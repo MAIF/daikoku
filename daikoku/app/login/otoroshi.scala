@@ -1,32 +1,21 @@
 package fr.maif.otoroshi.daikoku.login
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
-import play.api.libs.json.{
-  Format,
-  JsBoolean,
-  JsError,
-  JsObject,
-  JsResult,
-  JsSuccess,
-  JsValue,
-  Json
-}
+import play.api.libs.json._
 import play.api.mvc._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters._
 
 case class OtoroshiUser(
     name: String,

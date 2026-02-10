@@ -1053,7 +1053,7 @@ class CmsPagesAdminApiController(
         Future
           .sequence(
             body
-              .as(Reads.seq(CmsFileFormat.reads))
+              .as(Reads.seq(CmsFileFormat))
               .map(page => {
                 env.dataStore.cmsRepo
                   .forTenant(ctx.tenant)

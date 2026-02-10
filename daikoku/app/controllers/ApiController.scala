@@ -1,10 +1,5 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.NotUsed
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
-import org.apache.pekko.util.ByteString
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
@@ -30,8 +25,12 @@ import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
+import org.apache.pekko.util.ByteString
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.http.HttpEntity
@@ -883,30 +882,8 @@ class ApiController(
       }
     }
 
-  private val extensions: Map[String, String] = Map(
-    ".adoc" -> "text/asciidoc",
-    ".avi" -> "video/x-msvideo",
-    ".doc" -> "application/msword",
-    ".docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".gif" -> "image/gif",
-    ".html" -> "text/html",
-    ".jpg" -> "image/jpeg",
-    ".md" -> "text/markdown",
-    ".mpeg" -> "video/mpeg",
-    ".odp" -> "application/vnd.oasis.opendocument.presentation",
-    ".ods" -> "application/vnd.oasis.opendocument.spreadsheet",
-    ".odt" -> "application/vnd.oasis.opendocument.text",
-    ".png" -> "image/png",
-    ".pdf" -> "application/pdf",
-    ".webm" -> "video/webm",
-    ".css" -> "text/css",
-    ".js" -> "text/javascript"
-  ).map(t => (t._2, t._1))
-
   def getDocumentationPageRemoteContent(apiId: String, pageId: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>
-      import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-
       import scala.concurrent.duration._
 
       UberPublicUserAccess(
@@ -3835,11 +3812,8 @@ class ApiController(
               )
             case Some(issue) =>
               for {
-                creators <- Future.sequence(
-                  issue.comments.map(comment =>
-                    env.dataStore.userRepo.findById(comment.by.value)
-                  )
-                )
+                creators <- env.dataStore.userRepo
+                  .findNotDeleted(Json.obj("$id" -> Json.obj("$in" -> JsArray(issue.comments.map(_.by.asJson)))))
                 issueCreator <- env.dataStore.userRepo.findById(issue.by.value)
                 api <-
                   env.dataStore.apiRepo
@@ -3855,7 +3829,7 @@ class ApiController(
                   .map { creator =>
                     val issuesTags = api.map(_.issuesTags).getOrElse(Set.empty)
                     Ok(
-                      (issue.asJson.as[JsObject] ++
+                      issue.asJson.as[JsObject] ++
                         Json.obj(
                           "by" -> creator.asSimpleJson,
                           "tags" -> Json.toJson(
@@ -3866,16 +3840,15 @@ class ApiController(
                                   .map(tag => ApiTagFormat.writes(tag))
                               )
                           ),
-                          "comments" -> Json.toJson(
-                            issue.comments.zipWithIndex
-                              .map {
-                                case (comment, i) =>
-                                  ApiIssueCommentFormat
-                                    .writes(comment) + ("by" -> creators(i)
-                                    .map(_.asSimpleJson)
-                                    .getOrElse(Json.obj()))
-                              }
-                          )
+                          "comments" -> issue.comments
+                            .map(comment => {
+                                val by: JsValue = creators.find(_.id == comment.by)
+                                  .map(_.asSimpleJson)
+                                  .getOrElse(Json.obj().as[JsValue])
+
+                                ApiIssueCommentFormat
+                                  .writes(comment).as[JsObject] ++ Json.obj("by" -> by)
+                            }
                         ))
                     )
                   }
@@ -4929,7 +4902,6 @@ class ApiController(
         ): EitherT[Future, AppError, Unit] = {
           import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
-          implicit val c: DaikokuActionContext[JsValue] = ctx
           implicit val mat: Materializer = env.defaultMaterializer
           implicit val language: String = ctx.request.getLanguage(ctx.tenant)
           implicit val currentUser: User = ctx.user

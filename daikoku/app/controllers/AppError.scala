@@ -1,8 +1,7 @@
 package controllers
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import controllers.AppError.toJson
 import fr.maif.otoroshi.daikoku.domain.UserId
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc
 import play.api.mvc.Results._

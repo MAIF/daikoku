@@ -40,7 +40,7 @@ sealed trait AlgoSettings extends AsJson {
 
   def asAlgorithmF(
       mode: AlgoMode
-  )(implicit env: Env, ec: ExecutionContext): Future[Option[Algorithm]] = {
+  )(implicit env: Env): Future[Option[Algorithm]] = {
     FastFuture.successful(asAlgorithm(mode)(env))
   }
 
@@ -107,7 +107,7 @@ case class HSAlgoSettings(size: Int, secret: String) extends AlgoSettings {
       case 512 => Some(Algorithm.HMAC512(transformValue(secret)))
       case _   => None
     }
-  override def asJson =
+  override def asJson: JsValue =
     Json.obj(
       "type" -> "HSAlgoSettings",
       "size" -> this.size,
@@ -201,7 +201,7 @@ case class RSAlgoSettings(
       case _ => None
     }
 
-  override def asJson =
+  override def asJson: JsValue =
     Json.obj(
       "type" -> "RSAlgoSettings",
       "size" -> this.size,
@@ -299,7 +299,7 @@ case class ESAlgoSettings(
       case _ => None
     }
 
-  override def asJson =
+  override def asJson: JsValue =
     Json.obj(
       "type" -> "ESAlgoSettings",
       "size" -> this.size,
@@ -376,7 +376,7 @@ case class JWKSAlgoSettings(
     Await.result(asAlgorithmF(mode)(env, env.defaultExecutionContext), timeout)
   }
 
-  override def asAlgorithmF(
+  def asAlgorithmF(
       mode: AlgoMode
   )(implicit env: Env, ec: ExecutionContext): Future[Option[Algorithm]] = {
     mode match {

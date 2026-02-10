@@ -1,17 +1,15 @@
 package fr.maif.otoroshi.daikoku.login
 
-import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
 import cats.syntax.option._
-import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.{Env, TenantProvider}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, JsString, JsValue, Json}
+import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.libs.typedmap._
 import play.api.mvc._
 

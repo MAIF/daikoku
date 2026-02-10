@@ -24,6 +24,7 @@ import org.apache.pekko.{Done, NotUsed}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
@@ -547,8 +548,8 @@ class ApiService(
             .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
             .getOrElse(Set.empty[String])
 
-          val tagsFromDk =
-            getListFromMeta("daikoku__tags", infos.apk.metadata)
+//          val tagsFromDk =
+//            getListFromMeta("daikoku__tags", infos.apk.metadata)
           val newTagsFromDk =
             planTags.map(OtoroshiTarget.processValue(_, ctx))
 
@@ -1464,43 +1465,43 @@ class ApiService(
             // no need to delete key (aggregate is saved and return new key, just we don't save it)
             // just delete subsscription
             case None if childs.nonEmpty =>
-              childs match {
-                case newParent :: newChilds =>
-                  for {
-                    // save new parent by removing link with old parent
-                    _ <-
-                      env.dataStore.apiSubscriptionRepo
-                        .forTenant(tenant)
-                        .save(newParent.copy(parent = None))
+              val newParent = childs.head
+              val newChilds = childs.tail
 
-                    // save other sub from aggregation with link to new parent
-                    _ <-
-                      env.dataStore.apiSubscriptionRepo
-                        .forTenant(tenant)
-                        .updateManyByQuery(
-                          Json.obj(
-                            "_id" -> Json.obj(
-                              "$in" -> JsArray(newChilds.map(_.id.asJson))
-                            )
-                          ),
-                          Json.obj(
-                            "$set" -> Json
-                              .obj("parent" -> newParent.id.asJson)
-                          )
+              for {
+                // save new parent by removing link with old parent
+                _ <-
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant)
+                    .save(newParent.copy(parent = None))
+
+                // save other sub from aggregation with link to new parent
+                _ <-
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant)
+                    .updateManyByQuery(
+                      Json.obj(
+                        "_id" -> Json.obj(
+                          "$in" -> JsArray(newChilds.map(_.id.asJson))
                         )
-
-                    // compute new tags, metadata...
-                    _ <- otoroshiSynchronisator.verify(
-                      Json.obj("_id" -> newParent.id.asJson)
+                      ),
+                      Json.obj(
+                        "$set" -> Json
+                          .obj("parent" -> newParent.id.asJson)
+                      )
                     )
-                    // delete extracted OtoroshiApiKey into Otoroshi
-                    // delete extracted subscription
-                    - <-
-                      env.dataStore.apiSubscriptionRepo
-                        .forTenant(tenant.id)
-                        .deleteByIdLogically(subscription.id)
-                  } yield ()
-              }
+
+                // compute new tags, metadata...
+                _ <- otoroshiSynchronisator.verify(
+                  Json.obj("_id" -> newParent.id.asJson)
+                )
+                // delete extracted OtoroshiApiKey into Otoroshi
+                // delete extracted subscription
+                - <-
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant.id)
+                    .deleteByIdLogically(subscription.id)
+              } yield ()
             case _ => deleteApiKey(tenant, subscription, plan)
           }
         }

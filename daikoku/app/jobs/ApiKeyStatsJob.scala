@@ -1,18 +1,17 @@
 package jobs
 
+import cats.data.OptionT
+import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Year}
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
 import org.apache.pekko.{Done, NotUsed}
-import cats.data.OptionT
-import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.libs.json._
@@ -189,7 +188,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         env.config.apikeysStatsSyncInterval / env.config.apikeysStatsCallInterval
       )
       val nbCall = Math
-        .ceil(Math.max(subscriptions.length / nbInterval, maxCallPerJob))
+        .ceil(Math.max(subscriptions.length / nbInterval, maxCallPerJob.toDouble))
         .toInt
 
       Source(tenants.toList)

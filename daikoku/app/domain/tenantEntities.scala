@@ -1,40 +1,15 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.implicits.catsSyntaxOptionId
-import com.github.jknack.handlebars.{Context, Handlebars, Options}
-import controllers.AppError.toJson
-import controllers.{AppError, Assets}
-import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqThirdPartyPaymentSettingsFormat,
-  SeqValidationStepFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.SeqValidationStepFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.joda.time.DateTime
-import play.api.i18n.MessagesApi
 import play.api.libs.json._
-import play.api.mvc.Request
 import services.CmsPage
-import storage.TenantCapableRepo
-
-import java.util
-import java.util.concurrent.Executors
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 object Tenant {
   val Default: TenantId = TenantId("default")
@@ -478,25 +453,25 @@ case class Tenant(
       "logo" -> style
         .flatMap(a => a.logo)
         .filter(_.trim.nonEmpty)
-        .map(JsString)
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
       "logoMin" -> style
         .flatMap(a => a.logoMin)
         .filter(_.trim.nonEmpty)
-        .map(JsString)
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
       "logoDark" -> style
         .flatMap(a => a.logoDark)
         .filter(_.trim.nonEmpty)
-        .map(JsString)
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
       "logoMinDark" -> style
         .flatMap(a => a.logoMinDark)
         .filter(_.trim.nonEmpty)
-        .map(JsString)
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
       "mode" -> env.config.mode.name,
@@ -506,7 +481,7 @@ case class Tenant(
       "homePageVisible" -> style.exists(_.homePageVisible),
       "homeCmsPage" -> style
         .flatMap(_.homeCmsPage)
-        .map(JsString)
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
       "creationSecurity" -> creationSecurity

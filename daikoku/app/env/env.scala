@@ -6,7 +6,6 @@ import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
-import fr.maif.otoroshi.daikoku.domain.json.TenantIdFormat
 import fr.maif.otoroshi.daikoku.domain.{
   DatastoreId,
   ReportsInfo,
@@ -23,12 +22,11 @@ import org.apache.pekko.actor.{ActorRef, ActorSystem, PoisonPill}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{FileIO, Keep, Sink, Source}
-import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
-import play.api.{Configuration, Environment, Play}
+import play.api.{Configuration, Environment}
 import storage.DataStore
 import storage.drivers.postgres.PostgresDataStore
 
@@ -524,7 +522,6 @@ class DaikokuEnv(
                   s"Main dataStore seems to be empty, importing from http resource $path ..."
                 )
                 implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
                 wsClient
                   .url(path)
                   .withHttpHeaders(config.init.data.headers.toSeq: _*)
@@ -545,9 +542,6 @@ class DaikokuEnv(
                 AppLogger.warn(
                   s"Main dataStore seems to be empty, importing from $path ..."
                 )
-                implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
-
                 dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
               case _ =>
                 import fr.maif.otoroshi.daikoku.domain._
@@ -721,7 +715,7 @@ class DaikokuEnv(
       } else {
         dataStore match {
           case store: PostgresDataStore => store.checkDatabase()
-          case _                        => FastFuture.successful(None)
+          case _                        => FastFuture.successful(())
         }
       }
     }
@@ -754,17 +748,18 @@ class DaikokuEnv(
       .toMat(Sink.ignore)(Keep.right)
       .run()(materializer)
       .map(_ => {
-        dataStore.reportsInfoRepo.count().map { case 0 =>
-          dataStore.reportsInfoRepo.save(
-            ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false)
-          )
+        dataStore.reportsInfoRepo.count().map {
+          case 0 =>
+            dataStore.reportsInfoRepo.save(
+              ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false)
+            )
+          case _ => FastFuture.successful(true)
         }
       })
   }
 
   override def onShutdown(): Unit = {
     AppLogger.debug("onShutdown called")
-    implicit val ec: ExecutionContext = defaultExecutionContext
     dataStore.stop()
     auditActor ! PoisonPill
     Await.result(actorSystem.terminate(), 20.seconds)

@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.utils
 
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
@@ -10,6 +9,8 @@ import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedForm
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -5,19 +5,12 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions._
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminAccessTenant
-import fr.maif.otoroshi.daikoku.domain.{
-  Api,
-  ApiState,
-  ApiVisibility,
-  Team,
-  UsagePlan,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.future._
 import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{AbstractController, ControllerComponents, Result}
+import play.api.mvc.{AbstractController, ControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
 

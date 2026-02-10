@@ -1,29 +1,20 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError.OtoroshiError
-import fr.maif.otoroshi.daikoku.audit.{
-  ElasticReadsAnalytics,
-  ElasticWritesAnalytics
-}
+import fr.maif.otoroshi.daikoku.audit.ElasticReadsAnalytics
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  ApiKeyQuotas,
-  ApiSubscription,
-  OtoroshiSettings,
-  Tenant,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -424,7 +415,7 @@ class OtoroshiClient(env: Env) {
                     Json.obj(
                       "terms" -> Json.obj(
                         "identity.identity.keyword" -> JsArray(
-                          subscriptions.map(_.apiKey.clientId).map(JsString)
+                          subscriptions.map(_.apiKey.clientId).map(JsString.apply)
                         )
                       )
                     )

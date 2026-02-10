@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{
@@ -14,11 +13,11 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator}
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
-import org.joda.time.{DateTime, Hours}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{
@@ -33,8 +32,8 @@ import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
 class UsersController(
     DaikokuAction: DaikokuAction,

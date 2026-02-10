@@ -64,10 +64,10 @@ class MessageController(
           .as[JsArray]
           .value
           .map(_.as[String])
-          .map(UserId)
+          .map(UserId.apply)
           .toSet
         val chat =
-          (body \ "chat").asOpt[String].map(UserId).getOrElse(ctx.user.id)
+          (body \ "chat").asOpt[String].map(UserId.apply).getOrElse(ctx.user.id)
 
         val message = Message(
           id = DatastoreId(IdGenerator.token(32)),
@@ -91,7 +91,7 @@ class MessageController(
             case true =>
               env.defaultActorSystem.eventStream.publish(StreamMessage(message))
               Ok(message.asJson)
-            case false =>
+            case _ =>
               BadRequest(
                 Json.obj(
                   "error" -> "Failure",

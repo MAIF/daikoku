@@ -1,8 +1,5 @@
 package jobs
 
-import org.apache.pekko.Done
-import org.apache.pekko.actor.Cancellable
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
@@ -17,52 +14,19 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import org.apache.pekko.Done
+import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-
-object LongExtensions {
-  implicit class HumanReadableExtension(duration: Long) {
-    final def toHumanReadable: String = {
-      val units = Seq(
-        TimeUnit.DAYS,
-        TimeUnit.HOURS,
-        TimeUnit.MINUTES,
-        TimeUnit.SECONDS,
-        TimeUnit.MILLISECONDS
-      )
-
-      val timeStrings = units
-        .foldLeft((Seq.empty[String], duration))({
-          case ((humanReadable, rest), unit) =>
-            val name = unit.toString.toLowerCase()
-            val result = unit.convert(rest, TimeUnit.NANOSECONDS)
-            val diff = rest - TimeUnit.NANOSECONDS.convert(result, unit)
-            val str = result match {
-              case 0    => humanReadable
-              case 1    => humanReadable :+ s"1 ${name.init}" // Drop last 's'
-              case more => humanReadable :+ s"$more $name"
-            }
-            (str, diff)
-        })
-        ._1
-
-      timeStrings.size match {
-        case 0 => ""
-        case 1 => timeStrings.head
-        case _ => timeStrings.init.mkString(", ") + " and " + timeStrings.last
-      }
-    }
-  }
-}
 
 class OtoroshiVerifierJob(
     client: OtoroshiClient,
@@ -306,8 +270,8 @@ class OtoroshiVerifierJob(
             .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
             .getOrElse(Set.empty[String])
 
-          val tagsFromDk =
-            getListFromMeta("daikoku__tags", infos.apk.metadata)
+//          val tagsFromDk =
+//            getListFromMeta("daikoku__tags", infos.apk.metadata)
           val newTagsFromDk =
             planTags.map(OtoroshiTarget.processValue(_, ctx))
 
@@ -708,7 +672,7 @@ class OtoroshiVerifierJob(
     */
 
   private def synchronizeApikeys(
-      query: JsObject = Json.obj("parent" -> JsNull)
+      query: JsObject
   ): Future[Done] = {
     import cats.implicits._
 
@@ -907,7 +871,7 @@ class OtoroshiVerifierJob(
 
   }
 
-  def checkRotation(query: JsObject = Json.obj("parent" -> JsNull)) = {
+  def checkRotation(query: JsObject) = {
     for {
       allSubscriptions <-
         env.dataStore.apiSubscriptionRepo

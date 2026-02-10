@@ -7,17 +7,21 @@ organization := "fr.maif.otoroshi"
 maintainer := "oss@maif.fr"
 Universal / packageName := "daikoku"
 
-scalaVersion := "2.13.12"
+scalaVersion := "2.13.15"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-lazy val reactiveMongoVersion = "0.20.10"
 lazy val wiremockVersion = "3.3.1"
 lazy val awsJavaSdkVersion = "1.12.582"
 lazy val akkaHttp2Version = "10.2.10"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayPekkoHttp2Support)
+  .enablePlugins(
+    PlayScala,
+    DockerPlugin,
+    BuildInfoPlugin,
+    PlayPekkoHttp2Support
+  )
   .disablePlugins(PlayFilters)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -36,9 +40,9 @@ assembly / assemblyMergeStrategy := {
   case PathList(ps @ _*) if ps.contains("reflection-config.json") =>
     MergeStrategy.first // ???
   case PathList(ps @ _*) if ps.contains("mime.types") =>
-    MergeStrategy.first //???
+    MergeStrategy.first // ???
   case PathList(ps @ _*) if ps.contains("native-image") =>
-    MergeStrategy.first //???
+    MergeStrategy.first // ???
   case "META-INF/mailcap.default"   => MergeStrategy.last
   case "META-INF/mimetypes.default" => MergeStrategy.last
   case x =>
@@ -64,14 +68,12 @@ libraryDependencies ++= Seq(
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
   "org.apache.commons" % "commons-lang3" % "3.13.0",
   "org.bouncycastle" % "bcprov-jdk18on" % "1.76",
-  //play framework
+  // play framework
   "org.playframework" %% "play-json" % "3.0.1",
   "org.playframework" %% "play-pekko-http2-support" % "3.0.0",
-  //pekko
+  // pekko
   "org.apache.pekko" %% "pekko-connectors-kafka" % "1.0.0",
   "org.apache.pekko" %% "pekko-connectors-s3" % "1.0.1",
-
-
   "com.auth0" % "java-jwt" % "4.4.0",
   "com.auth0" % "jwks-rsa" % "0.22.1", // https://github.com/auth0/jwks-rsa-java
   "com.nimbusds" % "nimbus-jose-jwt" % "9.37",
@@ -113,7 +115,19 @@ scalacOptions ++= Seq(
   "-language:existentials",
   "-language:postfixOps",
 //  "-Ypartial-unification",
-  "-Xfatal-warnings"
+//  "-Xfatal-warnings",
+  "-Wconf:msg=possible missing interpolator:silent",
+  "-Wconf:any:warning-verbose",  // Debug: montre d'où viennent les warnings
+  "-Wconf:src=conf/routes:silent",  // Exact path
+  "-Wconf:src=views/.*:silent",
+  "-Wconf:msg=discarded non-Unit value:s",
+  "-deprecation", // Avertit sur les APIs dépréciées
+  "-unchecked", // Avertit sur les pattern matching non exhaustifs
+  "-Xlint", // Active tous les lints
+  "-Ywarn-dead-code", // Code mort
+  "-Ywarn-numeric-widen", // Conversions numériques implicites
+  "-Ywarn-value-discard", // Valeurs jetées
+  "-Xsource:3" // ⭐ CRUCIAL : émule le comportement de Scala 3
 )
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
@@ -129,7 +143,7 @@ assembly / test := {}
 assembly / assemblyJarName := "daikoku.jar"
 assembly / fullClasspath += Attributed.blank(PlayKeys.playPackageAssets.value)
 assembly / assemblyMergeStrategy := {
-  //case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  // case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case PathList("javax", xs @ _*) =>
     MergeStrategy.first
   case PathList("org", "apache", "commons", "logging", xs @ _*) =>
@@ -173,7 +187,7 @@ dockerCommands := dockerCommands.value.filterNot {
 Docker / dockerPackageMappings += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
 dockerEntrypoint := Seq("/opt/docker/bin/start.sh")
 dockerUpdateLatest := true
-dockerEnvVars :=  Map("daikoku.containerized"-> "true")
+dockerEnvVars := Map("daikoku.containerized" -> "true")
 
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 

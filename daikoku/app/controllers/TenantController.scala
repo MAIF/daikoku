@@ -1,34 +1,27 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqTeamAuthorizedEntitiesFormat,
-  TenantFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
-import services.CmsPage
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -470,9 +463,6 @@ class TenantController(
                   Try {
                     val config = OAuth2Config()
                     val body = Json.parse(resp.body)
-                    val issuer = (body \ "issuer")
-                      .asOpt[String]
-                      .getOrElse("http://localhost:8082/")
                     val tokenUrl = (body \ "token_endpoint")
                       .asOpt[String]
                       .getOrElse(config.tokenUrl)

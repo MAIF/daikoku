@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.messages
 
+import fr.maif.otoroshi.daikoku.domain.UserId
 import org.apache.pekko.actor.{Actor, ActorRef}
-import fr.maif.otoroshi.daikoku.domain.{TeamId, UserId}
 
 class MessageStreamActor(source: ActorRef, user: UserId) extends Actor {
   override def receive = { case StreamMessage(message) =>

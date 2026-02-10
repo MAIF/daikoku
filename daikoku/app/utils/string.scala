@@ -18,7 +18,6 @@ object StringImplicits {
       hashedString
     }
     def gravatar: String = {
-      val email = s.toLowerCase().trim()
       val url = s"https://www.gravatar.com/avatar/${md5}?size=128&d=robohash"
       url
     }

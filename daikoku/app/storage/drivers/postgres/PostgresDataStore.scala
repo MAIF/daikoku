@@ -1,20 +1,17 @@
 package storage.drivers.postgres
 
-import org.apache.pekko.{Done, NotUsed}
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
-import org.apache.pekko.util.ByteString
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
-import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
-import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
-import io.vertx.sqlclient.{PoolOptions, Row}
+import io.vertx.pgclient.PgPool
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
+import org.apache.pekko.util.ByteString
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import services.CmsPage
@@ -24,7 +21,7 @@ import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait PostgresTenantCapableRepo[A, Id <: ValueType]
     extends TenantCapableRepo[A, Id] {
@@ -379,7 +376,7 @@ case class PostgresTenantCapableConsumptionRepo(
       query: JsObject,
       tableName: String,
       format: Format[ApiKeyConsumption]
-  )(implicit ec: ExecutionContext) = {
+  ) = {
     val (sql, params) = convertQuery(query)
     reactivePg.queryOne(s"SELECT * FROM $tableName WHERE $sql", params) {
       rowToJson(_, format)
@@ -434,93 +431,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "reports_info" -> true,
     "api_subscription_transfers" -> true
   )
-
-  private lazy val poolOptions: PoolOptions = new PoolOptions()
-    .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
-
-  private lazy val options: PgConnectOptions = {
-    val options = new PgConnectOptions()
-      .setPort(configuration.get[Int]("daikoku.postgres.port"))
-      .setHost(configuration.get[String]("daikoku.postgres.host"))
-      .setDatabase(configuration.get[String]("daikoku.postgres.database"))
-      .setUser(configuration.get[String]("daikoku.postgres.username"))
-      .setPassword(configuration.get[String]("daikoku.postgres.password"))
-      .setProperties(
-        Map(
-          "search_path" -> getSchema
-        ).asJava
-      )
-
-    val ssl = configuration
-      .getOptional[Configuration]("daikoku.postgres.ssl")
-      .getOrElse(Configuration.empty)
-    val sslEnabled = ssl.getOptional[Boolean]("enabled").getOrElse(false)
-
-    if (sslEnabled) {
-      val pemTrustOptions = new PemTrustOptions()
-      val pemKeyCertOptions = new PemKeyCertOptions()
-
-      options.setSslMode(
-        SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca"))
-      )
-      ssl
-        .getOptional[Int]("ssl-handshake-timeout")
-        .map(options.setSslHandshakeTimeout(_))
-
-      ssl.getOptional[Seq[String]]("trusted-certs-path").map { pathes =>
-        pathes.map(p => pemTrustOptions.addCertPath(p))
-        options.setPemTrustOptions(pemTrustOptions)
-      }
-      ssl.getOptional[String]("trusted-cert-path").map { path =>
-        pemTrustOptions.addCertPath(path)
-        options.setPemTrustOptions(pemTrustOptions)
-      }
-      ssl.getOptional[Seq[String]]("trusted-certs").map { certs =>
-        certs.map(p => pemTrustOptions.addCertValue(Buffer.buffer(p)))
-        options.setPemTrustOptions(pemTrustOptions)
-      }
-      ssl.getOptional[String]("trusted-cert").map { path =>
-        pemTrustOptions.addCertValue(Buffer.buffer(path))
-        options.setPemTrustOptions(pemTrustOptions)
-      }
-      ssl.getOptional[Seq[String]]("client-certs-path").map { paths =>
-        paths.map(p => pemKeyCertOptions.addCertPath(p))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[Seq[String]]("client-certs").map { certs =>
-        certs.map(p => pemKeyCertOptions.addCertValue(Buffer.buffer(p)))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[String]("client-cert-path").map { path =>
-        pemKeyCertOptions.addCertPath(path)
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[String]("client-cert").map { path =>
-        pemKeyCertOptions.addCertValue(Buffer.buffer(path))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[Seq[String]]("client-keys-path").map { pathes =>
-        pathes.map(p => pemKeyCertOptions.addKeyPath(p))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[Seq[String]]("client-keys").map { certs =>
-        certs.map(p => pemKeyCertOptions.addKeyValue(Buffer.buffer(p)))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[String]("client-key-path").map { path =>
-        pemKeyCertOptions.addKeyPath(path)
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[String]("client-key").map { path =>
-        pemKeyCertOptions.addKeyValue(Buffer.buffer(path))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
-      }
-      ssl.getOptional[Boolean]("trust-all").map(options.setTrustAll)
-    }
-    options
-  }
-
-//  logger.info(s"used : ${options.getDatabase}")
 
   private lazy val reactivePg =
     new ReactivePg(pgPool, configuration)(ec)
@@ -833,8 +743,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       .map { r =>
         r.asScala.toSeq.head.getBoolean("exists")
       }
-      .flatMap {
-        case java.lang.Boolean.FALSE =>
+      .flatMap(exists => {
+        if (!exists) {
           AppLogger.info(s"Create missing table : $table")
           reactivePg
             .rawQuery(
@@ -846,8 +756,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
             .map { _ =>
               AppLogger.info(s"Created : $table")
             }
-        case java.lang.Boolean.TRUE => FastFuture.successful(())
-      }
+        } else {
+          FastFuture.successful(())
+        }
+      })
   }
 
   override def exportAsStream(
@@ -2320,7 +2232,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
         s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql RETURNING _id",
         params ++ Seq(new JsonObject(Json.stringify(value)))
       )
-      .map(_.size())
+      .map(_.size().toLong)
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(

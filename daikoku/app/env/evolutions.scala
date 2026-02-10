@@ -18,16 +18,15 @@ import fr.maif.otoroshi.daikoku.domain.json.{
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
-import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.Done
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import services.CmsPage
 import storage.DataStore
-import storage.drivers.postgres.PostgresDataStore
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -613,7 +612,7 @@ object evolution_1612_a extends EvolutionScript {
               .updateManyByQuery(
                 Json.obj(
                   "parent" -> JsNull,
-                  "_id" -> Json.obj("$nin" -> JsArray(parents.map(JsString)))
+                  "_id" -> Json.obj("$nin" -> JsArray(parents.map(JsString.apply)))
                 ),
                 Json.obj(
                   "$set" -> Json.obj(
@@ -1136,7 +1135,7 @@ object evolution_1750 extends EvolutionScript {
     (
         _: Option[DatastoreId],
         dataStore: DataStore,
-        mat: Materializer,
+        _: Materializer,
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
@@ -1146,8 +1145,6 @@ object evolution_1750 extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-      val cmsApiDefaultTenantId =
-        ApiId(s"cms-api-tenant-${Tenant.Default.value}")
 
       for {
         tenants <- dataStore.tenantRepo.findAll()
@@ -1425,11 +1422,6 @@ object evolution_1840_a extends EvolutionScript {
       logger.info(
         s"Begin evolution $version - Extract form step from admin step"
       )
-
-      val count = dataStore.usagePlanRepo
-        .forAllTenant()
-        .streamAllRaw()(ec)
-        .runWith(Sink.fold(0)((count, _) => count + 1))(mat)
 
       dataStore.usagePlanRepo
         .forAllTenant()

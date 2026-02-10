@@ -43,12 +43,12 @@ object Authenticator {
       BigInt(time).toByteArray.reverse.padTo(8, 0.toByte).reverse
     val hash = hmac_sha(crypto, secret.toByteArray, msg)
     val offset: Int = hash(hash.length - 1) & 0xf
-    val binary: Long = ((hash(offset) & 0x7f) << 24) |
-      ((hash(offset + 1) & 0xff) << 16) |
-      ((hash(offset + 2) & 0xff) << 8 |
-        (hash(offset + 3) & 0xff))
+    val binary: Long = ((hash(offset) & 0x7f) << 24).toLong |
+      ((hash(offset + 1) & 0xff) << 16).toLong |
+      (((hash(offset + 2) & 0xff) << 8).toLong |
+        (hash(offset + 3) & 0xff).toLong)
 
-    val otp: Long = binary % pow(10, returnDigits).toLong
+    val otp: Long = binary % pow(10, returnDigits.toDouble).toLong
 
     ("0" * returnDigits + otp.toString).takeRight(returnDigits)
   }

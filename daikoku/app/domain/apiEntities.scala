@@ -4,15 +4,12 @@ import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.json.{
-  CurrencyFormat,
   SeqIssueIdFormat,
   SeqPostIdFormat,
   SeqTeamIdFormat,
-  SetApiTagFormat,
-  TestingConfigFormat
+  SetApiTagFormat
 }
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -677,8 +674,8 @@ case class Api(
       "team" -> team.value,
       "name" -> name,
       "smallDescription" -> smallDescription,
-      "header" -> header.map(JsString).getOrElse(JsNull).as[JsValue],
-      "image" -> image.map(JsString).getOrElse(JsNull).as[JsValue],
+      "header" -> header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "image" -> image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "description" -> description,
       "currentVersion" -> currentVersion.asJson,
       "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),

@@ -1,16 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
+import cats.implicits._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json._
-import cats.implicits._
 
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

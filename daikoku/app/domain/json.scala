@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.domain
 
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
-import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
+import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -15,7 +15,6 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -82,14 +81,14 @@ object json {
   }
 
   val DateTimeFormat = new Format[DateTime] {
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[DateTime] =
       Try {
         JsSuccess(new DateTime(json.as[Long]))
       } recover { case e =>
         JsError(e.getMessage)
       } get
 
-    override def writes(o: DateTime) = JsNumber(o.getMillis)
+    override def writes(o: DateTime): JsValue = JsNumber(o.getMillis)
   }
 
   val OtoroshiSettingsFormat = new Format[OtoroshiSettings] {
@@ -384,12 +383,12 @@ object json {
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
   }
   val ApiTagFormat = new Format[ApiIssueTag] {
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[ApiIssueTag] =
       Try {
         JsSuccess(
           ApiIssueTag(
             id = (json \ "id")
-              .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
+              .asOpt[ApiIssueTagId](ApiIssueTagIdFormat)
               .getOrElse(ApiIssueTagId(IdGenerator.token(32))),
             name = (json \ "name").as[String],
             color = (json \ "color").as[String]
@@ -399,7 +398,7 @@ object json {
         JsError(e.getMessage)
       } get
 
-    override def writes(o: ApiIssueTag) =
+    override def writes(o: ApiIssueTag): JsValue =
       Json.obj(
         "id" -> ApiIssueTagIdFormat.writes(o.id),
         "name" -> o.name,
@@ -407,16 +406,16 @@ object json {
       )
   }
   val ApiIssueCommentFormat = new Format[ApiIssueComment] {
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[ApiIssueComment] =
       Try {
         JsSuccess(
           ApiIssueComment(
             by = (json \ "by").as(UserIdFormat),
             createdAt = (json \ "createdAt")
-              .asOpt[DateTime](DateTimeFormat.reads)
+              .asOpt(DateTimeFormat)
               .getOrElse(DateTime.now()),
             lastModificationAt = (json \ "lastModificationAt")
-              .asOpt[DateTime](DateTimeFormat.reads)
+              .asOpt(DateTimeFormat)
               .getOrElse(DateTime.now()),
             content = (json \ "content").as[String]
           )
@@ -425,7 +424,7 @@ object json {
         JsError(e.getMessage)
       } get
 
-    override def writes(o: ApiIssueComment) =
+    override def writes(o: ApiIssueComment): JsValue =
       Json.obj(
         "by" -> UserIdFormat.writes(o.by),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
@@ -566,7 +565,7 @@ object json {
         case str            => JsError(s"Bad TeamType value: $str")
       }
 
-    override def writes(o: TeamType) = JsString(o.name)
+    override def writes(o: TeamType): JsValue = JsString(o.name)
   }
   val ApiVisibilityFormat = new Format[ApiVisibility] {
     override def reads(json: JsValue) =
@@ -578,7 +577,7 @@ object json {
         case str => JsError(s"Bad ApiVisibility value: $str")
       }
 
-    override def writes(o: ApiVisibility) = JsString(o.name)
+    override def writes(o: ApiVisibility): JsValue = JsString(o.name)
   }
   val ApiStateFormat = new Format[ApiState] {
     override def reads(json: JsValue) =
@@ -590,7 +589,7 @@ object json {
         case str          => JsError(s"Bad ApiState value: $str")
       }
 
-    override def writes(o: ApiState) = JsString(o.name)
+    override def writes(o: ApiState): JsValue = JsString(o.name)
   }
   val UsagePlanVisibilityFormat = new Format[UsagePlanVisibility] {
     override def reads(json: JsValue) =
@@ -601,7 +600,7 @@ object json {
         case str       => JsError(s"Bad UsagePlanVisibility value: $str")
       }
 
-    override def writes(o: UsagePlanVisibility) = JsString(o.name)
+    override def writes(o: UsagePlanVisibility): JsValue = JsString(o.name)
   }
 
   val ValidationStepFormat = new Format[ValidationStep] {
@@ -613,7 +612,7 @@ object json {
             "id" -> id,
             "emails" -> emails,
             "title" -> title,
-            "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
+            "message" -> message.map(JsString.apply).getOrElse(JsNull).as[JsValue]
           )
         case ValidationStep.TeamAdmin(id, team, title) =>
           Json.obj(
@@ -636,15 +635,15 @@ object json {
             "title" -> title,
             "schema" -> schema.getOrElse(JsNull).as[JsValue],
             "formatter" -> formatter
-              .map(JsString)
+              .map(JsString.apply)
               .getOrElse(JsNull)
               .as[JsValue],
             "formKeysToMetadata" -> formKeysToMetadata
-              .map(keys => JsArray(keys.map(JsString)))
+              .map(keys => JsArray(keys.map(JsString.apply)))
               .getOrElse(JsNull)
               .as[JsValue],
             "info" -> info
-              .map(JsString)
+              .map(JsString.apply)
               .getOrElse(JsNull)
               .as[JsValue]
           )
@@ -746,7 +745,7 @@ object json {
         case str         => JsError(s"Bad SubscriptionProcess value: $str")
       }
 
-    override def writes(o: IntegrationProcess) = JsString(o.name)
+    override def writes(o: IntegrationProcess): JsValue = JsString(o.name)
   }
 
   val BasePaymentInformationFormat = new Format[BasePaymentInformation] {
@@ -779,7 +778,7 @@ object json {
   }
 
   val UsagePlanFormat = new Format[UsagePlan] {
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[UsagePlan] =
       Try {
         JsSuccess(
           UsagePlan(
@@ -832,7 +831,7 @@ object json {
         JsError(e.getMessage)
       } get
 
-    override def writes(o: UsagePlan) =
+    override def writes(o: UsagePlan): JsValue =
       Json.obj(
         "_id" -> UsagePlanIdFormat.writes(o.id),
         "_tenant" -> TenantIdFormat.writes(o.tenant),
@@ -1089,7 +1088,7 @@ object json {
       Json.obj(
         "basePriceId" -> o.basePriceId,
         "additionalPriceId" -> o.additionalPriceId
-          .map(JsString)
+          .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
@@ -1453,7 +1452,7 @@ object json {
         JsSuccess(
           ApiPost(
             id = (json \ "_id")
-              .asOpt[ApiPostId](ApiPostIdFormat.reads)
+              .asOpt(ApiPostIdFormat)
               .getOrElse(ApiPostId(IdGenerator.token(32))),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
@@ -1491,23 +1490,23 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
             lastModificationAt = (json \ "lastModificationAt")
-              .asOpt[DateTime](DateTimeFormat.reads)
+              .asOpt(DateTimeFormat)
               .getOrElse(DateTime.now()),
             tags = (json \ "tags")
-              .asOpt[Set[ApiIssueTagId]](Reads.set(ApiIssueTagIdFormat.reads))
+              .asOpt[Set[ApiIssueTagId]](Reads.set(ApiIssueTagIdFormat))
               .getOrElse(Set.empty),
             open = (json \ "open").asOpt[Boolean].getOrElse(true),
             createdAt = (json \ "createdAt")
-              .asOpt[DateTime](DateTimeFormat.reads)
+              .asOpt(DateTimeFormat)
               .getOrElse(DateTime.now()),
             by = (json \ "by").as(UserIdFormat),
             comments = (json \ "comments")
               .asOpt[Seq[ApiIssueComment]](
-                Reads.seq(ApiIssueCommentFormat.reads)
+                Reads.seq(ApiIssueCommentFormat)
               )
               .getOrElse(Seq.empty),
             closedAt = (json \ "closedAt")
-              .asOpt[DateTime](DateTimeFormat.reads),
+              .asOpt(DateTimeFormat),
             apiVersion = (json \ "apiVersion").asOpt[String]
           )
         )
@@ -2213,8 +2212,8 @@ object json {
         "smallDescription" -> o.smallDescription,
         "customHeaderCmsPage" -> o.customHeaderCmsPage,
         "descriptionCmsPage" -> o.descriptionCmsPage,
-        "header" -> o.header.map(JsString).getOrElse(JsNull).as[JsValue],
-        "image" -> o.image.map(JsString).getOrElse(JsNull).as[JsValue],
+        "header" -> o.header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "image" -> o.image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "description" -> o.description,
         "currentVersion" -> VersionFormat.writes(o.currentVersion),
         "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
@@ -2477,7 +2476,7 @@ object json {
         case str          => JsError(s"Bad SubscriptionDemandState value: $str")
       }
 
-    override def writes(o: SubscriptionDemandState) = JsString(o.name)
+    override def writes(o: SubscriptionDemandState): JsValue = JsString(o.name)
   }
 
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
@@ -2667,6 +2666,7 @@ object json {
                           value.replaceFirst("service_", "")
                         )
                       )
+                    case _ => entities
                   }
                 }
               }
@@ -3752,7 +3752,7 @@ object json {
               api = (json \ "api").as(ApiIdFormat),
               plan = (json \ "plan").as(UsagePlanIdFormat),
               clientId = (json \ "clientId").as[String],
-              hits = (json \ "hits").as[Int],
+              hits = (json \ "hits").as[Long],
               globalInformations = (json \ "globalInformations").as(
                 GlobalConsumptionInformationsFormat
               ),
@@ -4064,7 +4064,7 @@ object json {
         case str             => JsError(s"Bad TeamPermission value: $str")
       }
 
-    override def writes(o: TeamPermission) = JsString(o.name)
+    override def writes(o: TeamPermission): JsValue = JsString(o.name)
   }
 
   val UserWithPermissionFormat: Format[UserWithPermission] =
@@ -4183,7 +4183,7 @@ object json {
           UserInvitation(
             token = (json \ "token").as[String],
             createdAt = (json \ "createdAt")
-              .asOpt[DateTime](DateTimeFormat.reads)
+              .asOpt(DateTimeFormat)
               .getOrElse(DateTime.now()),
             team = (json \ "team").asOpt[String].getOrElse("team"),
             notificationId =
@@ -4450,7 +4450,7 @@ object json {
     override def reads(json: JsValue): JsResult[CmsRequestRendering] =
       Try {
         CmsRequestRendering(
-          content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
+          content = (json \ "content").as(Reads.seq(CmsFileFormat)),
           current_page = (json \ "current_page").as[String],
           fields = (json \ "fields").as[Map[String, JsValue]]
         )
@@ -4529,7 +4529,7 @@ object json {
           path = (json \ "path").asOpt[String],
           exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
           lastPublishedDate =
-            (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
+            (json \ "lastPublishedDate").asOpt(DateTimeFormat)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

@@ -1,20 +1,20 @@
 package jobs
 
-import org.apache.pekko.actor.{ActorSystem, Cancellable}
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.{EitherT, OptionT}
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.ApiService
+import org.apache.pekko.actor.Cancellable
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class QueueJob(
     env: Env,
@@ -71,7 +71,7 @@ class QueueJob(
                   "NewIssueOpen",
                   "NewCommentOnIssue",
                   "TransferApiOwnership"
-                ).map(JsString)
+                ).map(JsString.apply)
               )
             ),
           "$or" -> Json.arr(
@@ -96,7 +96,7 @@ class QueueJob(
                   "ApiKeyRotationInProgress",
                   "ApiKeyRotationEndend",
                   "ApiKeyRefresh"
-                ).map(JsString)
+                ).map(JsString.apply)
               )
             ),
           "$or" -> Json.arr(
@@ -122,7 +122,7 @@ class QueueJob(
                   "ApiSubscriptionAccept",
                   "ApiSubscriptionReject",
                   "TransferApiOwnership"
-                ).map(JsString)
+                ).map(JsString.apply)
               )
             ),
           "action.team" -> team.id.asJson
@@ -130,16 +130,16 @@ class QueueJob(
       )
   }
 
-  private def deleteThirdPartyPaymentClient(team: Team) = {
-    env.dataStore.tenantRepo.findById(team.tenant).flatMap {
-      case Some(tenant) =>
-        Future.sequence(tenant.thirdPartyPaymentSettings.map {
-          case p: ThirdPartyPaymentSettings.StripeSettings =>
-            paymentClient.deleteStripeClient(team)(p)
-        })
-      case None => FastFuture.successful(())
-    }
-  }
+//  private def deleteThirdPartyPaymentClient(team: Team) = {
+//    env.dataStore.tenantRepo.findById(team.tenant).flatMap {
+//      case Some(tenant) =>
+//        Future.sequence(tenant.thirdPartyPaymentSettings.map {
+//          case p: ThirdPartyPaymentSettings.StripeSettings =>
+//            paymentClient.deleteStripeClient(team)(p)
+//        })
+//      case None => FastFuture.successful(())
+//    }
+//  }
 
   private def deleteUserNotifications(
       user: User,
@@ -154,7 +154,7 @@ class QueueJob(
               "$in" -> JsArray(
                 Seq(
                   "TeamInvitation"
-                ).map(JsString)
+                ).map(JsString.apply)
               )
             ),
           "action.user" -> user.id.asJson
@@ -225,7 +225,7 @@ class QueueJob(
             .deleteLogically(
               Json.obj(
                 "_id" -> Json.obj(
-                  "$in" -> JsArray(api.documentation.docIds().map(JsString))
+                  "$in" -> JsArray(api.documentation.docIds().map(JsString.apply))
                 )
               )
             )
@@ -520,16 +520,6 @@ class QueueJob(
 
   // ***************************
   // ***************************
-
-  private def awaitF(
-      duration: FiniteDuration
-  )(implicit actorSystem: ActorSystem, ec: ExecutionContext): Future[Unit] = {
-    val p = Promise[Unit]()
-    actorSystem.scheduler.scheduleOnce(duration) {
-      p.trySuccess(())
-    }
-    p.future
-  }
 
   def deleteFirstOperation(): Future[Unit] = {
 

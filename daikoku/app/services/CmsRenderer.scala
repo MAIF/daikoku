@@ -4,16 +4,9 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuActionMaybeWithoutUserContext,
-  DaikokuInternalActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuInternalActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _UberPublicUserAccess
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -27,7 +20,7 @@ import storage.TenantCapableRepo
 import java.util.concurrent.Executors
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
 object CmsPage {
   val pageRenderingEc = ExecutionContext.fromExecutor(
@@ -58,7 +51,7 @@ case class CmsFile(
       .parse(metadata.getOrElse("_exact", JsString("false")).as[String])
       .as[Boolean]
 
-  def id() = {
+  def id(): String = {
     val defaultId = path().replaceAll("/", "-")
     daikokuData
       .map(data => data.getOrElse("id", defaultId))
@@ -110,7 +103,7 @@ case class CmsPage(
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
-  def enrichHandlebarsWithPublicUserEntity(
+  private def enrichHandlebarsWithPublicUserEntity(
       ctx: DaikokuInternalActionMaybeWithoutUserContext[JsValue],
       parentId: Option[String],
       handlebars: Handlebars,
@@ -152,7 +145,7 @@ case class CmsPage(
     )
   }
 
-  def enrichHandlebarsWithOwnedApis[A](
+  private def enrichHandlebarsWithOwnedApis[A](
       ctx: DaikokuInternalActionMaybeWithoutUserContext[JsValue],
       parentId: Option[String],
       handlebars: Handlebars,
@@ -292,7 +285,7 @@ case class CmsPage(
     )
   }
 
-  def maybeWithoutUserToUserContextConverter(
+  private def maybeWithoutUserToUserContextConverter(
       ctx: DaikokuInternalActionMaybeWithoutUserContext[_]
   ): DaikokuActionContext[JsValue] = {
     DaikokuActionContext(
@@ -373,7 +366,7 @@ case class CmsPage(
                   fields = fields,
                   jsonToCombine = jsonToCombine ++ Map("team" -> team.asJson),
                   req = req
-                )(env, ec, messagesApi)
+                )
               )
               .mkString("\n")
           case Left(error) => AppError.render(error)
@@ -422,7 +415,7 @@ case class CmsPage(
     )
     handlebars.registerHelper(
       s"daikoku-json-owned-team",
-      (id: String, options: Options) => {
+      (id: String, _: Options) => {
         val teamId = renderString(ctx, parentId, id, fields, jsonToCombine, req)
 
         Await.result(
@@ -543,7 +536,7 @@ case class CmsPage(
       fields: Map[String, Any],
       jsonToCombine: Map[String, JsValue],
       req: Option[CmsRequestRendering]
-  )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) =
+  )(implicit env: Env, messagesApi: MessagesApi) =
     Await
       .result(
         CmsPage(
@@ -764,49 +757,11 @@ case class CmsPage(
     }
   }
 
-  private def daikokuPathParam(
-      ctx: DaikokuActionMaybeWithoutUserContext[_],
-      id: String,
-      req: Option[CmsRequestRendering]
-  )(implicit env: Env, ec: ExecutionContext) = {
-    val pages = req match {
-      case Some(value) =>
-        value.content
-          .filter(p => p.path().nonEmpty)
-          .map(r => s"/_${r.path()}")
-      case None =>
-        Await
-          .result(
-            env.dataStore.cmsRepo
-              .forTenant(ctx.tenant)
-              .findWithProjection(Json.obj(), Json.obj("path" -> true)),
-            10.seconds
-          )
-          .map(r => s"/_${(r \ "path").as[String]}")
-    }
-
-    pages
-      .sortBy(_.length)(Ordering[Int].reverse)
-      .find(p => ctx.request.path.startsWith(p))
-      .map(r => {
-        val params = ctx.request.path.split(r).filter(f => f.nonEmpty)
-        try {
-          if (params.length > 0)
-            params(0).split("/").filter(_.nonEmpty)(Integer.parseInt(id))
-          else
-            s"path param $id not found"
-        } catch {
-          case _: Throwable => s"path param $id not found"
-        }
-      })
-      .getOrElse(s"path param $id not found")
-  }
-
   private def daikokuPageUrl(
       ctx: DaikokuInternalActionMaybeWithoutUserContext[JsValue],
       id: String,
       req: Option[CmsRequestRendering]
-  )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+  )(implicit env: Env, ec: ExecutionContext) = {
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "#not-found"
       case Some(page) =>
@@ -815,7 +770,7 @@ case class CmsPage(
         if (!path.startsWith("/"))
           path = s"/$path"
 
-        s"/_${path}"
+        s"/_$path"
     }
   }
 
@@ -852,7 +807,6 @@ case class CmsPage(
       req: Option[CmsRequestRendering]
   )(implicit
       env: Env,
-      ec: ExecutionContext,
       messagesApi: MessagesApi
   ): Map[String, Any] = {
     import scala.jdk.CollectionConverters._
@@ -866,7 +820,7 @@ case class CmsPage(
           fields,
           jsonToCombine = jsonToCombine,
           req = req
-        )(env, ec, messagesApi)
+        )
       )
     }.toMap
   }
@@ -947,10 +901,6 @@ case class CmsPage(
           fields,
           jsonToCombine = jsonToCombine,
           req
-        )(
-          env,
-          ec,
-          messagesApi
         )
       )
 
@@ -1120,7 +1070,7 @@ case class CmsPage(
           case JsNumber(value)          => value
           case JsString(value)          => value
           case JsArray(value)           => value
-          case o @ JsObject(underlying) => o
+          case o @ JsObject(_) => o
         }
       )
     }).foldLeft(context) { (acc, item) =>
@@ -1174,7 +1124,7 @@ case class CmsPage(
     }
     try {
       import com.github.jknack.handlebars.EscapingStrategy
-      implicit val ec = CmsPage.pageRenderingEc
+      implicit val ec: ExecutionContextExecutor = CmsPage.pageRenderingEc
 
       if (
         page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest))
@@ -1204,7 +1154,7 @@ case class CmsPage(
           .resolver(JsonNodeValueResolver.INSTANCE)
           .combine("tenant", ctx.tenant.asJson)
           .combine("is_admin", ctx.isTenantAdmin)
-          .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
+          .combine("connected", ctx.user.exists(!_.isGuest))
           .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
           .combine(
             "request",

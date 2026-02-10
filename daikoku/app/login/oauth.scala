@@ -1,10 +1,8 @@
 package fr.maif.otoroshi.daikoku.login
 
 import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.auth0.jwt.interfaces.DecodedJWT
 import controllers.AppError
 import controllers.AppError.AuthenticationError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -14,10 +12,10 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.jwt.{AlgoSettings, InputMode}
 import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
-import org.apache.pekko.serialization.jackson.Compression.Algoritm
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.WSResponse
 import play.api.mvc.RequestHeader
 
@@ -25,7 +23,7 @@ import java.security.{MessageDigest, SecureRandom}
 import java.util.Base64
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.util.Try
 
 object OAuth2Config {
 
@@ -33,13 +31,13 @@ object OAuth2Config {
 
   val _fmt = new Format[OAuth2Config] {
 
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[OAuth2Config] =
       fromJson(json) match {
         case Left(e)  => JsError(e.getErrorMessage())
         case Right(v) => JsSuccess(v)
       }
 
-    override def writes(o: OAuth2Config) = o.asJson
+    override def writes(o: OAuth2Config): JsValue = o.asJson
   }
 
   val pkceConfigFmt = new Format[PKCEConfig] {
@@ -71,7 +69,7 @@ object OAuth2Config {
       Right(
         OAuth2Config(
           pkceConfig =
-            (json \ "pkceConfig").asOpt[PKCEConfig](pkceConfigFmt.reads),
+            (json \ "pkceConfig").asOpt(pkceConfigFmt),
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400),
           clientId = (json \ "clientId").asOpt[String].getOrElse("client"),
           clientSecret = (json \ "clientSecret").asOpt[String],
@@ -173,7 +171,7 @@ case class OAuth2Config(
       "tokenUrl" -> this.tokenUrl,
       "userInfoUrl" -> this.userInfoUrl,
       "loginUrl" -> this.loginUrl,
-      "logoutUrl" -> this.logoutUrl.map(JsString).getOrElse(JsNull).as[JsValue],
+      "logoutUrl" -> this.logoutUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "scope" -> this.scope,
       "useJson" -> this.useJson,
       "readProfileFromToken" -> this.readProfileFromToken,
@@ -184,14 +182,12 @@ case class OAuth2Config(
       "pictureField" -> this.pictureField,
       "callbackUrl" -> this.callbackUrl,
       "daikokuAdmins" -> this.daikokuAdmins,
-      "roleClaim" -> this.roleClaim.map(JsString).getOrElse(JsNull).as[JsValue],
-      "adminRole" -> this.adminRole.map(JsString).getOrElse(JsNull).as[JsValue]
+      "roleClaim" -> this.roleClaim.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "adminRole" -> this.adminRole.map(JsString.apply).getOrElse(JsNull).as[JsValue]
     )
 }
 
 object OAuth2Support {
-
-  import fr.maif.otoroshi.daikoku.utils.future._
   lazy val logger = Logger("oauth2-config")
 
   def generatePKCECodes(
@@ -495,8 +491,6 @@ object OAuth2Support {
     val config = OAuth2Config()
 
     def parseResponseAsConfig(body: JsValue): OAuth2Config = {
-      val issuer =
-        (body \ "issuer").asOpt[String].getOrElse("http://localhost:8082/")
       val tokenUrl =
         (body \ "token_endpoint").asOpt[String].getOrElse(config.tokenUrl)
       val authorizeUrl = (body \ "authorization_endpoint")

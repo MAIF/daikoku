@@ -384,8 +384,6 @@ class DeletionService(
       tenant: TenantId,
       user: User
   ): EitherT[Future, AppError, Unit] = {
-    implicit val m = env.defaultMaterializer
-
     for {
       tenant <- EitherT.fromOptionF(
         env.dataStore.tenantRepo.findByIdNotDeleted(tenant),

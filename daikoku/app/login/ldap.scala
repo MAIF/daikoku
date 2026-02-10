@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.login
 
 import cats.data.EitherT
 import controllers.AppError
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -10,29 +9,15 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.apache.commons.lang3.StringUtils.stripAccents
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.Logger
 import play.api.libs.json._
 
-import java.net.{InetAddress, Socket}
-import java.security.cert.X509Certificate
 import javax.naming.ldap.{Control, InitialLdapContext}
-import javax.net.ssl.{
-  SSLContext,
-  SSLSocket,
-  SSLSocketFactory,
-  TrustManager,
-  X509TrustManager
-}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{
-  Await,
-  ExecutionContext,
-  Future,
-  Promise,
-  TimeoutException
-}
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object LdapConfig {
 
@@ -512,7 +497,6 @@ object LdapSupport {
           Left(e.getMessage)
         case e =>
           AppLogger.error("bind failed - check your fields", e)
-          throw e
           Left(s"bind failed - check your fields")
       } get
     }
@@ -629,9 +613,7 @@ object LdapSupport {
     } yield r
   }
 
-  def existsUser(email: String, tenant: Tenant)(implicit
-      ec: ExecutionContext
-  ): Future[(Boolean, String)] = {
+  def existsUser(email: String, tenant: Tenant): Future[(Boolean, String)] = {
     try {
       val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
       if (ldapConfig.serverUrls.isEmpty) {

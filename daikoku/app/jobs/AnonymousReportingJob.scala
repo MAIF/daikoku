@@ -11,6 +11,7 @@ import org.apache.pekko.stream.Materializer
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.WSRequest
 
 import java.util.concurrent.atomic.AtomicReference
@@ -155,7 +156,7 @@ class AnonymousReportingJob(env: Env) {
       usage_plans = usage_plans.length,
       user_sessions = user_sessions.length,
       users = users.length,
-      timestamp = timestamp,
+      timestamp = timestamp.as[JsNumber],
       timestampStr = timestamp_str,
       daikokuVersion = daikoku_version,
       javaVersion = java_version,
@@ -167,7 +168,7 @@ class AnonymousReportingJob(env: Env) {
     dataStore.reportsInfoRepo
       .findAll()
       .map(seq => seq.head)
-      .map(seq => {
+      .flatMap(seq => {
         if (enabled && seq.activated) {
           for {
             data <- getData
@@ -222,8 +223,7 @@ class AnonymousReportingJob(env: Env) {
               "os" -> data.os,
               "containerized" -> containerized
             )
-            _ <-
-              wSRequest
+            _ <- wSRequest
                 .withRequestTimeout(ev.config.anonymousReportingTimeout.millis)
                 .post(post)
                 .map { resp =>
@@ -245,13 +245,11 @@ class AnonymousReportingJob(env: Env) {
                 }
           } yield Done
         } else {
-
           logger.info(
             "Anonymous reporting is disabled if you want to activate it for helping us, see (https://maif.github.io/daikoku/docs/getstarted/setup/reporting)"
           )
           FastFuture.successful(Done)
         }
       })
-      .flatten
   }
 }

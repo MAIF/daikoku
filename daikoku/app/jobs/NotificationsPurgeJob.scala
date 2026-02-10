@@ -1,6 +1,6 @@
 package jobs
 
-import fr.maif.otoroshi.daikoku.domain.{NotificationStatus, NotificationType}
+import fr.maif.otoroshi.daikoku.domain.NotificationType
 import fr.maif.otoroshi.daikoku.env.Env
 import org.apache.pekko.actor.Cancellable
 import org.joda.time.DateTime

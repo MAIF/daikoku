@@ -7,7 +7,6 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json._
@@ -30,7 +29,7 @@ object CommonServices {
       val user = ctx.user
       val idFilter =
         if (ids.nonEmpty)
-          Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString))))
+          Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply))))
         else Json.obj()
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)

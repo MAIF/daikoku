@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
@@ -605,9 +606,6 @@ class AccountCreationService {
       translator: Translator,
       messagesApi: MessagesApi
   ) = {
-
-    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
-
     // TODO: maybe good to explain why by giving a message from user who decline
     for {
       demand <- EitherT.fromOptionF(

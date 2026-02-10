@@ -1,12 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import controllers.AppError
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
-import org.apache.pekko.util.ByteString
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
-  DaikokuActionContext,
   DaikokuActionMaybeWithGuest,
   DaikokuTenantAction
 }
@@ -18,21 +14,21 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.services.{AssetsService, NormalizeSupport}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.connectors.s3.ObjectMetadata
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import play.api.http.HttpEntity
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.Results.{NotFound, Ok}
 import play.api.mvc.{
   AbstractController,
   Action,
-  AnyContent,
   BodyParser,
   ControllerComponents
 }
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class TeamAssetsController(

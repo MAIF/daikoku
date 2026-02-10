@@ -10,31 +10,28 @@ import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.DaikokuMode.Prod
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import sangria.ast.{AstLocation, AstVisitor, Field}
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
 import sangria.validation.{
   QueryValidator,
   UndefinedFieldViolation,
-  UnknownArgViolation,
-  ValidationContext,
-  ValidationRule
+  UnknownArgViolation
 }
 import storage.DataStore
 import storage.graphql.DaikokuAuthMiddleware
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class GraphQLController(

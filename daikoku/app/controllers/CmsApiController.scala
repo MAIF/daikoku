@@ -10,17 +10,11 @@ import fr.maif.otoroshi.daikoku.actions.{
 }
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
-import fr.maif.otoroshi.daikoku.domain.{
-  CmsPageId,
-  Tenant,
-  TenantId,
-  TenantMode,
-  User
-}
+import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantMode, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
-import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, OAuth2Config}
+import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.ApiService
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
@@ -62,7 +56,6 @@ class CmsApiController(
 
   val logger: Logger = Logger(s"cms-controller-$entityName")
 
-  private def entityClass = classOf[CmsPage]
 //  def description: String = entityClass.getName
 //  def pathRoot: String = "/cms-api"
   def entityName: String = "api-cms-page"
@@ -145,7 +138,7 @@ class CmsApiController(
       for {
         _ <- Future.sequence(
           ctx.request.body
-            .as(Reads.seq(CmsFileFormat.reads))
+            .as(Reads.seq(CmsFileFormat))
             .map(page => {
               val path = page.path()
               if (path.startsWith("/customization/")) {

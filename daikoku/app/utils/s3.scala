@@ -5,7 +5,7 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.{
   ContentType,
@@ -18,7 +18,6 @@ import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
 import org.apache.pekko.stream.connectors.s3.scaladsl.S3
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
-import org.apache.pekko.{Done, NotUsed}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import software.amazon.awssdk.auth.credentials._

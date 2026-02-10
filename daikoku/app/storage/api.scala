@@ -1,13 +1,12 @@
 package storage
 
+import cats.data.OptionT
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.Env
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
-import cats.data.OptionT
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.Env
-import io.vertx.sqlclient.Row
 import play.api.libs.json._
 import services.CmsPage
 
@@ -521,7 +520,6 @@ trait ConsumptionRepo
   ): Future[Seq[ApiKeyConsumption]]
 
   def getLastConsumption(tenant: Tenant, query: JsObject)(implicit
-      env: Env,
       ec: ExecutionContext
   ): Future[Option[ApiKeyConsumption]] = {
     getLastConsumptionsForTenant(tenant.id, query).map(_.headOption)

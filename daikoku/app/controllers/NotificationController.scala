@@ -17,15 +17,9 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{
   AccountCreationService,
   ApiService,
-  ConsoleMailer,
-  MailgunSender,
-  MailjetSender,
-  SendgridSender,
-  SimpleSMTPSender,
   Translator
 }
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -143,7 +137,7 @@ class NotificationController(
   def acceptNotification(notificationId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       import cats.data._
-      import cats.implicits._
+        import cats.implicits._
 
       implicit val c = ctx
 

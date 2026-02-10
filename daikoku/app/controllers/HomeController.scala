@@ -14,7 +14,6 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.CmsRequestRenderingFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -40,24 +39,6 @@ class HomeController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val e: Env = env
   implicit val m: MessagesApi = messagesApi
-
-  private def manageCmsHome[A](
-      ctx: DaikokuActionMaybeWithoutUserContext[A],
-      redirectTo: Result
-  ) = {
-    ctx.tenant.style match {
-      case Some(value) if value.homePageVisible =>
-        value.homeCmsPage match {
-          case Some(pageId) =>
-            if (!ctx.tenant.isPrivate || ctx.user.exists(!_.isGuest))
-              cmsPageByIdWithoutAction(ctx, pageId)
-          case _ =>
-            AppLogger.warn("tenant is private (3)")
-            FastFuture.successful(redirectTo)
-        }
-      case _ => FastFuture.successful(redirectTo)
-    }
-  }
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
@@ -304,7 +285,7 @@ class HomeController(
 
   def cmsPageByPath(path: String, page: Option[CmsPage] = None) =
     DaikokuActionMaybeWithoutUser.async {
-      ctx: DaikokuActionMaybeWithoutUserContext[AnyContent] =>
+      (ctx: DaikokuActionMaybeWithoutUserContext[AnyContent]) =>
         val actualPath = if (path.startsWith("/")) {
           path
         } else {
@@ -322,14 +303,14 @@ class HomeController(
                 .map(cmsPages =>
                   cmsPages.filter(p => p.path.exists(_.nonEmpty))
                 )
-                .flatMap(cmsPages => {
+                .flatMap((cmsPages) => {
                   val strictPage =
                     getMatchingRoutes(
                       ctx.request.path,
                       cmsPages
                         .filter(p => p.exact && p.path.nonEmpty)
                         .map(p => (p.path.get, p)),
-                      true
+                      strictMode = true
                     )
 
                   val (page, urlSearchParams) =
@@ -515,26 +496,4 @@ class HomeController(
         }
       }
     }
-
-//  def session(userId: String) =
-//    DaikokuAction.async { ctx =>
-//      DaikokuAdminOrSelf(AuditTrailEvent("@{user.name} get session"))(
-//        UserId(userId),
-//        ctx
-//      ) {
-//        val token =
-//          ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
-//        FastFuture.successful(Ok(Json.obj("token" -> token)))
-//      }
-//    }
-
-  private val contentTypeToExtension = Map(
-    "application/json" -> "json",
-    "text/html" -> "html",
-    "text/javascript" -> "js",
-    "text/css" -> "css",
-    "text/markdown" -> "md",
-    "text/plain" -> "txt",
-    "text/xml" -> "xml"
-  )
 }

@@ -2,9 +2,8 @@ package fr.maif.otoroshi.daikoku.login
 
 import cats.data.EitherT
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.{Tenant, TenantId, User}
+import fr.maif.otoroshi.daikoku.domain.{Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.LocalLoginConfig.logger
 import org.mindrot.jbcrypt.BCrypt
 import play.api.Logger
 import play.api.libs.json._
@@ -28,13 +27,13 @@ object LocalLoginConfig {
 
   val _fmt = new Format[LocalLoginConfig] {
 
-    override def reads(json: JsValue) =
+    override def reads(json: JsValue): JsResult[LocalLoginConfig] =
       fromJson(json) match {
         case Left(e)  => JsError(e.getMessage)
         case Right(v) => JsSuccess(v.asInstanceOf[LocalLoginConfig])
       }
 
-    override def writes(o: LocalLoginConfig) = o.asJson
+    override def writes(o: LocalLoginConfig): JsValue = o.asJson
   }
 
   def fromJson(json: JsValue): Either[Throwable, LocalLoginConfig] =

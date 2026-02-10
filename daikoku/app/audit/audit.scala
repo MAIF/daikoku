@@ -1,21 +1,5 @@
 package fr.maif.otoroshi.daikoku.audit
 
-import org.apache.pekko.Done
-import org.apache.pekko.actor.{
-  Actor,
-  ActorSystem,
-  PoisonPill,
-  Props,
-  Terminated
-}
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.http.scaladsl.util.FastFuture._
-import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
-import org.apache.pekko.stream.{
-  Materializer,
-  OverflowStrategy,
-  QueueOfferResult
-}
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
@@ -36,12 +20,30 @@ import org.apache.kafka.common.serialization.{
   ByteArraySerializer,
   StringSerializer
 }
+import org.apache.pekko.Done
+import org.apache.pekko.actor.{
+  Actor,
+  ActorSystem,
+  PoisonPill,
+  Props,
+  Terminated
+}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture._
 import org.apache.pekko.kafka.ProducerSettings
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.stream.{
+  Materializer,
+  OverflowStrategy,
+  QueueOfferResult
+}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_String
 import play.api.libs.ws.WSRequest
 import play.api.mvc.RequestHeader
 
@@ -132,7 +134,7 @@ sealed trait AuditEvent {
       tenant: Tenant,
       user: User,
       details: JsObject = Json.obj()
-  )(implicit ec: ExecutionContext, env: Env): Unit = {
+  )(implicit env: Env): Unit = {
     env.auditActor ! TenantAuditEvent(
       this,
       tenant,
@@ -149,7 +151,7 @@ sealed trait AuditEvent {
   def logUnauthenticatedUserEvent(
       tenant: Tenant,
       details: JsObject = Json.obj()
-  )(implicit ec: ExecutionContext, env: Env): Unit = {
+  )(implicit env: Env): Unit = {
     env.auditActor ! TenantAuditEvent(
       this,
       tenant,
@@ -316,9 +318,6 @@ class AuditActor(implicit
           .map { jsonEvt =>
             val alert =
               (jsonEvt \ "alert").asOpt[String].getOrElse("Unkown alert")
-            val message = (jsonEvt \ "audit" \ "message")
-              .asOpt[String]
-              .getOrElse("No description message")
             val date = new DateTime((jsonEvt \ "@timestamp").as[Long])
             val id = (jsonEvt \ "@id").as[String]
             s"""<h3 id="$id">$alert - ${date.toString()}</h3><pre>${Json
@@ -952,9 +951,7 @@ class ElasticReadsAnalytics(config: ElasticAnalyticsConfig, env: Env) {
 
   private def urlFromPath(path: String): String = s"${config.clusterUri}$path"
   private val index: String = config.index.getOrElse("otoroshi-events")
-  private val `type`: String = config.`type`.getOrElse("event")
   private val searchUri = urlFromPath(s"/$index*/_search")
-  private implicit val mat: Materializer = env.defaultMaterializer
 
   private def url(url: String): WSRequest = {
     val builder = env.wsClient.url(url)
@@ -1025,8 +1022,8 @@ class WebHookAnalytics(webhook: Webhook) {
       service: Option[String],
       from: Option[DateTime],
       to: Option[DateTime],
-      page: Option[Int] = None,
-      size: Option[Int] = None
+      page: Option[Int],
+      size: Option[Int]
   ): Seq[(String, String)] =
     Seq(
       service.map(s => "services" -> s),

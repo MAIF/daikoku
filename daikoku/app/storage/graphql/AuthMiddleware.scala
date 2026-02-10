@@ -1,25 +1,12 @@
 package storage.graphql
 
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
-import fr.maif.otoroshi.daikoku.domain.{
-  Tenant,
-  User,
-  UserId,
-  UserWithPermission
-}
+import fr.maif.otoroshi.daikoku.domain.{Tenant, User}
 import play.api.Logger
 import play.api.libs.json.JsValue
-import sangria.execution.{
-  BeforeFieldResult,
-  FieldTag,
-  Middleware,
-  MiddlewareBeforeField,
-  MiddlewareQueryContext
-}
+import sangria.execution._
 import sangria.schema.Context
 import storage.DataStore
-
-import scala.concurrent.ExecutionContext
 
 object GraphQLImplicits {
 
@@ -61,7 +48,7 @@ case class AuthorizationException(message: String) extends Exception(message)
 case object RequiresTenantAdmin extends FieldTag
 case object RequiresDaikokuAdmin extends FieldTag
 
-class DaikokuAuthMiddleware(implicit ec: ExecutionContext)
+class DaikokuAuthMiddleware()
     extends Middleware[(DataStore, DaikokuActionContext[JsValue])]
     with MiddlewareBeforeField[(DataStore, DaikokuActionContext[JsValue])] {
 

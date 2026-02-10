@@ -1,49 +1,31 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.model.Uri
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.util.ByteString
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
 import com.google.common.base.Charsets
 import controllers.AppError
-import controllers.AppError.InternalServerError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json.{
   AuthorizedEntitiesFormat,
   OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat,
   TestingConfigFormat
 }
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  Api,
-  ApiKeyRestrictions,
-  AuthorizedEntities,
-  OtoroshiSettings,
-  Testing,
-  TestingAuth,
-  UsagePlan
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
-import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request,
-  Result
-}
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_WsBody
+import play.api.mvc.{AbstractController, ControllerComponents, Result}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}

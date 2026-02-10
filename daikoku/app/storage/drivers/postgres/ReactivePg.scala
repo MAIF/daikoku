@@ -1,8 +1,7 @@
 package storage.drivers.postgres
 
-import io.vertx.core.AsyncResult
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import io.vertx.sqlclient.{Pool, Row, RowSet}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.{Configuration, Logger}
 
@@ -96,8 +95,8 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
 
   private def queryRaw[A](
       query: String,
-      params: Seq[Any] = Seq.empty,
-      debug: Boolean = true
+      params: Seq[Any],
+      debug: Boolean
   )(f: Seq[Row] => A): Future[A] = {
     if (debug || debugQueries)
       logger.debug(s"""query: "$query", params: "${params.mkString(", ")}"""")

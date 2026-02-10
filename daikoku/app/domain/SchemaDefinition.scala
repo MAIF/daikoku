@@ -12,16 +12,8 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   _UberPublicUserAccess
 }
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiSubscriptionDemandFormat,
-  TeamCountFormat,
-  TeamTypeFormat,
-  TenantIdFormat,
-  UserIdFormat,
-  ValueCountFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
@@ -33,11 +25,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{
-  GraphQLImplicits,
-  RequiresDaikokuAdmin,
-  RequiresTenantAdmin
-}
+import storage.graphql.{GraphQLImplicits, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -97,7 +85,7 @@ object SchemaDefinition {
       case v: Double     => Right(JsNumber(v))
       case v: BigInt     => Right(JsNumber(v.toInt))
       case v: BigDecimal => Right(JsNumber(v))
-      case v: JsValue    => Right(v)
+      case v: _          => Right(v)
     },
     coerceInput = {
       case StringValue(jsonStr, _, _, _, _) => Right(JsString(jsonStr))
@@ -843,15 +831,6 @@ object SchemaDefinition {
         )
     )
 
-    lazy val IntegrationProcessType = InterfaceType(
-      "IntegrationProcess",
-      "Interface of IntegrationProcess",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), IntegrationProcess](
-          Field("name", StringType, resolve = _.value.name)
-        )
-    )
-
     lazy val TeamAuthorizedEntitiesType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       TeamAuthorizedEntities
@@ -1124,6 +1103,11 @@ object SchemaDefinition {
             "aggregationApiKeysSecurity",
             OptionType(BooleanType),
             resolve = _.value.aggregationApiKeysSecurity
+          ),
+          Field(
+            "visibility",
+            UsagePlanVisibilityType,
+            resolve = _.value.visibility
           ),
           Field(
             "metadata",
@@ -3913,18 +3897,6 @@ object SchemaDefinition {
     )
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
-    val PAGE_NUMBER = Argument(
-      "pageNumber",
-      OptionInputType(IntType),
-      description = "The number of the current page",
-      defaultValue = 0
-    )
-    val PAGE_SIZE = Argument(
-      "pageSize",
-      OptionInputType(IntType),
-      description = "The number of items displayed on the current page",
-      defaultValue = 10
-    )
     val TO = Argument("to", OptionInputType(LongType), description = "Date to")
     val VERSION = Argument("version", StringType, description = "a version")
     val API_IDS = Argument(
@@ -4520,10 +4492,10 @@ object SchemaDefinition {
             Json.obj(
               "$or" -> Json.arr(
                 Json
-                  .obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString)))),
+                  .obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))),
                 Json.obj(
                   "_humanReadableId" -> Json
-                    .obj("$in" -> JsArray(ids.map(JsString)))
+                    .obj("$in" -> JsArray(ids.map(JsString.apply)))
                 )
               )
             )
@@ -4532,11 +4504,11 @@ object SchemaDefinition {
             Json.obj(
               "$or" -> Json.arr(
                 Json.obj(
-                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString)))
+                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                 ),
                 Json.obj(
                   "_humanReadableId" -> Json
-                    .obj("$in" -> JsArray(ids.map(JsString)))
+                    .obj("$in" -> JsArray(ids.map(JsString.apply)))
                 )
               ),
               "team" -> teamId

@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.actions
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
@@ -14,9 +13,9 @@ import fr.maif.otoroshi.daikoku.env.{
 }
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, TenantHelper}
 import fr.maif.otoroshi.daikoku.utils.Errors
-import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.Logger
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 
 import java.util.Base64
@@ -43,7 +42,7 @@ object tenantSecurity {
                   false
                 else
                   teams.exists { team =>
-                    team.users.exists { u: UserWithPermission =>
+                    team.users.exists { (u: UserWithPermission) =>
                       user.id == u.userId && (
                         u.teamPermission.name == Administrator.name ||
                           u.teamPermission.name == ApiEditor.name

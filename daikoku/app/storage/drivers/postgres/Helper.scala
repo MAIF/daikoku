@@ -1,13 +1,9 @@
 package storage.drivers.postgres
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import io.vertx.sqlclient.Row
 import play.api.Logger
 import play.api.libs.json._
-
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.typeOf
 
 object Helper {
 

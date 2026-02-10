@@ -4,7 +4,6 @@ import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.PublicUserAccess
-import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider

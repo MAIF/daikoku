@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.audit.config
 
 import play.api.libs.json._
 
-import scala.collection.MapView
 import scala.util.Try
 
 case class ElasticAnalyticsConfig(
@@ -19,7 +18,7 @@ case class ElasticAnalyticsConfig(
 object ElasticAnalyticsConfig {
   val format: Format[ElasticAnalyticsConfig] =
     new Format[ElasticAnalyticsConfig] {
-      override def writes(o: ElasticAnalyticsConfig) = {
+      override def writes(o: ElasticAnalyticsConfig): JsValue = {
         Json.obj(
           "clusterUri" -> o.clusterUri,
           "index" -> o.index.map(JsString.apply).getOrElse(JsNull).as[JsValue],
@@ -32,7 +31,7 @@ object ElasticAnalyticsConfig {
           "headers" -> JsObject(o.headers.view.mapValues(JsString.apply).toSeq)
         )
       }
-      override def reads(json: JsValue) =
+      override def reads(json: JsValue): JsResult[ElasticAnalyticsConfig] =
         Try {
           JsSuccess(
             ElasticAnalyticsConfig(

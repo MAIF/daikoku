@@ -12,7 +12,6 @@ import fr.maif.otoroshi.daikoku.actions.{
   DaikokuTenantActionContext
 }
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -21,13 +20,7 @@ import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
-import fr.maif.otoroshi.daikoku.utils.{
-  AccountCreationService,
-  Cypher,
-  Errors,
-  IdGenerator,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils._
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -478,10 +471,6 @@ class LoginController(
 
   def logout() =
     DaikokuAction.async { ctx =>
-      val host = ctx.request.headers
-        .get("Otoroshi-Proxied-Host")
-        .orElse(ctx.request.headers.get("X-Forwarded-Host"))
-        .getOrElse(ctx.request.host)
       val redirect = ctx.request
         .getQueryString("redirect")
         .getOrElse(env.getDaikokuUrl(ctx.tenant, "/"))

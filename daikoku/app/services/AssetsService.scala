@@ -1,8 +1,6 @@
 package fr.maif.otoroshi.daikoku.services
 
 import fr.maif.otoroshi.daikoku.actions.ApiActionContext
-import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.CmsApiActionContext
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -15,11 +13,9 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, Json}
-import play.api.mvc.AnyContent
 import play.api.mvc.Results._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
 trait NormalizeSupport {
@@ -322,8 +318,6 @@ class AssetsService {
   def deleteAsset[T](assetId: String, ctx: ApiActionContext[T])(implicit
       env: Env
   ) = {
-    implicit val ec = env.defaultExecutionContext
-
     ctx.setCtxValue("assetId", assetId)
     internalDeleteAsset(assetId, ctx)
   }

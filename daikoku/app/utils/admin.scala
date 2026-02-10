@@ -4,7 +4,7 @@ import cats.data.EitherT
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.{CanJson, Tenant, ValueType}
+import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
 import fr.maif.otoroshi.daikoku.env.{
   Env,
   LocalAdminApiConfig,
@@ -334,10 +334,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction.async(parse.json) { ctx =>
       object JsonPatchHelpers {
         import diffson.jsonpatch._
-        import diffson.playJson.DiffsonProtocol._
-        import diffson.lcs._
-        import diffson.playJson._
         import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
+        import diffson.lcs._
+        import diffson.playJson.DiffsonProtocol._
+        import diffson.playJson._
 
         private def patchResponse(
             patchJson: JsonPatch[JsValue],
