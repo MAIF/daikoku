@@ -1,25 +1,25 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.tests
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import controllers.AppError
-import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+import fr.maif.controllers.AppError
+import fr.maif.controllers.AppError.SubscriptionAggregationDisabled
+import fr.maif.domain.NotificationAction.{
   ApiAccess,
   ApiSubscriptionDemand,
   TransferApiOwnership
 }
-import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
+import fr.maif.domain.NotificationType.AcceptOrReject
+import fr.maif.domain.TeamPermission.Administrator
+import fr.maif.domain.UsagePlanVisibility.{Private, Public}
+import fr.maif.domain._
+import fr.maif.domain.json.{
   ApiFormat,
   SeqApiSubscriptionFormat
 }
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
@@ -31,7 +31,7 @@ import play.api.libs.json.{Json, _}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
+import fr.maif.utils.LoggerImplicits.BetterLogger
 
 class ApiControllerSpec()
     extends PlaySpec
@@ -40,7 +40,7 @@ class ApiControllerSpec()
     with BeforeAndAfter
     with ForAllTestContainer {
 
-  val pwd = System.getProperty("user.dir");
+  val pwd = System.getProperty("user.dir")
 
   override val container: GenericContainer = GenericContainer(
     "maif/otoroshi",
@@ -362,7 +362,7 @@ class ApiControllerSpec()
         s"/api/teams/${teamOwnerId.value}/subscribed-apis"
       )(tenant, sessionTest)
       respTestApis.status mustBe 200
-      val resultTestApis = fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
+      val resultTestApis = fr.maif.domain.json.SeqApiFormat
         .reads(respTestApis.json)
       resultTestApis.isSuccess mustBe true
       resultTestApis.get.length mustBe 1
@@ -373,12 +373,12 @@ class ApiControllerSpec()
       )(tenant, sessionTest)
       respTestSubscriptions.status mustBe 200
       val resultTestSubscriptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+        fr.maif.domain.json.SeqApiSubscriptionFormat
           .reads(respTestSubscriptions.json)
       resultTestSubscriptions.isSuccess mustBe true
       resultTestSubscriptions.get.length mustBe 5
       Seq("1", "2", "3", "4", "5")
-        .map(UsagePlanId)
+        .map(UsagePlanId.apply)
         .forall(id =>
           resultTestSubscriptions.get.exists(sub => sub.plan == id)
         ) mustBe true
@@ -805,7 +805,7 @@ class ApiControllerSpec()
         )
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
+        fr.maif.domain.json.TeamFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.id mustBe teamOwnerId
     }
@@ -868,7 +868,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 201
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
+        fr.maif.domain.json.ApiFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.equals(api) mustBe true
     }
@@ -1209,7 +1209,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
+        fr.maif.domain.json.ApiFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.description.equals("description") mustBe true
 
@@ -1220,7 +1220,7 @@ class ApiControllerSpec()
 
       respGet.status mustBe 200
       val resultAsApi =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(respGet.json)
+        fr.maif.domain.json.ApiFormat.reads(respGet.json)
       resultAsApi.isSuccess mustBe true
       resultAsApi.get.description.equals("description") mustBe true
     }
@@ -3462,7 +3462,7 @@ class ApiControllerSpec()
         )
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
+        fr.maif.domain.json.TeamFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.id mustBe teamOwnerId
     }
@@ -3503,7 +3503,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 201
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
+        fr.maif.domain.json.ApiFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.equals(api.api) mustBe true
     }
@@ -3573,7 +3573,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
+        fr.maif.domain.json.ApiFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.description.equals("description") mustBe true
 
@@ -3584,7 +3584,7 @@ class ApiControllerSpec()
 
       respGet.status mustBe 200
       val resultAsApi =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(respGet.json)
+        fr.maif.domain.json.ApiFormat.reads(respGet.json)
       resultAsApi.isSuccess mustBe true
       resultAsApi.get.description.equals("description") mustBe true
     }
@@ -4449,7 +4449,7 @@ class ApiControllerSpec()
         )
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
+        fr.maif.domain.json.TeamFormat.reads(resp.json)
       result.isSuccess mustBe true
       result.get.id mustBe teamOwnerId
     }
@@ -5272,7 +5272,7 @@ class ApiControllerSpec()
         s"/api/teams/${teamOwnerId.value}/subscribed-apis"
       )(tenant, sessionTest)
       respTestApis.status mustBe 200
-      val resultTestApis = fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
+      val resultTestApis = fr.maif.domain.json.SeqApiFormat
         .reads(respTestApis.json)
 
       resultTestApis.get.length mustBe 2
@@ -5691,7 +5691,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads(resp.json)
+        fr.maif.domain.json.UsagePlanFormat.reads(resp.json)
       result.isSuccess mustBe true
 
       result.get.authorizedTeams.length mustBe 1
@@ -5761,7 +5761,7 @@ class ApiControllerSpec()
       )(tenant, session)
       respGetSubsStart.status mustBe 200
       val resultStart =
-        fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+        fr.maif.domain.json.SeqApiSubscriptionFormat
           .reads(respGetSubsStart.json)
       resultStart.isSuccess mustBe true
       resultStart.get.length mustBe 1
@@ -5778,7 +5778,7 @@ class ApiControllerSpec()
         s"/api/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
       )(tenant, session)
       respGetSubs.status mustBe 200
-      val result = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+      val result = fr.maif.domain.json.SeqApiSubscriptionFormat
         .reads(respGetSubs.json)
       result.isSuccess mustBe true
       result.get.length mustBe 0
@@ -5848,7 +5848,7 @@ class ApiControllerSpec()
       )(tenant, session)
       respGetSubsStart.status mustBe 200
       val resultStart =
-        fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat
+        fr.maif.domain.json.SeqApiSubscriptionFormat
           .reads(respGetSubsStart.json)
       resultStart.isSuccess mustBe true
       resultStart.get.length mustBe 1
@@ -6053,7 +6053,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
       val result =
-        fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads(resp.json)
+        fr.maif.domain.json.UsagePlanFormat.reads(resp.json)
       result.isSuccess mustBe true
 
       val adminPlan = result.get
@@ -6518,7 +6518,7 @@ class ApiControllerSpec()
             )(tenant, session)
             respSubs.status mustBe 200
             val resultAsUpdatedSubscription =
-              fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionFormat
+              fr.maif.domain.json.ApiSubscriptionFormat
                 .reads((respSubs.json \ 0).as[JsObject])
 
             resultAsUpdatedSubscription.isSuccess mustBe true

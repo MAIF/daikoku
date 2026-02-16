@@ -1,11 +1,11 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.tests
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.domain.TeamPermission.Administrator
+import fr.maif.domain._
+import fr.maif.login.AuthProvider
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.IntegrationPatience

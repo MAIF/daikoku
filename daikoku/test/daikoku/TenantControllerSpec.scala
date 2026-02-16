@@ -1,20 +1,20 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.tests
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.domain.TeamPermission.Administrator
+import fr.maif.domain._
+import fr.maif.logger.AppLogger
+import fr.maif.login.AuthProvider
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.libs.json._
-import play.api.libs.ws.WSBodyReadables.readableAsJson
+import play.api.libs.ws.WSBodyReadables._
 
 
 import scala.concurrent.Await
@@ -83,7 +83,7 @@ class TenantControllerSpec()
       respCreation.status mustBe 201
 
       val tryCreatedTenant =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat
+        fr.maif.domain.json.TenantFormat
           .reads(respCreation.json)
       tryCreatedTenant.isSuccess mustBe true
       val createdTenant = tryCreatedTenant.get
@@ -130,7 +130,7 @@ class TenantControllerSpec()
         )(createdTenant, sessionNewTenant)
 
       val tryMyTeams =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(
+        fr.maif.domain.json.SeqTeamFormat.reads(
           (respTeams.json \ "data" \ "myTeams")
             .as[JsArray]
             .value
@@ -155,7 +155,7 @@ class TenantControllerSpec()
           s"/api/me/visible-apis/${createdAdminApiId.value}"
         )(createdTenant, sessionNewTenant)
       val tryAdminApi =
-        fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(respAdminApi.json)
+        fr.maif.domain.json.ApiFormat.reads(respAdminApi.json)
       tryAdminApi.isSuccess mustBe true
       val createdAdminApi = tryAdminApi.get
 
@@ -202,7 +202,7 @@ class TenantControllerSpec()
       respCreation.status mustBe 201
 
       val tryCreatedTenant =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat
+        fr.maif.domain.json.TenantFormat
           .reads(respCreation.json)
       tryCreatedTenant.isSuccess mustBe true
       val createdTenant = tryCreatedTenant.get
@@ -245,7 +245,7 @@ class TenantControllerSpec()
       val resp = httpJsonCallBlocking("/api/tenants")(tenant, session)
       resp.status mustBe 200
       val tenants =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTenantFormat.reads(resp.json)
+        fr.maif.domain.json.SeqTenantFormat.reads(resp.json)
       tenants.isSuccess mustBe true
       tenants.get.length mustBe 2
       // test if adminApiId id present to test if tenant is full
@@ -271,7 +271,7 @@ class TenantControllerSpec()
         httpJsonCallBlocking("/api/tenants/simplified")(tenant, session)
       resp.status mustBe 200
       val tenants =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTenantFormat.reads(resp.json)
+        fr.maif.domain.json.SeqTenantFormat.reads(resp.json)
       tenants.isSuccess mustBe false
 
       val simpleTenants = resp.json.as[JsArray].value
@@ -301,7 +301,7 @@ class TenantControllerSpec()
         )
       resp.status mustBe 200
       val tenantResult =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(resp.json)
+        fr.maif.domain.json.TenantFormat.reads(resp.json)
       tenantResult.isSuccess mustBe true
       tenantResult.get.adminApi mustBe adminApi.id
     }
@@ -387,7 +387,7 @@ class TenantControllerSpec()
         )
       respTest.status mustBe 200
       val tenantResult =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(respTest.json)
+        fr.maif.domain.json.TenantFormat.reads(respTest.json)
       tenantResult.isSuccess mustBe true
       tenantResult.get.name mustBe "test-again"
     }
@@ -408,7 +408,7 @@ class TenantControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val adminTeam = (resp.json \ "team").as[JsObject]
-      val admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      val admins = fr.maif.domain.json.SeqUserFormat
         .reads((resp.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -432,7 +432,7 @@ class TenantControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val addableAdmins =
-        fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
+        fr.maif.domain.json.SeqUserFormat.reads(resp.json)
 
       addableAdmins.isSuccess mustBe true
       addableAdmins.get.size mustBe 2
@@ -460,7 +460,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      val admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      val admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -489,7 +489,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      var admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      var admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -506,7 +506,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -566,7 +566,7 @@ class TenantControllerSpec()
         httpJsonCallBlocking("/api/tenants/simplified")(tenant, session)
       resp.status mustBe 200
       val tenants =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTenantFormat.reads(resp.json)
+        fr.maif.domain.json.SeqTenantFormat.reads(resp.json)
       tenants.isSuccess mustBe false
 
       val simpleTenants = resp.json.as[JsArray].value
@@ -596,7 +596,7 @@ class TenantControllerSpec()
         )
       resp.status mustBe 200
       val tenantResult =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(resp.json)
+        fr.maif.domain.json.TenantFormat.reads(resp.json)
       tenantResult.isSuccess mustBe true
       tenantResult.get.adminApi mustBe adminApi.id
     }
@@ -625,7 +625,7 @@ class TenantControllerSpec()
         )
       resp.status mustBe 200
       val tenantResult =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(resp.json)
+        fr.maif.domain.json.TenantFormat.reads(resp.json)
       tenantResult.isSuccess mustBe true
       tenantResult.get.adminApi mustBe adminApi.id
 
@@ -716,7 +716,7 @@ class TenantControllerSpec()
         )
       respTest.status mustBe 200
       val tenantResult =
-        fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(respTest.json)
+        fr.maif.domain.json.TenantFormat.reads(respTest.json)
       tenantResult.isSuccess mustBe true
       tenantResult.get.name mustBe "test-again"
     }
@@ -735,7 +735,7 @@ class TenantControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val adminTeam = (resp.json \ "team").as[JsObject]
-      val admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      val admins = fr.maif.domain.json.SeqUserFormat
         .reads((resp.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -759,7 +759,7 @@ class TenantControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val addableAdmins =
-        fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
+        fr.maif.domain.json.SeqUserFormat.reads(resp.json)
 
       addableAdmins.isSuccess mustBe true
       addableAdmins.get.size mustBe 2
@@ -787,7 +787,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      val admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      val admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -814,7 +814,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      var admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      var admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -831,7 +831,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 200
-      admins = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+      admins = fr.maif.domain.json.SeqUserFormat
         .reads((respTest.json \ "admins").as[JsArray])
 
       admins.isSuccess mustBe true
@@ -1023,7 +1023,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis"
       )(tenant, session)
       respGet.status mustBe 200
-      var otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
+      var otos = fr.maif.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
       otos.get.size mustBe 2 // wiremock && fakotoroshi
@@ -1040,7 +1040,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis"
       )(tenant, session)
       respGet.status mustBe 200
-      otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
+      otos = fr.maif.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
       otos.get.size mustBe 3
@@ -1049,7 +1049,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis/${otoroshiSettings.id.value}"
       )(tenant, session)
       respGet.status mustBe 200
-      val oto = fr.maif.otoroshi.daikoku.domain.json.OtoroshiSettingsFormat
+      val oto = fr.maif.domain.json.OtoroshiSettingsFormat
         .reads(respGet.json)
       oto.isSuccess mustBe true
       oto.get mustBe otoroshiSettings
@@ -1087,7 +1087,7 @@ class TenantControllerSpec()
         body = Some(otoroshiSettings.copy(url = "new-url").asJson)
       )(tenant, session)
       resp.status mustBe 200
-      var oto = fr.maif.otoroshi.daikoku.domain.json.OtoroshiSettingsFormat
+      var oto = fr.maif.domain.json.OtoroshiSettingsFormat
         .reads(resp.json)
       oto.isSuccess mustBe true
       oto.get.url mustBe "new-url"
@@ -1096,7 +1096,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis/${otoroshiSettings.id.value}"
       )(tenant, session)
       respGet.status mustBe 200
-      oto = fr.maif.otoroshi.daikoku.domain.json.OtoroshiSettingsFormat
+      oto = fr.maif.domain.json.OtoroshiSettingsFormat
         .reads(respGet.json)
       oto.isSuccess mustBe true
       oto.get.url mustBe "new-url"
@@ -1131,7 +1131,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis"
       )(tenant, session)
       respGet.status mustBe 200
-      var otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
+      var otos = fr.maif.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
       otos.get.size mustBe 3 // wiremock && fakotoroshi && test
@@ -1147,7 +1147,7 @@ class TenantControllerSpec()
         s"/api/tenants/${tenant.id.value}/otoroshis"
       )(tenant, session)
       respGet.status mustBe 200
-      otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
+      otos = fr.maif.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
       otos.get.size mustBe 2 // wiremock && fakotoroshi && test
@@ -1183,7 +1183,8 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("<h1>production content</h1>")
+      logger.warn(resp.body[String])
+      resp.body[String] mustBe "<h1>production content</h1>"
     }
     "get the production content of a cms page by path" in {
       setupEnvBlocking(
@@ -1202,7 +1203,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString(defaultCmsPage.body)
+      resp.body[String] mustBe defaultCmsPage.body
     }
     "navigate to an unknown cms page" in {
       setupEnvBlocking(
@@ -1248,7 +1249,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString(notFoundPage.body)
+      resp.body[String] mustBe notFoundPage.body
     }
     "navigate to a cms page with only exact path" in {
       val page = defaultCmsPage.copy(path = Some("/home"), exact = true)
@@ -1299,7 +1300,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("bar-foo")
+      resp.body[String] mustBe "bar-foo"
     }
     "validate size helper" in {
       val page = defaultCmsPage.copy(
@@ -1323,7 +1324,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("2")
+      resp.body[String] mustBe "2"
     }
     "validate ifeq helper" in {
       val page = defaultCmsPage.copy(
@@ -1347,7 +1348,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("foobar")
+      resp.body[String] mustBe "foobar"
     }
     "validate ifnoteq helper" in {
       val page = defaultCmsPage.copy(
@@ -1371,7 +1372,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("foobar")
+      resp.body[String] mustBe "foobar"
     }
     "validate getOrElse helper" in {
       val page = defaultCmsPage.copy(
@@ -1395,7 +1396,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString("foobar")
+      resp.body[String] mustBe "foobar"
     }
     "validate daikoku-include-block helper" in {
       val page = defaultCmsPage.copy(
@@ -1419,7 +1420,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString(defaultCmsPage.body)
+      resp.body[String] mustBe defaultCmsPage.body
     }
     "validate daikoku-template-wrapper helper" in {
       val wrapper = defaultCmsPage.copy(
@@ -1449,7 +1450,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString(s"""<div><h1>Wrapper</h1>${defaultCmsPage.body}</div>""")
+      resp.body[String] mustBe s"""<div><h1>Wrapper</h1>${defaultCmsPage.body}</div>"""
     }
     "validate daikoku-apis helper" in {
       val page = defaultCmsPage.copy(
@@ -1501,7 +1502,7 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
 
-      Json.parse(resp.body).as[JsArray].value.size mustBe 2
+      Json.parse(resp.body[String]).as[JsArray].value.size mustBe 2
     }
     "validate daikoku-plans helper" in {
       val page = defaultCmsPage.copy(
@@ -1527,7 +1528,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe JsString(s"${defaultApi.plans.map(_.id.value).mkString("\n")}")
+      resp.body[String] mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
     }
 
     "setup defaut authorized otoroshi entities for future created teams" in {
@@ -1595,7 +1596,7 @@ class TenantControllerSpec()
         path = s"/api/teams/${newTeam.id.value}"
       )(tenant, userSession)
       controlTeamResp.status mustBe 200
-      val controlTeam = Json.parse(controlTeamResp.body).as(json.TeamFormat)
+      val controlTeam = Json.parse(controlTeamResp.body[String]).as(json.TeamFormat)
 
       controlTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlTeam.authorizedOtoroshiEntities mustBe newDefaultAuthEntities
@@ -1672,7 +1673,7 @@ class TenantControllerSpec()
         s"/api/teams/${teamConsumerId.value}"
       )(tenant, adminSession)
       val controlConsumerTeam =
-        Json.parse(controlConsumerTeamResp.body).as(json.TeamFormat)
+        Json.parse(controlConsumerTeamResp.body[String]).as(json.TeamFormat)
       controlConsumerTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlConsumerTeam.authorizedOtoroshiEntities
         .map(_.length)
@@ -1696,7 +1697,7 @@ class TenantControllerSpec()
       )(tenant, adminSession)
 
       val controlOwnerTeam =
-        Json.parse(controlOwnerTeamResp.body).as(json.TeamFormat)
+        Json.parse(controlOwnerTeamResp.body[String]).as(json.TeamFormat)
       controlOwnerTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlOwnerTeam.authorizedOtoroshiEntities
         .map(_.length)
@@ -1803,7 +1804,7 @@ class TenantControllerSpec()
         s"/api/teams/${teamConsumerId.value}"
       )(tenant, adminSession)
       val controlConsumerTeam =
-        Json.parse(controlConsumerTeamResp.body).as(json.TeamFormat)
+        Json.parse(controlConsumerTeamResp.body[String]).as(json.TeamFormat)
       controlConsumerTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlConsumerTeam.authorizedOtoroshiEntities
         .map(_.length)
@@ -1827,7 +1828,7 @@ class TenantControllerSpec()
       )(tenant, adminSession)
 
       val controlOwnerTeam =
-        Json.parse(controlOwnerTeamResp.body).as(json.TeamFormat)
+        Json.parse(controlOwnerTeamResp.body[String]).as(json.TeamFormat)
       controlOwnerTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlOwnerTeam.authorizedOtoroshiEntities
         .map(_.length)
@@ -1895,7 +1896,7 @@ class TenantControllerSpec()
         httpJsonCallBlocking("/api/tenants/simplified")(tenant, session)
       resp.status mustBe 200
       val tenants =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTenantFormat.reads(resp.json)
+        fr.maif.domain.json.SeqTenantFormat.reads(resp.json)
       tenants.isSuccess mustBe false
 
       val simpleTenants = resp.json.as[JsArray].value

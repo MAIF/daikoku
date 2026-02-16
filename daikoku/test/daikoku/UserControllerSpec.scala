@@ -1,13 +1,15 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.tests
 
 import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig}
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
+import fr.maif.domain.*
+import fr.maif.login.{AuthProvider, LdapConfig}
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.LoggerImplicits.BetterLogger
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
+import org.testcontainers.containers.BindMode
 import play.api.libs.json.{JsArray, Json}
 
 import scala.util.Random
@@ -18,9 +20,25 @@ class UserControllerSpec()
     with IntegrationPatience
     with ForAllTestContainer {
 
+  val pwd: String = System.getProperty("user.dir")
   override val container: GenericContainer = GenericContainer(
-    "ghcr.io/rroemhild/docker-test-openldap:master",
-    exposedPorts = Seq(10389, 10636)
+    "osixia/openldap:latest",
+    exposedPorts = Seq(389),
+    env = Map(
+      "LDAP_BASE_DN" -> "dc=dundermifflin,dc=com",
+      "LDAP_ORGANISATION" -> "Dunder Mifflin Organization",
+      "LDAP_DOMAIN" -> "dundermifflin.com",
+      "LDAP_ADMIN_PASSWORD" -> "adminpassword",
+      "LDAP_TLS" -> "false"
+    ),
+    command = Seq("--copy-service"),
+    fileSystemBind = Seq(
+      FileSystemBind(
+        s"$pwd/javascript/tests/config/ldap/bootstrap.ldif",
+        "/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif",
+        BindMode.READ_ONLY
+      )
+    ),
   )
 
   "a daikoku admin" can {
@@ -63,7 +81,7 @@ class UserControllerSpec()
         )
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
+        fr.maif.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get mustBe user
     }
@@ -87,7 +105,7 @@ class UserControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
+        fr.maif.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.name mustBe "test"
     }
@@ -192,7 +210,7 @@ class UserControllerSpec()
       )(tenant, session)
       respVerif.status mustBe 200
       val eventualUser =
-        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
+        fr.maif.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.id mustBe user.id
       eventualUser.get.isDaikokuAdmin mustBe true
@@ -209,7 +227,7 @@ class UserControllerSpec()
       )(tenant, session)
       respRemove.status mustBe 200
       val eventualUser2 =
-        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp2.json)
+        fr.maif.domain.json.UserFormat.reads(resp2.json)
       eventualUser2.isSuccess mustBe true
       eventualUser2.get.id mustBe user.id
       eventualUser2.get.isDaikokuAdmin mustBe false
@@ -278,7 +296,7 @@ class UserControllerSpec()
       val resp = httpJsonCallBlocking(path = s"/api/me")(tenant, session)
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
+        fr.maif.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.name mustBe "test"
 
@@ -377,15 +395,15 @@ class UserControllerSpec()
 
   lazy val authProviderSettings = LdapConfig(
     serverUrls = Seq(
-      s"ldap://localhost:${container.mappedPort(10389)}"
+      s"ldap://localhost:${container.mappedPort(389)}"
     ),
-    searchBase = "dc=planetexpress,dc=com",
-    userBase = "ou=people".some,
-    groupFilter = "ou=ship_crew".some,
-    adminGroupFilter = "ou=admin_staff".some,
-    adminUsername = "cn=admin,dc=planetexpress,dc=com".some,
-    adminPassword = "GoodNewsEveryone".some,
-    nameFields = Seq("givenName", "sn")
+    searchBase = "dc=dundermifflin,dc=com",
+    userBase = "ou=scranton".some,
+    groupFilter = "ou=employees".some,
+    adminGroupFilter = "ou=managers".some,
+    adminUsername = "cn=admin,dc=dundermifflin,dc=com".some,
+    adminPassword = "adminpassword".some,
+    nameFields = Seq("cn")
   ).asJson
 
   "a teamAdmin" can {
@@ -407,7 +425,7 @@ class UserControllerSpec()
         method = "POST",
         body = Some(
           Json.obj(
-            "email" -> "fry@planetexpress.com",
+            "email" -> "jim.halpert@dundermifflin.com",
             "teamId" -> defaultAdminTeam.id.value
           )
         )

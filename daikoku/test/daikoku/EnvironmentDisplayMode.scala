@@ -1,15 +1,15 @@
 package daikoku
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.{
+import fr.maif.domain.{
   IntegrationProcess,
   Tenant,
   TenantDisplay,
   UsagePlan,
   UsagePlanId
 }
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}

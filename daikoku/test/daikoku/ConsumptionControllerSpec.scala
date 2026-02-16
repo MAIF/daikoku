@@ -4,8 +4,8 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
+import fr.maif.domain._
+import fr.maif.tests.utils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -99,7 +99,7 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+        fr.maif.domain.json.SeqConsumptionFormat
           .reads(resp.json.as[JsArray])
       eventualConsumptions.isSuccess mustBe true
 
@@ -128,7 +128,7 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+        fr.maif.domain.json.SeqConsumptionFormat
           .reads(resp.json.as[JsArray])
       eventualConsumptions.isSuccess mustBe true
 
@@ -157,7 +157,7 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+        fr.maif.domain.json.SeqConsumptionFormat
           .reads(resp.json)
       eventualConsumptions.isSuccess mustBe true
 

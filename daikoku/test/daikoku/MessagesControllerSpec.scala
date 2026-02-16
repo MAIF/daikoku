@@ -1,15 +1,15 @@
 package daikoku
 
-import fr.maif.otoroshi.daikoku.domain.{
+import fr.maif.domain.{
   Message,
   MessageType,
   DatastoreId,
   User,
   json
 }
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.logger.AppLogger
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec

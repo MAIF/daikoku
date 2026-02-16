@@ -1,17 +1,17 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.tests
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
-import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
+import fr.maif.domain.ApiVisibility.PublicWithAuthorizations
+import fr.maif.domain.NotificationAction._
+import fr.maif.domain.NotificationStatus.{Accepted, Pending}
+import fr.maif.domain.NotificationType.AcceptOrReject
+import fr.maif.domain.TeamPermission.Administrator
+import fr.maif.domain._
+import fr.maif.domain.json._
+import fr.maif.login.AuthProvider
+import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.utils.IdGenerator
+import fr.maif.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfterEach
@@ -1568,7 +1568,7 @@ class NotificationControllerSpec()
       )(tenant, adminSession)
       getTeam.status mustBe 200
       val maybeUsers =
-        fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+        fr.maif.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
       maybeUsers.isSuccess mustBe true
@@ -1620,7 +1620,7 @@ class NotificationControllerSpec()
       )(tenant, adminSession)
       getTeam.status mustBe 200
       val maybeUsers =
-        fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+        fr.maif.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
       maybeUsers.isSuccess mustBe true
