@@ -3898,12 +3898,12 @@ object SchemaDefinition {
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
-    val NAME = Argument(
+    val NAME: Argument[Option[String]] = Argument(
       "name",
       OptionInputType(StringType),
       description = "A filter about name of value"
     )
-    val PATH = Argument(
+    val PATH: Argument[Option[String]] = Argument(
       "path",
       OptionInputType(StringType),
       description = "A cms filter about path of page"
@@ -4322,9 +4322,12 @@ object SchemaDefinition {
             _UberPublicUserAccess(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
-              (ctx.arg(NAME), ctx.arg(PATH)) match {
+
+              val maybePath = ctx.arg(PATH)
+              val maybeName = ctx.arg(NAME)
+              (maybeName, maybePath) match {
                 case (None, None) => FastFuture.successful(None)
-                case (maybeName: Option[String], maybePath: Option[String]) =>
+                case (maybeName, maybePath) =>
                   ctx.ctx._1.cmsRepo
                     .forTenant(ctx.ctx._2.tenant)
                     .findOne(
