@@ -7,7 +7,7 @@ organization := "fr.maif.otoroshi"
 maintainer := "oss@maif.fr"
 Universal / packageName := "daikoku"
 
-scalaVersion := "2.13.15"
+scalaVersion := "3.3.6"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -63,7 +63,7 @@ libraryDependencies ++= Seq(
   "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
   "org.wiremock" % "wiremock" % wiremockVersion % Test,
 //  "org.wiremock" % "wiremock-jre8" % wiremockVersion % Test,
-  "org.testcontainers" % "testcontainers" % "1.20.0" % Test,
+  "org.testcontainers" % "testcontainers" % "1.20.6" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.14" % Test,
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
   "org.apache.commons" % "commons-lang3" % "3.13.0",
@@ -114,21 +114,27 @@ scalacOptions ++= Seq(
   "-language:implicitConversions",
   "-language:existentials",
   "-language:postfixOps",
-//  "-Ypartial-unification",
-//  "-Xfatal-warnings",
   "-Wconf:msg=possible missing interpolator:silent",
-  "-Wconf:any:warning-verbose",  // Debug: montre d'où viennent les warnings
   "-Wconf:src=conf/routes:silent",  // Exact path
   "-Wconf:src=views/.*:silent",
   "-Wconf:msg=discarded non-Unit value:s",
-  "-deprecation", // Avertit sur les APIs dépréciées
-  "-unchecked", // Avertit sur les pattern matching non exhaustifs
-  "-Xlint", // Active tous les lints
-  "-Ywarn-dead-code", // Code mort
-  "-Ywarn-numeric-widen", // Conversions numériques implicites
-  "-Ywarn-value-discard", // Valeurs jetées
-  "-Xsource:3" // ⭐ CRUCIAL : émule le comportement de Scala 3
 )
+
+//scalacOptions ++= {
+//  CrossVersion.partialVersion(scalaVersion.value) match {
+//    case Some((2, _)) => {
+//      Seq("-Xsource:3", "-quickfix:cat=scala3-migration")
+//    }
+//    case Some((3, _)) => {
+//      Seq(
+//        "-explain-cyclic",
+//        "-explain",
+//        "-Xmax-inlines:64"
+//      )
+//    }
+//    case _ => sys.error("Unsupported scala version")
+//  }
+//}
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
 

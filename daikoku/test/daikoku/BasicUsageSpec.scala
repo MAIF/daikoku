@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
-import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer}
 import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience
@@ -13,7 +13,12 @@ class BasicUsageSpec()
     with IntegrationPatience
     with ForAllTestContainer {
 
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
+    "ghcr.io/rroemhild/docker-test-openldap:master",
+    exposedPorts = Seq(10389, 10636)
+  )
+
+  override val containerDef = GenericContainer.Def(
     "ghcr.io/rroemhild/docker-test-openldap:master",
     exposedPorts = Seq(10389, 10636)
   )

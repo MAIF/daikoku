@@ -42,7 +42,7 @@ class ApiControllerSpec()
 
   val pwd = System.getProperty("user.dir");
 
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
     "maif/otoroshi",
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(

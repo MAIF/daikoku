@@ -594,8 +594,6 @@ class PaymentClient(
                 ) =>
               implicit val stripeSettings: StripeSettings = s
               syncConsumptionWithStripe(consumption, i)
-            case _ =>
-              FastFuture.successful(())
           }
         }).value
           .map(_ => AppLogger.debug("sync with third party ok"))
@@ -651,10 +649,6 @@ class PaymentClient(
                   i: StripeSubscriptionInformations
                 ) =>
               deleteStripeSubscription(i)(s)
-            case _ =>
-              EitherT.left[JsValue](
-                AppError.EntityConflict("payment settings").future()
-              )
           }
         } yield r
       case _ => EitherT.pure[Future, AppError](Json.obj())

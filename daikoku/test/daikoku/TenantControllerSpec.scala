@@ -14,6 +14,8 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.libs.json._
+import play.api.libs.ws.WSBodyReadables.readableAsJson
+
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -27,7 +29,7 @@ class TenantControllerSpec()
     with ForAllTestContainer {
 
   val pwd = System.getProperty("user.dir");
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
     "maif/otoroshi",
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(
@@ -1181,7 +1183,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "<h1>production content</h1>"
+      resp.body mustBe JsString("<h1>production content</h1>")
     }
     "get the production content of a cms page by path" in {
       setupEnvBlocking(
@@ -1200,7 +1202,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.body
+      resp.body mustBe JsString(defaultCmsPage.body)
     }
     "navigate to an unknown cms page" in {
       setupEnvBlocking(
@@ -1246,7 +1248,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe notFoundPage.body
+      resp.body mustBe JsString(notFoundPage.body)
     }
     "navigate to a cms page with only exact path" in {
       val page = defaultCmsPage.copy(path = Some("/home"), exact = true)
@@ -1297,7 +1299,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "bar-foo"
+      resp.body mustBe JsString("bar-foo")
     }
     "validate size helper" in {
       val page = defaultCmsPage.copy(
@@ -1321,7 +1323,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "2"
+      resp.body mustBe JsString("2")
     }
     "validate ifeq helper" in {
       val page = defaultCmsPage.copy(
@@ -1345,7 +1347,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "foobar"
+      resp.body mustBe JsString("foobar")
     }
     "validate ifnoteq helper" in {
       val page = defaultCmsPage.copy(
@@ -1369,7 +1371,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "foobar"
+      resp.body mustBe JsString("foobar")
     }
     "validate getOrElse helper" in {
       val page = defaultCmsPage.copy(
@@ -1393,7 +1395,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe "foobar"
+      resp.body mustBe JsString("foobar")
     }
     "validate daikoku-include-block helper" in {
       val page = defaultCmsPage.copy(
@@ -1417,7 +1419,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.body
+      resp.body mustBe JsString(defaultCmsPage.body)
     }
     "validate daikoku-template-wrapper helper" in {
       val wrapper = defaultCmsPage.copy(
@@ -1447,7 +1449,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe s"""<div><h1>Wrapper</h1>${defaultCmsPage.body}</div>"""
+      resp.body mustBe JsString(s"""<div><h1>Wrapper</h1>${defaultCmsPage.body}</div>""")
     }
     "validate daikoku-apis helper" in {
       val page = defaultCmsPage.copy(
@@ -1525,7 +1527,7 @@ class TenantControllerSpec()
       )(tenant, session)
 
       resp.status mustBe 200
-      resp.body mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
+      resp.body mustBe JsString(s"${defaultApi.plans.map(_.id.value).mkString("\n")}")
     }
 
     "setup defaut authorized otoroshi entities for future created teams" in {

@@ -202,7 +202,6 @@ object AppError {
       case AuthenticationError(msg) => msg
       case UserNotAllowed(email) =>
         s"User $email is not allowed to access this application"
-      case _ => ""
     }
 
   def toJson(error: AppError) = {

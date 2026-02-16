@@ -316,23 +316,23 @@ object OtoroshiIdentityFilter {
                               r
                             }
                         }
-                    case Some(user) =>
+                    case Some(daikokuUser) =>
                       val updatedTeam = Team(
                         id = TeamId(IdGenerator.token(32)),
                         tenant = tenant.id,
                         `type` = TeamType.Personal,
-                        name = s"${user.name}",
-                        description = s"The personal team of ${user.name}",
-                        users = Set(UserWithPermission(user.id, Administrator)),
+                        name = s"${daikokuUser.name}",
+                        description = s"The personal team of ${daikokuUser.name}",
+                        users = Set(UserWithPermission(daikokuUser.id, Administrator)),
                         authorizedOtoroshiEntities = None,
-                        contact = user.email
+                        contact = daikokuUser.email
                       )
                       val session = maybeSession.getOrElse(
                         UserSession(
                           id = DatastoreId(IdGenerator.token(32)),
-                          userId = user.id,
-                          userName = user.name,
-                          userEmail = user.email,
+                          userId = daikokuUser.id,
+                          userName = daikokuUser.name,
+                          userEmail = daikokuUser.email,
                           impersonatorId = None,
                           impersonatorName = None,
                           impersonatorEmail = None,
@@ -345,16 +345,16 @@ object OtoroshiIdentityFilter {
                       )
                       val updatedUser =
                         if (session.impersonatorId.isDefined)
-                          user.copy()
+                          daikokuUser.copy()
                         else
-                          user.copy(
+                          daikokuUser.copy(
                             name = user.name,
                             email = user.email,
                             picture =
-                              if (user.pictureFromProvider) user.picture
-                              else user.picture,
-                            tenants = user.tenants + tenant.id,
-                            origins = user.origins + AuthProvider.Otoroshi,
+                              if (daikokuUser.pictureFromProvider) daikokuUser.picture
+                              else daikokuUser.picture,
+                            tenants = daikokuUser.tenants + tenant.id,
+                            origins = daikokuUser.origins + AuthProvider.Otoroshi,
                             isDaikokuAdmin = isDaikokuAdmin
                           )
                       for {
@@ -442,9 +442,9 @@ object OtoroshiIdentityFilter {
                               createSessionFromOtoroshi(
                                 maybeSession = Some(session)
                               )
-                            case Some(user) =>
+                            case Some(u) =>
                               createSessionFromOtoroshi(
-                                maybeUser = Some(user),
+                                maybeUser = Some(u),
                                 maybeSession = Some(session)
                               )
                           }

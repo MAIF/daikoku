@@ -4,6 +4,7 @@ import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.Done
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json._
@@ -127,22 +128,22 @@ class MockController(
     }
 
   def createFakeOtoroshiApiKey() =
-    Action(parse.json) { req =>
+    Action.async(parse.json) { req =>
       apikeys = apikeys :+ req.body.as[JsObject]
-      Ok(req.body.as[JsObject])
+      Ok(req.body.as[JsObject]).future
     }
 
   def updateFakeOtoroshiApiKey(clientId: String) =
-    Action(parse.json) { req =>
+    Action.async(parse.json) { req =>
       json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {
-        case Some(apiKey) => Ok(apiKey.asJson)
-        case None => BadRequest(Json.obj("error" -> "wrong apikey format"))
+        case Some(apiKey) => Ok(apiKey.asJson).future
+        case None => BadRequest(Json.obj("error" -> "wrong apikey format")).future
       }
     }
 
   def deleteFakeOtoroshiApiKey(clientId: String) =
-    Action(parse.json) {
-      Ok(Json.obj("deleted" -> true))
+    Action.async(parse.json) { _ =>
+      Ok(Json.obj("deleted" -> true)).future
     }
 
   def fakeOtoroshiStats(from: String, to: String, apikey: String) =

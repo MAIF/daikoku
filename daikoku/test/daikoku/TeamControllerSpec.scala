@@ -3,10 +3,7 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionAccept,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiSubscriptionAccept
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
   Administrator,
@@ -15,13 +12,12 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
 }
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
-import play.api.libs.json.{Json, _}
+import play.api.libs.json._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -36,7 +32,7 @@ class TeamControllerSpec()
 
   val pwd = System.getProperty("user.dir");
 
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
     "maif/otoroshi",
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(

@@ -709,7 +709,7 @@ class ApiController(
                 case process => Json.obj("name" -> process.name)
               }))))
             case UserLevel.Guest if ctx.tenant.apiReferenceHideForGuest.getOrElse(true) => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "SubscriptionProcess" - "testing" - "swagger"))
-            case UserLevel.Guest => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "subscriptionProcess" - "testing"))
+            case _ => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "subscriptionProcess" - "testing"))
           }
 
           Ok(jsonPlans)
@@ -888,10 +888,9 @@ class ApiController(
 
       UberPublicUserAccess(
         AuditTrailEvent(
-          s"@{user.name} has accessed documentation page remote content for @{api.name} - @{api.id} - $pageId"
+          s"@{user.name} has accessed documentation page remote content for @{api.name} - @{api.id}- $pageId"
         )
       )(ctx) {
-          logger.info("héhé")
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findByIdNotDeleted(apiId)
@@ -4889,8 +4888,8 @@ class ApiController(
                   plan
                 }
             } match {
-            case Some(updatedPlan) =>
-              EitherT.pure[Future, AppError](updatedPlan)
+            case Some(zeUpdatedPlan) =>
+              EitherT.pure[Future, AppError](zeUpdatedPlan)
             case None => EitherT.leftT[Future, UsagePlan](AppError.PlanNotFound)
           }
         }

@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
-import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.scalatest.BeforeAndAfterEach

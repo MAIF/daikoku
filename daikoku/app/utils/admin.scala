@@ -368,7 +368,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             sourceJson: JsValue,
             targetJson: JsValue
         ): Either[AppError, JsValue] = {
-          implicit val lcs = new Patience[JsValue]
+          implicit val lcs: Patience[JsValue] = new Patience[JsValue]
           val diff = diffson.diff(sourceJson, targetJson)
           patchResponse(diff, targetJson)
         }

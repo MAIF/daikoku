@@ -81,11 +81,11 @@ object SchemaDefinition {
       case v: Boolean    => Right(JsBoolean(v))
       case v: Int        => Right(JsNumber(v))
       case v: Long       => Right(JsNumber(v))
-      case v: Float      => Right(JsNumber(v))
+      case v: Float      => Right(JsNumber(BigDecimal(v)))
       case v: Double     => Right(JsNumber(v))
       case v: BigInt     => Right(JsNumber(v.toInt))
       case v: BigDecimal => Right(JsNumber(v))
-      case v: _          => Right(v)
+      case v: JsValue    => Right(v)
     },
     coerceInput = {
       case StringValue(jsonStr, _, _, _, _) => Right(JsString(jsonStr))
@@ -119,7 +119,7 @@ object SchemaDefinition {
     coerceUserInput = e =>
       e.asInstanceOf[Map[String, String]] match {
         case r: Map[String, String] => Right(r)
-        case _                      => Left(MapCoercionViolation)
+//        case _                      => Left(MapCoercionViolation)
       },
     coerceInput = {
       case ObjectValue(fields, _, _) =>
@@ -1103,11 +1103,6 @@ object SchemaDefinition {
             "aggregationApiKeysSecurity",
             OptionType(BooleanType),
             resolve = _.value.aggregationApiKeysSecurity
-          ),
-          Field(
-            "visibility",
-            UsagePlanVisibilityType,
-            resolve = _.value.visibility
           ),
           Field(
             "metadata",
@@ -4306,7 +4301,7 @@ object SchemaDefinition {
                 .forTenant(ctx.ctx._2.tenant)
                 .find(
                   Json.obj(
-                    "_deleted" -> ctx.arg(DELETED)
+                    "_deleted" -> JsBoolean(ctx.arg(DELETED))
                   )
                 )
             }.map {
@@ -4330,12 +4325,12 @@ object SchemaDefinition {
             )(ctx.ctx._2) {
               (ctx.arg(NAME), ctx.arg(PATH)) match {
                 case (None, None) => FastFuture.successful(None)
-                case (maybeName, maybePath) =>
+                case (maybeName: Option[String], maybePath: Option[String]) =>
                   ctx.ctx._1.cmsRepo
                     .forTenant(ctx.ctx._2.tenant)
                     .findOne(
                       Json.obj(
-                        "_deleted" -> ctx.arg(DELETED)
+                        "_deleted" -> JsBoolean(ctx.arg(DELETED))
                       ) ++ maybeName
                         .map(name => Json.obj("name" -> name))
                         .getOrElse(Json.obj())
@@ -4382,7 +4377,7 @@ object SchemaDefinition {
 
               val apiFilter =
                 if (apiIds.isEmpty) Json.obj()
-                else Json.obj("_id" -> Json.obj("$in" -> apiIds.get))
+                else Json.obj("_id" -> Json.obj("$in" -> JsArray(apiIds.get.map(JsString.apply))))
 
               val value
                   : EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] =

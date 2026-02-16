@@ -18,7 +18,7 @@ class UserControllerSpec()
     with IntegrationPatience
     with ForAllTestContainer {
 
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
     "ghcr.io/rroemhild/docker-test-openldap:master",
     exposedPorts = Seq(10389, 10636)
   )

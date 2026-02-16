@@ -3,24 +3,25 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
-import fr.maif.otoroshi.daikoku.domain.TeamPermission._
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.*
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.*
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.*
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.pattern.after
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
-import org.apache.pekko.pattern.after
+import org.scalatest.*
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest._
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
-import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
+import play.api.libs.json.*
+import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
 import services.CmsPage
@@ -29,7 +30,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.impl.Promise
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger

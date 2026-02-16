@@ -1119,7 +1119,7 @@ case class CmsPage(
     implicit val ec: ExecutionContext = env.defaultExecutionContext
 
     val page = forwardRef match {
-      case Some(id) => cmsFindByIdNotDeleted(ctx, id.value, req).getOrElse(this)
+      case Some(ref) => cmsFindByIdNotDeleted(ctx, ref.value, req).getOrElse(this)
       case None     => this
     }
     try {

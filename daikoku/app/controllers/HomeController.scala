@@ -3,18 +3,14 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.CmsRequestRenderingFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.Errors
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs
@@ -25,6 +21,8 @@ import services.{CmsPage, CmsRequestRendering}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
+
+import fr.maif.otoroshi.daikoku.ctrls.{routes => daikokuRoutes}
 
 class HomeController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
@@ -110,13 +108,13 @@ class HomeController(
     }
 
   def health() =
-    DaikokuActionMaybeWithGuest { ctx =>
+    DaikokuActionMaybeWithGuest.async { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {
         // todo: better health check
         case Some(value) =>
           Ok.withHeaders(
             "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
-          )
+          ).future
         case None =>
           Ok(
             Json.obj(
@@ -124,17 +122,17 @@ class HomeController(
                 .getOrElse(TenantMode.Default)
                 .name
             )
-          )
+          ).future
       }
     }
 
   def getDaikokuVersion() =
-    DaikokuActionMaybeWithoutUser { ctx =>
-      Ok(Json.obj("version" -> BuildInfo.version))
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      Ok(Json.obj("version" -> BuildInfo.version)).future
     }
 
   def getConnectedUser() = {
-    DaikokuActionMaybeWithoutUser { ctx =>
+    DaikokuActionMaybeWithoutUser.async { ctx =>
       Ok(
         Json.obj(
           "connectedUser" -> ctx.user
@@ -162,7 +160,7 @@ class HomeController(
               .url
           )
         )
-      )
+      ).future
     }
   }
 

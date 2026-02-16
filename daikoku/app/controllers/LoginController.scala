@@ -56,14 +56,14 @@ class LoginController(
   implicit val as: ActorSystem = env.defaultActorSystem
 
   def loginContext(provider: String) =
-    DaikokuActionMaybeWithoutUser { _ =>
+    DaikokuActionMaybeWithoutUser.async { _ =>
       Ok(
         Json.obj(
           "action" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
             .login(provider)
             .url
         )
-      )
+      ).future
     }
 
   def loginPage(provider: String) =
