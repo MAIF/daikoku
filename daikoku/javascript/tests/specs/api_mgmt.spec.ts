@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId,loginLocalAs } from './utils';
 import { JIM, MICHAEL } from './users';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 
@@ -287,3 +287,76 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
 
 
 });
+
+const createAPILifeCycleTest = async ({page}) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('button', { name: 'Créer une API' }).click();
+  await page.getByRole('listitem', { name: 'API Division' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('ApiLifeCycleTest');
+  await page.getByRole('button', { name: 'Publiée' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('main').locator('div').filter({ hasText: /^ApiLifeCycleTest$/ }).click();
+}
+
+test('Passer une API a l\'état bloqué', async ({ page }) => {
+  await createAPILifeCycleTest({page})
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await page.getByRole('button', { name: 'Bloquée' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  expect(page.getByRole('heading', { name: 'Attention' })).toBeVisible;
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).fill('ApiLifeCycleTest');
+  await page.getByRole('button', { name: 'Confirmation' }).click();
+  expect(page.getByText('Bloquée')).toBeVisible;
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  const api = page.getByRole('listitem').filter({ hasText: 'ApiLifeCycleTest' });
+  expect(api.getByRole('article').getByRole('article').getByText('Api bloquée')).toBeVisible;
+  await deleteAPILifeCycleTest({page})
+});
+
+test('Passer une API a l\'état deprecated', async ({ page }) => {
+  await createAPILifeCycleTest({page})
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.getByRole('link', { name: 'ApiLifeCycleTest' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await page.getByRole('button', { name: 'Dépréciée' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  expect(page.getByText('Dépréciée')).toBeVisible;
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  const api = page.getByRole('listitem').filter({ hasText: 'ApiLifeCycleTest' });
+  expect(api.getByRole('article').getByRole('article').getByText('Api dépréciée')).toBeVisible;
+  await deleteAPILifeCycleTest({page})
+});
+
+test('Passer une API de l\'état deprecated vers blocked', async ({ page }) => {
+  await createAPILifeCycleTest({page})
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await page.getByRole('button', { name: 'Dépréciée' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  expect(page.getByText('Dépréciée')).toBeVisible;
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await page.getByRole('button', { name: 'Bloquée' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).fill('ApiLifeCycleTest');
+  await page.getByRole('button', { name: 'Confirmation' }).click();
+  expect(page.getByText('Api bloquée')).toBeVisible;
+  await deleteAPILifeCycleTest({page})
+});
+
+const deleteAPILifeCycleTest = async ({page}) => {
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.getByRole('link', { name: 'ApiLifeCycleTest' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Supprimer' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez ApiLifeCycleTest' }).fill('ApiLifeCycleTest');
+  await page.getByRole('button', { name: 'Confirmation' }).click();
+  expect(page.getByText('Supprimé avec succès')).toBeVisible;
+}
