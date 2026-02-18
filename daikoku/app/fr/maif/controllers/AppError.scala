@@ -4,16 +4,17 @@ import fr.maif.domain.UserId
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc
-import play.api.mvc.Results._
+import play.api.mvc.Result
+import play.api.mvc.Results.*
 
 import scala.concurrent.Future
 
 sealed trait AppError {
-  def render() = AppError.render(this)
-  def renderF() = AppError.renderF(this)
-  def toJson() = AppError.toJson(this)
-  def future() = FastFuture.successful(this)
-  def getErrorMessage() = AppError.getErrorMessage(this)
+  def render(): Result = AppError.render(this)
+  def renderF(): Future[Result] = AppError.renderF(this)
+  def toJson(): JsObject = AppError.toJson(this)
+  def future(): Future[AppError] = FastFuture.successful(this)
+  def getErrorMessage(): String = AppError.getErrorMessage(this)
 }
 
 object AppError {

@@ -6,7 +6,7 @@ import fr.maif.domain.json._
 import fr.maif.env.Env
 import fr.maif.logger.AppLogger
 import io.vertx.core.json.JsonObject
-import io.vertx.pgclient.PgPool
+import io.vertx.sqlclient.Pool
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -395,7 +395,7 @@ case class PostgresTenantCapableConsumptionRepo(
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
+class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     extends DataStore {
 
   private implicit lazy val logger: Logger = Logger("PostgresDataStore")

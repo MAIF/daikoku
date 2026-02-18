@@ -3,37 +3,32 @@ package fr.maif.controllers
 import cats.data.EitherT
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import fr.maif.controllers.AppError
-import fr.maif.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.audit.AuditTrailEvent
-import fr.maif.controllers.authorizations.async._
+import fr.maif.controllers.authorizations.async.*
 import fr.maif.domain.TeamPermission.Administrator
-import fr.maif.domain._
+import fr.maif.domain.*
 import fr.maif.env.Env
+import fr.maif.utils.future.EnhancedObject
 import fr.maif.utils.{DeletionService, IdGenerator}
-import io.nayuki.qrcodegen.QrCode
+import io.nayuki.qrcodegen.*
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
 
+import java.awt.image.BufferedImage
+import java.io.File
 import java.time.Instant
-import java.util.Base64
+import java.util.{Base64, Objects}
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import javax.imageio.ImageIO
 
 class UsersController(
     DaikokuAction: DaikokuAction,
@@ -332,6 +327,35 @@ class UsersController(
       }
     }
 
+  private def toSvgString(qr: QrCode): String = {
+    val border = 4
+    val size = qr.size + border * 2
+    val sb = new StringBuilder()
+
+    sb.append(s"""<?xml version="1.0" encoding="UTF-8"?>""")
+    sb.append(
+      s"""<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">"""
+    )
+    sb.append(
+      s"""<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 $size $size" stroke="none">"""
+    )
+    sb.append(s"""<rect width="100%" height="100%" fill="#FFFFFF"/>""")
+    sb.append("""<path d="""")
+
+    for {
+      y <- 0 until qr.size
+      x <- 0 until qr.size
+      if qr.getModule(x, y)
+    } {
+      sb.append(s"M${x + border},${y + border}h1v1h-1z ")
+    }
+
+    sb.append("""" fill="#000000"/>""")
+    sb.append("""</svg>""")
+
+    sb.toString()
+  }
+
   def get2faQrCode() =
     DaikokuAction.async { ctx =>
       PublicUserAccess(
@@ -357,37 +381,33 @@ class UsersController(
                 ctx.user.copy(
                   twoFactorAuthentication = Some(
                     TwoFactorAuthentication(
-                      enabled = false,
-                      secret =
-                        Base64.getEncoder.encodeToString(secret.getEncoded),
+                      secret = Base64.getEncoder.encodeToString(secret.getEncoded),
                       token = "",
                       backupCodes = ""
                     )
                   )
                 )
               )
-              .flatMap {
+              .map {
                 case true =>
-                  FastFuture.successful(
-                    Ok(
-                      Json.obj(
-                        "rawSecret" -> base32SecretEncoded,
-                        "qrcode" -> QrCode
-                          .encodeText(
-                            s"otpauth://totp/$label?secret=$base32SecretEncoded",
-                            QrCode.Ecc.HIGH
-                          )
-                          .toSvgString(10)
-                      )
+                  val qrCode = QrCode.encodeText(
+                    s"otpauth://totp/$label?secret=$base32SecretEncoded",
+                    QrCode.Ecc.HIGH
+                  )
+                  val svgString = toSvgString(qrCode)
+
+                  Ok(
+                    Json.obj(
+                      "rawSecret" -> base32SecretEncoded,
+                      "qrcode" -> svgString
                     )
                   )
                 case false =>
-                  FastFuture.successful(
-                    BadRequest(Json.obj("error" -> "Can't updated user"))
-                  )
+                  BadRequest(Json.obj("error" -> "Can't update user"))
               }
+
           case _ =>
-            FastFuture.successful(
+            Future.successful(
               BadRequest(
                 Json.obj(
                   "error" -> "Unable to retrieve generated qrcode when 2fa enabled"

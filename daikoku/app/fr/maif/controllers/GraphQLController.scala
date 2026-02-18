@@ -132,8 +132,9 @@ class GraphQLController(
 
     QueryParser.parse(query) match {
       case Success(queryAst) =>
+        //FIXME: variables is not set
         val violations =
-          QueryValidator.default.validateQuery(schema, queryAst, None)
+          QueryValidator.default.validateQuery(schema = schema, queryAst = queryAst, variables = Map.empty, errorsLimit = None)
         if (violations.isEmpty || env.config.mode != Prod) {
           Executor
             .execute(

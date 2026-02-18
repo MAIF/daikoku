@@ -10,10 +10,11 @@ import fr.maif.services.{AssetsService, TranslationsService}
 import fr.maif.utils.*
 import fr.maif.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx
+import io.vertx.core.Vertx.vertx
 import io.vertx.core.buffer.Buffer
-import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
-import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
-import io.vertx.sqlclient.PoolOptions
+import io.vertx.core.net.{ClientSSLOptions, PemKeyCertOptions, PemTrustOptions}
+import io.vertx.pgclient.{PgBuilder, PgConnectOptions, SslMode}
+import io.vertx.sqlclient.{Pool, PoolOptions}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import play.api.ApplicationLoader.Context
@@ -133,7 +134,7 @@ class DaikokuComponentsInstances(context: Context)
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
     .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
-
+  
   private lazy val options: PgConnectOptions = {
     val options = new PgConnectOptions()
       .setPort(configuration.get[Int]("daikoku.postgres.port"))
@@ -157,66 +158,74 @@ class DaikokuComponentsInstances(context: Context)
       val pemTrustOptions = new PemTrustOptions()
       val pemKeyCertOptions = new PemKeyCertOptions()
 
+      val clientSSLOptions = new ClientSSLOptions()
+
       options.setSslMode(
         SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca"))
       )
-      ssl
-        .getOptional[Long]("ssl-handshake-timeout")
-        .map(options.setSslHandshakeTimeout)
 
       ssl.getOptional[Seq[String]]("trusted-certs-path").map { pathes =>
         pathes.map(p => pemTrustOptions.addCertPath(p))
-        options.setPemTrustOptions(pemTrustOptions)
       }
       ssl.getOptional[String]("trusted-cert-path").map { path =>
         pemTrustOptions.addCertPath(path)
-        options.setPemTrustOptions(pemTrustOptions)
       }
       ssl.getOptional[Seq[String]]("trusted-certs").map { certs =>
         certs.map(p => pemTrustOptions.addCertValue(Buffer.buffer(p)))
-        options.setPemTrustOptions(pemTrustOptions)
       }
       ssl.getOptional[String]("trusted-cert").map { path =>
         pemTrustOptions.addCertValue(Buffer.buffer(path))
-        options.setPemTrustOptions(pemTrustOptions)
       }
+
+      clientSSLOptions
+        .setTrustOptions(pemTrustOptions)
+
+      ssl
+        .getOptional[Long]("ssl-handshake-timeout")
+        .foreach(timeout =>  clientSSLOptions.setSslHandshakeTimeout(timeout))
+
       ssl.getOptional[Seq[String]]("client-certs-path").map { paths =>
         paths.map(p => pemKeyCertOptions.addCertPath(p))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[Seq[String]]("client-certs").map { certs =>
         certs.map(p => pemKeyCertOptions.addCertValue(Buffer.buffer(p)))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[String]("client-cert-path").map { path =>
         pemKeyCertOptions.addCertPath(path)
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[String]("client-cert").map { path =>
         pemKeyCertOptions.addCertValue(Buffer.buffer(path))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[Seq[String]]("client-keys-path").map { pathes =>
         pathes.map(p => pemKeyCertOptions.addKeyPath(p))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[Seq[String]]("client-keys").map { certs =>
         certs.map(p => pemKeyCertOptions.addKeyValue(Buffer.buffer(p)))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[String]("client-key-path").map { path =>
         pemKeyCertOptions.addKeyPath(path)
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
       ssl.getOptional[String]("client-key").map { path =>
         pemKeyCertOptions.addKeyValue(Buffer.buffer(path))
-        options.setPemKeyCertOptions(pemKeyCertOptions)
       }
-      ssl.getOptional[Boolean]("trust-all").map(options.setTrustAll)
+
+      clientSSLOptions
+        .setKeyCertOptions(pemKeyCertOptions)
+
+
+      ssl.getOptional[Boolean]("trust-all")
+        .foreach(trustAll => clientSSLOptions.setTrustAll(trustAll))
+
+      options
+        .setSslOptions(clientSSLOptions)
     }
     options
   }
-  lazy val pgPool = PgPool.pool(Vertx.vertx, options, poolOptions)
+  lazy val pgPool: Pool = PgBuilder.pool()
+    .`with`(poolOptions)
+    .connectingTo(options)
+    .using(vertx)
+    .build()
 
   //    statsJob.start()
   deletor.start()

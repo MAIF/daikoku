@@ -14,7 +14,7 @@ import fr.maif.services.CmsPage
 import fr.maif.storage.drivers.postgres.PostgresDataStore
 import fr.maif.storage.{DataStore, Repo}
 import fr.maif.utils.*
-import io.vertx.pgclient.PgPool
+import io.vertx.sqlclient.Pool
 import org.apache.pekko.Done
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -34,7 +34,7 @@ class StateController(
     env: Env,
     otoroshiClient: OtoroshiClient,
     cc: ControllerComponents,
-    pgPool: PgPool
+    pgPool: Pool
 ) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext

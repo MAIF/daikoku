@@ -1,30 +1,29 @@
 package fr.maif.utils
 
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.s3.AmazonS3ClientBuilder
-import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
-import fr.maif.domain._
+import fr.maif.domain.*
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.{
-  ContentType,
-  ContentTypes,
-  HttpHeader
-}
+import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.connectors.s3._
+import org.apache.pekko.stream.connectors.s3.*
 import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
 import org.apache.pekko.stream.connectors.s3.scaladsl.S3
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
-import play.api.libs.json._
-import software.amazon.awssdk.auth.credentials._
+import play.api.libs.json.*
+import software.amazon.awssdk.auth.credentials.*
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
-import java.net.URL
+import scala.concurrent.duration.DurationInt
+import java.net.{URI, URL}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -440,30 +439,35 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
   private def getPresignedUrl(
       path: String
   )(implicit conf: S3Configuration): Option[String] = {
-    lazy val opts = new ClientConfiguration()
-    lazy val endpointConfiguration =
-      new EndpointConfiguration(conf.endpoint, conf.region)
-    lazy val credentialsProvider = new AWSStaticCredentialsProvider(
-      new BasicAWSCredentials(conf.access, conf.secret)
-    )
-    lazy val s3Client = AmazonS3ClientBuilder
-      .standard()
-      .withCredentials(credentialsProvider)
-      .withClientConfiguration(opts)
-      .withEndpointConfiguration(endpointConfiguration)
+
+    lazy val credentials = AwsBasicCredentials.create(conf.access, conf.secret)
+    lazy val credentialsProvider = StaticCredentialsProvider.create(credentials)
+
+    lazy val presigner: S3Presigner = S3Presigner
+      .builder()
+      .credentialsProvider(credentialsProvider)
+      .region(Region.of(conf.region))
+      .endpointOverride(URI.create(conf.endpoint))
       .build()
 
     try {
-      val url: URL = s3Client.generatePresignedUrl(
-        "",
-        path,
-        DateTime.now().plusHours(1).toDate,
-        HttpMethod.GET
-      )
-      Some(url.toURI.toString)
+      val getObjectRequest = GetObjectRequest.builder()
+        .bucket(conf.bucket)
+        .key(path)
+        .build()
+
+      val presignRequest = GetObjectPresignRequest.builder()
+        .signatureDuration(java.time.Duration.ofNanos(1.hour.toNanos))
+        .getObjectRequest(getObjectRequest)
+        .build()
+
+      val presignedUrl = presigner.presignGetObject(presignRequest)
+
+      Some(presignedUrl.url().toString)
     } catch {
-      case _: SdkClientException => None
+      case _: Exception => None
     }
+
   }
 
   def getTeamAssetPresignedUrl(tenant: TenantId, team: TeamId, asset: AssetId)(

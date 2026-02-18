@@ -13,7 +13,7 @@ import fr.maif.login.{AuthProvider, LoginFilter, OAuth2Config}
 import fr.maif.storage.drivers.postgres.PostgresDataStore
 import fr.maif.storage.DataStore
 import fr.maif.utils.*
-import io.vertx.pgclient.PgPool
+import io.vertx.sqlclient.Pool
 import org.apache.pekko.Done
 import org.apache.pekko.actor.{ActorRef, ActorSystem, PoisonPill}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -438,7 +438,7 @@ class DaikokuEnv(
     context: Context,
     messagesApi: MessagesApi,
     interpreter: Translator,
-    pgPool: PgPool
+    pgPool: Pool
 ) extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
