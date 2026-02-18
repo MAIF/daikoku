@@ -1,6 +1,6 @@
 package fr.maif.jobs
 
-import daikoku.BuildInfo
+import fr.maif.daikoku.BuildInfo
 import fr.maif.domain.{Tenant, TenantMode, json}
 import fr.maif.env.Env
 import fr.maif.utils.IdGenerator

@@ -1,4 +1,4 @@
-package daikoku
+package fr.maif.daikoku.controllers
 
 import fr.maif.domain.{
   Message,
@@ -7,8 +7,7 @@ import fr.maif.domain.{
   User,
   json
 }
-import fr.maif.logger.AppLogger
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience

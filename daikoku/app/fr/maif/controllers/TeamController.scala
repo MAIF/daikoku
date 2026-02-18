@@ -14,9 +14,10 @@ import fr.maif.domain._
 import fr.maif.domain.json.TeamFormat
 import fr.maif.env.Env
 import fr.maif.login.{LdapConfig, LdapSupport}
+import fr.maif.services.DeletionService
 import fr.maif.utils.Cypher.{decrypt, encrypt}
 import fr.maif.utils.future.EnhancedObject
-import fr.maif.utils.{DeletionService, IdGenerator, Translator}
+import fr.maif.utils.{IdGenerator, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}

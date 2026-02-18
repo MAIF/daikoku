@@ -17,7 +17,8 @@ import fr.maif.domain.NotificationType.AcceptOnly
 import fr.maif.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.domain.json.NotificationStatusFormat
 import fr.maif.env.Env
-import fr.maif.utils.{AccountCreationService, ApiService, Translator}
+import fr.maif.services.{AccountCreationService, ApiService}
+import fr.maif.utils.Translator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
 import play.api.libs.json.*

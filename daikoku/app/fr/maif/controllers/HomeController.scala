@@ -2,7 +2,7 @@ package fr.maif.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
-import daikoku.BuildInfo
+import fr.maif.daikoku.BuildInfo
 import fr.maif.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.audit.AuditTrailEvent
 import fr.maif.controllers.authorizations.async.TenantAdminOnly

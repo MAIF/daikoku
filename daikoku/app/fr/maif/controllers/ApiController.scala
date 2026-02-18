@@ -2,12 +2,7 @@ package fr.maif.controllers
 
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import fr.maif.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.audit.AuditTrailEvent
 import fr.maif.controllers.AppError
 import fr.maif.controllers.AppError.*
@@ -20,6 +15,7 @@ import fr.maif.env.Env
 import fr.maif.jobs
 import fr.maif.jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import fr.maif.logger.AppLogger
+import fr.maif.services.{ApiService, DeletionService}
 import fr.maif.utils.Cypher.{decrypt, encrypt}
 import fr.maif.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.utils.*
@@ -4203,7 +4199,7 @@ class ApiController(
               sortedEntryComments = issue.comments.sortBy(_.createdAt.getMillis)
 
               _ <- EitherT.cond[Future][AppError, Unit](existingIssue.tags.equals(issue.tags) ||
-                isPriviligedUser, (), AppError.Unauthorized("Only admin can manage issue tags"))
+                isPriviligedUser, (), AppError.UnauthorizedExplicit("Only admin can manage issue tags"))
               _ <- EitherT.cond[Future][AppError, Unit](!commentsHasBeenRemovedWithoutRights(
                 ctx.user.isDaikokuAdmin,
                 sortedEntryComments,
@@ -4215,11 +4211,11 @@ class ApiController(
                 sortedExistingComments
               ), (), AppError.Forbidden("You're not allowed to edit a comment that does not belong to you"))
               _ <- EitherT.cond[Future][AppError, Unit](existingIssue.open == issue.open ||
-                isPriviligedUser, (), AppError.Unauthorized("You're not authorized to close or re-open an issue"))
+                isPriviligedUser, (), AppError.UnauthorizedExplicit("You're not authorized to close or re-open an issue"))
               _ <- EitherT.cond[Future][AppError, Unit](existingIssue.title == issue.title || ctx.user.isDaikokuAdmin ||
                 issue.by == ctx.user.id, (), AppError.Forbidden("You're not authorized to edit issue title"))
               _ <- EitherT.cond[Future][AppError, Unit](myTeams.map(_.id).intersect(subs.map(_.team)).nonEmpty || isPriviligedUser,
-                (), AppError.Unauthorized("not a  suber / not member of api team"))
+                (), AppError.UnauthorizedExplicit("not a  suber / not member of api team"))
 
               _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)

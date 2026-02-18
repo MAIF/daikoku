@@ -9,8 +9,9 @@ import fr.maif.controllers.authorizations.async.*
 import fr.maif.domain.TeamPermission.Administrator
 import fr.maif.domain.*
 import fr.maif.env.Env
+import fr.maif.services.DeletionService
 import fr.maif.utils.future.EnhancedObject
-import fr.maif.utils.{DeletionService, IdGenerator}
+import fr.maif.utils.IdGenerator
 import io.nayuki.qrcodegen.*
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.http.scaladsl.util.FastFuture

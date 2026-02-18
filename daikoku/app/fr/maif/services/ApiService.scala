@@ -1,4 +1,4 @@
-package fr.maif.utils
+package fr.maif.services
 
 import cats.Monad
 import cats.data.{EitherT, OptionT}
@@ -12,11 +12,17 @@ import fr.maif.domain.UsagePlanVisibility.Admin
 import fr.maif.domain.json.SeqApiFormat
 import fr.maif.env.Env
 import fr.maif.jobs
+import fr.maif.jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import fr.maif.logger.AppLogger
 import fr.maif.utils.Cypher.{decrypt, encrypt}
 import fr.maif.utils.StringImplicits.BetterString
 import fr.maif.utils.future.EnhancedObject
-import fr.maif.jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import fr.maif.utils.{
+  IdGenerator,
+  JsonOperationsHelper,
+  OtoroshiClient,
+  Translator
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}

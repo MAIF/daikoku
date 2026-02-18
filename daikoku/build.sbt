@@ -26,7 +26,7 @@ lazy val root = (project in file("."))
   .disablePlugins(PlayFilters)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage := "daikoku"
+    buildInfoPackage := "fr.maif.daikoku"
   )
 
 Test / javaOptions += "-Dconfig.file=conf/application.test.conf"
@@ -85,9 +85,7 @@ libraryDependencies ++= Seq(
   "com.auth0" % "jwks-rsa" % "0.23.0" excludeAll (excludesJackson: _*), // https://github.com/auth0/jwks-rsa-java
   "com.nimbusds" % "nimbus-jose-jwt" % "10.7",
   "com.softwaremill.macwire" %% "macros" % "2.6.7" % "provided",
-  "io.vertx" % "vertx-pg-client" % "5.0.8",
-  "com.ongres.scram" % "common" % "2.1",
-  "com.ongres.scram" % "client" % "2.1",
+  "io.vertx" % "vertx-pg-client" % "5.0.8", // scram-client included transitively
   "io.nayuki" % "qrcodegen" % "1.8.0",
   "com.eatthepath" % "java-otp" % "0.4.0",
   "com.sun.mail" % "jakarta.mail" % "2.0.2",

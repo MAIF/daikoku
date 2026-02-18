@@ -6,7 +6,7 @@ import fr.maif.actions.*
 import fr.maif.controllers.*
 import fr.maif.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.jobs.*
-import fr.maif.services.{AssetsService, TranslationsService}
+import fr.maif.services.{AccountCreationService, ApiService, AssetsService, DeletionService, TranslationsService}
 import fr.maif.utils.*
 import fr.maif.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx

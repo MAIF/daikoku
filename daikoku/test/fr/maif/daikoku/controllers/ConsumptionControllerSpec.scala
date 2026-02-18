@@ -1,11 +1,11 @@
-package daikoku
+package fr.maif.daikoku.controllers
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import fr.maif.domain._
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience

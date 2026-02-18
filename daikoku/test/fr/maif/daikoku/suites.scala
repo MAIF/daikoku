@@ -1,4 +1,4 @@
-package fr.maif.tests
+package fr.maif.daikoku
 
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
@@ -38,7 +38,7 @@ import scala.util.{Failure, Success, Try}
 
 case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
 
-object utils {
+object testUtils {
 //  trait OneServerPerSuiteWithMyComponents
 //      extends OneServerPerSuiteWithComponents
 //      with ScalaFutures {

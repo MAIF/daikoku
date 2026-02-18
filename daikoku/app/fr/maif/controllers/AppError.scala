@@ -56,7 +56,7 @@ object AppError {
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
-  case class Unauthorized(message: String) extends AppError
+  case class UnauthorizedExplicit(message: String) extends AppError
   case class Forbidden(message: String) extends AppError
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
@@ -119,7 +119,7 @@ object AppError {
       case MissingParentSubscription               => NotFound(toJson(error))
       case TranslationNotFound                     => NotFound(toJson(error))
       case Unauthorized    => play.api.mvc.Results.Unauthorized(toJson(error))
-      case Unauthorized(_) => play.api.mvc.Results.Unauthorized(toJson(error))
+      case UnauthorizedExplicit(_) => play.api.mvc.Results.Unauthorized(toJson(error))
       case Forbidden(_)    => play.api.mvc.Results.Forbidden(toJson(error))
       case ParsingPayloadError(message)      => BadRequest(toJson(error))
       case NameAlreadyExists                 => Conflict(toJson(error))
@@ -191,7 +191,7 @@ object AppError {
         "The parent of this subscription is missing"
       case TranslationNotFound   => "Translation not found"
       case Unauthorized          => "You're not authorized here"
-      case Unauthorized(message) => message
+      case UnauthorizedExplicit(message) => message
       case Forbidden(message)    => message
       case NameAlreadyExists     => "Resource with same name already exists"
       case ThirdPartyPaymentSettingsNotFound =>

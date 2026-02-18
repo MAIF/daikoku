@@ -1,13 +1,12 @@
-package fr.maif.tests
+package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import fr.maif.domain.TeamPermission.Administrator
 import fr.maif.domain._
-import fr.maif.logger.AppLogger
 import fr.maif.login.AuthProvider
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.utils.IdGenerator
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
@@ -34,7 +33,7 @@ class TenantControllerSpec()
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(
       FileSystemBind(
-        s"$pwd/test/daikoku/otoroshi.json",
+        s"$pwd/test/fr/maif/daikoku/otoroshi.json",
         "/home/user/otoroshi.json",
         BindMode.READ_ONLY
       )

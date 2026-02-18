@@ -4,7 +4,7 @@ import cats.data.{EitherT, OptionT}
 import fr.maif.controllers.{AppError, PaymentClient}
 import fr.maif.domain.*
 import fr.maif.env.Env
-import fr.maif.utils.ApiService
+import fr.maif.services.ApiService
 import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime

@@ -1,17 +1,18 @@
-package fr.maif.utils
+package fr.maif.services
 
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.controllers.AppError
 import fr.maif.actions.DaikokuActionContext
+import fr.maif.controllers.AppError
+import fr.maif.domain.*
 import fr.maif.domain.SubscriptionDemandState.Accepted
 import fr.maif.domain.TeamPermission.Administrator
-import fr.maif.domain._
 import fr.maif.env.Env
 import fr.maif.utils.Cypher.encrypt
+import fr.maif.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
@@ -636,8 +637,8 @@ class AccountCreationService {
       translator: Translator,
       messagesApi: MessagesApi
   ): Future[Either[AppError, Unit]] = {
-    import cats.data._
-    import cats.implicits._
+    import cats.data.*
+    import cats.implicits.*
 
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
@@ -667,8 +668,8 @@ class AccountCreationService {
       translator: Translator,
       messagesApi: MessagesApi
   ): Future[Either[AppError, Unit]] = {
-    import cats.data._
-    import cats.implicits._
+    import cats.data.*
+    import cats.implicits.*
 
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(

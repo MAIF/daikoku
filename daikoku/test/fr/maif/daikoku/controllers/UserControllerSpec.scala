@@ -1,11 +1,11 @@
-package fr.maif.tests
+package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.domain.*
 import fr.maif.login.{AuthProvider, LdapConfig}
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.utils.LoggerImplicits.BetterLogger
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec

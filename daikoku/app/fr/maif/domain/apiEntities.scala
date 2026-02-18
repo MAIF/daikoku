@@ -353,7 +353,7 @@ case class UsagePlan(
                       .subsetOf(authorizedEntities.authorizedEntities.groups)
                   ),
                 (),
-                AppError.Unauthorized(
+                AppError.UnauthorizedExplicit(
                   "at least one of the group provided is unauthorized"
                 )
               )
@@ -364,7 +364,7 @@ case class UsagePlan(
                       .subsetOf(authorizedEntities.authorizedEntities.services)
                   ),
                 (),
-                AppError.Unauthorized(
+                AppError.UnauthorizedExplicit(
                   "at least one of the service provided is unauthorized"
                 )
               )
@@ -375,7 +375,7 @@ case class UsagePlan(
                       .subsetOf(authorizedEntities.authorizedEntities.routes)
                   ),
                 (),
-                AppError.Unauthorized(
+                AppError.UnauthorizedExplicit(
                   "at least one of the route provided is unauthorized"
                 )
               )

@@ -14,6 +14,7 @@ import fr.maif.domain.json.TenantFormat
 import fr.maif.env.Env
 import fr.maif.logger.AppLogger
 import fr.maif.login.OAuth2Config
+import fr.maif.services.ApiService
 import fr.maif.utils.*
 import fr.maif.utils.future.EnhancedObject
 import fr.maif.utils.JWKSAlgoSettings

@@ -1,4 +1,4 @@
-package fr.maif.utils
+package fr.maif.services
 
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
@@ -7,7 +7,8 @@ import fr.maif.domain.*
 import fr.maif.env.Env
 import fr.maif.jobs.ApiKeyStatsJob
 import fr.maif.logger.AppLogger
-import fr.maif.utils.ApiService
+import fr.maif.services.ApiService
+import fr.maif.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}

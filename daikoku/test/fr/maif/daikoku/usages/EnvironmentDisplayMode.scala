@@ -1,4 +1,4 @@
-package daikoku
+package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.domain.{
@@ -8,7 +8,7 @@ import fr.maif.domain.{
   UsagePlan,
   UsagePlanId
 }
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec

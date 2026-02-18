@@ -1,10 +1,11 @@
-package fr.maif.tests
+package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.domain.TeamPermission.Administrator
 import fr.maif.domain._
 import fr.maif.login.AuthProvider
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
+import fr.maif.daikoku.ApiWithPlans
 import fr.maif.utils.IdGenerator
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt

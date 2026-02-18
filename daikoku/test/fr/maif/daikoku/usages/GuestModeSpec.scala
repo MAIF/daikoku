@@ -1,8 +1,8 @@
-package fr.maif.tests
+package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.domain._
-import fr.maif.tests.utils.DaikokuSpecHelper
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
