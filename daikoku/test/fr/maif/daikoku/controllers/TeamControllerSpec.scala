@@ -299,7 +299,7 @@ class TeamControllerSpec()
       )
       val session = loginWithBlocking(tenantAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/members",
+        path = s"/api/teams/${teamOwnerId.value}/members"
       )(tenant, session)
       resp.status mustBe 200
       resp.json.as[JsArray].value.size mustBe 3
