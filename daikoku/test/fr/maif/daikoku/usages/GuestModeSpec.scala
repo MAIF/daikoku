@@ -1,7 +1,7 @@
 package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.domain._
+import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -58,7 +58,7 @@ class GuestModeSpec()
 
       resp.status mustBe 200
       val myTeam =
-        fr.maif.domain.json.SeqTeamFormat.reads(
+        fr.maif.daikoku.domain.json.SeqTeamFormat.reads(
           (resp.json \ "data" \ "myTeams")
             .as[JsArray]
             .value
@@ -87,7 +87,7 @@ class GuestModeSpec()
       )(publicTenant)
       resp.status mustBe 200
       val team =
-        fr.maif.domain.json.TeamFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(resp.json)
       team.isSuccess mustBe true
       team.get.id mustBe teamOwnerId
 

@@ -1,6 +1,6 @@
 package fr.maif.daikoku.controllers
 
-import fr.maif.domain.{
+import fr.maif.daikoku.domain.{
   Message,
   MessageType,
   DatastoreId,
@@ -8,7 +8,7 @@ import fr.maif.domain.{
   json
 }
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
-import fr.maif.utils.IdGenerator
+import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec

@@ -3,10 +3,10 @@ package fr.maif.daikoku.controllers
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.domain.*
-import fr.maif.login.{AuthProvider, LdapConfig}
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
-import fr.maif.utils.LoggerImplicits.BetterLogger
+import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
@@ -81,7 +81,7 @@ class UserControllerSpec()
         )
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.domain.json.UserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get mustBe user
     }
@@ -105,7 +105,7 @@ class UserControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.domain.json.UserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.name mustBe "test"
     }
@@ -210,7 +210,7 @@ class UserControllerSpec()
       )(tenant, session)
       respVerif.status mustBe 200
       val eventualUser =
-        fr.maif.domain.json.UserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.id mustBe user.id
       eventualUser.get.isDaikokuAdmin mustBe true
@@ -227,7 +227,7 @@ class UserControllerSpec()
       )(tenant, session)
       respRemove.status mustBe 200
       val eventualUser2 =
-        fr.maif.domain.json.UserFormat.reads(resp2.json)
+        fr.maif.daikoku.domain.json.UserFormat.reads(resp2.json)
       eventualUser2.isSuccess mustBe true
       eventualUser2.get.id mustBe user.id
       eventualUser2.get.isDaikokuAdmin mustBe false
@@ -296,7 +296,7 @@ class UserControllerSpec()
       val resp = httpJsonCallBlocking(path = s"/api/me")(tenant, session)
       resp.status mustBe 200
       val eventualUser =
-        fr.maif.domain.json.UserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.UserFormat.reads(resp.json)
       eventualUser.isSuccess mustBe true
       eventualUser.get.name mustBe "test"
 

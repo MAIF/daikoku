@@ -3,12 +3,12 @@ package fr.maif.daikoku
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
-import fr.maif.domain.*
-import fr.maif.domain.TeamPermission.*
-import fr.maif.domain.UsagePlan.*
-import fr.maif.login.AuthProvider
-import fr.maif.modules.DaikokuComponentsInstances
-import fr.maif.utils.IdGenerator
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.TeamPermission.*
+import fr.maif.daikoku.domain.UsagePlan.*
+import fr.maif.daikoku.login.AuthProvider
+import fr.maif.daikoku.modules.DaikokuComponentsInstances
+import fr.maif.daikoku.utils.IdGenerator
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
@@ -24,7 +24,7 @@ import play.api.libs.json.*
 import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
-import fr.maif.services.CmsPage
+import fr.maif.daikoku.services.CmsPage
 
 import java.io.File
 import java.nio.charset.StandardCharsets

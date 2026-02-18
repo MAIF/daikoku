@@ -3,7 +3,7 @@ package fr.maif.daikoku.usages
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer}
-import fr.maif.login.{AuthProvider, LdapConfig}
+import fr.maif.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -89,7 +89,7 @@ class BasicUsageSpec()
 //      resp.status mustBe 200
 //
 //      val result =
-//        fr.maif.domain.json.UserFormat.reads(resp.json)
+//        fr.maif.daikoku.domain.json.UserFormat.reads(resp.json)
 //
 //      result.isSuccess mustBe true
 //

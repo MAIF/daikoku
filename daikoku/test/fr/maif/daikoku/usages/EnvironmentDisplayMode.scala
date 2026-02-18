@@ -1,7 +1,7 @@
 package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.domain.{
+import fr.maif.daikoku.domain.{
   IntegrationProcess,
   Tenant,
   TenantDisplay,
@@ -9,7 +9,7 @@ import fr.maif.domain.{
   UsagePlanId
 }
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
-import fr.maif.utils.IdGenerator
+import fr.maif.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}

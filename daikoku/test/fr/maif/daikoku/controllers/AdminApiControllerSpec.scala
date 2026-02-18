@@ -1,17 +1,17 @@
 package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.domain.UsagePlan
-import fr.maif.domain._
+import fr.maif.daikoku.domain.UsagePlan
+import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
-import fr.maif.utils.IdGenerator
+import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WSResponse
-import fr.maif.services.CmsPage
+import fr.maif.daikoku.services.CmsPage
 
 import java.util.Base64
 import scala.concurrent.duration.DurationInt

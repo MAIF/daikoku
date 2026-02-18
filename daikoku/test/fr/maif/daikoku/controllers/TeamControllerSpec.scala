@@ -3,14 +3,14 @@ package fr.maif.daikoku.controllers
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.domain.NotificationAction.ApiSubscriptionAccept
-import fr.maif.domain.NotificationType.AcceptOrReject
-import fr.maif.domain.TeamPermission.{
+import fr.maif.daikoku.domain.NotificationAction.ApiSubscriptionAccept
+import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
+import fr.maif.daikoku.domain.TeamPermission.{
   Administrator,
   ApiEditor,
   TeamUser
 }
-import fr.maif.domain._
+import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
@@ -84,7 +84,7 @@ class TeamControllerSpec()
           session
         )
       val updatedTeam =
-        fr.maif.domain.json.TeamFormat.reads(respGet.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.name mustBe "bobby team"
 
@@ -136,7 +136,7 @@ class TeamControllerSpec()
         httpJsonCallBlocking("/api/me/teams/own")(tenant, userSession)
       respMyTeam.status mustBe 200
       val userTeam =
-        fr.maif.domain.json.TeamFormat.reads(respMyTeam.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       userTeam.isSuccess mustBe true
       val userTeamId = userTeam.get.id
 
@@ -179,7 +179,7 @@ class TeamControllerSpec()
           session
         )
       val updatedTeam =
-        fr.maif.domain.json.TeamFormat.reads(respGet.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.apisCreationPermission mustBe Some(true)
     }
@@ -325,7 +325,7 @@ class TeamControllerSpec()
           session
         )
       val updatedTeam =
-        fr.maif.domain.json.TeamFormat.reads(respGet.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.name mustBe "bobby team"
     }
@@ -416,7 +416,7 @@ class TeamControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.users.size mustBe 2
@@ -442,7 +442,7 @@ class TeamControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       val updatedUser =
@@ -492,7 +492,7 @@ class TeamControllerSpec()
         )
       resp.status mustBe 200
       val users =
-        fr.maif.domain.json.SeqUserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.SeqUserFormat.reads(resp.json)
       users.isSuccess mustBe true
       users.get.length mustBe 3
       users.get.map(_.id).toSet mustEqual Set(
@@ -523,7 +523,7 @@ class TeamControllerSpec()
         )(tenant, session)
       resp.status mustBe 200
 
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads(resp.json.as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.apiKeyVisibility mustBe Some(
@@ -549,7 +549,7 @@ class TeamControllerSpec()
           path = s"/api/teams/${teamOwnerId.value}/pending-members"
         )(tenant, session)
       respGet.status mustBe 200
-      var pendingUsers = fr.maif.domain.json.SeqUserFormat
+      var pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 0
@@ -566,7 +566,7 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/pending-members"
       )(tenant, session)
       respGet.status mustBe 200
-      pendingUsers = fr.maif.domain.json.SeqUserFormat
+      pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
       //
       pendingUsers.get.size mustBe 1
@@ -582,7 +582,7 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/pending-members"
       )(tenant, session)
       respGet.status mustBe 200
-      pendingUsers = fr.maif.domain.json.SeqUserFormat
+      pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 2
@@ -651,7 +651,7 @@ class TeamControllerSpec()
           session
         )
       val updatedTeam =
-        fr.maif.domain.json.TeamFormat.reads(respGet.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.name mustBe "bobby team"
     }
@@ -741,7 +741,7 @@ class TeamControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.users.size mustBe 2
@@ -767,7 +767,7 @@ class TeamControllerSpec()
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       val updatedUser =
@@ -821,7 +821,7 @@ class TeamControllerSpec()
         )
       resp.status mustBe 200
       val users =
-        fr.maif.domain.json.SeqUserFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.SeqUserFormat.reads(resp.json)
       users.isSuccess mustBe true
       users.get.length mustBe 3
       users.get.map(_.id).toSet mustEqual Set(
@@ -859,7 +859,7 @@ class TeamControllerSpec()
         )(tenant, session)
       resp.status mustBe 200
 
-      val updatedTeam = fr.maif.domain.json.TeamFormat
+      val updatedTeam = fr.maif.daikoku.domain.json.TeamFormat
         .reads(resp.json.as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.apiKeyVisibility mustBe Some(
@@ -884,7 +884,7 @@ class TeamControllerSpec()
           path = s"/api/teams/${teamOwnerId.value}/pending-members"
         )(tenant, session)
       respGet.status mustBe 200
-      var pendingUsers = fr.maif.domain.json.SeqUserFormat
+      var pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 0
@@ -901,7 +901,7 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/pending-members"
       )(tenant, session)
       respGet.status mustBe 200
-      pendingUsers = fr.maif.domain.json.SeqUserFormat
+      pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 //
       pendingUsers.get.size mustBe 1
@@ -917,7 +917,7 @@ class TeamControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/pending-members"
       )(tenant, session)
       respGet.status mustBe 200
-      pendingUsers = fr.maif.domain.json.SeqUserFormat
+      pendingUsers = fr.maif.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 2
@@ -943,7 +943,7 @@ class TeamControllerSpec()
           session
         )
       val updatedTeam =
-        fr.maif.domain.json.TeamFormat.reads(respGet.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.apisCreationPermission mustBe None
     }
@@ -1035,7 +1035,7 @@ class TeamControllerSpec()
         httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
       respMyTeam.status mustBe 200
       val myTeam =
-        fr.maif.domain.json.TeamFormat.reads(respMyTeam.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
@@ -1088,7 +1088,7 @@ class TeamControllerSpec()
       val respMyTeam =
         httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
       val myTeam =
-        fr.maif.domain.json.TeamFormat.reads(respMyTeam.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
@@ -1137,7 +1137,7 @@ class TeamControllerSpec()
       val respMyTeam =
         httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
       val myTeam =
-        fr.maif.domain.json.TeamFormat.reads(respMyTeam.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
@@ -1200,7 +1200,7 @@ class TeamControllerSpec()
       resp.status mustBe 200
 
       val team =
-        fr.maif.domain.json.TeamFormat.reads(resp.json)
+        fr.maif.daikoku.domain.json.TeamFormat.reads(resp.json)
       team.isSuccess mustBe true
       team.get.name mustBe teamOwner.name
 
