@@ -1,10 +1,10 @@
 package fr.maif.daikoku.services
 
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.daikoku.logger.AppLogger
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
-import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.{
+import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.domain.{
   Api,
   ApiState,
   ApiSubscription,
@@ -22,8 +22,8 @@ import fr.maif.otoroshi.daikoku.domain.{
   UsagePlanId,
   User
 }
-import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import play.api.i18n.MessagesApi

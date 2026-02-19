@@ -1,28 +1,24 @@
 package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
-import fr.maif.daikoku.domain.UsagePlanVisibility.Private
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.ApiService
+import fr.maif.daikoku.services.{ApiLifeCycleService, ApiService, MailService}
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.services.{ApiLifeCycleService, MailService}
+import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestBody
+import fr.maif.daikoku.storage.Desc
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -32,8 +28,11 @@ import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.i18n.I18nSupport
+import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
+import play.api.mvc.*
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -1010,7 +1009,7 @@ class ApiController(
             )
           )
           .map {
-            case None      => AppError.render(ApiNotFound)
+            case None      => AppError.render(AppError.ApiNotFound)
             case Some(api) => Ok(ApiFormat.writes(api))
           }
       }
@@ -2177,13 +2176,13 @@ class ApiController(
   private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
     subscription.parent match {
       case None =>
-        EitherT.leftT[Future, JsObject](MissingParentSubscription).value
+        EitherT.leftT[Future, JsObject](AppError.MissingParentSubscription).value
       case Some(parentSubscriptionId) =>
         plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
           tenant.otoroshiSettings.find(_.id == id)
         } match {
           case None =>
-            FastFuture.successful(Left(OtoroshiSettingsNotFound))
+            FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
           case Some(otoroshiSettings) =>
             implicit val o: OtoroshiSettings = otoroshiSettings
             (for {
@@ -2354,7 +2353,7 @@ class ApiController(
       delete <- apiService
           .deleteApiKey(tenant, subscription, plan)
           .flatMap(delete => {
-            if (plan.visibility == Private) {
+            if (plan.visibility == UsagePlanVisibility.Private) {
               env.dataStore.usagePlanRepo
                 .forTenant(tenant)
                 .save(plan.removeAuthorizedTeam(team.id))
@@ -3949,7 +3948,7 @@ class ApiController(
                     )
                     .flatMap {
                       case None =>
-                        FastFuture.successful(AppError.render(ApiNotFound))
+                        FastFuture.successful(AppError.render(AppError.ApiNotFound))
                       case Some(api) =>
                         env.dataStore.apiIssueRepo
                           .forTenant(ctx.tenant.id)
@@ -4323,7 +4322,7 @@ class ApiController(
                 case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
                   AppError.ForbiddenAction.renderF()
                 case Some(api) if api.currentVersion.value == newVersion =>
-                  ApiVersionConflict.renderF()
+                  AppError.ApiVersionConflict.renderF()
                 case Some(api) =>
                   apiRepo
                     .exists(
@@ -4570,7 +4569,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findByVersion(ctx.tenant, apiId, version)
           .flatMap {
-            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case None => FastFuture.successful(AppError.render(AppError.ApiNotFound))
             case Some(api) =>
               ctx.setCtxValue("api.name", api.name)
 
@@ -4640,13 +4639,13 @@ class ApiController(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
-            AppError.render(TeamNotFound)
+            AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(apiId),
-            AppError.render(ApiNotFound)
+            AppError.render(AppError.ApiNotFound)
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),

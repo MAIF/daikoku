@@ -7,15 +7,18 @@ import fr.maif.daikoku.controllers.AppError.OtoroshiError
 import fr.maif.daikoku.audit.ElasticReadsAnalytics
 import fr.maif.daikoku.audit.ElasticAnalyticsConfig
 import fr.maif.daikoku.domain.json.ActualOtoroshiApiKeyFormat
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import play.api.libs.json._
+import org.apache.pekko.stream.scaladsl.{Source, Sink}
+import org.apache.pekko.util.ByteString
+import play.api.libs.json.*
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc._
+import play.api.libs.ws.WSBodyWritables.writeableOf_String
+import play.api.mvc.*
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
