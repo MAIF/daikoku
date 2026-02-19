@@ -1,10 +1,10 @@
 package fr.maif.daikoku.services
 
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.{Team, Tenant, User, UserId}
-import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.Translator
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import fr.maif.daikoku.domain.TeamPermission.Administrator
+import fr.maif.daikoku.domain.{Team, Tenant, User, UserId}
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.utils.Translator
+import fr.maif.daikoku.utils.future.EnhancedObject
 import play.api.i18n.MessagesApi
 import play.api.libs.json.{JsArray, JsValue, Json}
 

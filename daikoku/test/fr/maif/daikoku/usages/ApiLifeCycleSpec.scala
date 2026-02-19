@@ -3,13 +3,12 @@ package fr.maif.daikoku.usages
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain.*
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.TeamPermission.Administrator
+import fr.maif.daikoku.login.AuthProvider
+import fr.maif.daikoku.testUtils.DaikokuSpecHelper
+import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
-import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -28,7 +27,7 @@ class ApiLifeCycleSpec(
   val pwd: String = System.getProperty("user.dir")
 
   // Container Otoroshi
-  override val container = GenericContainer(
+  override val container: GenericContainer = GenericContainer(
     "maif/otoroshi",
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(
