@@ -1,23 +1,23 @@
-package fr.maif.otoroshi.daikoku.tests
+package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import fr.maif.otoroshi.daikoku.domain.*
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.BeforeAndAfter
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ApiLifeCycleSpec(
 ) extends PlaySpec

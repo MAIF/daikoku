@@ -1,4 +1,4 @@
-package fr.maif.otoroshi.daikoku.services
+package fr.maif.daikoku.services
 
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import cats.data.EitherT
