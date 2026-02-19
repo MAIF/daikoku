@@ -2,12 +2,7 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuUnauthenticatedAction
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.controllers.AppError.*
@@ -42,6 +37,7 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc.*
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -977,7 +973,7 @@ class ApiController(
             )
           )
           .map {
-            case None      => AppError.render(ApiNotFound)
+            case None      => AppError.render(AppError.ApiNotFound)
             case Some(api) => Ok(ApiFormat.writes(api))
           }
       }
@@ -2155,13 +2151,13 @@ class ApiController(
   private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
     subscription.parent match {
       case None =>
-        EitherT.leftT[Future, JsObject](MissingParentSubscription).value
+        EitherT.leftT[Future, JsObject](AppError.MissingParentSubscription).value
       case Some(parentSubscriptionId) =>
         plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
           tenant.otoroshiSettings.find(_.id == id)
         } match {
           case None =>
-            FastFuture.successful(Left(OtoroshiSettingsNotFound))
+            FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
           case Some(otoroshiSettings) =>
             implicit val o: OtoroshiSettings = otoroshiSettings
             import cats.implicits.*
@@ -3821,7 +3817,7 @@ class ApiController(
                     )
                     .flatMap {
                       case None =>
-                        FastFuture.successful(AppError.render(ApiNotFound))
+                        FastFuture.successful(AppError.render(AppError.ApiNotFound))
                       case Some(api) =>
                         env.dataStore.apiIssueRepo
                           .forTenant(ctx.tenant.id)
@@ -4195,7 +4191,7 @@ class ApiController(
                 case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
                   AppError.ForbiddenAction.renderF()
                 case Some(api) if api.currentVersion.value == newVersion =>
-                  ApiVersionConflict.renderF()
+                  AppError.ApiVersionConflict.renderF()
                 case Some(api) =>
                   apiRepo
                     .exists(
@@ -4442,7 +4438,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findByVersion(ctx.tenant, apiId, version)
           .flatMap {
-            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case None => FastFuture.successful(AppError.render(AppError.ApiNotFound))
             case Some(api) =>
               ctx.setCtxValue("api.name", api.name)
 
@@ -4512,13 +4508,13 @@ class ApiController(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
-            AppError.render(TeamNotFound)
+            AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(apiId),
-            AppError.render(ApiNotFound)
+            AppError.render(AppError.ApiNotFound)
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),
