@@ -4,10 +4,10 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
 import { useMatch, useNavigate } from 'react-router-dom';
-import Select, { components, OptionProps, ValueContainerProps } from 'react-select';
+import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
 
@@ -26,7 +26,7 @@ import {
   ISubscriptionDemand,
   ITeamSimple,
   IThirdPartyPaymentSettings,
-  IUsagePlan,
+  IUsagePlan
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -450,7 +450,7 @@ const CustomMetadataInput = (props: {
 
 const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan: (plan: IUsagePlan) => void }) => {
   const { translate } = useContext(I18nContext);
-  const { tenant } = useContext(GlobalContext);
+  useContext(GlobalContext);
 
   const [quotasDisplayed, setQuotasDisplayed] = useState(!!props.plan.maxPerDay)
 
@@ -1472,15 +1472,6 @@ type ApiPricingProps = {
   }) => Promise<void>;
 };
 
-type UsagePlanFormProps = {
-  plan: IUsagePlan,
-  creation: boolean,
-  ownerTeam: ITeamSimple,
-  api: IApi,
-  plans: Array<IUsagePlan>
-  onSubmit: (plan: IUsagePlan) => void
-}
-
 type ToggleButtonProps = {
   action: (value: boolean) => void
   value: boolean
@@ -1520,9 +1511,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
   });
 
   const match = useMatch('/:team/:api/:version/pricing/:env/:tab');
-
-  const maybeTab = match?.params.tab;
-  const maybeEnv = match?.params.env;
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['plans'] });

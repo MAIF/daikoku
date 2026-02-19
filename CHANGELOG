@@ -881,3 +881,9 @@ We'd like to thank all the contributors who worked on this release!
 - It is not possible to delete a key from your personal team [#946](https://github.com/MAIF/daikoku/issues/946)
 - Wrong content in dashboard button Afficher plus de notification [#942](https://github.com/MAIF/daikoku/issues/942)
 
+## [v18.7.1] - 2026-02-09
+
+## :beetle: Bug Fixes
+
+- Tenant admin couldn't manipulate entirely teams [#964](https://github.com/MAIF/daikoku/issues/964)
+

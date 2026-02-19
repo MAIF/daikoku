@@ -1,0 +1,338 @@
+package fr.maif.daikoku.domain
+
+import cats.syntax.option._
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.utils.StringImplicits.BetterString
+import org.joda.time.DateTime
+import play.api.libs.json._
+
+object Team {
+  val Default: TeamId = TeamId("none")
+}
+
+sealed trait TeamType {
+  def name: String
+}
+
+object TeamType {
+  case object Personal     extends TeamType {
+    def name: String = "Personal"
+  }
+  case object Organization extends TeamType {
+    def name: String = "Organization"
+  }
+  case object Admin        extends TeamType {
+    def name: String = "Admin"
+  }
+  val values: Seq[TeamType] =
+    Seq(Personal, Organization, Admin)
+  def apply(name: String): Option[TeamType] =
+    name match {
+      case "Organization" => Organization.some
+      case "Personal"     => Personal.some
+      case "Admin"        => Admin.some
+      case _              => None
+    }
+}
+
+sealed trait TeamPermission {
+  def name: String
+}
+
+object TeamPermission {
+  case object Administrator extends TeamPermission {
+    def name: String = "Administrator"
+  }
+  case object ApiEditor     extends TeamPermission {
+    def name: String = "ApiEditor"
+  }
+  case object TeamUser      extends TeamPermission {
+    def name: String = "User"
+  }
+  val values: Seq[TeamPermission] =
+    Seq(Administrator, ApiEditor, TeamUser)
+  def apply(name: String): Option[TeamPermission] =
+    name match {
+      case "Administrator" => Administrator.some
+      case "ApiEditor"     => ApiEditor.some
+      case "User"          => TeamUser.some
+      case _               => None
+    }
+}
+
+case class UserWithPermission(
+    userId: UserId,
+    teamPermission: TeamPermission
+) extends CanJson[UserWithPermission] {
+  override def asJson: JsValue = json.UserWithPermissionFormat.writes(this)
+}
+
+sealed trait TeamApiKeyVisibility extends CanJson[TeamApiKeyVisibility] {
+  def name: String
+  def asJson: JsValue = JsString(name)
+}
+
+object TeamApiKeyVisibility {
+  case object Administrator extends TeamApiKeyVisibility {
+    def name: String = "Administrator"
+  }
+  case object ApiEditor     extends TeamApiKeyVisibility {
+    def name: String = "ApiEditor"
+  }
+  case object User          extends TeamApiKeyVisibility {
+    def name: String = "User"
+  }
+  val values: Seq[TeamApiKeyVisibility] =
+    Seq(Administrator, ApiEditor, User)
+  def apply(name: String): Option[TeamApiKeyVisibility] =
+    name.toLowerCase() match {
+      case "administrator" => Administrator.some
+      case "apieditor"     => ApiEditor.some
+      case "user"          => User.some
+      case _               => None
+    }
+}
+
+case class TeamAuthorizedEntities(
+    otoroshiSettingsId: OtoroshiSettingsId,
+    authorizedEntities: AuthorizedEntities
+)
+case class Team(
+    id: TeamId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    `type`: TeamType,
+    name: String,
+    description: String,
+    contact: String,
+    avatar: Option[String] = Some("/assets/images/daikoku.svg"),
+    users: Set[UserWithPermission] = Set.empty,
+    authorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None,
+    apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
+      TeamApiKeyVisibility.User
+    ),
+    metadata: Map[String, String] = Map.empty,
+    apisCreationPermission: Option[Boolean] = None,
+    verified: Boolean = false
+) extends CanJson[User] {
+  override def asJson: JsValue                 = json.TeamFormat.writes(this)
+  def humanReadableId                          = name.urlPathSegmentSanitized
+  def asSimpleJson(implicit env: Env): JsValue = toUiPayload()
+  def toUiPayload()(implicit env: Env): JsValue = {
+    Json.obj(
+      "_id"                        -> id.value,
+      "_humanReadableId"           -> humanReadableId,
+      "_tenant"                    -> json.TenantIdFormat.writes(tenant),
+      "tenant"                     -> json.TenantIdFormat.writes(tenant),
+      "type"                       -> json.TeamTypeFormat.writes(`type`),
+      "name"                       -> name,
+      "description"                -> description,
+      "avatar"                     -> JsString(avatar.getOrElse("/assets/images/daikoku.svg")),
+      "contact"                    -> contact,
+      "users"                      -> json.SetUserWithPermissionFormat.writes(users),
+      "apiKeyVisibility"           -> apiKeyVisibility
+        .getOrElse(env.config.defaultApiKeyVisibility)
+        .asJson,
+      "apisCreationPermission"     -> apisCreationPermission
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "verified"                   -> verified,
+      "authorizedOtoroshiEntities" -> authorizedOtoroshiEntities
+        .map(json.SeqTeamAuthorizedEntitiesFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
+  def includeUser(userId: UserId): Boolean = {
+    users.exists(_.userId == userId)
+  }
+  def admins(): Set[UserId]                    =
+    users
+      .filter(u => u.teamPermission == TeamPermission.Administrator)
+      .map(_.userId)
+}
+
+// ############# Notifications ###########
+
+sealed trait NotificationStatus {
+  def status: String
+}
+
+case class EmailVerification(
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    tenant: TenantId,
+    team: TeamId,
+    creationDate: DateTime,
+    validUntil: DateTime
+) extends CanJson[EmailVerification] {
+  override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
+}
+object NotificationStatus {
+  case class Pending()                                 extends NotificationStatus with Product with Serializable {
+    def status: String = "Pending"
+  }
+  case class Accepted(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable {
+    def status: String = "Accepted"
+
+  }
+  case class Rejected(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable {
+    def status: String = "Rejected"
+
+  }
+}
+
+sealed trait NotificationAction
+sealed trait OtoroshiSyncNotificationAction extends NotificationAction {
+  def message: String
+  def json: JsValue
+}
+
+object NotificationAction {
+  case class ApiAccess(api: ApiId, team: TeamId) extends NotificationAction
+
+  case class TeamInvitation(team: TeamId, user: UserId) extends NotificationAction
+
+  case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId) extends NotificationAction
+
+  case class ApiSubscriptionReject(
+      message: Option[String],
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId
+  ) extends NotificationAction
+
+  case class ApiSubscriptionDemand(
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId,
+      demand: DemandId,
+      step: SubscriptionDemandStepId,
+      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      motivation: Option[String]
+  ) extends NotificationAction
+
+  case class AccountCreationAttempt(
+      demand: DemandId,
+      step: SubscriptionDemandStepId,
+      motivation: String
+  ) extends NotificationAction
+
+  case class ApiSubscriptionTransferSuccess(
+      subscription: ApiSubscriptionId
+  ) extends NotificationAction
+
+  case class OtoroshiSyncSubscriptionError(
+      subscription: ApiSubscription,
+      message: String
+  )                                                                   extends OtoroshiSyncNotificationAction {
+    def json: JsValue =
+      Json.obj(
+        "errType"      -> "OtoroshiSyncSubscriptionError",
+        "errMessage"   -> message,
+        "subscription" -> subscription.asJson
+      )
+  }
+  case class OtoroshiSyncApiError(api: Api, message: String)          extends OtoroshiSyncNotificationAction {
+    def json: JsValue =
+      Json.obj(
+        "errType"    -> "OtoroshiSyncApiError",
+        "errMessage" -> message,
+        "api"        -> api.asJson
+      )
+  }
+  case class ApiKeyDeletionInformation(api: String, clientId: String) extends NotificationAction
+
+  case class ApiKeyRotationInProgress(
+      clientId: String,
+      api: String,
+      plan: String
+  ) extends NotificationAction
+
+  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String) extends NotificationAction
+
+  case class ApiKeyRefresh(subscription: String, api: String, plan: String) extends NotificationAction
+
+  case class NewPostPublished(teamId: String, apiName: String) extends NotificationAction
+
+  case class NewIssueOpen(teamId: String, apiName: String, linkTo: String) extends NotificationAction
+
+  case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String) extends NotificationAction
+
+  case class ApiKeyDeletionInformationV2(
+      api: ApiId,
+      clientId: String,
+      subscription: ApiSubscriptionId
+  ) extends NotificationAction
+
+  case class ApiKeyRotationInProgressV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
+  case class ApiKeyRotationEndedV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
+  case class ApiKeyRefreshV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      message: Option[String] = None
+  ) extends NotificationAction
+
+  case class NewPostPublishedV2(api: ApiId, post: ApiPostId) extends NotificationAction
+
+  case class NewIssueOpenV2(api: ApiId, issue: ApiIssueId) extends NotificationAction
+
+  case class NewCommentOnIssueV2(api: ApiId, issue: ApiIssueId, user: UserId) extends NotificationAction
+
+  case class TransferApiOwnership(team: TeamId, api: ApiId) extends NotificationAction
+
+  case class CheckoutForSubscription(
+      demand: DemandId,
+      api: ApiId,
+      plan: UsagePlanId,
+      step: SubscriptionDemandStepId
+  ) extends NotificationAction
+
+  case class ApiDepreciationWarning(api: ApiId) extends NotificationAction
+
+  case class ApiBlockingWarning(api: ApiId, subscription: ApiSubscriptionId) extends NotificationAction
+}
+
+sealed trait NotificationType {
+  def value: String
+}
+
+object NotificationType {
+  case object AcceptOrReject extends NotificationType {
+    override def value: String = "AcceptOrReject"
+  }
+  case object AcceptOnly     extends NotificationType {
+    override def value: String = "AcceptOnly"
+  }
+}
+
+case class NotificationSender(name: String, email: String, id: Option[UserId]) extends CanJson[NotificationSender] {
+  override def asJson: JsValue = json.NotificationSenderFormat.writes(this)
+}
+
+case class Notification(
+    id: NotificationId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    team: Option[TeamId],
+    sender: NotificationSender,
+    date: DateTime = DateTime.now(),
+    notificationType: NotificationType = NotificationType.AcceptOrReject,
+    status: NotificationStatus = NotificationStatus.Pending(),
+    action: NotificationAction
+) extends CanJson[Notification] {
+  override def asJson: JsValue = json.NotificationFormat.writes(this)
+}
