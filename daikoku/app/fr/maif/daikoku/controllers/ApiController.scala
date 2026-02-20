@@ -362,13 +362,13 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.asJson))
-          parentSubs <-
-            env.dataStore.apiSubscriptionRepo
+          keyring <-
+            env.dataStore.keyringRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
                 Json.obj(
                   "_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+                    "$in" -> subscriptions.flatMap(s => s.keyring).map(_.value)
                   )
                 )
               )
@@ -464,7 +464,7 @@ class ApiController(
               )
             )
           ) ++ Json.obj(
-            "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+            "subscriptions" -> JsArray(subscriptions.map(_.asSafeJson))
           )
           ctx.setCtxValue("api.name", api.name)
           ctx.setCtxValue("team.name", team.name)
@@ -541,7 +541,7 @@ class ApiController(
           pendingRequests.map(_.asJson)
         )
       ) ++ Json.obj(
-        "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+        "subscriptions" -> JsArray(subscriptions.map(_.asSafeJson))
       )
       ctx.setCtxValue("api.name", api.name)
 
@@ -5210,17 +5210,17 @@ class ApiController(
             paymentSettingsId
           )
 
-          ratedPlanwithSettings = ratedPlan.isPaymentDefined match {
-            case true =>
-              ratedPlan.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(
-                  ValidationStep.Payment(
-                    id = IdGenerator.token(32),
-                    thirdPartyPaymentSettingsId =
-                      paymentSettings.thirdPartyPaymentSettingsId
-                  )
+          ratedPlanwithSettings = if (ratedPlan.isPaymentDefined) {
+            ratedPlan.copy(paymentSettings = paymentSettings.some)
+              .addSubscriptionStep(
+                ValidationStep.Payment(
+                  id = IdGenerator.token(32),
+                  thirdPartyPaymentSettingsId =
+                    paymentSettings.thirdPartyPaymentSettingsId
                 )
-            case false => ratedPlan
+              )
+          } else {
+            ratedPlan
           }
 
           _ <- EitherT.liftF(

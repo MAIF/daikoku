@@ -560,6 +560,8 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 trait EmailVerificationRepo
     extends TenantCapableRepo[EmailVerification, DatastoreId]
 
+trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -618,6 +620,8 @@ trait DataStore {
   def reportsInfoRepo: ReportsInfoRepo
 
   def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo
+
+  def keyringRepo: KeyringRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(implicit
       ec: ExecutionContext,

@@ -5,16 +5,12 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.*
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
+import fr.maif.daikoku.controllers.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.daikoku.domain.NotificationAction.*
-import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
+import fr.maif.daikoku.domain.json.{ApiKeyConfigurationFormat, TenantIdFormat, UserIdFormat}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration}
-import fr.maif.daikoku.storage.{DataStore, TenantCapableRepo, Repo}
+import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.graphql.RequiresTenantAdmin
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -1484,6 +1480,64 @@ object SchemaDefinition {
       )
     )
 
+    lazy val ApiKeyConfigurationType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyConfiguration] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyConfiguration](
+        "ApiKeyConfigurationType",
+        "A object representing an apikey configuration",
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyConfiguration](
+          //    validUntil: Option[DateTime] = None,
+          //    enabled: Boolean = true,
+          Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
+          Field(
+            "bearerToken",
+            OptionType(StringType),
+            resolve = _.value.bearerToken
+          ),
+          Field("enabled", BooleanType, resolve = _.value.enabled),
+          Field(
+            "rotation",
+            OptionType(ApiSubscriptionRotationType),
+            resolve = _.value.rotation
+          ),
+          Field(
+            "integrationToken",
+            StringType,
+            resolve = _.value.integrationToken
+          ),
+          Field(
+            "customMetadata",
+            OptionType(JsonType),
+            resolve = _.value.customMetadata
+          ),
+          Field("metadata", OptionType(JsonType), resolve = _.value.metadata),
+          Field(
+            "tags",
+            OptionType(ListType(StringType)),
+            resolve = _.value.tags
+          ),
+          Field(
+            "customMaxPerSecond",
+            OptionType(LongType),
+            resolve = _.value.customMaxPerSecond
+          ),
+          Field(
+            "customMaxPerDay",
+            OptionType(LongType),
+            resolve = _.value.customMaxPerDay
+          ),
+          Field(
+            "customMaxPerMonth",
+            OptionType(LongType),
+            resolve = _.value.customMaxPerMonth
+          ),
+          Field(
+            "customReadOnly",
+            OptionType(BooleanType),
+            resolve = _.value.customReadOnly
+          ),
+        )
+      )
+
     lazy val ApiSubscriptionType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiSubscription
@@ -1499,12 +1553,6 @@ object SchemaDefinition {
             resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
-          Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
-          Field(
-            "bearerToken",
-            OptionType(StringType),
-            resolve = _.value.bearerToken
-          ),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -1550,57 +1598,20 @@ object SchemaDefinition {
             OptionType(StringType),
             resolve = _.value.adminCustomName
           ),
-          Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
-            "rotation",
-            OptionType(ApiSubscriptionRotationType),
-            resolve = _.value.rotation
-          ),
-          Field(
-            "integrationToken",
-            StringType,
-            resolve = _.value.integrationToken
-          ),
-          Field(
-            "customMetadata",
-            OptionType(JsonType),
-            resolve = _.value.customMetadata
-          ),
-          Field("metadata", OptionType(JsonType), resolve = _.value.metadata),
-          Field(
-            "tags",
-            OptionType(ListType(StringType)),
-            resolve = _.value.tags
-          ),
-          Field(
-            "customMaxPerSecond",
-            OptionType(LongType),
-            resolve = _.value.customMaxPerSecond
-          ),
-          Field(
-            "customMaxPerDay",
-            OptionType(LongType),
-            resolve = _.value.customMaxPerDay
-          ),
-          Field(
-            "customMaxPerMonth",
-            OptionType(LongType),
-            resolve = _.value.customMaxPerMonth
-          ),
-          Field(
-            "customReadOnly",
-            OptionType(BooleanType),
-            resolve = _.value.customReadOnly
+            "apikeyConfiguration",
+            ApiKeyConfigurationType,
+            resolve = _.value.apikeyConfiguration
           ),
           Field(
             "parent",
             OptionType(ApiSubscriptionType),
             resolve = ctx =>
-              ctx.value.parent match {
-                case Some(parent) =>
-                  ctx.ctx._1.apiSubscriptionRepo
+              ctx.value.keyring match {
+                case Some(k) =>
+                  ctx.ctx._1.keyringRepo
                     .forTenant(ctx.ctx._2.tenant)
-                    .findById(parent)
+                    .findById(k)
                 case None         => None
               }
           ),
@@ -1612,36 +1623,94 @@ object SchemaDefinition {
         )
     )
 
-    def getOtoroshiUsage(
-        subscription: ApiSubscription
-    )(implicit tenant: Tenant): Future[Option[DateTime]] = {
-
-      val maybeLastUsage = for {
-        plan                                             <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
-                                                              env.dataStore.usagePlanRepo
-                                                                .forTenant(tenant)
-                                                                .findById(subscription.plan),
-                                                              None
-                                                            )
-        otoroshi                                         <-
-          EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
-            tenant.otoroshiSettings.find(oto => plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)),
-            None
+    lazy val KeyringType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      Keyring
+    ] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+      "KeyringType",
+      "A keyring that groups api subscriptions together",
+      () =>
+        fields[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+          Field("_id", StringType, resolve = _.value.id.value),
+          Field(
+            "tenant",
+            OptionType(TenantType),
+            resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
+          ),
+          Field("deleted", BooleanType, resolve = _.value.deleted),
+          Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
+          Field(
+            "team",
+            OptionType(TeamObjectType),
+            resolve = ctx =>
+              ctx.ctx._1.teamRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findById(ctx.value.team)
+          ),
+          Field(
+            "by",
+            OptionType(UserType),
+            resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.by)
+          ),
+          Field("customName", OptionType(StringType), resolve = _.value.customName),
+          Field("adminCustomName", OptionType(StringType), resolve = _.value.adminCustomName),
+          Field(
+            "apikeyConfiguration",
+            ApiKeyConfigurationType,
+            resolve = _.value.apikeyConfiguration
+          ),
+          Field(
+            "otoroshiSettings",
+            StringType,
+            resolve = _.value.otoroshiSettings.value
+          ),
+          Field(
+            "lastUsage",
+            OptionType(DateTimeUnitype),
+            resolve = ctx => getOtoroshiUsage(ctx.value)(ctx.ctx._2.tenant)
+          ),
+          Field(
+            "subscriptions",
+            ListType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .find(Json.obj("keyring" -> ctx.value.id.value))
           )
-        value: EitherT[Future, Option[DateTime], JsArray] =
-          otoroshiClient
-            .getSubscriptionLastUsage(Seq(subscription))(
-              otoroshi,
-              tenant
-            )
-            .leftMap(_ => None)
-        usages                                           <- value
-      } yield {
-        usages.value.headOption
-      }
+        )
+    )
+
+
+    def getOtoroshiUsage(
+                          item: HasApiKeyConfig
+                        )(implicit tenant: Tenant): Future[Option[DateTime]] = {
+
+      val maybeLastUsage: EitherT[Future, Option[DateTime], Option[JsValue]] = for {
+        otoroshiSettingId <- item match {
+          case s: ApiSubscription => EitherT.fromOptionF[Future, Option[DateTime], OtoroshiSettingsId](
+            env.dataStore.usagePlanRepo
+              .forTenant(tenant)
+              .findById(s.plan)
+              .map(s => s.flatMap(_.otoroshiTarget).map(_.otoroshiSettings)),
+            Option.empty[DateTime]
+          )
+          case k: Keyring => EitherT.pure[Future, Option[DateTime]](k.otoroshiSettings)
+        }
+        otoroshi <-
+          EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
+            tenant.otoroshiSettings.find(_.id == otoroshiSettingId),
+            Option.empty[DateTime]
+          )
+        usages <- otoroshiClient
+          .getSubscriptionLastUsage(Seq(item))(
+            otoroshi,
+            tenant
+          )
+          .leftMap(_ => Option.empty[DateTime])
+      } yield usages.value.headOption
 
       maybeLastUsage
-        .map(_.map(r => (r \ "date").as(json.DateTimeFormat)))
+        .map(v => v.map(r => (r \ "date").as(json.DateTimeFormat)))
         .merge
     }
 

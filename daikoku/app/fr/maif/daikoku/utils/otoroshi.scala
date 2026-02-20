@@ -475,7 +475,7 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def getSubscriptionLastUsage(subscriptions: Seq[ApiSubscription])(implicit
+  def getSubscriptionLastUsage(subscriptions: Seq[HasApiKeyConfig])(implicit
       otoroshiSettings: OtoroshiSettings,
       tenant: Tenant
   ): EitherT[Future, JsArray, JsArray] = {
@@ -490,7 +490,7 @@ class OtoroshiClient(env: Env) {
                     Json.obj(
                       "terms" -> Json.obj(
                         "identity.identity.keyword" -> JsArray(
-                          subscriptions.map(_.apiKey.clientId).map(JsString.apply)
+                          subscriptions.map(_.apikeyConfiguration.apiKey.clientId).map(JsString.apply)
                         )
                       )
                     )
@@ -537,7 +537,7 @@ class OtoroshiClient(env: Env) {
                 "clientName"   -> key,
                 "date"         -> date,
                 "subscription" -> subscriptions
-                  .find(_.apiKey.clientId == key)
+                  .find(_.apikeyConfiguration.apiKey.clientId == key)
                   .map(_.id.asJson)
                   .getOrElse(JsNull)
                   .as[JsValue]

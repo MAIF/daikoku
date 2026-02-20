@@ -1,8 +1,8 @@
 package fr.maif.daikoku.storage.drivers.postgres
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain._
-import fr.maif.daikoku.domain.json._
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import io.vertx.core.json.JsonObject
@@ -12,11 +12,11 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.{Configuration, Logger}
 import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.storage._
-import fr.maif.daikoku.storage.drivers.postgres.Helper._
+import fr.maif.daikoku.storage.*
+import fr.maif.daikoku.storage.drivers.postgres.Helper.*
 import fr.maif.daikoku.storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.collection.mutable.ListBuffer
@@ -81,6 +81,23 @@ case class PostgresTenantCapableApiSubscriptionRepo(
 
   override def repo(): PostgresRepo[ApiSubscription, ApiSubscriptionId] =
     _repo()
+}
+
+case class PostgresTenantCapableKeyringRepo(
+                                             _repo: () => PostgresRepo[Keyring, KeyringId],
+                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[
+                                               Keyring,
+                                               KeyringId
+                                             ]
+                                           ) extends PostgresTenantCapableRepo[Keyring, KeyringId]
+  with KeyringRepo {
+  override def repo(): PostgresRepo[Keyring, KeyringId] =
+    _repo()
+
+  override def tenantRepo(
+                           tenant: TenantId
+                         ): PostgresTenantAwareRepo[Keyring, KeyringId] =
+    _tenantRepo(tenant)
 }
 
 case class PostgresTenantCapableApiDocumentationPageRepo(
@@ -429,7 +446,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "usage_plans" -> true,
     "assets" -> true,
     "reports_info" -> true,
-    "api_subscription_transfers" -> true
+    "api_subscription_transfers" -> true,
+    "keyrings" -> true
   )
 
   private lazy val reactivePg =
@@ -452,6 +470,13 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       () => new PostgresApiSubscriptionRepo(env, reactivePg),
       t => new PostgresTenantApiSubscriptionRepo(env, reactivePg, t)
     )
+
+  private val _keyringRepo: KeyringRepo =
+    PostgresTenantCapableKeyringRepo(
+      () => new PostgresKeyringRepo(env, reactivePg),
+      t => new PostgresTenantKeyringRepo(env, reactivePg, t)
+    )
+
   private val _apiDocumentationPageRepo: ApiDocumentationPageRepo =
     PostgresTenantCapableApiDocumentationPageRepo(
       () => new PostgresApiDocumentationPageRepo(env, reactivePg),
@@ -558,6 +583,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   override def apiRepo: ApiRepo = _apiRepo
 
   override def apiSubscriptionRepo: ApiSubscriptionRepo = _apiSubscriptionRepo
+  override def keyringRepo: KeyringRepo = _keyringRepo
 
   override def apiDocumentationPageRepo: ApiDocumentationPageRepo =
     _apiDocumentationPageRepo
@@ -1188,6 +1214,22 @@ class PostgresTenantApiSubscriptionRepo(
   override def extractId(value: ApiSubscription): String = value.id.value
 }
 
+class PostgresTenantKeyringRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Keyring, KeyringId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+  override def tableName: String = "keyrings"
+
+  override def format: Format[Keyring] = json.KeyringFormat
+
+  override def extractId(value: Keyring): String = value.id.value
+}
+
 class PostgresTenantApiDocumentationPageRepo(
     env: Env,
     reactivePg: ReactivePg,
@@ -1434,6 +1476,15 @@ class PostgresApiSubscriptionRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
 
   override def extractId(value: ApiSubscription): String = value.id.value
+}
+
+class PostgresKeyringRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Keyring, KeyringId](env, reactivePg) {
+  override def tableName: String = "keyrings"
+
+  override def format: Format[Keyring] = json.KeyringFormat
+
+  override def extractId(value: Keyring): String = value.id.value
 }
 
 class PostgresApiDocumentationPageRepo(env: Env, reactivePg: ReactivePg)

@@ -343,6 +343,16 @@ object json {
 
     override def writes(o: ApiSubscriptionId): JsValue = JsString(o.value)
   }
+  val KeyringIdFormat = new Format[KeyringId] {
+    override def reads(json: JsValue): JsResult[KeyringId] =
+      Try {
+        JsSuccess(KeyringId(json.as[String]))
+      } recover { case e =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: KeyringId): JsValue = JsString(o.value)
+  }
   val ApiDocumentationIdFormat = new Format[ApiDocumentationId] {
     override def reads(json: JsValue): JsResult[ApiDocumentationId] =
       Try {
@@ -2307,6 +2317,64 @@ object json {
       )
   }
 
+  val ApiKeyConfigurationFormat = new Format[ApiKeyConfiguration] {
+    override def reads(json: JsValue): JsResult[ApiKeyConfiguration] = Try {
+      JsSuccess(
+        ApiKeyConfiguration(
+          apiKey = (json \ "apikey").as(OtoroshiApiKeyFormat),
+          integrationToken = (json \ "integrationToken").as[String],
+          enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+          rotation =
+            (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
+          bearerToken = (json \ "bearerToken").asOpt[String],
+          metadata = (json \ "metadata").asOpt[JsObject],
+          customMetadata = (json \ "customMetadata").asOpt[JsObject],
+          tags = (json \ "tags").asOpt[Set[String]],
+          customMaxPerSecond =
+            (json \ "customMaxPerSecond").asOpt(LongFormat),
+          customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
+          customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
+          customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
+        )
+      )
+    } recover { case e =>
+      AppLogger.error(e.getMessage, e)
+      JsError(e.getMessage)
+    } get
+
+    override def writes(o: ApiKeyConfiguration): JsValue = Json.obj(
+      "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
+      "enabled" -> o.enabled,
+      "rotation" -> o.rotation
+        .map(ApiSubscriptionyRotationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "integrationToken" -> o.integrationToken,
+      "bearerToken" -> o.bearerToken,
+      "metadata" -> o.metadata,
+      "customMetadata" -> o.customMetadata,
+      "tags" -> JsArray(
+        o.tags.getOrElse(Set.empty).toSeq.map(JsString.apply)
+      ),
+      "customMaxPerSecond" -> o.customMaxPerSecond
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerDay" -> o.customMaxPerDay
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerMonth" -> o.customMaxPerMonth
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customReadOnly" -> o.customReadOnly
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+    )
+  }
+
   val ApiSubscriptionFormat = new Format[ApiSubscription] {
     override def reads(json: JsValue): JsResult[ApiSubscription] =
       Try {
@@ -2315,7 +2383,6 @@ object json {
             id = (json \ "_id").as(ApiSubscriptionIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            apiKey = (json \ "apiKey").as(OtoroshiApiKeyFormat),
             plan = (json \ "plan").as(UsagePlanIdFormat),
             team = (json \ "team").as(TeamIdFormat),
             api = (json \ "api").as(ApiIdFormat),
@@ -2324,22 +2391,7 @@ object json {
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
             adminCustomName = (json \ "adminCustomName").asOpt[String],
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation =
-              (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
-            integrationToken = (json \ "integrationToken").as[String],
-            bearerToken = (json \ "bearerToken").asOpt[String],
-            metadata = (json \ "metadata").asOpt[JsObject],
-            customMetadata = (json \ "customMetadata").asOpt[JsObject],
-            tags = (json \ "tags").asOpt[Set[String]],
-            customMaxPerSecond =
-              (json \ "customMaxPerSecond").asOpt(LongFormat),
-            customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
-            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat),
-            thirdPartySubscriptionInformations =
-              (json \ "thirdPartySubscriptionInformations") match {
+            thirdPartySubscriptionInformations = json \ "thirdPartySubscriptionInformations" match {
                 case JsDefined(value) =>
                   value match {
                     case JsNull => None
@@ -2351,7 +2403,9 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            state = (json \ "state").asOpt(ApiSubscriptionStateFormat).getOrElse(Active)
+            state = (json \ "state").asOpt(ApiSubscriptionStateFormat).getOrElse(Active),
+            apikeyConfiguration = (json \ "apikeyConfiguration").as(ApiKeyConfigurationFormat),
+            keyring = (json \ "keyring").asOpt(KeyringIdFormat)
           )
         )
       } recover { case e =>
@@ -2365,7 +2419,6 @@ object json {
         "_id" -> ApiSubscriptionIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
         "_deleted" -> o.deleted,
-        "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "plan" -> UsagePlanIdFormat.writes(o.plan),
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
@@ -2383,44 +2436,58 @@ object json {
           .map(id => JsString(id))
           .getOrElse(JsNull)
           .as[JsValue],
-        "enabled" -> o.enabled,
-        "rotation" -> o.rotation
-          .map(ApiSubscriptionyRotationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "integrationToken" -> o.integrationToken,
-        "bearerToken" -> o.bearerToken,
-        "metadata" -> o.metadata,
-        "customMetadata" -> o.customMetadata,
-        "tags" -> JsArray(
-          o.tags.getOrElse(Set.empty).toSeq.map(JsString.apply)
-        ),
-        "customMaxPerSecond" -> o.customMaxPerSecond
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customMaxPerDay" -> o.customMaxPerDay
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customMaxPerMonth" -> o.customMaxPerMonth
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customReadOnly" -> o.customReadOnly
-          .map(JsBoolean.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "parent" -> o.parent
-          .map(ApiSubscriptionIdFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "state" -> ApiSubscriptionStateFormat.writes(o.state)
+        "state" -> ApiSubscriptionStateFormat.writes(o.state),
+        "keyring" -> o.keyring
+          .map(KeyringIdFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "apikeyConfiguration" -> ApiKeyConfigurationFormat.writes(o.apikeyConfiguration)
       )
+  }
+
+  val KeyringFormat = new Format[Keyring] {
+    override def reads(json: JsValue): JsResult[Keyring] = Try {
+      JsSuccess(
+        Keyring(
+          id = (json \ "_id").as(KeyringIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+          team = (json \ "team").as(TeamIdFormat),
+          by = (json \ "by").as(UserIdFormat),
+          createdAt = (json \ "createdAt").as(DateTimeFormat),
+          customName = (json \ "customName").asOpt[String],
+          adminCustomName = (json \ "adminCustomName").asOpt[String],
+          apikeyConfiguration = (json \ "apikeyConfiguration").as(ApiKeyConfigurationFormat),
+          otoroshiSettings = (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat)
+        )
+      )
+    } recover { case e =>
+      AppLogger.error(e.getMessage, e)
+      JsError(e.getMessage)
+    } get
+
+    override def writes(o: Keyring): JsValue = Json.obj(
+      "_id" -> KeyringIdFormat.writes(o.id),
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "team" -> TeamIdFormat.writes(o.team),
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "by" -> UserIdFormat.writes(o.by),
+      "customName" -> o.customName
+        .map(id => JsString(id))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "adminCustomName" -> o.adminCustomName
+        .map(id => JsString(id))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "apikeyConfiguration" -> ApiKeyConfigurationFormat.writes(o.apikeyConfiguration),
+      "otoroshiSettings" -> o.otoroshiSettings.asJson
+    )
   }
 
   val ThirdPartySubscriptionInformationsFormat =
