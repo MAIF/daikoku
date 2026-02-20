@@ -121,6 +121,8 @@
     "notif.issues": "A new issue has been opened regarding API %s.",
     "notif.issues.comment": "A new comment has been added to an issue related to you.",
     "notif.account.creation.attempt": "Registration request pending",
+    "notif.ApiDepreciationWarning": "The API %s has been deprecated",
+    "notif.ApiBlockingWarning": "The API %s has been blocked",
     "api.access.request": "You will send an access request to the API %s. For which team do you want to send the request?",
     "FreeWithoutQuotas": "Free without quotas",
     "FreeWithQuotas": "Free with quotas",
@@ -150,6 +152,8 @@
     "Request in progress": "Request in progress",
     "api not linked": "This API is not linked to an actual Otoroshi service yet",
     "Subscribe": "Subscribe",
+    "team.api.state.information.title": "Api's state %s",
+    "team.api.state.information.message": "The %s Api's state which you subscribe is %s, are you sure you want to proceed ?",
     "team.selection.title": "Select team",
     "team.selection.desc.get": "You are going to get an API key. For which team do you want it?",
     "team.selection.desc.request": "You are going to request an API key. For which team do you want it?",
@@ -1531,6 +1535,8 @@
     "api.home.create.plan.modal.description": "Create a new usage plan from scratch or import an existing usage plan from another API version. You can then customize it as needed.",
     "api.home.create.plan.modal.create.btn.label": "Create new usage plan",
     "api.home.create.plan.modal.import.btn.label": "Import a existing usage plan",
+    "api.lifecycle.blocking.confirm.modal.description.1": "Are you sure you want to block the API %s ?",
+    "api.lifecycle.blocking.confirm.modal.description.2": "There are %s subscriptions associated with this API.",
     "usage.plan.form.quotas.selector.true.label": "Configure quotas",
     "usage.plan.form.quotas.selector.true.description": "Set quotas to limit the number of calls.",
     "usage.plan.form.quotas.selector.false.label": "Unlimited",
@@ -1625,6 +1631,7 @@
     "notifications.page.filters.type.TransferApiOwnership.label": "API ownership transfer",
     "notifications.page.filters.type.ApiSubscriptionTransferSuccess.label": "Subscription transfer successful",
     "notifications.page.filters.type.CheckoutForSubscription.label": "Subscription payment",
+    "notifications.page.filters.type.ApiDepreciationWarning.label": "API depreciation",
     "notifications.page.filters.all.notifications.label": "All",
     "notifications.page.filters.unread.notifications.label": "To treat",
     "notifications.page.filters.clear.label": "Reset filters",
@@ -1751,6 +1758,8 @@
         "p": "Teams"
     },
     "dashboard.filters.all.team.label": "All teams",
+    "dashboard.api.list.deprecated.subscription.tag.label": "Api deprecated",
+    "dashboard.api.list.blocked.subscription.tag.label": "Api blocked",
     "dashboard.api.list.actives.subscription.tag.label": {
         "s": "%s active key",
         "p": "%s clés active keys"

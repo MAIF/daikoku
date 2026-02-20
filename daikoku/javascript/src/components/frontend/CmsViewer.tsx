@@ -1,10 +1,10 @@
-import { ReactNode, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { ReactNode, useContext, useEffect, useState} from "react";
+import {useQuery} from "@tanstack/react-query";
 
 import { graphql, getCmsPage } from "../../services";
-import { GlobalContext } from "../../contexts/globalContext";
-import { ICmsPageGQL } from "../../types";
-import { Spinner } from "../utils";
+import {GlobalContext} from "../../contexts/globalContext";
+import {ICmsPageGQL} from "../../types";
+import {Spinner} from "../utils";
 
 type CmsViewerProps = {
     pageId: string
@@ -36,11 +36,11 @@ type CmsViewerByPathProps = {
 }
 export function CmsViewerByPath({ path, className, fallBack }: CmsViewerByPathProps) {
 
-    const { customGraphQLClient } = useContext(GlobalContext)
+    const {customGraphQLClient} = useContext(GlobalContext)
     const pageRequest = useQuery({
         queryKey: ["cms-page", path],
         queryFn: () => customGraphQLClient.request<{ page: ICmsPageGQL }>(graphql.getCmsPageByName, { path })
-    })
+      })
 
     if (pageRequest.isLoading) {
         return <Spinner />

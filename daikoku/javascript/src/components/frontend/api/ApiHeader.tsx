@@ -9,12 +9,13 @@ import { toast } from 'sonner';
 import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, ITeamSimple, isError } from '../../../types';
+import {IApi, ITeamSimple, isError, ApiState} from '../../../types';
 import { api as API, Can, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
 import { reservedCharacters } from '../../utils/tenantUtils';
 import { CmsViewer } from '../CmsViewer';
+import {GlobalContext} from "../../../contexts/globalContext";
 
 type ApiHeaderProps = {
   api: IApi
@@ -33,6 +34,7 @@ export const ApiHeader = ({
   const queryClient = useQueryClient();
   const { openRightPanel, closeRightPanel, prompt, openFormModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [versions, setApiVersions] = useState<Array<string>>([]);
 
@@ -54,7 +56,7 @@ export const ApiHeader = ({
         setApiVersions(versions)
       );
   }, []);
-      
+
   const transferSchema = {
     team: {
       type: type.string,
@@ -87,19 +89,97 @@ export const ApiHeader = ({
     },
   };
 
+const saveTeamApi  = async (updatedApi) =>  {
+    const response_1 = await Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion);
+    if (!isError(response_1))
+    {
+        await queryClient.invalidateQueries({queryKey: ["api"]});
+        toast.success(translate("update.api.successful.toast.label"));
+        navigate(`/${ownerTeam._humanReadableId}/${response_1._humanReadableId}/${response_1.currentVersion}/description`);
+    }
+    else {
+        toast.error(response_1.error);
+    }
+}
+
+const confirmApiBlocking = (updatedApi: IApi) => {
+  customGraphQLClient.request<{ apiApiSubscriptions: { total: number } }>(Services.graphql.getApiSubscriptionsTotal, {
+    apiId: api._id,
+    teamId: ownerTeam._id,
+    version: api.currentVersion,
+    limit: 0,
+    offset: 0,
+  })
+    .then(
+      response => {
+        if (!isError(response)) {
+          openFormModal({
+              title: translate('Confirm'),
+              description: <div className="alert alert-danger" role="alert">
+                <h4 className="alert-heading">{translate('Warning')}</h4>
+                <p>{translate({key: "api.lifecycle.blocking.confirm.modal.description.1", replacements: [api.name]})}</p>
+                <ul>
+                  <li>{translate({key: "api.lifecycle.blocking.confirm.modal.description.2", replacements: [response.apiApiSubscriptions.total.toString()]})}</li>
+                </ul>
+              </div>,
+              schema: {
+                confirm: {
+                  type: type.string,
+                  label: translate({
+                    key: 'delete.item.confirm.modal.confirm.label',
+                    replacements: [api.name]
+                  }),
+                  constraints: [
+                    constraints.oneOf(
+                      [api.name],
+                      translate({
+                        key: 'constraints.type.api.name',
+                        replacements: [api.name]
+                      })
+                    ),
+                  ],
+                },
+              },
+              onSubmit: () => saveTeamApi(updatedApi),
+              actionLabel: translate('Confirm')
+            }
+          )
+        }
+      }
+    )
+}
+
+const apiStateInformation = () => {
+  switch (api.state) {
+    case 'deprecated' :
+      return {
+        "title": "text-decoration-line-through",
+        "badge": <span className="badge badge-custom-warning">{translate('api.deprecated')}</span>
+      }
+    case 'blocked' :
+      return {
+        "title": "text-decoration-line-through",
+        "badge": <span className="badge badge-custom-danger">{translate('api.blocked')}</span>
+      }
+    default:
+      return {"title": "", "badge": <></>}
+  }
+}
+
   return (
     <section className="api__header col-12 mb-4 p-3 d-flex flex-row" style={{ position: 'relative' }}>
       {!!api.customHeaderCmsPage && <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} />}
       {!api.customHeaderCmsPage && <div className="container-fluid">
         {!api.header && (
           <>
-            <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
-              {api.name}
-              <div
-                style={{ position: 'absolute', right: 0, bottom: 0 }}
-                className="d-flex align-items-center">
+            <div className="d-flex flex-row align-items-center gap-3">
+              <h1 className={`jumbotron-heading ${apiStateInformation().title}`} style={{position: 'relative'}}>
+                {api.name}
+              </h1>
+              <div>
+                {apiStateInformation().badge}
               </div>
-            </h1>
+            </div>
             <p className="lead">{api.smallDescription}</p>
           </>
         )}
@@ -151,17 +231,12 @@ export const ApiHeader = ({
                 role='menuitem'
                 onClick={() => openRightPanel({
                   title: translate("api.home.config.api.menu.configure"),
-                  content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={(updatedApi) => {
-                    return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
-                      .then((response) => {
-                        if (!isError(response)) {
-                          queryClient.invalidateQueries({ queryKey: ["api"] });
-                          toast.success(translate("update.api.successful.toast.label"));
-                          navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
-                        } else {
-                          toast.error(response.error);
-                        }
-                      })
+                  content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={async (updatedApi) => {
+                    if (updatedApi.state === `blocked`) {
+                      confirmApiBlocking(updatedApi)
+                    } else {
+                      saveTeamApi(updatedApi)
+                    }
                   }} />
                 })}
                 className="dropdown-item cursor-pointer"

@@ -437,6 +437,141 @@
         "daikoku__metadata": "| foo",
         "foo": "bar"
       }
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "clientId": "5w24yl2ly3dlnn93",
+      "clientSecret": "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName": "daikoku_test_subscription_1",
+      "description": "",
+      "authorizedGroup": null,
+      "authorizedEntities": [
+        "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+      ],
+      "authorizations": [
+        {
+          "kind": "route",
+          "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+        }
+      ],
+      "enabled": true,
+      "readOnly": false,
+      "allowClientIdOnly": false,
+      "throttlingQuota": 10000000,
+      "dailyQuota": 10000000,
+      "monthlyQuota": 10000000,
+      "constrainedServicesOnly": false,
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "rotation": {
+        "enabled": false,
+        "rotationEvery": 744,
+        "gracePeriod": 168,
+        "nextSecret": null
+      },
+      "validUntil": null,
+      "tags": [],
+      "metadata": {}
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "clientId": "5w24yl2ly3dlnn94",
+      "clientSecret": "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName": "daikoku_test_subscription_2",
+      "description": "",
+      "authorizedGroup": null,
+      "authorizedEntities": [
+        "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+      ],
+      "authorizations": [
+        {
+          "kind": "route",
+          "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+        }
+      ],
+      "enabled": true,
+      "readOnly": false,
+      "allowClientIdOnly": false,
+      "throttlingQuota": 10000000,
+      "dailyQuota": 10000000,
+      "monthlyQuota": 10000000,
+      "constrainedServicesOnly": false,
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "rotation": {
+        "enabled": false,
+        "rotationEvery": 744,
+        "gracePeriod": 168,
+        "nextSecret": null
+      },
+      "validUntil": null,
+      "tags": [],
+      "metadata": {}
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "clientId": "5w24yl2ly3dlnn95",
+      "clientSecret": "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName": "daikoku_test_subscription_3",
+      "description": "",
+      "authorizedGroup": null,
+      "authorizedEntities": [
+        "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+      ],
+      "authorizations": [
+        {
+          "kind": "route",
+          "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+        }
+      ],
+      "enabled": true,
+      "readOnly": false,
+      "allowClientIdOnly": false,
+      "throttlingQuota": 10000000,
+      "dailyQuota": 10000000,
+      "monthlyQuota": 10000000,
+      "constrainedServicesOnly": false,
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "rotation": {
+        "enabled": false,
+        "rotationEvery": 744,
+        "gracePeriod": 168,
+        "nextSecret": null
+      },
+      "validUntil": null,
+      "tags": [],
+      "metadata": {}
     }
   ],
   "serviceDescriptors": [

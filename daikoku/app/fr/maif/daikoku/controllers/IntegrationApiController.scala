@@ -42,7 +42,7 @@ class IntegrationApiController(
                 Left(AppError.ApiNotFound).future
               case Some(api) if team.id != api.team =>
                 Left(AppError.ApiNotFound).future
-              case Some(api) if !api.isPublished =>
+              case Some(api) if !api.isSubscribable =>
                 Left(AppError.ApiNotFound).future
               case Some(api) => {
                 env.dataStore.teamRepo

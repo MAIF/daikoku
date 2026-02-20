@@ -116,7 +116,7 @@ export const isSubscriptionProcessIsAutomatic = (plan: IUsagePlan | IFastPlan) =
 }
 
 export const isPublish = (api: IApi) => {
-  return api.state === 'published'
+  return api.state === 'published' || api.state === 'deprecated'
 }
 
 export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {

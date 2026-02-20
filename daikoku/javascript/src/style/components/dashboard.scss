@@ -12,7 +12,9 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
-
+  .line-through {
+    text-decoration: line-through
+  }
   .select-all-row {
     background-color: variables.$level3_bg-color;
     padding: 1rem 1rem !important;
