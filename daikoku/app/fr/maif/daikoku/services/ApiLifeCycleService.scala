@@ -43,9 +43,6 @@ class ApiLifeCycleService(
       env: Env,
       ma: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
-    AppLogger.error("=================================")
-    AppLogger.error(newApi.humanReadableId)
-    AppLogger.error("=================================")
     (oldApi.state, newApi.state) match {
       case (ApiState.Published, ApiState.Deprecated) =>
         notifyDepreciation(newApi, tenant, user)
@@ -163,8 +160,10 @@ class ApiLifeCycleService(
   }
 
   private def handleApiBlocking(api: Api, tenant: Tenant, user: User)(implicit
+      translator: Translator,
       ec: ExecutionContext,
-      env: Env
+      env: Env,
+      ma: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
     implicit val mat = env.defaultMaterializer
 
@@ -225,7 +224,7 @@ class ApiLifeCycleService(
           )
         )
       _ <- EitherT.liftF(disableOtoroshiApiKey(subOrNotToSub._2))
-      _ <- notifyBlocking(subscriptions, api, user)
+      _ <- notifyBlocking(subscriptions, api, tenant, user)
     } yield ()
   }
 
@@ -234,10 +233,13 @@ class ApiLifeCycleService(
   private def notifyBlocking(
       subscriptions: Seq[ApiSubscription],
       api: Api,
+      tenant: Tenant,
       user: User
   )(implicit
+      translator: Translator,
       ec: ExecutionContext,
-      env: Env
+      env: Env,
+      ma: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
     val subscriptionsTeamsIds: Seq[TeamId] = subscriptions.map(_.team).distinct
 
@@ -277,6 +279,23 @@ class ApiLifeCycleService(
           case (_, None) =>
             FastFuture.successful(false) // Todo: handle the case
         })
+      )
+      _ <- EitherT.right[AppError](
+        mailService.sendMailToTeamsAdmins(
+          teams = subscriptionTeams,
+          tenant = tenant,
+          args = (team, admin) =>
+            Map(
+              "recipientName" -> JsString(admin.name),
+              "teamName" -> JsString(team.name),
+              "apiName" -> JsString(api.name),
+              "recipient_data" -> admin.asSimpleJson,
+              "team_data" -> team.asSimpleJson,
+              "api_data" -> api.asJson,
+              "tenant_data" -> tenant.toUiPayload(env)
+            ),
+          mailKey = "mail.api.blocking.warning"
+        )
       )
     } yield ()
   }

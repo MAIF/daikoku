@@ -4,6 +4,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import fr.maif.daikoku.audit.KafkaConfig
 import fr.maif.daikoku.audit.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.daikoku.domain.ApiSubscriptionState.Active
 import fr.maif.daikoku.domain.ApiVisibility._
 import fr.maif.daikoku.domain.NotificationAction._
 import fr.maif.daikoku.domain.NotificationStatus.{
@@ -2350,7 +2351,7 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            state = (json \ "state").as(ApiSubscriptionStateFormat)
+            state = (json \ "state").asOpt(ApiSubscriptionStateFormat).getOrElse(Active)
           )
         )
       } recover { case e =>

@@ -140,3 +140,8 @@ mail.api.depreciation.warning.title = the API [apiName] has been deprecated
 mail.api.depreciation.warning.body = Hello [recipientName], </br>\
 As team administrator of [teamName], we inform you that the API [apiName]</br>\
 has been deprecated.
+
+mail.api.blocking.warning.title = the API [apiName] has been blocked
+mail.api.blocking.warning.body = Hello [recipientName], </br>\
+                                 As team administrator of [teamName], we inform you that the API [apiName]</br>\
+                                 has been blocked.
