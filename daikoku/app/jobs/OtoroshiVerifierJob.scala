@@ -334,9 +334,20 @@ class OtoroshiVerifierJob(
             })
             .toMap
 
+//          val customMetaFromSub = subscription.customMetadata
+//            .flatMap(_.asOpt[Map[String, String]])
+//            .getOrElse(Map.empty[String, String])
+
           val customMetaFromSub = subscription.customMetadata
-            .flatMap(_.asOpt[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
+            .flatMap(_.asOpt[Map[String, JsValue]])
+            .getOrElse(Map.empty[String, JsValue])
+            .map {
+              case (k, JsString(v))  => k -> v
+              case (k, JsBoolean(v)) => k -> v.toString
+              case (k, JsNumber(v))  => k -> v.toString
+              case (k, v)            => k -> Json.stringify(v)
+            }
+          //todo: sync also subscription.metadata
 
           val newMetaFromDk = (planMeta ++ customMetaFromSub).map {
             case (a, b) => a -> OtoroshiTarget.processValue(b, ctx)
