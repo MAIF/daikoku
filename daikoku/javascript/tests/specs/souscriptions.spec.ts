@@ -2,6 +2,7 @@ import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import type { ActualOtoroshiApiKey } from './utils';
 
 test.beforeEach(async () => {
   await Promise.all([
@@ -866,9 +867,62 @@ test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre 
   await page.goto(link);
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Confirmer le transfert' }).click();
-  await page.getByRole('link', {name: 'API papier'}).isVisible();
+  await page.getByRole('link', { name: 'API papier' }).isVisible();
   await page.goto(`${HOME}vendeurs/settings/dashboard`);
   await page.getByText('Clés d\'API').click();
   await page.getByRole('row', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeVisible();
+})
+
+test("Les custom metadatas d'une souscription peuvent être de n'importe quel type (string, boolean, etc)", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByText('Environnements').click();
+  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+
+  await page.getByText('Jim Halpert').click();
+  await page.getByRole('textbox', { name: 'motivation' }).click();
+  await page.getByRole('textbox', { name: 'motivation' }).fill('super bien');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await page.getByRole('button', { name: 'Accepter' }).click();
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByText('bar', { exact: true }).click();
+  await page.getByText('Accepter').click();
+
+  await page.goto(ACCUEIL);
+  await findAndGoToTeam('Jim Halpert', page);
+  await page.getByText('Clés d\'API').click();
+  await page.getByRole('row', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
+  await expect(page.locator('h1')).toContainText('API papier');
+  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
+  const apikey = await page.evaluate(() => navigator.clipboard.readText());
+  const [clientId, clientSecret] = apikey.split(":", 2)
+
+  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${clientId}`, {
+    method: 'GET',
+    headers: {
+      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+    },
+  })
+  await expect(maybeKey.status).toBe(200)
+  const otoroshiKey = await maybeKey.json() as ActualOtoroshiApiKey;
+
+  await expect(otoroshiKey.clientId).toBe(clientId)
+  await expect(otoroshiKey.clientSecret).toBe(clientSecret)
+  await expect(otoroshiKey.metadata.custom_foo).toBe("bar")
+  await expect(otoroshiKey.metadata.foo).toBe("bar")
+  await expect(otoroshiKey.metadata.bar).toBe("true")
 })

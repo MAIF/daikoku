@@ -239,6 +239,16 @@ class OtoroshiVerifierJob(
       }
   }
 
+  private def metadataObjectToMap(obj: Map[String, JsValue]): Map[String, String] = {
+    obj.map {
+      case (k, JsString(v))  => k -> v
+      case (k, JsBoolean(v)) => k -> v.toString
+      case (k, JsNumber(v))  => k -> v.toString
+      case (k, JsNull)       => k -> ""
+      case (k, v)            => k -> Json.stringify(v)
+    }
+  }
+
   private def computeAPIKey(
       infos: SyncInformation
   ): Future[ComputedInformation] = {
@@ -317,9 +327,9 @@ class OtoroshiVerifierJob(
           // ********************
           // process new metadata
           // ********************
-          val planMeta = plan.otoroshiTarget
-            .map(_.apikeyCustomization.metadata.as[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
+          val planMeta = metadataObjectToMap(plan.otoroshiTarget
+            .flatMap(_.apikeyCustomization.metadata.asOpt[Map[String, JsValue]])
+            .getOrElse(Map.empty[String, JsValue]))
 
           val metaFromDk = infos.apk.metadata
             .get("daikoku__metadata")
@@ -338,18 +348,16 @@ class OtoroshiVerifierJob(
 //            .flatMap(_.asOpt[Map[String, String]])
 //            .getOrElse(Map.empty[String, String])
 
-          val customMetaFromSub = subscription.customMetadata
+          val customMetaFromSub = metadataObjectToMap(subscription.customMetadata
             .flatMap(_.asOpt[Map[String, JsValue]])
-            .getOrElse(Map.empty[String, JsValue])
-            .map {
-              case (k, JsString(v))  => k -> v
-              case (k, JsBoolean(v)) => k -> v.toString
-              case (k, JsNumber(v))  => k -> v.toString
-              case (k, v)            => k -> Json.stringify(v)
-            }
+            .getOrElse(Map.empty[String, JsValue]))
+
+          val metadataFromSub = metadataObjectToMap(subscription.metadata
+            .flatMap(_.asOpt[Map[String, JsValue]])
+            .getOrElse(Map.empty[String, JsValue]))
           //todo: sync also subscription.metadata
 
-          val newMetaFromDk = (planMeta ++ customMetaFromSub).map {
+          val newMetaFromDk = (planMeta ++ customMetaFromSub ++ metadataFromSub).map {
             case (a, b) => a -> OtoroshiTarget.processValue(b, ctx)
           }
           val newMeta = infos.apk.metadata
