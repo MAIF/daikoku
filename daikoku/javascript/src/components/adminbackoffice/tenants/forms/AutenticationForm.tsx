@@ -153,6 +153,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
                   setValue('pictureField', config.pictureField)
                   setValue('clientId', config.clientId)
                   setValue('clientSecret', config.clientSecret)
+                  setValue('selectedMetadata', config.selectedMetadata)
                 }
               })
             }
@@ -198,6 +199,10 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       constraints: [
         constraints.required(translate("constraints.required.value"))
       ]
+    },
+    selectedMetadata: {
+      type: type.string,
+      label: translate('selectedMetadata')
     },
     clientId: {
       type: type.string,
@@ -285,7 +290,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     roleClaim: {
       type: type.string,
-      label: translate('oauth2.form.role.claim.label'), 
+      label: translate('oauth2.form.role.claim.label'),
       help: translate('oauth2.form.role.claim.help'),
     },
     adminRole: {
@@ -338,8 +343,8 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
           type: type.string,
           format: format.text,
           label: translate('authentication.form.jwtverifier.public.key.label'),
-          placeholder: `-----BEGIN PUBLIC KEY----- 
-          xxxxxxxx 
+          placeholder: `-----BEGIN PUBLIC KEY-----
+          xxxxxxxx
           -----END PUBLIC KEY-----`,
           visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
         },
@@ -347,8 +352,8 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
           type: type.string,
           format: format.text,
           label: translate('authentication.form.jwtverifier.private.key.label'),
-          placeholder: `-----BEGIN PRIVATE KEY----- 
-          xxxxxxxx 
+          placeholder: `-----BEGIN PRIVATE KEY-----
+          xxxxxxxx
           -----END PRIVATE KEY-----`,
           visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
         },

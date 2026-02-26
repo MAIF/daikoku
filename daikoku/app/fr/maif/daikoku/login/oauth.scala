@@ -9,10 +9,11 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.utils.{AlgoSettings, IdGenerator, InputMode}
+import fr.maif.daikoku.utils.{AlgoSettings, IdGenerator, InputMode, getFilteredMetadataFromOauth}
 import org.apache.commons.codec.binary.Base64 as ApacheBase64
 import play.api.Logger
 import play.api.libs.json.*
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.WSResponse
@@ -23,6 +24,7 @@ import java.util.Base64
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+
 
 object OAuth2Config {
 
@@ -50,7 +52,6 @@ object OAuth2Config {
           )
         )
       } recover { case e =>
-//          AppLogger.error(e.getMessage, e)
         JsError(e.getMessage)
       } get
     }
@@ -118,6 +119,8 @@ object OAuth2Config {
           adminRole = (json \ "adminRole")
             .asOpt[String],
           userRole = (json \ "userRole")
+            .asOpt[String],
+          selectedMetadata = (json \ "selectedMetadata")
             .asOpt[String]
         )
       )
@@ -158,7 +161,8 @@ case class OAuth2Config(
     pkceConfig: Option[PKCEConfig] = None,
     roleClaim: Option[String] = None,
     adminRole: Option[String] = None,
-    userRole: Option[String] = None
+    userRole: Option[String] = None,
+    selectedMetadata: Option[String] = None
 ) {
   def asJson =
     Json.obj(
@@ -182,7 +186,8 @@ case class OAuth2Config(
       "callbackUrl" -> this.callbackUrl,
       "daikokuAdmins" -> this.daikokuAdmins,
       "roleClaim" -> this.roleClaim.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "adminRole" -> this.adminRole.map(JsString.apply).getOrElse(JsNull).as[JsValue]
+      "adminRole" -> this.adminRole.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "selectedMetadata" -> this.selectedMetadata.map(JsString.apply).getOrElse(JsNull).as[JsValue]
     )
 }
 
@@ -264,7 +269,6 @@ object OAuth2Support {
 
     def getUser(accessToken: String) = {
       val builder2 = _env.wsClient.url(authConfig.userInfoUrl)
-
       val future2 = if (authConfig.useJson) {
         builder2.post(
           Json.obj(
@@ -278,7 +282,6 @@ object OAuth2Support {
           )
         )(writeableOf_urlEncodedSimpleForm)
       }
-
       EitherT
         .right[AppError](future2)
         .map(_.json)
@@ -288,9 +291,11 @@ object OAuth2Support {
         name: String,
         email: String,
         picture: Option[String],
-        isDaikokuAdmin: Boolean
+        isDaikokuAdmin: Boolean,
+        userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
       val userId = UserId(IdGenerator.token(32))
+
       val team = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -312,8 +317,9 @@ object OAuth2Support {
         isDaikokuAdmin = isDaikokuAdmin,
         lastTenant = Some(tenant.id),
         personalToken = Some(IdGenerator.token(32)),
-        defaultLanguage = None
-      )
+        defaultLanguage = None,
+        metadata = getFilteredMetadataFromOauth(authConfig,userFromOauth) //TODO pas value map mais value collect et avant, vérifier que metadataBiding existe et est Ok
+       )
       for {
         _ <- EitherT.right[AppError](
           _env.dataStore.teamRepo
@@ -331,8 +337,10 @@ object OAuth2Support {
         name: String,
         email: String,
         picture: Option[String],
-        isDaikokuAdmin: Boolean
+        isDaikokuAdmin: Boolean,
+        userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
+      val selectedMetadata = authConfig.selectedMetadata.map(_.split(",").map(_.trim))
       val updatedUser = u.copy(
         name = name,
         email = email,
@@ -348,9 +356,9 @@ object OAuth2Support {
               case true if picture.isEmpty => User.DEFAULT_IMAGE
               case _                       => u.picture
             },
-        isDaikokuAdmin = isDaikokuAdmin
+        isDaikokuAdmin = isDaikokuAdmin,
+        metadata = u.metadata ++ getFilteredMetadataFromOauth(authConfig,userFromOauth)
       )
-
       EitherT
         .right[AppError](_env.dataStore.userRepo.save(updatedUser))
         .map(_ => updatedUser)
@@ -418,8 +426,8 @@ object OAuth2Support {
 
         connectedUser <- existingUser match {
           case Some(user) =>
-            updateUser(user, name, email, picture, isDaikokuAdmin)
-          case None => createUser(name, email, picture, isDaikokuAdmin)
+            updateUser(user, name, email, picture, isDaikokuAdmin, userFromOauth)
+          case None => createUser(name, email, picture, isDaikokuAdmin, userFromOauth)
         }
       } yield connectedUser
     }
@@ -467,15 +475,14 @@ object OAuth2Support {
       })
       accessToken = (response.json \ authConfig.accessTokenField).as[String]
       idToken = (response.json \ "id_token").asOpt[String]
+
       userJson <-
-        if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined)
+        if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined) {
           verifyAndGetUser(accessToken)
-        else
+        } else
           getUser(accessToken)
-
-      user <- processUserFromOAuth(userJson)
+      user: User <- processUserFromOAuth(userJson)
     } yield (user, idToken)
-
   }
 
   def getConfiguration(

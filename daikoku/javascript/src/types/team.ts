@@ -40,6 +40,7 @@ export interface IUserSimple {
   starredApis: Array<string>;
   twoFactorAuthentication: I2FA | null;
   name: string;
+  metadata: Array<string>;
 }
 
 export interface IUser extends IUserSimple {

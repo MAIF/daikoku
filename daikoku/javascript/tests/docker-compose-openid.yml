@@ -88,6 +88,11 @@ services:
                 "Type": "role",
                 "Value": "saler",
                 "ValueType": "string"
+              },
+              {
+                "Type": "birthdate",
+                "Value": "1978/10/01",
+                "ValueType": "string"
               }
             ]
           },
