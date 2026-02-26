@@ -318,6 +318,7 @@
   "Use JSON payloads": "Utiliser un payload JSON",
   "Read profile from JWT token": "Lire le profil depuis un token JWT",
   "Token scope": "Scope token",
+  "selectedMetadata": "Metadata choisies",
   "Client Id": "Id client",
   "Client secret": "Secret client",
   "Authorize URL": "URL d'autorisation",
