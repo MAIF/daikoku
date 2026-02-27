@@ -155,7 +155,8 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
       metadata.getOrElse("env", "") mustBe "prod"
       metadata.getOrElse("region", "") mustBe "eu-west"
     }
@@ -249,7 +250,8 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
 
       metadata.getOrElse("env", "") mustBe "prod"
       metadata.getOrElse("region", "") mustBe "eu-west"
@@ -338,7 +340,8 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
 
       metadata.getOrElse("env", "") mustBe "prod"
     }
@@ -478,7 +481,9 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerParentDevSubscription.apiKey.clientId)
+      val metadata = getApkMetadataFromOtoroshi(
+        consumerParentDevSubscription.apiKey.clientId
+      )
 
       metadata.getOrElse("env", "") mustBe "prod"
       metadata.getOrElse("type", "") mustBe "child"
@@ -594,7 +599,9 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerParentDevSubscription.apiKey.clientId)
+      val metadata = getApkMetadataFromOtoroshi(
+        consumerParentDevSubscription.apiKey.clientId
+      )
 
       metadata.getOrElse("env", "") mustBe "prod"
       metadata.getOrElse("region", "") mustBe "eu-west"
@@ -711,7 +718,8 @@ class OtoroshiSyncSpec()
 
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
       metadata.getOrElse("env", "") mustBe "prod"
       metadata.getOrElse("region", "") mustBe "eu-west"
       metadata.getOrElse("meta_from_oto", "") mustBe "foo"
@@ -900,7 +908,8 @@ class OtoroshiSyncSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       triggerSyncJob(session)
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
       metadata.getOrElse("team", "") mustBe teamConsumer.name
 
     }
@@ -927,7 +936,7 @@ class OtoroshiSyncSpec()
         allowMultipleKeys = Some(false),
         subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false),
+        autoRotation = Some(false)
       )
 
       val parentApi = defaultApi.api.copy(
@@ -983,30 +992,38 @@ class OtoroshiSyncSpec()
       )(tenant, session)
       resp.status mustBe 200
 
-      val metadata = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
       metadata.getOrElse("env", "") mustBe "prod"
 
       val respUpdatePlan = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}/plan/${parentDevPlan.id.value}",
         method = "PUT",
-        body = Some(parentDevPlan.copy(otoroshiTarget = Some(
-          OtoroshiTarget(
-            otoroshiSettings = containerizedOtoroshi,
-            authorizedEntities = Some(
-              AuthorizedEntities(
-                routes = Set(OtoroshiRouteId(parentRouteId))
+        body = Some(
+          parentDevPlan
+            .copy(otoroshiTarget =
+              Some(
+                OtoroshiTarget(
+                  otoroshiSettings = containerizedOtoroshi,
+                  authorizedEntities = Some(
+                    AuthorizedEntities(
+                      routes = Set(OtoroshiRouteId(parentRouteId))
+                    )
+                  ),
+                  apikeyCustomization = ApikeyCustomization(
+                    metadata = Json.obj("usage" -> "test")
+                  )
+                )
               )
-            ),
-            apikeyCustomization = ApikeyCustomization(
-              metadata = Json.obj("usage" -> "test")
             )
-          )
-        )).asJson)
+            .asJson
+        )
       )(tenant, session)
       respUpdatePlan.status mustBe 200
 
-      val metadata2 = getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
+      val metadata2 =
+        getApkMetadataFromOtoroshi(consumerSubscription.apiKey.clientId)
       metadata2.get("env") mustBe None
       metadata2.getOrElse("usage", "") mustBe "test"
 
