@@ -22,26 +22,6 @@ export const otoroshiProdPaperRouteId = "route_route_4e29a989-cef9-41d8-a64c-385
 export const otoroshiDevCommandRouteId = "route_route_3fdac0cf-ae98-4802-9729-1b4b06de32bc"
 export const otoroshiProdCommandRouteId = "route_route_cf6f8d3e-8c11-4b6f-b080-64fbd1b8a3ec"
 
-export type ActualOtoroshiApiKey = {
-  clientId: string
-  clientSecret: string
-  clientName: string
-  authorizedEntities: any
-  enabled: boolean
-  allowClientIdOnly: boolean
-  readOnly: boolean
-  constrainedServicesOnly: boolean
-  throttlingQuota: number
-  dailyQuota: number
-  monthlyQuota: number
-  tags: string[]
-  metadata: Record<string, string>
-  restrictions: any
-  rotation?: any
-  validUntil?: number
-  bearer?: string
-}
-
 export const exposedPort = process.env.EXPOSED_PORT || 5173;
 export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`
