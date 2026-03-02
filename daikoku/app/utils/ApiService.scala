@@ -16,7 +16,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
-import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob, SyncInformation}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
@@ -972,20 +972,21 @@ class ApiService(
                   )
               )
             else EitherT.pure[Future, AppError](0)
-          parentSubscription <- subscription.parent match {
-            case Some(parentId) =>
-              EitherT.fromOptionF(
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant)
-                  .findById(parentId),
-                AppError.EntityNotFound(
-                  s"Parent subscription (ID: ${parentId.value})"
-                )
-              )
-            case None => EitherT.pure[Future, AppError](updatedSubscription)
-          }
-          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
-          _ <- EitherT(otoroshiClient.updateApiKey(apk))
+//          parentSubscription <- subscription.parent match {
+//            case Some(parentId) =>
+//              EitherT.fromOptionF(
+//                env.dataStore.apiSubscriptionRepo
+//                  .forTenant(tenant)
+//                  .findById(parentId),
+//                AppError.EntityNotFound(
+//                  s"Parent subscription (ID: ${parentId.value})"
+//                )
+//              )
+//            case None => EitherT.pure[Future, AppError](updatedSubscription)
+//          }
+          _ <- EitherT.right[AppError](otoroshiSynchronisator.verify(Json.obj("_id" -> updatedSubscription.id.asJson)))
+//          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
+//          _ <- EitherT(otoroshiClient.updateApiKey(apk))
           _ <-
             paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
         } yield updatedSubscription.asSafeJson.as[JsObject]
@@ -1348,6 +1349,7 @@ class ApiService(
       )
 
       //compute new OtoroshiApiKey for subscription to extract
+      //FIXME: use sync compute instead of
       apikey = createOtoroshiApiKey(
         user = user,
         api = api,

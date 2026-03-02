@@ -64,8 +64,19 @@ object LongExtensions {
   }
 }
 
+case class SyncInformation(
+                            parent: ApiSubscription,
+                            childs: Seq[ApiSubscription],
+                            team: Team,
+                            parentApi: Api,
+                            apk: ActualOtoroshiApiKey,
+                            otoroshiSettings: OtoroshiSettings,
+                            tenant: Tenant,
+                            tenantAdminTeam: Team
+                          )
+
 class OtoroshiVerifierJob(
-    client: OtoroshiClient,
+                           client: OtoroshiClient,
     env: Env,
     translator: Translator,
     messagesApi: MessagesApi
@@ -114,17 +125,6 @@ class OtoroshiVerifierJob(
     val list2 = getListFromMeta(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
-
-  case class SyncInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      team: Team,
-      parentApi: Api,
-      apk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
 
   case class ComputedInformation(
       parent: ApiSubscription,
@@ -251,9 +251,11 @@ class OtoroshiVerifierJob(
     }
   }
 
-  private def computeAPIKey(
+  def computeAPIKey(
       infos: SyncInformation
   ): Future[ComputedInformation] = {
+    logger.warn(s"childs are : [${infos.childs.map(_.id.value).mkString(" & ")}]")
+    logger.warn(s"parent is ${infos.parent.id.value}")
     (infos.childs :+ infos.parent)
       .map(subscription => {
         for {
@@ -384,6 +386,7 @@ class OtoroshiVerifierJob(
 
           infos.apk.copy(
             tags = newTagsFromDk,
+            enabled = infos.parent.enabled,
             metadata = newMeta,
             constrainedServicesOnly = plan.otoroshiTarget
               .exists(_.apikeyCustomization.constrainedServicesOnly),
@@ -453,6 +456,7 @@ class OtoroshiVerifierJob(
           case Right(apikey2) =>
             _apikey1.map(apikey1 =>
               apikey1.copy(
+                enabled = infos.parent.enabled,
                 tags = apikey1.tags ++ apikey2.tags,
                 metadata = apikey1.metadata ++
                   apikey2.metadata ++
@@ -804,7 +808,10 @@ class OtoroshiVerifierJob(
             childs <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
                 .forAllTenant()
-                .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
+                .findNotDeleted(Json.obj(
+                  "parent" -> subscription.id.asJson,
+                  "enabled" -> true
+                ))
             )
 
             //get tenant

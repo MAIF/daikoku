@@ -1,11 +1,11 @@
 {
   "label": "Otoroshi export",
-  "dateRaw": 1772457617760,
-  "date": "2026-03-02 01:20:17",
+  "dateRaw": 1722331630114,
+  "date": "2024-07-30 11:27:10",
   "stats": {
-    "calls": 4,
-    "dataIn": 0,
-    "dataOut": 188
+    "calls": 164,
+    "dataIn": 19447,
+    "dataOut": 2000425
   },
   "config": {
     "tags": [],
@@ -67,10 +67,8 @@
       "saslConfig": {
         "username": "foo",
         "password": "bar",
-        "mechanism": "PLAIN",
-        "jaasConfig": null
-      },
-      "properties": null
+        "mechanism": "PLAIN"
+      }
     },
     "backOfficeAuthRef": null,
     "mailerSettings": {
@@ -147,8 +145,7 @@
       "includeJdkCaServer": true,
       "includeJdkCaClient": true,
       "trustedCAsServer": [],
-      "bannedAlpnProtocols": {},
-      "clientAuth": "None"
+      "bannedAlpnProtocols": {}
     },
     "quotasSettings": {
       "enabled": false,
@@ -213,14 +210,10 @@
       "authConfig": {},
       "certificate": {},
       "script": {},
-      "draft": null,
-      "api": null,
       "tcpService": {},
       "dataExporter": {},
       "tenant": {},
-      "team": {},
-      "apiConsumerSubscription": null,
-      "routeTemplate": null
+      "team": {}
     }
   },
   "admins": [],
@@ -271,9 +264,9 @@
           "default"
         ]
       },
-      "id": "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5",
-      "name": "aggregated-group",
-      "description": "group for aggregagtion",
+      "id": "admin-api-group",
+      "name": "Otoroshi Admin Api group",
+      "description": "No description",
       "tags": [],
       "metadata": {}
     },
@@ -284,9 +277,9 @@
           "default"
         ]
       },
-      "id": "admin-api-group",
-      "name": "Otoroshi Admin Api group",
-      "description": "No description",
+      "id": "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5",
+      "name": "aggregated-group",
+      "description": "group for aggregagtion",
       "tags": [],
       "metadata": {}
     }
@@ -454,651 +447,6 @@
           "default"
         ]
       },
-      "id": "KAyMY0iHPF7aljWqNkJx3mehRiwJtwKt2ZUybPZDZMIfOJDDJZiXvnrzlQlXyaAc",
-      "groupId": "VVHIgho2keCtVHaDR3l9Xkq34t6XnXnIcdf20i5NqEJmAt8uF5Tio9hSBWbgIo6O",
-      "groups": [
-        "VVHIgho2keCtVHaDR3l9Xkq34t6XnXnIcdf20i5NqEJmAt8uF5Tio9hSBWbgIo6O"
-      ],
-      "name": "[MIGRATED TO ROUTE, PENDING DELETION] my-service",
-      "description": "",
-      "env": "prod",
-      "domain": "opunmaif.fr",
-      "subdomain": "nio",
-      "targetsLoadBalancing": {
-        "type": "RoundRobin"
-      },
-      "targets": [
-        {
-          "host": "app-d85f65bf-e7ae-41c1-a3b5-408e74b07dac.opunmaif.io",
-          "scheme": "https",
-          "weight": 1,
-          "mtlsConfig": {
-            "certs": [],
-            "trustedCerts": [],
-            "mtls": false,
-            "loose": false,
-            "trustAll": false
-          },
-          "tags": [],
-          "metadata": {},
-          "protocol": "HTTP/1.1",
-          "predicate": {
-            "type": "AlwaysMatch"
-          },
-          "backup": false,
-          "ipAddress": null
-        }
-      ],
-      "root": "/",
-      "matchingRoot": null,
-      "stripPath": true,
-      "localHost": "localhost:8080",
-      "localScheme": "http",
-      "redirectToLocal": false,
-      "enabled": false,
-      "userFacing": false,
-      "privateApp": true,
-      "forceHttps": true,
-      "logAnalyticsOnServer": false,
-      "useAkkaHttpClient": true,
-      "useNewWSClient": false,
-      "tcpUdpTunneling": false,
-      "detectApiKeySooner": false,
-      "maintenanceMode": false,
-      "buildMode": false,
-      "strictlyPrivate": false,
-      "enforceSecureCommunication": true,
-      "sendInfoToken": true,
-      "sendStateChallenge": true,
-      "sendOtoroshiHeadersBack": false,
-      "readOnly": false,
-      "xForwardedHeaders": false,
-      "overrideHost": true,
-      "allowHttp10": false,
-      "letsEncrypt": false,
-      "secComHeaders": {
-        "claimRequestName": null,
-        "stateRequestName": null,
-        "stateResponseName": null
-      },
-      "secComTtl": 30000,
-      "secComVersion": "V1",
-      "secComInfoTokenVersion": "Legacy",
-      "secComExcludedPatterns": [
-        "/ruxitagentjs_.*",
-        "/rb_.*"
-      ],
-      "securityExcludedPatterns": [],
-      "publicPatterns": [
-        "/.*"
-      ],
-      "privatePatterns": [
-        "/api/.*",
-        "/_healthCheck"
-      ],
-      "additionalHeaders": {},
-      "additionalHeadersOut": {},
-      "missingOnlyHeadersIn": {},
-      "missingOnlyHeadersOut": {},
-      "removeHeadersIn": [],
-      "removeHeadersOut": [],
-      "headersVerification": {},
-      "matchingHeaders": {},
-      "ipFiltering": {
-        "whitelist": [],
-        "blacklist": []
-      },
-      "api": {
-        "exposeApi": false
-      },
-      "healthCheck": {
-        "enabled": false,
-        "url": "/",
-        "timeout": 5000,
-        "healthyStatuses": [],
-        "unhealthyStatuses": [],
-        "blockOnRed": false,
-        "logicCheck": true,
-        "healthyRegexChecks": [],
-        "unhealthyRegexChecks": []
-      },
-      "clientConfig": {
-        "useCircuitBreaker": true,
-        "retries": 3,
-        "maxErrors": 60,
-        "retryInitialDelay": 50,
-        "backoffFactor": 2,
-        "callTimeout": 60000,
-        "callAndStreamTimeout": 72000000,
-        "connectionTimeout": 10000,
-        "idleTimeout": 60000,
-        "globalTimeout": 18000,
-        "sampleInterval": 2000,
-        "proxy": {},
-        "customTimeouts": [],
-        "cacheConnectionSettings": {
-          "enabled": false,
-          "queueSize": 2048
-        }
-      },
-      "canary": {
-        "enabled": false,
-        "traffic": 0.2,
-        "targets": [],
-        "root": "/"
-      },
-      "gzip": {
-        "enabled": false,
-        "excludedPatterns": [],
-        "whiteList": [
-          "text/*",
-          "application/javascript",
-          "application/json"
-        ],
-        "blackList": [],
-        "bufferSize": 8192,
-        "chunkedThreshold": 102400,
-        "compressionLevel": 5
-      },
-      "metadata": {
-        "converted_to_route_by": "admin@otoroshi.io - admin@otoroshi.io",
-        "service": "nio",
-        "converted_to_route_at": "2024-05-13 04:14:12",
-        "env": "prod",
-        "product": "nio"
-      },
-      "tags": [],
-      "chaosConfig": {
-        "enabled": false,
-        "largeRequestFaultConfig": {
-          "ratio": 0.2,
-          "additionalRequestSize": 0
-        },
-        "largeResponseFaultConfig": {
-          "ratio": 0.2,
-          "additionalResponseSize": 0
-        },
-        "latencyInjectionFaultConfig": {
-          "ratio": 0.2,
-          "from": 0,
-          "to": 0
-        },
-        "badResponsesFaultConfig": {
-          "ratio": 0.2,
-          "responses": []
-        }
-      },
-      "jwtVerifier": {
-        "type": "ref",
-        "ids": [],
-        "id": null,
-        "enabled": false,
-        "excludedPatterns": []
-      },
-      "secComSettings": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "Wh9cYrNCQl8wUUdJPdUsDrnSVP9Y5PRqElopegNoTX0Sy5BiV7k4mo4m1ew4gwdDNkUwHJk5shU5AujW55D0lV30dp8OOVhdGlwBko4kSforYgUIuPTVy3Jgd8BfXQLj",
-        "base64": false
-      },
-      "secComUseSameAlgo": true,
-      "secComAlgoChallengeOtoToBack": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "secComAlgoChallengeBackToOto": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "secComAlgoInfoToken": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "cors": {
-        "enabled": false,
-        "allowOrigin": "*",
-        "exposeHeaders": [],
-        "allowHeaders": [],
-        "allowMethods": [],
-        "excludedPatterns": [],
-        "maxAge": null,
-        "allowCredentials": true
-      },
-      "redirection": {
-        "enabled": false,
-        "code": 303,
-        "to": "https://www.otoroshi.io"
-      },
-      "authConfigRef": "confidential-apps",
-      "clientValidatorRef": null,
-      "transformerRef": null,
-      "transformerRefs": [],
-      "transformerConfig": {
-        "KafkaAccessLog": {
-          "enabled": true,
-          "topic": "otoroshi-access-log-nio",
-          "statuses": [],
-          "paths": [],
-          "methods": [],
-          "identities": []
-        }
-      },
-      "apiKeyConstraints": {
-        "basicAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "customHeadersAuth": {
-          "enabled": true,
-          "clientIdHeaderName": null,
-          "clientSecretHeaderName": null
-        },
-        "otoBearerAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "clientIdAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "jwtAuth": {
-          "enabled": true,
-          "secretSigned": true,
-          "keyPairSigned": true,
-          "includeRequestAttributes": false,
-          "maxJwtLifespanSecs": null,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "routing": {
-          "noneTagIn": [],
-          "oneTagIn": [],
-          "allTagsIn": [],
-          "noneMetaIn": {},
-          "oneMetaIn": {},
-          "allMetaIn": {},
-          "noneMetaKeysIn": [],
-          "oneMetaKeyIn": [],
-          "allMetaKeysIn": []
-        }
-      },
-      "restrictions": {
-        "enabled": false,
-        "allowLast": true,
-        "allowed": [],
-        "forbidden": [],
-        "notFound": []
-      },
-      "accessValidator": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excludedPatterns": []
-      },
-      "preRouting": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excludedPatterns": []
-      },
-      "plugins": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excluded": []
-      },
-      "hosts": [],
-      "paths": [],
-      "handleLegacyDomain": true,
-      "issueCert": false,
-      "issueCertCA": null
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "4dMCocfui1hLmlqxCI7Sx8D4TV1KrUczAzKDqb2RsarpJSUHLhddQAHBArSmoIVj",
-      "groupId": "0ZISHDNhJOHOP0IflvU0voYhLAVsqyej5wxqnOheuCM7Gk8SzppbyDDbSI1aEc5n",
-      "groups": [
-        "0ZISHDNhJOHOP0IflvU0voYhLAVsqyej5wxqnOheuCM7Gk8SzppbyDDbSI1aEc5n"
-      ],
-      "name": "my-service",
-      "description": "",
-      "env": "preprod",
-      "domain": "opunmaif.fr",
-      "subdomain": "nio",
-      "targetsLoadBalancing": {
-        "type": "RoundRobin"
-      },
-      "targets": [
-        {
-          "host": "mirror.otoroshi.io",
-          "scheme": "https",
-          "weight": 1,
-          "mtlsConfig": {
-            "certs": [],
-            "trustedCerts": [],
-            "mtls": false,
-            "loose": false,
-            "trustAll": false
-          },
-          "tags": [],
-          "metadata": {},
-          "protocol": "HTTP/1.1",
-          "predicate": {
-            "type": "AlwaysMatch"
-          },
-          "backup": false,
-          "ipAddress": null
-        }
-      ],
-      "root": "/",
-      "matchingRoot": null,
-      "stripPath": true,
-      "localHost": "localhost:8080",
-      "localScheme": "http",
-      "redirectToLocal": false,
-      "enabled": true,
-      "userFacing": false,
-      "privateApp": true,
-      "forceHttps": true,
-      "logAnalyticsOnServer": false,
-      "useAkkaHttpClient": true,
-      "useNewWSClient": false,
-      "tcpUdpTunneling": false,
-      "detectApiKeySooner": false,
-      "maintenanceMode": false,
-      "buildMode": false,
-      "strictlyPrivate": false,
-      "enforceSecureCommunication": true,
-      "sendInfoToken": true,
-      "sendStateChallenge": true,
-      "sendOtoroshiHeadersBack": false,
-      "readOnly": false,
-      "xForwardedHeaders": false,
-      "overrideHost": true,
-      "allowHttp10": false,
-      "letsEncrypt": false,
-      "secComHeaders": {
-        "claimRequestName": null,
-        "stateRequestName": null,
-        "stateResponseName": null
-      },
-      "secComTtl": 30000,
-      "secComVersion": "V1",
-      "secComInfoTokenVersion": "Legacy",
-      "secComExcludedPatterns": [
-        "/ruxitagentjs_.*",
-        "/rb_.*"
-      ],
-      "securityExcludedPatterns": [],
-      "publicPatterns": [
-        "/.*"
-      ],
-      "privatePatterns": [
-        "/api/.*",
-        "/_healthCheck",
-        "/assets/swagger/swagger.json"
-      ],
-      "additionalHeaders": {},
-      "additionalHeadersOut": {},
-      "missingOnlyHeadersIn": {},
-      "missingOnlyHeadersOut": {},
-      "removeHeadersIn": [],
-      "removeHeadersOut": [],
-      "headersVerification": {},
-      "matchingHeaders": {},
-      "ipFiltering": {
-        "whitelist": [],
-        "blacklist": []
-      },
-      "api": {
-        "exposeApi": false
-      },
-      "healthCheck": {
-        "enabled": false,
-        "url": "/",
-        "timeout": 5000,
-        "healthyStatuses": [],
-        "unhealthyStatuses": [],
-        "blockOnRed": false,
-        "logicCheck": true,
-        "healthyRegexChecks": [],
-        "unhealthyRegexChecks": []
-      },
-      "clientConfig": {
-        "useCircuitBreaker": true,
-        "retries": 3,
-        "maxErrors": 60,
-        "retryInitialDelay": 50,
-        "backoffFactor": 2,
-        "callTimeout": 60000,
-        "callAndStreamTimeout": 1200000,
-        "connectionTimeout": 10000,
-        "idleTimeout": 60000,
-        "globalTimeout": 30000,
-        "sampleInterval": 2000,
-        "proxy": {},
-        "customTimeouts": [],
-        "cacheConnectionSettings": {
-          "enabled": false,
-          "queueSize": 2048
-        }
-      },
-      "canary": {
-        "enabled": false,
-        "traffic": 0.2,
-        "targets": [],
-        "root": "/"
-      },
-      "gzip": {
-        "enabled": false,
-        "excludedPatterns": [],
-        "whiteList": [
-          "text/*",
-          "application/javascript",
-          "application/json"
-        ],
-        "blackList": [],
-        "bufferSize": 8192,
-        "chunkedThreshold": 102400,
-        "compressionLevel": 5
-      },
-      "metadata": {
-        "service": "nio",
-        "env": "preprod",
-        "product": "nio"
-      },
-      "tags": [],
-      "chaosConfig": {
-        "enabled": false,
-        "largeRequestFaultConfig": {
-          "ratio": 0.2,
-          "additionalRequestSize": 0
-        },
-        "largeResponseFaultConfig": {
-          "ratio": 0.2,
-          "additionalResponseSize": 0
-        },
-        "latencyInjectionFaultConfig": {
-          "ratio": 0.2,
-          "from": 0,
-          "to": 0
-        },
-        "badResponsesFaultConfig": {
-          "ratio": 0.2,
-          "responses": []
-        }
-      },
-      "jwtVerifier": {
-        "type": "ref",
-        "ids": [],
-        "id": null,
-        "enabled": false,
-        "excludedPatterns": []
-      },
-      "secComSettings": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "eE1YY5jEr1p7FH1otSFPJhyiKapPCmqtTYw14oervekiWAPUE3xIPuxz3ZLPwuleIgZrQoOiMmJx919JdsTJA6BHXeksuoI5h0f1PI57SshEGwMVTF02RK7Gamw8hAaW",
-        "base64": false
-      },
-      "secComUseSameAlgo": true,
-      "secComAlgoChallengeOtoToBack": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "secComAlgoChallengeBackToOto": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "secComAlgoInfoToken": {
-        "type": "HSAlgoSettings",
-        "size": 512,
-        "secret": "secret",
-        "base64": false
-      },
-      "cors": {
-        "enabled": false,
-        "allowOrigin": "*",
-        "exposeHeaders": [],
-        "allowHeaders": [],
-        "allowMethods": [],
-        "excludedPatterns": [],
-        "maxAge": null,
-        "allowCredentials": true
-      },
-      "redirection": {
-        "enabled": false,
-        "code": 303,
-        "to": "https://www.otoroshi.io"
-      },
-      "authConfigRef": "confidential-apps",
-      "clientValidatorRef": null,
-      "transformerRef": null,
-      "transformerRefs": [],
-      "transformerConfig": {
-        "KafkaAccessLog": {
-          "enabled": true,
-          "topic": "otoroshi-access-log-nio",
-          "statuses": [],
-          "paths": [],
-          "methods": [],
-          "identities": []
-        }
-      },
-      "apiKeyConstraints": {
-        "basicAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "customHeadersAuth": {
-          "enabled": true,
-          "clientIdHeaderName": null,
-          "clientSecretHeaderName": null
-        },
-        "otoBearerAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "clientIdAuth": {
-          "enabled": true,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "jwtAuth": {
-          "enabled": true,
-          "secretSigned": true,
-          "keyPairSigned": true,
-          "includeRequestAttributes": false,
-          "maxJwtLifespanSecs": null,
-          "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
-        },
-        "routing": {
-          "noneTagIn": [],
-          "oneTagIn": [],
-          "allTagsIn": [],
-          "noneMetaIn": {},
-          "oneMetaIn": {},
-          "allMetaIn": {},
-          "noneMetaKeysIn": [],
-          "oneMetaKeyIn": [],
-          "allMetaKeysIn": []
-        }
-      },
-      "restrictions": {
-        "enabled": false,
-        "allowLast": true,
-        "allowed": [],
-        "forbidden": [],
-        "notFound": []
-      },
-      "accessValidator": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excludedPatterns": []
-      },
-      "preRouting": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excludedPatterns": []
-      },
-      "plugins": {
-        "enabled": false,
-        "refs": [],
-        "config": {},
-        "excluded": []
-      },
-      "hosts": [],
-      "paths": [],
-      "handleLegacyDomain": true,
-      "issueCert": false,
-      "issueCertCA": null
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
       "id": "ZSTWnemHcCDi4yA6h7qJz0wCP9glqeWnCMG9KQrDi17hcapQ5mpN15cWr68y4vs8",
       "groupId": "3mXM0GtZBsNQEEBOfBZw6KteRXfdEmqorGOXckAgWZ2WDZpRiIAr4DMgoxIb2BQ3",
       "groups": [
@@ -1130,7 +478,6 @@
           "predicate": {
             "type": "AlwaysMatch"
           },
-          "backup": false,
           "ipAddress": null
         }
       ],
@@ -1196,11 +543,7 @@
         "url": "/",
         "timeout": 5000,
         "healthyStatuses": [],
-        "unhealthyStatuses": [],
-        "blockOnRed": false,
-        "logicCheck": true,
-        "healthyRegexChecks": [],
-        "unhealthyRegexChecks": []
+        "unhealthyStatuses": []
       },
       "clientConfig": {
         "useCircuitBreaker": true,
@@ -1334,9 +677,7 @@
         "basicAuth": {
           "enabled": true,
           "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
+          "queryName": null
         },
         "customHeadersAuth": {
           "enabled": true,
@@ -1347,15 +688,12 @@
           "enabled": true,
           "headerName": null,
           "queryName": null,
-          "cookieName": null,
-          "pathName": null
+          "cookieName": null
         },
         "clientIdAuth": {
           "enabled": true,
           "headerName": null,
-          "queryName": null,
-          "cookieName": null,
-          "pathName": null
+          "queryName": null
         },
         "jwtAuth": {
           "enabled": true,
@@ -1365,8 +703,630 @@
           "maxJwtLifespanSecs": null,
           "headerName": null,
           "queryName": null,
-          "cookieName": null,
-          "pathName": null
+          "cookieName": null
+        },
+        "routing": {
+          "noneTagIn": [],
+          "oneTagIn": [],
+          "allTagsIn": [],
+          "noneMetaIn": {},
+          "oneMetaIn": {},
+          "allMetaIn": {},
+          "noneMetaKeysIn": [],
+          "oneMetaKeyIn": [],
+          "allMetaKeysIn": []
+        }
+      },
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "accessValidator": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "preRouting": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "plugins": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excluded": []
+      },
+      "hosts": [],
+      "paths": [],
+      "handleLegacyDomain": true,
+      "issueCert": false,
+      "issueCertCA": null
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "4dMCocfui1hLmlqxCI7Sx8D4TV1KrUczAzKDqb2RsarpJSUHLhddQAHBArSmoIVj",
+      "groupId": "0ZISHDNhJOHOP0IflvU0voYhLAVsqyej5wxqnOheuCM7Gk8SzppbyDDbSI1aEc5n",
+      "groups": [
+        "0ZISHDNhJOHOP0IflvU0voYhLAVsqyej5wxqnOheuCM7Gk8SzppbyDDbSI1aEc5n"
+      ],
+      "name": "my-service",
+      "description": "",
+      "env": "preprod",
+      "domain": "opunmaif.fr",
+      "subdomain": "nio",
+      "targetsLoadBalancing": {
+        "type": "RoundRobin"
+      },
+      "targets": [
+        {
+          "host": "mirror.otoroshi.io",
+          "scheme": "https",
+          "weight": 1,
+          "mtlsConfig": {
+            "certs": [],
+            "trustedCerts": [],
+            "mtls": false,
+            "loose": false,
+            "trustAll": false
+          },
+          "tags": [],
+          "metadata": {},
+          "protocol": "HTTP/1.1",
+          "predicate": {
+            "type": "AlwaysMatch"
+          },
+          "ipAddress": null
+        }
+      ],
+      "root": "/",
+      "matchingRoot": null,
+      "stripPath": true,
+      "localHost": "localhost:8080",
+      "localScheme": "http",
+      "redirectToLocal": false,
+      "enabled": true,
+      "userFacing": false,
+      "privateApp": true,
+      "forceHttps": true,
+      "logAnalyticsOnServer": false,
+      "useAkkaHttpClient": true,
+      "useNewWSClient": false,
+      "tcpUdpTunneling": false,
+      "detectApiKeySooner": false,
+      "maintenanceMode": false,
+      "buildMode": false,
+      "strictlyPrivate": false,
+      "enforceSecureCommunication": true,
+      "sendInfoToken": true,
+      "sendStateChallenge": true,
+      "sendOtoroshiHeadersBack": false,
+      "readOnly": false,
+      "xForwardedHeaders": false,
+      "overrideHost": true,
+      "allowHttp10": false,
+      "letsEncrypt": false,
+      "secComHeaders": {
+        "claimRequestName": null,
+        "stateRequestName": null,
+        "stateResponseName": null
+      },
+      "secComTtl": 30000,
+      "secComVersion": "V1",
+      "secComInfoTokenVersion": "Legacy",
+      "secComExcludedPatterns": [
+        "/ruxitagentjs_.*",
+        "/rb_.*"
+      ],
+      "securityExcludedPatterns": [],
+      "publicPatterns": [
+        "/.*"
+      ],
+      "privatePatterns": [
+        "/api/.*",
+        "/_healthCheck",
+        "/assets/swagger/swagger.json"
+      ],
+      "additionalHeaders": {},
+      "additionalHeadersOut": {},
+      "missingOnlyHeadersIn": {},
+      "missingOnlyHeadersOut": {},
+      "removeHeadersIn": [],
+      "removeHeadersOut": [],
+      "headersVerification": {},
+      "matchingHeaders": {},
+      "ipFiltering": {
+        "whitelist": [],
+        "blacklist": []
+      },
+      "api": {
+        "exposeApi": false
+      },
+      "healthCheck": {
+        "enabled": false,
+        "url": "/",
+        "timeout": 5000,
+        "healthyStatuses": [],
+        "unhealthyStatuses": []
+      },
+      "clientConfig": {
+        "useCircuitBreaker": true,
+        "retries": 3,
+        "maxErrors": 60,
+        "retryInitialDelay": 50,
+        "backoffFactor": 2,
+        "callTimeout": 60000,
+        "callAndStreamTimeout": 1200000,
+        "connectionTimeout": 10000,
+        "idleTimeout": 60000,
+        "globalTimeout": 30000,
+        "sampleInterval": 2000,
+        "proxy": {},
+        "customTimeouts": [],
+        "cacheConnectionSettings": {
+          "enabled": false,
+          "queueSize": 2048
+        }
+      },
+      "canary": {
+        "enabled": false,
+        "traffic": 0.2,
+        "targets": [],
+        "root": "/"
+      },
+      "gzip": {
+        "enabled": false,
+        "excludedPatterns": [],
+        "whiteList": [
+          "text/*",
+          "application/javascript",
+          "application/json"
+        ],
+        "blackList": [],
+        "bufferSize": 8192,
+        "chunkedThreshold": 102400,
+        "compressionLevel": 5
+      },
+      "metadata": {
+        "service": "nio",
+        "env": "preprod",
+        "product": "nio"
+      },
+      "tags": [],
+      "chaosConfig": {
+        "enabled": false,
+        "largeRequestFaultConfig": {
+          "ratio": 0.2,
+          "additionalRequestSize": 0
+        },
+        "largeResponseFaultConfig": {
+          "ratio": 0.2,
+          "additionalResponseSize": 0
+        },
+        "latencyInjectionFaultConfig": {
+          "ratio": 0.2,
+          "from": 0,
+          "to": 0
+        },
+        "badResponsesFaultConfig": {
+          "ratio": 0.2,
+          "responses": []
+        }
+      },
+      "jwtVerifier": {
+        "type": "ref",
+        "ids": [],
+        "id": null,
+        "enabled": false,
+        "excludedPatterns": []
+      },
+      "secComSettings": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "eE1YY5jEr1p7FH1otSFPJhyiKapPCmqtTYw14oervekiWAPUE3xIPuxz3ZLPwuleIgZrQoOiMmJx919JdsTJA6BHXeksuoI5h0f1PI57SshEGwMVTF02RK7Gamw8hAaW",
+        "base64": false
+      },
+      "secComUseSameAlgo": true,
+      "secComAlgoChallengeOtoToBack": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoChallengeBackToOto": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoInfoToken": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "cors": {
+        "enabled": false,
+        "allowOrigin": "*",
+        "exposeHeaders": [],
+        "allowHeaders": [],
+        "allowMethods": [],
+        "excludedPatterns": [],
+        "maxAge": null,
+        "allowCredentials": true
+      },
+      "redirection": {
+        "enabled": false,
+        "code": 303,
+        "to": "https://www.otoroshi.io"
+      },
+      "authConfigRef": "confidential-apps",
+      "clientValidatorRef": null,
+      "transformerRef": null,
+      "transformerRefs": [],
+      "transformerConfig": {
+        "KafkaAccessLog": {
+          "enabled": true,
+          "topic": "otoroshi-access-log-nio",
+          "statuses": [],
+          "paths": [],
+          "methods": [],
+          "identities": []
+        }
+      },
+      "apiKeyConstraints": {
+        "basicAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "customHeadersAuth": {
+          "enabled": true,
+          "clientIdHeaderName": null,
+          "clientSecretHeaderName": null
+        },
+        "otoBearerAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null,
+          "cookieName": null
+        },
+        "clientIdAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "jwtAuth": {
+          "enabled": true,
+          "secretSigned": true,
+          "keyPairSigned": true,
+          "includeRequestAttributes": false,
+          "maxJwtLifespanSecs": null,
+          "headerName": null,
+          "queryName": null,
+          "cookieName": null
+        },
+        "routing": {
+          "noneTagIn": [],
+          "oneTagIn": [],
+          "allTagsIn": [],
+          "noneMetaIn": {},
+          "oneMetaIn": {},
+          "allMetaIn": {},
+          "noneMetaKeysIn": [],
+          "oneMetaKeyIn": [],
+          "allMetaKeysIn": []
+        }
+      },
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "accessValidator": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "preRouting": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excludedPatterns": []
+      },
+      "plugins": {
+        "enabled": false,
+        "refs": [],
+        "config": {},
+        "excluded": []
+      },
+      "hosts": [],
+      "paths": [],
+      "handleLegacyDomain": true,
+      "issueCert": false,
+      "issueCertCA": null
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "KAyMY0iHPF7aljWqNkJx3mehRiwJtwKt2ZUybPZDZMIfOJDDJZiXvnrzlQlXyaAc",
+      "groupId": "VVHIgho2keCtVHaDR3l9Xkq34t6XnXnIcdf20i5NqEJmAt8uF5Tio9hSBWbgIo6O",
+      "groups": [
+        "VVHIgho2keCtVHaDR3l9Xkq34t6XnXnIcdf20i5NqEJmAt8uF5Tio9hSBWbgIo6O"
+      ],
+      "name": "[MIGRATED TO ROUTE, PENDING DELETION] my-service",
+      "description": "",
+      "env": "prod",
+      "domain": "opunmaif.fr",
+      "subdomain": "nio",
+      "targetsLoadBalancing": {
+        "type": "RoundRobin"
+      },
+      "targets": [
+        {
+          "host": "app-d85f65bf-e7ae-41c1-a3b5-408e74b07dac.opunmaif.io",
+          "scheme": "https",
+          "weight": 1,
+          "mtlsConfig": {
+            "certs": [],
+            "trustedCerts": [],
+            "mtls": false,
+            "loose": false,
+            "trustAll": false
+          },
+          "tags": [],
+          "metadata": {},
+          "protocol": "HTTP/1.1",
+          "predicate": {
+            "type": "AlwaysMatch"
+          },
+          "ipAddress": null
+        }
+      ],
+      "root": "/",
+      "matchingRoot": null,
+      "stripPath": true,
+      "localHost": "localhost:8080",
+      "localScheme": "http",
+      "redirectToLocal": false,
+      "enabled": false,
+      "userFacing": false,
+      "privateApp": true,
+      "forceHttps": true,
+      "logAnalyticsOnServer": false,
+      "useAkkaHttpClient": true,
+      "useNewWSClient": false,
+      "tcpUdpTunneling": false,
+      "detectApiKeySooner": false,
+      "maintenanceMode": false,
+      "buildMode": false,
+      "strictlyPrivate": false,
+      "enforceSecureCommunication": true,
+      "sendInfoToken": true,
+      "sendStateChallenge": true,
+      "sendOtoroshiHeadersBack": false,
+      "readOnly": false,
+      "xForwardedHeaders": false,
+      "overrideHost": true,
+      "allowHttp10": false,
+      "letsEncrypt": false,
+      "secComHeaders": {
+        "claimRequestName": null,
+        "stateRequestName": null,
+        "stateResponseName": null
+      },
+      "secComTtl": 30000,
+      "secComVersion": "V1",
+      "secComInfoTokenVersion": "Legacy",
+      "secComExcludedPatterns": [
+        "/ruxitagentjs_.*",
+        "/rb_.*"
+      ],
+      "securityExcludedPatterns": [],
+      "publicPatterns": [
+        "/.*"
+      ],
+      "privatePatterns": [
+        "/api/.*",
+        "/_healthCheck"
+      ],
+      "additionalHeaders": {},
+      "additionalHeadersOut": {},
+      "missingOnlyHeadersIn": {},
+      "missingOnlyHeadersOut": {},
+      "removeHeadersIn": [],
+      "removeHeadersOut": [],
+      "headersVerification": {},
+      "matchingHeaders": {},
+      "ipFiltering": {
+        "whitelist": [],
+        "blacklist": []
+      },
+      "api": {
+        "exposeApi": false
+      },
+      "healthCheck": {
+        "enabled": false,
+        "url": "/",
+        "timeout": 5000,
+        "healthyStatuses": [],
+        "unhealthyStatuses": []
+      },
+      "clientConfig": {
+        "useCircuitBreaker": true,
+        "retries": 3,
+        "maxErrors": 60,
+        "retryInitialDelay": 50,
+        "backoffFactor": 2,
+        "callTimeout": 60000,
+        "callAndStreamTimeout": 72000000,
+        "connectionTimeout": 10000,
+        "idleTimeout": 60000,
+        "globalTimeout": 18000,
+        "sampleInterval": 2000,
+        "proxy": {},
+        "customTimeouts": [],
+        "cacheConnectionSettings": {
+          "enabled": false,
+          "queueSize": 2048
+        }
+      },
+      "canary": {
+        "enabled": false,
+        "traffic": 0.2,
+        "targets": [],
+        "root": "/"
+      },
+      "gzip": {
+        "enabled": false,
+        "excludedPatterns": [],
+        "whiteList": [
+          "text/*",
+          "application/javascript",
+          "application/json"
+        ],
+        "blackList": [],
+        "bufferSize": 8192,
+        "chunkedThreshold": 102400,
+        "compressionLevel": 5
+      },
+      "metadata": {
+        "converted_to_route_by": "admin@otoroshi.io - admin@otoroshi.io",
+        "service": "nio",
+        "converted_to_route_at": "2024-05-13 04:14:12",
+        "env": "prod",
+        "product": "nio"
+      },
+      "tags": [],
+      "chaosConfig": {
+        "enabled": false,
+        "largeRequestFaultConfig": {
+          "ratio": 0.2,
+          "additionalRequestSize": 0
+        },
+        "largeResponseFaultConfig": {
+          "ratio": 0.2,
+          "additionalResponseSize": 0
+        },
+        "latencyInjectionFaultConfig": {
+          "ratio": 0.2,
+          "from": 0,
+          "to": 0
+        },
+        "badResponsesFaultConfig": {
+          "ratio": 0.2,
+          "responses": []
+        }
+      },
+      "jwtVerifier": {
+        "type": "ref",
+        "ids": [],
+        "id": null,
+        "enabled": false,
+        "excludedPatterns": []
+      },
+      "secComSettings": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "Wh9cYrNCQl8wUUdJPdUsDrnSVP9Y5PRqElopegNoTX0Sy5BiV7k4mo4m1ew4gwdDNkUwHJk5shU5AujW55D0lV30dp8OOVhdGlwBko4kSforYgUIuPTVy3Jgd8BfXQLj",
+        "base64": false
+      },
+      "secComUseSameAlgo": true,
+      "secComAlgoChallengeOtoToBack": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoChallengeBackToOto": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "secComAlgoInfoToken": {
+        "type": "HSAlgoSettings",
+        "size": 512,
+        "secret": "secret",
+        "base64": false
+      },
+      "cors": {
+        "enabled": false,
+        "allowOrigin": "*",
+        "exposeHeaders": [],
+        "allowHeaders": [],
+        "allowMethods": [],
+        "excludedPatterns": [],
+        "maxAge": null,
+        "allowCredentials": true
+      },
+      "redirection": {
+        "enabled": false,
+        "code": 303,
+        "to": "https://www.otoroshi.io"
+      },
+      "authConfigRef": "confidential-apps",
+      "clientValidatorRef": null,
+      "transformerRef": null,
+      "transformerRefs": [],
+      "transformerConfig": {
+        "KafkaAccessLog": {
+          "enabled": true,
+          "topic": "otoroshi-access-log-nio",
+          "statuses": [],
+          "paths": [],
+          "methods": [],
+          "identities": []
+        }
+      },
+      "apiKeyConstraints": {
+        "basicAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "customHeadersAuth": {
+          "enabled": true,
+          "clientIdHeaderName": null,
+          "clientSecretHeaderName": null
+        },
+        "otoBearerAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null,
+          "cookieName": null
+        },
+        "clientIdAuth": {
+          "enabled": true,
+          "headerName": null,
+          "queryName": null
+        },
+        "jwtAuth": {
+          "enabled": true,
+          "secretSigned": true,
+          "keyPairSigned": true,
+          "includeRequestAttributes": false,
+          "maxJwtLifespanSecs": null,
+          "headerName": null,
+          "queryName": null,
+          "cookieName": null
         },
         "routing": {
           "noneTagIn": [],
@@ -1429,7 +1389,6 @@
       "clientSideSessionEnabled": true,
       "sessionMaxAge": 86400,
       "userValidators": [],
-      "remoteValidators": [],
       "clientId": "ty4FtdvLumT9iFRcQ5Oy6dqmeCNNFJFM",
       "clientSecret": "Ts0vcdejBbt8Co32YDZPQNSHvXEhUHtW0ncpYMylqOcf7cM_-qDtNf2hWakb7vQL",
       "authorizeUrl": "https://komainu-demo.eu.auth0.com/authorize",
@@ -1503,12 +1462,44 @@
         }
       },
       "otoroshiRightsField": "otoroshi_rights",
-      "allowedUsers": [],
-      "deniedUsers": [],
       "adminEntityValidatorsOverride": {}
     }
   ],
   "certificates": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "otoroshi-client",
+      "domain": "Otoroshi Default Client Certificate",
+      "name": "Otoroshi Default Client Certificate",
+      "description": "Otoroshi client certificate (auto-generated)",
+      "chain": "-----BEGIN CERTIFICATE-----\nMIIEfzCCA2egAwIBAgIIZ3nGcsq30SswDQYJKoZIhvcNAQELBQAwajE1MDMGA1UE\nAwwsT3Rvcm9zaGkgRGVmYXVsdCBJbnRlcm1lZGlhdGUgQ0EgQ2VydGlmaWNhdGUx\nHjAcBgNVBAsMFU90b3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9z\naGkwHhcNMjQwNTEzMTI0MDMxWhcNMjUwNTEzMTI0MDMxWjBhMSwwKgYDVQQDDCNP\ndG9yb3NoaSBEZWZhdWx0IENsaWVudCBDZXJ0aWZpY2F0ZTEeMBwGA1UECwwVT3Rv\ncm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTCCASIwDQYJKoZI\nhvcNAQEBBQADggEPADCCAQoCggEBAPyu8zPrlQM6SWKuvrD19Zm4G2DB88NC9LWr\nW/zxKQhPlxnKo4JNfgSdWvPMosX6JL7cAwxEYQmwKlXxmCH5PFygf9RDGoZHvz7I\nFmBxN95hqQ08WMT3ltPegeStP7HTFLMIrzy4EaYCxRqCDhPBKPjYSm6dzg9ifWtz\nGnoUQVWx7tBLYx2XwkBozxNpNi7ZrOexgyrE66Mg2JrM37y7YPiv4YrwW5q34tZf\njZ4IivT6KX2FLcdhlSoEUFCdhBxDF2fmiWklOoVjBL1uPSz26+usq/1ay8tfpHP5\nfKYVrh7hEYyeDrrLYMOGs7TmVcRDAPKbr+RahGZqOSlevlEwXzUCAwEAAaOCATAw\nggEsMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsG\nAQUFBwMCBggrBgEFBQcDATAfBgNVHSMEGDAWgBS4QwI1e7QM+El9SEMtz3eNaEIw\naDAJBgNVHREEAjAAMIHABggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0\ncDovL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9y\nb3NoaS9jZXJ0aWZpY2F0ZXMvNzQ1NjIwODg1NDQxODE4MjQ0MzBIBggrBgEFBQcw\nAYY8aHR0cDovL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93\nbi9vdG9yb3NoaS9vY3NwMA0GCSqGSIb3DQEBCwUAA4IBAQBY57t8UyB2QoGlnzdD\nvFtVrSqNqqtTXxzy8XWHZ8OQVeKyIYq8+Q6Vw/IkhqxL1JPFWHD8ATdwziX/DEkt\n0SUwCSvDFxD6xahB+Uh8EfVvqWzqpyXVabpPI/FpC8btbj12wfh5OAz+UpdpvbAs\nzjfeKtIGHWDb/GSa1Rp9dFJQRRAaHWBFV4kLNoNAfGL6wnTze80e9F1wrfUi0263\noach/LIWm9SWaSZSZQ87LELLp5u5ZqZHyx4Fv585Fxp0hBreB0Z1GEjTqTsFjnag\n8eIe+i3qGPxBFDMEeZ9B+66OaMrWPDwIx0Ikfu4y4Ko3ijqIJp+Mw9l1fiE23ROf\ndVjs\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIDtTCCAp2gAwIBAgIJAJI/0IpO0bFHMA0GCSqGSIb3DQEBCwUAMGIxLTArBgNV\nBAMMJE90b3Jvc2hpIERlZmF1bHQgUm9vdCBDQSBDZXJ0aWZpY2F0ZTEeMBwGA1UE\nCwwVT3Rvcm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTAeFw0y\nNDA1MTMxMjQwMzBaFw0zNDA1MTExMjQwMzBaMGoxNTAzBgNVBAMMLE90b3Jvc2hp\nIERlZmF1bHQgSW50ZXJtZWRpYXRlIENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVP\ndG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkq\nhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtnT7t0ZsEcW4nVg3vGfLx0en8smZ5rcs\nSP8UWvQGXrbPs0vX/tDty2IabSIw6YrddRfBVoPr6IgFn6ZkVx6OxVPL2siftsUR\n0ha77Ie2wbMcEot3utfBllypG6lUBxvQvTBpJUmtHbI/ZSK9z1PVzvyetIPlN2ow\nvBVGeuxLuOINNIGVv1ByyPx2lTIo2kkhuU+XUufnF9CEYDRaMt7CgJjeE1SWs6nR\nwqA8V0BJnUHkcw5QPqTqPeetN3UUHw+hvzJjWK9wRK7o2oYGDxPFLv19qu8apOyD\nnlTkXtSRQqS7i5K6WPeHFEu8qEaUqgFq4z4SelTpjRAQjkFGPG6YowIDAQABo2Yw\nZDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAfBgNVHSMEGDAW\ngBRIIm+c4aGHU0/jJ+HiwRZKdZ8NOjAdBgNVHQ4EFgQUuEMCNXu0DPhJfUhDLc93\njWhCMGgwDQYJKoZIhvcNAQELBQADggEBAE8L95TZRPx6JZ4FLRAeFvalBOp+c9C+\n1w0yubOVGVrHGdCvbu5VE7c5OhUDXNU/lC86VF7d5UhW07XnmiKXyZGxbVY/MMnm\nDQbCRd2yXD9g7KQIFQTWURBj516nh1ugR4k3hEcjPTAtcMMbLD2xga6cAkA7NWwX\nODSjNLSAvefzJLpGAMjISJeLKnTCHqdpgoWKroZ8RzVeOj2V45CnIGocX852291N\nnKqsdfHCxcxx34wp1km7aiJqYG1vEaXw1e7sW8E57pVcSmOcqXHwbP7Ebk729PI8\nnoPerKLn/AN8iL34t3CtkIpBQmQsVyMfhqpY8qBcjZOjYgmTaaNwe1E=\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIEcDCCA1igAwIBAgIILMmQ5szf0skwDQYJKoZIhvcNAQELBQAwYjEtMCsGA1UE\nAwwkT3Rvcm9zaGkgRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQL\nDBVPdG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMB4XDTI0\nMDUxMzEyNDAzMFoXDTM0MDUxMTEyNDAzMFowYjEtMCsGA1UEAwwkT3Rvcm9zaGkg\nRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVPdG9yb3NoaSBD\nZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkqhkiG9w0BAQEF\nAAOCAQ8AMIIBCgKCAQEAunpALvuym5JJNFD5rVDBEUVWn+cHYpBsPDhwpezuVgTF\nm/vzAlHBNKuBd/JhKyfekR/vByesxZVuKUFi6whbvdYaENQqWzqNtCHPhB8zcgoF\nQnXMGQqSIlk7NL8fY4r3d5+rKZ535S5zrHunibby4tp4Bt9Z6miP7/Kds2+hrPgt\nWt+lq+OHeHo8brn9Y9jXArO112U3SpaqD+kuRmWa4CsSdVUHSMHSzUt2v7zV/m1k\nDl0eJqAi5q9GN4wrG3ES6zC66caZFLk2o3/uN6zakln0xM2LjjdHH/7D83qF9Itx\nh091jZ9XP/+71accjrEs3InVuKhwmb4gNlFkeJzO+QIDAQABo4IBKDCCASQwDwYD\nVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHwYDVR0jBBgwFoAUSCJvnOGh\nh1NP4yfh4sEWSnWfDTowHQYDVR0OBBYEFEgib5zhoYdTT+Mn4eLBFkp1nw06MIHA\nBggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jvc2hpLWFw\naS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0aWZpY2F0\nZXMvMzIyNzI2OTkyODk0MTc2OTQxNzBIBggrBgEFBQcwAYY8aHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9vY3Nw\nMA0GCSqGSIb3DQEBCwUAA4IBAQCWAAxgeZyFyay78wYqm14vsaziPd16xSiTz57X\nxFzQ0g8Ysc+Z/9FwJmAiSr2tdksKSk2AETrNpGchj30xVknKcpuOtmcyOUZl7QBk\nVWJHDcUudeBPJssMNauTfamzaDbekpRR3rNkzJBK8eg7p1kzokPku4vqVZ3crPgV\nC9lZzkOGTiBmRxUuUV+RupQg7EfMxT9FdIuAycxLdhvZQ3k3fWHo73UOK3PKBhAs\nusOxUTUDWRCSpzihNoAwulc5GwnLRMaNRQeUlJLADQfdZ5k6qbPdmim7sElGU7JK\ndd+6mZ0gYv8vZOUmiSUNTsY2TUkM3TizSmI5IIfSZcxr46GQ\n-----END CERTIFICATE-----\n",
+      "caRef": null,
+      "privateKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD8rvMz65UDOkli\nrr6w9fWZuBtgwfPDQvS1q1v88SkIT5cZyqOCTX4EnVrzzKLF+iS+3AMMRGEJsCpV\n8Zgh+TxcoH/UQxqGR78+yBZgcTfeYakNPFjE95bT3oHkrT+x0xSzCK88uBGmAsUa\ngg4TwSj42Epunc4PYn1rcxp6FEFVse7QS2Mdl8JAaM8TaTYu2aznsYMqxOujINia\nzN+8u2D4r+GK8Fuat+LWX42eCIr0+il9hS3HYZUqBFBQnYQcQxdn5olpJTqFYwS9\nbj0s9uvrrKv9WsvLX6Rz+XymFa4e4RGMng66y2DDhrO05lXEQwDym6/kWoRmajkp\nXr5RMF81AgMBAAECggEAKoV0Vr3jpxXlaI5Yd6YETPhu3wL0dtzrGjE6ex/IFGZ0\nWno/trs8pCEov5MlpyQ3j8itWKCfJca38RuFSt5KupmluT4LliI3vCRmo5cZ3DnZ\n/Wi01XyGrKOqfyVqbQ3E03X4K0MccS/RJGtTXB6quumG6QN0PCGKUo0dnQKQlg9U\nM5YHt4YPspMUOhnxht0fkqztSdacCBQCMpW+6D7xq5Y0gqfswHv1SqhSKor3Uqa2\nXWEsHJCmhA5s6Q3g9ywmZ7q78WXh9w7EF+ay4fpfjpj53YiaBWp4UrKkrHqHoWvI\ntDOX6jpnNDyz2dt2Z4cI9Aw2V2VmQBUwfB0o911bhwKBgQD+1CUAKiAmwi8Ubyt+\nY/PjSWMMo8qSs097lytyZEZWq4ebRVZ0lQ2lLxPSwJoXMSZY77llgYgHyDRIgN3z\nWjsPlwKiZIW9mjE5PIXpdiExg4ehRhVW/1j8X9ck+Wd+8IDKvq5F0Iy4I+XU/soG\nbY8Obj5P6xQFuK0SxOdqddYl7wKBgQD92Ef31ddsfvwvfVI8IcpaDUBE81wfMO2e\nRjGooXPetRsuKzi5ntQQQjPQPzYeThqc2IE/NWjCrGJo6/3GVNYw+YVIrpP3UfCN\nbeDGvXTEs8g6KYZAvgpmXCPvfl3Xz2Rk14Q8+2opIArnK8SVXwybti/Mr/blPm+Y\nW/SRt8KRGwKBgQDPXyxNGfrYD6XoZx9p10UdbRchrhinkSvZU4eTq25iEWxlOuPE\nM5fLGKh1FS9QODsQnOSuad6dFpsVdWkpJAB0C1ulc1Ayn0v3W/1No0gX1wWEhFfR\nWDK+DfAyspM6hdUJKGsBfVlGcFAUKNOWr4l/IM+skYzVqxeM8pev1vzSGQKBgAse\nyXBS/t/y5CtUayDVPh8Zy4H5w0ReiVpQquY/RGsyNeGc5RxEl/eqXsi1rDJBq6rJ\nVUgml9NHZ/w+slxY5RU6KRuZAkRoY4hekuVB8XaYhaH+pbH6YUxApxZby9KjdDty\nsYlWXj00+SVNZoxAoLXFkmx+HOvIA22CQcGMckqXAoGAA6DCoWdH0OkdQF5/a4be\nu6OqhwvlEXFn/7uV9a6UAXo0k+OQdNfZFtCpngguzd31pLj263fh+XzFGb+z2fc/\nHpolKx2FfV3oU840j564sLXPsaFCy85B6+Mz3Goxpeqw36OHnYpTYrMR3bWApvy7\njKcN00mIjBZ3kBa2/pBAGZ0=\n-----END PRIVATE KEY-----\n",
+      "selfSigned": false,
+      "ca": false,
+      "valid": true,
+      "exposed": true,
+      "revoked": false,
+      "autoRenew": true,
+      "letsEncrypt": false,
+      "subject": "OU=Otoroshi Certificates, O=Otoroshi, CN=Otoroshi Default Client Certificate",
+      "from": 1715604031000,
+      "to": 1747140031000,
+      "client": true,
+      "keypair": false,
+      "sans": [],
+      "certType": "client",
+      "password": null,
+      "metadata": {
+        "csr": "{\"hosts\":[],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=Otoroshi Default Client Certificate, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":true,\"ca\":false,\"duration\":31536000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
+      },
+      "tags": []
+    },
     {
       "_loc": {
         "tenant": "default",
@@ -1542,40 +1533,6 @@
       "password": null,
       "metadata": {
         "csr": "{\"hosts\":[\"*.oto.tools\"],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=*.oto.tools, SN=Otoroshi Default Wildcard Certificate, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":false,\"ca\":false,\"duration\":31536000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
-      },
-      "tags": []
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "otoroshi-client",
-      "domain": "Otoroshi Default Client Certificate",
-      "name": "Otoroshi Default Client Certificate",
-      "description": "Otoroshi client certificate (auto-generated)",
-      "chain": "-----BEGIN CERTIFICATE-----\nMIIEfzCCA2egAwIBAgIIZ3nGcsq30SswDQYJKoZIhvcNAQELBQAwajE1MDMGA1UE\nAwwsT3Rvcm9zaGkgRGVmYXVsdCBJbnRlcm1lZGlhdGUgQ0EgQ2VydGlmaWNhdGUx\nHjAcBgNVBAsMFU90b3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9z\naGkwHhcNMjQwNTEzMTI0MDMxWhcNMjUwNTEzMTI0MDMxWjBhMSwwKgYDVQQDDCNP\ndG9yb3NoaSBEZWZhdWx0IENsaWVudCBDZXJ0aWZpY2F0ZTEeMBwGA1UECwwVT3Rv\ncm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTCCASIwDQYJKoZI\nhvcNAQEBBQADggEPADCCAQoCggEBAPyu8zPrlQM6SWKuvrD19Zm4G2DB88NC9LWr\nW/zxKQhPlxnKo4JNfgSdWvPMosX6JL7cAwxEYQmwKlXxmCH5PFygf9RDGoZHvz7I\nFmBxN95hqQ08WMT3ltPegeStP7HTFLMIrzy4EaYCxRqCDhPBKPjYSm6dzg9ifWtz\nGnoUQVWx7tBLYx2XwkBozxNpNi7ZrOexgyrE66Mg2JrM37y7YPiv4YrwW5q34tZf\njZ4IivT6KX2FLcdhlSoEUFCdhBxDF2fmiWklOoVjBL1uPSz26+usq/1ay8tfpHP5\nfKYVrh7hEYyeDrrLYMOGs7TmVcRDAPKbr+RahGZqOSlevlEwXzUCAwEAAaOCATAw\nggEsMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsG\nAQUFBwMCBggrBgEFBQcDATAfBgNVHSMEGDAWgBS4QwI1e7QM+El9SEMtz3eNaEIw\naDAJBgNVHREEAjAAMIHABggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0\ncDovL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9y\nb3NoaS9jZXJ0aWZpY2F0ZXMvNzQ1NjIwODg1NDQxODE4MjQ0MzBIBggrBgEFBQcw\nAYY8aHR0cDovL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93\nbi9vdG9yb3NoaS9vY3NwMA0GCSqGSIb3DQEBCwUAA4IBAQBY57t8UyB2QoGlnzdD\nvFtVrSqNqqtTXxzy8XWHZ8OQVeKyIYq8+Q6Vw/IkhqxL1JPFWHD8ATdwziX/DEkt\n0SUwCSvDFxD6xahB+Uh8EfVvqWzqpyXVabpPI/FpC8btbj12wfh5OAz+UpdpvbAs\nzjfeKtIGHWDb/GSa1Rp9dFJQRRAaHWBFV4kLNoNAfGL6wnTze80e9F1wrfUi0263\noach/LIWm9SWaSZSZQ87LELLp5u5ZqZHyx4Fv585Fxp0hBreB0Z1GEjTqTsFjnag\n8eIe+i3qGPxBFDMEeZ9B+66OaMrWPDwIx0Ikfu4y4Ko3ijqIJp+Mw9l1fiE23ROf\ndVjs\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIDtTCCAp2gAwIBAgIJAJI/0IpO0bFHMA0GCSqGSIb3DQEBCwUAMGIxLTArBgNV\nBAMMJE90b3Jvc2hpIERlZmF1bHQgUm9vdCBDQSBDZXJ0aWZpY2F0ZTEeMBwGA1UE\nCwwVT3Rvcm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTAeFw0y\nNDA1MTMxMjQwMzBaFw0zNDA1MTExMjQwMzBaMGoxNTAzBgNVBAMMLE90b3Jvc2hp\nIERlZmF1bHQgSW50ZXJtZWRpYXRlIENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVP\ndG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkq\nhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtnT7t0ZsEcW4nVg3vGfLx0en8smZ5rcs\nSP8UWvQGXrbPs0vX/tDty2IabSIw6YrddRfBVoPr6IgFn6ZkVx6OxVPL2siftsUR\n0ha77Ie2wbMcEot3utfBllypG6lUBxvQvTBpJUmtHbI/ZSK9z1PVzvyetIPlN2ow\nvBVGeuxLuOINNIGVv1ByyPx2lTIo2kkhuU+XUufnF9CEYDRaMt7CgJjeE1SWs6nR\nwqA8V0BJnUHkcw5QPqTqPeetN3UUHw+hvzJjWK9wRK7o2oYGDxPFLv19qu8apOyD\nnlTkXtSRQqS7i5K6WPeHFEu8qEaUqgFq4z4SelTpjRAQjkFGPG6YowIDAQABo2Yw\nZDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAfBgNVHSMEGDAW\ngBRIIm+c4aGHU0/jJ+HiwRZKdZ8NOjAdBgNVHQ4EFgQUuEMCNXu0DPhJfUhDLc93\njWhCMGgwDQYJKoZIhvcNAQELBQADggEBAE8L95TZRPx6JZ4FLRAeFvalBOp+c9C+\n1w0yubOVGVrHGdCvbu5VE7c5OhUDXNU/lC86VF7d5UhW07XnmiKXyZGxbVY/MMnm\nDQbCRd2yXD9g7KQIFQTWURBj516nh1ugR4k3hEcjPTAtcMMbLD2xga6cAkA7NWwX\nODSjNLSAvefzJLpGAMjISJeLKnTCHqdpgoWKroZ8RzVeOj2V45CnIGocX852291N\nnKqsdfHCxcxx34wp1km7aiJqYG1vEaXw1e7sW8E57pVcSmOcqXHwbP7Ebk729PI8\nnoPerKLn/AN8iL34t3CtkIpBQmQsVyMfhqpY8qBcjZOjYgmTaaNwe1E=\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIEcDCCA1igAwIBAgIILMmQ5szf0skwDQYJKoZIhvcNAQELBQAwYjEtMCsGA1UE\nAwwkT3Rvcm9zaGkgRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQL\nDBVPdG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMB4XDTI0\nMDUxMzEyNDAzMFoXDTM0MDUxMTEyNDAzMFowYjEtMCsGA1UEAwwkT3Rvcm9zaGkg\nRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVPdG9yb3NoaSBD\nZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkqhkiG9w0BAQEF\nAAOCAQ8AMIIBCgKCAQEAunpALvuym5JJNFD5rVDBEUVWn+cHYpBsPDhwpezuVgTF\nm/vzAlHBNKuBd/JhKyfekR/vByesxZVuKUFi6whbvdYaENQqWzqNtCHPhB8zcgoF\nQnXMGQqSIlk7NL8fY4r3d5+rKZ535S5zrHunibby4tp4Bt9Z6miP7/Kds2+hrPgt\nWt+lq+OHeHo8brn9Y9jXArO112U3SpaqD+kuRmWa4CsSdVUHSMHSzUt2v7zV/m1k\nDl0eJqAi5q9GN4wrG3ES6zC66caZFLk2o3/uN6zakln0xM2LjjdHH/7D83qF9Itx\nh091jZ9XP/+71accjrEs3InVuKhwmb4gNlFkeJzO+QIDAQABo4IBKDCCASQwDwYD\nVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHwYDVR0jBBgwFoAUSCJvnOGh\nh1NP4yfh4sEWSnWfDTowHQYDVR0OBBYEFEgib5zhoYdTT+Mn4eLBFkp1nw06MIHA\nBggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jvc2hpLWFw\naS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0aWZpY2F0\nZXMvMzIyNzI2OTkyODk0MTc2OTQxNzBIBggrBgEFBQcwAYY8aHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9vY3Nw\nMA0GCSqGSIb3DQEBCwUAA4IBAQCWAAxgeZyFyay78wYqm14vsaziPd16xSiTz57X\nxFzQ0g8Ysc+Z/9FwJmAiSr2tdksKSk2AETrNpGchj30xVknKcpuOtmcyOUZl7QBk\nVWJHDcUudeBPJssMNauTfamzaDbekpRR3rNkzJBK8eg7p1kzokPku4vqVZ3crPgV\nC9lZzkOGTiBmRxUuUV+RupQg7EfMxT9FdIuAycxLdhvZQ3k3fWHo73UOK3PKBhAs\nusOxUTUDWRCSpzihNoAwulc5GwnLRMaNRQeUlJLADQfdZ5k6qbPdmim7sElGU7JK\ndd+6mZ0gYv8vZOUmiSUNTsY2TUkM3TizSmI5IIfSZcxr46GQ\n-----END CERTIFICATE-----\n",
-      "caRef": null,
-      "privateKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD8rvMz65UDOkli\nrr6w9fWZuBtgwfPDQvS1q1v88SkIT5cZyqOCTX4EnVrzzKLF+iS+3AMMRGEJsCpV\n8Zgh+TxcoH/UQxqGR78+yBZgcTfeYakNPFjE95bT3oHkrT+x0xSzCK88uBGmAsUa\ngg4TwSj42Epunc4PYn1rcxp6FEFVse7QS2Mdl8JAaM8TaTYu2aznsYMqxOujINia\nzN+8u2D4r+GK8Fuat+LWX42eCIr0+il9hS3HYZUqBFBQnYQcQxdn5olpJTqFYwS9\nbj0s9uvrrKv9WsvLX6Rz+XymFa4e4RGMng66y2DDhrO05lXEQwDym6/kWoRmajkp\nXr5RMF81AgMBAAECggEAKoV0Vr3jpxXlaI5Yd6YETPhu3wL0dtzrGjE6ex/IFGZ0\nWno/trs8pCEov5MlpyQ3j8itWKCfJca38RuFSt5KupmluT4LliI3vCRmo5cZ3DnZ\n/Wi01XyGrKOqfyVqbQ3E03X4K0MccS/RJGtTXB6quumG6QN0PCGKUo0dnQKQlg9U\nM5YHt4YPspMUOhnxht0fkqztSdacCBQCMpW+6D7xq5Y0gqfswHv1SqhSKor3Uqa2\nXWEsHJCmhA5s6Q3g9ywmZ7q78WXh9w7EF+ay4fpfjpj53YiaBWp4UrKkrHqHoWvI\ntDOX6jpnNDyz2dt2Z4cI9Aw2V2VmQBUwfB0o911bhwKBgQD+1CUAKiAmwi8Ubyt+\nY/PjSWMMo8qSs097lytyZEZWq4ebRVZ0lQ2lLxPSwJoXMSZY77llgYgHyDRIgN3z\nWjsPlwKiZIW9mjE5PIXpdiExg4ehRhVW/1j8X9ck+Wd+8IDKvq5F0Iy4I+XU/soG\nbY8Obj5P6xQFuK0SxOdqddYl7wKBgQD92Ef31ddsfvwvfVI8IcpaDUBE81wfMO2e\nRjGooXPetRsuKzi5ntQQQjPQPzYeThqc2IE/NWjCrGJo6/3GVNYw+YVIrpP3UfCN\nbeDGvXTEs8g6KYZAvgpmXCPvfl3Xz2Rk14Q8+2opIArnK8SVXwybti/Mr/blPm+Y\nW/SRt8KRGwKBgQDPXyxNGfrYD6XoZx9p10UdbRchrhinkSvZU4eTq25iEWxlOuPE\nM5fLGKh1FS9QODsQnOSuad6dFpsVdWkpJAB0C1ulc1Ayn0v3W/1No0gX1wWEhFfR\nWDK+DfAyspM6hdUJKGsBfVlGcFAUKNOWr4l/IM+skYzVqxeM8pev1vzSGQKBgAse\nyXBS/t/y5CtUayDVPh8Zy4H5w0ReiVpQquY/RGsyNeGc5RxEl/eqXsi1rDJBq6rJ\nVUgml9NHZ/w+slxY5RU6KRuZAkRoY4hekuVB8XaYhaH+pbH6YUxApxZby9KjdDty\nsYlWXj00+SVNZoxAoLXFkmx+HOvIA22CQcGMckqXAoGAA6DCoWdH0OkdQF5/a4be\nu6OqhwvlEXFn/7uV9a6UAXo0k+OQdNfZFtCpngguzd31pLj263fh+XzFGb+z2fc/\nHpolKx2FfV3oU840j564sLXPsaFCy85B6+Mz3Goxpeqw36OHnYpTYrMR3bWApvy7\njKcN00mIjBZ3kBa2/pBAGZ0=\n-----END PRIVATE KEY-----\n",
-      "selfSigned": false,
-      "ca": false,
-      "valid": true,
-      "exposed": true,
-      "revoked": false,
-      "autoRenew": true,
-      "letsEncrypt": false,
-      "subject": "OU=Otoroshi Certificates, O=Otoroshi, CN=Otoroshi Default Client Certificate",
-      "from": 1715604031000,
-      "to": 1747140031000,
-      "client": true,
-      "keypair": false,
-      "sans": [],
-      "certType": "client",
-      "password": null,
-      "metadata": {
-        "csr": "{\"hosts\":[],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=Otoroshi Default Client Certificate, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":true,\"ca\":false,\"duration\":31536000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
       },
       "tags": []
     },
@@ -1620,40 +1577,6 @@
           "default"
         ]
       },
-      "id": "otoroshi-jwt-signing",
-      "domain": "Otoroshi Default Jwt Signing Keypair",
-      "name": "Otoroshi Default Jwt Signing Keypair",
-      "description": "Otoroshi jwt signing keypair (auto-generated)",
-      "chain": "-----BEGIN CERTIFICATE-----\nMIIEdjCCA16gAwIBAgIIGNNuea+cmjcwDQYJKoZIhvcNAQELBQAwajE1MDMGA1UE\nAwwsT3Rvcm9zaGkgRGVmYXVsdCBJbnRlcm1lZGlhdGUgQ0EgQ2VydGlmaWNhdGUx\nHjAcBgNVBAsMFU90b3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9z\naGkwHhcNMjQwNTEzMTI0MDMxWhcNMjUwNTEzMTI0MDMxWjBiMS0wKwYDVQQDDCRP\ndG9yb3NoaSBEZWZhdWx0IEp3dCBTaWduaW5nIEtleXBhaXIxHjAcBgNVBAsMFU90\nb3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9zaGkwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2ZwwVGRVqM75JUoTcMVipsQPLnR6wzNgy\nymluPAIxOFYQ78hJUQqF097OxRS65OJpYj7pW4pMPIc26aFlBdXik3nmcucuuga9\nFhXt2CGgiro+0rGIa9DHbNEpLFdvG9qCdozTINgJCpFzyKupS9O5oO4P5tfVlEog\nXxGPjzGiyuInCdFc39b97YXpFIo0VO8B2qlXJLvzK3I/zQlVT4fSwKuKytVb5sRU\nndC2FFMdon9NRYVP5lgVh5oXflAKH1LTiMPB+6hlXqjkiw6BeoL+7TVVxFgoXOR9\nHoLj1L7WEuNG28OCbcecrge2gxPHLEEHGsBDVXNpHuVFh3SmSo/ZAgMBAAGjggEm\nMIIBIjAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggr\nBgEFBQcDATAfBgNVHSMEGDAWgBS4QwI1e7QM+El9SEMtz3eNaEIwaDAJBgNVHREE\nAjAAMIHABggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0\naWZpY2F0ZXMvMTc4ODg5NDk0NTkxMjU5Mjk1MTBIBggrBgEFBQcwAYY8aHR0cDov\nL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3No\naS9vY3NwMA0GCSqGSIb3DQEBCwUAA4IBAQBs41g9qLUZA9WrtXdNG4f9DTuB1iPz\nvVvI/YPxheDuo89QAsNLLgb3nfRaYNjZGc6DkFQK0EUYMKEsFzScjcCadNk9XXcj\nxGTpuLsTcDXf98ZUBJbLmKSs8CxvK8q3swV18E1GPnhQpKSNqJJQGIrVtchY6uuP\nFmVy8tgSqSRhlNoGSoD9iwhp4tB8Mi31QzYRj5vX2XhpW8n6Zf/C9woxVraUnxEa\nghMg161HnI2KxNCMlvX9DrbXk7FXZm2wqTY+rsDfaVSsMHi2hpXbE5co9JwteNTL\n53DXlixZdYA7I2hrJ8ISi/wwteYaqAVyZg3cZs+srVwRolVYthFzUdJO\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIDtTCCAp2gAwIBAgIJAJI/0IpO0bFHMA0GCSqGSIb3DQEBCwUAMGIxLTArBgNV\nBAMMJE90b3Jvc2hpIERlZmF1bHQgUm9vdCBDQSBDZXJ0aWZpY2F0ZTEeMBwGA1UE\nCwwVT3Rvcm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTAeFw0y\nNDA1MTMxMjQwMzBaFw0zNDA1MTExMjQwMzBaMGoxNTAzBgNVBAMMLE90b3Jvc2hp\nIERlZmF1bHQgSW50ZXJtZWRpYXRlIENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVP\ndG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkq\nhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtnT7t0ZsEcW4nVg3vGfLx0en8smZ5rcs\nSP8UWvQGXrbPs0vX/tDty2IabSIw6YrddRfBVoPr6IgFn6ZkVx6OxVPL2siftsUR\n0ha77Ie2wbMcEot3utfBllypG6lUBxvQvTBpJUmtHbI/ZSK9z1PVzvyetIPlN2ow\nvBVGeuxLuOINNIGVv1ByyPx2lTIo2kkhuU+XUufnF9CEYDRaMt7CgJjeE1SWs6nR\nwqA8V0BJnUHkcw5QPqTqPeetN3UUHw+hvzJjWK9wRK7o2oYGDxPFLv19qu8apOyD\nnlTkXtSRQqS7i5K6WPeHFEu8qEaUqgFq4z4SelTpjRAQjkFGPG6YowIDAQABo2Yw\nZDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAfBgNVHSMEGDAW\ngBRIIm+c4aGHU0/jJ+HiwRZKdZ8NOjAdBgNVHQ4EFgQUuEMCNXu0DPhJfUhDLc93\njWhCMGgwDQYJKoZIhvcNAQELBQADggEBAE8L95TZRPx6JZ4FLRAeFvalBOp+c9C+\n1w0yubOVGVrHGdCvbu5VE7c5OhUDXNU/lC86VF7d5UhW07XnmiKXyZGxbVY/MMnm\nDQbCRd2yXD9g7KQIFQTWURBj516nh1ugR4k3hEcjPTAtcMMbLD2xga6cAkA7NWwX\nODSjNLSAvefzJLpGAMjISJeLKnTCHqdpgoWKroZ8RzVeOj2V45CnIGocX852291N\nnKqsdfHCxcxx34wp1km7aiJqYG1vEaXw1e7sW8E57pVcSmOcqXHwbP7Ebk729PI8\nnoPerKLn/AN8iL34t3CtkIpBQmQsVyMfhqpY8qBcjZOjYgmTaaNwe1E=\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIEcDCCA1igAwIBAgIILMmQ5szf0skwDQYJKoZIhvcNAQELBQAwYjEtMCsGA1UE\nAwwkT3Rvcm9zaGkgRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQL\nDBVPdG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMB4XDTI0\nMDUxMzEyNDAzMFoXDTM0MDUxMTEyNDAzMFowYjEtMCsGA1UEAwwkT3Rvcm9zaGkg\nRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVPdG9yb3NoaSBD\nZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkqhkiG9w0BAQEF\nAAOCAQ8AMIIBCgKCAQEAunpALvuym5JJNFD5rVDBEUVWn+cHYpBsPDhwpezuVgTF\nm/vzAlHBNKuBd/JhKyfekR/vByesxZVuKUFi6whbvdYaENQqWzqNtCHPhB8zcgoF\nQnXMGQqSIlk7NL8fY4r3d5+rKZ535S5zrHunibby4tp4Bt9Z6miP7/Kds2+hrPgt\nWt+lq+OHeHo8brn9Y9jXArO112U3SpaqD+kuRmWa4CsSdVUHSMHSzUt2v7zV/m1k\nDl0eJqAi5q9GN4wrG3ES6zC66caZFLk2o3/uN6zakln0xM2LjjdHH/7D83qF9Itx\nh091jZ9XP/+71accjrEs3InVuKhwmb4gNlFkeJzO+QIDAQABo4IBKDCCASQwDwYD\nVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHwYDVR0jBBgwFoAUSCJvnOGh\nh1NP4yfh4sEWSnWfDTowHQYDVR0OBBYEFEgib5zhoYdTT+Mn4eLBFkp1nw06MIHA\nBggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jvc2hpLWFw\naS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0aWZpY2F0\nZXMvMzIyNzI2OTkyODk0MTc2OTQxNzBIBggrBgEFBQcwAYY8aHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9vY3Nw\nMA0GCSqGSIb3DQEBCwUAA4IBAQCWAAxgeZyFyay78wYqm14vsaziPd16xSiTz57X\nxFzQ0g8Ysc+Z/9FwJmAiSr2tdksKSk2AETrNpGchj30xVknKcpuOtmcyOUZl7QBk\nVWJHDcUudeBPJssMNauTfamzaDbekpRR3rNkzJBK8eg7p1kzokPku4vqVZ3crPgV\nC9lZzkOGTiBmRxUuUV+RupQg7EfMxT9FdIuAycxLdhvZQ3k3fWHo73UOK3PKBhAs\nusOxUTUDWRCSpzihNoAwulc5GwnLRMaNRQeUlJLADQfdZ5k6qbPdmim7sElGU7JK\ndd+6mZ0gYv8vZOUmiSUNTsY2TUkM3TizSmI5IIfSZcxr46GQ\n-----END CERTIFICATE-----\n",
-      "caRef": null,
-      "privateKey": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC2ZwwVGRVqM75J\nUoTcMVipsQPLnR6wzNgyymluPAIxOFYQ78hJUQqF097OxRS65OJpYj7pW4pMPIc2\n6aFlBdXik3nmcucuuga9FhXt2CGgiro+0rGIa9DHbNEpLFdvG9qCdozTINgJCpFz\nyKupS9O5oO4P5tfVlEogXxGPjzGiyuInCdFc39b97YXpFIo0VO8B2qlXJLvzK3I/\nzQlVT4fSwKuKytVb5sRUndC2FFMdon9NRYVP5lgVh5oXflAKH1LTiMPB+6hlXqjk\niw6BeoL+7TVVxFgoXOR9HoLj1L7WEuNG28OCbcecrge2gxPHLEEHGsBDVXNpHuVF\nh3SmSo/ZAgMBAAECggEAM2fbSd7l4CZxDG0LMJtfp4NR1IKVcbJpg/bzu7OB0qlT\n6DYLtk32rzzE4HU+oGV9QcIEhPPdiBrO6LTzXWtFmjOB+WaMrOiUmZmt2Hg/EeXH\nE4mBqzbngiyyze3HPnMVJAuRKLdq6zFlSMJXTsEmDHzEWwrt7S17rp/cbR8oF/6n\n6Kurs4+SvkTnK1v2IHXsBUrkVVE988bWeZhRf3Gd09dPfCmEQdHlR2yv8raMt+cu\nNT2CzXxNYNYQZG7+/93X3P0lKYMMoPe0rdcQRxW2qpqkrcmo2SQyyxOCARRvZIIW\nadIuSnN+3yiHrv7FAhtLB9YlRly1IdGLg6dYd/+luQKBgQDbmtDLKu8yKW51kC73\nnrDpvAkDeQOed9hleiLqLqdwFtx7dS6cs2WeQUDvCegiDHMOEblMo8nNHksVMkVn\nvkHen7px+9lQfTGgK8Y+8AnGzPV5SbCBoDx2m4CjgBiL2JMEBBxUmLDrNvTQ7MaS\ncSmgO6y0S1zsMFpK0NAg9OwMrwKBgQDUodnFXf+Gj7LakMspdkm6U7jX2Fd1LPmX\niRyXvTEgOVbSbHkJvIREFCrMjsgn4qTPVptiS31jASsJwOOXVxSJ3k0x1KgmHtYb\naWh/3ogUUI2aKqYONh1TTqpcEZ7dPLzKDkOv03QMWFCj4BKpL6QHkSwqyXSyJ1mc\naFAmKC2d9wKBgB6LAr0vJIOKhaVuP0oLVTm9AFfuTdWNf5hli1Oc14bcdx/opWn/\n/YMsOjbE3vdVWe88AdSp9xhDPVgeXM7YBFtNReYyjAAI2Y0YaYM5aXKv8PhEinsM\n6Tvp1tNmroNMxO3LEJGnhvu/8f7Y36lgedSiWBvfW3YyJ2y+bCQZTHdbAoGAJVFa\nlQcQR5+EtlNfNKGsAuWatVck0k3YaD4KJJ9xtcQadsfO3mSVmhUoBcqxWj6uyizb\nDH9PPEcCNK4Dw5Xm5uN7DNnTwQz8ascvLfHyVA5nK718c1YQA4T05T+6b/2u7I9g\nVcV4wonlbT1wSP0xfpp98+xzbKj3UzoDhw7aIrUCgYBbZ0R4JHIEBqiWWHz78Ixm\nlo0j8HPdqtyqftne2jAHmHO584MCbJm+/g4gmcwOqyz46smhBdNvCXo0n3Z9Be1T\nVc52xFIyUU4+N4ZqzmrJ9T7fZm8aBDzqpCeq6Yta9gOoHNz9/A2o99bLa87EGRkf\nNzWBlpKUVpHbBIWh3NWKiQ==\n-----END PRIVATE KEY-----\n",
-      "selfSigned": false,
-      "ca": false,
-      "valid": true,
-      "exposed": true,
-      "revoked": false,
-      "autoRenew": true,
-      "letsEncrypt": false,
-      "subject": "OU=Otoroshi Certificates, O=Otoroshi, CN=Otoroshi Default Jwt Signing Keypair",
-      "from": 1715604031000,
-      "to": 1747140031000,
-      "client": false,
-      "keypair": true,
-      "sans": [],
-      "certType": "keypair",
-      "password": null,
-      "metadata": {
-        "csr": "{\"hosts\":[],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=Otoroshi Default Jwt Signing Keypair, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":false,\"ca\":false,\"duration\":31536000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
-      },
-      "tags": []
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
       "id": "otoroshi-root-ca",
       "domain": "Otoroshi Default Root CA Certificate",
       "name": "Otoroshi Default Root CA Certificate",
@@ -1678,6 +1601,40 @@
       "password": null,
       "metadata": {
         "csr": "{\"hosts\":[],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=Otoroshi Default Root CA Certificate, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":false,\"ca\":true,\"duration\":315360000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
+      },
+      "tags": []
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "otoroshi-jwt-signing",
+      "domain": "Otoroshi Default Jwt Signing Keypair",
+      "name": "Otoroshi Default Jwt Signing Keypair",
+      "description": "Otoroshi jwt signing keypair (auto-generated)",
+      "chain": "-----BEGIN CERTIFICATE-----\nMIIEdjCCA16gAwIBAgIIGNNuea+cmjcwDQYJKoZIhvcNAQELBQAwajE1MDMGA1UE\nAwwsT3Rvcm9zaGkgRGVmYXVsdCBJbnRlcm1lZGlhdGUgQ0EgQ2VydGlmaWNhdGUx\nHjAcBgNVBAsMFU90b3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9z\naGkwHhcNMjQwNTEzMTI0MDMxWhcNMjUwNTEzMTI0MDMxWjBiMS0wKwYDVQQDDCRP\ndG9yb3NoaSBEZWZhdWx0IEp3dCBTaWduaW5nIEtleXBhaXIxHjAcBgNVBAsMFU90\nb3Jvc2hpIENlcnRpZmljYXRlczERMA8GA1UECgwIT3Rvcm9zaGkwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2ZwwVGRVqM75JUoTcMVipsQPLnR6wzNgy\nymluPAIxOFYQ78hJUQqF097OxRS65OJpYj7pW4pMPIc26aFlBdXik3nmcucuuga9\nFhXt2CGgiro+0rGIa9DHbNEpLFdvG9qCdozTINgJCpFzyKupS9O5oO4P5tfVlEog\nXxGPjzGiyuInCdFc39b97YXpFIo0VO8B2qlXJLvzK3I/zQlVT4fSwKuKytVb5sRU\nndC2FFMdon9NRYVP5lgVh5oXflAKH1LTiMPB+6hlXqjkiw6BeoL+7TVVxFgoXOR9\nHoLj1L7WEuNG28OCbcecrge2gxPHLEEHGsBDVXNpHuVFh3SmSo/ZAgMBAAGjggEm\nMIIBIjAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggr\nBgEFBQcDATAfBgNVHSMEGDAWgBS4QwI1e7QM+El9SEMtz3eNaEIwaDAJBgNVHREE\nAjAAMIHABggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0\naWZpY2F0ZXMvMTc4ODg5NDk0NTkxMjU5Mjk1MTBIBggrBgEFBQcwAYY8aHR0cDov\nL290b3Jvc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3No\naS9vY3NwMA0GCSqGSIb3DQEBCwUAA4IBAQBs41g9qLUZA9WrtXdNG4f9DTuB1iPz\nvVvI/YPxheDuo89QAsNLLgb3nfRaYNjZGc6DkFQK0EUYMKEsFzScjcCadNk9XXcj\nxGTpuLsTcDXf98ZUBJbLmKSs8CxvK8q3swV18E1GPnhQpKSNqJJQGIrVtchY6uuP\nFmVy8tgSqSRhlNoGSoD9iwhp4tB8Mi31QzYRj5vX2XhpW8n6Zf/C9woxVraUnxEa\nghMg161HnI2KxNCMlvX9DrbXk7FXZm2wqTY+rsDfaVSsMHi2hpXbE5co9JwteNTL\n53DXlixZdYA7I2hrJ8ISi/wwteYaqAVyZg3cZs+srVwRolVYthFzUdJO\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIDtTCCAp2gAwIBAgIJAJI/0IpO0bFHMA0GCSqGSIb3DQEBCwUAMGIxLTArBgNV\nBAMMJE90b3Jvc2hpIERlZmF1bHQgUm9vdCBDQSBDZXJ0aWZpY2F0ZTEeMBwGA1UE\nCwwVT3Rvcm9zaGkgQ2VydGlmaWNhdGVzMREwDwYDVQQKDAhPdG9yb3NoaTAeFw0y\nNDA1MTMxMjQwMzBaFw0zNDA1MTExMjQwMzBaMGoxNTAzBgNVBAMMLE90b3Jvc2hp\nIERlZmF1bHQgSW50ZXJtZWRpYXRlIENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVP\ndG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkq\nhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtnT7t0ZsEcW4nVg3vGfLx0en8smZ5rcs\nSP8UWvQGXrbPs0vX/tDty2IabSIw6YrddRfBVoPr6IgFn6ZkVx6OxVPL2siftsUR\n0ha77Ie2wbMcEot3utfBllypG6lUBxvQvTBpJUmtHbI/ZSK9z1PVzvyetIPlN2ow\nvBVGeuxLuOINNIGVv1ByyPx2lTIo2kkhuU+XUufnF9CEYDRaMt7CgJjeE1SWs6nR\nwqA8V0BJnUHkcw5QPqTqPeetN3UUHw+hvzJjWK9wRK7o2oYGDxPFLv19qu8apOyD\nnlTkXtSRQqS7i5K6WPeHFEu8qEaUqgFq4z4SelTpjRAQjkFGPG6YowIDAQABo2Yw\nZDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAfBgNVHSMEGDAW\ngBRIIm+c4aGHU0/jJ+HiwRZKdZ8NOjAdBgNVHQ4EFgQUuEMCNXu0DPhJfUhDLc93\njWhCMGgwDQYJKoZIhvcNAQELBQADggEBAE8L95TZRPx6JZ4FLRAeFvalBOp+c9C+\n1w0yubOVGVrHGdCvbu5VE7c5OhUDXNU/lC86VF7d5UhW07XnmiKXyZGxbVY/MMnm\nDQbCRd2yXD9g7KQIFQTWURBj516nh1ugR4k3hEcjPTAtcMMbLD2xga6cAkA7NWwX\nODSjNLSAvefzJLpGAMjISJeLKnTCHqdpgoWKroZ8RzVeOj2V45CnIGocX852291N\nnKqsdfHCxcxx34wp1km7aiJqYG1vEaXw1e7sW8E57pVcSmOcqXHwbP7Ebk729PI8\nnoPerKLn/AN8iL34t3CtkIpBQmQsVyMfhqpY8qBcjZOjYgmTaaNwe1E=\n-----END CERTIFICATE-----\n\n-----BEGIN CERTIFICATE-----\nMIIEcDCCA1igAwIBAgIILMmQ5szf0skwDQYJKoZIhvcNAQELBQAwYjEtMCsGA1UE\nAwwkT3Rvcm9zaGkgRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQL\nDBVPdG9yb3NoaSBDZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMB4XDTI0\nMDUxMzEyNDAzMFoXDTM0MDUxMTEyNDAzMFowYjEtMCsGA1UEAwwkT3Rvcm9zaGkg\nRGVmYXVsdCBSb290IENBIENlcnRpZmljYXRlMR4wHAYDVQQLDBVPdG9yb3NoaSBD\nZXJ0aWZpY2F0ZXMxETAPBgNVBAoMCE90b3Jvc2hpMIIBIjANBgkqhkiG9w0BAQEF\nAAOCAQ8AMIIBCgKCAQEAunpALvuym5JJNFD5rVDBEUVWn+cHYpBsPDhwpezuVgTF\nm/vzAlHBNKuBd/JhKyfekR/vByesxZVuKUFi6whbvdYaENQqWzqNtCHPhB8zcgoF\nQnXMGQqSIlk7NL8fY4r3d5+rKZ535S5zrHunibby4tp4Bt9Z6miP7/Kds2+hrPgt\nWt+lq+OHeHo8brn9Y9jXArO112U3SpaqD+kuRmWa4CsSdVUHSMHSzUt2v7zV/m1k\nDl0eJqAi5q9GN4wrG3ES6zC66caZFLk2o3/uN6zakln0xM2LjjdHH/7D83qF9Itx\nh091jZ9XP/+71accjrEs3InVuKhwmb4gNlFkeJzO+QIDAQABo4IBKDCCASQwDwYD\nVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHwYDVR0jBBgwFoAUSCJvnOGh\nh1NP4yfh4sEWSnWfDTowHQYDVR0OBBYEFEgib5zhoYdTT+Mn4eLBFkp1nw06MIHA\nBggrBgEFBQcBAQSBszCBsDBkBggrBgEFBQcwAoZYaHR0cDovL290b3Jvc2hpLWFw\naS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9jZXJ0aWZpY2F0\nZXMvMzIyNzI2OTkyODk0MTc2OTQxNzBIBggrBgEFBQcwAYY8aHR0cDovL290b3Jv\nc2hpLWFwaS5vdG8udG9vbHM6OTk5OS8ud2VsbC1rbm93bi9vdG9yb3NoaS9vY3Nw\nMA0GCSqGSIb3DQEBCwUAA4IBAQCWAAxgeZyFyay78wYqm14vsaziPd16xSiTz57X\nxFzQ0g8Ysc+Z/9FwJmAiSr2tdksKSk2AETrNpGchj30xVknKcpuOtmcyOUZl7QBk\nVWJHDcUudeBPJssMNauTfamzaDbekpRR3rNkzJBK8eg7p1kzokPku4vqVZ3crPgV\nC9lZzkOGTiBmRxUuUV+RupQg7EfMxT9FdIuAycxLdhvZQ3k3fWHo73UOK3PKBhAs\nusOxUTUDWRCSpzihNoAwulc5GwnLRMaNRQeUlJLADQfdZ5k6qbPdmim7sElGU7JK\ndd+6mZ0gYv8vZOUmiSUNTsY2TUkM3TizSmI5IIfSZcxr46GQ\n-----END CERTIFICATE-----\n",
+      "caRef": null,
+      "privateKey": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC2ZwwVGRVqM75J\nUoTcMVipsQPLnR6wzNgyymluPAIxOFYQ78hJUQqF097OxRS65OJpYj7pW4pMPIc2\n6aFlBdXik3nmcucuuga9FhXt2CGgiro+0rGIa9DHbNEpLFdvG9qCdozTINgJCpFz\nyKupS9O5oO4P5tfVlEogXxGPjzGiyuInCdFc39b97YXpFIo0VO8B2qlXJLvzK3I/\nzQlVT4fSwKuKytVb5sRUndC2FFMdon9NRYVP5lgVh5oXflAKH1LTiMPB+6hlXqjk\niw6BeoL+7TVVxFgoXOR9HoLj1L7WEuNG28OCbcecrge2gxPHLEEHGsBDVXNpHuVF\nh3SmSo/ZAgMBAAECggEAM2fbSd7l4CZxDG0LMJtfp4NR1IKVcbJpg/bzu7OB0qlT\n6DYLtk32rzzE4HU+oGV9QcIEhPPdiBrO6LTzXWtFmjOB+WaMrOiUmZmt2Hg/EeXH\nE4mBqzbngiyyze3HPnMVJAuRKLdq6zFlSMJXTsEmDHzEWwrt7S17rp/cbR8oF/6n\n6Kurs4+SvkTnK1v2IHXsBUrkVVE988bWeZhRf3Gd09dPfCmEQdHlR2yv8raMt+cu\nNT2CzXxNYNYQZG7+/93X3P0lKYMMoPe0rdcQRxW2qpqkrcmo2SQyyxOCARRvZIIW\nadIuSnN+3yiHrv7FAhtLB9YlRly1IdGLg6dYd/+luQKBgQDbmtDLKu8yKW51kC73\nnrDpvAkDeQOed9hleiLqLqdwFtx7dS6cs2WeQUDvCegiDHMOEblMo8nNHksVMkVn\nvkHen7px+9lQfTGgK8Y+8AnGzPV5SbCBoDx2m4CjgBiL2JMEBBxUmLDrNvTQ7MaS\ncSmgO6y0S1zsMFpK0NAg9OwMrwKBgQDUodnFXf+Gj7LakMspdkm6U7jX2Fd1LPmX\niRyXvTEgOVbSbHkJvIREFCrMjsgn4qTPVptiS31jASsJwOOXVxSJ3k0x1KgmHtYb\naWh/3ogUUI2aKqYONh1TTqpcEZ7dPLzKDkOv03QMWFCj4BKpL6QHkSwqyXSyJ1mc\naFAmKC2d9wKBgB6LAr0vJIOKhaVuP0oLVTm9AFfuTdWNf5hli1Oc14bcdx/opWn/\n/YMsOjbE3vdVWe88AdSp9xhDPVgeXM7YBFtNReYyjAAI2Y0YaYM5aXKv8PhEinsM\n6Tvp1tNmroNMxO3LEJGnhvu/8f7Y36lgedSiWBvfW3YyJ2y+bCQZTHdbAoGAJVFa\nlQcQR5+EtlNfNKGsAuWatVck0k3YaD4KJJ9xtcQadsfO3mSVmhUoBcqxWj6uyizb\nDH9PPEcCNK4Dw5Xm5uN7DNnTwQz8ascvLfHyVA5nK718c1YQA4T05T+6b/2u7I9g\nVcV4wonlbT1wSP0xfpp98+xzbKj3UzoDhw7aIrUCgYBbZ0R4JHIEBqiWWHz78Ixm\nlo0j8HPdqtyqftne2jAHmHO584MCbJm+/g4gmcwOqyz46smhBdNvCXo0n3Z9Be1T\nVc52xFIyUU4+N4ZqzmrJ9T7fZm8aBDzqpCeq6Yta9gOoHNz9/A2o99bLa87EGRkf\nNzWBlpKUVpHbBIWh3NWKiQ==\n-----END PRIVATE KEY-----\n",
+      "selfSigned": false,
+      "ca": false,
+      "valid": true,
+      "exposed": true,
+      "revoked": false,
+      "autoRenew": true,
+      "letsEncrypt": false,
+      "subject": "OU=Otoroshi Certificates, O=Otoroshi, CN=Otoroshi Default Jwt Signing Keypair",
+      "from": 1715604031000,
+      "to": 1747140031000,
+      "client": false,
+      "keypair": true,
+      "sans": [],
+      "certType": "keypair",
+      "password": null,
+      "metadata": {
+        "csr": "{\"hosts\":[],\"key\":{\"algo\":\"rsa\",\"size\":2048},\"name\":{},\"subject\":\"CN=Otoroshi Default Jwt Signing Keypair, OU=Otoroshi Certificates, O=Otoroshi\",\"client\":false,\"ca\":false,\"duration\":31536000000,\"signatureAlg\":\"SHA256WithRSAEncryption\",\"digestAlg\":\"SHA-256\"}"
       },
       "tags": []
     }
@@ -1713,44 +1670,37 @@
           "default"
         ]
       },
-      "id": "admin-api-service",
-      "name": "otoroshi-admin-api",
-      "description": "",
-      "tags": [
-        "env:prod"
-      ],
-      "metadata": {
-        "otoroshi-core-legacy": "true",
-        "otoroshi-core-env": "prod"
-      },
+      "id": "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d",
+      "name": "child route",
+      "description": "A new route",
+      "tags": [],
+      "metadata": {},
       "enabled": true,
       "debug_flow": false,
       "export_reporting": false,
       "capture": false,
       "groups": [
-        "admin-api-group"
+        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5"
       ],
       "bound_listeners": [],
       "frontend": {
         "domains": [
-          "otoroshi-api.oto.tools/"
+          "child.oto.tools"
         ],
         "strip_path": true,
         "exact": false,
         "headers": {},
-        "cookies": {},
         "query": {},
         "methods": []
       },
       "backend": {
         "targets": [
           {
-            "id": "127.0.0.1:8080",
-            "hostname": "127.0.0.1",
-            "port": 8080,
+            "id": "target_1",
+            "hostname": "mirror.otoroshi.io",
+            "port": 80,
             "tls": false,
             "weight": 1,
-            "backup": false,
             "predicate": {
               "type": "AlwaysMatch"
             },
@@ -1793,11 +1743,310 @@
           "url": "",
           "timeout": 5000,
           "healthyStatuses": [],
-          "unhealthyStatuses": [],
-          "blockOnRed": false,
-          "logicCheck": true,
-          "healthyRegexChecks": [],
-          "unhealthyRegexChecks": []
+          "unhealthyStatuses": []
+        }
+      },
+      "backend_ref": null,
+      "plugins": [
+        {
+          "enabled": true,
+          "debug": false,
+          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
+          "include": [],
+          "exclude": [],
+          "config": {},
+          "bound_listeners": [],
+          "plugin_index": {
+            "transform_request": 0
+          }
+        }
+      ]
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50",
+      "name": "parent route",
+      "description": "A new route",
+      "tags": [],
+      "metadata": {},
+      "enabled": true,
+      "debug_flow": false,
+      "export_reporting": false,
+      "capture": false,
+      "groups": [
+        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5"
+      ],
+      "bound_listeners": [],
+      "frontend": {
+        "domains": [
+          "parent.oto.tools"
+        ],
+        "strip_path": true,
+        "exact": false,
+        "headers": {},
+        "query": {},
+        "methods": []
+      },
+      "backend": {
+        "targets": [
+          {
+            "id": "target_1",
+            "hostname": "mirror.otoroshi.io",
+            "port": 80,
+            "tls": false,
+            "weight": 1,
+            "predicate": {
+              "type": "AlwaysMatch"
+            },
+            "protocol": "HTTP/1.1",
+            "ip_address": null,
+            "tls_config": {
+              "certs": [],
+              "trusted_certs": [],
+              "enabled": false,
+              "loose": false,
+              "trust_all": false
+            }
+          }
+        ],
+        "root": "/",
+        "rewrite": false,
+        "load_balancing": {
+          "type": "RoundRobin"
+        },
+        "client": {
+          "retries": 1,
+          "max_errors": 20,
+          "retry_initial_delay": 50,
+          "backoff_factor": 2,
+          "call_timeout": 30000,
+          "call_and_stream_timeout": 120000,
+          "connection_timeout": 10000,
+          "idle_timeout": 60000,
+          "global_timeout": 30000,
+          "sample_interval": 2000,
+          "proxy": {},
+          "custom_timeouts": [],
+          "cache_connection_settings": {
+            "enabled": false,
+            "queue_size": 2048
+          }
+        },
+        "health_check": {
+          "enabled": false,
+          "url": "",
+          "timeout": 5000,
+          "healthyStatuses": [],
+          "unhealthyStatuses": []
+        }
+      },
+      "backend_ref": null,
+      "plugins": [
+        {
+          "enabled": true,
+          "debug": false,
+          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
+          "include": [],
+          "exclude": [],
+          "config": {},
+          "bound_listeners": [],
+          "plugin_index": {
+            "transform_request": 0
+          }
+        }
+      ]
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c51",
+      "name": "other route",
+      "description": "A new route",
+      "tags": [],
+      "metadata": {},
+      "enabled": true,
+      "debug_flow": false,
+      "export_reporting": false,
+      "capture": false,
+      "groups": [
+        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5",
+        "default"
+      ],
+      "bound_listeners": [],
+      "frontend": {
+        "domains": [
+          "other.oto.tools"
+        ],
+        "strip_path": true,
+        "exact": false,
+        "headers": {},
+        "query": {},
+        "methods": []
+      },
+      "backend": {
+        "targets": [
+          {
+            "id": "target_1",
+            "hostname": "mirror.otoroshi.io",
+            "port": 80,
+            "tls": false,
+            "weight": 1,
+            "predicate": {
+              "type": "AlwaysMatch"
+            },
+            "protocol": "HTTP/1.1",
+            "ip_address": null,
+            "tls_config": {
+              "certs": [],
+              "trusted_certs": [],
+              "enabled": false,
+              "loose": false,
+              "trust_all": false
+            }
+          }
+        ],
+        "root": "/",
+        "rewrite": false,
+        "load_balancing": {
+          "type": "RoundRobin"
+        },
+        "client": {
+          "retries": 1,
+          "max_errors": 20,
+          "retry_initial_delay": 50,
+          "backoff_factor": 2,
+          "call_timeout": 30000,
+          "call_and_stream_timeout": 120000,
+          "connection_timeout": 10000,
+          "idle_timeout": 60000,
+          "global_timeout": 30000,
+          "sample_interval": 2000,
+          "proxy": {},
+          "custom_timeouts": [],
+          "cache_connection_settings": {
+            "enabled": false,
+            "queue_size": 2048
+          }
+        },
+        "health_check": {
+          "enabled": false,
+          "url": "",
+          "timeout": 5000,
+          "healthyStatuses": [],
+          "unhealthyStatuses": []
+        }
+      },
+      "backend_ref": null,
+      "plugins": [
+        {
+          "enabled": true,
+          "debug": false,
+          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
+          "include": [],
+          "exclude": [],
+          "config": {},
+          "bound_listeners": [],
+          "plugin_index": {
+            "transform_request": 0
+          }
+        }
+      ]
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "id": "admin-api-service",
+      "name": "otoroshi-admin-api",
+      "description": "",
+      "tags": [
+        "env:prod"
+      ],
+      "metadata": {
+        "otoroshi-core-legacy": "true",
+        "otoroshi-core-env": "prod"
+      },
+      "enabled": true,
+      "debug_flow": false,
+      "export_reporting": false,
+      "capture": false,
+      "groups": [
+        "admin-api-group"
+      ],
+      "bound_listeners": [],
+      "frontend": {
+        "domains": [
+          "otoroshi-api.oto.tools/"
+        ],
+        "strip_path": true,
+        "exact": false,
+        "headers": {},
+        "query": {},
+        "methods": []
+      },
+      "backend": {
+        "targets": [
+          {
+            "id": "127.0.0.1:8080",
+            "hostname": "127.0.0.1",
+            "port": 8080,
+            "tls": false,
+            "weight": 1,
+            "predicate": {
+              "type": "AlwaysMatch"
+            },
+            "protocol": "HTTP/1.1",
+            "ip_address": null,
+            "tls_config": {
+              "certs": [],
+              "trusted_certs": [],
+              "enabled": false,
+              "loose": false,
+              "trust_all": false
+            }
+          }
+        ],
+        "root": "/",
+        "rewrite": false,
+        "load_balancing": {
+          "type": "RoundRobin"
+        },
+        "client": {
+          "retries": 1,
+          "max_errors": 20,
+          "retry_initial_delay": 50,
+          "backoff_factor": 2,
+          "call_timeout": 30000,
+          "call_and_stream_timeout": 120000,
+          "connection_timeout": 10000,
+          "idle_timeout": 60000,
+          "global_timeout": 30000,
+          "sample_interval": 2000,
+          "proxy": {},
+          "custom_timeouts": [],
+          "cache_connection_settings": {
+            "enabled": false,
+            "queue_size": 2048
+          }
+        },
+        "health_check": {
+          "enabled": false,
+          "url": "",
+          "timeout": 5000,
+          "healthyStatuses": [],
+          "unhealthyStatuses": []
         }
       },
       "backend_ref": null,
@@ -1940,444 +2189,105 @@
           "bound_listeners": []
         }
       ]
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50",
-      "name": "parent route",
-      "description": "A new route",
-      "tags": [],
-      "metadata": {},
-      "enabled": true,
-      "debug_flow": false,
-      "export_reporting": false,
-      "capture": false,
-      "groups": [
-        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5"
-      ],
-      "bound_listeners": [],
-      "frontend": {
-        "domains": [
-          "parent.oto.tools"
-        ],
-        "strip_path": true,
-        "exact": false,
-        "headers": {},
-        "cookies": {},
-        "query": {},
-        "methods": []
-      },
-      "backend": {
-        "targets": [
-          {
-            "id": "target_1",
-            "hostname": "mirror.otoroshi.io",
-            "port": 80,
-            "tls": false,
-            "weight": 1,
-            "backup": false,
-            "predicate": {
-              "type": "AlwaysMatch"
-            },
-            "protocol": "HTTP/1.1",
-            "ip_address": null,
-            "tls_config": {
-              "certs": [],
-              "trusted_certs": [],
-              "enabled": false,
-              "loose": false,
-              "trust_all": false
-            }
-          }
-        ],
-        "root": "/",
-        "rewrite": false,
-        "load_balancing": {
-          "type": "RoundRobin"
-        },
-        "client": {
-          "retries": 1,
-          "max_errors": 20,
-          "retry_initial_delay": 50,
-          "backoff_factor": 2,
-          "call_timeout": 30000,
-          "call_and_stream_timeout": 120000,
-          "connection_timeout": 10000,
-          "idle_timeout": 60000,
-          "global_timeout": 30000,
-          "sample_interval": 2000,
-          "proxy": {},
-          "custom_timeouts": [],
-          "cache_connection_settings": {
-            "enabled": false,
-            "queue_size": 2048
-          }
-        },
-        "health_check": {
-          "enabled": false,
-          "url": "",
-          "timeout": 5000,
-          "healthyStatuses": [],
-          "unhealthyStatuses": [],
-          "blockOnRed": false,
-          "logicCheck": true,
-          "healthyRegexChecks": [],
-          "unhealthyRegexChecks": []
-        }
-      },
-      "backend_ref": null,
-      "plugins": [
-        {
-          "enabled": true,
-          "debug": false,
-          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
-          "include": [],
-          "exclude": [],
-          "config": {},
-          "bound_listeners": [],
-          "plugin_index": {
-            "transform_request": 0
-          }
-        }
-      ]
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "route_69c0b3a11-3c3b-45d6-b2e4-a25bd4be6437",
-      "name": "request",
-      "description": "A new route",
-      "tags": [],
-      "metadata": {
-        "updated_at": "2026-03-02T13:16:53.535Z"
-      },
-      "enabled": true,
-      "debug_flow": false,
-      "export_reporting": false,
-      "capture": false,
-      "groups": [
-        "default"
-      ],
-      "bound_listeners": [],
-      "frontend": {
-        "domains": [
-          "request-accepted.oto.tools"
-        ],
-        "strip_path": true,
-        "exact": false,
-        "headers": {},
-        "cookies": {},
-        "query": {},
-        "methods": []
-      },
-      "backend": {
-        "targets": [
-          {
-            "id": "target_1",
-            "hostname": "mirror.ototoshi.io",
-            "port": 443,
-            "tls": true,
-            "weight": 1,
-            "backup": false,
-            "predicate": {
-              "type": "AlwaysMatch"
-            },
-            "protocol": "HTTP/1.1",
-            "ip_address": null,
-            "tls_config": {
-              "certs": [],
-              "trusted_certs": [],
-              "enabled": true,
-              "loose": false,
-              "trust_all": false
-            }
-          }
-        ],
-        "root": "/",
-        "rewrite": false,
-        "load_balancing": {
-          "type": "RoundRobin"
-        },
-        "client": {
-          "retries": 1,
-          "max_errors": 20,
-          "retry_initial_delay": 50,
-          "backoff_factor": 2,
-          "call_timeout": 30000,
-          "call_and_stream_timeout": 120000,
-          "connection_timeout": 10000,
-          "idle_timeout": 60000,
-          "global_timeout": 30000,
-          "sample_interval": 2000,
-          "proxy": {},
-          "custom_timeouts": [],
-          "cache_connection_settings": {
-            "enabled": false,
-            "queue_size": 2048
-          }
-        },
-        "health_check": {
-          "enabled": false,
-          "url": "",
-          "timeout": 5000,
-          "healthyStatuses": [],
-          "unhealthyStatuses": [],
-          "blockOnRed": false,
-          "logicCheck": true,
-          "healthyRegexChecks": [],
-          "unhealthyRegexChecks": []
-        }
-      },
-      "backend_ref": null,
-      "plugins": [
-        {
-          "enabled": true,
-          "debug": false,
-          "plugin": "cp:otoroshi.next.plugins.StaticResponse",
-          "include": [],
-          "exclude": [],
-          "config": {
-            "status": 200,
-            "headers": {},
-            "body": "{\n  \"accept\": true,\n  \"customMetadata\": {\n    \"validated\": true,\n    \"region\": \"eu-west\"\n  }\n}",
-            "apply_el": false
-          },
-          "bound_listeners": [],
-          "plugin_index": {}
-        }
-      ]
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d",
-      "name": "child route",
-      "description": "A new route",
-      "tags": [],
-      "metadata": {},
-      "enabled": true,
-      "debug_flow": false,
-      "export_reporting": false,
-      "capture": false,
-      "groups": [
-        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5"
-      ],
-      "bound_listeners": [],
-      "frontend": {
-        "domains": [
-          "child.oto.tools"
-        ],
-        "strip_path": true,
-        "exact": false,
-        "headers": {},
-        "cookies": {},
-        "query": {},
-        "methods": []
-      },
-      "backend": {
-        "targets": [
-          {
-            "id": "target_1",
-            "hostname": "mirror.otoroshi.io",
-            "port": 80,
-            "tls": false,
-            "weight": 1,
-            "backup": false,
-            "predicate": {
-              "type": "AlwaysMatch"
-            },
-            "protocol": "HTTP/1.1",
-            "ip_address": null,
-            "tls_config": {
-              "certs": [],
-              "trusted_certs": [],
-              "enabled": false,
-              "loose": false,
-              "trust_all": false
-            }
-          }
-        ],
-        "root": "/",
-        "rewrite": false,
-        "load_balancing": {
-          "type": "RoundRobin"
-        },
-        "client": {
-          "retries": 1,
-          "max_errors": 20,
-          "retry_initial_delay": 50,
-          "backoff_factor": 2,
-          "call_timeout": 30000,
-          "call_and_stream_timeout": 120000,
-          "connection_timeout": 10000,
-          "idle_timeout": 60000,
-          "global_timeout": 30000,
-          "sample_interval": 2000,
-          "proxy": {},
-          "custom_timeouts": [],
-          "cache_connection_settings": {
-            "enabled": false,
-            "queue_size": 2048
-          }
-        },
-        "health_check": {
-          "enabled": false,
-          "url": "",
-          "timeout": 5000,
-          "healthyStatuses": [],
-          "unhealthyStatuses": [],
-          "blockOnRed": false,
-          "logicCheck": true,
-          "healthyRegexChecks": [],
-          "unhealthyRegexChecks": []
-        }
-      },
-      "backend_ref": null,
-      "plugins": [
-        {
-          "enabled": true,
-          "debug": false,
-          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
-          "include": [],
-          "exclude": [],
-          "config": {},
-          "bound_listeners": [],
-          "plugin_index": {
-            "transform_request": 0
-          }
-        }
-      ]
-    },
-    {
-      "_loc": {
-        "tenant": "default",
-        "teams": [
-          "default"
-        ]
-      },
-      "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c51",
-      "name": "other route",
-      "description": "A new route",
-      "tags": [],
-      "metadata": {},
-      "enabled": true,
-      "debug_flow": false,
-      "export_reporting": false,
-      "capture": false,
-      "groups": [
-        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5",
-        "default"
-      ],
-      "bound_listeners": [],
-      "frontend": {
-        "domains": [
-          "other.oto.tools"
-        ],
-        "strip_path": true,
-        "exact": false,
-        "headers": {},
-        "cookies": {},
-        "query": {},
-        "methods": []
-      },
-      "backend": {
-        "targets": [
-          {
-            "id": "target_1",
-            "hostname": "mirror.otoroshi.io",
-            "port": 80,
-            "tls": false,
-            "weight": 1,
-            "backup": false,
-            "predicate": {
-              "type": "AlwaysMatch"
-            },
-            "protocol": "HTTP/1.1",
-            "ip_address": null,
-            "tls_config": {
-              "certs": [],
-              "trusted_certs": [],
-              "enabled": false,
-              "loose": false,
-              "trust_all": false
-            }
-          }
-        ],
-        "root": "/",
-        "rewrite": false,
-        "load_balancing": {
-          "type": "RoundRobin"
-        },
-        "client": {
-          "retries": 1,
-          "max_errors": 20,
-          "retry_initial_delay": 50,
-          "backoff_factor": 2,
-          "call_timeout": 30000,
-          "call_and_stream_timeout": 120000,
-          "connection_timeout": 10000,
-          "idle_timeout": 60000,
-          "global_timeout": 30000,
-          "sample_interval": 2000,
-          "proxy": {},
-          "custom_timeouts": [],
-          "cache_connection_settings": {
-            "enabled": false,
-            "queue_size": 2048
-          }
-        },
-        "health_check": {
-          "enabled": false,
-          "url": "",
-          "timeout": 5000,
-          "healthyStatuses": [],
-          "unhealthyStatuses": [],
-          "blockOnRed": false,
-          "logicCheck": true,
-          "healthyRegexChecks": [],
-          "unhealthyRegexChecks": []
-        }
-      },
-      "backend_ref": null,
-      "plugins": [
-        {
-          "enabled": true,
-          "debug": false,
-          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
-          "include": [],
-          "exclude": [],
-          "config": {},
-          "bound_listeners": [],
-          "plugin_index": {
-            "transform_request": 0
-          }
-        }
-      ]
     }
   ],
   "routeCompositions": [],
   "backends": [],
   "wasmPlugins": [],
-  "drafts": [],
   "extensions": {
+    "otoroshi_extensions_greenscore": {
+      "green-scores": [
+        {
+          "_loc": {
+            "tenant": "default",
+            "teams": [
+              "default"
+            ]
+          },
+          "id": "green-score_dev_21b8957a-7aa5-4a25-a157-41e82d23a8d4",
+          "name": "green score group",
+          "description": "screen score for the routes of this group",
+          "metadata": {
+            "created_at": "2024-05-21T10:22:45.927+02:00"
+          },
+          "tags": [],
+          "routes": [
+            {
+              "routeId": "KAyMY0iHPF7aljWqNkJx3mehRiwJtwKt2ZUybPZDZMIfOJDDJZiXvnrzlQlXyaAc",
+              "rulesConfig": {
+                "states": [
+                  {
+                    "date": 1716249600000,
+                    "states": []
+                  }
+                ]
+              }
+            },
+            {
+              "routeId": "ZSTWnemHcCDi4yA6h7qJz0wCP9glqeWnCMG9KQrDi17hcapQ5mpN15cWr68y4vs8",
+              "rulesConfig": {
+                "states": [
+                  {
+                    "date": 1716249600000,
+                    "states": []
+                  }
+                ]
+              }
+            }
+          ],
+          "thresholds": {
+            "overhead": {
+              "excellent": 5,
+              "sufficient": 10,
+              "poor": 15
+            },
+            "duration": {
+              "excellent": 5,
+              "sufficient": 10,
+              "poor": 15
+            },
+            "backendDuration": {
+              "excellent": 5,
+              "sufficient": 10,
+              "poor": 15
+            },
+            "calls": {
+              "excellent": 5,
+              "sufficient": 10,
+              "poor": 15
+            },
+            "dataIn": {
+              "excellent": 100,
+              "sufficient": 500,
+              "poor": 1000
+            },
+            "dataOut": {
+              "excellent": 100,
+              "sufficient": 500,
+              "poor": 1000
+            },
+            "headersOut": {
+              "excellent": 10,
+              "sufficient": 30,
+              "poor": 50
+            },
+            "headersIn": {
+              "excellent": 10,
+              "sufficient": 30,
+              "poor": 50
+            }
+          },
+          "efficiency": {
+            "paths": []
+          }
+        }
+      ]
+    },
+    "otoroshi_extensions_foo": {
+      "foos": []
+    },
     "otoroshi_extensions_httplisteners": {
       "http-listeners": []
-    },
-    "otoroshi_extensions_workflows": {
-      "workflows": []
     },
     "otoroshi_extensions_corazawaf": {
       "coraza-configs": []
