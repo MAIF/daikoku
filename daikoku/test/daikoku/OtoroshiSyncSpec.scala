@@ -1472,7 +1472,8 @@ class OtoroshiSyncSpec()
       )(tenant, session)
       resp.status mustBe 200
 
-      val apk = getApkFromOtoroshi(consumerParentDevSubscription.apiKey.clientId)
+      val apk =
+        getApkFromOtoroshi(consumerParentDevSubscription.apiKey.clientId)
 
       (apk \ "enabled").as[Boolean] mustBe false
 

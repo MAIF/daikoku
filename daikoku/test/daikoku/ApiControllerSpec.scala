@@ -60,8 +60,8 @@ class ApiControllerSpec()
   }
 
   private def getApkFromOtoroshi(
-                                  clientId: String
-                                ): JsValue = {
+      clientId: String
+  ): JsValue = {
     val respPreVerifOtoParent = httpJsonCallWithoutSessionBlocking(
       path = s"/api/apikeys/$clientId",
       baseUrl = "http://otoroshi-api.oto.tools",
@@ -1574,7 +1574,7 @@ class ApiControllerSpec()
         .as[Boolean] mustBe true
 
       val newApk = getApkFromOtoroshi(sub.apiKey.clientId)
-      val metadata =  (newApk \ "metadata")
+      val metadata = (newApk \ "metadata")
         .as[JsObject]
       (metadata \ "foo").as[String] mustBe "bar"
       (newApk \ "throttlingQuota")

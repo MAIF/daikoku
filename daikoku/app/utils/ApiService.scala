@@ -984,7 +984,10 @@ class ApiService(
 //              )
 //            case None => EitherT.pure[Future, AppError](updatedSubscription)
 //          }
-          _ <- EitherT.right[AppError](otoroshiSynchronisator.verify(Json.obj("_id" -> updatedSubscription.id.asJson)))
+          _ <- EitherT.right[AppError](
+            otoroshiSynchronisator
+              .verify(Json.obj("_id" -> updatedSubscription.id.asJson))
+          )
 //          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
 //          _ <- EitherT(otoroshiClient.updateApiKey(apk))
           _ <-

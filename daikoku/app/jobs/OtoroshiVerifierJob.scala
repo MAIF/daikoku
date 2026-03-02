@@ -65,18 +65,18 @@ object LongExtensions {
 }
 
 case class SyncInformation(
-                            parent: ApiSubscription,
-                            childs: Seq[ApiSubscription],
-                            team: Team,
-                            parentApi: Api,
-                            apk: ActualOtoroshiApiKey,
-                            otoroshiSettings: OtoroshiSettings,
-                            tenant: Tenant,
-                            tenantAdminTeam: Team
-                          )
+    parent: ApiSubscription,
+    childs: Seq[ApiSubscription],
+    team: Team,
+    parentApi: Api,
+    apk: ActualOtoroshiApiKey,
+    otoroshiSettings: OtoroshiSettings,
+    tenant: Tenant,
+    tenantAdminTeam: Team
+)
 
 class OtoroshiVerifierJob(
-                           client: OtoroshiClient,
+    client: OtoroshiClient,
     env: Env,
     translator: Translator,
     messagesApi: MessagesApi
@@ -254,7 +254,9 @@ class OtoroshiVerifierJob(
   def computeAPIKey(
       infos: SyncInformation
   ): Future[ComputedInformation] = {
-    logger.warn(s"childs are : [${infos.childs.map(_.id.value).mkString(" & ")}]")
+    logger.warn(
+      s"childs are : [${infos.childs.map(_.id.value).mkString(" & ")}]"
+    )
     logger.warn(s"parent is ${infos.parent.id.value}")
     (infos.childs :+ infos.parent)
       .map(subscription => {
@@ -457,7 +459,10 @@ class OtoroshiVerifierJob(
             _apikey1.map(apikey1 =>
               apikey1.copy(
                 enabled = infos.parent.enabled,
-                validUntil = List(apikey1.validUntil, apikey2.validUntil).flatten.minOption,
+                validUntil = List(
+                  apikey1.validUntil,
+                  apikey2.validUntil
+                ).flatten.minOption,
                 tags = apikey1.tags ++ apikey2.tags,
                 metadata = apikey1.metadata ++
                   apikey2.metadata ++
@@ -493,11 +498,15 @@ class OtoroshiVerifierJob(
                   routes =
                     apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
                 ),
-                throttlingQuota = math.min(apikey1.throttlingQuota, apikey2.throttlingQuota),
+                throttlingQuota =
+                  math.min(apikey1.throttlingQuota, apikey2.throttlingQuota),
                 dailyQuota = math.min(apikey1.dailyQuota, apikey2.dailyQuota),
-                monthlyQuota = math.min(apikey1.monthlyQuota, apikey2.monthlyQuota),
-                readOnly = apikey1.readOnly || apikey2.readOnly, //todo: not sure for aggregation
-                allowClientIdOnly = apikey1.allowClientIdOnly || apikey1.allowClientIdOnly //todo: not sure for aggregation
+                monthlyQuota =
+                  math.min(apikey1.monthlyQuota, apikey2.monthlyQuota),
+                readOnly =
+                  apikey1.readOnly || apikey2.readOnly, //todo: not sure for aggregation
+                allowClientIdOnly =
+                  apikey1.allowClientIdOnly || apikey1.allowClientIdOnly //todo: not sure for aggregation
               )
             )
         }
@@ -814,10 +823,12 @@ class OtoroshiVerifierJob(
             childs <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
                 .forAllTenant()
-                .findNotDeleted(Json.obj(
-                  "parent" -> subscription.id.asJson,
-                  "enabled" -> true
-                ))
+                .findNotDeleted(
+                  Json.obj(
+                    "parent" -> subscription.id.asJson,
+                    "enabled" -> true
+                  )
+                )
             )
 
             //get tenant
