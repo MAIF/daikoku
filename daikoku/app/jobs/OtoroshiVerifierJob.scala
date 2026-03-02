@@ -457,6 +457,7 @@ class OtoroshiVerifierJob(
             _apikey1.map(apikey1 =>
               apikey1.copy(
                 enabled = infos.parent.enabled,
+                validUntil = List(apikey1.validUntil, apikey2.validUntil).flatten.minOption,
                 tags = apikey1.tags ++ apikey2.tags,
                 metadata = apikey1.metadata ++
                   apikey2.metadata ++
@@ -491,7 +492,12 @@ class OtoroshiVerifierJob(
                     apikey1.authorizedEntities.services | apikey2.authorizedEntities.services,
                   routes =
                     apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
-                )
+                ),
+                throttlingQuota = math.min(apikey1.throttlingQuota, apikey2.throttlingQuota),
+                dailyQuota = math.min(apikey1.dailyQuota, apikey2.dailyQuota),
+                monthlyQuota = math.min(apikey1.monthlyQuota, apikey2.monthlyQuota),
+                readOnly = apikey1.readOnly || apikey2.readOnly, //todo: not sure for aggregation
+                allowClientIdOnly = apikey1.allowClientIdOnly || apikey1.allowClientIdOnly //todo: not sure for aggregation
               )
             )
         }

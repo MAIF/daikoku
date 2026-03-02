@@ -1761,11 +1761,11 @@ class ApiController(
               ),
             AppError.ForbiddenAction
           )
-          plan <- EitherT.fromOptionF(
+          _ <- EitherT.fromOptionF(
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .findById(subscription.plan),
-            AppError.ApiNotFound
+            AppError.PlanNotFound
           )
           subToSave = subscription.copy(
             customMetadata = (body \ "customMetadata").asOpt[JsObject],
@@ -1782,7 +1782,7 @@ class ApiController(
               .save(subToSave))
 
           _ <- EitherT.right[AppError](otoroshiSynchronisator.verify(Json.obj("_id" -> subscription.id.asJson)))
-        } yield Ok(subscription.asJson))
+        } yield Ok(subToSave.asJson))
           .leftMap(_.render())
           .merge
       }

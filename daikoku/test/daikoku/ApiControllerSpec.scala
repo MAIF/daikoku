@@ -59,6 +59,22 @@ class ApiControllerSpec()
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
   }
 
+  private def getApkFromOtoroshi(
+                                  clientId: String
+                                ): JsValue = {
+    val respPreVerifOtoParent = httpJsonCallWithoutSessionBlocking(
+      path = s"/api/apikeys/$clientId",
+      baseUrl = "http://otoroshi-api.oto.tools",
+      headers = Map(
+        "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+        "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+        "Host" -> "otoroshi-api.oto.tools"
+      ),
+      port = container.mappedPort(8080)
+    )(tenant)
+    respPreVerifOtoParent.json
+  }
+
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
       setupEnvBlocking(
@@ -905,7 +921,8 @@ class ApiControllerSpec()
                 )
               )
             )
-          )
+          ),
+          defaultAdminTeam
         )
       )
       val planToCreate = UsagePlan(
@@ -986,7 +1003,7 @@ class ApiControllerSpec()
       respRoutesForConsumer.json
         .as[JsArray]
         .value
-        .length mustBe 4 //parent, child, other, admin
+        .length mustBe 5 //parent, child, other, admin, request
 
       val respUnauthRoute = httpJsonCallBlocking(
         path =
@@ -1481,7 +1498,7 @@ class ApiControllerSpec()
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
-        by = daikokuAdminId,
+        by = userAdmin.id,
         customName = Some("custom name"),
         rotation = None,
         integrationToken = "test"
@@ -1501,12 +1518,13 @@ class ApiControllerSpec()
             )
           )
         ),
-        users = Seq(userAdmin),
+        users = Seq(userAdmin, user),
         teams = Seq(
           teamOwner,
           teamConsumer.copy(
             users = Set(UserWithPermission(user.id, Administrator))
-          )
+          ),
+          defaultAdminTeam
         ),
         usagePlans = Seq(plan),
         apis = Seq(api),
@@ -1542,7 +1560,6 @@ class ApiControllerSpec()
             .asSafeJson
         )
       )(tenant, session)
-
       resp.status mustBe 200
 
       (resp.json \ "customMetadata")
@@ -1555,9 +1572,19 @@ class ApiControllerSpec()
         .as[Long] mustBe 42
       (resp.json \ "customReadOnly")
         .as[Boolean] mustBe true
-      (resp.json \ "apiKey").as[JsObject] mustBe Json.obj(
-        "clientName" -> otoApiKey.clientName
-      )
+
+      val newApk = getApkFromOtoroshi(sub.apiKey.clientId)
+      val metadata =  (newApk \ "metadata")
+        .as[JsObject]
+      (metadata \ "foo").as[String] mustBe "bar"
+      (newApk \ "throttlingQuota")
+        .as[Long] mustBe 1
+      (newApk \ "dailyQuota")
+        .as[Long] mustBe 2
+      (newApk \ "monthlyQuota")
+        .as[Long] mustBe 42
+      (newApk \ "readOnly")
+        .as[Boolean] mustBe true
     }
 
     "not update a subscription to another api (even if it's own)" in {
