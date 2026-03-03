@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
-import { MICHAEL } from './users';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret,dwightPaperApiKeyId, 
+dwightPaperApiKeySecret} from './utils';
+import { MICHAEL, JIM } from './users';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 
 
@@ -248,6 +249,37 @@ test('When API pass to Blocked, check if shared subscription that Oto ApiKey sti
 
 })
 
+test('When API pass vdvto Blocked, check if shared subscription that Oto ApiKey still enabled ', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+  
+
+})
+
+test('laisse betom ', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await passAPIToPublished({page}, 'papier')
+  await passAPIToBlocked({page}, 'papier')
+
+  const result = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq`, {
+        headers: {
+          "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+          "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+          "Host": "otoroshi-api.oto.tools",
+        }
+      }).then(reponse => reponse.json() )
+      console.log(result)
+    
+  // const context = page.context();
+  // const pageOto = await context.newPage();
+  // await pageOto.setExtraHTTPHeaders({
+  //       "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+  //       "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+  //   },
+  // );
+  // pageOto.goto("http://otoroshi-api.oto.tools:8080/api/apikeys/6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq")
+})
 
 //Verifier par un autre test au blocage (qui ne fonctionnera pas pour le moment) 
 // que les souscriptions soient bloquées, et vérifier que la souscription partagée 
