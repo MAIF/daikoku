@@ -6,7 +6,7 @@ import fr.maif.daikoku.actions.*
 import fr.maif.daikoku.controllers.*
 import fr.maif.daikoku.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.daikoku.jobs.*
-import fr.maif.daikoku.services.{AccountCreationService, ApiService, AssetsService, DeletionService, TranslationsService}
+import fr.maif.daikoku.services.*
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx
@@ -54,6 +54,8 @@ class DaikokuComponentsInstances(context: Context)
   lazy val assetsService = wire[AssetsService]
   lazy val translationsService = wire[TranslationsService]
   lazy val deletionService = wire[DeletionService]
+  lazy val mailService = wire[MailService]
+  lazy val apiLifeCycleService = wire[ApiLifeCycleService]
 
   lazy val translator = wire[Translator]
 

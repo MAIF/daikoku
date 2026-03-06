@@ -34,14 +34,10 @@ import scala.util.{Failure, Success, Try}
 
 object SchemaDefinition {
 
-  case object JsArrayCoercionViolation
-      extends ValueCoercionViolation("Can't parse string to js array")
-  case object JsonCoercionViolation
-      extends ValueCoercionViolation("Not valid JSON")
-  case object DateCoercionViolation
-      extends ValueCoercionViolation("Date value expected")
-  case object MapCoercionViolation
-      extends ValueCoercionViolation("Map value can't be parsed")
+  case object JsArrayCoercionViolation extends ValueCoercionViolation("Can't parse string to js array")
+  case object JsonCoercionViolation    extends ValueCoercionViolation("Not valid JSON")
+  case object DateCoercionViolation    extends ValueCoercionViolation("Date value expected")
+  case object MapCoercionViolation     extends ValueCoercionViolation("Map value can't be parsed")
 
   implicit val TimeUnitType: ScalarType[TimeUnit] = ScalarType[TimeUnit](
     "TimeUnit",
@@ -113,8 +109,7 @@ object SchemaDefinition {
 
   val MapType = ScalarType[Map[String, String]](
     "Map",
-    coerceOutput = (data, _) =>
-      Json.stringify(JsObject(data.view.mapValues(JsString.apply).toSeq)),
+    coerceOutput = (data, _) => Json.stringify(JsObject(data.view.mapValues(JsString.apply).toSeq)),
     coerceUserInput = e =>
       e.asInstanceOf[Map[String, String]] match {
         case r: Map[String, String] => Right(r)
@@ -123,18 +118,17 @@ object SchemaDefinition {
     coerceInput = {
       case ObjectValue(fields, _, _) =>
         Right(fields.map(f => (f.name, f.value.toString)).toMap)
-      case _ => Left(MapCoercionViolation)
+      case _                         => Left(MapCoercionViolation)
     }
   )
 
   case class NotAuthorizedError(message: String) extends Exception(message)
 
   def getSchema(env: Env, otoroshiClient: OtoroshiClient) = {
-    implicit val e = env.defaultExecutionContext
+    implicit val e  = env.defaultExecutionContext
     implicit val en = env
 
-    lazy val TenantType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant] =
+    lazy val TenantType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant](
         "Tenant",
         "A tenant object",
@@ -273,7 +267,7 @@ object SchemaDefinition {
           )
       )
 
-    lazy val DaikokuStyleType = deriveObjectType[
+    lazy val DaikokuStyleType           = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       DaikokuStyle
     ](
@@ -293,7 +287,7 @@ object SchemaDefinition {
         Field("headers", MapType, resolve = _.value.headers)
       )
     )
-    lazy val WebhookType =
+    lazy val WebhookType                =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Webhook](
         ObjectTypeDescription("A configuration of a Kakfa web hook"),
         ReplaceField(
@@ -301,7 +295,7 @@ object SchemaDefinition {
           Field("headers", MapType, resolve = _.value.headers)
         )
       )
-    lazy val KafkaConfigType =
+    lazy val KafkaConfigType            =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), KafkaConfig](
         ObjectTypeDescription("A configuration to connect with a kafka")
       )
@@ -339,7 +333,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val OtoroshiSettingsType = deriveObjectType[
+    lazy val OtoroshiSettingsType      = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       OtoroshiSettings
     ](
@@ -395,7 +389,7 @@ object SchemaDefinition {
     lazy val MailerSettingsType: InterfaceType[
       (DataStore, DaikokuActionContext[JsValue]),
       MailerSettings
-    ] = InterfaceType(
+    ]                                  = InterfaceType(
       "MailerSettings",
       "A template of mailer",
       () =>
@@ -412,7 +406,7 @@ object SchemaDefinition {
         Interfaces(MailerSettingsType)
       )
     )
-    lazy val MailgunSettingsType = new PossibleObject(
+    lazy val MailgunSettingsType       = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         MailgunSettings
@@ -421,7 +415,7 @@ object SchemaDefinition {
         Interfaces(MailerSettingsType)
       )
     )
-    lazy val MailjetSettingsType = new PossibleObject(
+    lazy val MailjetSettingsType       = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         MailjetSettings
@@ -430,7 +424,7 @@ object SchemaDefinition {
         Interfaces(MailerSettingsType)
       )
     )
-    lazy val SimpleSMTPSettingsType = new PossibleObject(
+    lazy val SimpleSMTPSettingsType    = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         SimpleSMTPSettings
@@ -439,7 +433,7 @@ object SchemaDefinition {
         Interfaces(MailerSettingsType)
       )
     )
-    lazy val SendgridSettingsType = new PossibleObject(
+    lazy val SendgridSettingsType      = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         SendgridSettings
@@ -462,7 +456,7 @@ object SchemaDefinition {
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictionPath
     ]()
-    lazy val ApiKeyRestrictionsType = deriveObjectType[
+    lazy val ApiKeyRestrictionsType    = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictions
     ](
@@ -493,7 +487,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val CustomMetadataType = deriveObjectType[
+    lazy val CustomMetadataType      = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       CustomMetadata
     ](
@@ -632,7 +626,7 @@ object SchemaDefinition {
         )
     )
 
-    lazy val ValidationStepEmail = new PossibleObject(
+    lazy val ValidationStepEmail      = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         ValidationStep.Email
@@ -665,7 +659,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ValidationStepAdmin = new PossibleObject(
+    lazy val ValidationStepAdmin      = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         ValidationStep.TeamAdmin
@@ -694,7 +688,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ValidationStepForm = new PossibleObject(
+    lazy val ValidationStepForm       = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         ValidationStep.Form
@@ -768,7 +762,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ValidationStepPayment = new PossibleObject(
+    lazy val ValidationStepPayment    = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         ValidationStep.Payment
@@ -855,8 +849,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val TeamCountType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount] =
+    lazy val TeamCountType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount]   =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount](
         "TeamCount",
         "a representation of team and total of owned API",
@@ -866,8 +859,7 @@ object SchemaDefinition {
             Field("total", IntType, resolve = _.value.total)
           )
       )
-    lazy val ValueCountType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount] =
+    lazy val ValueCountType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount](
         "ValueCount",
         "a representation of string value and total of iteration",
@@ -878,8 +870,7 @@ object SchemaDefinition {
           )
       )
 
-    lazy val TeamObjectType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] =
+    lazy val TeamObjectType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team](
         "Team",
         "A Daikoku Team object",
@@ -924,9 +915,7 @@ object SchemaDefinition {
             Field(
               "metadata",
               JsonType,
-              resolve = _.value.metadata.foldLeft(Json.obj())((obj, entry) =>
-                obj + (entry._1 -> JsString(entry._2))
-              )
+              resolve = _.value.metadata.foldLeft(Json.obj())((obj, entry) => obj + (entry._1 -> JsString(entry._2)))
             ),
             Field(
               "_humanReadableId",
@@ -941,7 +930,7 @@ object SchemaDefinition {
             Field("verified", BooleanType, resolve = _.value.verified)
           )
       )
-    lazy val CurrencyType = ObjectType(
+    lazy val CurrencyType                                                                 = ObjectType(
       name = "Currency",
       description = "Currency for a plan of an api",
       () =>
@@ -1111,13 +1100,13 @@ object SchemaDefinition {
         )
     )
 
-    lazy val OtoroshiApiKeyType = deriveObjectType[
+    lazy val OtoroshiApiKeyType       = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       OtoroshiApiKey
     ](
       ObjectTypeDescription("A representation of an Otoroshi api key")
     )
-    lazy val SwaggerAccessType = deriveObjectType[
+    lazy val SwaggerAccessType        = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       SwaggerAccess
     ](
@@ -1178,7 +1167,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val ApiDocumentationType = ObjectType(
+    lazy val ApiDocumentationType        = ObjectType(
       "ApiDocumentation",
       "The documentation of an api composed of multiples pages",
       fields[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentation](
@@ -1207,7 +1196,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiPostType =
+    lazy val ApiPostType                 =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiPost](
         ObjectTypeDescription(
           "A post of an api used to communicate with consumers"
@@ -1248,12 +1237,12 @@ object SchemaDefinition {
         "A two factor authentication configuration of an user account"
       )
     )
-    lazy val ApiIssueTagType =
+    lazy val ApiIssueTagType             =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssueTag](
         ObjectTypeDescription("A tag used on issues"),
         ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value))
       )
-    lazy val ApiIssueCommentType = deriveObjectType[
+    lazy val ApiIssueCommentType         = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiIssueComment
     ](
@@ -1279,7 +1268,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiIssueType =
+    lazy val ApiIssueType                =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssue](
         ObjectTypeDescription("An issue on an api"),
         ReplaceField(
@@ -1346,7 +1335,7 @@ object SchemaDefinition {
           )
         )
       )
-    lazy val UserInvitationType = deriveObjectType[
+    lazy val UserInvitationType          = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       UserInvitation
     ](
@@ -1507,8 +1496,7 @@ object SchemaDefinition {
           Field(
             "tenant",
             OptionType(TenantType),
-            resolve =
-              ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
+            resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
           Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
@@ -1613,7 +1601,7 @@ object SchemaDefinition {
                   ctx.ctx._1.apiSubscriptionRepo
                     .forTenant(ctx.ctx._2.tenant)
                     .findById(parent)
-                case None => None
+                case None         => None
               }
           ),
           Field(
@@ -1629,17 +1617,15 @@ object SchemaDefinition {
     )(implicit tenant: Tenant): Future[Option[DateTime]] = {
 
       val maybeLastUsage = for {
-        plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
-          env.dataStore.usagePlanRepo
-            .forTenant(tenant)
-            .findById(subscription.plan),
-          None
-        )
-        otoroshi <-
+        plan                                             <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
+                                                              env.dataStore.usagePlanRepo
+                                                                .forTenant(tenant)
+                                                                .findById(subscription.plan),
+                                                              None
+                                                            )
+        otoroshi                                         <-
           EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
-            tenant.otoroshiSettings.find(oto =>
-              plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
-            ),
+            tenant.otoroshiSettings.find(oto => plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)),
             None
           )
         value: EitherT[Future, Option[DateTime], JsArray] =
@@ -1649,7 +1635,7 @@ object SchemaDefinition {
               tenant
             )
             .leftMap(_ => None)
-        usages <- value
+        usages                                           <- value
       } yield {
         usages.value.headOption
       }
@@ -1714,8 +1700,7 @@ object SchemaDefinition {
           )
       )
 
-    lazy val TestingType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing] =
+    lazy val TestingType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing] =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
         ObjectTypeName("Testing"),
         ObjectTypeDescription("Credentials used to test an api from UI"),
@@ -1733,35 +1718,27 @@ object SchemaDefinition {
         )
       )
 
-    lazy val teamsFetcher = Fetcher(
-      (ctx: (DataStore, DaikokuActionContext[JsValue]), teams: Seq[TeamId]) =>
-        Future
-          .sequence(
-            teams.map(teamId =>
-              ctx._1.teamRepo.forTenant(ctx._2.tenant).findById(teamId)
-            )
-          )
-          .map(teams => teams.flatten)
+    lazy val teamsFetcher = Fetcher((ctx: (DataStore, DaikokuActionContext[JsValue]), teams: Seq[TeamId]) =>
+      Future
+        .sequence(
+          teams.map(teamId => ctx._1.teamRepo.forTenant(ctx._2.tenant).findById(teamId))
+        )
+        .map(teams => teams.flatten)
     )(HasId[Team, TeamId](_.id))
-    lazy val apisFetcher = Fetcher(
-      (ctx: (DataStore, DaikokuActionContext[JsValue]), apis: Seq[ApiId]) =>
-        Future
-          .sequence(
-            apis.map(apiId =>
-              ctx._1.apiRepo.forTenant(ctx._2.tenant).findById(apiId)
-            )
-          )
-          .map(apis => apis.flatten)
+    lazy val apisFetcher  = Fetcher((ctx: (DataStore, DaikokuActionContext[JsValue]), apis: Seq[ApiId]) =>
+      Future
+        .sequence(
+          apis.map(apiId => ctx._1.apiRepo.forTenant(ctx._2.tenant).findById(apiId))
+        )
+        .map(apis => apis.flatten)
     )(HasId[Api, ApiId](_.id))
-    lazy val usersFetcher = Fetcher(
-      (ctx: (DataStore, DaikokuActionContext[JsValue]), users: Seq[UserId]) =>
-        Future
-          .sequence(users.map(userId => ctx._1.userRepo.findById(userId)))
-          .map(users => users.flatten)
+    lazy val usersFetcher = Fetcher((ctx: (DataStore, DaikokuActionContext[JsValue]), users: Seq[UserId]) =>
+      Future
+        .sequence(users.map(userId => ctx._1.userRepo.findById(userId)))
+        .map(users => users.flatten)
     )(HasId[User, UserId](_.id))
 
-    lazy val ApiType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] =
+    lazy val ApiType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api](
         "Api",
         "A Daikoku Api",
@@ -1771,8 +1748,7 @@ object SchemaDefinition {
             Field(
               "tenant",
               OptionType(TenantType),
-              resolve =
-                ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)
+              resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)
             ),
             Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
@@ -1815,8 +1791,7 @@ object SchemaDefinition {
             Field(
               "possibleUsagePlans",
               ListType(UsagePlanType),
-              resolve = ctx =>
-                ctx.ctx._1.usagePlanRepo.findByApi(ctx.value.tenant, ctx.value)
+              resolve = ctx => ctx.ctx._1.usagePlanRepo.findByApi(ctx.value.tenant, ctx.value)
             ),
             Field(
               "defaultUsagePlan",
@@ -1827,7 +1802,7 @@ object SchemaDefinition {
                     ctx.ctx._1.usagePlanRepo
                       .forTenant(ctx.ctx._2.tenant)
                       .findById(value)
-                  case None => FastFuture.successful(None)
+                  case None        => FastFuture.successful(None)
                 }
             ),
             Field(
@@ -1901,7 +1876,7 @@ object SchemaDefinition {
                 ctx.value.parent match {
                   case Some(p) =>
                     ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(p)
-                  case None => None
+                  case None    => None
                 }
             ),
             Field(
@@ -1909,7 +1884,7 @@ object SchemaDefinition {
               OptionType(ListType(ApiWithAuthorizationType)),
               resolve = ctx => {
                 ctx.value.apis match {
-                  case None => FastFuture.successful(None)
+                  case None       => FastFuture.successful(None)
                   case Some(apis) =>
                     CommonServices
                       .getApisByIds(apis.toSeq.map(_.value))(ctx.ctx._2, env, e)
@@ -1971,7 +1946,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiWithCountType = deriveObjectType[
+    lazy val ApiWithCountType         = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiWithCount
     ](
@@ -2280,7 +2255,7 @@ object SchemaDefinition {
       ](NotificationActionType)
     )
 
-    lazy val ApiAccessType = new PossibleObject(
+    lazy val ApiAccessType      = new PossibleObject(
       ObjectType(
         "ApiAccess",
         "A api access notification action",
@@ -2410,7 +2385,7 @@ object SchemaDefinition {
         )
     )
 
-    lazy val ApiSubscriptionDemandType = new PossibleObject(
+    lazy val ApiSubscriptionDemandType         = new PossibleObject(
       ObjectType(
         "ApiSubscription",
         "A api subscription notification action",
@@ -2455,7 +2430,7 @@ object SchemaDefinition {
                   ctx.ctx._1.apiSubscriptionRepo
                     .forTenant(ctx.ctx._2.tenant)
                     .findById(parent)
-                case None => None
+                case None         => None
               }
           ),
           Field(
@@ -2474,7 +2449,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val TransferApiOwnershipType = new PossibleObject(
+    lazy val TransferApiOwnershipType          = new PossibleObject(
       ObjectType(
         "TransferApiOwnership",
         "A transfer ownership for API notification action",
@@ -2530,7 +2505,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiSubscriptionRejectType = new PossibleObject(
+    lazy val ApiSubscriptionRejectType         = new PossibleObject(
       ObjectType(
         "ApiSubscriptionReject",
         "A notification triggered when a when your api subscription is reject",
@@ -2570,7 +2545,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiSubscriptionAcceptType = new PossibleObject(
+    lazy val ApiSubscriptionAcceptType         = new PossibleObject(
       ObjectType(
         "ApiSubscriptionAccept",
         "A notification triggered when a when your api subscription is reject",
@@ -2610,7 +2585,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val NewIssueOpenType = new PossibleObject(
+    lazy val NewIssueOpenType   = new PossibleObject(
       ObjectType(
         "NewIssueOpen",
         "An Otoroshi notification triggered when a new issue has been created",
@@ -2677,7 +2652,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val NewPostPublishedType = new PossibleObject(
+    lazy val NewPostPublishedType   = new PossibleObject(
       ObjectType(
         "NewPostPublished",
         "An Otoroshi notification triggered when a new post has been pusblished",
@@ -2727,7 +2702,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val ApiKeyRefreshType = new PossibleObject(
+    lazy val ApiKeyRefreshType   = new PossibleObject(
       ObjectType(
         "ApiKeyRefresh",
         "An Otoroshi notification triggered when an api key has been refreshed",
@@ -2888,7 +2863,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val ApiKeyRotationEndedType = new PossibleObject(
+    lazy val ApiKeyRotationEndedType            = new PossibleObject(
       ObjectType(
         "ApiKeyRotationEnded",
         "An Otoroshi notification triggered when the credentials of an api key has been rotated",
@@ -2903,7 +2878,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val ApiKeyRotationEndedV2Type = new PossibleObject(
+    lazy val ApiKeyRotationEndedV2Type          = new PossibleObject(
       ObjectType(
         "ApiKeyRotationEndedV2",
         "An Otoroshi notification triggered when the credentials of an api key has been rotated",
@@ -2942,7 +2917,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val NewCommentOnIssueType = new PossibleObject(
+    lazy val NewCommentOnIssueType              = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
         NewCommentOnIssue
@@ -2953,7 +2928,7 @@ object SchemaDefinition {
         Interfaces(NotificationActionType)
       )
     )
-    lazy val NewCommentOnIssueV2Type = new PossibleObject(
+    lazy val NewCommentOnIssueV2Type            = new PossibleObject(
       ObjectType(
         "NewCommentOnIssueV2",
         "A notification triggered when a new comment on an issue has been written",
@@ -2988,7 +2963,7 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val CheckoutForSubscriptionType = new PossibleObject(
+    lazy val CheckoutForSubscriptionType        = new PossibleObject(
       ObjectType(
         "CheckoutForSubscription",
         "A notification triggered when a checkout session is available",
@@ -3051,7 +3026,64 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val AccountCreationType = deriveObjectType[
+
+    lazy val ApiDepreciationWarningType = new PossibleObject(
+      ObjectType(
+        "ApiDepreciationWarning",
+        "A notification triggered when an API is deprecated",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiDepreciationWarning
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiDepreciationWarning
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          )
+        )
+      )
+    )
+
+    lazy val ApiBlockingWarningType = new PossibleObject(
+      ObjectType(
+        "ApiBlockingWarning",
+        "A notification triggered when an API is blocked",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockingWarning
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockingWarning
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          )
+        )
+      )
+    )
+
+    lazy val AccountCreationType        = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       AccountCreation
     ](
@@ -3179,8 +3211,7 @@ object SchemaDefinition {
         Field(
           "tenant",
           OptionType(TenantType),
-          resolve =
-            ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
+          resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
         )
       ),
       ReplaceField(
@@ -3192,7 +3223,7 @@ object SchemaDefinition {
             ctx.value.team match {
               case Some(team) =>
                 ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)
-              case None => None
+              case None       => None
             }
         )
       ),
@@ -3256,7 +3287,9 @@ object SchemaDefinition {
             ApiSubscriptionAcceptType,
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
-            AccountCreationAttemptType
+            AccountCreationAttemptType,
+            ApiDepreciationWarningType,
+            ApiBlockingWarningType
           )
         )
       )
@@ -3271,8 +3304,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val UserSessionType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession] =
+    lazy val UserSessionType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession](
         "UserSession",
         "A user session",
@@ -3313,7 +3345,7 @@ object SchemaDefinition {
                 ctx.value.impersonatorSessionId match {
                   case Some(imp) =>
                     ctx.ctx._1.userSessionRepo.findById(imp.value)
-                  case None => None
+                  case None      => None
                 }
             ),
             Field("created", DateTimeUnitype, resolve = _.value.created),
@@ -3328,13 +3360,13 @@ object SchemaDefinition {
     ](
       ObjectTypeDescription("Consumptions of an api key")
     )
-    val ApiKeyQuotasType = deriveObjectType[
+    val ApiKeyQuotasType                        = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyQuotas
     ](
       ObjectTypeDescription("Quotas of an api key")
     )
-    val ApiKeyBillingType = deriveObjectType[
+    val ApiKeyBillingType                       = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyBilling
     ](
@@ -3352,8 +3384,7 @@ object SchemaDefinition {
         Field(
           "tenant",
           OptionType(TenantType),
-          resolve =
-            ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
+          resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
         )
       ),
       ReplaceField(
@@ -3456,8 +3487,7 @@ object SchemaDefinition {
             Field(
               "tenant",
               OptionType(TenantType),
-              resolve =
-                ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
+              resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
             ),
             Field("language", StringType, resolve = _.value.language),
             Field("key", StringType, resolve = _.value.key),
@@ -3497,8 +3527,7 @@ object SchemaDefinition {
             Field(
               "tenant",
               OptionType(TenantType),
-              resolve =
-                ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)
+              resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)
             ),
             Field(
               "messageType",
@@ -3572,11 +3601,10 @@ object SchemaDefinition {
             id = (json \ "id").as(UserIdFormat),
             name = (json \ "name").as[String],
             email = (json \ "email").as[String],
-            isDaikokuAdmin =
-              (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false)
+            isDaikokuAdmin = (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false)
           )
         )
-      override def writes(o: UserAuditEvent): JsValue = Json.obj()
+      override def writes(o: UserAuditEvent): JsValue             = Json.obj()
     }
 
     case class TenantAuditEvent(id: TenantId, name: String)
@@ -3595,7 +3623,7 @@ object SchemaDefinition {
             name = (json \ "name").as[String]
           )
         )
-      override def writes(o: TenantAuditEvent): JsValue = Json.obj()
+      override def writes(o: TenantAuditEvent): JsValue             = Json.obj()
     }
 
     val AuditEventType =
@@ -3642,8 +3670,7 @@ object SchemaDefinition {
             Field(
               "user",
               OptionType(UserAuditEventType),
-              resolve =
-                ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
+              resolve = ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
             ),
             Field(
               "impersonator",
@@ -3662,8 +3689,7 @@ object SchemaDefinition {
             Field(
               "tenant",
               OptionType(TenantAuditEventType),
-              resolve =
-                ctx => (ctx.value \ "tenant").asOpt(TenantAuditEventTypeReader)
+              resolve = ctx => (ctx.value \ "tenant").asOpt(TenantAuditEventTypeReader)
             ),
             Field(
               "_tenant",
@@ -3726,8 +3752,7 @@ object SchemaDefinition {
           )
       )
 
-    lazy val CmsPageType
-        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
+    lazy val CmsPageType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
         "CmsPage",
         "A CMS page",
@@ -3746,7 +3771,7 @@ object SchemaDefinition {
                 ctx.value.forwardRef match {
                   case Some(ref) =>
                     ctx.ctx._1.cmsRepo.forTenant(ctx.value.tenant).findById(ref)
-                  case None => None
+                  case None      => None
                 }
             ),
             Field("deleted", BooleanType, resolve = _.value.deleted),
@@ -3794,46 +3819,45 @@ object SchemaDefinition {
       ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
-    val ID: Argument[String] =
+    val ID: Argument[String]             =
       Argument("id", StringType, description = "The id of element")
-    val LIMIT: Argument[Int] = Argument(
+    val LIMIT: Argument[Int]             = Argument(
       "limit",
       IntType,
       description =
         "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.",
       defaultValue = -1
     )
-    val OFFSET: Argument[Int] = Argument(
+    val OFFSET: Argument[Int]            = Argument(
       "offset",
       IntType,
-      description =
-        "The (zero-based) offset of the first item in the collection to return",
+      description = "The (zero-based) offset of the first item in the collection to return",
       defaultValue = 0
     )
-    val GROUP_ID = Argument(
+    val GROUP_ID                         = Argument(
       "groupId",
       OptionInputType(StringType),
       description = "The id of API group"
     )
-    val API_SUB_ONLY: Argument[Boolean] = Argument(
+    val API_SUB_ONLY: Argument[Boolean]  = Argument(
       "apiSubOnly",
       BooleanType,
       description = "The condition if you want to see only subscribed Apis.",
       defaultValue = false
     )
-    val RESEARCH: Argument[String] = Argument(
+    val RESEARCH: Argument[String]       = Argument(
       "research",
       StringType,
       description = "This is a the string of a research",
       defaultValue = ""
     )
-    val FILTER: Argument[String] = Argument(
+    val FILTER: Argument[String]         = Argument(
       "filter",
       StringType,
       description = "This is a the string for filtering request",
       defaultValue = ""
     )
-    val FILTER_TABLE: Argument[JsArray] = Argument(
+    val FILTER_TABLE: Argument[JsArray]  = Argument(
       "filterTable",
       JsArrayType,
       description = "This is a the json for filtering request",
@@ -3846,50 +3870,50 @@ object SchemaDefinition {
       defaultValue = "[]"
     )
 
-    val SELECTED_TAG = Argument(
+    val SELECTED_TAG                                                                     = Argument(
       "selectedTag",
       OptionInputType(StringType),
       description = "A tag of an Api"
     )
-    val SELECTED_TEAM = Argument(
+    val SELECTED_TEAM                                                                    = Argument(
       "selectedTeam",
       OptionInputType(StringType),
       description = "An API owner"
     )
-    val SELECTED_CAT = Argument(
+    val SELECTED_CAT                                                                     = Argument(
       "selectedCategory",
       OptionInputType(StringType),
       description = "A category of an Api"
     )
-    val DELETED: Argument[Boolean] = Argument(
+    val DELETED: Argument[Boolean]                                                       = Argument(
       "deleted",
       BooleanType,
       description = "If enabled, the page is considered deleted",
       defaultValue = false
     )
-    val IDS = Argument(
+    val IDS                                                                              = Argument(
       "ids",
       OptionInputType(ListInputType(StringType)),
       description = "List of filtered ids (if empty, no filter)"
     )
-    val TEAM_ID = Argument(
+    val TEAM_ID                                                                          = Argument(
       "teamId",
       OptionInputType(StringType),
       description = "The id of the team"
     )
-    val SUBSCRIPTION_ID = Argument(
+    val SUBSCRIPTION_ID                                                                  = Argument(
       "subscriptionId",
       StringType,
       description = "The id of the subscription"
     )
-    val TEAM_ID_NOT_OPT =
+    val TEAM_ID_NOT_OPT                                                                  =
       Argument("teamId", StringType, description = "The id of the team")
-    val PLAN_ID_OPT = Argument(
+    val PLAN_ID_OPT                                                                      = Argument(
       "planIdOpt",
       OptionInputType(StringType),
       description = "The optional id of a plan"
     )
-    val FROM =
+    val FROM                                                                             =
       Argument("from", OptionInputType(LongType), description = "Date from")
     val TO = Argument("to", OptionInputType(LongType), description = "Date to")
     val VERSION = Argument("version", StringType, description = "a version")
@@ -3934,8 +3958,7 @@ object SchemaDefinition {
 
       }
     }
-    def allTeamsQuery()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def allTeamsQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]]   =
       List(
         Field(
           "teamsPagination",
@@ -3963,8 +3986,7 @@ object SchemaDefinition {
         }
     }
 
-    def apiConsumptionQuery()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def apiConsumptionQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "apiConsumptions",
@@ -3996,8 +4018,7 @@ object SchemaDefinition {
       }
     }
 
-    def teamIncomeQuery()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamIncomeQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "teamIncomes",
@@ -4029,8 +4050,7 @@ object SchemaDefinition {
         }
     }
 
-    def myNotificationQuery()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def myNotificationQuery(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "myNotifications",
@@ -4098,14 +4118,12 @@ object SchemaDefinition {
         }
     }
 
-    def apiSubscriptionsQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def apiSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "apiApiSubscriptions",
           ApiSubscriptionListType,
-          arguments =
-            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
               ctx,
@@ -4121,14 +4139,12 @@ object SchemaDefinition {
         )
       )
 
-    def getAuditTrailQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def getAuditTrailQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "auditTrail",
           AuditTrailType,
-          arguments =
-            FROM :: TO :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          arguments = FROM :: TO :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getAuditTrail(
               ctx,
@@ -4176,14 +4192,12 @@ object SchemaDefinition {
       )
     }
 
-    def apiQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "visibleApis",
           ApiWithCountType,
-          arguments =
-            FILTER_TABLE :: SORTING_TABLE :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
+          arguments = FILTER_TABLE :: SORTING_TABLE :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getVisibleApis(
               ctx = ctx,
@@ -4197,8 +4211,7 @@ object SchemaDefinition {
         )
       )
 
-    def getAllTagsQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def getAllTagsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "allTags",
@@ -4220,8 +4233,7 @@ object SchemaDefinition {
         )
       )
 
-    def getAllCategoriesQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def getAllCategoriesQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "allCategories",
@@ -4264,14 +4276,12 @@ object SchemaDefinition {
         }
     }
 
-    def apiWithSubscriptionsQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def apiWithSubscriptionsQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "accessibleApis",
           GraphQlAccessibleApisWithNumberOfApis,
-          arguments =
-            TEAM_ID_NOT_OPT :: RESEARCH :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil,
+          arguments = TEAM_ID_NOT_OPT :: RESEARCH :: API_SUB_ONLY :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApisWithSubscriptions(
               ctx,
@@ -4285,8 +4295,7 @@ object SchemaDefinition {
         )
       )
 
-    def cmsPageFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def cmsPageFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "pages",
@@ -4311,8 +4320,7 @@ object SchemaDefinition {
         )
       )
 
-    def cmsSinglePageFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def cmsSinglePageFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "page",
@@ -4342,18 +4350,16 @@ object SchemaDefinition {
                     )
               }
             }.map {
-              case Right(Some(page))
-                  if page.authenticated && ctx.ctx._2.user.isGuest =>
+              case Right(Some(page)) if page.authenticated && ctx.ctx._2.user.isGuest =>
                 throw NotAuthorizedError("please log in.")
-              case Right(value) => value
-              case Left(r)      => throw NotAuthorizedError(r.toString)
+              case Right(value)                                                       => value
+              case Left(r)                                                            => throw NotAuthorizedError(r.toString)
             }
           }
         )
       )
 
-    def subscriptionDemandsForTeamAdmin()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def subscriptionDemandsForTeamAdmin(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "subscriptionDemandsForAdmin",
@@ -4364,9 +4370,9 @@ object SchemaDefinition {
               ctx.arg(TEAM_ID_NOT_OPT),
               AuditTrailEvent("*** TODO ***")
             )(ctx.ctx._2) { team =>
-              val tenant = ctx.ctx._2.tenant
+              val tenant    = ctx.ctx._2.tenant
               val dataStore = ctx.ctx._1
-              val apiIds = ctx.arg(API_IDS)
+              val apiIds    = ctx.arg(API_IDS)
 
               def testApisTeam(
                   apis: Seq[Api],
@@ -4377,48 +4383,47 @@ object SchemaDefinition {
                 else EitherT.pure[Future, AppError](())
               }
 
-              val apiFilter =
+              val apiFilter                                                         =
                 if (apiIds.isEmpty) Json.obj()
                 else Json.obj("_id" -> Json.obj("$in" -> JsArray(apiIds.get.map(JsString.apply))))
 
-              val value
-                  : EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] =
+              val value: EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] =
                 for {
-                  apis <- EitherT.liftF(
-                    dataStore.apiRepo
-                      .forTenant(tenant)
-                      .findNotDeleted(
-                        Json.obj("team" -> team.id.asJson) ++ apiFilter
-                      )
-                  )
-                  _ <- testApisTeam(apis, team)
+                  apis    <- EitherT.liftF(
+                               dataStore.apiRepo
+                                 .forTenant(tenant)
+                                 .findNotDeleted(
+                                   Json.obj("team" -> team.id.asJson) ++ apiFilter
+                                 )
+                             )
+                  _       <- testApisTeam(apis, team)
                   demands <- EitherT.liftF(
-                    dataStore.subscriptionDemandRepo
-                      .forTenant(tenant)
-                      .findWithPagination(
-                        Json.obj(
-                          "_deleted" -> false,
-                          "$or" -> Json.arr(
-                            Json.obj(
-                              "state" -> SubscriptionDemandState.InProgress.name
-                            ),
-                            Json.obj(
-                              "state" -> SubscriptionDemandState.Waiting.name
-                            )
-                          ),
-                          "api" -> Json
-                            .obj("$in" -> JsArray(apis.map(_.id.asJson)))
-                        ),
-                        ctx.arg(OFFSET),
-                        ctx.arg(LIMIT)
-                      )
-                  )
+                               dataStore.subscriptionDemandRepo
+                                 .forTenant(tenant)
+                                 .findWithPagination(
+                                   Json.obj(
+                                     "_deleted" -> false,
+                                     "$or"      -> Json.arr(
+                                       Json.obj(
+                                         "state" -> SubscriptionDemandState.InProgress.name
+                                       ),
+                                       Json.obj(
+                                         "state" -> SubscriptionDemandState.Waiting.name
+                                       )
+                                     ),
+                                     "api"      -> Json
+                                       .obj("$in" -> JsArray(apis.map(_.id.asJson)))
+                                   ),
+                                   ctx.arg(OFFSET),
+                                   ctx.arg(LIMIT)
+                                 )
+                             )
                 } yield demands
 
               value.value
 
             }.map {
-              case Left(error) =>
+              case Left(error)    =>
                 throw NotAuthorizedError((error.toJson() \ "error").as[String])
               case Right(demands) =>
                 SubscriptionDemandWithCount(demands._1, demands._2)
@@ -4427,8 +4432,7 @@ object SchemaDefinition {
         )
       )
 
-    def teamSubscriptionDemands()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamSubscriptionDemands(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "teamSubscriptionDemands",
@@ -4439,7 +4443,7 @@ object SchemaDefinition {
               ctx.arg(TEAM_ID_NOT_OPT),
               AuditTrailEvent("*** TODO ***")
             )(ctx.ctx._2) { team =>
-              val tenant = ctx.ctx._2.tenant
+              val tenant    = ctx.ctx._2.tenant
               val dataStore = ctx.ctx._1
 
               dataStore.subscriptionDemandRepo
@@ -4447,10 +4451,10 @@ object SchemaDefinition {
                 .findWithPagination(
                   Json.obj(
                     "_deleted" -> false,
-                    "team" -> team.id.asJson,
-                    "$or" -> Json.arr(
+                    "team"     -> team.id.asJson,
+                    "$or"      -> Json.arr(
                       Json.obj(
-                        "state" -> SubscriptionDemandState.InProgress.name
+                        "state"        -> SubscriptionDemandState.InProgress.name
                       ),
                       Json.obj("state" -> SubscriptionDemandState.Waiting.name)
                     )
@@ -4464,7 +4468,7 @@ object SchemaDefinition {
                 .map(Right(_))
             }.map {
               case Right(demands) => demands
-              case Left(error) =>
+              case Left(error)    =>
                 throw NotAuthorizedError((error.toJson() \ "error").as[String])
             }
           }
@@ -4484,8 +4488,8 @@ object SchemaDefinition {
           maybeTeamId: Option[String]
       ): JsObject = {
         (maybeIds, maybeTeamId) match {
-          case (None, None) => Json.obj()
-          case (Some(ids), None) =>
+          case (None, None)              => Json.obj()
+          case (Some(ids), None)         =>
             Json.obj(
               "$or" -> Json.arr(
                 Json
@@ -4496,10 +4500,10 @@ object SchemaDefinition {
                 )
               )
             )
-          case (None, Some(teamId)) => Json.obj("team" -> teamId)
+          case (None, Some(teamId))      => Json.obj("team" -> teamId)
           case (Some(ids), Some(teamId)) =>
             Json.obj(
-              "$or" -> Json.arr(
+              "$or"  -> Json.arr(
                 Json.obj(
                   "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                 ),
@@ -4534,7 +4538,7 @@ object SchemaDefinition {
               ctx.arg(IDS),
               ctx.arg(TEAM_ID)
             ) match {
-              case (-1, _, ids, teamId) =>
+              case (-1, _, ids, teamId)         =>
                 repo(ctx)
                   .find(toQuery(ids, teamId))
                   .map(_.asInstanceOf[Seq[Out]])
@@ -4562,8 +4566,7 @@ object SchemaDefinition {
         ctx => repo(ctx).forTenant(ctx.ctx._2.tenant)
       )
 
-    def getSubscriptionDetailsFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def getSubscriptionDetailsFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "apiSubscriptionDetails",
@@ -4576,37 +4579,36 @@ object SchemaDefinition {
               ctx.arg(TEAM_ID_NOT_OPT)
             ).map {
               case Right(details) => details
-              case Left(error) =>
+              case Left(error)    =>
                 throw NotAuthorizedError(error.getErrorMessage())
             }
           }
         )
       )
 
-    def allFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def allFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo) ++
-          getRepoFields(
-            "userSession",
-            UserSessionType,
-            ctx => ctx.ctx._1.userSessionRepo
-          ) ++
-          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo) ++
-          getRepoFields(
-            "passwordReset",
-            PasswordResetType,
-            ctx => ctx.ctx._1.passwordResetRepo
-          ) ++
-          getRepoFields(
-            "accountCreation",
-            AccountCreationType,
-            ctx => ctx.ctx._1.accountCreationRepo
-          ) ++
-          // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
-          getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
-          getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
-          // format: off
+        getRepoFields(
+          "userSession",
+          UserSessionType,
+          ctx => ctx.ctx._1.userSessionRepo
+        ) ++
+        getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo) ++
+        getRepoFields(
+          "passwordReset",
+          PasswordResetType,
+          ctx => ctx.ctx._1.passwordResetRepo
+        ) ++
+        getRepoFields(
+          "accountCreation",
+          AccountCreationType,
+          ctx => ctx.ctx._1.accountCreationRepo
+        ) ++
+        // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
+        getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
+        getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
+        // format: off
       getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
       getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
       // format: off

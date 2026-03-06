@@ -15,13 +15,13 @@ sealed trait TeamType {
 }
 
 object TeamType {
-  case object Personal extends TeamType {
+  case object Personal     extends TeamType {
     def name: String = "Personal"
   }
   case object Organization extends TeamType {
     def name: String = "Organization"
   }
-  case object Admin extends TeamType {
+  case object Admin        extends TeamType {
     def name: String = "Admin"
   }
   val values: Seq[TeamType] =
@@ -43,10 +43,10 @@ object TeamPermission {
   case object Administrator extends TeamPermission {
     def name: String = "Administrator"
   }
-  case object ApiEditor extends TeamPermission {
+  case object ApiEditor     extends TeamPermission {
     def name: String = "ApiEditor"
   }
-  case object TeamUser extends TeamPermission {
+  case object TeamUser      extends TeamPermission {
     def name: String = "User"
   }
   val values: Seq[TeamPermission] =
@@ -76,10 +76,10 @@ object TeamApiKeyVisibility {
   case object Administrator extends TeamApiKeyVisibility {
     def name: String = "Administrator"
   }
-  case object ApiEditor extends TeamApiKeyVisibility {
+  case object ApiEditor     extends TeamApiKeyVisibility {
     def name: String = "ApiEditor"
   }
-  case object User extends TeamApiKeyVisibility {
+  case object User          extends TeamApiKeyVisibility {
     def name: String = "User"
   }
   val values: Seq[TeamApiKeyVisibility] =
@@ -115,29 +115,29 @@ case class Team(
     apisCreationPermission: Option[Boolean] = None,
     verified: Boolean = false
 ) extends CanJson[User] {
-  override def asJson: JsValue = json.TeamFormat.writes(this)
-  def humanReadableId = name.urlPathSegmentSanitized
+  override def asJson: JsValue                 = json.TeamFormat.writes(this)
+  def humanReadableId                          = name.urlPathSegmentSanitized
   def asSimpleJson(implicit env: Env): JsValue = toUiPayload()
   def toUiPayload()(implicit env: Env): JsValue = {
     Json.obj(
-      "_id" -> id.value,
-      "_humanReadableId" -> humanReadableId,
-      "_tenant" -> json.TenantIdFormat.writes(tenant),
-      "tenant" -> json.TenantIdFormat.writes(tenant),
-      "type" -> json.TeamTypeFormat.writes(`type`),
-      "name" -> name,
-      "description" -> description,
-      "avatar" -> JsString(avatar.getOrElse("/assets/images/daikoku.svg")),
-      "contact" -> contact,
-      "users" -> json.SetUserWithPermissionFormat.writes(users),
-      "apiKeyVisibility" -> apiKeyVisibility
+      "_id"                        -> id.value,
+      "_humanReadableId"           -> humanReadableId,
+      "_tenant"                    -> json.TenantIdFormat.writes(tenant),
+      "tenant"                     -> json.TenantIdFormat.writes(tenant),
+      "type"                       -> json.TeamTypeFormat.writes(`type`),
+      "name"                       -> name,
+      "description"                -> description,
+      "avatar"                     -> JsString(avatar.getOrElse("/assets/images/daikoku.svg")),
+      "contact"                    -> contact,
+      "users"                      -> json.SetUserWithPermissionFormat.writes(users),
+      "apiKeyVisibility"           -> apiKeyVisibility
         .getOrElse(env.config.defaultApiKeyVisibility)
         .asJson,
-      "apisCreationPermission" -> apisCreationPermission
+      "apisCreationPermission"     -> apisCreationPermission
         .map(JsBoolean)
         .getOrElse(JsNull)
         .as[JsValue],
-      "verified" -> verified,
+      "verified"                   -> verified,
       "authorizedOtoroshiEntities" -> authorizedOtoroshiEntities
         .map(json.SeqTeamAuthorizedEntitiesFormat.writes)
         .getOrElse(JsNull)
@@ -147,7 +147,7 @@ case class Team(
   def includeUser(userId: UserId): Boolean = {
     users.exists(_.userId == userId)
   }
-  def admins(): Set[UserId] =
+  def admins(): Set[UserId]                    =
     users
       .filter(u => u.teamPermission == TeamPermission.Administrator)
       .map(_.userId)
@@ -171,23 +171,14 @@ case class EmailVerification(
   override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
 }
 object NotificationStatus {
-  case class Pending()
-      extends NotificationStatus
-      with Product
-      with Serializable {
+  case class Pending()                                 extends NotificationStatus with Product with Serializable {
     def status: String = "Pending"
   }
-  case class Accepted(date: DateTime = DateTime.now())
-      extends NotificationStatus
-      with Product
-      with Serializable {
+  case class Accepted(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable {
     def status: String = "Accepted"
 
   }
-  case class Rejected(date: DateTime = DateTime.now())
-      extends NotificationStatus
-      with Product
-      with Serializable {
+  case class Rejected(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable {
     def status: String = "Rejected"
 
   }
@@ -202,11 +193,9 @@ sealed trait OtoroshiSyncNotificationAction extends NotificationAction {
 object NotificationAction {
   case class ApiAccess(api: ApiId, team: TeamId) extends NotificationAction
 
-  case class TeamInvitation(team: TeamId, user: UserId)
-      extends NotificationAction
+  case class TeamInvitation(team: TeamId, user: UserId) extends NotificationAction
 
-  case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId)
-      extends NotificationAction
+  case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId) extends NotificationAction
 
   case class ApiSubscriptionReject(
       message: Option[String],
@@ -238,25 +227,23 @@ object NotificationAction {
   case class OtoroshiSyncSubscriptionError(
       subscription: ApiSubscription,
       message: String
-  ) extends OtoroshiSyncNotificationAction {
+  )                                                                   extends OtoroshiSyncNotificationAction {
     def json: JsValue =
       Json.obj(
-        "errType" -> "OtoroshiSyncSubscriptionError",
-        "errMessage" -> message,
+        "errType"      -> "OtoroshiSyncSubscriptionError",
+        "errMessage"   -> message,
         "subscription" -> subscription.asJson
       )
   }
-  case class OtoroshiSyncApiError(api: Api, message: String)
-      extends OtoroshiSyncNotificationAction {
+  case class OtoroshiSyncApiError(api: Api, message: String)          extends OtoroshiSyncNotificationAction {
     def json: JsValue =
       Json.obj(
-        "errType" -> "OtoroshiSyncApiError",
+        "errType"    -> "OtoroshiSyncApiError",
         "errMessage" -> message,
-        "api" -> api.asJson
+        "api"        -> api.asJson
       )
   }
-  case class ApiKeyDeletionInformation(api: String, clientId: String)
-      extends NotificationAction
+  case class ApiKeyDeletionInformation(api: String, clientId: String) extends NotificationAction
 
   case class ApiKeyRotationInProgress(
       clientId: String,
@@ -264,20 +251,15 @@ object NotificationAction {
       plan: String
   ) extends NotificationAction
 
-  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String)
-      extends NotificationAction
+  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String) extends NotificationAction
 
-  case class ApiKeyRefresh(subscription: String, api: String, plan: String)
-      extends NotificationAction
+  case class ApiKeyRefresh(subscription: String, api: String, plan: String) extends NotificationAction
 
-  case class NewPostPublished(teamId: String, apiName: String)
-      extends NotificationAction
+  case class NewPostPublished(teamId: String, apiName: String) extends NotificationAction
 
-  case class NewIssueOpen(teamId: String, apiName: String, linkTo: String)
-      extends NotificationAction
+  case class NewIssueOpen(teamId: String, apiName: String, linkTo: String) extends NotificationAction
 
-  case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
-      extends NotificationAction
+  case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String) extends NotificationAction
 
   case class ApiKeyDeletionInformationV2(
       api: ApiId,
@@ -304,17 +286,13 @@ object NotificationAction {
       message: Option[String] = None
   ) extends NotificationAction
 
-  case class NewPostPublishedV2(api: ApiId, post: ApiPostId)
-      extends NotificationAction
+  case class NewPostPublishedV2(api: ApiId, post: ApiPostId) extends NotificationAction
 
-  case class NewIssueOpenV2(api: ApiId, issue: ApiIssueId)
-      extends NotificationAction
+  case class NewIssueOpenV2(api: ApiId, issue: ApiIssueId) extends NotificationAction
 
-  case class NewCommentOnIssueV2(api: ApiId, issue: ApiIssueId, user: UserId)
-      extends NotificationAction
+  case class NewCommentOnIssueV2(api: ApiId, issue: ApiIssueId, user: UserId) extends NotificationAction
 
-  case class TransferApiOwnership(team: TeamId, api: ApiId)
-      extends NotificationAction
+  case class TransferApiOwnership(team: TeamId, api: ApiId) extends NotificationAction
 
   case class CheckoutForSubscription(
       demand: DemandId,
@@ -322,6 +300,10 @@ object NotificationAction {
       plan: UsagePlanId,
       step: SubscriptionDemandStepId
   ) extends NotificationAction
+
+  case class ApiDepreciationWarning(api: ApiId) extends NotificationAction
+
+  case class ApiBlockingWarning(api: ApiId, subscription: ApiSubscriptionId) extends NotificationAction
 }
 
 sealed trait NotificationType {
@@ -332,13 +314,12 @@ object NotificationType {
   case object AcceptOrReject extends NotificationType {
     override def value: String = "AcceptOrReject"
   }
-  case object AcceptOnly extends NotificationType {
+  case object AcceptOnly     extends NotificationType {
     override def value: String = "AcceptOnly"
   }
 }
 
-case class NotificationSender(name: String, email: String, id: Option[UserId])
-    extends CanJson[NotificationSender] {
+case class NotificationSender(name: String, email: String, id: Option[UserId]) extends CanJson[NotificationSender] {
   override def asJson: JsValue = json.NotificationSenderFormat.writes(this)
 }
 

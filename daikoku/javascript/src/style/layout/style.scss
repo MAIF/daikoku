@@ -217,8 +217,8 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 }
 
 .wrapper:not(.information-container) {
-  height: calc(100vh - variables.$topbar-height);
-  overflow: scroll;
+  height: calc(100vh - #{variables.$topbar-height});
+overflow: scroll;
 
   margin-top: 50px;
 }

@@ -25,15 +25,15 @@ object CommonServices {
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
 
-      val tenant = ctx.tenant
-      val user = ctx.user
+      val tenant   = ctx.tenant
+      val user     = ctx.user
       val idFilter =
         if (ids.nonEmpty)
           Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply))))
         else Json.obj()
       for {
-        myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-        apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
+        myTeams           <- env.dataStore.teamRepo.myTeams(tenant, user)
+        apiRepo           <- env.dataStore.apiRepo.forTenantF(tenant.id)
         myCurrentRequests <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
@@ -41,27 +41,27 @@ object CommonServices {
               .forTenant(tenant.id)
               .findNotDeleted(
                 Json.obj(
-                  "action.type" -> "ApiAccess",
-                  "action.team" -> Json
+                  "action.type"   -> "ApiAccess",
+                  "action.team"   -> Json
                     .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
                   "status.status" -> "Pending"
                 )
               )
-        publicApis <-
+        publicApis        <-
           apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ idFilter)
-        almostPublicApis <-
+        almostPublicApis  <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
             apiRepo.findNotDeleted(
               Json.obj("visibility" -> "PublicWithAuthorizations") ++ idFilter
             )
-        privateApis <-
+        privateApis       <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
             apiRepo.findNotDeleted(
               Json.obj(
                 "visibility" -> "Private",
-                "$or" -> Json.arr(
+                "$or"        -> Json.arr(
                   Json.obj(
                     "authorizedTeams" -> Json
                       .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
@@ -69,13 +69,13 @@ object CommonServices {
                 )
               ) ++ idFilter
             )
-        adminApis <-
+        adminApis         <-
           if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty)
           else
             apiRepo.findNotDeleted(
               Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ idFilter
             )
-        plans <-
+        plans             <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(
@@ -92,7 +92,7 @@ object CommonServices {
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] =
           (publicApis ++ almostPublicApis ++ privateApis)
-            .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
+            .filter(api => api.isSubscribable || myTeams.exists(api.team == _.id))
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
             .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
               val apiPlans =
@@ -122,33 +122,30 @@ object CommonServices {
                     plans = apiPlans,
                     authorizations = authorizations
                   )
-                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
+                case _                                      => ApiWithAuthorizations(api = api, plans = apiPlans)
               })
             }
 
         val apis: Seq[ApiWithAuthorizations] =
-          (if (user.isDaikokuAdmin)
-             adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) {
-               case (acc, api) =>
-                 acc :+ ApiWithAuthorizations(
-                   api = api,
-                   plans =
-                     plans.filter(p => api.possibleUsagePlans.contains(p.id)),
-                   authorizations = myTeams.foldLeft(
-                     Seq.empty[AuthorizationApi]
-                   ) { case (acc, team) =>
-                     acc :+ AuthorizationApi(
-                       team = team.id.value,
-                       authorized =
-                         user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
-                           .exists(u => u.userId == user.id),
-                       pending = false
-                     )
-                   }
-                 )
-             } ++ sortedApis
-           else
-             sortedApis)
+          if (user.isDaikokuAdmin)
+            adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
+              acc :+ ApiWithAuthorizations(
+                api = api,
+                plans = plans.filter(p => api.possibleUsagePlans.contains(p.id)),
+                authorizations = myTeams.foldLeft(
+                  Seq.empty[AuthorizationApi]
+                ) { case (acc, team) =>
+                  acc :+ AuthorizationApi(
+                    team = team.id.value,
+                    authorized = user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
+                      .exists(u => u.userId == user.id),
+                    pending = false
+                  )
+                }
+              )
+            } ++ sortedApis
+          else
+            sortedApis
 
         apis
           .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
@@ -172,7 +169,7 @@ object CommonServices {
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
       for {
-        subs <-
+        subs          <-
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(Json.obj("team" -> teamId))
@@ -183,18 +180,18 @@ object CommonServices {
                 .obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
             )
           else Json.obj()
-        apiFilter = Json.obj(
-          "$or" -> Json.arr(
-            Json.obj("visibility" -> "Public"),
-            Json.obj("authorizedTeams" -> teamId),
-            Json.obj("team" -> teamId)
-          ),
-          "state" -> ApiState.publishedJsonFilter,
-          "_deleted" -> false,
-          "parent" -> JsNull, // FIXME : could be a problem if parent is not published [#517]
-          "name" -> Json.obj("$regex" -> research)
-        )
-        uniqueApis <-
+        apiFilter      = Json.obj(
+                           "$or"      -> Json.arr(
+                             Json.obj("visibility"      -> "Public"),
+                             Json.obj("authorizedTeams" -> teamId),
+                             Json.obj("team"            -> teamId)
+                           ),
+                           "state"    -> ApiState.publishedJsonFilter,
+                           "_deleted" -> false,
+                           "parent"   -> JsNull, // FIXME : could be a problem if parent is not published [#517]
+                           "name"     -> Json.obj("$regex" -> research)
+                         )
+        uniqueApis    <-
           env.dataStore.apiRepo
             .forTenant(ctx.tenant)
             .findWithPagination(
@@ -203,22 +200,22 @@ object CommonServices {
               limit,
               Some(Json.obj("name" -> 1))
             )
-        allApisFilter = Json.obj(
-          "_humanReadableId" -> Json.obj(
-            "$in" -> JsArray(
-              uniqueApis._1.map(a => JsString(a.humanReadableId))
-            )
-          ),
-          "state" -> ApiState.publishedJsonFilter
-        )
-        allApis <-
+        allApisFilter  = Json.obj(
+                           "_humanReadableId" -> Json.obj(
+                             "$in" -> JsArray(
+                               uniqueApis._1.map(a => JsString(a.humanReadableId))
+                             )
+                           ),
+                           "state"            -> ApiState.publishedJsonFilter
+                         )
+        allApis       <-
           env.dataStore.apiRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(
               query = allApisFilter ++ subsOnlyFilter,
               sort = Some(Json.obj("name" -> 1))
             )
-        teams <-
+        teams         <-
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(
@@ -226,17 +223,17 @@ object CommonServices {
                 "_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))
               )
             )
-        demands <-
+        demands       <-
           env.dataStore.subscriptionDemandRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(
               Json.obj(
-                "team" -> teamId,
-                "api" -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
+                "team"  -> teamId,
+                "api"   -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
                 "state" -> Json.obj("$in" -> Json.arr("waiting", "inProgress"))
               )
             )
-        plans <-
+        plans         <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
             .findNotDeleted(
@@ -256,7 +253,7 @@ object CommonServices {
                   plan: UsagePlan,
                   api: Api,
                   teamId: String
-              ): Boolean =
+              ): Boolean                                       =
                 plan.visibility != UsagePlanVisibility.Private || api.team.value == teamId || plan.authorizedTeams
                   .contains(TeamId(teamId))
               def filterUnlinkedPlan(plan: UsagePlan): Boolean =
@@ -264,13 +261,13 @@ object CommonServices {
                   team.id == api.team && team.users
                     .exists(u => ctx.user.id == u.userId)
                 )) ||
-                  (plan.otoroshiTarget.nonEmpty &&
-                    plan.otoroshiTarget.exists(target =>
-                      target.authorizedEntities.exists(entities =>
-                        entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty
-                      )
-                    ))
-              val apiPlans =
+                (plan.otoroshiTarget.nonEmpty &&
+                plan.otoroshiTarget.exists(target =>
+                  target.authorizedEntities.exists(entities =>
+                    entities.groups.nonEmpty || entities.routes.nonEmpty || entities.services.nonEmpty
+                  )
+                ))
+              val apiPlans                                     =
                 plans.filter(p => api.possibleUsagePlans.contains(p.id))
               ApiWithSubscriptions(
                 api = api,
@@ -286,9 +283,7 @@ object CommonServices {
                       isPending = demands.exists(demand =>
                         demand.team.value == teamId && demand.plan.value == plan.id.value && demand.api.value == api.id.value
                       ),
-                      subscriptionsCount = subs.count(sub =>
-                        sub.plan.value == plan.id.value && sub.api == api.id
-                      )
+                      subscriptionsCount = subs.count(sub => sub.plan.value == plan.id.value && sub.api == api.id)
                     )
                   })
               )
@@ -342,13 +337,13 @@ object CommonServices {
     _UberPublicUserAccess(
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
-      val teams =
+      val teams         =
         getFiltervalue[List[String]](filter, "team").map(_.toArray)
-      val tags =
+      val tags          =
         getFiltervalue[List[String]](filter, "tag").map(_.toArray)
       val categories =
         getFiltervalue[List[String]](filter, "category").map(_.toArray)
-      val research =
+      val research      =
         getFiltervalue[String](filter, "research")
       val subscribeOnly =
         getFiltervalue[Boolean](filter, "subscribedOnly")
@@ -385,7 +380,7 @@ object CommonServices {
           |                   WHERE (
           |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
-          |                             (a.content ->> 'state' = 'published' OR
+          |                             (a.content ->> 'state' IN ('published','deprecated') OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
           |                             (case
@@ -595,7 +590,7 @@ object CommonServices {
   ): Future[Seq[String]] = {
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-      tags <-
+      tags    <-
         env.dataStore
           .asInstanceOf[PostgresDataStore]
           .queryString(
@@ -645,7 +640,7 @@ object CommonServices {
   ): Future[Seq[String]] = {
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-      tags <-
+      tags    <-
         env.dataStore
           .asInstanceOf[PostgresDataStore]
           .queryString(
@@ -691,9 +686,9 @@ object CommonServices {
       )
     )(ctx) { team =>
       val query = Json.obj(
-        "team" -> team.id.value,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> apiId),
+        "team"           -> team.id.value,
+        "$or"            -> Json.arr(
+          Json.obj("_id"              -> apiId),
           Json.obj("_humanReadableId" -> apiId)
         ),
         "currentVersion" -> version
@@ -701,11 +696,11 @@ object CommonServices {
 
       (for {
         api <- EitherT.fromOptionF(
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(query),
-          AppError.ApiNotFound
-        )
+                 env.dataStore.apiRepo
+                   .forTenant(ctx.tenant.id)
+                   .findOneNotDeleted(query),
+                 AppError.ApiNotFound
+               )
       } yield {
         ctx.setCtxValue("api.id", api.id)
         ctx.setCtxValue("api.name", api.name)
@@ -777,7 +772,7 @@ object CommonServices {
             .findWithPagination(
               Json.obj(
                 "_deleted" -> false,
-                "name" -> Json.obj("$regex" -> research)
+                "name"     -> Json.obj("$regex" -> research)
               ) ++ typeFilter,
               offset,
               limit,
@@ -810,33 +805,33 @@ object CommonServices {
       val fromTimestamp = from.getOrElse(
         DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
       )
-      val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+      val toTimestamp   = to.getOrElse(DateTime.now().toDateTime.getMillis)
       val planIdFilters = planId match {
         case Some(value) => Json.obj("plan" -> value)
         case None        => Json.obj()
       }
       for {
-        api <-
+        api          <-
           env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .findOneNotDeleted(
               Json.obj(
                 "team" -> team.id.value,
-                "$or" -> Json.arr(
-                  Json.obj("_id" -> apiId),
+                "$or"  -> Json.arr(
+                  Json.obj("_id"              -> apiId),
                   Json.obj("_humanReadableId" -> apiId)
                 )
               )
             )
-        apiId = api.map(api => api.id.value).get
+        apiId         = api.map(api => api.id.value).get
         consumptions <-
           env.dataStore.consumptionRepo
             .forTenant(ctx.tenant.id)
             .find(
               Json.obj(
-                "api" -> apiId,
+                "api"  -> apiId,
                 "from" -> Json.obj("$gte" -> fromTimestamp),
-                "to" -> Json.obj("$lte" -> toTimestamp)
+                "to"   -> Json.obj("$lte" -> toTimestamp)
               ) ++ planIdFilters,
               Some(Json.obj("from" -> 1))
             )
@@ -857,9 +852,7 @@ object CommonServices {
           .value
           .exists(p => p._1 == "id" && p._2.as[String] == key)
       })
-      .flatMap(v =>
-        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
-      )
+      .flatMap(v => v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T]))
   }
 
   def getApiSubscriptions(
@@ -882,7 +875,7 @@ object CommonServices {
     )(teamId, ctx) { _ =>
       val defaultOrderClause =
         "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
-      val sortClause = sorting.head.asOpt[JsObject] match {
+      val sortClause         = sorting.head.asOpt[JsObject] match {
         case Some(value) =>
           val desc = value.value.get("desc") match {
             case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
@@ -892,13 +885,13 @@ object CommonServices {
           value.value.get("id").map(_.as[String]) match {
             case Some(id) if id == "subscription" =>
               s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
-            case Some(id) if id == "plan" =>
+            case Some(id) if id == "plan"         =>
               s"ORDER BY p.content ->> 'customName' $desc"
-            case Some(id) if id == "team" =>
+            case Some(id) if id == "team"         =>
               s"ORDER BY t.content ->> 'name' $desc"
-            case _ => defaultOrderClause
+            case _                                => defaultOrderClause
           }
-        case None => defaultOrderClause
+        case None        => defaultOrderClause
       }
 
       val queryCount = s"""
@@ -917,7 +910,7 @@ object CommonServices {
                      |    END
                      |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb);
                      |""".stripMargin
-      val query = s"""
+      val query      = s"""
            |SELECT s.content
            |from api_subscriptions s
            |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
@@ -938,53 +931,53 @@ object CommonServices {
 
       (for {
         count <- EitherT.fromOptionF[Future, AppError, Long](
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneLong(
-              query = queryCount,
-              name = "count",
-              params = Seq(
-                apiId,
-                getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[String](filters, "plan").orNull[String],
-                getFiltervalue[String](filters, "team").orNull[String],
-                getFiltervalue[JsArray](filters, "tags")
-                  .map(Json.stringify(_))
-                  .orNull[String],
-                getFiltervalue[JsArray](filters, "clientIds")
-                  .map(_.value.map(_.as[String]).toArray)
-                  .orNull,
-                getFiltervalue[JsObject](filters, "metadata")
-                  .map(Json.stringify(_))
-                  .orNull[String]
-              )
-            ),
-          AppError.UnexpectedError
-        )
-        subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant)
-            .query(
-              query,
-              Seq(
-                apiId,
-                getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[String](filters, "plan").orNull[String],
-                getFiltervalue[String](filters, "team").orNull[String],
-                getFiltervalue[JsArray](filters, "tags")
-                  .map(Json.stringify(_))
-                  .orNull[String],
-                getFiltervalue[JsArray](filters, "clientIds")
-                  .map(_.value.map(_.as[String]).toArray)
-                  .orNull,
-                getFiltervalue[JsObject](filters, "metadata")
-                  .map(Json.stringify(_))
-                  .orNull[String],
-                java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
-              )
-            )
-        )
+                   env.dataStore
+                     .asInstanceOf[PostgresDataStore]
+                     .queryOneLong(
+                       query = queryCount,
+                       name = "count",
+                       params = Seq(
+                         apiId,
+                         getFiltervalue[String](filters, "subscription").orNull[String],
+                         getFiltervalue[String](filters, "plan").orNull[String],
+                         getFiltervalue[String](filters, "team").orNull[String],
+                         getFiltervalue[JsArray](filters, "tags")
+                           .map(Json.stringify(_))
+                           .orNull[String],
+                         getFiltervalue[JsArray](filters, "clientIds")
+                           .map(_.value.map(_.as[String]).toArray)
+                           .orNull,
+                         getFiltervalue[JsObject](filters, "metadata")
+                           .map(Json.stringify(_))
+                           .orNull[String]
+                       )
+                     ),
+                   AppError.UnexpectedError
+                 )
+        subs  <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+                   env.dataStore.apiSubscriptionRepo
+                     .forTenant(ctx.tenant)
+                     .query(
+                       query,
+                       Seq(
+                         apiId,
+                         getFiltervalue[String](filters, "subscription").orNull[String],
+                         getFiltervalue[String](filters, "plan").orNull[String],
+                         getFiltervalue[String](filters, "team").orNull[String],
+                         getFiltervalue[JsArray](filters, "tags")
+                           .map(Json.stringify(_))
+                           .orNull[String],
+                         getFiltervalue[JsArray](filters, "clientIds")
+                           .map(_.value.map(_.as[String]).toArray)
+                           .orNull,
+                         getFiltervalue[JsObject](filters, "metadata")
+                           .map(Json.stringify(_))
+                           .orNull[String],
+                         java.lang.Integer.valueOf(limit),
+                         java.lang.Integer.valueOf(offset)
+                       )
+                     )
+                 )
       } yield {
         ctx.setCtxValue("api.id", apiId)
         (subs, count)
@@ -992,8 +985,7 @@ object CommonServices {
     }
   }
 
-  def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(
-      implicit
+  def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
@@ -1017,13 +1009,13 @@ object CommonServices {
           |""".stripMargin
 
       (for {
-        sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant)
-            .findById(apiSubscriptionId),
-          AppError.EntityNotFound("ApiSubscription")
-        )
-        maybeParent <-
+        sub                 <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
+                                 env.dataStore.apiSubscriptionRepo
+                                   .forTenant(ctx.tenant)
+                                   .findById(apiSubscriptionId),
+                                 AppError.EntityNotFound("ApiSubscription")
+                               )
+        maybeParent         <-
           sub.parent
             .map(p =>
               EitherT.liftF[Future, AppError, Option[ApiSubscription]](
@@ -1059,8 +1051,7 @@ object CommonServices {
     }
   }
 
-  def getTeamIncome(teamId: String, from: Option[Long], to: Option[Long])(
-      implicit
+  def getTeamIncome(teamId: String, from: Option[Long], to: Option[Long])(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
@@ -1074,7 +1065,7 @@ object CommonServices {
       val fromTimestamp = from.getOrElse(
         DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
       )
-      val toTimestamp =
+      val toTimestamp   =
         to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
       for {
         ownApis <-
@@ -1086,10 +1077,10 @@ object CommonServices {
             .getLastConsumptionsForTenant(
               ctx.tenant.id,
               Json.obj(
-                "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
+                "api"  -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
                 "from" -> Json
                   .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
-                "to" -> Json.obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
+                "to"   -> Json.obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
               )
             )
       } yield {
@@ -1144,10 +1135,10 @@ object CommonServices {
 
       (for {
         notifications <- EitherT.fromOptionF(
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneRaw(
-              s"""
+                           env.dataStore
+                             .asInstanceOf[PostgresDataStore]
+                             .queryOneRaw(
+                               s"""
                |$CTE,
                |filtered_notifs as (
                |  SELECT
@@ -1185,24 +1176,24 @@ object CommonServices {
                |) AS result
                |FROM filtered_notifs;
                |""".stripMargin,
-              "result",
-              Seq(
-                actionTypes,
-                teams,
-                types,
-                apis,
-                java.lang.Boolean.valueOf(unreadOnly),
-                java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
-              )
-            ),
-          AppError.InternalServerError("SQL request for notifications failed")
-        )
-        totals <- EitherT.fromOptionF(
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneRaw(
-              s"""
+                               "result",
+                               Seq(
+                                 actionTypes,
+                                 teams,
+                                 types,
+                                 apis,
+                                 java.lang.Boolean.valueOf(unreadOnly),
+                                 java.lang.Integer.valueOf(limit),
+                                 java.lang.Integer.valueOf(offset)
+                               )
+                             ),
+                           AppError.InternalServerError("SQL request for notifications failed")
+                         )
+        totals        <- EitherT.fromOptionF(
+                           env.dataStore
+                             .asInstanceOf[PostgresDataStore]
+                             .queryOneRaw(
+                               s"""
                |$CTE,
                |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
                |              FROM notifications n
@@ -1250,15 +1241,15 @@ object CommonServices {
                |                      '[]'::json)                                                                           AS total_by_notification_types,
                |             (SELECT total_selectable FROM total_selectable)) _
                |  """.stripMargin,
-              "result",
-              Seq(
-                java.lang.Boolean.valueOf(unreadOnly)
-              )
-            ),
-          AppError.InternalServerError(
-            "SQL request for notifications totals failed"
-          )
-        )
+                               "result",
+                               Seq(
+                                 java.lang.Boolean.valueOf(unreadOnly)
+                               )
+                             ),
+                           AppError.InternalServerError(
+                             "SQL request for notifications totals failed"
+                           )
+                         )
       } yield {
         NotificationWithCount(
           notifications = (notifications \ "notifications")
@@ -1268,8 +1259,7 @@ object CommonServices {
           total = (totals \ "total").as[Long],
           totalSelectable = (totals \ "total_selectable").as[Long],
           totalByTypes = (totals \ "total_by_types").as[JsArray],
-          totalByNotificationTypes =
-            (totals \ "total_by_notification_types").as[JsArray],
+          totalByNotificationTypes = (totals \ "total_by_notification_types").as[JsArray],
           totalByTeams = (totals \ "total_by_teams").as[JsArray],
           totalByApis = (totals \ "total_by_apis").as[JsArray]
         )
@@ -1295,7 +1285,7 @@ object CommonServices {
 
       val defaultOrderClause =
         "ORDER BY content ->> '@timestamp' ASC"
-      val sortClause = sorting.head.asOpt[JsObject] match {
+      val sortClause         = sorting.head.asOpt[JsObject] match {
         case Some(value) =>
           val desc = value.value.get("desc") match {
             case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
@@ -1307,9 +1297,9 @@ object CommonServices {
               s"ORDER BY content -> 'user' ->> 'name' $desc"
             case Some(id) if id == "date" =>
               s"ORDER BY content ->> '@timestamp' $desc"
-            case _ => defaultOrderClause
+            case _                        => defaultOrderClause
           }
-        case None => defaultOrderClause
+        case None        => defaultOrderClause
       }
 
       val queryCount =
@@ -1320,7 +1310,7 @@ object CommonServices {
            |  AND (content -> 'user' ->> 'name') ~* COALESCE($$4::text, '')
            |  AND (content ->> 'message') ~* COALESCE($$5::text, '')
            |""".stripMargin
-      val query =
+      val query      =
         s"""
            |select content from audit_events
            |WHERE (content ->> '@timestamp')::bigint >= $$1 AND (content ->> '@timestamp')::bigint <= $$2
@@ -1333,37 +1323,37 @@ object CommonServices {
 
       (for {
         count <- EitherT.fromOptionF[Future, AppError, Long](
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneLong(
-              queryCount,
-              "count",
-              Seq(
-                java.lang.Long.valueOf(from),
-                java.lang.Long.valueOf(to),
-                getFiltervalue[String](filters, "user").orNull[String],
-                getFiltervalue[String](filters, "impersonator").orNull[String],
-                getFiltervalue[String](filters, "message").orNull[String]
-              )
-            ),
-          AppError.UnexpectedError
-        )
-        subs <- EitherT.liftF[Future, AppError, Seq[JsObject]](
-          env.dataStore.auditTrailRepo
-            .forTenant(ctx.tenant)
-            .query(
-              query,
-              Seq(
-                java.lang.Long.valueOf(from),
-                java.lang.Long.valueOf(to),
-                getFiltervalue[String](filters, "user").orNull[String],
-                getFiltervalue[String](filters, "impersonator").orNull[String],
-                getFiltervalue[String](filters, "message").orNull[String],
-                java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
-              )
-            )
-        )
+                   env.dataStore
+                     .asInstanceOf[PostgresDataStore]
+                     .queryOneLong(
+                       queryCount,
+                       "count",
+                       Seq(
+                         java.lang.Long.valueOf(from),
+                         java.lang.Long.valueOf(to),
+                         getFiltervalue[String](filters, "user").orNull[String],
+                         getFiltervalue[String](filters, "impersonator").orNull[String],
+                         getFiltervalue[String](filters, "message").orNull[String]
+                       )
+                     ),
+                   AppError.UnexpectedError
+                 )
+        subs  <- EitherT.liftF[Future, AppError, Seq[JsObject]](
+                   env.dataStore.auditTrailRepo
+                     .forTenant(ctx.tenant)
+                     .query(
+                       query,
+                       Seq(
+                         java.lang.Long.valueOf(from),
+                         java.lang.Long.valueOf(to),
+                         getFiltervalue[String](filters, "user").orNull[String],
+                         getFiltervalue[String](filters, "impersonator").orNull[String],
+                         getFiltervalue[String](filters, "message").orNull[String],
+                         java.lang.Integer.valueOf(limit),
+                         java.lang.Integer.valueOf(offset)
+                       )
+                     )
+                 )
       } yield {
         (subs, count)
       }).value.map {
