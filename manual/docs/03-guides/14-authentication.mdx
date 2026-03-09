@@ -304,11 +304,19 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     The `Logout URL` field is now optional. If left empty (e.g. when the provider does not expose an `end_session_endpoint`, like some PingFederate configurations), Daikoku will simply clear the local session and redirect the user to the home page without calling the provider's logout endpoint.
     :::
 
-      ## Testing your configuration
+    ## Bind metadata from OIDC claims to Daikoku user
 
-      Disconnect from your instance
-      Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
-      You can now login with a user setup with the auth module.
+    On setup selected metadata, Daikoku will retrieve the OIDC claims and fill or replace user metadata.  
+
+    You can write them separated by comma, like scope values.  
+    For no metadata, an empty string. 
+    For all Metadata, write `*`.  
+
+    ## Testing your configuration
+
+    Disconnect from your instance
+    Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
+    You can now login with a user setup with the auth module.
   </TabItem>
 </Tabs>
 

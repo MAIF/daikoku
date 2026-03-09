@@ -16,7 +16,7 @@ import play.api.libs.json.*
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{WSRequest, WSResponse}
 import play.api.mvc.RequestHeader
 
 import java.security.{MessageDigest, SecureRandom}
@@ -267,9 +267,9 @@ object OAuth2Support {
         .map(_ => tokenBody)
     }
 
-    def getUser(accessToken: String) = {
+    def getUser(accessToken: String): EitherT[Future, AppError, JsValue]= {
       val builder2 = _env.wsClient.url(authConfig.userInfoUrl)
-      val future2 = if (authConfig.useJson) {
+      val future2: Future[WSResponse] = if (authConfig.useJson) {
         builder2.post(
           Json.obj(
             "access_token" -> accessToken
@@ -340,7 +340,6 @@ object OAuth2Support {
         isDaikokuAdmin: Boolean,
         userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
-      val selectedMetadata = authConfig.selectedMetadata.map(_.split(",").map(_.trim))
       val updatedUser = u.copy(
         name = name,
         email = email,
@@ -433,7 +432,7 @@ object OAuth2Support {
     }
 
     for {
-      _ <- EitherT.cond[Future](
+      _ <- EitherT.cond[Future][AppError, Unit](
         request.getQueryString("error").isEmpty,
         (),
         AppError.BadRequestError("No code")
@@ -446,7 +445,7 @@ object OAuth2Support {
       builder = _env.wsClient.url(authConfig.tokenUrl)
       verifier = request.session.get("code_verifier").getOrElse("")
       clientSecret = authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
-      mapPayload = (Map(
+      mapPayload = Map(
         "code" -> code,
         "grant_type" -> "authorization_code",
         "client_id" -> authConfig.clientId,
@@ -459,7 +458,7 @@ object OAuth2Support {
         .getOrElse(Map.empty)
         ++ clientSecret
           .map(s => Map("client_secret" -> s))
-          .getOrElse(Map.empty))
+          .getOrElse(Map.empty)
 
       response <- EitherT.right[AppError](if (authConfig.useJson) {
         val jsonPayload = JsObject(
@@ -469,9 +468,10 @@ object OAuth2Support {
           jsonPayload
         )
       } else {
-        builder.post(
+        val value: Future[builder.Response] = builder.post(
           mapPayload
         )(writeableOf_urlEncodedSimpleForm)
+        value
       })
       accessToken = (response.json \ authConfig.accessTokenField).as[String]
       idToken = (response.json \ "id_token").asOpt[String]
@@ -481,7 +481,7 @@ object OAuth2Support {
           verifyAndGetUser(accessToken)
         } else
           getUser(accessToken)
-      user: User <- processUserFromOAuth(userJson)
+      user <- processUserFromOAuth(userJson)
     } yield (user, idToken)
   }
 

@@ -202,7 +202,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     selectedMetadata: {
       type: type.string,
-      label: translate('selectedMetadata')
+      label: translate('tenant.settings.authProvider.oauth.configuration.metadata.button.label')
     },
     clientId: {
       type: type.string,

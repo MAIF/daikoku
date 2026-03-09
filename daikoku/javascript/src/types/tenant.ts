@@ -357,5 +357,5 @@ export type OAuthSettings = {
   pictureField: string;
   callbackUrl: string;
   daikokuAdmins: string[];
-  selectedMetadata: string
+  selectedMetadata?: string
 };
