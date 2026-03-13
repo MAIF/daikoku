@@ -82,6 +82,17 @@ export interface IApiSubscriptionDetails {
     usagePlan: IUsagePlanGQL;
   }>;
 }
+export interface IApiSubscriptionSimpleDetails {
+  apiSubscription: IApiSubscriptionGql;
+  parentSubscription?: IApiSubscriptionGql;
+  accessibleResources: Array<{
+    api: string,
+    apiName: string,
+    version: string,
+    usagePlan: string,
+    usagePlanName: string
+  }>;
+}
 
 export interface IUserAuditEvent {
   _id: string;

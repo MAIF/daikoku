@@ -16,8 +16,8 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
-  IApiGQL,
   IApiSubscriptionDetails,
+  IApiSubscriptionSimpleDetails,
   IRotation,
   ISubscription,
   ISubscriptionExtended,
@@ -36,6 +36,7 @@ import {
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import { offset } from '@popperjs/core';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -71,7 +72,7 @@ const DisplayLink = ({ value }: { value: string }) => {
 ///###########################
 
 export const TeamApiKeysForApi = () => {
-  const { isLoading, currentTeam, error } = useTeamBackOffice();
+  const { currentTeam } = useTeamBackOffice();
   const { Translation } = useContext(I18nContext);
 
   const params = useParams();
@@ -141,8 +142,8 @@ type ApiKeysListForApiProps = {
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
 
-  const { customGraphQLClient } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
   const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
@@ -157,25 +158,46 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       ),
   });
 
-  const subApisQuery = useQuery({
-    queryKey: ['data', 'subscriptions', 'apis'],
-    queryFn: () => {
-      return customGraphQLClient.request<{ apis: IApiGQL[] }>(
-        Services.graphql.apisByIds,
-        {
-          ids: [
-            ...new Set(
-              (subsQuery.data as Array<ISubscription>).map((s) => s.api)
-            ),
-          ],
-        })
-    },
-    enabled: !!subsQuery.data && !isError(subsQuery.data),
-  });
+  const API_SUBSCRIPTION_SIMPLE_DETAIL_QUERY = `
+    query getApiSubscriptionSimpleDetails ($apiId: String!, $teamId: String!, $offset: Int, $limit: Int) {
+      apiSubscriptionSimpleDetails (apiId: $apiId, teamId: $teamId, limit: $limit, offset: $offset) {
+        apiSubscription {
+          _id
+          api { name }
+          plan { 
+            customName
+            autoRotation
+          }
+          parent { _id }
+          customName
+        }
+        accessibleResources {
+          api
+          apiName
+          apiVersion
+          usagePlan
+          usagePlanName
+        }
+      }
+    }
+    `;
+
+  const testQuery = useQuery({
+    queryKey: [props.api._id, props.team._id],
+    queryFn: () => customGraphQLClient.request<{ details: IApiSubscriptionSimpleDetails }>(API_SUBSCRIPTION_SIMPLE_DETAIL_QUERY, {
+      teamId: props.team._id,
+      apiId: props.api._id,
+      limit: 5, //FIXME: get real limit
+      offset: 0 //FIXME: get real offset from react table for exemple
+    }),
+    select: d => d.details
+  })
+  //TODO: use previous query to build new faster UI
+
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['data'] });
-  }, [location]);
+  }, [queryClient]);
 
   const updateCustomName = (
     subscription: ISubscription,
@@ -266,7 +288,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       const keyToInvalidate = ["data", "subscriptions", "mySubscription"]
       return queryClient.invalidateQueries({
         predicate: (query) => query.queryKey.some((v) => typeof v === 'string' && keyToInvalidate.includes(v)),
-      }) 
+      })
         .then(() => toast.success(
           translate("apikeys.delete.success.message")
         ));
@@ -313,7 +335,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll")}</p>
                 <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll.list")}</p>
                 <ul>
-                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                  {details.accessibleResources.map((resource, idx) => (<li key={idx}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
                 </ul>
               </>}
 
@@ -321,7 +343,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren")}</p>
                 <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren.list")}</p>
                 <ul>
-                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                  {details.accessibleResources.map((resource, idx) => (<li key={idx}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
                 </ul>
               </>}
 
@@ -348,7 +370,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
               }
             },
             actionLabel: translate('Confirm'),
-            onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
+            onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
               .then(afterDeletionFunction)
           }
         ),
@@ -390,7 +412,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             }
           },
           actionLabel: translate('Confirm'),
-          onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
+          onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
             .then(afterDeletionFunction)
         }
       )
@@ -415,7 +437,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       enabled,
       rotationEvery,
       gracePeriod
-    ).then((r) => {
+    ).then((_) => {
       toast.success(translate("subscription.rotation.successfully.setup"))
       queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
     });
@@ -467,18 +489,14 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   }
 
   if (
-    subsQuery.isLoading ||
-    subApisQuery.isLoading
+    subsQuery.isLoading
   ) {
     return <Spinner />;
   } else if (
     subsQuery.data &&
-    subApisQuery.data &&
-    !isError(subsQuery.data) &&
-    !isError(subApisQuery.data)
+    !isError(subsQuery.data)
   ) {
     const subscriptions = subsQuery.data;
-    const subscribedApis = subApisQuery.data.apis;
 
     const search = searched.trim();
 
@@ -537,7 +555,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                   statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
                   key={subscription._id}
                   subscription={subscription}
-                  subscribedApis={subscribedApis}
                   updateCustomName={(name) =>
                     updateCustomName(subscription, name)
                   }
@@ -593,7 +610,6 @@ type ApiKeyCardProps = {
   ) => Promise<void>;
   regenerateSecret: () => void;
   currentTeam?: ITeamSimple;
-  subscribedApis: Array<IApiGQL>;
   transferKey: () => void;
   handleTagClick: (tag: string) => void
   linkToChildren?: (api: IApi, teamHrId: string) => string
@@ -612,7 +628,6 @@ export const ApiKeyCard = ({
   deleteApiKey,
   transferKey,
   currentTeam,
-  subscribedApis,
   handleTagClick,
   linkToChildren
 }: ApiKeyCardProps) => {
@@ -929,7 +944,7 @@ export const ApiKeyCard = ({
               {more && (<div className='ms-4'>{getPartOfChildren(nbChildsDisplay, detailQuery.data.accessibleResources.length)}</div>)}
             </div>
             <div>
-              {subscription.tags.map(t => (<span className='badge badge-custom me-1 cursor-pointer' onClick={() => handleTagClick(t)}>{t}</span>))}
+              {subscription.tags.map(t => (<span key="tag" className='badge badge-custom me-1 cursor-pointer' onClick={() => handleTagClick(t)}>{t}</span>))}
             </div>
           </div>
         </div>
@@ -1130,7 +1145,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
             translate("subscription.for")}
             <span className='ms-1 underline'>{props.api.name}</span>/<span className='me-1 underline'>{props.plan.customName}</span>
             {translate({
-              key: 'subscription.created.at', replacements: [formatDate(props.subscription.createdAt, translate('date.locale'),translate('date.format.without.hours'))]
+              key: 'subscription.created.at', replacements: [formatDate(props.subscription.createdAt, translate('date.locale'), translate('date.format.without.hours'))]
             })}
             <span className={classNames('ms-1', {
               "danger-color": props.subscription.validUntil && isBefore(new Date(props.subscription.validUntil), new Date())

@@ -22,3 +22,17 @@ case class ApiSubscriptionDetail(
     parentSubscription: Option[ApiSubscription],
     accessibleResources: Seq[ApiSubscriptionAccessibleResource]
 )
+
+case class ApiSubscriptionSimpleAccessibleResource(
+    api: String,
+    apiName: String,
+    apiVersion: String,
+    usagePlan: String,
+    usagePlanName: String
+)
+
+case class ApiSubscriptionSimpleDetail(
+    apiSubscription: ApiSubscription,
+    parentSubscription: Option[ApiSubscription],
+    accessibleResources: Seq[ApiSubscriptionSimpleAccessibleResource]
+)

@@ -1055,6 +1055,109 @@ object CommonServices {
     }
   }
 
+  def getSubscriptions(teamId: String, api: String, limit: Int, offset: Int)(
+    implicit
+    ctx: DaikokuActionContext[JsValue],
+    env: Env,
+    ec: ExecutionContext
+  ): Future[Either[AppError, Seq[ApiSubscriptionSimpleDetail]]] = _TeamAdminOnly(teamId, AuditTrailEvent(
+    s"@{user.name} has accessed subscriptions for api @{api.name} - @{api.id} and @{team.name} - @{team.id}"
+  ))(ctx) { team =>
+
+    //$1 -> apiId
+    //$2 -> team
+    //$3 -> limit
+    //$4 -> offset
+
+    val sql =
+      s"""
+        |WITH paginated_subs AS (
+        |    SELECT *
+        |    FROM api_subscriptions
+        |    WHERE content ->> 'api' = $$1
+        |      AND content ->> 'team' = $$2
+        |    LIMIT $$3 OFFSET $$4
+        |),
+        |     with_parent AS (
+        |         SELECT
+        |             ps._id,
+        |             ps.content as api_subscription,
+        |             parent_subs.content as parent_subscription,
+        |             COALESCE(ps.content ->> 'parent', ps._id) as parent_or_self_id
+        |         FROM paginated_subs ps
+        |                  LEFT JOIN api_subscriptions parent_subs
+        |                            ON parent_subs._id = (ps.content ->> 'parent')
+        |     ),
+        |     all_subs_in_aggregate AS (
+        |         SELECT
+        |             wp._id as main_sub_id,
+        |             wp.api_subscription,
+        |             wp.parent_subscription,
+        |             wp.parent_or_self_id,
+        |             wp.parent_or_self_id as related_sub_id
+        |         FROM with_parent wp
+        |         WHERE wp.parent_or_self_id != wp._id
+        |
+        |         UNION ALL
+        |
+        |         SELECT
+        |             wp._id,
+        |             wp.api_subscription,
+        |             wp.parent_subscription,
+        |             wp.parent_or_self_id,
+        |             children._id
+        |         FROM with_parent wp
+        |                  LEFT JOIN api_subscriptions children
+        |                            ON (children.content ->> 'parent' = wp.parent_or_self_id)
+        |         WHERE children._id IS NOT NULL
+        |     )
+        |SELECT row_to_json(_.*) as subscription_detail
+        |FROM (SELECT asa.api_subscription,
+        |             asa.parent_subscription,
+        |             json_agg(
+        |             json_build_object(
+        |                     'api', apis.content ->> '_humanReadableId',
+        |                     'apiName', apis.content ->> 'name',
+        |                     'version', apis.content ->> 'currentVersion',
+        |                     'usagePlan', usage_plans._id,
+        |                     'usagePlanName', usage_plans.content ->> 'customName'
+        |             ) ORDER BY apis.content ->> 'name'
+        |                     ) FILTER (WHERE apis._id IS NOT NULL) as accessible_resources
+        |      FROM all_subs_in_aggregate asa
+        |               LEFT JOIN api_subscriptions subs ON subs._id = asa.related_sub_id
+        |               LEFT JOIN apis ON apis._id = (subs.content ->> 'api')
+        |               LEFT JOIN usage_plans ON usage_plans._id = (subs.content ->> 'plan')
+        |      GROUP BY asa.main_sub_id, asa.api_subscription, asa.parent_subscription
+        |      ORDER BY asa.main_sub_id) _;
+        |""".stripMargin
+
+    (for {
+      subs <- EitherT.right[AppError](env.dataStore
+        .asInstanceOf[PostgresDataStore]
+        .queryRaw(sql,
+          "subscription_detail",
+          Seq(
+            api,
+            team.id.value,
+            java.lang.Integer.valueOf(limit),
+            java.lang.Integer.valueOf(offset)
+          )))
+    } yield {
+      subs.map(s => ApiSubscriptionSimpleDetail(
+        apiSubscription = (s \ "api_subscription").as(json.ApiSubscriptionFormat),
+        parentSubscription =  (s \ "parent_subscription").asOpt(json.ApiSubscriptionFormat),
+        accessibleResources = (s \ "accessible_resources").as[JsArray].value.map(v => ApiSubscriptionSimpleAccessibleResource(
+          api = (v \ "api").as[String],
+          apiName = (v \ "apiName").as[String],
+          apiVersion = (v \ "version").as[String],
+          usagePlan = (v \ "usagePlan").as[String],
+          usagePlanName = (v \ "usagePlanName").as[String]
+        )).toSeq
+      ))
+    }).value
+
+  }
+
   def getTeamIncome(teamId: String, from: Option[Long], to: Option[Long])(
       implicit
       ctx: DaikokuActionContext[JsValue],

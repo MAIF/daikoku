@@ -6,25 +6,15 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiSubscriptionDemandFormat,
-  TeamCountFormat,
-  TeamTypeFormat,
-  TenantIdFormat,
-  UserIdFormat,
-  ValueCountFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TeamCountFormat, TeamTypeFormat, TenantIdFormat, UserIdFormat, ValueCountFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
+import play.api.Logger
 import play.api.libs.json._
 import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
@@ -33,11 +23,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{
-  GraphQLImplicits,
-  RequiresDaikokuAdmin,
-  RequiresTenantAdmin
-}
+import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -55,6 +41,29 @@ object SchemaDefinition {
       extends ValueCoercionViolation("Date value expected")
   case object MapCoercionViolation
       extends ValueCoercionViolation("Map value can't be parsed")
+
+  val logger = Logger("graphQL-schemaDef")
+
+  def time[R](block: => R): R = {
+    val t0 = java.lang.System.nanoTime()
+    val result = block // call-by-name
+    val t1 = java.lang.System.nanoTime()
+    logger.info(s"Elapsed time: ${formatDuration(t1 - t0)}")
+    result
+  }
+
+  def formatDuration(ns: Long): String = {
+    if (ns < 1_000) s"${ns} ns"
+    else if (ns < 1_000_000) f"${ns / 1_000.0}%.3f µs"
+    else if (ns < 1_000_000_000) f"${ns / 1_000_000.0}%.3f ms"
+    else if (ns < 60_000_000_000L) f"${ns / 1_000_000_000.0}%.3f s"
+    else {
+      val seconds = ns / 1_000_000_000.0
+      val minutes = (seconds / 60).toInt
+      val remaining = seconds % 60
+      f"${minutes}m ${remaining}%.2fs"
+    }
+  }
 
   implicit val TimeUnitType: ScalarType[TimeUnit] = ScalarType[TimeUnit](
     "TimeUnit",
@@ -2060,6 +2069,29 @@ object SchemaDefinition {
           )
       )
 
+    lazy val SimpleAccessibleResourceType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      ApiSubscriptionSimpleAccessibleResource
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ApiSubscriptionSimpleAccessibleResource
+      ](
+        "ApiSubscriptionSimpleAccessibleResource",
+        "A Daikoku Api Subscription accessible resource simplify",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            ApiSubscriptionSimpleAccessibleResource
+          ](
+            Field("api", StringType, resolve = _.value.api),
+            Field("apiName", StringType, resolve = _.value.apiName),
+            Field("usagePlan", StringType, resolve = _.value.usagePlan),
+            Field("usagePlanName", StringType, resolve = _.value.usagePlanName),
+            Field("apiVersion", StringType, resolve = _.value.apiVersion),
+          )
+      )
+
     lazy val ApiSubscriptionDetailType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiSubscriptionDetail
@@ -2088,6 +2120,39 @@ object SchemaDefinition {
             Field(
               "accessibleResources",
               ListType(AccessibleResourceType),
+              resolve = _.value.accessibleResources
+            )
+          )
+      )
+
+    lazy val ApiSubscriptionSimpleDetailType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      ApiSubscriptionSimpleDetail
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ApiSubscriptionSimpleDetail
+      ](
+        "ApiSubscriptionSimpleDetail",
+        "A Daikoku Api Subscription detail (with parent and accessible resources) - simplified",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            ApiSubscriptionSimpleDetail
+          ](
+            Field(
+              "apiSubscription",
+              ApiSubscriptionType,
+              resolve = _.value.apiSubscription
+            ),
+            Field(
+              "parentSubscription",
+              OptionType(ApiSubscriptionType),
+              resolve = _.value.parentSubscription
+            ),
+            Field(
+              "accessibleResources",
+              ListType(SimpleAccessibleResourceType),
               resolve = _.value.accessibleResources
             )
           )
@@ -3932,6 +3997,11 @@ object SchemaDefinition {
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
+    val API_ID = Argument(
+      "apiId",
+      StringType,
+      description = "The id of api"
+    )
     val NAME = Argument(
       "name",
       StringType,
@@ -4590,15 +4660,42 @@ object SchemaDefinition {
           arguments =
             SUBSCRIPTION_ID :: TEAM_ID_NOT_OPT :: Nil,
           resolve = ctx => {
-            getSubscriptionDetails(
-              ctx,
-              ctx.arg(SUBSCRIPTION_ID),
-              ctx.arg(TEAM_ID_NOT_OPT)
-            ).map {
-              case Right(details) => details
-              case Left(error) =>
-                throw NotAuthorizedError(error.getErrorMessage())
-            }
+            time(
+              getSubscriptionDetails(
+                ctx,
+                ctx.arg(SUBSCRIPTION_ID),
+                ctx.arg(TEAM_ID_NOT_OPT)
+              ).map {
+                case Right(details) => details
+                case Left(error) =>
+                  throw NotAuthorizedError(error.getErrorMessage())
+              }
+            )
+          }
+        )
+      )
+
+    def getSubscriptionForTeamAndApiFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "apiSubscriptionSimpleDetails",
+          ListType(ApiSubscriptionSimpleDetailType),
+          arguments = TEAM_ID_NOT_OPT :: API_ID :: OFFSET :: LIMIT :: Nil,
+          resolve = ctx => {
+            time(
+              (CommonServices.getSubscriptions(
+                teamId = ctx.arg(TEAM_ID_NOT_OPT),
+                api = ctx.arg(API_ID),
+                limit = ctx.arg(LIMIT),
+                offset = ctx.arg(OFFSET))(
+                ctx.ctx._2,
+                env,
+                e
+              )).map {
+                case Right(subs) => subs
+                case Left(error) => throw NotAuthorizedError(error.getErrorMessage())
+              }
+            )
           }
         )
       )
@@ -4658,6 +4755,7 @@ object SchemaDefinition {
           getSubscriptionDetailsFields() ++
           getAuditTrailQueryFields() ++
           cmsSinglePageFields() ++
+          getSubscriptionForTeamAndApiFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)
