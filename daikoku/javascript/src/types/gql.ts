@@ -73,22 +73,27 @@ export interface IApiGQL {
   metadata?: object;
 }
 
-export interface IApiSubscriptionDetails {
+export type IApiSubscriptionAcessibleResource = {
+  apiSubscription: string;
+  api: string;
+  apiName: string;
+  apiVersion: string;
+  usagePlan: string;
+  usagePlanName: string;
+}
+export type IApiSubscriptionDetails = {
   apiSubscription: IApiSubscriptionGql;
   parentSubscription?: IApiSubscriptionGql;
-  accessibleResources: Array<{
-    apiSubscription: IApiSubscriptionGql;
-    api: IApiGQL;
-    usagePlan: IUsagePlanGQL;
-  }>;
+  accessibleResources: Array<IApiSubscriptionAcessibleResource>;
 }
 export interface IApiSubscriptionSimpleDetails {
   apiSubscription: IApiSubscriptionGql;
   parentSubscription?: IApiSubscriptionGql;
   accessibleResources: Array<{
+    apiSubscription: string,
     api: string,
     apiName: string,
-    version: string,
+    apiVersion: string,
     usagePlan: string,
     usagePlanName: string
   }>;

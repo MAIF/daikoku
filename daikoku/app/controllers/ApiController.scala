@@ -549,8 +549,6 @@ class ApiController(
         "pendingRequests" -> JsArray(
           pendingRequests.map(_.asJson)
         )
-      ) ++ Json.obj(
-        "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
       )
       ctx.setCtxValue("api.name", api.name)
 

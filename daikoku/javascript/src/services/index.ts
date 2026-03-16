@@ -1,3 +1,4 @@
+import { IApiSubscriptionGql } from '../components';
 import { TDashboardData } from '../components/frontend/dashboard/Dashboard';
 import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
@@ -849,7 +850,7 @@ export const uploadExportFile = (file: any) =>
 
 export const updateSubscriptionCustomName = (
   team: ITeamSimple,
-  subscription: ISubscription,
+  subscription: ISubscription | IApiSubscriptionGql,
   customName: string
 ): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {

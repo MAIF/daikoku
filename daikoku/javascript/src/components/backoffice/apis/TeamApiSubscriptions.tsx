@@ -2,7 +2,6 @@ import { type } from "@maif/react-forms";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from "classnames";
-import { GraphQLClient } from "graphql-request";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import Pagination from 'react-paginate';
 import { toast } from "sonner";
@@ -13,6 +12,7 @@ import * as Services from "../../../services";
 import {
   IApi,
   IApiGQL,
+  IRotation,
   ISubscriptionCustomization,
   ITeamSimple,
   IUsagePlan,
@@ -50,6 +50,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
     _id: string;
     name: string;
     type: string;
+    _humanReadableId: string
   };
   createdAt: string;
   validUntil?: number;
@@ -64,6 +65,8 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
+  integrationToken: string;
+  bearerToken: string;
   parent?: {
     _id: string;
     adminCustomName: string;
@@ -79,6 +82,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
       type: string;
     };
   };
+  rotation: IRotation
 }
 
 interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
@@ -201,7 +205,7 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "left" } },
       cell: (info) => {
         const date = info.getValue();
-        if (!!date) {
+        if (date) {
           return formatDate(date, translate('date.locale'), translate('date.format.without.hours'));
         }
         return translate("N/A");
@@ -213,7 +217,7 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "left" } },
       cell: (info) => {
         const date = info.getValue();
-        if (!!date) {
+        if (date) {
           return formatDate(date, translate('date.locale'), translate('date.format'));
         }
         return translate("N/A");
