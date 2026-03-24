@@ -13,10 +13,10 @@ jobs:
     name: Build developer documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '18.x'
+          node-version: 'lts/*'
       - name: copy openapi
         id: openapi
         run: cp ./daikoku/public/swaggers/admin-api-openapi.yaml ./manual/static/admin-api-openapi.yaml

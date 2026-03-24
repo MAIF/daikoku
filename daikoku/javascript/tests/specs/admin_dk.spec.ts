@@ -29,7 +29,7 @@ test.beforeEach(async () => {
 })
 
 
-test('[ASOAPI-10396] - Se connecter en étant membre du groupe AD Managers (maif ==> M_GRG_Gateway_API_Interne)', async ({ page }) => {
+test('[ASOAPI-10396] - Se connecter en étant membre du groupe AD Managers', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();

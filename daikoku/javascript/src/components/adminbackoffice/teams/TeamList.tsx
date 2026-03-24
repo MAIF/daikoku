@@ -309,11 +309,14 @@ export const TeamList = () => {
                   <span className=" section team__name text-truncate">{team.name}</span>
                 </>} actions={actions(team)} />)
             })}
-            <div className="avatar-with-action new-team-button" aria-label={translate('Create a new team')}>
+            <div className="avatar-with-action new-team-button">
               <div className="container">
-                <div className="avatar__container"
+                <button className="avatar__container"
                   title={translate('Create a new team')}
-                  onClick={createNewTeam}><Plus /></div>
+                  aria-label={translate('Create a new team')}
+                  onClick={createNewTeam}>
+                  <Plus />
+                </button>
               </div>
             </div>
             <div className="apis__pagination d-flex justify-content-center align-items-center" style={{ width: '100%' }}>

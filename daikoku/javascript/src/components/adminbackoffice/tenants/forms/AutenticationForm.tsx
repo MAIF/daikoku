@@ -153,6 +153,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
                   setValue('pictureField', config.pictureField)
                   setValue('clientId', config.clientId)
                   setValue('clientSecret', config.clientSecret)
+                  setValue('selectedMetadata', config.selectedMetadata)
                 }
               })
             }
@@ -199,6 +200,10 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         constraints.required(translate("constraints.required.value"))
       ]
     },
+    selectedMetadata: {
+      type: type.string,
+      label: translate('tenant.settings.authProvider.oauth.configuration.metadata.button.label')
+    },
     clientId: {
       type: type.string,
       label: translate('Client Id'),
@@ -244,9 +249,9 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       type: type.string,
       label: translate('Logout URL'),
       help: translate("oauth2.form.logout.url.help"),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
+      // constraints: [
+      //   constraints.required(translate("constraints.required.value"))
+      // ]
     },
     callbackUrl: {
       type: type.string,
@@ -282,6 +287,21 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       constraints: [
         constraints.required(translate("constraints.required.value"))
       ]
+    },
+    roleClaim: {
+      type: type.string,
+      label: translate('oauth2.form.role.claim.label'),
+      help: translate('oauth2.form.role.claim.help'),
+    },
+    adminRole: {
+      type: type.string,
+      label: translate('oauth2.form.admin.role.label'),
+      help: translate('oauth2.form.admin.role.help'),
+    },
+    userRole: {
+      type: type.string,
+      label: translate('oauth2.form.user.role.label'),
+      help: translate('oauth2.form.user.role.help'),
     },
     daikokuAdmins: {
       type: type.string,
@@ -323,8 +343,8 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
           type: type.string,
           format: format.text,
           label: translate('authentication.form.jwtverifier.public.key.label'),
-          placeholder: `-----BEGIN PUBLIC KEY----- 
-          xxxxxxxx 
+          placeholder: `-----BEGIN PUBLIC KEY-----
+          xxxxxxxx
           -----END PUBLIC KEY-----`,
           visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
         },
@@ -332,8 +352,8 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
           type: type.string,
           format: format.text,
           label: translate('authentication.form.jwtverifier.private.key.label'),
-          placeholder: `-----BEGIN PRIVATE KEY----- 
-          xxxxxxxx 
+          placeholder: `-----BEGIN PRIVATE KEY-----
+          xxxxxxxx
           -----END PRIVATE KEY-----`,
           visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
         },

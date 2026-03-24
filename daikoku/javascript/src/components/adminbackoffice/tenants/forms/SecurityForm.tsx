@@ -57,6 +57,11 @@ export const SecurityForm = (props: {
       label: translate('API creation security'),
       help: translate('creation.security.help'),
     },
+    teamCreationSecurity: {
+      type: type.bool,
+      label: translate('team creation security'),
+      help: translate('team.creation.security.help'),
+    },
     subscriptionSecurity: {
       type: type.bool,
       label: translate('subscription security'),

@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test';
 import { JIM, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 
 test.beforeEach(async () => {
@@ -45,5 +45,26 @@ test('[ASOAPI-10359] - Se connecter pour la première fois en tant qu\'administr
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).press('Escape');
   await page.getByRole('img', { name: 'user menu' }).click();
   await expect(page.locator('#app')).toContainText(JIM.email);
+});
+
+test('Se connecter et se deconnecter depuis une page conserve la localisation', async ({ page }) => {
+  await page.goto(`${HOME}api-division/api-papier/1.0.0/pricing`);
+  await loginAs(JIM, page, false)
+  await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
+  
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
+});
+
+test('Se connecter depuis la modale de la page des plan de souscription conserve la localisation', async ({ page }) => {
+  await page.goto(`${HOME}api-division/api-papier/1.0.0/pricing`);
+  
+  await page.getByLabel('dev').getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill(JIM.email);
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
 });
 

@@ -849,3 +849,44 @@ We'd like to thank all the contributors who worked on this release!
 - Custom mail template mail-new-user not working [#927](https://github.com/MAIF/daikoku/issues/927)
 - team invitation for unexisting user are broken [#902](https://github.com/MAIF/daikoku/issues/902)
 
+## [v18.6.0] - 2026-01-12
+
+## :star: New Features
+
+- Add footer managed by CMS [#922](https://github.com/MAIF/daikoku/issues/922)
+- Reset all teams authorized entities [#907](https://github.com/MAIF/daikoku/issues/907)
+
+## :beetle: Bug Fixes
+
+- CLI cannot retrieve new mail with cms pull mails [#928](https://github.com/MAIF/daikoku/issues/928)
+- Double quotes exported by CLI in emails translations [#908](https://github.com/MAIF/daikoku/issues/908)
+- Team avatar is optional but team list page crashes if team doesn't have it [#887](https://github.com/MAIF/daikoku/issues/887)
+
+## [v18.7.0] - 2026-02-03
+
+## :star: New Features
+
+- footer manage in cms must be localized [#958](https://github.com/MAIF/daikoku/issues/958)
+- OAuth2 admin claim config [#954](https://github.com/MAIF/daikoku/issues/954)
+- Add API version to the name of the API in APIKEY Item [#945](https://github.com/MAIF/daikoku/issues/945)
+- [ApiGroup] :: group visbility should overwrite own api visibility [#934](https://github.com/MAIF/daikoku/issues/934)
+
+## :beetle: Bug Fixes
+
+- [GraphQL] :: Filtering visibleApis by categories in broken [#957](https://github.com/MAIF/daikoku/issues/957)
+- CLI dosen't work with capital letters in directory name [#953](https://github.com/MAIF/daikoku/issues/953)
+- Resetting the color theme requires creating a CMS page if one does not already exist. [#949](https://github.com/MAIF/daikoku/issues/949)
+- CLI pull customization dosn't seems to work [#948](https://github.com/MAIF/daikoku/issues/948)
+- User non admin can read team notifications [#947](https://github.com/MAIF/daikoku/issues/947)
+- It is not possible to delete a key from your personal team [#946](https://github.com/MAIF/daikoku/issues/946)
+- Wrong content in dashboard button Afficher plus de notification [#942](https://github.com/MAIF/daikoku/issues/942)
+
+## [v18.7.1] - 2026-02-09
+
+## :beetle: Bug Fixes
+
+- Tenant admin couldn't manipulate entirely teams [#964](https://github.com/MAIF/daikoku/issues/964)
+
+## [v18.7.2] - 2026-02-27
+
+

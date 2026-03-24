@@ -1,0 +1,912 @@
+package fr.maif.daikoku.controllers
+
+import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
+import com.nimbusds.jose.jwk.KeyType
+import fr.maif.daikoku.actions.DaikokuAction
+import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.TeamPermission.Administrator
+import fr.maif.daikoku.domain.Tenant.getCustomizationCmsPage
+import fr.maif.daikoku.domain.json.TenantFormat
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.login.OAuth2Config
+import fr.maif.daikoku.services.ApiService
+import fr.maif.daikoku.utils.*
+import fr.maif.daikoku.utils.future.EnhancedObject
+import fr.maif.daikoku.utils.JWKSAlgoSettings
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import play.api.i18n.*
+import play.api.libs.json.*
+import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+class TenantController(
+    DaikokuAction: DaikokuAction,
+    apiService: ApiService,
+    env: Env,
+    cc: ControllerComponents,
+    translator: Translator
+) extends AbstractController(cc)
+    with I18nSupport {
+
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val tr: Translator = translator
+
+  def namesOfTenants() =
+    DaikokuAction.async(parse.json) { ctx =>
+      val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
+      val tenantIds = ctx.request.body.as[JsArray].value.map(_.as[String])
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed tenant names for ${tenantIds.mkString(", ")}"
+        )
+      )(ctx) {
+        env.dataStore.tenantRepo
+          .find(
+            Json.obj(
+              "_deleted" -> false,
+              "_id" -> Json.obj(
+                "$in" -> tenantIdsJs
+              )
+            )
+          )
+          .map { tenants =>
+            Ok(JsArray(tenants.map(t => JsString(t.name))))
+          }
+      }
+    }
+
+  def allTenants() =
+    DaikokuAction.async { ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed list of all tenants")
+      )(ctx) {
+        env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+          Ok(JsArray(tenants.map(_.asJson)))
+        }
+      }
+    }
+
+  def tenantList() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent("@{user.name} has accessed simplified tenant list")
+      )(ctx) {
+        env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+          Ok(JsArray(tenants.map { tenant =>
+            val status: String =
+              if (ctx.user.tenants.contains(tenant.id)) "ALREADY_JOINED"
+              else "CAN_JOIN"
+            Json.obj(
+              "_id" -> tenant.id.value,
+              "name" -> tenant.name,
+              "desc" -> tenant.style
+                .map(_.description)
+                .getOrElse("")
+                .asInstanceOf[String],
+              "title" -> tenant.style
+                .map(_.title)
+                .getOrElse(tenant.name)
+                .asInstanceOf[String],
+              "status" -> status,
+              "style" -> tenant.style
+                .map(_.asJson)
+                .getOrElse(JsNull)
+                .as[JsValue]
+            )
+          }))
+        }
+      }
+    }
+
+  def redirectToTenant(id: String) =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed tenant redirection to @{dest.name} - ${id}"
+        )
+      )(ctx) {
+        val newTeamId = TeamId(IdGenerator.token(32))
+        env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
+          case Some(tenant) =>
+            ctx.setCtxValue("dest.name", tenant.name)
+            val wasInTenant = ctx.user.tenants.contains(tenant.id)
+            env.dataStore.teamRepo
+              .myTeams(tenant, ctx.user)
+              .flatMap { teams =>
+                env.dataStore.userRepo.save(
+                  ctx.user.copy(
+                    lastTenant = Some(tenant.id),
+                    tenants = ctx.user.tenants + tenant.id
+                  )
+                )
+              }
+              .flatMap { _ =>
+                val fu: Future[Unit] = if (!wasInTenant) {
+                  env.dataStore.teamRepo
+                    .forTenant(tenant)
+                    .save(
+                      Team(
+                        id = newTeamId,
+                        tenant = tenant.id,
+                        `type` = TeamType.Personal,
+                        name = s"${ctx.user.name}",
+                        description = s"The personal team of ${ctx.user.name}",
+                        users =
+                          Set(UserWithPermission(ctx.user.id, Administrator)),
+                        authorizedOtoroshiEntities = None,
+                        contact = ctx.user.email
+                      )
+                    )
+                    .map(_ => ())
+                } else {
+                  FastFuture.successful(())
+                }
+                fu.map { _ =>
+                  val path = ctx.request.getQueryString("path").getOrElse("")
+                  val url = env.getDaikokuUrl(tenant, path)
+
+                  Redirect(url)
+                }
+              }
+          case None =>
+            Errors.craftResponseResultF(
+              "Tenant not found",
+              Results.NotFound
+            )
+        }
+      }
+    }
+
+  def oneTenant(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed one tenant @{tenant.name} - @{tenant.id}"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        env.dataStore.translationRepo
+          .forTenant(ctx.tenant)
+          .find(Json.obj("element.id" -> tenant.id.asJson))
+          .map(translations => {
+            val translationAsJsObject = translations
+              .groupBy(t => t.language)
+              .map { case (k, v) =>
+                Json
+                  .obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
+              }
+              .fold(Json.obj())(_ deepMerge _)
+            val translation = Json.obj("translation" -> translationAsJsObject)
+            Ok(tenant.asJsonWithJwt.as[JsObject] ++ translation)
+          })
+      }
+    }
+
+  def createTenant() =
+    DaikokuAction.async(parse.json) { ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has created a tenant @{tenant.name} - @{tenant.id}"
+        )
+      )(ctx) {
+        TenantFormat.reads(ctx.request.body) match {
+          case JsError(e) =>
+            FastFuture.successful(
+              BadRequest(
+                Json.obj(
+                  "error" -> "Error while parsing payload",
+                  "msg" -> e.toString
+                )
+              )
+            )
+          case JsSuccess(tenant, _) => {
+            ctx.setCtxValue("tenant.name", tenant.name)
+            ctx.setCtxValue("tenant.id", tenant.id)
+            val adminTeam = Team(
+              id = TeamId(IdGenerator.token),
+              tenant = tenant.id,
+              `type` = TeamType.Admin,
+              name = s"${tenant.humanReadableId}-admin-team",
+              description = s"The admin team for the default tenant",
+              avatar = tenant.style.flatMap(_.logo),
+              users = Set.empty,
+              authorizedOtoroshiEntities = None,
+              contact = tenant.contact,
+              apisCreationPermission = true.some
+            )
+            val (adminApi, adminApiPlan) =
+              ApiTemplate.adminApi(adminTeam, tenant)
+
+            val tenantForCreation = tenant.copy(
+              adminApi = adminApi.id,
+              authProvider = env.config.init.authProviderConfig.defaultprovider,
+              authProviderSettings =
+                env.config.init.authProviderConfig.oauth2config
+                  .map(_.asJson)
+                  .getOrElse(Json.obj("sessionMaxAge" -> 86400))
+            )
+
+            val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(adminTeam, tenant)
+
+            for {
+              _ <- env.dataStore.tenantRepo.save(tenantForCreation)
+              _ <-
+                env.dataStore.teamRepo
+                  .forTenant(tenantForCreation)
+                  .save(adminTeam)
+              _ <-
+                env.dataStore.apiRepo
+                  .forTenant(tenantForCreation)
+                  .save(adminApi)
+              _ <-
+                env.dataStore.apiRepo
+                  .forTenant(tenantForCreation)
+                  .save(cmsApi)
+              _ <-
+                env.dataStore.usagePlanRepo
+                  .forTenant(tenantForCreation)
+                  .save(cmsPlan)
+              _ <-
+                env.dataStore.usagePlanRepo
+                  .forTenant(tenantForCreation)
+                  .save(adminApiPlan)
+            } yield {
+              Created(tenantForCreation.asJsonWithJwt)
+            }
+          }
+        }
+      }
+    }
+
+  def deleteTenant(id: String) =
+    DaikokuAction.async { ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(
+          "@{user.name} has logically deleted tenant @{tenant.name} - @{tenant.id}"
+        )
+      )(ctx) {
+        env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
+          case Some(tenant) => {
+            ctx.setCtxValue("tenant.name", tenant.name)
+            ctx.setCtxValue("tenant.id", tenant.id)
+            for {
+              _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAllLogically()
+              _ <-
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant)
+                  .deleteAllLogically()
+              _ <-
+                env.dataStore.apiDocumentationPageRepo
+                  .forTenant(tenant)
+                  .deleteAllLogically()
+              _ <-
+                env.dataStore.notificationRepo
+                  .forTenant(tenant)
+                  .deleteAllLogically()
+              _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAllLogically()
+              _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
+              _ <- env.dataStore.userRepo.updateMany(
+                Json.obj("lastTenant" -> tenant.id.asJson),
+                Json.obj("lastTenant" -> JsNull)
+              )
+            } yield {
+              Ok(tenant.copy(deleted = true).asJson)
+            }
+          }
+          case None =>
+            FastFuture
+              .successful(NotFound(Json.obj("error" -> "Tenant not found")))
+        }
+      }
+    }
+
+  def saveTenant(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"
+        )
+      )(tenantId, ctx) { (_, adminTeam) =>
+        TenantFormat.reads(ctx.request.body) match {
+          case JsError(e) =>
+            FastFuture.successful(
+              BadRequest(
+                Json.obj(
+                  "error" -> "Error while parsing payload",
+                  "msg" -> e.toString
+                )
+              )
+            )
+          case JsSuccess(updatedTenant, _) =>
+            ctx.setCtxValue("tenant.name", updatedTenant.name)
+            ctx.setCtxValue("tenant.id", updatedTenant.id)
+
+            def deleteUnusedEnvironments(
+                oldTenant: Tenant
+            ): EitherT[Future, AppError, Unit] = {
+              updatedTenant.display match {
+                case TenantDisplay.Environment =>
+                  val deletedEnvs =
+                    oldTenant.environments.diff(updatedTenant.environments)
+                  EitherT.liftF(
+                    Future
+                      .sequence(deletedEnvs.map(name => {
+                        for {
+                          plans <-
+                            env.dataStore.usagePlanRepo
+                              .forTenant(ctx.tenant)
+                              .find(
+                                Json.obj(
+                                  "customName" -> name
+                                )
+                              )
+                          _ <- Future.sequence(
+                            plans
+                              .map(plan => {
+                                for {
+                                  api <- EitherT.fromOptionF(
+                                    env.dataStore.apiRepo
+                                      .forTenant(ctx.tenant)
+                                      .findOne(
+                                        Json.obj(
+                                          "possibleUsagePlans" -> plan.id.value
+                                        )
+                                      ),
+                                    AppError.ApiNotFound
+                                  )
+                                  _ <- apiService.deleteUsagePlan(
+                                    plan,
+                                    api,
+                                    ctx.tenant,
+                                    ctx.user
+                                  )
+                                } yield api
+                              })
+                              .map(_.value)
+                          )
+                        } yield ()
+                      }))
+                      .map(_ -> ())
+                  )
+                case TenantDisplay.Default => EitherT.pure[Future, AppError](())
+              }
+            }
+
+            updatedTenant.tenantMode match {
+              case Some(value) =>
+                value match {
+                  case TenantMode.Maintenance | TenantMode.Construction =>
+                    env.dataStore.userSessionRepo
+                      .find(
+                        Json.obj(
+                          "_id" -> Json
+                            .obj("$ne" -> ctx.session.sessionId.asJson)
+                        )
+                      )
+                      .map(seq =>
+                        env.dataStore.userSessionRepo.delete(
+                          Json.obj(
+                            "_id" -> Json.obj(
+                              "$in" -> JsArray(seq.map(_.sessionId.asJson))
+                            )
+                          )
+                        )
+                      )
+                  case _ =>
+                }
+              case _ =>
+            }
+
+            (for {
+              oldTenant <- EitherT.fromOptionF(
+                env.dataStore.tenantRepo.findByIdNotDeleted(updatedTenant.id),
+                AppError.TenantNotFound
+              )
+              _ <- deleteUnusedEnvironments(oldTenant)
+              _ <- EitherT.liftF[Future, AppError, Boolean](
+                env.dataStore.tenantRepo.save(updatedTenant)
+              )
+              _ <- EitherT.liftF[Future, AppError, Boolean](
+                env.dataStore.teamRepo
+                  .forTenant(updatedTenant)
+                  .save(
+                    adminTeam.copy(
+                      name = s"${updatedTenant.humanReadableId}-admin-team",
+                      contact = updatedTenant.contact,
+                      avatar = updatedTenant.style.flatMap(_.logo)
+                    )
+                  )
+              )
+            } yield {
+              Ok(
+                Json.obj(
+                  "tenant" -> updatedTenant.asJsonWithJwt,
+                  "uiPayload" -> updatedTenant.toUiPayload(env)
+                )
+              )
+            }).leftMap(e => {
+              AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
+              e.render()
+            }).merge
+        }
+      }
+    }
+
+  def fetchOpenIdConfiguration() =
+    DaikokuAction.async(parse.json) { ctx =>
+      val _url = (ctx.request.body \ "url").asOpt[String].getOrElse("--")
+      DaikokuAdminOnly(
+        AuditTrailEvent(s"@{user.name} has fetch OIDC config from ${_url}")
+      )(ctx) {
+
+        import scala.concurrent.duration.*
+
+        (ctx.request.body \ "url").asOpt[String] match {
+          case None =>
+            FastFuture.successful(
+              Ok(
+                OAuth2Config().asJson
+              )
+            )
+          case Some(url) => {
+            env.wsClient.url(url).withRequestTimeout(10.seconds).get().map {
+              resp =>
+                if (resp.status == 200) {
+                  Try {
+                    val config = OAuth2Config()
+                    val body = Json.parse(resp.body)
+                    val tokenUrl = (body \ "token_endpoint")
+                      .asOpt[String]
+                      .getOrElse(config.tokenUrl)
+                    val authorizeUrl = (body \ "authorization_endpoint")
+                      .asOpt[String]
+                      .getOrElse(config.authorizeUrl)
+                    val userInfoUrl = (body \ "userinfo_endpoint")
+                      .asOpt[String]
+                      .getOrElse(config.userInfoUrl)
+                    val loginUrl = (body \ "authorization_endpoint")
+                      .asOpt[String]
+                      .getOrElse(authorizeUrl)
+                    val logoutUrl = (body \ "end_session_endpoint")
+                      .asOpt[String]
+                      .map { rawLogoutUrl =>
+                        if (
+                          rawLogoutUrl.contains("${redirect}") || rawLogoutUrl
+                            .contains("${clientId}")
+                        ) rawLogoutUrl
+                        else {
+                          val sep = if (rawLogoutUrl.contains("?")) "&" else "?"
+                          s"$rawLogoutUrl${sep}id_token_hint=$${idTokenHint}&post_logout_redirect_uri=$${redirect}&client_id=$${clientId}"
+                        }
+                      }
+                    val jwksUri = (body \ "jwks_uri").asOpt[String]
+                    Ok(
+                      config
+                        .copy(
+                          tokenUrl = tokenUrl,
+                          authorizeUrl = authorizeUrl,
+                          userInfoUrl = userInfoUrl,
+                          loginUrl = loginUrl,
+                          logoutUrl = logoutUrl,
+                          accessTokenField = jwksUri
+                            .map(_ => "id_token")
+                            .getOrElse("access_token"),
+                          useJson = true,
+                          readProfileFromToken = jwksUri.isDefined,
+                          jwtVerifier = jwksUri.map(url =>
+                            JWKSAlgoSettings(
+                              url = url,
+                              headers = Map.empty[String, String],
+                              timeout =
+                                FiniteDuration(2000, TimeUnit.MILLISECONDS),
+                              ttl = FiniteDuration(
+                                60 * 60 * 1000,
+                                TimeUnit.MILLISECONDS
+                              ),
+                              kty = KeyType.RSA
+                            )
+                          )
+                        )
+                        .asJson
+                    )
+                  } getOrElse {
+                    Ok(OAuth2Config().asJson)
+                  }
+                } else {
+                  Ok(OAuth2Config().asJson)
+                }
+            }
+          }
+        }
+      }
+    }
+
+  def contact(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} - @{user.email} send a contact email to @{contact}"
+        )
+      )(ctx) {
+
+        implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
+          .find(test => test._1 == "X-contact-language")
+          .map(h => h._2)
+          .orElse(ctx.tenant.defaultLanguage)
+          .getOrElse("en")
+
+        val body = ctx.request.body
+
+        val subject = (body \ "subject").as[String]
+        val mailBody = (body \ "body").as[String]
+        val teamId = (body \ "teamId").asOpt[String]
+        val apiId = (body \ "apiId").asOpt[String]
+
+        val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
+
+        def sendMail(contact: String, contactData: JsValue): Future[Result] = {
+          for {
+            titleToSender <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            titleToContact <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            mailToSender <- translator.translate(
+              "mail.contact.sender",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(ctx.user.name),
+                "email" -> JsString(ctx.user.email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
+              )
+            )
+            mailToContact <- translator.translate(
+              "mail.contact.contact",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(ctx.user.name),
+                "email" -> JsString(ctx.user.email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
+              )
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToSender,
+              Seq(ctx.user.email),
+              mailToSender,
+              ctx.tenant
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToContact,
+              Seq(contact),
+              mailToContact,
+              ctx.tenant
+            )
+          } yield {
+            ctx.setCtxValue("contact", contact)
+            Ok(Json.obj("send" -> true))
+          }
+        }
+
+        (teamId, apiId) match {
+          case (Some(id), _) =>
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(id)
+              .flatMap {
+                case Some(team) => sendMail(team.contact, team.asJson)
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "team not found"))
+                  )
+              }
+          case (_, Some(id)) =>
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(id)
+              .flatMap {
+                case Some(api) =>
+                  env.dataStore.teamRepo
+                    .forTenant(ctx.tenant)
+                    .findByIdNotDeleted(api.team)
+                    .flatMap {
+                      case Some(team) => sendMail(team.contact, team.asJson)
+                      case None =>
+                        FastFuture.successful(
+                          NotFound(Json.obj("error" -> "team not found"))
+                        )
+                    }
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "api not found"))
+                  )
+              }
+          case (None, None) => sendMail(ctx.tenant.contact, ctx.tenant.asJson)
+        }
+      }
+    }
+
+  def testConnection(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} - @{user.email} test a provider")
+      )(tenantId, ctx) { (_, _) =>
+        ctx.request.body.asOpt(json.MailerSettingsFormat) match {
+          case Some(settings) =>
+            settings.mailer
+              .testConnection(ctx.tenant)
+              .map {
+                case true => Ok(Json.obj("done" -> true))
+                case false =>
+                  BadRequest(Json.obj("error" -> "wrong mailer configuration"))
+              }
+          case None =>
+            BadRequest(
+              Json.obj("error" -> "wrong mailer configuration format")
+            ).future
+        }
+      }
+    }
+
+  def admins(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed the current tenant admins")
+      )(tenantId, ctx) { (tenant, adminTeam) =>
+        env.dataStore.userRepo
+          .findNotDeleted(
+            Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> JsArray(adminTeam.users.map(_.userId.asJson).toList)
+              )
+            )
+          )
+          .map(admins =>
+            Ok(
+              Json.obj(
+                "team" -> adminTeam.asSimpleJson,
+                "admins" -> JsArray(admins.map(_.asSimpleJson).toList)
+              )
+            )
+          )
+      }
+    }
+
+  def addableAdmins(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed the current tenant admins")
+      )(tenantId, ctx) { (tenant, adminTeam) =>
+        env.dataStore.userRepo
+          .findNotDeleted(
+            Json.obj(
+              "_id" -> Json.obj(
+                "$nin" -> JsArray(adminTeam.users.map(_.userId.asJson).toSeq)
+              )
+            )
+          )
+          .map(addableAdmins =>
+            Ok(JsArray(addableAdmins.map(_.asSimpleJson).toList))
+          )
+      }
+    }
+
+  def addAdminsToTenant(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has added a new tenant admin - @{ids}")
+      )(tenantId, ctx) { (tenant, adminTeam) =>
+        val admins = (ctx.request.body)
+          .as[JsArray]
+          .value
+          .map(id =>
+            UserWithPermission(
+              UserId(id.as[String]),
+              TeamPermission.Administrator
+            )
+          )
+        val updatedTeam = adminTeam.copy(users = adminTeam.users ++ admins)
+
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .save(updatedTeam)
+          .map(done => {
+            if (done) {
+              Ok(updatedTeam.asSimpleJson)
+            } else {
+              BadRequest(Json.obj("error" -> "Failure"))
+            }
+          })
+
+      }
+    }
+
+  def removeAdminFromTenant(tenantId: String, adminId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has added a new tenant admins - @{admin.id}"
+        )
+      )(tenantId, ctx) { (tenant, adminTeam) =>
+        if (
+          adminTeam.users.size == 1 && adminTeam.users
+            .exists(u => u.userId.value == adminId)
+        ) {
+          FastFuture.successful(
+            Conflict(
+              Json.obj(
+                "error" -> "There must be at least one administrator on the team"
+              )
+            )
+          )
+        } else if (adminId == ctx.user.id.value) {
+          FastFuture.successful(
+            Conflict(
+              Json.obj(
+                "error" -> "You can't remove yourself your tenant admin rights"
+              )
+            )
+          )
+        } else {
+          val updatedTeam = adminTeam.copy(
+            users = adminTeam.users.filterNot(_.userId.value == adminId)
+          )
+          env.dataStore.teamRepo
+            .forTenant(tenant)
+            .save(updatedTeam)
+            .map(done => {
+              if (done) {
+                Ok(updatedTeam.asSimpleJson)
+              } else {
+                BadRequest(Json.obj("error" -> "Failure"))
+              }
+            })
+        }
+      }
+    }
+
+  private def readFile(path: String): EitherT[Future, AppError, String] = {
+    env.environment.resourceAsStream(path) match {
+      case Some(stream) =>
+        try {
+          val content = scala.io.Source.fromInputStream(stream).mkString
+          stream.close()
+          EitherT.pure[Future, AppError](content)
+        } catch {
+          case e: Throwable =>
+            AppLogger.error(e.getLocalizedMessage, e)
+            EitherT.leftT[Future, String](
+              AppError.InternalServerError(e.getLocalizedMessage)
+            )
+        }
+      case None =>
+        EitherT.leftT[Future, String](
+          AppError.BadRequestError(s"File not found at $path")
+        )
+    }
+  }
+
+  def resetColorTheme(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has reset color-theme"
+        )
+      )(tenantId, ctx) { (_, _) =>
+        (for {
+          themeBody <- readFile("public/themes/default.css")
+          oldCmsPage <- EitherT.right[AppError](
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .findById(s"${ctx.tenant.id.value}-color-theme")
+          )
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .save(
+                oldCmsPage
+                  .map(_.copy(body = themeBody))
+                  .getOrElse(
+                    getCustomizationCmsPage(
+                      TenantId(tenantId),
+                      "color-theme",
+                      "text/css",
+                      themeBody
+                    )
+                  )
+              )
+          )
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  sealed trait DispatchMode
+  object DispatchMode {
+    case object Replace extends DispatchMode
+    case object Merge extends DispatchMode
+
+    def fromString(value: String): Option[DispatchMode] =
+      value.toLowerCase match {
+        case "replace" => Some(Replace)
+        case "merge"   => Some(Merge)
+        case _         => None
+      }
+  }
+
+  def dipatchDefaultAuthorizedEntities(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has dispatch default authorized otoroshi entities with mode @{mode}"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        val mode = (ctx.request.body \ "mode")
+          .asOpt[String]
+          .flatMap(DispatchMode.fromString)
+          .getOrElse(DispatchMode.Merge)
+
+        val defaultEntitites = tenant.defaultAuthorizedOtoroshiEntities
+
+        def mergeAuhtorizedEntities(
+            a: Option[Seq[TeamAuthorizedEntities]],
+            b: Option[Seq[TeamAuthorizedEntities]]
+        ): Option[Seq[TeamAuthorizedEntities]] = {
+          (a, b) match {
+            case (None, None)   => None
+            case (None, second) => second
+            case (first, None)  => first
+            case (Some(first), Some(second)) =>
+              (first ++ second)
+                .groupBy(_.otoroshiSettingsId)
+                .map { case (id, entities) =>
+                  TeamAuthorizedEntities(
+                    id,
+                    entities.map(_.authorizedEntities).reduce(_ ++ _)
+                  )
+                }
+                .toSeq
+                .some
+          }
+
+        }
+
+        for {
+          teams <- env.dataStore.teamRepo.forTenant(tenant).findAllNotDeleted()
+          _ <- Source(teams)
+            .mapAsync(5)(team => {
+              val updatedTeam = mode match {
+                case DispatchMode.Replace =>
+                  team.copy(authorizedOtoroshiEntities = defaultEntitites)
+                case DispatchMode.Merge =>
+                  team.copy(
+                    authorizedOtoroshiEntities = mergeAuhtorizedEntities(
+                      team.authorizedOtoroshiEntities,
+                      defaultEntitites
+                    )
+                  )
+              }
+              env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
+            })
+            .toMat(Sink.ignore)(Keep.right)
+            .run()(env.defaultMaterializer)
+        } yield NoContent
+
+      }
+    }
+}

@@ -18,29 +18,33 @@ const Teams = () => {
 
   const { translate } = useContext(I18nContext)
   const { close, openFormModal } = useContext(ModalContext)
+  const { tenant, isTenantAdmin } = useContext(GlobalContext)
 
   const queryClient = useQueryClient();
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
+
   const createTeam = () => {
-    Services.fetchNewTeam()
-      .then((team) => openFormModal({
-        title: translate('Create a new team'),
-        schema: teamSchema(team, translate),
-        onSubmit: (data) => Services.createTeam(data)
-          .then(r => {
-            if (r.error) {
-              toast.error(r.error)
-            } else {
-              queryClient.invalidateQueries({ queryKey: ['teams'] })
-              queryClient.invalidateQueries({ queryKey: ['myTeams'] })
-              toast.info(translate("mailValidation.sent.body"))
-              toast.success(translate({ key: "Team %s created successfully", replacements: [data.name] }))
-            }
-          }),
-        actionLabel: translate('Create'),
-        value: team
-      }));
+    if (!tenant.teamCreationSecurity) {
+      Services.fetchNewTeam()
+        .then((team) => openFormModal({
+          title: translate('Create a new team'),
+          schema: teamSchema(team, translate),
+          onSubmit: (data) => Services.createTeam(data)
+            .then(r => {
+              if (r.error) {
+                toast.error(r.error)
+              } else {
+                queryClient.invalidateQueries({ queryKey: ['teams'] })
+                queryClient.invalidateQueries({ queryKey: ['myTeams'] })
+                toast.info(translate("mailValidation.sent.body"))
+                toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
+              }
+            }),
+          actionLabel: translate('Create'),
+          value: team
+        }));
+    }
   };
 
 
@@ -81,10 +85,12 @@ const Teams = () => {
           </div>
         </div>
         <div className="modal-footer">
-          <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createTeam()}>
-            <Plus />
-            <p className="m-0">{translate('dashboard.create.team.button.label')}</p>
-          </button>
+          {!tenant.teamCreationSecurity && (
+            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createTeam()}>
+              <Plus />
+              <p className="m-0">{translate('dashboard.create.team.button.label')}</p>
+            </button>
+          )}
         </div>
       </div>
     )
@@ -105,7 +111,6 @@ export const TeamPanel = () => {
       content: <Teams />
     })
   }
-
 
   if (connectedUser.isGuest) {
     return null;
