@@ -1,18 +1,15 @@
 package fr.maif.daikoku.jobs
 
 import cats.data.EitherT
-import cats.syntax.option._
+import cats.syntax.option.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.daikoku.domain.NotificationAction.{
-  OtoroshiSyncApiError,
-  OtoroshiSyncSubscriptionError
-}
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.ApiSubscriptionyRotationFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.utils._
+import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.Done
 import org.apache.pekko.actor.Cancellable
@@ -21,10 +18,11 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
-import play.api.libs.json._
+import play.api.libs.json.*
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
