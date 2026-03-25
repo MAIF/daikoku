@@ -65,7 +65,7 @@
     "swagger-ui-dist": "5.31.1",
     "util": "^0.12.5",
     "xstate": "^5.28.0",
-    "yaml": "^2.8.2"
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
