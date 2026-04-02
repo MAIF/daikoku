@@ -15,6 +15,8 @@ import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
+import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
@@ -506,6 +508,26 @@ class ApiControllerSpec()
       sub.apiKey.clientName mustBe expectedName
     }
 
+    "sees his daikoku users' teams" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq.empty
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking("/api/users")(tenant, session)
+
+      resp.status mustBe 200
+
+      val resultTeams = resp.json.as[JsArray].value
+      resultTeams.length mustBe 4
+
+      val resultUsers =
+        resultTeams.flatMap(team => (team \ "users").as[JsArray].value)
+      resultUsers.length mustBe 4
+    }
   }
 
   "a team administrator" can {

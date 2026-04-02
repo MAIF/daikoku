@@ -48,6 +48,7 @@ import { MessagesEvents } from '../services/messages';
 import { ITenant } from '../types';
 import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './DaikokuHomeApp';
 import {MaintenancePage} from "../components/frontend/Maintenance";
+import {UserTeamList, UserTeamPanel} from "../components/adminbackoffice/teams/UserTeamList";
 
 const RouteWithFooterLayout = () => (
   <>
@@ -335,6 +336,14 @@ export const DaikokuApp = () => {
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Users', plural: true })}`}>
                         <UserList />
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
+                    path="/settings/tenantUsers"
+                    element={
+                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Users', plural: true })}`}>
+                        <UserTeamPanel />
                       </RouteWithTitle>
                     }
                   />

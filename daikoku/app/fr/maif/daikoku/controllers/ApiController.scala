@@ -41,6 +41,14 @@ import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
 import fr.maif.daikoku.utils.StringImplicits.BetterString
+import fr.maif.daikoku.utils.future.EnhancedObject
+
+import fr.maif.daikoku.storage.drivers.postgres.{
+  Col,
+  ColString,
+  ColJsonArray,
+  PostgresDataStore
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -312,6 +320,149 @@ class ApiController(
                   .map(_.asSimpleJson)
               )
             )
+          }
+      }
+    }
+
+  case class UserSimple(_id: String, name: String, email: String ) {
+    def json = Json.obj (
+      "_id" -> _id,
+      "name" -> name,
+      "email" -> email,
+    )
+  }
+
+  object UserSimple {
+    def readFromJson(json: JsValue): UserSimple = {
+      UserSimple(
+        _id = (json \ "_id").as[String],
+        name = (json \ "name").as[String],
+        email = (json \ "email").as[String],
+      )
+    }
+  }
+
+  def getUsers() =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has get users"
+        )
+      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+        implicit val mat: Materializer = env.defaultMaterializer
+        val teamId = ctx.request.getQueryString("teamId")
+        val userId = ctx.request.getQueryString("userId")
+
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryRawMappedStream(
+            s"""SELECT
+               |    t._id AS team_id,
+               |    t.content ->> 'name' AS team_name,
+               |    t.content ->> 'avatar' AS team_avatar,
+               |    t.content ->> '_tenant' AS team_tenant,
+               |    json_agg(json_build_object(
+               |            '_id', u.content ->> '_id',
+               |            'name',  u.content ->> 'name',
+               |            'email', u.content ->> 'email'
+               |            )
+               |    ) AS users
+               |FROM teams t
+               |         CROSS JOIN LATERAL jsonb_array_elements(t.content->'users') AS team_user(val)
+               |         JOIN users u ON u._id = (team_user.val->>'userId')::text
+               |GROUP BY t._id, t.content ->> 'name';""".stripMargin,
+            Seq(
+              Col("team_id", ColString),
+              Col("team_name", ColString),
+              Col("team_tenant", ColString),
+              Col("team_avatar", ColString),
+              Col("users", ColJsonArray)
+            )
+          )
+          .map(row =>
+            val teamId = (row  \"team_id").as[String]
+            val teamName = (row  \"team_name").as[String]
+            val teamAvatar = (row  \"team_avatar").as[String]
+            val teamTenant = (row \"team_tenant").as[String]
+            val users = (row  \"users").asOpt[Seq[JsValue]]
+              .map(_.filter(_ != JsNull).map(UserSimple.readFromJson))
+              .getOrElse(Seq.empty)
+
+            Json.obj(
+              "teamId" -> teamId,
+              "teamName" -> teamName,
+              "teamAvatar" -> teamAvatar,
+              "teamTenant" -> teamTenant,
+              "users" -> JsArray(users.map(_.json)))
+            )
+          .runWith(Sink.seq)
+          .map( teams => Ok(JsArray(teams)))
+      }
+    }
+
+  def userTeams(userId: String) =
+    DaikokuAction.async { ctx =>
+      env.dataStore.userRepo
+        .findById(userId)
+        .flatMap {
+          case Some(user) => env.dataStore
+            .teamRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(
+              Json.obj("users.userId" -> userId)
+            ).map(
+              teams => Ok(
+                JsArray(
+                  teams.map(
+                    team => team.asSimpleJson
+                  )
+                )
+              )
+            )
+          case None => FastFuture.successful(
+            NotFound(Json.obj("error" -> "teams not found"))
+          )
+        }
+    }
+
+  def oneOfMyTeam(teamId: String) =
+    DaikokuAction.async { ctx =>
+      TeamMemberOnly(
+        AuditTrailEvent(
+          "@{user.name} has accessed on of his team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        ctx.setCtxValue("team.name", team.name)
+        ctx.setCtxValue("team.id", team.id)
+
+        FastFuture.successful(Right(Ok(team.toUiPayload())))
+      }
+    }
+
+  def myOwnTeam() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed its first team on @{tenant.name}"
+        )
+      )(ctx) {
+        env.dataStore.teamRepo
+          .forTenant(ctx.tenant.id)
+          .findOne(
+            Json.obj(
+              "_deleted" -> false,
+              "type" -> TeamType.Personal.name,
+              "users.userId" -> ctx.user.id.asJson
+            )
+          )
+          .map {
+            case None => NotFound(Json.obj("error" -> "Team not found"))
+            case Some(team) if team.includeUser(ctx.user.id) =>
+              Ok(team.asSimpleJson)
+            case _ =>
+              Unauthorized(
+                Json.obj("error" -> "You're not authorized on this team")
+              )
           }
       }
     }

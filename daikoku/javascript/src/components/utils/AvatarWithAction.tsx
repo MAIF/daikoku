@@ -50,7 +50,7 @@ export const AvatarWithAction = (props: Props) => {
     action();
   };
 
-  const getAction = (action: any, idx: any) => {
+  const getAction = (action: any) => {
     const uuid = nanoid();
     let ActionComponent;
 
@@ -108,8 +108,8 @@ export const AvatarWithAction = (props: Props) => {
           {!props.avatar?.includes('anonymous') && !!props.avatar && <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />}
         </div>
         <div className="avatar-with-action__infos" id={id}>{props.infos}</div>
-        {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}
-        {!!secondaryActions.length && secondaryActions.map((action, idx) => getAction(action, idx))}
+        {!secondaryActions.length && props.actions.map((action) => getAction(action))}
+        {!!secondaryActions.length && secondaryActions.map((action) => getAction(action))}
       </div>
     </div>
   );

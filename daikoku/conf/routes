@@ -488,6 +488,7 @@ GET     /integration-api/:teamId/:apiId/documentation   fr.maif.daikoku.controll
 GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.daikoku.controllers.IntegrationApiController.apiSwagger(teamId, apiId)
 GET     /integration-api/:teamId/:apiId                 fr.maif.daikoku.controllers.IntegrationApiController.api(teamId, apiId)
 
+GET     /api/users                                      fr.maif.daikoku.controllers.ApiController.getUsers()
 ### NoDocs ###
 GET     /*path                      fr.maif.daikoku.controllers.HomeController.indexWithPath(path)
 

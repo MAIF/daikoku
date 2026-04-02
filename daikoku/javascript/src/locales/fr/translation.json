@@ -56,6 +56,8 @@
   },
   "Tenant administration": "Administration du tenant",
   "Audit trail": "Piste d'audit",
+  "navigation.users": "Utilisateurs",
+  "tenant.user.teams": "Equipes de l'utilisateur",
   "Tenant assets": "Tenant assets",
   "Daikoku administration": "Administration Daikoku",
   "Users": "Utilisateurs",
