@@ -173,7 +173,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         order: 2,
         links: {
           contact: {
-            component: ( connectedUser.isGuest ? 
+            component: ( connectedUser.isGuest ?
               <a
                 className="btn btn-sm btn-outline-primary mb-2"
                 href={`mailto:${team?.contact}`}
@@ -431,6 +431,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
             label: translate('Audit trail'),
             action: () => navigateTo('audit'),
             className: { active: currentTab === 'audit' },
+          },
+          users: {
+            label: "Tenant Users",
+            action: () => navigateTo('tenantUsers'),
+            className: { active: currentTab === 'tenantUsers' },
           },
           teams: {
             label: translate('Teams'),

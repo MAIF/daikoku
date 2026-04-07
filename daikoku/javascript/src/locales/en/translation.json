@@ -55,6 +55,8 @@
         "p": "Notifications"
     },
     "Tenant administration": "Tenant administration",
+    "navigation.users": "Users",
+    "tenant.user.teams": "Teams's user",
     "Audit trail": "Audit trail",
     "Tenant assets": "Tenant assets",
     "Daikoku administration": "Daikoku administration",

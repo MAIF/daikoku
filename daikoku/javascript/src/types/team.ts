@@ -29,6 +29,35 @@ export interface ITeamFull extends ITeamSimple {
   metadata: object;
 }
 
+
+export interface IUserTeamsSimple {
+  teamId: string;
+  teamName: string;
+  teamAvatar: string;
+  teamTenant: string;
+  users: IUserVerySimple[];
+}
+
+export interface IUserVerySimple {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+export interface IUserWithTeams  extends IUserVerySimple{
+  teams: ITeamsForUsers[];
+}
+
+export interface ITeamsForUsers {
+  teamId: string;
+  teamName: string;
+  teamAvatar: string;
+}
+
+export interface ITeamsWithUsers extends ITeamsForUsers{
+  users: Array<IUserVerySimple>;
+}
+
 export interface IUserSimple {
   _id: string;
   _humanReadableId: string;

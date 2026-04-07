@@ -1,5 +1,6 @@
-import { TDashboardData } from '../components/frontend/dashboard/Dashboard';
-import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
+import { types } from "sass";
+import {TDashboardData} from '../components/frontend/dashboard/Dashboard';
+import {SearchResult} from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
   IAsset,
@@ -24,7 +25,7 @@ import {
   ISimpleOtoroshiSettings,
   IAnonymousState,
   IAuthContext,
-  OAuthSettings,
+  OAuthSettings, IUserTeamsSimple,
 } from '../types';
 import {
   IApi,
@@ -48,7 +49,7 @@ import {
   ResponseDone,
   ResponseError,
 } from '../types/api';
-import { IChatInfo } from '../types/chat';
+import {IChatInfo} from '../types/chat';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -58,9 +59,9 @@ const HEADERS = {
 type PromiseWithError<T> = Promise<ResponseError | T>;
 const customFetch = <T>(
   url: string,
-  { headers = HEADERS, method = 'GET', body, ...props }: any = {}
+  {headers = HEADERS, method = 'GET', body, ...props}: any = {}
 ) =>
-  fetch(url, { headers, method, body, ...props }).then((r) => {
+  fetch(url, {headers, method, body, ...props}).then((r) => {
     if (r.status === 503) {
       location.href = "/maintenance"
     }
@@ -97,7 +98,15 @@ export const getTeamVisibleApi = (
   customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
-
+export const userTeams = (tenantId: string, teamId: string = "", userId: string = ""): Promise<ResponseError | Array<IUserTeamsSimple>> =>
+{
+  const params = new URLSearchParams()
+  if (userId) params.append("userId", userId);
+  if (teamId) params.append("teamId", teamId);
+  if (tenantId) params.append("tenantId", tenantId);
+  const queryString = params.toString();
+  return customFetch(`/api/users${queryString ? `?${queryString}` : ""}`);
+}
 export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(
@@ -1322,6 +1331,25 @@ export const graphql = {
   myTeams: `
     query MyTeams {
       myTeams {
+        name
+        _humanReadableId
+        _id
+        type
+        apiKeyVisibility
+        apisCreationPermission
+        verified
+        users {
+          user {
+            userId: id
+          }
+          teamPermission
+        }
+      }
+    }
+  `,
+  userTeams: `
+    query userTeams {
+      userTeams {
         name
         _humanReadableId
         _id
