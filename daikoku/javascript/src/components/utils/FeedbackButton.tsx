@@ -46,16 +46,12 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
       if (timeout) clearTimeout(timeout);
     };
 
-  }, [result])
+  }, [result, props.feedbackTimeout])
 
   const failed = result === 'failed';
   const successed = result === 'success';
   const waiting = result === 'waiting';
   const loading = waiting && uploading;
-
-  useEffect(() => {
-    setColor(getColor());
-  }, [result, uploading]);
 
   const getColor = (): ButtonType => {
     if (successed) return 'success';
@@ -65,9 +61,15 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
     return props.type;
   };
 
+  useEffect(() => {
+    setColor(getColor());
+  }, [result, uploading]);
+
+
+
   const setStyle = () => {
     if (failed) {
-      const { backgroundColor, borderColor, ...rest } = props.style || {};
+      const { ...rest } = props.style || {};
       return rest;
     } else {
       return props.style;

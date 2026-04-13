@@ -12,6 +12,7 @@ import org.joda.time.DateTime
 import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.libs.typedmap._
 import play.api.mvc._
+import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -189,6 +190,73 @@ object TenantHelper {
   }
 }
 
+object LoginFilter {
+//  implicit class RegexOps(sc: StringContext) {
+//    def r = new util.matching.Regex(sc.parts.mkString)
+//  }
+
+  /**
+   * Handles routes that are whitelisted regardless of auth provider.
+   * Returns Some(result) if the route is whitelisted, None if auth should proceed normally.
+   */
+  def handleWhitelistedRoute(
+      request: RequestHeader,
+      tenant: Tenant,
+      nextFilter: RequestHeader => Future[Result],
+      env: Env
+  )(implicit ec: ExecutionContext): Option[Future[Result]] = {
+    import fr.maif.daikoku.domain.json.RegexOps
+    
+    lazy val pass = nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+    (request.method.toLowerCase(), request.relativeUri) match {
+      case ("get", r"/")                                                   => Some(pass)
+      case ("get", r"/signup")                                             => Some(pass)
+      case ("get", r"/robot.txt")                                          => Some(pass)
+      case ("get", r"/api/translations/_all")                              => Some(pass)
+      case ("get", r"/reset")                                              => Some(pass)
+      case (_, path) if path.startsWith("/api/2fa")                        => Some(pass)
+      case ("get", r"/2fa")                                                => Some(pass)
+      case ("get", path) if path.startsWith("/2fa")                        => Some(pass)
+      case ("get", path) if path.startsWith("/reset")                      => Some(pass)
+      case ("get", path) if path.startsWith("/signup")                     => Some(pass)
+      case ("get", path) if path.startsWith("/robots.txt")                 => Some(pass)
+      case ("get", path) if path.startsWith("/api/versions/_daikoku")      => Some(pass)
+      case (_, r"/account")                                                => Some(pass)
+      case (_, r"/account/.*")                                             => Some(pass)
+      case ("get", r"/tenant-assets/.*")                                   => Some(pass)
+      case ("get", r"/user-assets/.*")                                     => Some(pass)
+      case ("get", r"/asset-thumbnails/.*")                                => Some(pass)
+      case (_, r"/admin-api/.*")                                           => Some(pass)
+      case (_, r"/integration-api/.*")                                     =>
+        Some(
+          request
+            .getQueryString("token")
+            .orElse(request.headers.get("X-Personal-Token")) match {
+            case None =>
+              AppLogger.info("No personal token found")
+              org.apache.pekko.http.scaladsl.util.FastFuture.successful(
+                Results.Unauthorized(Json.obj("error" -> "not authorized"))
+              )
+            case Some(token) =>
+              env.dataStore.userRepo
+                .findOneNotDeleted(Json.obj("personalToken" -> token))
+                .flatMap {
+                  case None =>
+                    AppLogger.info("No user found")
+                    org.apache.pekko.http.scaladsl.util.FastFuture.successful(
+                      Results.Unauthorized(Json.obj("error" -> "not authorized"))
+                    )
+                  case Some(_user) =>
+                    val user = _user.copy(tenants = _user.tenants + tenant.id)
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant).addAttr(IdentityAttrs.UserKey, user))
+                }
+          }
+        )
+      case _ => None
+    }
+  }
+}
+
 class LoginFilter(env: Env)(implicit
     val mat: Materializer,
     ec: ExecutionContext
@@ -284,160 +352,11 @@ class LoginFilter(env: Env)(implicit
               .get("sessionId")
               .orElse(request.getQueryString("sessionId")) match {
               case None =>
-                (request.method.toLowerCase(), request.relativeUri) match {
-                  case ("get", r"/") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/signup") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/robot.txt") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/api/translations/_all") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/reset") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, path) if path.startsWith("/api/2fa") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/2fa") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path) if path.startsWith("/2fa") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path) if path.startsWith("/reset") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path) if path.startsWith("/signup") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path) if path.startsWith("/robots.txt") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", path)
-                      if path.startsWith("/api/versions/_daikoku") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/account") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/account/.*") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/tenant-assets/.*") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/user-assets/.*") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/asset-thumbnails/.*") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/admin-api/.*") =>
-                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/integration-api/.*") =>
-                    request
-                      .getQueryString("token")
-                      .orElse(request.headers.get("X-Personal-Token")) match {
-                      case None =>
-                        AppLogger.info("No personal token found")
-                        FastFuture.successful(
-                          Results.Unauthorized(
-                            Json.obj("error" -> "not authorized")
-                          )
-                        )
-                      case Some(token) =>
-                        env.dataStore.userRepo
-                          .findOneNotDeleted(Json.obj("personalToken" -> token))
-                          .flatMap {
-                            case None =>
-                              AppLogger.info("No user found")
-                              FastFuture.successful(
-                                Results.Unauthorized(
-                                  Json.obj("error" -> "not authorized")
-                                )
-                              )
-                            case Some(_user) =>
-                              val user =
-                                _user.copy(tenants = _user.tenants + tenant.id)
-                              val session = UserSession(
-                                id = DatastoreId(IdGenerator.token(32)),
-                                userId = user.id,
-                                userName = user.name,
-                                userEmail = user.email,
-                                impersonatorId = None,
-                                impersonatorName = None,
-                                impersonatorEmail = None,
-                                impersonatorSessionId = None,
-                                sessionId = UserSessionId(IdGenerator.token),
-                                created = DateTime.now(),
-                                expires = DateTime.now().plusSeconds(10),
-                                ttl = FiniteDuration(10, TimeUnit.SECONDS)
-                              )
-                              findUserTeam(tenant.id, user).flatMap {
-                                case None =>
-                                  AppLogger.info("No team found")
-                                  FastFuture.successful(
-                                    Results
-                                      .Redirect(
-                                        fr.maif.daikoku.controllers.routes.LoginController
-                                          .loginPage(provider.name)
-                                      )
-                                      .removingFromSession("sessionId")(using request)
-                                      .withSession(
-                                        "redirect" -> cleanupRedirect(
-                                          request.relativeUri
-                                        )
-                                      )
-                                  )
-                                case Some(team) =>
-                                  env.dataStore.userRepo.save(user).flatMap {
-                                    _ =>
-                                      env.dataStore.teamRepo
-                                        .forTenant(tenant)
-                                        .exists(
-                                          Json.obj(
-                                            "type" -> "Admin",
-                                            "users.userId" -> user.id.asJson
-                                          )
-                                        )
-                                        .flatMap(isTenantAdmin => {
-                                          nextFilter(
-                                            request
-                                              .addAttr(
-                                                IdentityAttrs.TeamKey,
-                                                team
-                                              )
-                                              .addAttr(
-                                                IdentityAttrs.UserKey,
-                                                user
-                                              )
-                                              .addAttr(
-                                                IdentityAttrs.TenantAdminKey,
-                                                isTenantAdmin
-                                              )
-                                              .addAttr(
-                                                IdentityAttrs.ImpersonatorKey,
-                                                None
-                                              )
-                                              .addAttr(
-                                                IdentityAttrs.TenantKey,
-                                                tenant
-                                              )
-                                              .addAttr(
-                                                IdentityAttrs.SessionKey,
-                                                session
-                                              )
-                                          )
-                                        })
-                                  }
-                              }
-                          }
-                    }
-//                  case (_, _) if tenant.isPrivate =>
-//                    AppLogger.warn("tenant is private (4)")
-//                    FastFuture.successful(
-//                      Results
-//                        .Redirect(
-//                          fr.maif.daikoku.controllers.routes.LoginController
-//                            .loginPage(provider.name)
-//                        )
-//                        .removingFromSession("sessionId")(request)
-//                        .withSession(
-//                          "redirect" -> cleanupRedirect(request.relativeUri)
-//                        )
-//                    )
-                  case (_, _) =>
+                LoginFilter.handleWhitelistedRoute(request, tenant, nextFilter, env)
+                  .getOrElse {
                     AppLogger.info("no session found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                }
+                  }
               case Some(sessionId) =>
                 env.dataStore.userSessionRepo
                   .findOne(Json.obj("sessionId" -> sessionId))

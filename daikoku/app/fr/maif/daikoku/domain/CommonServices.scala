@@ -938,8 +938,6 @@ object CommonServices {
            |""".stripMargin
 
 
-      AppLogger.warn("herre")
-
       (for {
         count <- EitherT.fromOptionF[Future, AppError, Long](
           env.dataStore

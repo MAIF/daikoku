@@ -90,6 +90,8 @@ object OtoroshiIdentityFilter {
       ec: ExecutionContext
   ): Future[Result] = {
 
+    LoginFilter.handleWhitelistedRoute(request, tenant, nextFilter, env).getOrElse {
+
     val sessionMaxAge =
       tenant.authProviderSettings.\("sessionMaxAge").asOpt[Int].getOrElse(86400)
     val claimSecret = tenant.authProviderSettings.\("claimSecret").as[String]
@@ -454,5 +456,6 @@ object OtoroshiIdentityFilter {
             }
         }
     }
+    } // end getOrElse (whitelisted routes)
   }
 }

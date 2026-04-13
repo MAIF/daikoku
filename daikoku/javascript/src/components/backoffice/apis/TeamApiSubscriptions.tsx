@@ -27,7 +27,6 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
-import { FeedbackButton } from "../../utils/FeedbackButton";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -120,8 +119,6 @@ export const TeamApiSubscriptions = ({
     }),
     select: d => d.apiApiSubscriptions
   });
-
-  const testPromise = (log: string) => new Promise(resolve => setTimeout(() => { console.debug(log); resolve(undefined); }, 3000))
 
   const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
   const columns = [
