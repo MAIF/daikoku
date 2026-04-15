@@ -28,6 +28,7 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.storage.Desc
+import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -5292,27 +5293,93 @@ class ApiController(
     )(ctx) {
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        subscriptions <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-        consumedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
-          .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson).distinct))))
-        publishedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
-          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-        demandToTreat <- env.dataStore.notificationRepo.forTenant(ctx.tenant)
-          .find(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-      } yield Ok(Json.obj(
-        "apis" -> Json.obj(
-          "published" -> publishedApi.size,
-          "consumed" -> consumedApi.size,
-        ),
-        "subscriptions" -> Json.obj(
-          "active" -> subscriptions.size,
-          "expire" -> subscriptions.count(_.validUntil.exists(d => Days.daysBetween(DateTime.now(), d).getDays < 7)),
-        ),
-        "demands" -> Json.obj(
-          "waiting" -> demandToTreat.size
-        ),
-      ))
+        teamIds  = myTeams.map(_.id.value).toArray
+        rows <- env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryRawMapped(
+            """
+              |SELECT
+              |  (SELECT count(*)::int FROM api_subscriptions s
+              |   WHERE s.content->>'_tenant' = $1
+              |     AND s._deleted = false
+              |     AND s.content->>'team' = ANY($2)
+              |     AND (s.content->>'enabled')::boolean IS NOT FALSE) AS active_count,
+              |
+              |  (SELECT count(*)::int FROM api_subscriptions s
+              |   WHERE s.content->>'_tenant' = $1
+              |     AND s._deleted = false
+              |     AND s.content->>'team' = ANY($2)
+              |     AND s.content->>'validUntil' IS NOT NULL
+              |     AND (s.content->>'validUntil')::timestamptz < now() + interval '30 days') AS expire_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND (a.content->>'created')::timestamptz > now() - interval '30 days') AS newly_created_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE) AS published_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
+              |     AND a.content->>'state' = 'deprecated') AS deprecated_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
+              |     AND a.content->>'state' = 'deprecated'
+              |     AND EXISTS (
+              |       SELECT 1 FROM api_subscriptions s
+              |       WHERE s._deleted = false
+              |         AND s.content->>'api' = a._id
+              |         AND s.content->>'team' = ANY($2)
+              |         AND s.content->>'validUntil' IS NOT NULL
+              |         AND (s.content->>'validUntil')::timestamptz < now() + interval '30 days'
+              |     )) AS deprecated_expire_count,
+              |
+              |  (SELECT count(*)::int FROM notifications n
+              |   WHERE n._deleted = false
+              |     AND n.content->>'_tenant' = $1
+              |     AND n.content->'action'->>'type' = 'ApiSubscription'
+              |     AND n.content->'status'->>'status' = 'Pending'
+              |     AND n.content->>'team' = ANY($2)) AS waiting_count
+              |""".stripMargin,
+            Seq(
+              Col.int("active_count"),
+              Col.int("expire_count"),
+              Col.int("newly_created_count"),
+              Col.int("published_count"),
+              Col.int("deprecated_count"),
+              Col.int("deprecated_expire_count"),
+              Col.int("waiting_count")),
+            Seq(ctx.tenant.id.value, teamIds)
+          )
+      } yield {
+        val row = rows.headOption.getOrElse(JsObject.empty)
+        Ok(Json.obj(
+          "subscriptions" -> Json.obj(
+            "active" -> (row \ "active_count").asOpt[Int].getOrElse(0),
+            "expire" -> (row \ "expire_count").asOpt[Int].getOrElse(0),
+          ),
+          "apis" -> Json.obj(
+            "published"            -> (row \ "published_count").asOpt[Int].getOrElse(0),
+            "deprecated"           -> (row \ "deprecated_count").asOpt[Int].getOrElse(0),
+            "deprecatedExpireSoon" -> (row \ "deprecated_expire_count").asOpt[Int].getOrElse(0),
+            "NewlyCreated"         -> (row \ "newly_created_count").asOpt[Int].getOrElse(0),
+          ),
+          "demands" -> Json.obj(
+            "waiting" -> (row \ "waiting_count").asOpt[Int].getOrElse(0),
+          )
+        ))
+      }
     }
   }
 }

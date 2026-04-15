@@ -848,6 +848,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_deleted ON notifications ((content->>'_deleted'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_team ON notifications ((content->>'team'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_action_team ON notifications ((content-> 'action' ->> 'team'));")
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_action_api ON notifications ((content-> 'action' ->> 'api'));")
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_action_type ON notifications ((content-> 'action' ->> 'type'));")
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_notification_status ON notifications ((content-> 'status' ->> 'status'));")
 
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_team_id ON teams ((content->>'_id'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_team_tenant ON teams ((content->>'_tenant'));")
@@ -877,7 +880,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_subscription_enabled ON api_subscriptions ((content->>'enabled'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_subscription_created_at ON api_subscriptions ((content->>'createdAt'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_subscription_clientId ON api_subscriptions ((content-> 'apiKey' ->> 'clientId));")
-      
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_subscription_team ON api_subscriptions ((content->>'team'));")
+
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));")
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));")
+      _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));")
+
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_job_started_at ON job_informations ((content->>'startedAt'));")
       _ <- reactivePg.rawQuery("CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));")
     } yield ()

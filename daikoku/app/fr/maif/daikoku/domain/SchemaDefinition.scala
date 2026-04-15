@@ -5,23 +5,19 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.*
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
+import fr.maif.daikoku.controllers.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration}
-import fr.maif.daikoku.storage.{DataStore, TenantCapableRepo, Repo}
+import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
+import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.graphql.RequiresTenantAdmin
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.*
 import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
-import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId, FetcherConfig}
+import sangria.execution.deferred.{DeferredResolver, Fetcher, FetcherConfig, HasId}
 import sangria.macros.derive.*
 import sangria.schema.{Context, *}
 import sangria.validation.ValueCoercionViolation
@@ -1892,11 +1888,19 @@ object SchemaDefinition {
         )
       ),
       ReplaceField(
-        "subscriptions",
+        "subscriptionCount",
         Field(
-          "subscriptions",
-          ListType(ApiSubscriptionType),
-          resolve = _.value.subscriptions
+          "subscriptionCount",
+          IntType,
+          resolve = _.value.subscriptionCount
+        )
+      ),
+      ReplaceField(
+        "expireCount",
+        Field(
+          "expireCount",
+          IntType,
+          resolve = _.value.expireCount
         )
       ),
       ReplaceField(
@@ -3950,18 +3954,21 @@ object SchemaDefinition {
         limit: Int,
         offset: Int
     ) = {
-      CommonServices
-        .getVisibleApis(
-          filterTable,
-          sortingTable,
-          groupOpt,
-          limit,
-          offset
-        )(using ctx.ctx._2, env, e)
-        .map {
-          case Right(value) => value
-          case Left(r)      => throw NotAuthorizedError(r.toString)
-        }
+      Time.concurrentTime(
+        CommonServices
+          .getVisibleApis(
+            filterTable,
+            sortingTable,
+            groupOpt,
+            limit,
+            offset
+          )(using ctx.ctx._2, env, e)
+          .map {
+            case Right(value) => value
+            case Left(r)      => throw NotAuthorizedError(r.toString)
+          },
+        "schema def"
+      )
     }
     def getSubscriptionDetails(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],

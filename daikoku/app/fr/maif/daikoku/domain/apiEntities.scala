@@ -762,7 +762,8 @@ case class ApiWithAuthorizations(
     plans: Seq[UsagePlan],
     authorizations: Seq[AuthorizationApi] = Seq.empty,
     subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
-    subscriptions: Seq[ApiSubscription] = Seq.empty
+    subscriptionCount: Int = 0,
+    expireCount: Int = 0
 ) extends CanJson[ApiWithAuthorizations] {
   override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
 }

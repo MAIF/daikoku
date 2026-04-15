@@ -4761,7 +4761,8 @@ object json {
             (json \ "authorizations").as(using SeqAuthorizationApiFormat),
           subscriptionDemands =
             (json \ "subscriptionDemands").as(using SeqSubscriptionDemandFormat),
-          subscriptions = (json \ "subscriptions").as(using SeqApiSubscriptionFormat)
+          subscriptionCount = (json \ "subscriptionCount").as[Int],
+          expireCount = (json \ "expireCount").as[Int]
         )
       } match {
         case Failure(e) =>
@@ -4778,7 +4779,8 @@ object json {
         "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(
           o.subscriptionDemands
         ),
-        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions)
+        "subscriptionCount" -> o.subscriptionCount,
+        "expireCount" -> o.expireCount
       )
   }
 

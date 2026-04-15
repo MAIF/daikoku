@@ -12,6 +12,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json.*
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
+import fr.maif.daikoku.utils.Time
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -409,6 +410,24 @@ object CommonServices {
           |                             )),
           |     total_apis as (select count(1) as total_count
           |                    FROM base_apis),
+          |     visible_apis_no_team as (select a._id, a.content
+          |                      FROM base_apis a LEFT JOIN me on true
+          |                      WHERE (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*')) AND
+          |                            CASE WHEN array_length($$5::text[], 1) IS NULL THEN true ELSE a.content -> 'tags' ?| $$5::text[] END AND
+          |                            CASE WHEN array_length($$10::text[], 1) IS NULL THEN true ELSE a.content -> 'categories' ?| $$10::text[] END AND
+          |                            (NOT $$6 OR EXISTS (SELECT 1 FROM api_subscriptions s WHERE s.content ->> 'api' = a._id AND s.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)))),
+          |     visible_apis_no_tag as (select a._id, a.content
+          |                      FROM base_apis a LEFT JOIN me on true
+          |                      WHERE (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*')) AND
+          |                            CASE WHEN array_length($$4::text[], 1) IS NULL THEN true ELSE a.content ->> 'team' = ANY ($$4::text[]) END AND
+          |                            CASE WHEN array_length($$10::text[], 1) IS NULL THEN true ELSE a.content -> 'categories' ?| $$10::text[] END AND
+          |                            (NOT $$6 OR EXISTS (SELECT 1 FROM api_subscriptions s WHERE s.content ->> 'api' = a._id AND s.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)))),
+          |     visible_apis_no_category as (select a._id, a.content
+          |                      FROM base_apis a LEFT JOIN me on true
+          |                      WHERE (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*')) AND
+          |                            CASE WHEN array_length($$4::text[], 1) IS NULL THEN true ELSE a.content ->> 'team' = ANY ($$4::text[]) END AND
+          |                            CASE WHEN array_length($$5::text[], 1) IS NULL THEN true ELSE a.content -> 'tags' ?| $$5::text[] END AND
+          |                            (NOT $$6 OR EXISTS (SELECT 1 FROM api_subscriptions s WHERE s.content ->> 'api' = a._id AND s.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)))),
           |     visible_apis as (select a._id,
           |                             a.content,
           |                             count(1) over ()                                                          as total_filtered,
@@ -444,17 +463,17 @@ object CommonServices {
           |                                content ->> 'name'
           |                       limit CASE WHEN $$7 = -1 THEN null ELSE $$7 END offset $$8),
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
-          |                            FROM visible_apis va
+          |                            FROM visible_apis_no_team va
           |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
           |                            WHERE t._deleted IS FALSE
           |                            GROUP BY t.content ),
           |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
-          |                  FROM visible_apis va,
+          |                  FROM visible_apis_no_tag va,
           |                       jsonb_array_elements_text(va.content -> 'tags') as tag
           |                           left outer join base_apis on base_apis.content -> 'tags' ? tag
           |                  group by tag),
           |     all_categories as (SELECT DISTINCT category, count(DISTINCT base_apis._id) as total
-          |                       FROM visible_apis va,
+          |                       FROM visible_apis_no_category va,
           |                            jsonb_array_elements_text(va.content -> 'categories') as category
           |                                left outer join base_apis on base_apis.content -> 'categories' ? category
           |                       group by category),
@@ -464,11 +483,21 @@ object CommonServices {
           |                       WHERE d.content ->> 'state' = 'inProgress' AND
           |                            d.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
           |                       GROUP BY apis._id),
-          |    filtered_subscriptions as ( SELECT apis._id as api, jsonb_agg(sub.content) as subscriptions
+          |    filtered_subscriptions as ( SELECT apis._id as api,
+          |                                      count(*) as subscription_count,
+          |                                      count(*) FILTER (WHERE sub.content->>'validUntil' IS NOT NULL
+          |                                                         AND (sub.content->>'validUntil')::timestamptz < now() + interval '1 month') as expire_count
           |                       FROM api_subscriptions sub
           |                       INNER JOIN filtered_apis apis ON apis._id = sub.content ->> 'api'
           |                       WHERE sub.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
           |                       GROUP BY apis._id),
+          |    pending_notifications as (SELECT n.content -> 'action' ->> 'api'  as api_id,
+          |                                     n.content -> 'action' ->> 'team' as team_id
+          |                             FROM notifications n
+          |                             WHERE n.content -> 'action' ->> 'api' = ANY (SELECT _id FROM filtered_apis)
+          |                               AND n.content -> 'action' ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
+          |                               AND n.content -> 'action' ->> 'type' = 'ApiAccess'
+          |                               AND n.content -> 'status' ->> 'status' = 'Pending'),
           |    authorizations_by_api as (select apis._id                as api_id,
           |                                      teams.content ->> '_id' as team_id,
           |                                      (
@@ -476,23 +505,16 @@ object CommonServices {
           |                                           jsonb_build_array(teams.content ->> '_id'))
           |                                              OR (apis.content ->> 'team' = teams.content ->> '_id')
           |                                          )                   as authorized,
-          |                                      coalesce(
-          |                                              (select n.content -> 'status' ->> 'status' = 'Pending'
-          |                                               from notifications n
-          |                                               where n.content -> 'action' ->> 'api' = apis._id
-          |                                                 and n.content -> 'action' ->> 'team' = teams.content ->> '_id'
-          |                                                 and n.content -> 'action' ->> 'type' = 'ApiAccess'), false
+          |                                      exists(
+          |                                          SELECT 1 FROM pending_notifications pn
+          |                                          WHERE pn.api_id = apis._id AND pn.team_id = teams.content ->> '_id'
           |                                      )                       as pending
           |                               from filtered_apis apis
           |                                        cross join my_teams teams
           |                               where (apis.content -> 'authorizedTeams' @> jsonb_build_array(teams.content ->> '_id'))
           |                                  OR (apis.content ->> 'team' = teams.content ->> '_id')
-          |                                  OR exists (select 1
-          |                                             from notifications n
-          |                                             where n.content -> 'action' ->> 'api' = apis._id
-          |                                               and n.content -> 'action' ->> 'team' = teams.content ->> '_id'
-          |                                               and n.content -> 'action' ->> 'type' = 'ApiAccess'
-          |                                               and n.content -> 'status' ->> 'status' = 'Pending')),
+          |                                  OR exists (SELECT 1 FROM pending_notifications pn
+          |                                             WHERE pn.api_id = apis._id AND pn.team_id = teams.content ->> '_id')),
           |     apis_with_authorizations as (select apis._id,
           |                                         apis.content as api_content,
           |                                         apis.total_filtered,
@@ -514,13 +536,14 @@ object CommonServices {
           |                                                  )
           |                                             END      as authorizations,
           |                                      coalesce(fd.demands, '[]'::jsonb) as demands,
-          |                                      coalesce(fs.subscriptions, '[]'::jsonb) as subscriptions
+          |                                      coalesce(fs.subscription_count, 0) as subscription_count,
+          |                                      coalesce(fs.expire_count, 0) as expire_count
           |                                  from filtered_apis apis
           |                                           left join authorizations_by_api aba on aba.api_id = apis._id
           |                                           left join usage_plans on apis.content -> 'possibleUsagePlans' ? usage_plans._id::text
           |                                           left join filtered_subscriptions fs on fs.api = apis._id
           |                                           left join filtered_demands fd on fd.api = apis._id
-          |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team, fd.demands, fs.subscriptions
+          |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team, fd.demands, fs.subscription_count, fs.expire_count
           |                                  order by apis.is_starred DESC,
           |                                           apis.is_my_team DESC,
           |                                           apis.content ->> 'name')
@@ -534,7 +557,8 @@ object CommonServices {
           |                                        'plans', coalesce(plans, '[]'::jsonb),
           |                                        'authorizations', authorizations,
           |                                        'subscriptionDemands', demands,
-          |                                        'subscriptions', subscriptions
+          |                                        'subscriptionCount', subscription_count,
+          |                                        'expireCount', expire_count
           |                                )
           |                        )
           |                 FROM apis_with_authorizations),
@@ -554,6 +578,7 @@ object CommonServices {
 
       for {
         result <-
+          Time.concurrentTime(
           env.dataStore
             .asInstanceOf[PostgresDataStore]
             .queryOneRaw(
@@ -571,7 +596,9 @@ object CommonServices {
                 apiGroupId.orNull,
                 categories.orNull
               )
-            )
+            ),
+            "just la query sql"
+          )
       } yield {
         result
           .map(_.as(using json.ApiWithCountFormat))

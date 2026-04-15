@@ -21,7 +21,9 @@ type NewHomeProps = {
 export type TDashboardData = {
   apis: {
     published: number
-    consumed: number
+    deprecated: number
+    deprecatedExpireSoon: number
+    newlyCreated: number
   },
   subscriptions: {
     active: number
@@ -76,17 +78,25 @@ export const Dashboard = (_: NewHomeProps) => {
       </section>
       {!connectedUser.isGuest && <div className="d-flex flex-row gap-3">
         <Tile
-          width={40}
+          width={20}
+          title={translate('dashboard.demands.tile.title')}
+          icon={<i className="fas fa-bolt" />}
+          description={translate('dashboard.demands.tile.description')}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => [{ label: translate('nouvelle apis depuis 30j jours'), value: data.apis.newlyCreated }]} />
+        <Tile
+          width={30}
           title={translate('dashboard.apis.tile.title')}
           icon={<Search />}
           description={translate('dashboard.apis.tile.description')}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
           data={(data) => [
-            { label: translate('dashboard.apis.tile.published.label'), value: data.apis.published },
-            { label: translate('dashboard.apis.tile.consumed.label'), value: data.apis.consumed }]} />
+            { label: translate('deprecié'), value: data.apis.deprecated },
+            { label: translate('expire bientot'), value: data.apis.deprecatedExpireSoon }]} />
         <Tile
-          width={40}
+          width={30}
           title={translate('dashboard.apikeys.tile.title')}
           icon={<Key />}
           description={translate('dashboard.apikeys.tile.description')}

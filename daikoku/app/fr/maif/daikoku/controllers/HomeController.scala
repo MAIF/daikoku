@@ -534,10 +534,6 @@ class HomeController(
 
   def getCmsPageByPath(path: Option[String] = None) =
     DaikokuUnauthenticatedAction.async { ctx =>
-//      val maybePath: Option[String] = ctx.request.getQueryString("path")
-
-      AppLogger.warn(path.getOrElse("no path"))
-
       path match {
         case Some(_path) => cmsPageByIdWithoutAction(ctx, _path)
         case None => AppError.EntityNotFound("cms page").renderF()

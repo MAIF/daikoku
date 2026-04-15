@@ -86,7 +86,8 @@ export type IApiWithAuthorization = {
   }>;
   plans: Array<IUsagePlan>;
   subscriptionDemands: Array<ISubscriptionDemandGQL>;
-  subscriptions: Array<IApiSubscriptionGql>;
+  subscriptionCount: number;
+  expireCount: number;
 };
 
 export interface IApiExtended extends IApi {

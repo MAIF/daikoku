@@ -1539,20 +1539,8 @@ export const graphql = {
               name
             }
           }
-          subscriptions {
-            _id
-            validUntil
-            team {
-              _id
-              _humanReadableId
-              name
-            }
-            api {
-              _id
-              _humanReadableId
-              name
-            }
-          }
+          subscriptionCount,
+          expireCount
         }
         producers {
           team {
