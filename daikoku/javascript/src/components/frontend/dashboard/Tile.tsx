@@ -9,11 +9,12 @@ import { TDashboardData } from "./Dashboard"
 
 
 type TileProps = {
-  description: string
   title: string
+  secondaryDescription?: string
   icon: ReactNode
   query: UseQueryResult<TDashboardData | ResponseError>
-  data: (data: TDashboardData) => { label: string, value: number }[],
+  data: (data: TDashboardData) => number,
+  dataSecondary?: (data: TDashboardData) => number,
   action?: () => void,
   width: number
   reset: () => Promise<void>
@@ -32,9 +33,6 @@ export const Tile = (props: TileProps) => {
             </div>
             <h3>{props.title}</h3>
           </div>
-          <div className="description">
-            {props.description}
-          </div>
         </div>
       </div>}
       {!!props.action && <button className="tile__header tile__header-action d-flex flex-row align-items-center" onClick={() => props.action!()}>
@@ -44,9 +42,6 @@ export const Tile = (props: TileProps) => {
               {props.icon}
             </div>
             <h3>{props.title}</h3>
-          </div>
-          <div className="description">
-            {props.description}
           </div>
         </div>
         <i className="dashboard-tile-action"><ArrowRight /></i>
@@ -63,14 +58,21 @@ export const Tile = (props: TileProps) => {
               </button>
             </span>
           </div>}
-          {!isError(props.query.data) && props.data(props.query.data).map((item, idx) => {
-            return (
-              <div className="data d-flex flex-column flex-grow-1" key={idx}>
-                <div className="data__label">{item.label}</div>
-                <div className="data__value">{item.value}</div>
-              </div>
-            )
-          })}
+          {!isError(props.query.data) && (
+            <div className="data d-flex flex-column flex-grow-1">
+              <div className="data__value">{props.data(props.query.data)}</div>
+              {props.dataSecondary && (
+                <div className="data__value--secondary">
+                  <div className="data__value">{props.dataSecondary(props.query.data)}</div>
+                  {props.secondaryDescription && (
+                    <div className="data__description">
+                      {props.secondaryDescription}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

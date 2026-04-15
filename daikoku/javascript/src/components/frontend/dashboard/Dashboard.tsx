@@ -80,40 +80,38 @@ export const Dashboard = (_: NewHomeProps) => {
         <Tile
           width={20}
           title={translate('dashboard.demands.tile.title')}
-          icon={<i className="fas fa-bolt" />}
-          description={translate('dashboard.demands.tile.description')}
+          icon={<i className="fas fa-clock" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [{ label: translate('nouvelle apis depuis 30j jours'), value: data.apis.newlyCreated }]} />
+          data={(data) => data.demands.waiting}
+          action={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')} />
+        <Tile
+          width={20}
+          title={translate('nouvelle apis')}
+          icon={<i className="fas fa-bolt" />}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => data.apis.newlyCreated}
+        />
         <Tile
           width={30}
-          title={translate('dashboard.apis.tile.title')}
-          icon={<Search />}
-          description={translate('dashboard.apis.tile.description')}
+          title={translate('api depreciee')}
+          secondaryDescription={translate('expire bientôt')}
+          icon={<i className="fas fa-triangle-exclamation" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [
-            { label: translate('deprecié'), value: data.apis.deprecated },
-            { label: translate('expire bientot'), value: data.apis.deprecatedExpireSoon }]} />
+          data={(data) => data.apis.deprecated}
+          dataSecondary={(data) => data.apis.deprecatedExpireSoon} />
         <Tile
           width={30}
           title={translate('dashboard.apikeys.tile.title')}
-          icon={<Key />}
-          description={translate('dashboard.apikeys.tile.description')}
+          secondaryDescription={translate('expire bientôt')}
+          icon={<i className="fas fa-bolt" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [
-            { label: translate('dashboard.apikeys.tile.active.label'), value: data.subscriptions.active },
-            { label: translate('dashboard.apikeys.tile.expire.label'), value: data.subscriptions.expire }]} />
-        <Tile
-          width={20}
-          title={translate('dashboard.demands.tile.title')}
-          icon={<Search />}
-          description={translate('dashboard.demands.tile.description')}
-          query={dashboardQuery}
-          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [{ label: translate('dashboard.demands.tile.waiting.label'), value: data.demands.waiting }]}
-          action={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')} />
+          data={(data) => data.subscriptions.active}
+          dataSecondary={(data) => data.subscriptions.expire} />
+
       </div>}
       <ApiList />
     </main>

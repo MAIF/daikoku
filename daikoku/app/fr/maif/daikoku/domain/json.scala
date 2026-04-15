@@ -2142,6 +2142,7 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             lastUpdate = (json \ "lastUpdate").as(using DateTimeFormat),
+            createdAt = (json \ "createdAt").asOpt(using DateTimeFormat).getOrElse(DateTime.now()),
             description = (json \ "description").asOpt[String].getOrElse(""),
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
@@ -2208,6 +2209,7 @@ object json {
         "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
         "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "name" -> o.name,
         "smallDescription" -> o.smallDescription,
         "customHeaderCmsPage" -> o.customHeaderCmsPage,

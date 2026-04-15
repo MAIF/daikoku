@@ -2342,8 +2342,10 @@ class ApiController(
   private def deleteSubscriptionAsChild(subscription: ApiSubscription, plan: UsagePlan, tenant: Tenant) = {
     for {
       json <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
-      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .deleteById(subscription.id))
+      _ <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .deleteByIdLogically(subscription.id))
+      _ <- EitherT.right[AppError](env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value)))
     } yield json
   }
 
@@ -2386,7 +2388,9 @@ class ApiController(
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                         .save(futureParent.copy(parent = None))) //promot first or given sub id
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-                        .deleteById(subscriptionId)) //just delete ApiSubscription
+                        .deleteByIdLogically(subscriptionId))
+                      _ <- EitherT.right[AppError](env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .delete(Json.obj("action.subscription" -> subscription.id.value)))
                       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(childs.filter(c => c.id != futureParent.id)
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                           .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
@@ -3052,7 +3056,7 @@ class ApiController(
       }
     }
 
-  def createApiOfTeam(teamId: String) =
+  def createApiOfTeam(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       val body = ctx.request.body.as[JsObject]
       val finalBody = (body \ "_id").asOpt[String] match {
@@ -5287,7 +5291,7 @@ class ApiController(
     value1.merge
   }
 
-  def myDashboard() = DaikokuActionMaybeWithGuest.async { ctx =>
+  def myDashboard(): Action[AnyContent] = DaikokuActionMaybeWithGuest.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has accessed his team list")
     )(ctx) {
@@ -5315,7 +5319,7 @@ class ApiController(
               |  (SELECT count(*)::int FROM apis a
               |   WHERE a._deleted = false
               |     AND a.content->>'_tenant' = $1
-              |     AND (a.content->>'created')::timestamptz > now() - interval '30 days') AS newly_created_count,
+              |     AND to_timestamp((a.content->>'createdAt')::bigint / 1000) > (now() - interval '30 days')) AS newly_created_count,
               |
               |  (SELECT count(*)::int FROM apis a
               |   WHERE a._deleted = false
@@ -5373,7 +5377,7 @@ class ApiController(
             "published"            -> (row \ "published_count").asOpt[Int].getOrElse(0),
             "deprecated"           -> (row \ "deprecated_count").asOpt[Int].getOrElse(0),
             "deprecatedExpireSoon" -> (row \ "deprecated_expire_count").asOpt[Int].getOrElse(0),
-            "NewlyCreated"         -> (row \ "newly_created_count").asOpt[Int].getOrElse(0),
+            "newlyCreated"         -> (row \ "newly_created_count").asOpt[Int].getOrElse(0),
           ),
           "demands" -> Json.obj(
             "waiting" -> (row \ "waiting_count").asOpt[Int].getOrElse(0),

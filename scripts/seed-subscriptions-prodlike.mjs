@@ -249,6 +249,7 @@ for (let i = 0; i < NB_APIS; i++) {
       smallDescription: "",
       description: "",
       lastUpdate: Date.now(),
+      createdAt: Date.now(),
       currentVersion: "1.0.0",
       supportedVersions: ["1.0.0"],
       isDefault: true,
