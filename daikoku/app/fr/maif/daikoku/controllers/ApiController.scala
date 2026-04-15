@@ -2390,7 +2390,7 @@ class ApiController(
                         .save(futureParent.copy(parent = None))) //promot first or given sub id
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                         .deleteByIdLogically(subscriptionId))
-                      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+                      _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant)
                         .delete(Json.obj("action.subscription" -> subscription.id.value))
                       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(childs.filter(c => c.id != futureParent.id)
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
