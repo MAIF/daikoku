@@ -2310,6 +2310,8 @@ class ApiController(
   private def syncAndDeleteSubscription(subscription: ApiSubscription, api: Api, plan: UsagePlan, tenant: Tenant, team: Team, user: User) = {
     for {
       _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value))
       notif = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -2342,7 +2344,9 @@ class ApiController(
     for {
       json <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .deleteById(subscription.id))
+        .deleteByIdLogically(subscription.id))
+      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value))
     } yield json
   }
 
@@ -2385,7 +2389,9 @@ class ApiController(
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                         .save(futureParent.copy(parent = None))) //promot first or given sub id
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-                        .deleteById(subscriptionId)) //just delete ApiSubscription
+                        .deleteByIdLogically(subscriptionId))
+                      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+                        .delete(Json.obj("action.subscription" -> subscription.id.value))
                       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(childs.filter(c => c.id != futureParent.id)
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                           .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
