@@ -42,22 +42,31 @@ const GenericValueContainer = (
   props: ValueContainerProps<Option, true> & { selectProps: ExtraProps }
 ) => {
   const { translate } = useContext(I18nContext);
-
-  const { getValue, hasValue, selectProps } = props;
+  const { getValue, hasValue, selectProps, children, selectProps: { inputValue } } = props;
   const selectedValues = getValue();
   const nbValues = selectedValues.length;
 
   const label = translate({ key: selectProps.labelKey, plural: nbValues > 1 })
+
+  const input = Array.isArray(children) ? children[children.length - 1] : children;
+    const showPlaceholder = (!hasValue || nbValues === 0) && !inputValue;
+
   return (
     <components.ValueContainer {...props}>
-      {!hasValue || nbValues === 0 ? (
-        translate(selectProps.labelKeyAll)
-      ) : (
-        <>
-          {label}
-          <span className="ms-2 badge badge-custom">{nbValues}</span>
-        </>
-      )}
+      <div style={{ position: 'relative', width: '100%' }}>
+        {showPlaceholder && (
+          <div style={{ position: 'absolute', pointerEvents: 'none', opacity: 0.5, top: "15%" }}>
+            {translate(selectProps.labelKeyAll)}
+          </div>
+        )}
+        {hasValue && nbValues > 0 && (
+          <>
+            {label}
+            <span className="ms-2 badge badge-custom">{nbValues}</span>
+          </>
+        )}
+        {input}
+      </div>
     </components.ValueContainer>
   );
 };
@@ -587,7 +596,7 @@ export const ApiList = (props: ApiListProps) => {
               />
             </div>
             <Select
-              isMulti //@ts-ignore
+              isMulti
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
               options={(producers)}
               isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
@@ -595,11 +604,14 @@ export const ApiList = (props: ApiListProps) => {
               labelKey={"dashboard.filters.team.label"}
               labelKeyAll={"dashboard.filters.all.team.label"}
               getCount={getTotalForTeam}
-              classNamePrefix="daikoku-select"
               className="team__selector filter__select reactSelect col-2"
+              classNamePrefix="daikoku-select"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'team')}
-              value={getSelectValue('team', producers, 'name', '_id')} />
+              value={getSelectValue('team', producers, 'name', '_id')} 
+              />
+
+
 
             <Select
               isMulti //@ts-ignore
