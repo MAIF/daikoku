@@ -15,7 +15,7 @@ Daikoku looks for a page at:
 
 If no page is found for the current language, the default tenant description (title, name, description field) is displayed instead.
 
->the top section is height limited to 10rem. To avoid css issues dedicated classname is avalaible `organisation_header_wrapper` for warrper compoennt and `organisation__logo` for the logo
+>the top section is height limited to `10rem`. To avoid css issues dedicated classname is avalaible `organisation_header_wrapper` for warrper compoennt and `organisation__logo` for the logo
 
 **CLI project structure:**
 
