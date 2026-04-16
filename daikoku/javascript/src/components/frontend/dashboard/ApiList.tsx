@@ -338,8 +338,7 @@ export const ApiList = (props: ApiListProps) => {
     // getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSubRowSelection: true,
-    enableRowSelection: row => {
-      const notification = row.original;
+    enableRowSelection: _ => {
       return false;
       // return notification.status.status === 'Pending' && notification.notificationType.value === 'AcceptOnly';
     },

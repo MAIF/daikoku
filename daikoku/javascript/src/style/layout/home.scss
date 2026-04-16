@@ -2,13 +2,25 @@
 
 
 .organisation__header {
-  //display: flex;
+  margin-top: variables.$topbar-height;
+  max-height: 10rem;
   position: relative;
-  background-color: variables.$level2_bg-color;
-  color: variables.$level2_text-color;
+  overflow-y: scroll;
 
-  .organisation__avatar {
-    width: 150px;
+  .organisation__logo {
+    max-width: 25%;
+    max-height: 10rem;
+    object-fit: contain;
+  }
+
+  .organisation_header_wrapper {
+    max-height: 10rem;
+  }
+
+  .organisation_header_settings_button {
+    position: absolute;
+    top: 0;
+    right: 10px;
   }
 }
 

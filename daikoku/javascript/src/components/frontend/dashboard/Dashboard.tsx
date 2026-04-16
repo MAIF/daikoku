@@ -1,7 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useContext, useMemo } from "react"
-import Key from 'react-feather/dist/icons/key'
-import Search from 'react-feather/dist/icons/search'
 import Sliders from 'react-feather/dist/icons/sliders'
 import { useNavigate } from "react-router-dom"
 
@@ -9,9 +7,9 @@ import { useNavigate } from "react-router-dom"
 import { I18nContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
+import { CmsViewerByPath } from "../CmsViewer"
 import { ApiList } from "./ApiList"
 import { Tile } from "./Tile"
-import { CmsViewerByPath } from "../CmsViewer"
 
 type NewHomeProps = {
   teamId?: string
@@ -56,11 +54,11 @@ export const Dashboard = (_: NewHomeProps) => {
   return (
     <main className='flex-grow-1 d-flex flex-column gap-3' role="main">
       <section className="">
-        <div className="" style={{ marginTop: '50px', maxHeight: '155px', position: 'relative', overflowY: 'scroll' }}>
+        <div className="organisation__header">
           <CmsViewerByPath path={`/customization/dashboard/description/${language.toLocaleLowerCase()}`}
             fallBack={() => (
-              <div className="d-flex flex-row align-items-center gap-5" style={{ maxHeight: '155px' }}>
-                {themedLogo && <img style={{ maxWidth: '25%', maxHeight: '155px', objectFit: 'contain' }} src={themedLogo} alt="logo" />}
+              <div className="organisation_header_wrapper d-flex flex-row align-items-center gap-5">
+                {themedLogo && <img className="organisation_logo" src={themedLogo} alt="logo" />}
                 <div className="d-flex flex-column justify-content-center">
                   <h1 className="jumbotron-heading mt-3">
                     {tenant.title ?? tenant.name}
@@ -71,7 +69,7 @@ export const Dashboard = (_: NewHomeProps) => {
             )
             } />
           {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
-            className="btn btn-outline-primary" style={{ position: 'absolute', top: "0px", right: "10px" }}>
+            className="organisation_header_settings_button btn btn-outline-primary">
             <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
           </button>}
         </div>
