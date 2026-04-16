@@ -9,12 +9,13 @@ import fr.maif.daikoku.actions.{
   DaikokuActionMaybeWithGuest
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.authorizations.async._
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.TeamFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.login.{LdapConfig, LdapSupport}
 import fr.maif.daikoku.services.DeletionService
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
@@ -24,8 +25,8 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.I18nSupport
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -1049,14 +1050,28 @@ class TeamController(
           "@{user.name} has find User with many attributes (@{u.id})"
         )
       )(teamId, ctx) { _ =>
-        env.dataStore.userRepo
-          .findOne(
-            Json.obj(
-              "_deleted" -> false
-            ) ++ (ctx.request.body \ "attributes").as[JsObject]
+        val attributes = (ctx.request.body \ "attributes").as[JsObject]
+        val (clause, params, _) =
+          attributes.fields.foldLeft(("", Seq.empty[String], 1)) {
+            case ((acc, values, idx), (key, value)) =>
+              val separator = if (acc.isEmpty) "" else " AND "
+              (
+                s"$acc${separator}lower(content ->> '$key') = lower($$$idx)",
+                values :+ value.as[String],
+                idx + 1
+              )
+          }
+
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneRaw(
+            query =
+              s"SELECT content FROM users WHERE _deleted = false AND $clause",
+            name = "content",
+            params = params
           )
           .map {
-            case Some(user) => Ok(user.asJson)
+            case Some(user) => Ok(user.as(json.UserFormat).asSimpleJson)
             case None       => NotFound(Json.obj("error" -> "user not found"))
           }
       }

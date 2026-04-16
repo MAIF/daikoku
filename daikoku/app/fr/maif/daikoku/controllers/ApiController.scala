@@ -47,18 +47,18 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class ApiController(
-                     DaikokuAction: DaikokuAction,
-                     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                     DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
-                     apiService: ApiService,
-                     apiKeyStatsJob: ApiKeyStatsJob,
-                     env: Env,
-                     otoroshiClient: OtoroshiClient,
-                     cc: ControllerComponents,
-                     otoroshiSynchronisator: OtoroshiSynchronizerJob,
-                     translator: Translator,
-                     paymentClient: PaymentClient,
-                     deletionService: DeletionService
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
+    apiService: ApiService,
+    apiKeyStatsJob: ApiKeyStatsJob,
+    env: Env,
+    otoroshiClient: OtoroshiClient,
+    cc: ControllerComponents,
+    otoroshiSynchronisator: OtoroshiSynchronizerJob,
+    translator: Translator,
+    paymentClient: PaymentClient,
+    deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -2311,6 +2311,8 @@ class ApiController(
   private def syncAndDeleteSubscription(subscription: ApiSubscription, api: Api, plan: UsagePlan, tenant: Tenant, team: Team, user: User) = {
     for {
       _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value))
       notif = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -2342,7 +2344,7 @@ class ApiController(
   private def deleteSubscriptionAsChild(subscription: ApiSubscription, plan: UsagePlan, tenant: Tenant) = {
     for {
       json <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
-      _ <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
         .deleteByIdLogically(subscription.id))
       _ <- EitherT.right[AppError](env.dataStore.notificationRepo.forTenant(tenant)
         .delete(Json.obj("action.subscription" -> subscription.id.value)))
@@ -3347,7 +3349,7 @@ class ApiController(
         ctx.setCtxValue("search", search)
 
         val searchAsRegex =
-          Json.obj("$regex" -> s".*$search.*", "$options" -> "-i")
+          Json.obj("$regex" -> s".*${RegexUtil.cleanRegex(search)}.*", "$options" -> "-i")
         val teamUsersFilter =
           if (ctx.user.isDaikokuAdmin) Json.obj()
           else Json.obj("users.userId" -> ctx.user.id.value)
