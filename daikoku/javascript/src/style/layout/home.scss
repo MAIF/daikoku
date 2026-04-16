@@ -23,6 +23,11 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
   min-width: 20%;
   color: $tile_text_color;
 
+  &.tile--action {
+    background: color-mix(in srgb, variables.$primary-color 10%, #fff);
+    border-color: variables.$primary-color;
+  }
+
 
   .tile__header {
     padding: 16px;
@@ -80,16 +85,18 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
   }
 
   .tile_data {
-    padding: 5px 16px;
+    padding: 0px 16px;
 
     .data {
-      .data__label {
-        font-size: 14px;
-      }
+      display: flex;
+      flex-direction: row;
+      align-items: end;
+      justify-content: space-between;
 
       .data__value {
         font-size: 40px;
-        font-weight: 700;
+        line-height: 40px;
+        font-weight: 6 00;
         color: $tile_text_color;
       }
 
@@ -102,7 +109,8 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
 
         .data__value {
           font-size: 14px;
-          color: tomato;
+          font-weight: 700;
+          color: variables.$error-color;
         }
 
         .data__description {

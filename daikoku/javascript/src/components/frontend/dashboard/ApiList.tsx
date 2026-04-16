@@ -239,8 +239,10 @@ export const ApiList = (props: ApiListProps) => {
           {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
             {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
           </span>}
-          {!!expireCount && <span className="badge badge-custom-danger" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', replacements: [expireCount.toString()], plural: expireCount > 1 })}
+          {!!expireCount && <span
+            className="badge badge-custom-danger"
+            onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {expireCount} {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: expireCount > 1 })}
           </span>}
           {!!pendingCount && <span className="badge badge-custom-warning">
             {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
@@ -525,7 +527,7 @@ export const ApiList = (props: ApiListProps) => {
         <div className='d-flex flex-row align-items-center justify-content-between'>
           <div className='d-flex align-items-center gap-3' aria-live="polite">
             <h2 className="api_list__title" id='notif-label'>
-              Liste des APIs
+              {translate("dashboard.api.list.title")}
             </h2>
           </div>
           {canCreateApi && (
@@ -612,7 +614,7 @@ export const ApiList = (props: ApiListProps) => {
               onClick={() => {
                 const filters = columnFilters.filter(f => f.id !== 'subscribedOnly')
                 setColumnFilters([...filters, { id: 'subscribedOnly', value: true }])
-              }}>{translate('API souscrite seulement')}
+              }}>{translate('dashboard.filters.subscribe.apis.only.label')}
             </button>
 
             {!!columnFilters.length && <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>

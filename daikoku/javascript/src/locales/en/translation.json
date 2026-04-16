@@ -1727,16 +1727,12 @@
     "dashboard.tile.error": "Sorry, an error has occurred",
     "dashboard.page.tenant.setting.button.label": "Tenant settings",
     "dashboard.apis.tile.title": "My APIs",
-    "dashboard.apis.tile.description": "Summary of publications and consumptions",
-    "dashboard.apis.tile.published.label": "Published",
-    "dashboard.apis.tile.consumed.label": "Consumed",
     "dashboard.apikeys.tile.title": "My API keys",
-    "dashboard.apikeys.tile.description": "Status of the keys generated for this tenant",
-    "dashboard.apikeys.tile.active.label": "Active",
-    "dashboard.apikeys.tile.expire.label": "Expiring soon",
     "dashboard.demands.tile.title": "Requests to validate",
-    "dashboard.demands.tile.description": "Subscriptions pending validation",
-    "dashboard.demands.tile.waiting.label": "Pending",
+    "dashboard.newly.created.apis.tile.title": "Newly created APIs",
+    "dashboard.deprecated.apis.tile.title": "Deprecated APIs",
+    "dashboard.deprecated.apis.tile.secondary.label": "expire soon",
+    "dashboard.deprecated.apikeys.tile.secondary.label": "expire soon",
     "dashboard.tile.error.button.label": "Reload data",
     "dashboard.apis.table.header.label.api": "API",
     "dashboard.apis.table.header.label.tags": "Tags",
@@ -1755,11 +1751,11 @@
     "dashboard.filters.all.team.label": "All teams",
     "dashboard.api.list.actives.subscription.tag.label": {
         "s": "%s active key",
-        "p": "%s clés active keys"
+        "p": "%s active keys"
     },
     "dashboard.api.list.expires.subscription.tag.label": {
-        "s": "%s will expire soon",
-        "p": "%s will expire soon"
+        "s": "will expire soon",
+        "p": "will expire soon"
     },
     "dashboard.api.list.pending.subscription.tag.label": {
         "s": "%s pending request",
@@ -1771,6 +1767,8 @@
     "search.team.placeholder": "Search a team",
     "dashboard.create.team.button.label": "Create a team",
     "dashboard.api.table.more.button.label": "Show more APIs",
+    "dashboard.filters.subscribe.apis.only.label": "Subscribed APIs only",
+    "dashboard.api.list.title": "APIs list",
     "oauth2.form.role.claim.label": "Role claim name",
     "oauth2.form.role.claim.help": "Name of the OpenID claim containing the user's roles.",
     "oauth2.form.admin.role.label": "Admin role",

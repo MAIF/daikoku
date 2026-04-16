@@ -87,7 +87,7 @@ export const Dashboard = (_: NewHomeProps) => {
           action={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')} />
         <Tile
           width={20}
-          title={translate('nouvelle apis')}
+          title={translate('dashboard.newly.created.apis.tile.title')}
           icon={<i className="fas fa-bolt" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
@@ -95,8 +95,8 @@ export const Dashboard = (_: NewHomeProps) => {
         />
         <Tile
           width={30}
-          title={translate('api depreciee')}
-          secondaryDescription={translate('expire bientôt')}
+          title={translate('dashboard.deprecated.apis.tile.title')}
+          secondaryDescription={(count) => translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: count > 1 })}
           icon={<i className="fas fa-triangle-exclamation" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
@@ -105,7 +105,7 @@ export const Dashboard = (_: NewHomeProps) => {
         <Tile
           width={30}
           title={translate('dashboard.apikeys.tile.title')}
-          secondaryDescription={translate('expire bientôt')}
+          secondaryDescription={(count) => translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: count > 1 })}
           icon={<i className="fas fa-bolt" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
