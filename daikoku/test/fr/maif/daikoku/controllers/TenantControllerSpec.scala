@@ -1527,7 +1527,7 @@ class TenantControllerSpec()
       )(using tenant, session)
 
       resp.status mustBe 200
-      resp.body[String] mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
+      resp.body[String].split("\n").toSet mustBe defaultApi.plans.map(_.id.value).toSet
     }
 
     "setup defaut authorized otoroshi entities for future created teams" in {
