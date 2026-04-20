@@ -206,16 +206,19 @@ object LoginFilter {
       env: Env
   )(implicit ec: ExecutionContext): Option[Future[Result]] = {
     import fr.maif.daikoku.domain.json.RegexOps
-    
+
     lazy val pass = nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
     (request.method.toLowerCase(), request.relativeUri) match {
       case ("get", r"/")                                                   => Some(pass)
+      case ("get", r"/apis")                                               => Some(pass)
       case ("get", r"/signup")                                             => Some(pass)
+      case ("get", r"/health")                                             => Some(pass)
       case ("get", r"/robot.txt")                                          => Some(pass)
       case ("get", r"/api/translations/_all")                              => Some(pass)
       case ("get", r"/reset")                                              => Some(pass)
       case (_, path) if path.startsWith("/api/2fa")                        => Some(pass)
       case ("get", r"/2fa")                                                => Some(pass)
+      case ("get", path) if path.startsWith("/_/")                         => Some(pass)
       case ("get", path) if path.startsWith("/2fa")                        => Some(pass)
       case ("get", path) if path.startsWith("/reset")                      => Some(pass)
       case ("get", path) if path.startsWith("/signup")                     => Some(pass)
@@ -227,6 +230,7 @@ object LoginFilter {
       case ("get", r"/user-assets/.*")                                     => Some(pass)
       case ("get", r"/asset-thumbnails/.*")                                => Some(pass)
       case (_, r"/admin-api/.*")                                           => Some(pass)
+      case (_, r"/cms-api/.*")                                           => Some(pass)
       case (_, r"/integration-api/.*")                                     =>
         Some(
           request
