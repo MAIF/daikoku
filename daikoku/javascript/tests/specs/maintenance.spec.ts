@@ -59,7 +59,7 @@ test('Se connecter en maintenance avec admin', async ({ page }) => {
 
 test('redirection par l\'url retourne page maintenance', async ({ page }) => {
   await passInModeMaintenance({ page })
-  await page.goto("http://localhost:5173/apis")
+  await page.goto(`http://localhost:${exposedPort}/apis`)
   await expect(page.getByRole('heading', { name: 'Daikoku est en maintenance' })).toBeVisible();
 });
 

@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test';
 import { MICHAEL } from './users';
-import { loginOidcAs, adminApikeyId, adminApikeySecret, exposedPort } from './utils';
+import { loginOidcAs, adminApikeyId, adminApikeySecret, exposedPort, ACCUEIL } from './utils';
 
 test.beforeEach(async () => {
   await fetch(`http://localhost:${exposedPort}/admin-api/state/reset`, {
@@ -13,7 +13,7 @@ test.beforeEach(async () => {
 });
 
 const passInModeMaintenance = async ({ page }) => {
-  await page.goto("http://localhost:5173/auth/Local/login")
+  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`)
   await page.locator('input[name="username"]').fill('admin@foo.bar');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
@@ -25,7 +25,7 @@ const passInModeMaintenance = async ({ page }) => {
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   // await expect(page.getByText('You are now logged out')).toBeVisible();
-  await page.goto("http://localhost:5173/apis")
+  await page.goto(ACCUEIL)
 }
 
 test('Passe en mode maintenance', async ({ page }) => {
@@ -46,7 +46,7 @@ test('Se connecter en maintenance avec admin', async ({ page }) => {
   await page.getByRole('textbox', { name: 'username' }).fill(MICHAEL.email);
   await page.getByRole('textbox', { name: 'Password' }).fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
-  await expect(page.getByRole('heading', { name: 'Mes APIs' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
 
 });
 

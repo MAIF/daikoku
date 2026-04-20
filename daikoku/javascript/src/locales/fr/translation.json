@@ -1733,16 +1733,13 @@
   "dashboard.tile.error.button.label": "Récupérer les données",
   "dashboard.page.tenant.setting.button.label": "Réglage du tenant",
   "dashboard.apis.tile.title": "Mes APIs",
-  "dashboard.apis.tile.description": "Synthèse des publications et consommations",
-  "dashboard.apis.tile.published.label": "Publiées",
-  "dashboard.apis.tile.consumed.label": "Consommée",
   "dashboard.apikeys.tile.title": "Mes clé d'API",
-  "dashboard.apikeys.tile.description": "État des clés générées pour ce tenant",
-  "dashboard.apikeys.tile.active.label": "Active",
-  "dashboard.apikeys.tile.expire.label": "Proche expiration",
   "dashboard.demands.tile.title": "Demandes à valider",
   "dashboard.demands.tile.description": "Souscriptions en attente de validation",
-  "dashboard.demands.tile.waiting.label": "En attente",
+  "dashboard.newly.created.apis.tile.title": "Nouvelles APIs",
+    "dashboard.deprecated.apis.tile.title": "APIs dépréciées",
+    "dashboard.deprecated.apis.tile.secondary.label": "expire bientôt",
+    "dashboard.deprecated.apikeys.tile.secondary.label": "expire bientôt",
   "dashboard.apis.table.header.label.api": "API",
   "dashboard.apis.table.header.label.tags": "Tags",
   "dashboard.apis.table.header.label.team": "Équipe",
@@ -1763,8 +1760,8 @@
     "p": "%s clés actives"
   },
   "dashboard.api.list.expires.subscription.tag.label": {
-    "s": "%s expire bientôt",
-    "p": "%s expirent bientôt"
+    "s": "expire bientôt",
+    "p": "expirent bientôt"
   },
   "dashboard.api.list.pending.subscription.tag.label": {
     "s": "%s demande en attente",
@@ -1776,6 +1773,8 @@
   "search.team.placeholder": "Rechercher une équipe",
   "dashboard.create.team.button.label": "Créer une équipe",
   "dashboard.api.table.more.button.label": "afficher plus d'APIs",
+  "dashboard.filters.subscribe.apis.only.label": "APIs souscrites seulement",
+    "dashboard.api.list.title": "Liste des APIs",
   "oauth2.form.role.claim.label": "Nom du claim des rôles",
   "oauth2.form.role.claim.help": "Nom du claim OpenID contenant les rôles de l’utilisateur.",
   "oauth2.form.admin.role.label": "Rôle administrateur",

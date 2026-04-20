@@ -62,14 +62,15 @@ object tenantSecurity {
     val isDaikokuAdmin = user.exists(_.isDaikokuAdmin)
     val isTenantAdmin = isMaybeTenantAdmin.contains(true)
     val whiteListRoutes =
-      Seq("/_/customization", "/api/translations/_all", "/api/me/context", 
-        "/auth/Local/provider", "/auth/LDAP/provider", "/auth/OAuth2/provider","/auth/Otoroshi/provider")
+      Seq("/_/customization", "/api/translations/_all", "/api/me/context",
+        "/auth/Local/provider", "/auth/LDAP/provider", "/auth/OAuth2/provider", "/auth/Otoroshi/provider",
+        "/maintenance", "/construction")
     if (isDaikokuAdmin || isTenantAdmin) {
       true
     } else {
       tenant.tenantMode match {
         case Some(TenantMode.Maintenance | TenantMode.Construction) =>
-          whiteListRoutes.exists(route => route.startsWith(path))
+          whiteListRoutes.exists(route => path.startsWith(route))
         case _ => true
       }
     }

@@ -34,11 +34,6 @@ type NotificationsGQL = {
   totalByApis: Array<{ api: string, total: number }>,
   totalSelectable: number
 }
-type LimitedTeam = {
-  _id: string
-  name: string
-  type: string
-}
 
 type NotificationActionGQL =
   | {
@@ -103,7 +98,6 @@ type NotificationActionGQL =
     __typename: 'ApiKeyDeletionInformationV2';
     clientId: string;
     api: IApiGQL;
-    subscription: IApiSubscriptionGql;
   }
   | {
     __typename: 'TransferApiOwnership';
@@ -261,7 +255,7 @@ export const NotificationList = () => {
 
   const pageSize = 25;
   const [selectAll, setSelectAll] = useState(false);
-  const [limit, setLimit] = useState(pageSize);
+  const [limit, _] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
@@ -778,7 +772,7 @@ export const NotificationList = () => {
         return translate({ key: 'notif.apikey.deletion' })
       case 'ApiKeyDeletionInformationV2': {
         const apiKeyDeletionInformationDescription = translate({ key: 'notif.apikey.deletion' })
-        const __subscription = notification.action.subscription
+        const clientId = notification.action.clientId
         return (
           <>
             {apiKeyDeletionInformationDescription}
@@ -790,7 +784,7 @@ export const NotificationList = () => {
               onClick={() => alert({
                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
                 message: <div>
-                  {translate("subscription.display.credentials.clientId")} : <i>{__subscription.apiKey.clientId}</i>
+                  {translate("subscription.display.credentials.clientId")} : <i>{clientId}</i>
                 </div>
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
@@ -1232,7 +1226,7 @@ export const NotificationList = () => {
                   return ((f.value as Array<string>).map(value => {
                     const teamName = myTeamsRequest.data?.find(t => t._id === value)?.name;
                     return (
-                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                      <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {teamName}
                         <i className='fas fa-xmark' />
                       </button>
@@ -1240,10 +1234,10 @@ export const NotificationList = () => {
                   }))
                 case f.id === 'api':
                   return ((f.value as Array<string>).map(value => {
-                    const teamName = visibleApisRequest.data?.find(t => t._id === value)?.name;
+                    const apiName = visibleApisRequest.data?.find(t => t._id === value)?.name;
                     return (
-                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
-                        {teamName}
+                      <button key={apiName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        {apiName}
                         <i className='fas fa-xmark' />
                       </button>
                     )
@@ -1252,7 +1246,7 @@ export const NotificationList = () => {
                   return ((f.value as Array<string>).map(value => {
                     const label = translate(`notifications.page.filters.type.${value}.label`)
                     return (
-                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                      <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
                         <i className='fas fa-xmark' />
                       </button>
@@ -1263,7 +1257,7 @@ export const NotificationList = () => {
                     const type = notificationActionTypes.find(t => t.value === value)
                     const label = translate(`notifications.page.filters.action.${type?.value}.label`)
                     return (
-                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                      <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
                         <i className='fas fa-xmark' />
                       </button>

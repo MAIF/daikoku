@@ -1,7 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useContext, useMemo } from "react"
-import Key from 'react-feather/dist/icons/key'
-import Search from 'react-feather/dist/icons/search'
 import Sliders from 'react-feather/dist/icons/sliders'
 import { useNavigate } from "react-router-dom"
 
@@ -9,10 +7,9 @@ import { useNavigate } from "react-router-dom"
 import { I18nContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
+import { CmsViewerByPath } from "../CmsViewer"
 import { ApiList } from "./ApiList"
 import { Tile } from "./Tile"
-import { Spinner } from "../../utils"
-import { isError } from "../../../types"
 
 type NewHomeProps = {
   teamId?: string
@@ -22,7 +19,9 @@ type NewHomeProps = {
 export type TDashboardData = {
   apis: {
     published: number
-    consumed: number
+    deprecated: number
+    deprecatedExpireSoon: number
+    newlyCreated: number
   },
   subscriptions: {
     active: number
@@ -33,9 +32,9 @@ export type TDashboardData = {
   }
 }
 
-export const Dashboard = (props: NewHomeProps) => {
+export const Dashboard = (_: NewHomeProps) => {
   const { tenant, connectedUser, isTenantAdmin, theme } = useContext(GlobalContext)
-  const { translate } = useContext(I18nContext)
+  const { translate, language } = useContext(I18nContext)
 
   const navigate = useNavigate()
 
@@ -55,52 +54,62 @@ export const Dashboard = (props: NewHomeProps) => {
   return (
     <main className='flex-grow-1 d-flex flex-column gap-3' role="main">
       <section className="">
-        <div className="d-flex flex-row justify-content-between align-items-center">
-          <div className="d-flex flex-row align-items-center gap-5">
-            {themedLogo && <img style={{ maxWidth: '25%' }} src={themedLogo} alt="logo" />}
-            <div className="d-flex flex-column justify-content-center">
-              <h1 className="jumbotron-heading mt-3">
-                {tenant.title ?? tenant.name}
-              </h1>
-              <p>{tenant.description}</p>
-            </div>
-          </div>
+        <div className="organisation__header">
+          <CmsViewerByPath path={`/customization/dashboard/description/${language.toLocaleLowerCase()}`}
+            fallBack={() => (
+              <div className="organisation_header_wrapper d-flex flex-row align-items-center gap-5">
+                {themedLogo && <img className="organisation__logo" src={themedLogo} alt="logo" />}
+                <div className="d-flex flex-column justify-content-center">
+                  <h1 className="jumbotron-heading mt-3">
+                    {tenant.title ?? tenant.name}
+                  </h1>
+                  <p>{tenant.description}</p>
+                </div>
+              </div>
+            )
+            } />
           {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
-            className="btn btn-outline-primary">
+            className="organisation_header_settings_button btn btn-outline-primary">
             <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
           </button>}
         </div>
       </section>
       {!connectedUser.isGuest && <div className="d-flex flex-row gap-3">
         <Tile
-          width={40}
-          title={translate('dashboard.apis.tile.title')}
-          icon={<Search />}
-          description={translate('dashboard.apis.tile.description')}
-          query={dashboardQuery}
-          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [
-            { label: translate('dashboard.apis.tile.published.label'), value: data.apis.published },
-            { label: translate('dashboard.apis.tile.consumed.label'), value: data.apis.consumed }]} />
-        <Tile
-          width={40}
-          title={translate('dashboard.apikeys.tile.title')}
-          icon={<Key />}
-          description={translate('dashboard.apikeys.tile.description')}
-          query={dashboardQuery}
-          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [
-            { label: translate('dashboard.apikeys.tile.active.label'), value: data.subscriptions.active },
-            { label: translate('dashboard.apikeys.tile.expire.label'), value: data.subscriptions.expire }]} />
-        <Tile
           width={20}
           title={translate('dashboard.demands.tile.title')}
-          icon={<Search />}
-          description={translate('dashboard.demands.tile.description')}
+          icon={<i className="fas fa-clock" />}
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
-          data={(data) => [{ label: translate('dashboard.demands.tile.waiting.label'), value: data.demands.waiting }]}
+          data={(data) => data.demands.waiting}
           action={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')} />
+        <Tile
+          width={20}
+          title={translate('dashboard.newly.created.apis.tile.title')}
+          icon={<i className="fas fa-bolt" />}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => data.apis.newlyCreated}
+        />
+        <Tile
+          width={30}
+          title={translate('dashboard.deprecated.apis.tile.title')}
+          secondaryDescription={(count) => translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: count > 1 })}
+          icon={<i className="fas fa-triangle-exclamation" />}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => data.apis.deprecated}
+          dataSecondary={(data) => data.apis.deprecatedExpireSoon} />
+        <Tile
+          width={30}
+          title={translate('dashboard.apikeys.tile.title')}
+          secondaryDescription={(count) => translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: count > 1 })}
+          icon={<i className="fas fa-bolt" />}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => data.subscriptions.active}
+          dataSecondary={(data) => data.subscriptions.expire} />
+
       </div>}
       <ApiList />
     </main>

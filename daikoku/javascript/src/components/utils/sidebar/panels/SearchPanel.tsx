@@ -101,10 +101,6 @@ export const Search = () => {
     setFocusedOption(oIndex);
   }
 
-
-
-
-
   const debouncedSearch = debounce(search, 100, { leading: true });
 
   if (myTeamsRequest.isLoading) {

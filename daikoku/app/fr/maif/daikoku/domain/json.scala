@@ -2142,6 +2142,7 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             lastUpdate = (json \ "lastUpdate").as(using DateTimeFormat),
+            createdAt = (json \ "createdAt").asOpt(using DateTimeFormat).getOrElse(DateTime.now()),
             description = (json \ "description").asOpt[String].getOrElse(""),
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
@@ -2208,6 +2209,7 @@ object json {
         "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
         "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "name" -> o.name,
         "smallDescription" -> o.smallDescription,
         "customHeaderCmsPage" -> o.customHeaderCmsPage,
@@ -4761,7 +4763,8 @@ object json {
             (json \ "authorizations").as(using SeqAuthorizationApiFormat),
           subscriptionDemands =
             (json \ "subscriptionDemands").as(using SeqSubscriptionDemandFormat),
-          subscriptions = (json \ "subscriptions").as(using SeqApiSubscriptionFormat)
+          subscriptionCount = (json \ "subscriptionCount").as[Int],
+          expireCount = (json \ "expireCount").as[Int]
         )
       } match {
         case Failure(e) =>
@@ -4778,7 +4781,8 @@ object json {
         "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(
           o.subscriptionDemands
         ),
-        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions)
+        "subscriptionCount" -> o.subscriptionCount,
+        "expireCount" -> o.expireCount
       )
   }
 

@@ -138,7 +138,8 @@ class CmsApiController(
             .as(using Reads.seq(using CmsFileFormat))
             .map(page => {
               val path = page.path()
-              if (path.startsWith("/customization/")) {
+              val fixedIdPages = Set("style.css", "script.js", "color-theme.css")
+              if (path.startsWith("/customization/") && fixedIdPages.contains(page.name)) {
                 env.dataStore.cmsRepo
                   .forTenant(ctx.tenant)
                   .delete(Json.obj("path" -> page.path()))
@@ -148,12 +149,17 @@ class CmsApiController(
                       .save(
                         page
                           .toCmsPage(ctx.tenant.id)
-                          .copy(id =
-                            CmsPageId(
-                              s"${ctx.tenant.id.value}-${page.name.split("\\.").head}"
-                            )
-                          )
+                          .copy(id = CmsPageId(s"${ctx.tenant.id.value}-${page.name.split("\\.").head}"))
                       )
+                  )
+              } else if (path.startsWith("/customization/")) {
+                env.dataStore.cmsRepo
+                  .forTenant(ctx.tenant)
+                  .delete(Json.obj("path" -> page.path()))
+                  .map(_ =>
+                    env.dataStore.cmsRepo
+                      .forTenant(ctx.tenant)
+                      .save(page.toCmsPage(ctx.tenant.id))
                   )
               } else {
                 env.dataStore.cmsRepo

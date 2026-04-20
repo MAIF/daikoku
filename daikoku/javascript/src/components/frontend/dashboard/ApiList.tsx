@@ -1,13 +1,12 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
 import classNames from "classnames"
-import { addMonths, isBefore } from 'date-fns'
 import debounce from "lodash/debounce"
 import { ChangeEvent, useContext, useMemo, useState } from "react"
 import Plus from 'react-feather/dist/icons/plus'
 import MoreVertical from 'react-feather/dist/icons/more-vertical'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import Select, { components, MultiValue, OptionProps, ValueContainerProps } from "react-select"
+import Select, { components, MultiValue, OptionProps } from "react-select"
 import { toast } from "sonner"
 
 import { I18nContext, ModalContext } from "../../../contexts"
@@ -38,50 +37,39 @@ type ExtraProps = {
   getCount: (data: string) => number
 };
 
-const GenericValueContainer = (
-  props: ValueContainerProps<Option, true> & { selectProps: ExtraProps }
-) => {
+const GenericPlaceholder = (props: any & { selectProps: ExtraProps }) => {
   const { translate } = useContext(I18nContext);
-
-  const { getValue, hasValue, selectProps } = props;
-  const selectedValues = getValue();
+  const { selectProps } = props;
+  const selectedValues: Option[] = selectProps.value ?? [];
   const nbValues = selectedValues.length;
 
-  const label = translate({ key: selectProps.labelKey, plural: nbValues > 1 })
   return (
-    <components.ValueContainer {...props}>
-      {!hasValue || nbValues === 0 ? (
-        translate(selectProps.labelKeyAll)
+    <components.Placeholder {...props}>
+      {nbValues === 0 ? (
+        <span>{translate(selectProps.labelKeyAll)}</span>
       ) : (
         <>
-          {label}
+          <span>{translate({ key: selectProps.labelKey, plural: nbValues > 1 })}</span>
           <span className="ms-2 badge badge-custom">{nbValues}</span>
         </>
       )}
-    </components.ValueContainer>
+    </components.Placeholder>
   );
 };
 
 export const ApiList = (props: ApiListProps) => {
 
   const pageSize = 15;
-  const [selectAll, setSelectAll] = useState(false);
-  const [limit, setLimit] = useState(pageSize);
+  const [limit, _] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
   })
 
-  const [searched, setSearched] = useState("");
   const [inputVal, setInputVal] = useState("")
-  const [apisWithAuth, setApisWithAuth] = useState<IApiWithAuthorization[]>()
 
   const [producers, setProducers] = useState<Array<TOption>>([]);
-  const [selectedProducer, setSelectedProducer] = useState<TOption | undefined>();
-  const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
-  const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
 
-  const [researchTag, setResearchTag] = useState("");
   const [tags, setTags] = useState<Array<string>>([]);
 
   const defaultColumnFilters = [];
@@ -149,8 +137,9 @@ export const ApiList = (props: ApiListProps) => {
           offset: pageParam,
         })
         .then(({ visibleApis }) => {
-          setApisWithAuth(visibleApis.apis)
-          setProducers(visibleApis.producers.map(p => ({ label: p.team.name, value: p.team._id })))
+          setProducers(visibleApis.producers
+            .map(p => ({ label: p.team.name, value: p.team._id }))
+            .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })))
           setTags(visibleApis.tags.map(p => p.value))
           return visibleApis
         })
@@ -242,18 +231,18 @@ export const ApiList = (props: ApiListProps) => {
       meta: { className: "status-cell" },
       cell: (info) => {
         const api = info.row.original.api
-        const activeCount = info.row.original.subscriptions.length
+        const activeCount = info.row.original.subscriptionCount
         const pendingCount = info.row.original.subscriptionDemands.length
-        const expireCount = info.row.original.subscriptions
-          .filter(s => s.validUntil)
-          .filter(s => isBefore(new Date(s.validUntil!), addMonths(new Date(), 1))).length
+        const expireCount = info.row.original.expireCount
 
         return <div className="d-flex gap-1 status">
           {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
             {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
           </span>}
-          {!!expireCount && <span className="badge badge-custom-danger" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', replacements: [expireCount.toString()], plural: expireCount > 1 })}
+          {!!expireCount && <span
+            className="badge badge-custom-danger"
+            onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {expireCount} {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: expireCount > 1 })}
           </span>}
           {!!pendingCount && <span className="badge badge-custom-warning">
             {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
@@ -349,8 +338,7 @@ export const ApiList = (props: ApiListProps) => {
     // getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSubRowSelection: true,
-    enableRowSelection: row => {
-      const notification = row.original;
+    enableRowSelection: _ => {
       return false;
       // return notification.status.status === 'Pending' && notification.notificationType.value === 'AcceptOnly';
     },
@@ -501,7 +489,7 @@ export const ApiList = (props: ApiListProps) => {
                     .map(value => {
                       const teamName = myTeams.find(t => t._id === value)?.name;
                       return (
-                        <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                           {teamName}
                           <i className='fas fa-xmark' />
                         </button>
@@ -511,7 +499,7 @@ export const ApiList = (props: ApiListProps) => {
                   return ((f.value as Array<string>)
                     .map(tag => {
                       return (
-                        <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, tag)}>
+                        <button key={tag} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, tag)}>
                           {tag}
                           <i className='fas fa-xmark' />
                         </button>
@@ -538,7 +526,7 @@ export const ApiList = (props: ApiListProps) => {
         <div className='d-flex flex-row align-items-center justify-content-between'>
           <div className='d-flex align-items-center gap-3' aria-live="polite">
             <h2 className="api_list__title" id='notif-label'>
-              Liste des APIs
+              {translate("dashboard.api.list.title")}
             </h2>
           </div>
           {canCreateApi && (
@@ -558,7 +546,7 @@ export const ApiList = (props: ApiListProps) => {
                     <div className="blocks">
                       <div className="mb-3 block">
                         <div className="ms-2 block__entries block__border d-flex flex-column">
-                          <Link to={'#'} onClick={() => createApi({isApiGroup: true})} className="block__entry__link">
+                          <Link to={'#'} onClick={() => createApi({ isApiGroup: true })} className="block__entry__link">
                             {translate('dashboard.create.apigroup.button.label')}
                           </Link>
                         </div>
@@ -588,10 +576,11 @@ export const ApiList = (props: ApiListProps) => {
             </div>
             <Select
               isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              components={{ Placeholder: GenericPlaceholder, Option: CustomOption }}
+              controlShouldRenderValue={false}
               options={(producers)}
               isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
-              closeMenuOnSelect={true}
+              closeMenuOnSelect={false}
               labelKey={"dashboard.filters.team.label"}
               labelKeyAll={"dashboard.filters.all.team.label"}
               getCount={getTotalForTeam}
@@ -599,14 +588,15 @@ export const ApiList = (props: ApiListProps) => {
               className="team__selector filter__select reactSelect col-2"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'team')}
-              value={getSelectValue('team', producers, 'name', '_id')} />
+              value={getSelectValue('team', producers, 'label', 'value')} />
 
             <Select
               isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              components={{ Placeholder: GenericPlaceholder, Option: CustomOption }}
+              controlShouldRenderValue={false}
               options={arrayStringToTOps(tags)}
               isLoading={dataRequest.isLoading}
-              closeMenuOnSelect={true}
+              closeMenuOnSelect={false}
               labelKey={"dashboard.filters.tag.label"}
               labelKeyAll={"dashboard.filters.all.tags.label"}
               getCount={getTotalForTags}
@@ -623,7 +613,7 @@ export const ApiList = (props: ApiListProps) => {
               onClick={() => {
                 const filters = columnFilters.filter(f => f.id !== 'subscribedOnly')
                 setColumnFilters([...filters, { id: 'subscribedOnly', value: true }])
-              }}>{translate('API souscrite seulement')}
+              }}>{translate('dashboard.filters.subscribe.apis.only.label')}
             </button>
 
             {!!columnFilters.length && <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>

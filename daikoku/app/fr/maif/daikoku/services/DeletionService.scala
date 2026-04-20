@@ -78,39 +78,25 @@ class DeletionService(
     } yield ()
   }
 
-  private def deleteSubscription(
+  private case class SubscriptionContext(
+      subscription: ApiSubscription,
+      api: Api,
+      plan: UsagePlan,
+      notif: Notification
+  )
+
+  private def prepareSubscriptionContext(
       subscription: ApiSubscription,
       tenant: Tenant,
       user: User
-  ): EitherT[Future, AppError, Unit] = {
-    def deleteOtoroshiKey(
-        apiSubscription: ApiSubscription,
-        plan: UsagePlan,
-        tenant: Tenant
-    ): EitherT[Future, AppError, Unit] = {
-      for {
-        target <- EitherT.fromOption[Future](
-          plan.otoroshiTarget,
-          AppError.EntityNotFound("Otoroshi settings")
-        )
-        settings <- EitherT.fromOption[Future](
-          tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings),
-          AppError.EntityNotFound("Otoroshi settings")
-        )
-        _ <-
-          otoroshiClient.deleteApiKey(apiSubscription.apiKey.clientId)(using settings)
-      } yield ()
-    }
-
-    for {
+  ): Future[Either[AppError, SubscriptionContext]] =
+    (for {
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findById(subscription.plan),
+        env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
         AppError.PlanNotFound
       )
       notif = Notification(
@@ -119,50 +105,66 @@ class DeletionService(
         team = Some(subscription.team),
         sender = user.asNotificationSender,
         notificationType = NotificationType.AcceptOnly,
-        action = NotificationAction
-          .ApiKeyDeletionInformationV2(
-            api.id,
-            subscription.apiKey.clientId,
-            subscription.id
-          )
+        action = NotificationAction.ApiKeyDeletionInformationV2(
+          api.id,
+          subscription.apiKey.clientId,
+          subscription.id
+        )
       )
-      _ <- EitherT.liftF(
-        apiKeyStatsJob
-          .syncForSubscription(subscription, tenant, completed = true)
-      )
-      // todo: deaggregate key
-      _ <- deleteOtoroshiKey(subscription, plan, tenant)
-      _ <- plan.paymentSettings match {
+    } yield SubscriptionContext(subscription, api, plan, notif)).value
+
+  private def processOtoroshiForSubscription(
+      ctx: SubscriptionContext,
+      tenant: Tenant
+  ): Future[Either[AppError, SubscriptionContext]] = {
+    def deleteOtoroshiKey: EitherT[Future, AppError, Unit] =
+      for {
+        target <- EitherT.fromOption[Future](
+          ctx.plan.otoroshiTarget,
+          AppError.EntityNotFound("Otoroshi settings")
+        )
+        settings <- EitherT.fromOption[Future](
+          tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings),
+          AppError.EntityNotFound("Otoroshi settings")
+        )
+        _ <- otoroshiClient.deleteApiKey(ctx.subscription.apiKey.clientId)(using settings)
+      } yield ()
+
+    (for {
+      _ <- EitherT.liftF(apiKeyStatsJob.syncForSubscription(ctx.subscription, tenant, completed = true))
+      _ <- deleteOtoroshiKey
+    } yield ctx).value
+  }
+
+  private def finalizeSubscriptionDeletion(
+      ctx: SubscriptionContext,
+      tenant: Tenant
+  ): Future[Either[AppError, Unit]] =
+    (for {
+      _ <- ctx.plan.paymentSettings match {
         case Some(settings) =>
           EitherT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(tenant)
-              .save(
-                Operation(
-                  DatastoreId(IdGenerator.token(24)),
-                  tenant = tenant.id,
-                  itemId = subscription.id.value,
-                  itemType = ItemType.ThirdPartySubscription,
-                  action = OperationAction.Delete,
-                  payload = Json
-                    .obj(
-                      "paymentSettings" -> settings.asJson,
-                      "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue]
-                    )
-                    .some
-                )
+            env.dataStore.operationRepo.forTenant(tenant).save(
+              Operation(
+                DatastoreId(IdGenerator.token(24)),
+                tenant = tenant.id,
+                itemId = ctx.subscription.id.value,
+                itemType = ItemType.ThirdPartySubscription,
+                action = OperationAction.Delete,
+                payload = Json.obj(
+                  "paymentSettings" -> settings.asJson,
+                  "thirdPartySubscriptionInformations" -> ctx.subscription.thirdPartySubscriptionInformations
+                    .map(_.asJson)
+                    .getOrElse(JsNull)
+                    .as[JsValue]
+                ).some
               )
+            )
           )
         case None => EitherT.pure[Future, AppError](())
       }
-      _ <- EitherT.liftF(
-        env.dataStore.notificationRepo.forTenant(tenant).save(notif)
-      )
-    } yield ()
-  }
+      _ <- EitherT.liftF(env.dataStore.notificationRepo.forTenant(tenant).save(ctx.notif))
+    } yield ()).value
 
   /** delete logically all subscriptions add for each subscriptions an operation
     * in queue to process a complete deletion of each Api (disable apikey in
@@ -181,9 +183,14 @@ class DeletionService(
 
     EitherT(
       Source(subscriptions)
-        .mapAsync(1)(subscription =>
-          deleteSubscription(subscription, tenant, user).value
-        )
+        // Phase 1 — DB : find api, plan, build notif (séquence to not block DB access)
+        .mapAsync(1)(subscription => prepareSubscriptionContext(subscription, tenant, user))
+        .collect { case Right(ctx) => ctx }
+        // Phase 2 — Otoroshi : syncStats + deleteApiKey (parallel, independant network calls)
+        .mapAsync(5)(ctx => processOtoroshiForSubscription(ctx, tenant))
+        .collect { case Right(ctx) => ctx }
+        // Phase 3 — DB : save notification + payment operation (sequence)
+        .mapAsync(1)(ctx => finalizeSubscriptionDeletion(ctx, tenant))
         .runWith(
           Sink.fold[Either[AppError, Unit], Either[AppError, Unit]](
             Right[AppError, Unit](())
@@ -400,23 +407,20 @@ class DeletionService(
           .forTenant(tenant)
           .findNotDeleted(Json.obj("team" -> team.id.asJson))
       )
-      // just subscriptions to other apis than the team apis
-      teamSubscriptions <- EitherT.liftF(
+      allSubscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
           .findNotDeleted(
             Json.obj(
-              "team" -> team.id.asJson,
-              "api" -> Json.obj("$nin" -> JsArray(apis.map(_.id.asJson)))
+              "$or" -> Json.arr(
+                Json.obj("team" -> team.id.asJson),
+                Json.obj("api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson))))
+              )
             )
           )
       )
-      _ <- deleteSubscriptions(teamSubscriptions, tenant, user)
-      _ <- EitherT.liftF(
-        Future.sequence(
-          apis.map(api => deleteApiByQueue(api.id, tenant.id, user).value)
-        )
-      )
+      _ <- deleteSubscriptions(allSubscriptions, tenant, user)
+      _ <- deleteApis(apis, tenant, user)
       _ <- deleteTeam(team, tenant)
     } yield ()
   }

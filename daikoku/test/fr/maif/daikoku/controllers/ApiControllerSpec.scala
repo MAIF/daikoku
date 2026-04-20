@@ -270,7 +270,7 @@ class ApiControllerSpec()
     "initialize tenant subscriptions" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin, userAdmin),
+        users = Seq(tenantAdmin, userAdmin, user),
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api)
@@ -633,7 +633,7 @@ class ApiControllerSpec()
     "see his teams (graphQl)" in {
       setupEnvBlocking(
         tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
-        users = Seq(userAdmin),
+        users = Seq(userAdmin, user),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3378,7 +3378,7 @@ class ApiControllerSpec()
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(userApiEditor),
+        users = Seq(userApiEditor, user),
         teams = Seq(teamOwner)
       )
       val session = loginWithBlocking(userApiEditor, tenant)

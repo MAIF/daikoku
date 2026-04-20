@@ -1,17 +1,12 @@
 name: Playwright Tests
 
 on:
-  # Triggered after build-docker pushes a new image (code changes)
+  # Triggered after build-docker completes (whether or not it actually built)
   workflow_run:
     workflows: ["Build Docker Image"]
     types: [completed]
-
-  # Triggered directly when only tests change — uses the existing branch image
-  push:
-    paths:
-      - 'daikoku/javascript/tests/**'
-      - 'scripts/seed-subscriptions.mjs'
-      - '.github/workflows/playwright-tests.yml'
+    branches:
+      - '**'
 
   workflow_dispatch:
 
@@ -43,15 +38,15 @@ jobs:
             compose-file: ./daikoku/javascript/tests/docker-compose.yml
             playwright-config: playwright.perf.config.js
             health-url: http://localhost:13200/health
-    name: test-${{ matrix.suite.name }}
+    name: "test-${{ matrix.suite.name }} — ${{ github.event.workflow_run.display_title || github.event.head_commit.message }}"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: latest
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -91,7 +86,7 @@ jobs:
         run: |
           cd scripts
           npm ci
-          seed-subscriptions-prodlike.mjs
+          node seed-subscriptions-prodlike.mjs
         env:
           PG_HOST: localhost
           PG_PORT: 5442
@@ -109,3 +104,9 @@ jobs:
         env:
           CI: true
           EXPOSED_PORT: 13200
+          DAIKOKU_URL: http://localhost:13200
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5442
+          POSTGRES_DB: daikoku_demo_komainu
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres

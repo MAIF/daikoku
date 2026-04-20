@@ -5,7 +5,8 @@ GET     /_/                                             fr.maif.daikoku.controll
 GET     /_/*path                                        fr.maif.daikoku.controllers.HomeController.cmsPageByPath(path)
 
 POST    /_*path                                         fr.maif.daikoku.controllers.HomeController.renderCmsPageFromBody(path)
-GET     /cms/pages/:id                                  fr.maif.daikoku.controllers.HomeController.cmsPageById(id)
+GET     /cms/pages                                      fr.maif.daikoku.controllers.HomeController.getCmsPageByPath(path: Option[String] ?= None)
+GET     /cms/pages/:id                                  fr.maif.daikoku.controllers.HomeController.getCmsPageById(id)
 POST    /cms/pages/:id                                  fr.maif.daikoku.controllers.HomeController.advancedRenderCmsPageById(id)
 DELETE  /api/cms/pages/:id                              fr.maif.daikoku.controllers.HomeController.deleteCmsPage(id)
 
@@ -277,6 +278,7 @@ POST    /api/tenants/:tenantId/_dispatch-default-authorized-entities fr.maif.dai
 
 GET     /api/translations/_all                          fr.maif.daikoku.controllers.TranslationController.getAllTranslations()
 GET     /api/translations/_mail                         fr.maif.daikoku.controllers.TranslationController.getMailTranslations(domain: Option[String] ?= None)
+GET     /api/translations/_languages                    fr.maif.daikoku.controllers.TranslationController.getLanguages()
 GET     /api/translations/_languages                    fr.maif.daikoku.controllers.TranslationController.getLanguages()
 PUT     /api/translations                               fr.maif.daikoku.controllers.TranslationController.saveTranslation()
 POST    /api/translations/:translationId/_reset         fr.maif.daikoku.controllers.TranslationController.resetTranslation(translationId: String)

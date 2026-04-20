@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
 
   oidc-server-mock:
@@ -6,7 +6,7 @@ services:
     networks:
       - basicsetup
     ports:
-      - '9001:8080'
+      - "9001:8080"
     healthcheck:
       test: curl --fail http://localhost:8080 || exit 1
       interval: 2s
@@ -185,6 +185,7 @@ services:
       - DAIKOKU_EXPOSED_ON=13200
       - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_oidc.ndjson
       - DAIKOKU_MODE=test
+      - DAIKOKU_HEALTH_ACCESS_KEY=secret
     ports:
       - 13200:8080
     volumes:

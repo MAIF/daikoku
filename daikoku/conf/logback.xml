@@ -48,7 +48,7 @@
   <logger name="audit-console" level="INFO"/>
   <logger name="evolution" level="INFO"/>
   <logger name="APIkey-Synchronizer" level="INFO"/>
-  <logger name="Tic-Tac" level="DEBUG"/>
+  <logger name="Tic-Tac" level="INFO"/>
 
   <root level="INFO">
     <appender-ref ref="ASYNCSTDOUT"/>

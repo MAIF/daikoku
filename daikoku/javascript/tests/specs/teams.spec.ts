@@ -142,3 +142,121 @@ test("un utilisateur peut creer une équipe si la securité de reation d'équipe
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' })).toBeHidden();
 });
+
+test("Inviter un utilisateur dans une équipe sans caseSensitive", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.locator('#portal-root').getByRole('link', { name: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('Andy.BERNARD@dundermifflin.com');
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.waitForTimeout(1000);
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.waitForTimeout(1000);
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').click();
+  await page.locator('input[name="username"]').fill('Andy.BERNARD@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForTimeout(1000);
+  await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await page.getByRole('button', { name: 'Rejeter' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+
+  
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill('michael.scott@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.getByRole('link', { name: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.getByText('En attente (1)').click();
+  await page.getByText('Andy Bernard', { exact: true }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.waitForTimeout(1000);
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill('Andy.BERNARD@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForTimeout(1000);
+  await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await page.getByRole('button', { name: 'Accepter' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill('michael.scott@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.getByRole('link', { name: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('main').getByText('Membres').click();
+  await page.getByText('Andy Bernard').click();
+  await expect(page.getByRole('listitem', { name: 'Andy Bernard' })).toHaveText('Andy Bernard');
+
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Paramètres Daikoku' }).click();
+  await page.getByText('Utilisateurs', { exact: true }).click();
+  await page.getByText('Andy Bernard').click();
+});
+
+test("inviter un utilisateur plusieurs fois en case insensitive ne doit pas créer plusieurs users dans le tenant", async ({ page }) => {
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.locator('#portal-root').getByRole('link', { name: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.waitForTimeout(1000)
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.waitForTimeout(1000)
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill('andy.bernard@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForTimeout(1000)
+  await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await page.getByRole('button', { name: 'Rejeter' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
+  await page.locator('input[name="username"]').fill('michael.scott@dundermifflin.com');
+  await page.locator('input[name="password"]').fill('password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.waitForTimeout(1000)
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.getByRole('link', { name: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Paramètres Daikoku' }).click();
+  await page.getByText('Utilisateurs', { exact: true }).click();
+  expect(page.getByText('Andy Bernard').first()).toBeVisible;
+  expect(page.getByText('Andy Bernard').nth(1)).not.toBeAttached();
+});

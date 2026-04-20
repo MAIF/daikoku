@@ -28,6 +28,7 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.storage.Desc
+import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -46,18 +47,18 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class ApiController(
-                     DaikokuAction: DaikokuAction,
-                     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                     DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
-                     apiService: ApiService,
-                     apiKeyStatsJob: ApiKeyStatsJob,
-                     env: Env,
-                     otoroshiClient: OtoroshiClient,
-                     cc: ControllerComponents,
-                     otoroshiSynchronisator: OtoroshiSynchronizerJob,
-                     translator: Translator,
-                     paymentClient: PaymentClient,
-                     deletionService: DeletionService
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
+    apiService: ApiService,
+    apiKeyStatsJob: ApiKeyStatsJob,
+    env: Env,
+    otoroshiClient: OtoroshiClient,
+    cc: ControllerComponents,
+    otoroshiSynchronisator: OtoroshiSynchronizerJob,
+    translator: Translator,
+    paymentClient: PaymentClient,
+    deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -2310,6 +2311,8 @@ class ApiController(
   private def syncAndDeleteSubscription(subscription: ApiSubscription, api: Api, plan: UsagePlan, tenant: Tenant, team: Team, user: User) = {
     for {
       _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+      _ <- env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value))
       notif = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -2342,7 +2345,9 @@ class ApiController(
     for {
       json <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .deleteById(subscription.id))
+        .deleteByIdLogically(subscription.id))
+      _ <- EitherT.right[AppError](env.dataStore.notificationRepo.forTenant(tenant)
+        .delete(Json.obj("action.subscription" -> subscription.id.value)))
     } yield json
   }
 
@@ -2385,7 +2390,9 @@ class ApiController(
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                         .save(futureParent.copy(parent = None))) //promot first or given sub id
                       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-                        .deleteById(subscriptionId)) //just delete ApiSubscription
+                        .deleteByIdLogically(subscriptionId))
+                      _ <- EitherT.right[AppError](env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .delete(Json.obj("action.subscription" -> subscription.id.value)))
                       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(childs.filter(c => c.id != futureParent.id)
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                           .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
@@ -3051,7 +3058,7 @@ class ApiController(
       }
     }
 
-  def createApiOfTeam(teamId: String) =
+  def createApiOfTeam(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       val body = ctx.request.body.as[JsObject]
       val finalBody = (body \ "_id").asOpt[String] match {
@@ -3342,7 +3349,7 @@ class ApiController(
         ctx.setCtxValue("search", search)
 
         val searchAsRegex =
-          Json.obj("$regex" -> s".*$search.*", "$options" -> "-i")
+          Json.obj("$regex" -> s".*${RegexUtil.cleanRegex(search)}.*", "$options" -> "-i")
         val teamUsersFilter =
           if (ctx.user.isDaikokuAdmin) Json.obj()
           else Json.obj("users.userId" -> ctx.user.id.value)
@@ -5286,33 +5293,99 @@ class ApiController(
     value1.merge
   }
 
-  def myDashboard() = DaikokuActionMaybeWithGuest.async { ctx =>
+  def myDashboard(): Action[AnyContent] = DaikokuActionMaybeWithGuest.async { ctx =>
     PublicUserAccess(
       AuditTrailEvent("@{user.name} has accessed his team list")
     )(ctx) {
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        subscriptions <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-        consumedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
-          .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson).distinct))))
-        publishedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
-          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-        demandToTreat <- env.dataStore.notificationRepo.forTenant(ctx.tenant)
-          .find(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-      } yield Ok(Json.obj(
-        "apis" -> Json.obj(
-          "published" -> publishedApi.size,
-          "consumed" -> consumedApi.size,
-        ),
-        "subscriptions" -> Json.obj(
-          "active" -> subscriptions.size,
-          "expire" -> subscriptions.count(_.validUntil.exists(d => Days.daysBetween(DateTime.now(), d).getDays < 7)),
-        ),
-        "demands" -> Json.obj(
-          "waiting" -> demandToTreat.size
-        ),
-      ))
+        teamIds  = myTeams.map(_.id.value).toArray
+        rows <- env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryRawMapped(
+            """
+              |SELECT
+              |  (SELECT count(*)::int FROM api_subscriptions s
+              |   WHERE s.content->>'_tenant' = $1
+              |     AND s._deleted = false
+              |     AND s.content->>'team' = ANY($2)
+              |     AND (s.content->>'enabled')::boolean IS NOT FALSE) AS active_count,
+              |
+              |  (SELECT count(*)::int FROM api_subscriptions s
+              |   WHERE s.content->>'_tenant' = $1
+              |     AND s._deleted = false
+              |     AND s.content->>'team' = ANY($2)
+              |     AND s.content->>'validUntil' IS NOT NULL
+              |     AND CASE WHEN (s.content->>'validUntil')::bigint > 9999999999 THEN to_timestamp((s.content->>'validUntil')::bigint / 1000) ELSE to_timestamp((s.content->>'validUntil')::bigint) END < now() + interval '30 days') AS expire_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND to_timestamp((a.content->>'createdAt')::bigint / 1000) > (now() - interval '30 days')) AS newly_created_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE) AS published_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
+              |     AND a.content->>'state' = 'deprecated') AS deprecated_count,
+              |
+              |  (SELECT count(*)::int FROM apis a
+              |   WHERE a._deleted = false
+              |     AND a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)
+              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
+              |     AND a.content->>'state' = 'deprecated'
+              |     AND EXISTS (
+              |       SELECT 1 FROM api_subscriptions s
+              |       WHERE s._deleted = false
+              |         AND s.content->>'api' = a._id
+              |         AND s.content->>'team' = ANY($2)
+              |         AND s.content->>'validUntil' IS NOT NULL
+              |         AND CASE WHEN (s.content->>'validUntil')::bigint > 9999999999 THEN to_timestamp((s.content->>'validUntil')::bigint / 1000) ELSE to_timestamp((s.content->>'validUntil')::bigint) END < now() + interval '30 days'
+              |     )) AS deprecated_expire_count,
+              |
+              |  (SELECT count(*)::int FROM notifications n
+              |   WHERE n._deleted = false
+              |     AND n.content->>'_tenant' = $1
+              |     AND n.content->'action'->>'type' = 'ApiSubscription'
+              |     AND n.content->'status'->>'status' = 'Pending'
+              |     AND n.content->>'team' = ANY($2)) AS waiting_count
+              |""".stripMargin,
+            Seq(
+              Col.int("active_count"),
+              Col.int("expire_count"),
+              Col.int("newly_created_count"),
+              Col.int("published_count"),
+              Col.int("deprecated_count"),
+              Col.int("deprecated_expire_count"),
+              Col.int("waiting_count")),
+            Seq(ctx.tenant.id.value, teamIds)
+          )
+      } yield {
+        val row = rows.headOption.getOrElse(JsObject.empty)
+        Ok(Json.obj(
+          "subscriptions" -> Json.obj(
+            "active" -> (row \ "active_count").asOpt[Int].getOrElse(0),
+            "expire" -> (row \ "expire_count").asOpt[Int].getOrElse(0),
+          ),
+          "apis" -> Json.obj(
+            "published"            -> (row \ "published_count").asOpt[Int].getOrElse(0),
+            "deprecated"           -> (row \ "deprecated_count").asOpt[Int].getOrElse(0),
+            "deprecatedExpireSoon" -> (row \ "deprecated_expire_count").asOpt[Int].getOrElse(0),
+            "newlyCreated"         -> (row \ "newly_created_count").asOpt[Int].getOrElse(0),
+          ),
+          "demands" -> Json.obj(
+            "waiting" -> (row \ "waiting_count").asOpt[Int].getOrElse(0),
+          )
+        ))
+      }
     }
   }
 }

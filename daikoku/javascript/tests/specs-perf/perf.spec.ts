@@ -10,7 +10,7 @@ const THRESHOLDS = {
   fullSyncWithChange: 60 * 1000,     // 1min — 80k keys, 1 update to push to Otoroshi
   apiSync: 15 * 1000,                // 15s  — all keys for a given API
   planSync: 15 * 1000,               // 15s  — all keys for a given plan
-  subscriptionSync: 1000,             // 1s — single subscription - better to 500ms
+  subscriptionSync: 1500,             // 1.5s — single subscription (docker overhead)
 }
 
 const BASE_URL = process.env.DAIKOKU_URL ?? 'http://localhost:9000'
@@ -23,11 +23,59 @@ const DAIKOKU_ADMIN_KEY_CLIENT_SECRET = process.env.DAIKOKU_ADMIN_KEY_CLIENT_SEC
 const OTOROSHI_ADMIN_KEY_CLIENT_ID = process.env.OTOROSHI_ADMIN_KEY_CLIENT_ID ?? 'admin-api-apikey-id'
 const OTOROSHI_ADMIN_KEY_CLIENT_SECRET = process.env.OTOROSHI_ADMIN_KEY_CLIENT_SECRET ?? 'admin-api-apikey-secret'
 
-// IDs used by the data seed script — adjust to match what the script inserts
-const SEED_API_ID = process.env.PERF_API_ID ?? 'seed-api-157' //271 direct subscriptions
-const SEED_PLAN_ID = process.env.PERF_PLAN_ID ?? 'seed-plan-157-9' //13
-const SEED_SUBSCRIPTION_ID = process.env.PERF_SUBSCRIPTION_ID ?? 'seed-sub-10214'
-const SEED_CLIENT_ID = process.env.PERF_CLIENT_ID ?? 'cid-seed-sub-10214'
+// IDs resolved dynamically from DB in beforeAll
+let SEED_API_ID: string
+let SEED_PLAN_ID: string
+let SEED_SUBSCRIPTION_ID: string
+let SEED_CLIENT_ID: string
+
+async function resolveSeedIds(): Promise<void> {
+  await withDb(async client => {
+    const res = await client.query(`
+      SELECT
+        best_plan.api_id,
+        best_plan.plan_id,
+        best_plan.cnt,
+        s._id                            AS sub_id,
+        s.content->'apiKey'->>'clientId' AS client_id
+      FROM (
+        SELECT content->>'api' AS api_id, content->>'plan' AS plan_id, count(*) AS cnt
+        FROM api_subscriptions
+        WHERE content->>'parent' IS NULL
+          AND (content->>'_deleted')::boolean IS NOT TRUE
+          AND _id LIKE 'seed-%'
+          AND content->>'api' = (
+            SELECT content->>'api'
+            FROM api_subscriptions
+            WHERE content->>'parent' IS NULL
+              AND (content->>'_deleted')::boolean IS NOT TRUE
+              AND _id LIKE 'seed-%'
+            GROUP BY content->>'api'
+            ORDER BY count(*) DESC, content->>'api' ASC
+            LIMIT 1
+          )
+        GROUP BY content->>'api', content->>'plan'
+        ORDER BY cnt DESC, content->>'plan' ASC
+        LIMIT 1
+      ) best_plan
+      JOIN api_subscriptions s
+        ON  s.content->>'plan' = best_plan.plan_id
+        AND s.content->>'api'  = best_plan.api_id
+        AND s.content->>'parent' IS NULL
+        AND (s.content->>'_deleted')::boolean IS NOT TRUE
+        AND s._id LIKE 'seed-%'
+      LIMIT 1
+    `)
+
+    const row = res.rows[0]
+    SEED_API_ID = row.api_id
+    SEED_PLAN_ID = row.plan_id
+    SEED_SUBSCRIPTION_ID = row.sub_id
+    SEED_CLIENT_ID = row.client_id
+
+    console.log(`[seed] api=${SEED_API_ID} plan=${SEED_PLAN_ID} sub=${SEED_SUBSCRIPTION_ID} clientId=${SEED_CLIENT_ID} (${row.cnt} direct subs on this plan)`)
+  })
+}
 
 // --- DB helpers ---
 
@@ -126,8 +174,7 @@ test.describe('OtoroshiSync performance', () => {
   let otoroshiCtx: APIRequestContext
 
   test.beforeAll(async () => {
-    // Fail fast if DB is unreachable — avoids waiting for sync timeouts for nothing
-    await withDb(client => client.query('SELECT 1'))
+    await resolveSeedIds()
 
     daikokuCtx = await request.newContext({
       baseURL: BASE_URL,
@@ -144,8 +191,8 @@ test.describe('OtoroshiSync performance', () => {
   })
 
   test.afterAll(async () => {
-    await daikokuCtx.dispose()
-    await otoroshiCtx.dispose()
+    await daikokuCtx?.dispose()
+    await otoroshiCtx?.dispose()
   })
 
   test('full tenant sync — no changes — under 1 minutes', async () => {

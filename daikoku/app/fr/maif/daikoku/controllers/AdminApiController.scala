@@ -82,7 +82,7 @@ class StateController(
           .map(_ => Ok(Json.obj("done" -> true)))
       }
     }
-  
+
   def getAnonymousState: Action[AnyContent] =
     DaikokuAction.async { ctx =>
       DaikokuAdminOnly(
@@ -190,10 +190,17 @@ class StateController(
           .findAllNotDeleted()
           .map(
             _.map(tenant =>
-              env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode.Default.some))
+              env.dataStore.tenantRepo
+                .save(tenant.copy(tenantMode = TenantMode.Default.some))
             )
           )
-          .map(_ => Ok(ctx.tenant.copy(tenantMode = TenantMode.Default.some).toUiPayload(env)))
+          .map(_ =>
+            Ok(
+              ctx.tenant
+                .copy(tenantMode = TenantMode.Default.some)
+                .toUiPayload(env)
+            )
+          )
       }
     }
 
@@ -465,7 +472,7 @@ class ApiAdminApiController(
           EitherT(
             env.dataStore.apiRepo
               .forTenant(entity.tenant)
-              .findOne(
+              .findOneNotDeleted(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "name" -> entity.name
@@ -487,7 +494,7 @@ class ApiAdminApiController(
           EitherT(
             env.dataStore.apiRepo
               .forTenant(entity.tenant)
-              .findOne(
+              .findOneNotDeleted(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "name" -> entity.name

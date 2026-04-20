@@ -1,6 +1,6 @@
 import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router';
-import { useLocation, Route, Routes, useSearchParams } from 'react-router-dom';
+import { Route, Routes, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar, TopBar } from '../components/utils';
@@ -47,12 +47,12 @@ import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
 import { ITenant } from '../types';
 import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './DaikokuHomeApp';
-import {MaintenancePage} from "../components/frontend/Maintenance";
+import { MaintenancePage } from "../components/frontend/Maintenance";
 
 const RouteWithFooterLayout = () => (
   <>
     <Outlet />
-    <Footer/>
+    <Footer />
   </>
 );
 
@@ -71,373 +71,373 @@ export const DaikokuApp = () => {
 
   if (!connectedUser) {
     return (
-        <ModalProvider>
-          <div
-            role="root-container"
-            className="container-fluid"
-            style={{
-              minHeight: '100vh',
-              position: 'relative',
-              paddingBottom: '6rem',
-            }}>
-            <Routes>
-              <Route
-                path="/auth/:provider/login"
-                element={
-                  <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
-                    <LoginPage />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path="/reset/password"
-                element={
-                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
-                    <ResetPasswordEnd />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path="/reset"
-                element={
-                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
-                    <ResetPassword />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path="/signup"
-                element={
-                  <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
-                    <Signup />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path="/2fa"
-                element={
-                  <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
-                    <TwoFactorAuthentication />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path='/error'
-                element={
-                  <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
-                    <Error />
-                  </UnauthenticatedRoute>
-                }
-              />
-              <Route
-                path='/informations'
-                element={
-                  <Informations />
-                }
-              />
-              <Route
-                path="/maintenance"
-                element={<MaintenancePage provider={tenant.authProvider}/>}
-              />
-              <Route
-                path='*'
-                element={<ToLogin tenant={tenant} />}
-              />
-            </Routes>
-          </div>
-        </ModalProvider>
+      <ModalProvider>
+        <div
+          role="root-container"
+          className="container-fluid"
+          style={{
+            minHeight: '100vh',
+            position: 'relative',
+            paddingBottom: '6rem',
+          }}>
+          <Routes>
+            <Route
+              path="/auth/:provider/login"
+              element={
+                <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                  <LoginPage />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/reset/password"
+              element={
+                <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                  <ResetPasswordEnd />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/reset"
+              element={
+                <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                  <ResetPassword />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                  <Signup />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/2fa"
+              element={
+                <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                  <TwoFactorAuthentication />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path='/error'
+              element={
+                <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                  <Error />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path='/informations'
+              element={
+                <Informations />
+              }
+            />
+            <Route
+              path="/maintenance"
+              element={<MaintenancePage provider={tenant.authProvider} />}
+            />
+            <Route
+              path='*'
+              element={<ToLogin tenant={tenant} />}
+            />
+          </Routes>
+        </div>
+      </ModalProvider>
     );
   }
 
   return (
-      <MessagesProvider>
-        <NavProvider>
-          <ModalProvider>
-            <TopBar />
-            <div className="d-flex flex-row">
-              <SideBar />
-              <RightPanel />
-              <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto' }}>
-                 {/*<Breadcrumb /> */}
-                <Routes>
+    <MessagesProvider>
+      <NavProvider>
+        <ModalProvider>
+          <TopBar />
+          <div className="d-flex flex-row">
+            <SideBar />
+            <RightPanel />
+            <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto' }}>
+              {/*<Breadcrumb /> */}
+              <Routes>
+                <Route
+                  path='/error'
+                  element={
+                    <Error />
+                  }
+                />
+                <Route
+                  path='/informations'
+                  element={
+                    <Informations />
+                  }
+                />
+                <Route
+                  path="/2fa"
+                  element={
+                    <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                      <TwoFactorAuthentication />
+                    </UnauthenticatedRoute>
+                  }
+                />
+                <Route
+                  path="/reset/password"
+                  element={
+                    <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                      <ResetPasswordEnd />
+                    </UnauthenticatedRoute>
+                  }
+                />
+                <Route
+                  path="/reset"
+                  element={
+                    <UnauthenticatedRoute title={translate('Reset your password')} header={translate('Reset your password')}>
+                      <ResetPassword />
+                    </UnauthenticatedRoute>
+                  }
+                />
+                <Route
+                  path="/signup"
+                  element={
+                    <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                      <Signup />
+                    </UnauthenticatedRoute>
+                  }
+                />
+                <Route
+                  path="/auth/:provider/login"
+                  element={
+                    <LoginPage />
+                  }
+                />
+                <Route
+                  path="/maintenance"
+                  element={<MaintenancePage provider={tenant.authProvider} />}
+                />
+                <Route
+                  path="/"
+                  element={
+                    <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
+                      <MaybeHomePage tenant={tenant} />
+                    </FrontOfficeRoute>
+                  }
+                />
+                <Route element={<RouteWithFooterLayout />}>
+                  <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
+                    <Dashboard />
+                  </FrontOfficeRoute>} />
+                  <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
+                    <NotificationList />
+                  </RouteWithTitle>} />
+                  <Route path="/me" element={<RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
+                    <MyProfile />
+                  </RouteWithTitle>} />
+                  <Route path="/:teamId/settings*" element={<TeamBackOffice />} />
                   <Route
-                    path='/error'
+                    path="/:teamId/:apiId/:versionId/:tab/*"
                     element={
-                      <Error />
-                    }
-                  />
-                  <Route
-                    path='/informations'
-                    element={
-                      <Informations/>
-                    }
-                  />
-                  <Route
-                    path="/2fa"
-                    element={
-                      <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
-                        <TwoFactorAuthentication />
-                      </UnauthenticatedRoute>
-                    }
-                  />
-                  <Route
-                    path="/reset/password"
-                    element={
-                      <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
-                        <ResetPasswordEnd />
-                      </UnauthenticatedRoute>
-                    }
-                  />
-                  <Route
-                    path="/reset"
-                    element={
-                      <UnauthenticatedRoute title={translate('Reset your password')} header={translate('Reset your password')}>
-                        <ResetPassword />
-                      </UnauthenticatedRoute>
-                    }
-                  />
-                  <Route
-                    path="/signup"
-                    element={
-                      <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
-                        <Signup />
-                      </UnauthenticatedRoute>
-                    }
-                  />
-                  <Route
-                    path="/auth/:provider/login"
-                    element={
-                      <LoginPage />
-                    }
-                  />
-                  <Route
-                    path="/maintenance"
-                    element={<MaintenancePage provider={tenant.authProvider}/>}
-                  />
-                  <Route
-                    path="/"
-                    element={
-                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
-                        <MaybeHomePage tenant={tenant} />
+                      <FrontOfficeRoute>
+                        <ApiHome />
                       </FrontOfficeRoute>
                     }
                   />
-                  <Route element={<RouteWithFooterLayout />}>
-                    <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
-                      <Dashboard />
-                    </FrontOfficeRoute>} />
-                    <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
-                      <NotificationList />
-                    </RouteWithTitle>} />
-                    <Route path="/me" element={<RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
-                      <MyProfile />
-                    </RouteWithTitle>} />
-                    <Route path="/:teamId/settings*" element={<TeamBackOffice />} />
+                  <Route
+                    path='/subscriptions/_retrieve'
+                    element={
+                      <FrontOfficeRoute>
+                        <SubscriptionRetrieve />
+                      </FrontOfficeRoute>
+                    }
+                  />
+                  <Route
+                    path="/apis/fast"
+                    element={
+                      <RouteWithTitle title={
+                        translate({
+                          key: "fastMode.title.page",
+                          replacements: [tenant.title || tenant.name]
+                        })}>
+                        <FastMode />
+                      </RouteWithTitle>
+                    }
+                  />
+                </Route>
+                <Route
+                  path="/atomicDesign"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
+                      <AtomicDesign />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/messages"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Message', plural: true })}`}>
+                      <AdminMessages />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/otoroshis/:otoroshiId"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Otoroshi')}`}>
+                      <TenantOtoroshi />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/otoroshis"
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translate({ key: 'Otoroshis', plural: true })}`}
+                    >
+                      <TenantOtoroshis />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/settings*"
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translate({ key: 'Tenant edit', plural: true })}`}
+                    >
+                      <TenantEdit />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/tenants/:tenantId*"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Tenant edit')}`}>
+                      <TenantEditForAdmin />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/tenants"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Tenants', plural: true })}`}>
+                      <TenantList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/users/:userId"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('User')}`}>
+                      <UserEdit />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/users"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Users', plural: true })}`}>
+                      <UserList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/audit"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Audit trail')}`}>
+                      <AuditTrailList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/sessions"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('User sessions')}`}>
+                      <SessionList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/import-export"
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translate('Import / Export')}`}
+                    >
+                      <ImportExport />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/anonymous-reports"
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translate('anonymous.reporting.title')}`}
+                    >
+                      <AnonymousReporting />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/teams/:teamSettingId/members"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate({ key: "Member", plural: true })}`}>
+                      <TeamMembersForAdmin />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/teams"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Teams')}`}>
+                      <TeamList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route path="/settings/assets" element={<TenantAssets />} />
+                <Route
+                  path="/settings/admins"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
+                      <TenantAdminList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/init"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
+                      <InitializeFromOtoroshi />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/pages*"
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translate('daikokuapp.pages_title')}`}
+                    >
+                      <CMSOffice />
+                    </RouteWithTitle>
+                  }
+                />
+                {['/settings/internationalization', '/settings/internationalization/:domain'].map(
+                  (r) => (
                     <Route
-                      path="/:teamId/:apiId/:versionId/:tab/*"
+                      key={r}
+                      path={r}
                       element={
-                        <FrontOfficeRoute>
-                          <ApiHome />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                    <Route
-                      path='/subscriptions/_retrieve'
-                      element={
-                        <FrontOfficeRoute>
-                          <SubscriptionRetrieve />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                    <Route
-                      path="/apis/fast"
-                      element={
-                        <RouteWithTitle title={
-                          translate({
-                            key: "fastMode.title.page",
-                            replacements: [tenant.title || tenant.name]
-                          })}>
-                          <FastMode />
+                        <RouteWithTitle
+                          title={`${tenant.title} - ${translate('Internalization')}`}
+                        >
+                          <MailingInternalization />
                         </RouteWithTitle>
                       }
                     />
-                  </Route>
-                  <Route
-                    path="/atomicDesign"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
-                        <AtomicDesign />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/messages"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Message', plural: true })}`}>
-                        <AdminMessages />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/otoroshis/:otoroshiId"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Otoroshi')}`}>
-                        <TenantOtoroshi />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/otoroshis"
-                    element={
-                      <RouteWithTitle
-                        title={`${tenant.title} - ${translate({ key: 'Otoroshis', plural: true })}`}
-                      >
-                        <TenantOtoroshis />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/settings*"
-                    element={
-                      <RouteWithTitle
-                        title={`${tenant.title} - ${translate({ key: 'Tenant edit', plural: true })}`}
-                      >
-                        <TenantEdit />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/tenants/:tenantId*"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Tenant edit')}`}>
-                        <TenantEditForAdmin />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/tenants"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Tenants', plural: true })}`}>
-                        <TenantList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/users/:userId"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('User')}`}>
-                        <UserEdit />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/users"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Users', plural: true })}`}>
-                        <UserList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/audit"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Audit trail')}`}>
-                        <AuditTrailList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/sessions"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('User sessions')}`}>
-                        <SessionList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/import-export"
-                    element={
-                      <RouteWithTitle
-                        title={`${tenant.title} - ${translate('Import / Export')}`}
-                      >
-                        <ImportExport />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/anonymous-reports"
-                    element={
-                      <RouteWithTitle
-                        title={`${tenant.title} - ${translate('anonymous.reporting.title')}`}
-                      >
-                        <AnonymousReporting />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/teams/:teamSettingId/members"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: "Member", plural: true })}`}>
-                        <TeamMembersForAdmin />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/teams"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Teams')}`}>
-                        <TeamList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route path="/settings/assets" element={<TenantAssets />} />
-                  <Route
-                    path="/settings/admins"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
-                        <TenantAdminList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/init"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
-                        <InitializeFromOtoroshi />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/pages*"
-                    element={
-                      <RouteWithTitle
-                        title={`${tenant.title} - ${translate('daikokuapp.pages_title')}`}
-                      >
-                        <CMSOffice />
-                      </RouteWithTitle>
-                    }
-                  />
-                  {['/settings/internationalization', '/settings/internationalization/:domain'].map(
-                    (r) => (
-                      <Route
-                        key={r}
-                        path={r}
-                        element={
-                          <RouteWithTitle
-                            title={`${tenant.title} - ${translate('Internalization')}`}
-                          >
-                            <MailingInternalization />
-                          </RouteWithTitle>
-                        }
-                      />
-                    )
-                  )}
-                </Routes>
-              </div>
+                  )
+                )}
+              </Routes>
             </div>
-          </ModalProvider>
-        </NavProvider>
-      </MessagesProvider>
+          </div>
+        </ModalProvider>
+      </NavProvider>
+    </MessagesProvider>
   );
 };
 
@@ -466,8 +466,6 @@ const FrontOfficeRoute = (props: PropsWithChildren<{ title?: string }>) => {
 };
 
 const RouteWithTitle = (props: PropsWithChildren<{ title?: string }>) => {
-  const { tenant } = useContext(GlobalContext)
-
   useEffect(() => {
     if (props.title) {
       document.title = props.title;

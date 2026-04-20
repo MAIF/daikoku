@@ -55,7 +55,8 @@ test('User non producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API Papier' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeHidden();
 
-  await expect(page.locator('.dashboard-tile', { hasText: 'Mes APIs' })).toBeVisible();
+  await expect(page.locator('.dashboard-tile', { hasText: 'Nouvelles APIs' })).toBeVisible();
+  await expect(page.locator('.dashboard-tile', { hasText: 'APIs dépréciées' })).toBeVisible();
   await expect(page.locator('.dashboard-tile', { hasText: 'Mes clé d\'API' })).toBeVisible();
   await expect(page.locator('.dashboard-tile', { hasText: 'Demandes à valider' })).toBeVisible(); //todo: maybe better hidden
 
@@ -86,9 +87,10 @@ test('User producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API Papier' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();
 
-  await expect(page.locator('.dashboard-tile', { hasText: 'Mes APIs' })).toBeVisible();
+  await expect(page.locator('.dashboard-tile', { hasText: 'Nouvelles APIs' })).toBeVisible();
+  await expect(page.locator('.dashboard-tile', { hasText: 'APIs dépréciées' })).toBeVisible();
   await expect(page.locator('.dashboard-tile', { hasText: 'Mes clé d\'API' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'Demandes à valider' })).toBeVisible();
+  await expect(page.locator('.dashboard-tile', { hasText: 'Demandes à valider' })).toBeVisible(); //todo: maybe better hidden
 
   await expect(page.getByRole('listitem', { name: 'admin-api-tenant-default' }).locator('.status')).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'admin-api-tenant-default' }).locator('.status')).toContainText('1 clé active');
@@ -169,11 +171,11 @@ test('apilist infinite pagination', async ({ page }) => {
 
   await page.getByText('29 APIs').click();
   await expect(page.getByRole('article')).toHaveCount(15);
-  await page.getByRole('button', {name: 'afficher plus d\'APIs' }).click();
+  await page.getByRole('button', { name: 'afficher plus d\'APIs' }).click();
   await expect(page.getByRole('article')).toHaveCount(29);
   await expect(page.getByRole('article', { name: 'cms-api-tenant-default' })).toBeVisible();
-  await expect(page.getByRole('button', {name: 'afficher plus d\'APIs' })).toBeHidden();
-  await page.getByRole('button', { name: 'API souscrite seulement' }).click();
+  await expect(page.getByRole('button', { name: 'afficher plus d\'APIs' })).toBeHidden();
+  await page.getByRole('button', { name: 'APIs souscrites seulement' }).click();
   await expect(page.getByRole('article')).toHaveCount(3);
   await expect(page.getByText('3 APIs')).toBeVisible();
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
@@ -193,14 +195,14 @@ test('apilist display specials api', async ({ page }) => {
 test('apilist display apigroups & apigroups display apilist', async ({ page }) => {
 
   const api = generateApi()
-  const apiGroup: IApi = { 
-    ...api, 
-    _tenant: api.tenant, 
+  const apiGroup: IApi = {
+    ...api,
+    _tenant: api.tenant,
     _deleted: false,
     _humanReadableId: 'apigroup',
-    team: apiDivision, 
-    name: 'apigroup', 
-    description: 'a brand new apigroup', 
+    team: apiDivision,
+    name: 'apigroup',
+    description: 'a brand new apigroup',
     smallDescription: `a brand new apigroup`,
     tags: [],
     categories: [],
@@ -235,7 +237,7 @@ test('create new team', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
 
-  
+
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.getByRole('heading', { name: 'Mes équipes' })).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('link')).toHaveCount(3);

@@ -29,15 +29,14 @@ import {
   BeautifulTitle,
   Can,
   PaginatedComponent,
+  Placeholder,
   Spinner,
   apikey,
   escapeRegExp,
   formatDate,
-  read,
-  Placeholder
+  read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
-import { IApiSubscriptionGql } from '../apis';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -68,7 +67,7 @@ const DisplayLink = ({ value }: { value: string }) => {
 }
 
 export const TeamApiKeysForApi = () => {
-  const { isLoading, currentTeam, error } = useTeamBackOffice();
+  const { currentTeam } = useTeamBackOffice();
   const { Translation } = useContext(I18nContext);
 
   const params = useParams();
@@ -167,7 +166,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['data'] });
-  }, [location]);
+  }, [queryClient]);
 
   const updateCustomName = (
     subscription: ISubscription,
@@ -305,7 +304,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll")}</p>
                 <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll.list")}</p>
                 <ul>
-                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                  {details.accessibleResources.map((resource) => (<li key={resource.apiSubscription._id}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
                 </ul>
               </>}
 
@@ -313,7 +312,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren")}</p>
                 <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren.list")}</p>
                 <ul>
-                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                  {details.accessibleResources.map(resource => (<li key={resource.apiSubscription._id}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
                 </ul>
               </>}
 
@@ -340,7 +339,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
               }
             },
             actionLabel: translate('Confirm'),
-            onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
+            onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
               .then(afterDeletionFunction)
           }
         ),
@@ -382,7 +381,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             }
           },
           actionLabel: translate('Confirm'),
-          onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
+          onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
             .then(afterDeletionFunction)
         }
       )
@@ -407,7 +406,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       enabled,
       rotationEvery,
       gracePeriod
-    ).then((r) => {
+    ).then(() => {
       toast.success(translate("subscription.rotation.successfully.setup"))
       queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
     });
@@ -470,7 +469,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     !isError(subApisQuery.data)
   ) {
     const subscriptions = subsQuery.data;
-    const subscribedApis = subApisQuery.data.apis;
 
     const search = searched.trim();
 
@@ -529,7 +527,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                   statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
                   key={subscription._id}
                   subscription={subscription}
-                  subscribedApis={subscribedApis}
                   updateCustomName={(name) =>
                     updateCustomName(subscription, name)
                   }
@@ -585,7 +582,6 @@ type ApiKeyCardProps = {
   ) => Promise<void>;
   regenerateSecret: () => void;
   currentTeam?: ITeamSimple;
-  subscribedApis: Array<IApiGQL>;
   transferKey: () => void;
   handleTagClick: (tag: string) => void
   linkToChildren?: (api: IApi, teamHrId: string) => string
@@ -604,7 +600,6 @@ export const ApiKeyCard = ({
   deleteApiKey,
   transferKey,
   currentTeam,
-  subscribedApis,
   handleTagClick,
   linkToChildren
 }: ApiKeyCardProps) => {

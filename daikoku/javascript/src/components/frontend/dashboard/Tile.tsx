@@ -1,19 +1,21 @@
 import { UseQueryResult } from "@tanstack/react-query"
-import { ReactNode, useContext } from "react"
+import { PropsWithChildren, ReactNode, useContext } from "react"
 import ArrowRight from 'react-feather/dist/icons/arrow-right'
 
 import { I18nContext } from "../../../contexts"
 import { isError, ResponseError } from "../../../types"
 import { Spinner } from "../../utils/Spinner"
 import { TDashboardData } from "./Dashboard"
+import classNames from "classnames"
 
 
 type TileProps = {
-  description: string
   title: string
+  secondaryDescription?: (count: number) => string
   icon: ReactNode
   query: UseQueryResult<TDashboardData | ResponseError>
-  data: (data: TDashboardData) => { label: string, value: number }[],
+  data: (data: TDashboardData) => number,
+  dataSecondary?: (data: TDashboardData) => number,
   action?: () => void,
   width: number
   reset: () => Promise<void>
@@ -22,9 +24,27 @@ type TileProps = {
 export const Tile = (props: TileProps) => {
   const { translate } = useContext(I18nContext)
 
+  const Wrapper = (_props: PropsWithChildren<{}>) => {
+    if (props.action) {
+      return <button className={classNames("dashboard-tile tile--action")}
+        onClick={() => props.action!()} style={{ width: `${props.width}%` }}>
+        {_props.children}
+      </button>
+    }
+
+    return (
+      <div
+        className={"dashboard-tile"}
+        style={{ width: `${props.width}%` }}>
+        {_props.children}
+      </div>
+    )
+
+  }
+
   return (
-    <div className={"dashboard-tile"} style={{ width: `${props.width}%` }}>
-      {!props.action && <div className="tile__header d-flex flex-row align-items-center">
+    <Wrapper>
+      <div className="tile__header d-flex flex-row align-items-center">
         <div className="flex-grow-1">
           <div className="title d-flex flex-row justify-content-start gap-3">
             <div className="icon">
@@ -32,25 +52,8 @@ export const Tile = (props: TileProps) => {
             </div>
             <h3>{props.title}</h3>
           </div>
-          <div className="description">
-            {props.description}
-          </div>
         </div>
-      </div>}
-      {!!props.action && <button className="tile__header tile__header-action d-flex flex-row align-items-center" onClick={() => props.action!()}>
-        <div className="flex-grow-1">
-          <div className="title d-flex flex-row justify-content-start gap-3">
-            <div className="icon">
-              {props.icon}
-            </div>
-            <h3>{props.title}</h3>
-          </div>
-          <div className="description">
-            {props.description}
-          </div>
-        </div>
-        <i className="dashboard-tile-action"><ArrowRight /></i>
-      </button>}
+      </div>
       {props.query.isLoading && <Spinner />}
       {!props.query.isLoading && props.query.data && (
         <div className="tile_data d-flex flex-row">
@@ -63,16 +66,23 @@ export const Tile = (props: TileProps) => {
               </button>
             </span>
           </div>}
-          {!isError(props.query.data) && props.data(props.query.data).map((item, idx) => {
-            return (
-              <div className="data d-flex flex-column flex-grow-1" key={idx}>
-                <div className="data__label">{item.label}</div>
-                <div className="data__value">{item.value}</div>
-              </div>
-            )
-          })}
+          {!isError(props.query.data) && (
+            <div className="data flex-grow-1">
+              <div className="data__value">{props.data(props.query.data)}</div>
+              {props.dataSecondary && (
+                <div className="data__value--secondary">
+                  <div className="data__value">{props.dataSecondary(props.query.data)}</div>
+                  {props.secondaryDescription && (
+                    <div className="data__description">
+                      {props.secondaryDescription(props.dataSecondary(props.query.data))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </Wrapper>
   )
 }

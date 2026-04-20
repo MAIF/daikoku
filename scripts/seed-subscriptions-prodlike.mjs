@@ -24,7 +24,7 @@ const OTOROSHI_USER = process.env.OTOROSHI_USER ?? "admin-api-apikey-id";
 const OTOROSHI_PASS = process.env.OTOROSHI_PASS ?? "admin-api-apikey-secret";
 
 const TENANT_ID = "default";
-const OTOROSHI_SETTINGS_ID = "seed-otoroshi";
+let OTOROSHI_SETTINGS_ID = "seed-otoroshi"; // overridden below from tenant config
 
 // --- Dimensions prod-like ---
 const NB_TEAMS = 660;
@@ -126,27 +126,21 @@ console.log("✓ Previous seed data cleared");
 // 4. Fetch admin user id from DB
 const USER_ID = "asFpYYNvJmQRVq3irA6p9cnILhTMLQMC"; //MICHAEL SCOTT
 
-// 5. Register Otoroshi settings in tenant (upsert in DB)
+// 5. Resolve Otoroshi settings ID from existing tenant config
 const tenantRow = await client.query(`SELECT content FROM tenants WHERE _id = $1`, [TENANT_ID]);
-if (tenantRow.rows.length > 0) {
-  const tenantContent = tenantRow.rows[0].content;
-  const settings = tenantContent.otoroshiSettings ?? [];
-  const alreadyExists = settings.some(s => s._id === OTOROSHI_SETTINGS_ID);
-  if (!alreadyExists) {
-    const otoSettings = {
-      _id: OTOROSHI_SETTINGS_ID,
-      url: OTOROSHI_URL,
-      host: new URL(OTOROSHI_URL).hostname,
-      clientId: OTOROSHI_USER,
-      clientSecret: OTOROSHI_PASS,
-    };
-    tenantContent.otoroshiSettings = [...settings, otoSettings];
-    await client.query(`UPDATE tenants SET content = $1::jsonb WHERE _id = $2`, [JSON.stringify(tenantContent), TENANT_ID]);
-    console.log("✓ OtoroshiSettings added to tenant");
-  } else {
-    console.log("✓ OtoroshiSettings already present");
-  }
+if (tenantRow.rows.length === 0) {
+  console.error(`✗ Tenant '${TENANT_ID}' not found in DB`);
+  process.exit(1);
 }
+const tenantContent = tenantRow.rows[0].content;
+const existingSettings = tenantContent.otoroshiSettings ?? [];
+if (existingSettings.length === 0) {
+  console.error(`✗ No Otoroshi settings found in tenant '${TENANT_ID}' — configure them in Daikoku first`);
+  process.exit(1);
+}
+// Use the first existing settings entry (the one Daikoku already uses successfully)
+OTOROSHI_SETTINGS_ID = existingSettings[0]._id;
+console.log(`✓ Using existing OtoroshiSettings: ${OTOROSHI_SETTINGS_ID}`);
 
 // 6. Generate teams
 const teamRows = Array.from({ length: NB_TEAMS }, (_, i) => ({
@@ -249,6 +243,7 @@ for (let i = 0; i < NB_APIS; i++) {
       smallDescription: "",
       description: "",
       lastUpdate: Date.now(),
+      createdAt: Date.now(),
       currentVersion: "1.0.0",
       supportedVersions: ["1.0.0"],
       isDefault: true,
@@ -309,6 +304,7 @@ for (let t = 0; t < NB_TEAMS; t++) {
     }
 
     const now = Date.now();
+    const parentApiKey = { clientId, clientSecret, clientName: `Key ${parentId}` };
 
     const baseSub = (id, apiId, planId, customName, extra = {}) => ({
       _id: id,
@@ -318,7 +314,7 @@ for (let t = 0; t < NB_TEAMS; t++) {
       plan: planId,
       tags: [],
       team: teamId,
-      apiKey: { clientId, clientSecret, clientName: `Key ${parentId}` },
+      apiKey: parentApiKey,
       parent: null,
       by: USER_ID,
       enabled: true,

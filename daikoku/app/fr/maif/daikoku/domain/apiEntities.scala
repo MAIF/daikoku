@@ -638,7 +638,6 @@ case class Api(
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
     isDefault: Boolean = true,
-    lastUpdate: DateTime,
     testing: Option[Testing] = None,
     documentation: ApiDocumentation,
     swagger: Option[SwaggerAccess] = None,
@@ -655,9 +654,11 @@ case class Api(
     parent: Option[ApiId] = None,
     apis: Option[Set[ApiId]] = None,
     state: ApiState = ApiState.Created,
-    metadata: Map[String, String] = Map.empty
+    metadata: Map[String, String] = Map.empty,
+    createdAt: DateTime = DateTime.now(),
+    lastUpdate: DateTime,
 ) extends CanJson[User] {
-  def humanReadableId = name.urlPathSegmentSanitized
+  def humanReadableId: String = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
   def asGuestJson(hideOpenApiForGuest: Boolean): JsValue = {
     val baseJson =
@@ -762,7 +763,8 @@ case class ApiWithAuthorizations(
     plans: Seq[UsagePlan],
     authorizations: Seq[AuthorizationApi] = Seq.empty,
     subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
-    subscriptions: Seq[ApiSubscription] = Seq.empty
+    subscriptionCount: Int = 0,
+    expireCount: Int = 0
 ) extends CanJson[ApiWithAuthorizations] {
   override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
 }

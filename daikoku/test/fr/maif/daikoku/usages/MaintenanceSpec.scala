@@ -87,17 +87,17 @@ class MaintenanceSpec()
 
       val respActionDaikokuTenantAction = httpJsonCallBlocking(
         path = s"/auth/${tenant.authProvider}/login"
-      )(tenant, session)
+      )(using tenant, session)
       respActionDaikokuTenantAction.status mustBe 503
 
       val respActionDaikokuAction = httpJsonCallBlocking(
         path = "/logout"
-      )(tenant, session)
+      )(using tenant, session)
       respActionDaikokuAction.status mustBe 503
 
       val respActionDaikokuActionMaybeWithGuest = httpJsonCallBlocking(
         path = "/api/me/context"
-      )(tenant, session)
+      )(using tenant, session)
       respActionDaikokuActionMaybeWithGuest.status mustBe 200
 
     }

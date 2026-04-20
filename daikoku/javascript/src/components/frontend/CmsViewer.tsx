@@ -1,9 +1,8 @@
-import { ReactNode, useContext, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ReactNode, useEffect, useState } from "react";
 
-import { graphql, getCmsPage } from "../../services";
-import { GlobalContext } from "../../contexts/globalContext";
-import { ICmsPageGQL } from "../../types";
+import { getCmsPage, getCmsPageByPath } from "../../services";
+import { isError } from "../../types";
 import { Spinner } from "../utils";
 
 type CmsViewerProps = {
@@ -36,18 +35,17 @@ type CmsViewerByPathProps = {
 }
 export function CmsViewerByPath({ path, className, fallBack }: CmsViewerByPathProps) {
 
-    const { customGraphQLClient } = useContext(GlobalContext)
     const pageRequest = useQuery({
         queryKey: ["cms-page", path],
-        queryFn: () => customGraphQLClient.request<{ page: ICmsPageGQL }>(graphql.getCmsPageByName, { path })
+        queryFn: () => getCmsPageByPath(path)
     })
 
     if (pageRequest.isLoading) {
         return <Spinner />
-    } else if (!!pageRequest.data && !!pageRequest.data?.page)
-        return <div className={className ?? `flex-grow-1`} dangerouslySetInnerHTML={{ __html: pageRequest.data.page.body, }} />
+    } else if (pageRequest.data && !isError(pageRequest.data))
+        return <div className={className ?? `flex-grow-1`} dangerouslySetInnerHTML={{ __html: pageRequest.data, }} />
     else {
-        return !!fallBack ? fallBack() : null
+        return fallBack ? fallBack() : null
     }
 
 }

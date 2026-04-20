@@ -39,7 +39,7 @@ class TeamControllerSpec()
   private def getMyOwnTeam(user: User, session: UserSession, tenant: Tenant = tenant): Team = {
     httpJsonCallBlocking(
       path = s"/api/me",
-    )(tenant, session)
+    )(using tenant, session)
 
     val userTeams = Await.result(daikokuComponents.env.dataStore.teamRepo.myTeams(tenant, user), 5.seconds)
     val maybeUserTeam = userTeams.find(_.`type` == TeamType.Personal)
@@ -1347,7 +1347,7 @@ class TeamControllerSpec()
         path = s"/api/teams/${myTeam.id.value}",
         method = "PUT",
         body = Some(myTeam.copy(name = "test").asJson)
-      )(tenant, session)
+      )(using tenant, session)
       respUpdate.status mustBe 403
     }
     "be able to subscribe to an API and delete it" in {

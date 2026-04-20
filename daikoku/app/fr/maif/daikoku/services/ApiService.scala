@@ -812,7 +812,7 @@ class ApiService(
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant.id)
-          .deleteById(subscription.id)
+          .deleteByIdLogically(subscription.id)
       )
       shouldDeleteApiKey =
         subscription.parent.isEmpty &&

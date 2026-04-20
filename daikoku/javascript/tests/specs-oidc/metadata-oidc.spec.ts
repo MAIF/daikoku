@@ -19,15 +19,17 @@ test('Récupérer les metadatas claims "name" et "birthdate" uniquement de OIDC'
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Authentification').click();
-  await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name,  birthdate');
+  await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name birthdate');
   await page.getByRole('button', { name: 'Save' }).click();
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -74,10 +76,12 @@ test('Ne récupérer aucune metadatas claims d\'OIDC', async ({ page }) => {
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -122,10 +126,12 @@ test('Récupérer toutes les metadatas claims que d\'OIDC', async ({ page }) => 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -138,11 +144,6 @@ test('Récupérer toutes les metadatas claims que d\'OIDC', async ({ page }) => 
   }).then(r => r.json())
 
   const michael = users.find(u => u.email === MICHAEL.email)
-  console.error("***")
-  console.error(MICHAEL.email)
-  console.error("***")
-  console.error(JSON.stringify(michael))
-  console.error("***")
   const jim = users.find(u => u.email === JIM.email)
 
   expect(michael.metadata).toEqual(
@@ -175,10 +176,13 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
+
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -223,6 +227,7 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -234,10 +239,12 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 

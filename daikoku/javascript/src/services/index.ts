@@ -2,15 +2,16 @@ import { TDashboardData } from '../components/frontend/dashboard/Dashboard';
 import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
+  IAnonymousState,
   IAsset,
   IAuditTrail,
   IFastApiSubscription,
   IMailingTranslation,
-  INotification,
   IOtoroshiSettings,
   IQuotas,
   ISafeSubscription,
   ISession,
+  ISimpleOtoroshiSettings,
   IStateContext,
   ISubscriptionInformation,
   ITeamFull,
@@ -21,10 +22,7 @@ import {
   ITranslation,
   IUser,
   IUserSimple,
-  ISimpleOtoroshiSettings,
-  IAnonymousState,
-  IAuthContext,
-  OAuthSettings,
+  OAuthSettings
 } from '../types';
 import {
   IApi,
@@ -35,7 +33,6 @@ import {
   IDocDetail,
   IDocPage,
   IDocumentation,
-  IDocumentationPage,
   IImportingDocumentation,
   IOtoroshiApiKey,
   Issue,
@@ -46,7 +43,7 @@ import {
   ITestingConfig,
   IUsagePlan,
   ResponseDone,
-  ResponseError,
+  ResponseError
 } from '../types/api';
 import { IChatInfo } from '../types/chat';
 
@@ -307,7 +304,7 @@ export const createTeam = (team: ITeamSimple) =>
     body: JSON.stringify(team),
   });
 
-export const sendEmailVerification = (teamId: String) =>
+export const sendEmailVerification = (teamId: string) =>
   customFetch(`/api/teams/${teamId}/_sendEmail`, {
     method: 'PUT',
   });
@@ -677,7 +674,7 @@ export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, en
   );
 
 export const getSubscriptionDemand = (
-  teamId: String,
+  teamId: string,
   demandId: string
 ): PromiseWithError<ISubscriptionDemand> =>
   customFetch(`/api/subscription/team/${teamId}/demands/${demandId}`);
@@ -1274,7 +1271,7 @@ export const getMyTeamsStatusAccess = (
 ): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const getCmsPage = (id: any, fields: any) =>
+export const getCmsPage = (id: string, fields: any) =>
   fetch(`/cms/pages/${id}`, {
     method: 'POST',
     headers: {
@@ -1282,6 +1279,11 @@ export const getCmsPage = (id: any, fields: any) =>
     },
     body: JSON.stringify({ fields }),
   }).then((r) => r.text());
+
+export const getCmsPageByPath = (path: string): PromiseWithError<string> =>
+  fetch(`/cms/pages?path=${encodeURIComponent(path)}`, {
+    method: 'GET',
+  }).then((r) => r.ok ? r.text() : r.json());
 
 export const createCmsPage = (id: any, cmsPage: any) =>
   customFetch('/api/cms/pages', {
@@ -1350,11 +1352,9 @@ export const graphql = {
             _humanReadableId
           }
           apis {
-            api {
-              _id
-              _humanReadableId
-              name
-            }
+            _id
+            _humanReadableId
+            name
           }
         }
       }
@@ -1512,11 +1512,9 @@ export const graphql = {
               }
             }
             apis {
-              api {
-                _id
-                _humanReadableId
-                name
-              }
+              _id
+              _humanReadableId
+              name
             }
           }
           authorizations {
@@ -1537,20 +1535,8 @@ export const graphql = {
               name
             }
           }
-          subscriptions {
-            _id
-            validUntil
-            team {
-              _id
-              _humanReadableId
-              name
-            }
-            api {
-              _id
-              _humanReadableId
-              name
-            }
-          }
+          subscriptionCount,
+          expireCount
         }
         producers {
           team {
@@ -1893,16 +1879,6 @@ export const graphql = {
             }
             ... on ApiKeyDeletionInformationV2 {
             __typename
-              subscription {
-                _id
-                apiKey {
-                  clientId
-                }
-                plan {
-                  _id
-                  customName
-                }
-              }
               api {
                 _id
                 _humanReadableId
