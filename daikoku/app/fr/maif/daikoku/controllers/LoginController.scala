@@ -19,7 +19,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.*
 import fr.maif.daikoku.login.AuthProvider.*
-import fr.maif.daikoku.services.AccountCreationService
+import fr.maif.daikoku.services.{AccountCreationService, UserService}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.Cypher.decrypt
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -51,13 +51,15 @@ class LoginController(
     cc: ControllerComponents,
     translator: Translator,
     assets: Assets,
-    accountCreationService: AccountCreationService
+    accountCreationService: AccountCreationService,
+    userService: UserService
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
   implicit val as: ActorSystem = env.defaultActorSystem
 
+  val loginDelayDuration = 3
   def maintenanceLogin(provider: String) =
     Action.async { request =>
       {
@@ -127,20 +129,26 @@ class LoginController(
                             }
                         )
                       case _ =>
-                        after(3.seconds)(
-                          Errors.craftResponseResultF(
-                            "No matching provider found",
-                            Results.BadRequest
+                        userService.delayForAttempt(username).flatMap { delay =>
+                          after(delay.seconds)(
+                            Errors.craftResponseResultF(
+                              "No matching provider found",
+                              Results.BadRequest
+                            )
                           )
-                        )
+                        }
+
                     }
                   case _ =>
-                    after(3.seconds)(
-                      Errors.craftResponseResultF(
-                        "No credentials found",
-                        Results.BadRequest
+                    userService.delayForAttempt().flatMap { delay =>
+                      after(delay.seconds)(
+                        Errors.craftResponseResultF(
+                          "No credentials found",
+                          Results.BadRequest
+                        )
                       )
-                    )
+                    }
+
                 }
             }
           }
@@ -247,9 +255,11 @@ class LoginController(
   ): Future[Result] = {
     f.flatMap {
       case None =>
-        after(3.seconds)(
-          FastFuture.successful(BadRequest(Json.obj("error" -> true)))
-        )
+        userService.delayForAttempt().flatMap { delay =>
+          after(delay.seconds)(
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          )
+        }
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -261,16 +271,20 @@ class LoginController(
             env.dataStore.userRepo
               .save(
                 user.copy(
-                  twoFactorAuthentication = Some(auth.copy(token = token))
+                  twoFactorAuthentication = Some(auth.copy(token = token)),
+                  failedLoginAttempts = 0
                 )
               )
               .flatMap {
                 case true =>
                   FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false =>
-                  after(3.seconds)(
-                    FastFuture.successful(BadRequest(Json.obj("error" -> true)))
-                  )
+                  userService.delayForAttempt().flatMap { delay =>
+                    after(delay.seconds)(
+                      FastFuture
+                        .successful(BadRequest(Json.obj("error" -> true)))
+                    )
+                  }
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
@@ -311,7 +325,12 @@ class LoginController(
     }
 
     value.foldF(
-      error => after(3.seconds)(error.renderF()),
+      error =>
+        userService.delayForAttempt().flatMap { delay =>
+          after(delay.seconds)(
+            error.renderF()
+          )
+        },
       r => r.future
     )
   }
@@ -360,7 +379,12 @@ class LoginController(
             "UTF-8"
           )
           FastFuture.successful(Redirect(s"/informations?error=$errorMsg"))
-        case error => after(3.seconds)(error.renderF())
+        case error =>
+          userService.delayForAttempt().flatMap { delay =>
+            after(delay.seconds)(
+              error.renderF()
+            )
+          }
       },
       r => r.future
     )
@@ -439,20 +463,24 @@ class LoginController(
   ): Future[Result] = {
     AuthProvider(provider) match {
       case None =>
-        after(3.seconds)(
-          Errors.craftResponseResultF(
-            "Bad authentication provider",
-            Results.BadRequest
+        userService.delayForAttempt().flatMap { delay =>
+          after(delay.seconds)(
+            Errors.craftResponseResultF(
+              "Bad authentication provider",
+              Results.BadRequest
+            )
           )
-        )
+        }
 
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
-        after(3.seconds)(
-          Errors.craftResponseResultF(
-            "Bad authentication provider",
-            Results.BadRequest
+        userService.delayForAttempt().flatMap { delay =>
+          after(delay.seconds)(
+            Errors.craftResponseResultF(
+              "Bad authentication provider",
+              Results.BadRequest
+            )
           )
-        )
+        }
       case Some(p) if p == AuthProvider.OAuth2 =>
         val maybeOAuth2Config =
           OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
@@ -467,12 +495,14 @@ class LoginController(
                 .bindUser(ctx.request, authConfig, ctx.tenant, env)
             )
           case Left(e) =>
-            after(3.seconds)(
-              Errors.craftResponseResultF(
-                "Invalid OAuth Config",
-                Results.BadRequest
+            userService.delayForAttempt().flatMap { delay =>
+              after(delay.seconds)(
+                Errors.craftResponseResultF(
+                  "Invalid OAuth Config",
+                  Results.BadRequest
+                )
               )
-            )
+            }
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
@@ -539,13 +569,18 @@ class LoginController(
                         val localConfig = LocalLoginConfig.fromJsons(
                           ctx.tenant.authProviderSettings
                         )
-                        bindUser(
-                          localConfig.sessionMaxAge,
-                          ctx.tenant,
-                          ctx.request,
-                          LocalLoginSupport
-                            .bindUser(username, password, ctx.tenant, env)
-                        )
+                        userService.delayForAttempt(username).flatMap { delay =>
+                          after(delay.seconds)(
+                            bindUser(
+                              localConfig.sessionMaxAge,
+                              ctx.tenant,
+                              ctx.request,
+                              LocalLoginSupport
+                                .bindUser(username, password, ctx.tenant, env)
+                            )
+                          )
+                        }
+
                       case Right(user) =>
                         bindUser(
                           ldapConfig.sessionMaxAge,
@@ -555,20 +590,24 @@ class LoginController(
                         )
                     }
                   case _ =>
-                    after(3.seconds)(
-                      Errors.craftResponseResultF(
-                        "No matching provider found",
-                        Results.BadRequest
+                    userService.delayForAttempt(username).flatMap { delay =>
+                      after(delay.seconds)(
+                        Errors.craftResponseResultF(
+                          "No matching provider found",
+                          Results.BadRequest
+                        )
                       )
-                    )
+                    }
                 }
               case _ =>
-                after(3.seconds)(
-                  Errors.craftResponseResultF(
-                    "No credentials found",
-                    Results.BadRequest
+                userService.delayForAttempt().flatMap { delay =>
+                  after(delay.seconds)(
+                    Errors.craftResponseResultF(
+                      "No credentials found",
+                      Results.BadRequest
+                    )
                   )
-                )
+                }
             }
         }
     }

@@ -11,7 +11,8 @@ import fr.maif.daikoku.services.{
   ApiService,
   AssetsService,
   DeletionService,
-  TranslationsService
+  TranslationsService,
+  UserService
 }
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
@@ -61,6 +62,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
   lazy val translationsService = wire[TranslationsService]
+  lazy val UserService = wire[UserService]
   lazy val deletionService = wire[DeletionService]
 
   lazy val translator = wire[Translator]

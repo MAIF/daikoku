@@ -4,21 +4,22 @@ import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import fr.maif.daikoku.audit.KafkaConfig
 import fr.maif.daikoku.audit.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.daikoku.domain.ApiVisibility._
-import fr.maif.daikoku.domain.NotificationAction._
+import fr.maif.daikoku.domain.ApiVisibility.*
+import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
-import fr.maif.daikoku.domain.TeamPermission._
+import fr.maif.daikoku.domain.TeamPermission.*
 import fr.maif.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider
-import fr.maif.daikoku.utils.StringImplicits._
-import fr.maif.daikoku.utils._
+import fr.maif.daikoku.utils.StringImplicits.*
+import fr.maif.daikoku.utils.*
 import org.joda.time.DateTime
-import play.api.libs.json._
+import play.api.libs.json.*
 import fr.maif.daikoku.services.{CmsFile, CmsPage, CmsRequestRendering}
+import sangria.schema.ReduceAction.defaultAction
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -2006,7 +2007,12 @@ object json {
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
               using TwoFactorAuthenticationFormat
             ),
-            invitation = (json \ "invitation").asOpt(using UserInvitationFormat)
+            invitation =
+              (json \ "invitation").asOpt(using UserInvitationFormat),
+            failedLoginAttempts =
+              (json \ "failedLoginAttempts").asOpt[Long].getOrElse(0),
+            lastFailedLogin =
+              (json \ "lastFailedLogin").asOpt(using DateTimeFormat)
           )
         )
       } recover { case e =>
@@ -2047,7 +2053,12 @@ object json {
         "invitation" -> o.invitation
           .map(UserInvitationFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "failedLoginAttempts" -> o.failedLoginAttempts,
+        "lastFailedLogin" -> DateTimeFormat.writes(o.lastFailedLogin match {
+          case Some(lastFailedLogin) => lastFailedLogin
+          case None                  => DateTime.now()
+        })
       )
   }
 

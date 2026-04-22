@@ -3,15 +3,15 @@ package fr.maif.daikoku.login
 import cats.data.EitherT
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.IdGenerator
-import fr.maif.daikoku.utils.StringImplicits._
+import fr.maif.daikoku.utils.StringImplicits.*
 import org.apache.commons.lang3.StringUtils.stripAccents
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.Logger
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import javax.naming.ldap.{Control, InitialLdapContext}
 import scala.concurrent.duration.Duration
@@ -438,7 +438,8 @@ object LdapSupport {
                               attrs.get(f).toString.split(":").last.trim
                             )
                             .getOrElse(email.gravatar),
-                          lastTenant = Some(tenant.id)
+                          lastTenant = Some(tenant.id),
+                          failedLoginAttempts = 0
                         )
                         for {
                           _ <- _env.dataStore.userRepo.save(newUser)
@@ -492,6 +493,9 @@ object LdapSupport {
         case e: TimeoutException =>
           AppLogger.error("bind failed - check your fields", e)
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
+        case e: AuthenticationException =>
+          AppLogger.error(e.getMessage, e)
+          Left((s"bind failed - check your fields"))
         case e: NamingException =>
           AppLogger.error(e.getMessage, e)
           Left(e.getMessage)
