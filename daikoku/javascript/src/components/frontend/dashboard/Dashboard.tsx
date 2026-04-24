@@ -44,7 +44,7 @@ export const Dashboard = (_: NewHomeProps) => {
   })
 
   return (
-    <main className='flex-grow-1 d-flex flex-column gap-3' role="main">
+    <main className='flex-grow-1 d-flex flex-column gap-3 main' role="main" >
       <section className="">
         <div className="organisation__header d-flex flex-row space-between align-items-start">
           <h1 className="jumbotron-heading mt-3">

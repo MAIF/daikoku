@@ -1735,6 +1735,8 @@
     "dashboard.apis.table.header.label.tags": "Tags",
     "dashboard.apis.table.header.label.team": "Team",
     "dashboard.apis.table.header.label.status": "Status",
+    "dashboard.apis.table.header.label.subscriptions": "Subscriptions",
+  "dashboard.apis.table.header.label.subscriptions.cells": "subscription",
     "dashboard.apis.table.header.label.actions": "Actions",
     "dashboard.filters.tag.label": {
         "s": "Tag",
@@ -1764,7 +1766,7 @@
     "search.team.placeholder": "Search a team",
     "dashboard.create.team.button.label": "Create a team",
     "dashboard.api.table.more.button.label": "Show more APIs",
-    "dashboard.filters.subscribe.apis.only.label": "Subscribed APIs only",
+    "dashboard.filters.subscribe.apis.only.label": "Subscribed API",
     "dashboard.api.list.title": "APIs list",
     "oauth2.form.role.claim.label": "Role claim name",
     "oauth2.form.role.claim.help": "Name of the OpenID claim containing the user's roles.",

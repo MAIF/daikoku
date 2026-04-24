@@ -3,6 +3,9 @@
 
 $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
+.main {
+  background-color: #EEEEEE;
+}
 .api-table {
   display: flex;
   flex-direction: column;
@@ -42,7 +45,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   .table-row {
     display: grid;
-    grid-template-columns: 15fr 15fr 15fr 30fr 15fr;
+    grid-template-columns: 10fr 15fr 15fr 15fr 15fr 15fr 15fr;
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
@@ -148,14 +151,21 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     div.action-cell {
       text-align: end;
+    }
 
+    div.favorite-cell {
+      color: variables.$primary-color;
       .favorite-btn {
         color: variables.$primary-color;
-
         &:hover {
           color: variables.$level1_link-hover-color;
         }
       }
+    }
+
+    .btn-action{
+      width: 30px;
+      height: 30px;
     }
   }
 
