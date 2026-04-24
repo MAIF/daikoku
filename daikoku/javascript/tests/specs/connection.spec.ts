@@ -1,5 +1,5 @@
 import test, { expect } from '@playwright/test';
-import { JIM, PAM } from './users';
+import { JIM, MICHAEL, PAM } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 
@@ -51,7 +51,7 @@ test('Se connecter et se deconnecter depuis une page conserve la localisation', 
   await page.goto(`${HOME}api-division/api-papier/1.0.0/pricing`);
   await loginAs(JIM, page, false)
   await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
-  
+
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
@@ -59,12 +59,72 @@ test('Se connecter et se deconnecter depuis une page conserve la localisation', 
 
 test('Se connecter depuis la modale de la page des plan de souscription conserve la localisation', async ({ page }) => {
   await page.goto(`${HOME}api-division/api-papier/1.0.0/pricing`);
-  
+
   await page.getByLabel('dev').getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
   await page.getByRole('link', { name: 'Se connecter' }).click();
   await page.locator('input[name="username"]').fill(JIM.email);
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
+});
+
+test.describe('Tenant privé', () => {
+  const setTenantPrivate = async (isPrivate: boolean) =>
+    fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+      },
+      body: JSON.stringify([{ op: 'replace', path: '/isPrivate', value: isPrivate }]),
+    });
+
+  test.afterEach(async () => {
+    await setTenantPrivate(false);
+  });
+
+  test('Un tenant privé redirige vers la page de login', async ({ page }) => {
+    await setTenantPrivate(true);
+    await page.goto(ACCUEIL);
+    await expect(page).toHaveURL(/\/auth\/.*\/login/);
+    await expect(page.getByRole('button', { name: 'Se connecter' })).toBeVisible();
+  });
+
+  test('Un user peut se connecter et se déconnecter sur un tenant privé', async ({ page }) => {
+    await setTenantPrivate(true);
+    await page.goto(ACCUEIL);
+    await expect(page).toHaveURL(/\/auth\/.*\/login/);
+
+    await page.locator('input[name="username"]').fill(JIM.email);
+    await page.locator('input[name="password"]').fill('password');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
+
+    await page.getByRole('img', { name: 'user menu' }).click();
+    await page.getByRole('link', { name: 'Déconnexion' }).click();
+    await expect(page).toHaveURL(/\/auth\/.*\/login/);
+  });
+
+  test("L'impersonation fonctionne sur un tenant privé", async ({ page }) => {
+    await setTenantPrivate(true);
+    await page.goto(ACCUEIL);
+    await expect(page).toHaveURL(/\/auth\/.*\/login/);
+
+    await page.locator('input[name="username"]').fill(MICHAEL.email);
+    await page.locator('input[name="password"]').fill('password');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
+
+    await page.goto(`${HOME}settings/users`);
+    const page1Promise = page.waitForEvent('popup');
+    await page.getByLabel('Jim Halpert').getByRole('link').filter({ hasText: /^$/ }).click();
+    const page1 = await page1Promise;
+    await page1.getByRole('button', { name: 'user menu' }).click();
+    await expect(page1.locator('#app')).toContainText(JIM.email);
+
+
+    await page1.getByRole('link', { name: 'Quitter l\'impersonation' }).click();
+    await expect(page.locator('#app')).toContainText(MICHAEL.email);
+  });
 });
 

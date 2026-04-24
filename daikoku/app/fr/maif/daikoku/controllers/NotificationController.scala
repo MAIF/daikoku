@@ -5,7 +5,8 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.{
   DaikokuAction,
   DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
+  DaikokuActionMaybeWithGuest,
+  DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
@@ -34,6 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class NotificationController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     apiService: ApiService,
     accountCreationService: AccountCreationService,
@@ -47,38 +49,31 @@ class NotificationController(
   implicit val tr: Translator = translator
 
   def myUnreadNotificationsCount() =
-    DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          s"@{user.name} has accessed to his count of unread notifications"
-        )
-      )(ctx) {
-        for {
-          myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-          notificationRepo <-
-            env.dataStore.notificationRepo
-              .forTenantF(ctx.tenant.id)
-          youHaveUnreadNotifications <- notificationRepo.findNotDeleted(
-            Json.obj(
-              "status.status" -> "Pending",
-              "$or" -> Json.arr(
-                Json.obj(
-                  "team" -> Json.obj(
-                    "$in" -> JsArray(
-                      myTeams
-                        .filter(t => t.admins().contains(ctx.user.id))
-                        .map(_.id.asJson)
+    DaikokuUnauthenticatedAction.async { ctx =>
+      ctx.user match {
+        case None => FastFuture.successful(Ok(Json.obj("count" -> 0)))
+        case Some(user) =>
+          for {
+            myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, user)
+            notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
+            youHaveUnreadNotifications <- notificationRepo.findNotDeleted(
+              Json.obj(
+                "status.status" -> "Pending",
+                "$or" -> Json.arr(
+                  Json.obj(
+                    "team" -> Json.obj(
+                      "$in" -> JsArray(
+                        myTeams
+                          .filter(t => t.admins().contains(user.id))
+                          .map(_.id.asJson)
+                      )
                     )
-                  )
-                ),
-                Json.obj("action.user" -> ctx.user.id.asJson)
+                  ),
+                  Json.obj("action.user" -> user.id.asJson)
+                )
               )
             )
-          )
-        } yield {
-          ctx.setCtxValue("notifications", youHaveUnreadNotifications.size)
-          Ok(Json.obj("count" -> youHaveUnreadNotifications.size))
-        }
+          } yield Ok(Json.obj("count" -> youHaveUnreadNotifications.size))
       }
     }
 

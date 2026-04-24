@@ -61,7 +61,7 @@ const customFetch = <T>(
     if (r.status === 503) {
       location.href = '/maintenance';
     }
-    if (r.status === 204 || r.headers.get('content-length') === '0') {
+if (r.status === 204 || r.headers.get('content-length') === '0') {
       return null;
     }
     return r.json();

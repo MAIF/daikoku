@@ -31,6 +31,7 @@ import scala.concurrent.ExecutionContext
 class TranslationController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     cc: ControllerComponents,
     translator: Translator,
@@ -70,7 +71,7 @@ class TranslationController(
     }
 
   def getAllTranslations: Action[AnyContent] =
-    DaikokuActionMaybeWithGuest.async { ctx =>
+    DaikokuUnauthenticatedAction.async { ctx =>
       env.dataStore.translationRepo
         .forTenant(ctx.tenant.id)
         .findAll()

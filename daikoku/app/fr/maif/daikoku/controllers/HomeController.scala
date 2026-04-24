@@ -232,13 +232,12 @@ class HomeController(
     }
 
   def getConnectedUser(): Action[AnyContent] = {
-    DaikokuActionMaybeWithGuest.async { ctx =>
+    DaikokuUnauthenticatedAction.async { ctx =>
       Ok(
         Json.obj(
-          "connectedUser" -> ctx.user
-            .toUiPayload(),
-          "impersonator" -> ctx.session.impersonatorJson(),
-          "session" -> ctx.session.asSimpleJson,
+          "connectedUser" -> ctx.user.map(_.toUiPayload()).getOrElse(JsNull),
+          "impersonator" -> ctx.session.map(_.impersonatorJson()).getOrElse(JsNull),
+          "session" -> ctx.session.map(_.asSimpleJson).getOrElse(JsNull),
           "tenant" -> ctx.tenant.toUiPayload(env),
           "isTenantAdmin" -> ctx.isTenantAdmin,
           "apiCreationPermitted" -> ctx.apiCreationPermitted,
