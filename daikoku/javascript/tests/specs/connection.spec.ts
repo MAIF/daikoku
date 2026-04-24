@@ -105,6 +105,27 @@ test.describe('Tenant privé', () => {
     await expect(page).toHaveURL(/\/auth\/.*\/login/);
   });
 
+  test('La page signup est accessible sur un tenant privé avec auth locale', async ({ page }) => {
+    //todo: patch tenant to setup auth Local
+
+    await setTenantPrivate(true);
+    await page.goto(`${HOME}signup`);
+    await expect(page.locator('input[name="name"]')).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+  });
+
+  test('La page reset password est accessible sur un tenant privé avec auth locale', async ({ page }) => {
+    //todo: patch tenant to setup auth Local
+
+    await setTenantPrivate(true);
+    await page.goto(`${HOME}reset`);
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await page.locator('input[name="email"]').fill(JIM.email);
+    await page.getByRole('button', { name: /envo|reset|submit/i }).click();
+    await expect(page.getByText(JIM.email)).toBeVisible();
+  });
+
   test("L'impersonation fonctionne sur un tenant privé", async ({ page }) => {
     await setTenantPrivate(true);
     await page.goto(ACCUEIL);
