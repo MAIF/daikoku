@@ -182,6 +182,10 @@ a.navbar-brand,
         text-transform: capitalize;
         font-weight: 600;
         font-size: 12px;
+
+        &.email {
+          text-transform: lowercase;
+        }
       }
 
       .block__entries {
@@ -473,9 +477,9 @@ button.nav_item {
 
   li {
     &:not(:last-child)::after {
-        content: '/';
-        margin: 0 0.5rem;
-        color: #999;
-      }
+      content: '/';
+      margin: 0 0.5rem;
+      color: #999;
+    }
   }
 }

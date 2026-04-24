@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test';
 import { JIM, MICHAEL, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 
 test.beforeEach(async () => {
@@ -79,9 +79,29 @@ test.describe('Tenant privé', () => {
       body: JSON.stringify([{ op: 'replace', path: '/isPrivate', value: isPrivate }]),
     });
 
-  test.afterEach(async () => {
-    await setTenantPrivate(false);
-  });
+  const setTenantAuthLocal = async () =>
+    Promise.all([
+      fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+        },
+        body: JSON.stringify([{ op: 'replace', path: '/authProvider', value: 'Local' }]),
+      }),
+      fetch(`http://localhost:${exposedPort}/admin-api/users/${MICHAEL.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+        },
+        body: JSON.stringify([{ op: 'replace', path: '/password', value: '"$2a$10$/Vpj1lFN0AcCfbutd7FJwO0j1vU4X0fR6t.4vvWBqSEqtoUFFxfDG"' }]),
+      }),
+    ]);
+
+  // test.afterEach(async () => {
+  //   await setTenantPrivate(false);
+  // });
 
   test('Un tenant privé redirige vers la page de login', async ({ page }) => {
     await setTenantPrivate(true);
@@ -105,25 +125,63 @@ test.describe('Tenant privé', () => {
     await expect(page).toHaveURL(/\/auth\/.*\/login/);
   });
 
-  test('La page signup est accessible sur un tenant privé avec auth locale', async ({ page }) => {
-    //todo: patch tenant to setup auth Local
-
+  test('La page reset password est accessible sur un tenant privé avec auth locale', async ({ page }) => {
+    await setTenantAuthLocal();
     await setTenantPrivate(true);
-    await page.goto(`${HOME}signup`);
-    await expect(page.locator('input[name="name"]')).toBeVisible();
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
+
+    await page.goto(ACCUEIL)
+    await expect(page).toHaveURL(`http://localhost:${exposedPort}/auth/Local/login`)
+    await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click();
+    await page.getByRole('textbox', { name: 'Courriel' }).fill(MICHAEL.email);
+    await page.getByRole('button', { name: 'Réinitialisation' }).click();
+    await expect(page.getByText('Vous recevrez un courrier')).toBeVisible();
+    await page.goto(EMAIL_UI);
+    await page.locator('div').filter({ hasText: /^no-reply@dundermifflin\.com$/ }).click();
+    const page4Promise = page.waitForEvent('popup');
+    await page.getByRole('link', { name: 'Réinitialiser' }).click();
+    const page4 = await page4Promise;
+    await page4.getByRole('textbox', { name: 'Courriel' }).fill(MICHAEL.email);
+    await page4.getByRole('textbox', { name: 'Courriel' }).press('Tab');
+    const NEW_PASSWORD = 'Passw0rd!!!'
+    await page4.locator('form').locator('#password').fill(NEW_PASSWORD);
+    await page4.getByRole('textbox', { name: 'Confirmation de mot de passe' }).fill(NEW_PASSWORD);
+    await page4.getByRole('button', { name: 'Réinitialisation' }).click();
+    await expect(page4).toHaveURL(`${HOME}auth/Local/login`);
+    await page4.locator('input[type="text"]').fill('michael.scott@dundermifflin.com');
+    await page4.locator('form').locator('input[name="password"]').fill('Passw0rd!!!');
+    await page4.getByRole('button', { name: 'Se connecter' }).click();
+    await page4.getByRole('button', { name: 'user menu' }).click();
+    await expect(page4.locator('#app')).toContainText(MICHAEL.email);
   });
 
-  test('La page reset password est accessible sur un tenant privé avec auth locale', async ({ page }) => {
-    //todo: patch tenant to setup auth Local
-
+  test('La page signup password est accessible sur un tenant privé avec auth locale', async ({ page }) => {
+    await setTenantAuthLocal();
     await setTenantPrivate(true);
-    await page.goto(`${HOME}reset`);
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await page.locator('input[name="email"]').fill(JIM.email);
-    await page.getByRole('button', { name: /envo|reset|submit/i }).click();
-    await expect(page.getByText(JIM.email)).toBeVisible();
+
+    const PASSWORD = 'Passw0rd!!!'
+    const MAIL = 'erin.hannon@dundermifflin.com'
+
+    await page.goto(`${ACCUEIL}`);
+
+    await page.getByRole('link', { name: 'Créer un compte' }).click();
+    await page.getByRole('textbox', { name: 'Nom' }).fill('Erin Hannon');
+    await page.getByRole('textbox', { name: 'Courriel' }).fill(MAIL);
+    await page.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(PASSWORD);
+    await page.getByRole('textbox', { name: 'Confirmation du mot de passe' }).fill(PASSWORD);
+    await page.getByRole('button', { name: 'Création d\'un compte' }).click();
+    await expect(page.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
+    await page.goto(EMAIL_UI);
+    await page.getByText('Confirmez votre adresse e-mail pour activer votre compte Dunder Mifflin', { exact: true }).click();
+    const newPagePromise = page.waitForEvent('popup');
+    await page.getByRole('link', { name: '👉 [Confirmer mon adresse e-mail' }).click();
+    const page2 = await newPagePromise;
+    await expect(page2.getByRole('heading', { name: 'Création de compte approuvée' })).toBeVisible();
+    await page2.getByText('Revenir au catalogue d\'APIs').click();
+    await page2.locator('input[name="username"]').fill(MAIL);
+    await page2.locator('input[name="password"]').fill(PASSWORD);
+    await page2.getByRole('button', { name: 'Se connecter' }).click();
+    await page2.getByRole('button', { name: 'user menu' }).click();
+    await expect(page2.getByText(MAIL)).toBeVisible();
   });
 
   test("L'impersonation fonctionne sur un tenant privé", async ({ page }) => {
