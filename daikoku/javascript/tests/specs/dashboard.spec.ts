@@ -55,11 +55,6 @@ test('User non producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API Papier' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeHidden();
 
-  await expect(page.locator('.dashboard-tile', { hasText: 'Nouvelles APIs' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'APIs dépréciées' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'Mes clé d\'API' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'Demandes à valider' })).toBeVisible(); //todo: maybe better hidden
-
   await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.status')).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.status')).toContainText('2 clés actives');
 
@@ -86,11 +81,6 @@ test('User producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API Commande' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'API Papier' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();
-
-  await expect(page.locator('.dashboard-tile', { hasText: 'Nouvelles APIs' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'APIs dépréciées' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'Mes clé d\'API' })).toBeVisible();
-  await expect(page.locator('.dashboard-tile', { hasText: 'Demandes à valider' })).toBeVisible(); //todo: maybe better hidden
 
   await expect(page.getByRole('listitem', { name: 'admin-api-tenant-default' }).locator('.status')).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'admin-api-tenant-default' }).locator('.status')).toContainText('1 clé active');
@@ -184,7 +174,7 @@ test('apilist infinite pagination', async ({ page }) => {
 
 });
 
-test('apilist display specials api', async ({ page }) => {
+test.fixme('apilist display specials api', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
 

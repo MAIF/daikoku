@@ -116,7 +116,7 @@ test('Health check', async () => {
           S3: 'ABSENT',
           otoroshi: [
             {
-              "http://otoroshi:8080 (otoroshi-api.oto.tools)": "UP"
+              "http://localhost:8080 (otoroshi-api.oto.tools)": "UP"
             }
           ]
         },
