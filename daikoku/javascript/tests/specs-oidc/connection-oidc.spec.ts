@@ -91,6 +91,14 @@ test('Se connecter avec un user inconnu', async ({ page }) => {
 
 
 test('Health check', async () => {
+  const actualVersion = await (fetch(`http://localhost:${exposedPort}/api/versions/_daikoku`, {
+    method: 'GET',
+    headers: {
+      "content-type": "application/json",
+    }
+  }).then(r => r.json()))
+
+
   const resultHealth = await (fetch(`http://localhost:${exposedPort}/health/details?access_key=secret`, {
     method: 'GET',
     headers: {
@@ -114,7 +122,7 @@ test('Health check', async () => {
         },
       },
       "status": "UP",
-      "version": "18.8.0-dev"
+      "version": actualVersion.version
     }
   )
 });
