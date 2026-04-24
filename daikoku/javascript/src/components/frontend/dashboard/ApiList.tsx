@@ -121,7 +121,7 @@ export const ApiList = (props: ApiListProps) => {
         }
       });
 
-  const dataRequest = useInfiniteQuery({
+  const dataRequest = useQuery({
     queryKey: ["data",
       limit,
       columnFilters
@@ -157,6 +157,65 @@ export const ApiList = (props: ApiListProps) => {
   // --- MARK: Table
   const columnHelper = createColumnHelper<IApiWithAuthorization>();
   const columns = [
+    columnHelper.display({
+      id: 'favorite',
+      enableColumnFilter: false,
+      meta: { className: "favorite-cell" },
+      cell: (info) => {
+        const api = info.row.original.api;
+        const myTeams = !isError(myTeamsRequest.data) && myTeamsRequest.data ? myTeamsRequest.data : []
+        const starred = connectedUser.starredApis.includes(api._id)
+        const authorizations = info.row.original.authorizations
+        const allTeamsAreAuthorized =
+          api.visibility === 'Public' || (authorizations.length === myTeams.length && authorizations.every((a) => a.authorized));
+        const isPending =
+          authorizations.length === myTeams.length && authorizations.every((a) => a.pending && !a.authorized);
+        const accessButton = () => {
+          if (
+            !allTeamsAreAuthorized &&
+            !['Private', 'AdminOnly'].includes(api.visibility)
+          ) {
+            return (
+              <ActionWithTeamSelector
+                title={translate("api.access.modal.title")}
+                description={translate({ key: 'api.access.request', replacements: [api.name] })}
+                pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
+                acceptedTeams={authorizations
+                  .filter((auth) => auth.authorized)
+                  .map((auth) => auth.team)}
+                teams={myTeams?.filter((t) => t.type !== 'Admin')}
+                action={(teams) => askForApiAccess(info.row.original, teams)}
+                actionLabel={translate("Ask access to API")}
+                allTeamSelector={true}
+              >
+                {isPending ? (
+                  <button className="btn btn-sm btn-outline-info">
+                    {translate('Pending request')}
+                  </button>
+                ) : (
+                  <button className="btn btn-sm btn-outline-info">
+                    <i className="far fa-comment-dots me-2" />{translate('Access')}
+                  </button>
+                )}
+              </ActionWithTeamSelector>
+            );
+          }
+          return null;
+        };
+
+        return (
+          <div className='notification__actions d-flex flex-row gap-1 justify-content-end'>
+            {accessButton()}
+            <StarsButton
+              starred={starred}
+              classnames="notification-link-color"
+              toggleStar={() => Services.toggleStar(api._id)}
+            />
+          </div>
+        )
+      },
+    })
+    ,
     // columnHelper.display({
     //   id: 'select',
     //   meta: { className: "select-cell" },
@@ -234,21 +293,47 @@ export const ApiList = (props: ApiListProps) => {
         const activeCount = info.row.original.subscriptionCount
         const pendingCount = info.row.original.subscriptionDemands.length
         const expireCount = info.row.original.expireCount
-
-        return <div className="d-flex gap-1 status">
-          {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
-          </span>}
-          {!!expireCount && <span
-            className="badge badge-custom-danger"
+        return <div className="d-flex gap-1 status ">
+          {!!activeCount &&
+            <span
+              className="badge badge-custom-success d-flex align-items-center gap-2"
+              style={{ border: 'none'}}
+              onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}
+            >
+              <span className="bg-success rounded-circle"
+                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
+              <span>{"Active"}</span>
+            </span>}
+          {!!expireCount &&
+            <span
+            className="badge badge-custom-danger d-flex align-items-center gap-2"
+            style={{ border: 'none'}}
             onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {expireCount} {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: expireCount > 1 })}
-          </span>}
-          {!!pendingCount && <span className="badge badge-custom-warning">
-            {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
-          </span>}
+              <span className="bg-success rounded-circle"
+                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
+              <span>{"Retirée"}</span>
+            </span>
+            }
+          {!!pendingCount &&
+            <span
+              className="badge badge-custom-warning d-flex align-items-center gap-2"
+              style={{ border: 'none'}}>
+              <span className="bg-success rounded-circle"
+                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
+              <span>{"Retirée"}</span>
+            </span>
+          }
         </div>
-
+      }
+    }),
+    columnHelper.display({
+      id: translate("dashboard.apis.table.header.label.subscriptions"),
+      meta: { className: "subscription-cell" },
+      cell: (info) => {
+        const subscriptionCount = info.row.original.subscriptionCount;
+        return <a href='#' onClick={() => handleSelectChange([{ label: "subscriptionCount", value: subscriptionCount.toString() }], 'subscriptions')}>
+          {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 0 ? 's' : ''}`}
+        </a>
       }
     }),
     columnHelper.display({
@@ -303,13 +388,23 @@ export const ApiList = (props: ApiListProps) => {
         };
 
         return (
-          <div className='notification__actions d-flex flex-row gap-1 justify-content-end'>
-            {accessButton()}
-            <StarsButton
-              starred={starred}
-              classnames="notification-link-color"
-              toggleStar={() => Services.toggleStar(api._id)}
-            />
+
+          <div className="nav_item dropdown" style={{ color: '#fff' }}>
+            <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+                    data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
+              <MoreVertical />
+            </button>
+            <div className="dropdown-menu">
+              <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+                <div className="blocks">
+                  <div className="mb-3 block">
+                    <div className="ms-2 block__entries block__border d-flex flex-column">
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )
       },
@@ -554,17 +649,17 @@ export const ApiList = (props: ApiListProps) => {
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           )}
         </div>
         <div className="filter-container mt-3 d-flex justify-content-between">
           <div className="d-flex align-items-center gap-2 flex-grow-1">
-            <div className="col-2">
+            <div className="position-relative col-2">
+              <label className="form-label">Recherche</label>
               <input
                 type="text"
-                className="form-control"
+                className="form-control pe-5"
                 placeholder={translate('Search your API...')}
                 aria-label="Search your API"
                 value={inputVal}
@@ -573,26 +668,34 @@ export const ApiList = (props: ApiListProps) => {
                   debouncedResults(e)
                 }}
               />
+              <i
+                className="fas fa-search position-absolute"
+                style={{ right: '12px', top: '50%', marginTop: '7px' }}
+              />
             </div>
+            <div className="position-relative col-2">
+              <label className="form-label">Equipes</label>
+              <Select
+                isMulti //@ts-ignore
+                components={{Placeholder: GenericPlaceholder, Option: CustomOption}}
+                controlShouldRenderValue={false}
+                options={(producers)}
+                isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
+                closeMenuOnSelect={false}
+                labelKey={"dashboard.filters.team.label"}
+                labelKeyAll={"dashboard.filters.all.team.label"}
+                getCount={getTotalForTeam}
+                classNamePrefix="daikoku-select"
+                className="team__selector filter__select reactSelect"
+                styles={menuStyle}
+                onChange={data => handleSelectChange(data, 'team')}
+                value={getSelectValue('team', producers, 'label', 'value')}/>
+            </div>
+            <div className="position-relative col-2">
+              <label className="form-label">Tags</label>
             <Select
               isMulti //@ts-ignore
-              components={{ Placeholder: GenericPlaceholder, Option: CustomOption }}
-              controlShouldRenderValue={false}
-              options={(producers)}
-              isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
-              closeMenuOnSelect={false}
-              labelKey={"dashboard.filters.team.label"}
-              labelKeyAll={"dashboard.filters.all.team.label"}
-              getCount={getTotalForTeam}
-              classNamePrefix="daikoku-select"
-              className="team__selector filter__select reactSelect col-2"
-              styles={menuStyle}
-              onChange={data => handleSelectChange(data, 'team')}
-              value={getSelectValue('team', producers, 'label', 'value')} />
-
-            <Select
-              isMulti //@ts-ignore
-              components={{ Placeholder: GenericPlaceholder, Option: CustomOption }}
+              components={{Placeholder: GenericPlaceholder, Option: CustomOption}}
               controlShouldRenderValue={false}
               options={arrayStringToTOps(tags)}
               isLoading={dataRequest.isLoading}
@@ -601,25 +704,34 @@ export const ApiList = (props: ApiListProps) => {
               labelKeyAll={"dashboard.filters.all.tags.label"}
               getCount={getTotalForTags}
               classNamePrefix="daikoku-select"
-              className="tag__selector filter__select reactSelect col-2"
+              className="tag__selector filter__select reactSelect"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'tag')}
-              value={getSelectStringValue('tag', tags)} />
+              value={getSelectStringValue('tag', tags)}/>
+            </div>
+            <div className="position-relative  col-2">
+              <label className="form-label">{translate('dashboard.filters.subscribe.apis.only.label')}</label>
+            <div className="form-check form-switch">
+              <input
+                className={classNames('form-check-input', {active: subscribedOnly})}
+                type="checkbox"
+                role="switch"
+                id="flexSwitchCheckDefault"
+                aria-pressed={subscribedOnly}
+                onClick={() => {
+                 const filters = columnFilters.filter(f => f.id !== 'subscribedOnly')
+                 setColumnFilters([...filters, {id: 'subscribedOnly', value: true}])
+                }}
+              />
+              <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Désactivé</label>
+            </div>
+            </div>
 
-
-            <button
-              className={classNames('btn btn-outline-secondary', { active: subscribedOnly })}
-              aria-pressed={subscribedOnly}
-              onClick={() => {
-                const filters = columnFilters.filter(f => f.id !== 'subscribedOnly')
-                setColumnFilters([...filters, { id: 'subscribedOnly', value: true }])
-              }}>{translate('dashboard.filters.subscribe.apis.only.label')}
-            </button>
-
-            {!!columnFilters.length && <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
-              <i className='fas fa-rotate me-2' />
-              {translate('notifications.page.filters.clear.label')}
-            </button>}
+            {!!columnFilters.length &&
+              <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
+                <i className='fas fa-rotate me-2'/>
+                {translate('notifications.page.filters.clear.label')}
+              </button>}
           </div>
 
           <div className="">{dataRequest.data?.pages[0].totalFiltered} APIs</div>
@@ -627,7 +739,7 @@ export const ApiList = (props: ApiListProps) => {
         </div>
         {displayFilters()}
         <div className="table-container mt-3">
-          {dataRequest.isLoading && <Spinner />}
+          {dataRequest.isLoading && <Spinner/>}
           {dataRequest.data && (
             <>
               <div className="api-table table-rows">
@@ -644,7 +756,7 @@ export const ApiList = (props: ApiListProps) => {
                             table.getToggleAllPageRowsSelectedHandler()(e)
                           }}
                         />
-  
+
                       </label> */}
                   {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
                   {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
@@ -653,10 +765,12 @@ export const ApiList = (props: ApiListProps) => {
                   {/* {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
                         <button className='btn btn-sm btn-outline-secondary ms-3' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
                       )} */}
+                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span></span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.api')}</span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.tags')}</span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.team')}</span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.status')}</span>}
+                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.subscriptions')}</span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>}
                 </div>
                 <ul className='table-rows' role="list">

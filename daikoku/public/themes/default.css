@@ -1,7 +1,7 @@
 :root {
   --level1_bg-color: #fff;
-  --level1_text-color: #626262;
-  --level1_link-color: #626262;
+  --level1_text-color: #000;
+  --level1_link-color: #000;
   --level1_link-hover-color: orange;
 
   --level2_bg-color: #F9F9F9;
