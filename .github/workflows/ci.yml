@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'daikoku/app/**'
+      - 'daikoku/conf/**'
+      - 'daikoku/build.sbt'
+      - 'daikoku/project/**'
+      - 'daikoku/javascript/src/**'
+      - 'daikoku/javascript/package.json'
+      - 'daikoku/javascript/package-lock.json'
+      - 'daikoku/javascript/tests/**'
+      - 'scripts/seed-subscriptions.mjs'
+      - '.github/workflows/ci.yml'
+  pull_request:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: maif/daikoku
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.resolve-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if Docker build is needed
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            needs_build:
+              - 'daikoku/app/**'
+              - 'daikoku/conf/**'
+              - 'daikoku/build.sbt'
+              - 'daikoku/project/**'
+              - 'daikoku/javascript/src/**'
+              - 'daikoku/javascript/package.json'
+              - 'daikoku/javascript/package-lock.json'
+              - '.github/workflows/ci.yml'
+
+      - name: Resolve image tag
+        id: resolve-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          else
+            BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          fi
+          echo "tag=${BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Set up Node.js
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+
+      - name: Set up JDK 17
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: sbt/setup-sbt@v1
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+
+      - uses: coursier/cache-action@v6
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+
+      - name: Install JS dependencies and build frontend
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          cd daikoku/javascript
+          rm -rf node_modules/
+          npm ci
+          npm run build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Build backend and Docker image
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          cd daikoku
+          sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;compile;dist'
+          sbt 'docker:publishLocal'
+
+      - name: Log in to GitHub Container Registry
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image
+        if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          TAG=${{ steps.resolve-tag.outputs.tag }}
+          docker tag maif/daikoku:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}
+          if [[ "${{ github.ref_name }}" == "master" && "${{ github.event_name }}" == "push" ]]; then
+            docker tag maif/daikoku:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          fi
+
+      - name: Build skipped
+        if: steps.changes.outputs.needs_build == 'false' && github.event_name != 'workflow_dispatch'
+        run: echo "No source changes — skipping Docker build, tests will use existing image (${{ steps.resolve-tag.outputs.tag }} with fallback to master)"
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: ldap
+            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            playwright-config: playwright.config.js
+            health-url: http://localhost:13200/health
+          - name: oidc
+            compose-file: ./daikoku/javascript/tests/docker-compose-openid.yml
+            playwright-config: playwright.oidc.config.js
+            health-url: http://localhost:13200/health
+          - name: perf
+            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            playwright-config: playwright.perf.config.js
+            health-url: http://localhost:13200/health
+    name: "test-${{ matrix.suite.name }}"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Daikoku image
+        run: |
+          TAG=${{ needs.build.outputs.image-tag }}
+          if docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG} 2>/dev/null; then
+            docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG} maif/daikoku:latest
+          else
+            echo "Image ${TAG} not found, falling back to master"
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
+            docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master maif/daikoku:latest
+          fi
+
+      - name: Start environment
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: ${{ matrix.suite.compose-file }}
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for services to be up..."
+          until curl --silent --fail ${{ matrix.suite.health-url }}; do
+            printf '.'
+            sleep 2
+          done
+          echo "daikoku is ready!"
+
+      - name: Install Playwright
+        run: |
+          cd ./daikoku/javascript/tests
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Seed perf data
+        if: matrix.suite.name == 'perf'
+        run: |
+          cd scripts
+          npm ci
+          node seed-subscriptions-prodlike.mjs
+        env:
+          PG_HOST: localhost
+          PG_PORT: 5442
+          PG_DB: daikoku_demo_komainu
+          OTOROSHI_URL: http://otoroshi-api.oto.tools:8080
+
+      - name: Run Playwright tests (${{ matrix.suite.name }})
+        run: |
+          cd ./daikoku/javascript/tests
+          if [[ "${{ matrix.suite.name }}" == "perf" ]]; then
+            npx playwright test --config ${{ matrix.suite.playwright-config }}
+          else
+            npx playwright test --config ${{ matrix.suite.playwright-config }} --project chromium
+          fi
+        env:
+          CI: true
+          EXPOSED_PORT: 13200
+          DAIKOKU_URL: http://localhost:13200
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5442
+          POSTGRES_DB: daikoku_demo_komainu
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
