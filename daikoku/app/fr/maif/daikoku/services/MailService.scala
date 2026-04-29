@@ -24,32 +24,45 @@ class MailService {
   ): Future[Unit] = {
 
     val adminIdsWithTeam: Seq[(UserId, Team)] =
-      teams.flatMap(team => team.users.filter(_.teamPermission == Administrator).map(user => (user.userId, team)))
-    val usersFromDatabase: Future[Seq[User]]  = env.dataStore.userRepo.findNotDeleted(
-      Json.obj(
-        "_id" -> Json.obj("$in" -> JsArray(adminIdsWithTeam.map(_._1.asJson)))
+      teams.flatMap(team =>
+        team.users
+          .filter(_.teamPermission == Administrator)
+          .map(user => (user.userId, team))
       )
-    )
+    val usersFromDatabase: Future[Seq[User]] =
+      env.dataStore.userRepo.findNotDeleted(
+        Json.obj(
+          "_id" -> Json.obj("$in" -> JsArray(adminIdsWithTeam.map(_._1.asJson)))
+        )
+      )
 
-    val eventualMaybeAdminsWithTeam: Future[Seq[(Option[User], Team)]] = usersFromDatabase.map(users => {
-      adminIdsWithTeam.map { case (adminId, team) => (users.find(user => adminId == user.id), team) }
-    })
+    val eventualMaybeAdminsWithTeam: Future[Seq[(Option[User], Team)]] =
+      usersFromDatabase.map(users => {
+        adminIdsWithTeam.map { case (adminId, team) =>
+          (users.find(user => adminId == user.id), team)
+        }
+      })
 
     eventualMaybeAdminsWithTeam.map(maybeAdminsWithTeam =>
       maybeAdminsWithTeam.foreach {
         case (Some(admin), team) =>
-          implicit val language: String = admin.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
+          implicit val language: String =
+            admin.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
 
           for {
-            title <- translator.translate(s"$mailKey.title", tenant, args(team, admin))
-            body  <- translator.translate(
-                       s"$mailKey.body",
-                       tenant,
-                       args(team, admin)
-                     )
-            _     <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
+            title <- translator.translate(
+              s"$mailKey.title",
+              tenant,
+              args(team, admin)
+            )
+            body <- translator.translate(
+              s"$mailKey.body",
+              tenant,
+              args(team, admin)
+            )
+            _ <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
           } yield ()
-        case _                   => ().future
+        case _ => ().future
       }
     )
   }

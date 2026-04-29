@@ -59,8 +59,8 @@ class ApiController(
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
-  implicit val ev: Env              = env
-  implicit val tr: Translator       = translator
+  implicit val ev: Env = env
+  implicit val tr: Translator = translator
 
   val logger: Logger = Logger("ApiController")
 
@@ -89,7 +89,7 @@ class ApiController(
 
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _, _, _))      =>
+            case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
               val contentType =
                 if (content.startsWith("{")) "application/json"
                 else "application/yaml"
@@ -120,7 +120,7 @@ class ApiController(
                   Left(AppError.EntityNotFound("Swagger"))
                 )
               }.get)
-            case _                                                   =>
+            case _ =>
               EitherT.leftT[Future, Result](
                 AppError.EntityNotFound("Swagger access")
               )
@@ -128,33 +128,33 @@ class ApiController(
         }
 
         (for {
-          _       <- EitherT.cond[Future][AppError, Unit](
-                       !(ctx.tenant.apiReferenceHideForGuest
-                         .getOrElse(true) && ctx.user.isGuest),
-                       (),
-                       AppError.ForbiddenAction
-                     )
-          team    <- EitherT.fromOptionF[Future, AppError, Team](
-                       env.dataStore.teamRepo
-                         .forTenant(ctx.tenant.id)
-                         .findByIdOrHrIdNotDeleted(teamId),
-                       AppError.TeamNotFound
-                     )
-          api     <- EitherT.fromOptionF[Future, AppError, Api](
-                       env.dataStore.apiRepo
-                         .forTenant(ctx.tenant)
-                         .findOneNotDeleted(
-                           Json.obj(
-                             "$or"            -> Json.arr(
-                               Json.obj("_id"              -> apiId),
-                               Json.obj("_humanReadableId" -> apiId)
-                             ),
-                             "currentVersion" -> version,
-                             "team"           -> team.id.asJson
-                           )
-                         ),
-                       AppError.ApiNotFound
-                     )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !(ctx.tenant.apiReferenceHideForGuest
+              .getOrElse(true) && ctx.user.isGuest),
+            (),
+            AppError.ForbiddenAction
+          )
+          team <- EitherT.fromOptionF[Future, AppError, Team](
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant.id)
+              .findByIdOrHrIdNotDeleted(teamId),
+            AppError.TeamNotFound
+          )
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findOneNotDeleted(
+                Json.obj(
+                  "$or" -> Json.arr(
+                    Json.obj("_id" -> apiId),
+                    Json.obj("_humanReadableId" -> apiId)
+                  ),
+                  "currentVersion" -> version,
+                  "team" -> team.id.asJson
+                )
+              ),
+            AppError.ApiNotFound
+          )
           myTeams <-
             EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
           // format: off

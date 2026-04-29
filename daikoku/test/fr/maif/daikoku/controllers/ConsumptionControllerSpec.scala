@@ -30,7 +30,7 @@ class ConsumptionControllerSpec()
     wireMockServer.stop()
   }
 
-  val payPerUsePlanId: UsagePlanId   = UsagePlanId("5")
+  val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
   val payperUserSub: ApiSubscription = ApiSubscription(
     id = ApiSubscriptionId("test"),
     tenant = tenant.id,
@@ -90,10 +90,10 @@ class ConsumptionControllerSpec()
           yesterdayConsumption
         )
       )
-      val session              = loginWithBlocking(userAdmin, tenant)
-      val from                 = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to                   = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp                 = httpJsonCallBlocking(
+      val session = loginWithBlocking(userAdmin, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
       )(using tenant, session)
@@ -119,11 +119,12 @@ class ConsumptionControllerSpec()
           yesterdayConsumption
         )
       )
-      val session              = loginWithBlocking(userAdmin, tenant)
-      val from                 = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to                   = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp                 = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
+      val session = loginWithBlocking(userAdmin, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
@@ -147,11 +148,12 @@ class ConsumptionControllerSpec()
           yesterdayConsumption
         )
       )
-      val session              = loginWithBlocking(userAdmin, tenant)
-      val from                 = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to                   = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp                 = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+      val session = loginWithBlocking(userAdmin, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
@@ -176,9 +178,9 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 200
@@ -198,9 +200,9 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/billings?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 200
@@ -222,11 +224,11 @@ class ConsumptionControllerSpec()
         )
       )
 
-      val plan           = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
+      val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       val otoApiKey = ActualOtoroshiApiKey(
@@ -258,7 +260,7 @@ class ConsumptionControllerSpec()
               .withStatus(200)
           )
       )
-      val groupPath     = s"/api/groups/[\\w-]*"
+      val groupPath = s"/api/groups/[\\w-]*"
       stubFor(
         get(urlMatching(s"$groupPath.*"))
           .willReturn(
@@ -266,10 +268,10 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                  Json.obj(
-                    "id"   -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                    "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
-                  )
+                    Json.obj(
+                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
+                    )
                 )
               )
               .withStatus(200)
@@ -286,14 +288,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -301,13 +305,14 @@ class ConsumptionControllerSpec()
           )
       )
 
-      val session     = loginWithBlocking(userAdmin, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val threeDayAgo =
         DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-      val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
         method = "POST"
       )(using tenant, session)
 
@@ -344,8 +349,8 @@ class ConsumptionControllerSpec()
 
       val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -372,14 +377,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -387,13 +394,14 @@ class ConsumptionControllerSpec()
           )
       )
 
-      val session     = loginWithBlocking(userAdmin, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val threeDayAgo =
         DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-      val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
         method = "POST"
       )(using tenant, session)
 
@@ -429,8 +437,8 @@ class ConsumptionControllerSpec()
 
       val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -457,14 +465,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -472,10 +482,10 @@ class ConsumptionControllerSpec()
           )
       )
 
-      val session     = loginWithBlocking(userAdmin, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val threeDayAgo =
         DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-      val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/billing/_sync",
@@ -484,7 +494,7 @@ class ConsumptionControllerSpec()
 
       resp.status mustBe 200
 
-      val respConsumption  = httpJsonCallBlocking(
+      val respConsumption = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(using tenant, session)
@@ -514,8 +524,8 @@ class ConsumptionControllerSpec()
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -542,14 +552,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -557,10 +569,10 @@ class ConsumptionControllerSpec()
           )
       )
 
-      val session     = loginWithBlocking(userAdmin, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val threeDayAgo =
         DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-      val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income/_sync",
@@ -601,9 +613,9 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
       )(using tenant, session)
@@ -623,10 +635,11 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 403
     }
@@ -644,10 +657,11 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 403
     }
@@ -665,9 +679,9 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 403
@@ -686,9 +700,9 @@ class ConsumptionControllerSpec()
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp    = httpJsonCallBlocking(
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/billings?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 403
@@ -711,8 +725,8 @@ class ConsumptionControllerSpec()
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -739,14 +753,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -757,7 +773,8 @@ class ConsumptionControllerSpec()
       val session = loginWithBlocking(randomUser, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
         method = "POST"
       )(using tenant, session)
 
@@ -780,8 +797,8 @@ class ConsumptionControllerSpec()
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -808,14 +825,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -826,7 +845,8 @@ class ConsumptionControllerSpec()
       val session = loginWithBlocking(randomUser, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption/_sync",
         method = "POST"
       )(using tenant, session)
 
@@ -849,8 +869,8 @@ class ConsumptionControllerSpec()
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -877,14 +897,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -918,8 +940,8 @@ class ConsumptionControllerSpec()
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       wireMockServer.isRunning mustBe true
@@ -946,14 +968,16 @@ class ConsumptionControllerSpec()
                   ApiKeyQuotas(
                     authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )

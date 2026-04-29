@@ -597,7 +597,10 @@ class ApiLifeCycleSpec(
       (visibleApisAfter.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 1
       val apiAfter =
-        (visibleApisAfter.json \ "data" \ "visibleApis" \ "apis").as[JsArray].value.head
+        (visibleApisAfter.json \ "data" \ "visibleApis" \ "apis")
+          .as[JsArray]
+          .value
+          .head
       (apiAfter \ "api" \ "name").as[String] mustBe "api-test-isDefault"
       (apiAfter \ "api" \ "currentVersion").as[String] mustBe "2.0.0"
       (apiAfter \ "api" \ "state").as[String] mustBe "published"

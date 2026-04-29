@@ -11,7 +11,8 @@ import play.api.libs.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty) extends CanJson[CustomMetadata]      {
+case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty)
+    extends CanJson[CustomMetadata] {
   def asJson: JsValue = json.CustomMetadataFormat.writes(this)
 }
 case class ApikeyCustomization(
@@ -22,7 +23,7 @@ case class ApikeyCustomization(
     customMetadata: Seq[CustomMetadata] = Seq.empty,
     tags: JsArray = play.api.libs.json.Json.arr(),
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
-)                                                                               extends CanJson[ApikeyCustomization] {
+) extends CanJson[ApikeyCustomization] {
   def asJson: JsValue = json.ApikeyCustomizationFormat.writes(this)
 }
 
@@ -83,30 +84,30 @@ case class ApiSubscription(
       permission: TeamPermission,
       planIntegration: IntegrationProcess,
       isDaikokuAdmin: Boolean
-  ): JsValue                   =
+  ): JsValue =
     (permission, planIntegration) match {
-      case (_, _) if isDaikokuAdmin          => json.ApiSubscriptionFormat.writes(this)
-      case (Administrator, _)                => json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.ApiKey)    =>
+      case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
+      case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
+      case (_, IntegrationProcess.ApiKey) =>
         json.ApiSubscriptionFormat.writes(this)
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }
-  def asSafeJson: JsValue      =
+  def asSafeJson: JsValue =
     json.ApiSubscriptionFormat
       .writes(this)
       .as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj(
       "apiKey" -> Json.obj("clientName" -> apiKey.clientName)
     )
-  def asSimpleJson: JsValue    =
+  def asSimpleJson: JsValue =
     Json.obj(
-      "_id"        -> json.ApiSubscriptionIdFormat.writes(id),
-      "_tenant"    -> json.TenantIdFormat.writes(tenant),
-      "_deleted"   -> deleted,
-      "plan"       -> json.UsagePlanIdFormat.writes(plan),
-      "team"       -> json.TeamIdFormat.writes(team),
-      "api"        -> json.ApiIdFormat.writes(api),
-      "createdAt"  -> json.DateTimeFormat.writes(createdAt),
+      "_id" -> json.ApiSubscriptionIdFormat.writes(id),
+      "_tenant" -> json.TenantIdFormat.writes(tenant),
+      "_deleted" -> deleted,
+      "plan" -> json.UsagePlanIdFormat.writes(plan),
+      "team" -> json.TeamIdFormat.writes(team),
+      "api" -> json.ApiIdFormat.writes(api),
+      "createdAt" -> json.DateTimeFormat.writes(createdAt),
       "validUntil" -> validUntil
         .map(json.DateTimeFormat.writes)
         .getOrElse(JsNull)
@@ -115,7 +116,7 @@ case class ApiSubscription(
         .map(id => JsString(id))
         .getOrElse(JsNull)
         .as[JsValue],
-      "enabled"    -> JsBoolean(enabled)
+      "enabled" -> JsBoolean(enabled)
     )
 }
 
@@ -142,7 +143,7 @@ case class ActualOtoroshiApiKey(
     validUntil: Option[Long] = None,
     bearer: Option[String] = None
 ) extends CanJson[OtoroshiApiKey] {
-  override def asJson: JsValue         = json.ActualOtoroshiApiKeyFormat.writes(this)
+  override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
   def asOtoroshiApiKey: OtoroshiApiKey =
     OtoroshiApiKey(
       clientName = clientName,
@@ -156,7 +157,7 @@ sealed trait ApiKeyConsumptionState {
 }
 
 object ApiKeyConsumptionState {
-  case object Completed  extends ApiKeyConsumptionState {
+  case object Completed extends ApiKeyConsumptionState {
     def name: String = "completed"
   }
   case object InProgress extends ApiKeyConsumptionState {
@@ -181,7 +182,7 @@ case class ApiKeyConsumption(
     state: ApiKeyConsumptionState
 ) extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
-  def isComplete               = state == ApiKeyConsumptionState.Completed
+  def isComplete = state == ApiKeyConsumptionState.Completed
 }
 
 case class ApiKeyGlobalConsumptionInformations(
@@ -209,7 +210,8 @@ case class ApiKeyQuotas(
   override def asJson: JsValue = json.ApiKeyQuotasFormat.writes(this)
 }
 
-case class ApiKeyBilling(hits: Long, total: BigDecimal) extends CanJson[ApiKeyBilling] {
+case class ApiKeyBilling(hits: Long, total: BigDecimal)
+    extends CanJson[ApiKeyBilling] {
   override def asJson: JsValue = json.ApiKeyBillingFormat.writes(this)
 }
 
@@ -232,28 +234,28 @@ sealed trait SubscriptionDemandState {
 }
 
 object SubscriptionDemandState {
-  case object Accepted   extends SubscriptionDemandState {
-    def name: String      = "accepted"
+  case object Accepted extends SubscriptionDemandState {
+    def name: String = "accepted"
     def isClosed: Boolean = true
   }
-  case object Refused    extends SubscriptionDemandState {
-    def name: String      = "refused"
+  case object Refused extends SubscriptionDemandState {
+    def name: String = "refused"
     def isClosed: Boolean = true
   }
-  case object Canceled   extends SubscriptionDemandState {
-    def name: String      = "canceled"
+  case object Canceled extends SubscriptionDemandState {
+    def name: String = "canceled"
     def isClosed: Boolean = true
   }
   case object InProgress extends SubscriptionDemandState {
-    def name: String      = "inProgress"
+    def name: String = "inProgress"
     def isClosed: Boolean = false
   }
-  case object Waiting    extends SubscriptionDemandState {
-    def name: String      = "waiting"
+  case object Waiting extends SubscriptionDemandState {
+    def name: String = "waiting"
     def isClosed: Boolean = false
   }
-  case object Blocked    extends SubscriptionDemandState {
-    def name: String      = "blocked"
+  case object Blocked extends SubscriptionDemandState {
+    def name: String = "blocked"
     def isClosed: Boolean = true
   }
 
@@ -321,9 +323,10 @@ case class SubscriptionDemandStep(
   override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
   def check(): EitherT[Future, AppError, Unit] = {
     state match {
-      case SubscriptionDemandState.InProgress | SubscriptionDemandState.Waiting =>
+      case SubscriptionDemandState.InProgress |
+          SubscriptionDemandState.Waiting =>
         EitherT.pure[Future, AppError](())
-      case _                                                                    =>
+      case _ =>
         EitherT.leftT[Future, Unit](
           AppError.EntityConflict("Subscription demand state")
         )

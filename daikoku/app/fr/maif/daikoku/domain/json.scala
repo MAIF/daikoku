@@ -2373,7 +2373,9 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            state = (json \ "state").asOpt(ApiSubscriptionStateFormat).getOrElse(Active)
+            state = (json \ "state")
+              .asOpt(ApiSubscriptionStateFormat)
+              .getOrElse(Active)
           )
         )
       } recover { case e =>

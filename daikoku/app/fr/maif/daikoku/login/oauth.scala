@@ -30,7 +30,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-
 object OAuth2Config {
 
   lazy val logger = Logger("oauth2-config")
@@ -204,7 +203,10 @@ case class OAuth2Config(
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "selectedMetadata" -> this.selectedMetadata.map(JsString.apply).getOrElse(JsNull).as[JsValue]
+      "selectedMetadata" -> this.selectedMetadata
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
 }
 
@@ -335,8 +337,11 @@ object OAuth2Support {
         lastTenant = Some(tenant.id),
         personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
-        metadata = getFilteredMetadataFromOauth(authConfig,userFromOauth) //TODO pas value map mais value collect et avant, vérifier que metadataBiding existe et est Ok
-       )
+        metadata = getFilteredMetadataFromOauth(
+          authConfig,
+          userFromOauth
+        ) // TODO pas value map mais value collect et avant, vérifier que metadataBiding existe et est Ok
+      )
       for {
         _ <- EitherT.right[AppError](
           _env.dataStore.teamRepo
@@ -357,7 +362,8 @@ object OAuth2Support {
         isDaikokuAdmin: Boolean,
         userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
-      val selectedMetadata = authConfig.selectedMetadata.map(_.split(",").map(_.trim))
+      val selectedMetadata =
+        authConfig.selectedMetadata.map(_.split(",").map(_.trim))
       val updatedUser = u.copy(
         name = name,
         email = email,
@@ -374,7 +380,8 @@ object OAuth2Support {
               case _                       => u.picture
             },
         isDaikokuAdmin = isDaikokuAdmin,
-        metadata = u.metadata ++ getFilteredMetadataFromOauth(authConfig,userFromOauth)
+        metadata =
+          u.metadata ++ getFilteredMetadataFromOauth(authConfig, userFromOauth)
       )
       EitherT
         .right[AppError](_env.dataStore.userRepo.save(updatedUser))
@@ -448,7 +455,8 @@ object OAuth2Support {
               name,
               email,
               picture,
-              isDaikokuAdmin, userFromOauth
+              isDaikokuAdmin,
+              userFromOauth
             )
           case None =>
             createUser(name, email, picture, isDaikokuAdmin, userFromOauth)

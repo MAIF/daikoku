@@ -47,7 +47,7 @@ class OtoroshiExpositionFilter(
 class OtoroshiClient(env: Env) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
-  val ws                            = env.wsClient
+  val ws = env.wsClient
 
   def client(
       path: String
@@ -70,7 +70,7 @@ class OtoroshiClient(env: Env) {
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
         FastFuture.successful(JsArray(res.value.filter { item =>
-          val id   = (item \ "id").as[String]
+          val id = (item \ "id").as[String]
           val name = (item \ "name").as[String]
           (
             env.config.otoroshiGroupIdPrefix,
@@ -171,9 +171,9 @@ class OtoroshiClient(env: Env) {
   )(implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
     client(s"/api/groups/$groupId").get().flatMap { resp =>
       if (resp.status == 200) {
-        val res    = resp.json.as[JsObject]
-        val id     = (res \ "id").as[String]
-        val name   = (res \ "name").as[String]
+        val res = resp.json.as[JsObject]
+        val id = (res \ "id").as[String]
+        val name = (res \ "name").as[String]
         val passes = (
           env.config.otoroshiGroupIdPrefix,
           env.config.otoroshiGroupNamePrefix
@@ -209,9 +209,11 @@ class OtoroshiClient(env: Env) {
     ) {
       Future.failed(new RuntimeException(s"Bad group id"))
     } else {
-      getServiceGroup(groupId)(usingotoroshiSettings).flatMap(g => f).recoverWith { case e =>
-        Future.failed(e)
-      }
+      getServiceGroup(groupId)(usingotoroshiSettings)
+        .flatMap(g => f)
+        .recoverWith { case e =>
+          Future.failed(e)
+        }
     }
   }
 
@@ -266,7 +268,7 @@ class OtoroshiClient(env: Env) {
         if (resp.status == 200) {
           resp.json.validate(using ActualOtoroshiApiKeyFormat) match {
             case JsSuccess(k, _) => Right(k)
-            case JsError(e)      =>
+            case JsError(e) =>
               Left(
                 OtoroshiError(
                   Json.obj("error" -> s"Error while reading otoroshi apikey $e")
@@ -293,7 +295,7 @@ class OtoroshiClient(env: Env) {
         if (resp.status == 200) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {
             case JsSuccess(k, _) => Right(k)
-            case JsError(e)      =>
+            case JsError(e) =>
               Left(
                 OtoroshiError(
                   Json.obj("error" -> s"Error while reading otoroshi apikey $e")
@@ -311,18 +313,20 @@ class OtoroshiClient(env: Env) {
       }
   }
 
-  //FIXME: update Unit to ActualOtoroshiApikey
+  // FIXME: update Unit to ActualOtoroshiApikey
   def patchApiKeyBulk(clientIds: Seq[String], patch: JsValue)(implicit
-                                                              otoroshiSettings: OtoroshiSettings,
-                                                              mat: Materializer
+      otoroshiSettings: OtoroshiSettings,
+      mat: Materializer
   ): Future[Either[AppError, Unit]] = {
 
     val otoroshiApiKeys = clientIds
-      .map(id => Json.obj(
-        "id" -> id,
-        "patch" -> patch
-      ))
-      .map(Json.stringify)  // Convertir chaque objet JSON en String
+      .map(id =>
+        Json.obj(
+          "id" -> id,
+          "patch" -> patch
+        )
+      )
+      .map(Json.stringify) // Convertir chaque objet JSON en String
       .mkString("\n")
 
     val clientInstance = client(s"/apis/apim.otoroshi.io/v1/apikeys/_bulk")
@@ -330,9 +334,12 @@ class OtoroshiClient(env: Env) {
         "Content-Type" -> "application/x-ndjson"
       )
 
-    Source.single(otoroshiApiKeys)  // Source.single car otoroshiApiKeys est déjà une String complète
+    Source
+      .single(
+        otoroshiApiKeys
+      ) // Source.single car otoroshiApiKeys est déjà une String complète
       .map(bulk => ByteString(bulk))
-      .mapAsync(1) { bulk =>  // 1 seule requête bulk
+      .mapAsync(1) { bulk => // 1 seule requête bulk
         val req = bulk.utf8String
         val post = clientInstance.post(req)
 
@@ -348,14 +355,16 @@ class OtoroshiClient(env: Env) {
         }
         post
       }
-      .runWith(Sink.head)  // Récupérer le résultat
-      .map(_ => Right(()))  // Retourner Either[AppError, Unit]
-      .recover {
-        case e: Exception =>
-          Left(AppError.OtoroshiError(Json.obj("message" -> s"Error patching apikeys: ${e.getMessage}")))
+      .runWith(Sink.head) // Récupérer le résultat
+      .map(_ => Right(())) // Retourner Either[AppError, Unit]
+      .recover { case e: Exception =>
+        Left(
+          AppError.OtoroshiError(
+            Json.obj("message" -> s"Error patching apikeys: ${e.getMessage}")
+          )
+        )
       }
   }
-
 
   def deleteApiKey(
       clientId: String
@@ -364,33 +373,34 @@ class OtoroshiClient(env: Env) {
   ): EitherT[Future, AppError, Unit] = {
     for {
       resp <- EitherT.liftF(
-                client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").delete()
-              )
-      _    <- EitherT.cond[Future][AppError, Unit](
-                resp.status == 200,
-                (),
-                AppError.OtoroshiError(
-                  Json.obj(
-                    "error" -> s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"
-                  )
-                )
-              )
+        client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").delete()
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        resp.status == 200,
+        (),
+        AppError.OtoroshiError(
+          Json.obj(
+            "error" -> s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"
+          )
+        )
+      )
     } yield ()
   }
 
   def getServiceConsumption(service: String, from: String, to: String)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[JsObject] = {
-    client(s"/api/stats?service=$service&from=$from&to=$to").get().flatMap { resp =>
-      if (resp.status == 200) {
-        Future.successful(resp.json.as[JsObject])
-      } else {
-        Future.failed(
-          new RuntimeException(
-            s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+    client(s"/api/stats?service=$service&from=$from&to=$to").get().flatMap {
+      resp =>
+        if (resp.status == 200) {
+          Future.successful(resp.json.as[JsObject])
+        } else {
+          Future.failed(
+            new RuntimeException(
+              s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+            )
           )
-        )
-      }
+        }
     }
   }
 
@@ -414,13 +424,13 @@ class OtoroshiClient(env: Env) {
           s"[Get consumptions] :: Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
         )
         Json.obj(
-          "hits"        -> Json.obj("count" -> 0),
-          "dataIn"      -> Json.obj(
+          "hits" -> Json.obj("count" -> 0),
+          "dataIn" -> Json.obj(
             "data" -> Json.obj(
               "dataIn" -> 0
             )
           ),
-          "dataOut"     -> Json.obj(
+          "dataOut" -> Json.obj(
             "data" -> Json.obj(
               "dataOut" -> 0
             )
@@ -461,16 +471,17 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings
   ): Future[JsObject] = {
     validateGroupNameFromId(groupId) {
-      client(s"/api/stats?group=$groupId&from=$from&to=$to").get().flatMap { resp =>
-        if (resp.status == 200) {
-          Future.successful(resp.json.as[JsObject])
-        } else {
-          Future.failed(
-            new RuntimeException(
-              s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+      client(s"/api/stats?group=$groupId&from=$from&to=$to").get().flatMap {
+        resp =>
+          if (resp.status == 200) {
+            Future.successful(resp.json.as[JsObject])
+          } else {
+            Future.failed(
+              new RuntimeException(
+                s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+              )
             )
-          )
-        }
+          }
       }
     }
   }
@@ -499,12 +510,12 @@ class OtoroshiClient(env: Env) {
                   )
                 )
               ),
-              "aggs"  -> Json.obj(
+              "aggs" -> Json.obj(
                 "lastUsages" -> Json.obj(
                   "terms" -> Json.obj(
                     "field" -> "identity.identity.keyword"
                   ),
-                  "aggs"  -> Json.obj(
+                  "aggs" -> Json.obj(
                     "latest" -> Json.obj(
                       "top_hits" -> Json.obj(
                         "size" -> 1,
@@ -520,7 +531,7 @@ class OtoroshiClient(env: Env) {
                   )
                 )
               ),
-              "size"  -> 0
+              "size" -> 0
             )
           )
           .map(resp => {
@@ -530,14 +541,14 @@ class OtoroshiClient(env: Env) {
                 .asOpt[JsArray]
                 .getOrElse(Json.arr())
             JsArray(buckets.value.map(agg => {
-              val key       = (agg \ "key").as[String]
+              val key = (agg \ "key").as[String]
               val lastUsage =
                 (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
-              val date      = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
+              val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
 
               Json.obj(
-                "clientName"   -> key,
-                "date"         -> date,
+                "clientName" -> key,
+                "date" -> date,
                 "subscription" -> subscriptions
                   .find(_.apiKey.clientId == key)
                   .map(_.id.asJson)
@@ -550,20 +561,20 @@ class OtoroshiClient(env: Env) {
             AppLogger.error(e.getErrorMessage())
             Json.arr()
           })
-      case None         =>
+      case None =>
         for {
-          elasticConfig  <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
+          elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
           updatedSettings =
             otoroshiSettings.copy(elasticConfig = elasticConfig.some)
-          updatedTenant   = tenant.copy(
-                              otoroshiSettings = tenant.otoroshiSettings
-                                .filter(_.id != otoroshiSettings.id) + updatedSettings
-                            )
-          _              <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
-          r              <- getSubscriptionLastUsage(subscriptions)(using
-                              updatedSettings,
-                              updatedTenant
-                            )
+          updatedTenant = tenant.copy(
+            otoroshiSettings = tenant.otoroshiSettings
+              .filter(_.id != otoroshiSettings.id) + updatedSettings
+          )
+          _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
+          r <- getSubscriptionLastUsage(subscriptions)(using
+            updatedSettings,
+            updatedTenant
+          )
         } yield r
     }
   }
@@ -575,7 +586,7 @@ class OtoroshiClient(env: Env) {
       .get()
       .map(resp => {
         if (resp.status == 200) {
-          val config            = resp.json.as[JsObject]
+          val config = resp.json.as[JsObject]
           val elasticReadConfig =
             (config \ "elasticReadsConfig")
               .asOpt(using ElasticAnalyticsConfig.format)
