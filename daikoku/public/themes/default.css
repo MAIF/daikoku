@@ -1,7 +1,7 @@
 :root {
-  --level1_bg-color: #fff;
+  --level1_bg-color: #F9F9F9;
   --level1_text-color: #000;
-  --level1_link-color: #000;
+  --level1_link-color: #626262;
   --level1_link-hover-color: orange;
 
   --level2_bg-color: #F9F9F9;
@@ -9,7 +9,7 @@
   --level2_link-color: #605c5c;
   --level2_link-hover-color: #1E1E1E;
 
-  --level3_bg-color: #EEEEEE;
+  --level3_bg-color: #FFF;
   --level3_text-color: #222;
   --level3_link-color: #4c4c4d;
   --level3_link-hover-color: #000;

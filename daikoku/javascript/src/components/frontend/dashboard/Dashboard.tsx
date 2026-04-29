@@ -47,21 +47,17 @@ export const Dashboard = (_: NewHomeProps) => {
     <main className='flex-grow-1 d-flex flex-column gap-3 main' role="main" >
       <section className="">
         <div className="organisation__header d-flex flex-row space-between align-items-start">
-          <h1 className="jumbotron-heading mt-3">
+          <h1 className="jumbotron-heading">
             {tenant.title ?? tenant.name}
           </h1>
           <div className="d-flex gap-3 justify-content-end flex-grow-1">
             {dashboardQuery.data && !isError(dashboardQuery.data) && !!dashboardQuery.data?.demands.waiting && (
               <button
-                onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')}
+                onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription","ApiAccess"]}]')}
                 className="btn btn-outline-secondary">
                 <Clock className="me-2" />{translate('dashboard.demands.tile.title')}
               </button>
             )}
-            {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
-              className="organisation_header_settings_button btn btn-outline-secondary">
-              <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
-            </button>}
           </div>
         </div>
       </section>

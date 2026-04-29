@@ -2,11 +2,11 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
 import classNames from "classnames"
 import debounce from "lodash/debounce"
-import { ChangeEvent, useContext, useMemo, useState } from "react"
+import {ChangeEvent, useContext, useEffect, useMemo, useRef, useState} from "react"
 import Plus from 'react-feather/dist/icons/plus'
 import MoreVertical from 'react-feather/dist/icons/more-vertical'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import Select, { components, MultiValue, OptionProps } from "react-select"
+import Select, { StylesConfig, components, MultiValue, OptionProps } from "react-select"
 import { toast } from "sonner"
 
 import { I18nContext, ModalContext } from "../../../contexts"
@@ -37,6 +37,13 @@ type ExtraProps = {
   getCount: (data: string) => number
 };
 
+type ColourOption = {
+   value: string;
+   label: string;
+   color: string;
+   isFixed?: boolean;
+   isDisabled?: boolean;
+}
 const GenericPlaceholder = (props: any & { selectProps: ExtraProps }) => {
   const { translate } = useContext(I18nContext);
   const { selectProps } = props;
@@ -59,7 +66,7 @@ const GenericPlaceholder = (props: any & { selectProps: ExtraProps }) => {
 
 export const ApiList = (props: ApiListProps) => {
 
-  const pageSize = 15;
+  const pageSize = 8;
   const [limit, _] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -121,12 +128,11 @@ export const ApiList = (props: ApiListProps) => {
         }
       });
 
+  const [page, setPage] = useState(0);
+
   const dataRequest = useQuery({
-    queryKey: ["data",
-      limit,
-      columnFilters
-    ],
-    queryFn: ({ pageParam = 0 }) => {
+    queryKey: ["listOfMyVisiblesApis", limit, columnFilters, page],
+    queryFn: () => {
       return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
         Services.graphql.myVisibleApis,
         {
@@ -134,29 +140,38 @@ export const ApiList = (props: ApiListProps) => {
           sortingTable: JSON.stringify([]),
           groupId: props.apiGroupId,
           limit,
-          offset: pageParam,
-        })
-        .then(({ visibleApis }) => {
-          setProducers(visibleApis.producers
-            .map(p => ({ label: p.team.name, value: p.team._id }))
-            .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })))
-          setTags(visibleApis.tags.map(p => p.value))
-          return visibleApis
-        })
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, pages) => {
-      const totalFilteredCount = lastPage.totalFiltered;
-      const nextOffset = pages.length * pageSize;
-
-      return nextOffset < totalFilteredCount ? nextOffset : undefined;
-    },
-    gcTime: 0
-  })
-
+          offset: page * limit,
+        }
+      ).then(({ visibleApis }) => {
+        setProducers(visibleApis.producers
+          .map(p => ({ label: p.team.name, value: p.team._id }))
+          .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })))
+        setTags(visibleApis.tags.map(p => p.value))
+        return visibleApis
+      })
+  }}
+  )
   // --- MARK: Table
   const columnHelper = createColumnHelper<IApiWithAuthorization>();
   const columns = [
+    columnHelper.display({
+      id: 'select',
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllRowsSelected()}
+          onChange={table.getToggleAllRowsSelectedHandler()}
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      ),
+    }),
     columnHelper.display({
       id: 'favorite',
       enableColumnFilter: false,
@@ -244,7 +259,6 @@ export const ApiList = (props: ApiListProps) => {
         const authorizations = info.row.original.authorizations;
         const isApiGroup = !!info.row.original.api.apis?.length;
         const path = isApiGroup ? 'apis' : 'description';
-
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
           return <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
             {api.name}
@@ -265,7 +279,7 @@ export const ApiList = (props: ApiListProps) => {
             {tags.map((tag, idx) => {
               return (
                 <span key={`${tag}-${idx}`} onClick={() => handleSelectChange([{ label: tag, value: tag }], 'tag')}
-                  className={`badge badge-custom-primary`}>
+                  className={`badge badge-custom-primary`} style={{fontWeight:"normal"}}>
                   {tag}
                 </span>
               )
@@ -289,38 +303,47 @@ export const ApiList = (props: ApiListProps) => {
       id: 'Status',
       meta: { className: "status-cell" },
       cell: (info) => {
+
         const api = info.row.original.api
-        const activeCount = info.row.original.subscriptionCount
-        const pendingCount = info.row.original.subscriptionDemands.length
-        const expireCount = info.row.original.expireCount
+        const apiState = info.row.original.api.state
+        console.dir(apiState)
         return <div className="d-flex gap-1 status ">
-          {!!activeCount &&
+          {api.state}
+          {(apiState === 'published' || apiState == 'created') &&
             <span
               className="badge badge-custom-success d-flex align-items-center gap-2"
               style={{ border: 'none'}}
-              onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}
-            >
+              onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
               <span className="bg-success rounded-circle"
                     style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
               <span>{"Active"}</span>
             </span>}
-          {!!expireCount &&
+          { apiState == 'deprecated' &&
             <span
-            className="badge badge-custom-danger d-flex align-items-center gap-2"
+            className="badge  badge-custom-danger d-flex align-items-center gap-2"
             style={{ border: 'none'}}
             onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-              <span className="bg-success rounded-circle"
+              <span className="bg-danger rounded-circle"
+                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
+              <span>{"Dépréciée"}</span>
+            </span>
+            }
+          {(apiState == 'blocked' || apiState == 'deleted')  &&
+            <span
+              className="badge  badge-custom-success d-flex align-items-center gap-2"
+              style={{ border: 'none'}}>
+              <span className="bg-info rounded-circle"
                     style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
               <span>{"Retirée"}</span>
             </span>
-            }
-          {!!pendingCount &&
+          }
+          {(!apiState)  &&
             <span
-              className="badge badge-custom-warning d-flex align-items-center gap-2"
+              className="badge  badge-custom-info d-flex align-items-center gap-2"
               style={{ border: 'none'}}>
-              <span className="bg-success rounded-circle"
+              <span className="bg-info rounded-circle"
                     style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
-              <span>{"Retirée"}</span>
+              <span>{"Stateless"}</span>
             </span>
           }
         </div>
@@ -331,9 +354,15 @@ export const ApiList = (props: ApiListProps) => {
       meta: { className: "subscription-cell" },
       cell: (info) => {
         const subscriptionCount = info.row.original.subscriptionCount;
-        return <a href='#' onClick={() => handleSelectChange([{ label: "subscriptionCount", value: subscriptionCount.toString() }], 'subscriptions')}>
+        const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
+        return (
+        <div className="d-flex gap-2">
+        <a href='#' onClick={() => handleSelectChange([{ label: "subscriptionCount", value: subscriptionCount.toString() }], 'subscriptions')}>
           {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 0 ? 's' : ''}`}
         </a>
+          {subscriptionDemandsCount > 0 &&
+        <span className="badge badge-custom-demands-subscription">{subscriptionDemandsCount} en attente</span>}
+        </div>)
       }
     }),
     columnHelper.display({
@@ -352,45 +381,45 @@ export const ApiList = (props: ApiListProps) => {
           authorizations.length === myTeams.length && authorizations.every((a) => a.pending && !a.authorized);
 
 
-        const accessButton = () => {
-          if (
-            !allTeamsAreAuthorized &&
-            !['Private', 'AdminOnly'].includes(api.visibility)
-          ) {
-            return (
-              <ActionWithTeamSelector
-                title={translate("api.access.modal.title")}
-                description={translate({ key: 'api.access.request', replacements: [api.name] })}
-                pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
-                acceptedTeams={authorizations
-                  .filter((auth) => auth.authorized)
-                  .map((auth) => auth.team)}
-                teams={myTeams?.filter((t) => t.type !== 'Admin')}
-                action={(teams) => askForApiAccess(info.row.original, teams)}
-                actionLabel={translate("Ask access to API")}
-                allTeamSelector={true}
-              >
-                {isPending ? (
-
-
-                  <button className="btn btn-sm btn-outline-info">
-                    {translate('Pending request')}
-                  </button>
-                ) : (
-                  <button className="btn btn-sm btn-outline-info">
-                    <i className="far fa-comment-dots me-2" />{translate('Access')}
-                  </button>
-                )}
-              </ActionWithTeamSelector>
-            );
-          }
-          return null;
-        };
+        // const accessButton = () => {
+        //   if (
+        //     !allTeamsAreAuthorized &&
+        //     !['Private', 'AdminOnly'].includes(api.visibility)
+        //   ) {
+        //     return (
+        //       <ActionWithTeamSelector
+        //         title={translate("api.access.modal.title")}
+        //         description={translate({ key: 'api.access.request', replacements: [api.name] })}
+        //         pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
+        //         acceptedTeams={authorizations
+        //           .filter((auth) => auth.authorized)
+        //           .map((auth) => auth.team)}
+        //         teams={myTeams?.filter((t) => t.type !== 'Admin')}
+        //         action={(teams) => askForApiAccess(info.row.original, teams)}
+        //         actionLabel={translate("Ask access to API")}
+        //         allTeamSelector={true}
+        //       >
+        //         {isPending ? (
+        //
+        //
+        //           <button className="btn btn-sm btn-outline-info">
+        //             {translate('Pending request')}
+        //           </button>
+        //         ) : (
+        //           <button className="btn btn-sm btn-outline-info">
+        //             <i className="far fa-comment-dots me-2" />{translate('Access')}
+        //           </button>
+        //         )}
+        //       </ActionWithTeamSelector>
+        //     );
+        //   }
+        //   return null;
+        // };
 
         return (
 
-          <div className="nav_item dropdown" style={{ color: '#fff' }}>
-            <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+          <div className="nav_item dropdown">
+            <button type="button" className='btn btn-outline-secondary btn-icon d-flex align-items-center gap-2'
                     data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
               <MoreVertical />
             </button>
@@ -412,31 +441,24 @@ export const ApiList = (props: ApiListProps) => {
   ]
   const defaultData = useMemo(() => [], [])
   const table = useReactTable({
-    data: dataRequest.data?.pages.flatMap(
-      (page) => page.apis
-    ) ?? defaultData,
+    data: dataRequest.data?.apis ?? defaultData,
     columns: columns,
     getRowId: row => row.api._id,
-    rowCount: dataRequest.data?.pages.flatMap(
-      (page) => page.apis
+    rowCount: dataRequest.data?.apis.flatMap(
+      (page) => page.api
     ).length ?? 0, //FIXME: better with totalFiltered like notification page
     state: {
       pagination,
-      //columnFilters,
-      // sorting
+      columnFilters
     },
     onPaginationChange: setPagination,
-    // onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     onColumnFiltersChange: setColumnFilters,
-    // getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableMultiRowSelection: true,
     enableSubRowSelection: true,
-    enableRowSelection: _ => {
-      return false;
-      // return notification.status.status === 'Pending' && notification.notificationType.value === 'AcceptOnly';
-    },
+    enableRowSelection: true
   })
 
   //--- MARK: functions
@@ -500,16 +522,17 @@ export const ApiList = (props: ApiListProps) => {
   };
 
   const getTotalForTeam = (teamId: string) => {
-    return Option(dataRequest.data?.pages[0].producers.find(t => t.team._id === teamId))
-      .map(team => team.total)
-      .getOrNull()
+     return Option(dataRequest.data?.producers.find(t => t.team._id === teamId))
+       .map(team => team.total)
+       .getOrNull()
   }
 
   const getTotalForTags = (tag: string) => {
-    return Option(dataRequest.data?.pages[0].tags.find(t => t.value === tag))
+    return Option(dataRequest.data?.tags.find(t => t.value === tag))
       .map(tag => tag.total)
       .getOrNull()
   }
+
 
 
   const menuStyle = {
@@ -528,7 +551,6 @@ export const ApiList = (props: ApiListProps) => {
 
   const getSelectValue = <T extends object>(id: string, data: Array<T>, labelKey: string, idKey: string): Array<{ label: string, value: string }> => {
     const filter = columnFilters.find(f => f.id === id);
-
     const selectedValues = filter?.value as Array<string> ?? [];
     return data
       .filter(t => selectedValues.includes(t[idKey]))
@@ -537,7 +559,6 @@ export const ApiList = (props: ApiListProps) => {
 
   const getSelectStringValue = (id: string, data: Array<string>): Array<{ label: string, value: string }> => {
     const filter = columnFilters.find(f => f.id === id);
-
     const selectedValues = filter?.value as Array<string> ?? [];
     return data
       .filter(t => selectedValues.includes(t))
@@ -564,50 +585,6 @@ export const ApiList = (props: ApiListProps) => {
     setColumnFilters([...columnFilters.filter(c => c.id !== id), { id, value: columnFilterValues.filter(v => v !== value) }])
   }
 
-  const displayFilters = () => {
-    if (!columnFilters.length) {
-      return null
-    } else {
-      const filterOrder = ['research', 'team', 'tag']
-
-      const myTeams = myTeamsRequest.data as ITeamSimple[]
-
-
-      return (
-        <div className='mt-2 d-flex flex-wrap flex-row gap-2'>
-          {columnFilters
-            .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
-            .flatMap(f => {
-              switch (true) {
-                case f.id === 'team':
-                  return ((f.value as Array<string>)
-                    .map(value => {
-                      const teamName = myTeams.find(t => t._id === value)?.name;
-                      return (
-                        <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
-                          {teamName}
-                          <i className='fas fa-xmark' />
-                        </button>
-                      )
-                    }))
-                case f.id === 'tag':
-                  return ((f.value as Array<string>)
-                    .map(tag => {
-                      return (
-                        <button key={tag} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, tag)}>
-                          {tag}
-                          <i className='fas fa-xmark' />
-                        </button>
-                      )
-                    }))
-              }
-            })}
-        </div>
-      )
-    }
-  }
-
-
   //--- MARK: Rendering
   if (myTeamsRequest.isLoading) {
     return <Spinner />
@@ -615,6 +592,47 @@ export const ApiList = (props: ApiListProps) => {
 
     const subscribedOnly = !!columnFilters.find(f => f.id === 'subscribedOnly')?.value
     const canCreateApi = !connectedUser.isGuest && !props.apiGroupId && (!tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
+    const totalPages = Math.ceil((dataRequest.data?.total ?? 0) / limit);
+    const colourStyles: StylesConfig<ColourOption, true> = {
+      control: (styles) => ({ ...styles }),      option: (styles, { isDisabled, isFocused, isSelected }) => {
+        return {
+          ...styles,
+          backgroundColor: isDisabled
+            ? undefined
+            : isSelected
+              ? 'white'
+              : isFocused
+                ? '#93c5fd'
+                : 'white',
+          color: isDisabled ? '#93c5fd' : 'black',
+          cursor: isDisabled ? 'not-allowed' : 'defaults',
+
+          ':active': {
+            ...styles[':active'],
+            backgroundColor: !isDisabled ? 'white' : undefined,
+          },
+        };
+      },
+      multiValue: (styles) =>  ({
+        ...styles,
+        backgroundColor: "#29438D",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: 'white',
+      }),
+      multiValueRemove: (styles, { data }) => ({
+        ...styles,
+        color: "white",
+        ':hover': {
+          backgroundColor: "#a9cbea",
+          color: 'white',
+        },
+      }),
+    };
+
+    // const ref = useRef<HTMLInputElement>(null);
+    console.log(dataRequest.data)
 
     return (
       <div className="col-12 api_list_container">
@@ -632,10 +650,6 @@ export const ApiList = (props: ApiListProps) => {
               </button>
 
               <div className="nav_item dropdown" style={{ color: '#fff' }}>
-                <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
-                  data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
-                  <MoreVertical />
-                </button>
                 <div className="dropdown-menu">
                   <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
                     <div className="blocks">
@@ -654,9 +668,8 @@ export const ApiList = (props: ApiListProps) => {
           )}
         </div>
         <div className="filter-container mt-3 d-flex justify-content-between">
-          <div className="d-flex align-items-center gap-2 flex-grow-1">
+          <div className="d-flex align-items-end gap-2 flex-grow-1">
             <div className="position-relative col-2">
-              <label className="form-label">Recherche</label>
               <input
                 type="text"
                 className="form-control pe-5"
@@ -670,61 +683,52 @@ export const ApiList = (props: ApiListProps) => {
               />
               <i
                 className="fas fa-search position-absolute"
-                style={{ right: '12px', top: '50%', marginTop: '7px' }}
+                style={{ right: '12px', top: '10%', marginTop: '7px' }}
               />
             </div>
-            <div className="position-relative col-2">
-              <label className="form-label">Equipes</label>
               <Select
                 isMulti //@ts-ignore
-                components={{Placeholder: GenericPlaceholder, Option: CustomOption}}
-                controlShouldRenderValue={false}
+                className="basic-multi-select position-relative col-3"
+                classNamePrefix="select"
                 options={(producers)}
                 isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
                 closeMenuOnSelect={false}
-                labelKey={"dashboard.filters.team.label"}
-                labelKeyAll={"dashboard.filters.all.team.label"}
-                getCount={getTotalForTeam}
-                classNamePrefix="daikoku-select"
-                className="team__selector filter__select reactSelect"
-                styles={menuStyle}
+                // styles={menuStyle}
+                styles={colourStyles}
                 onChange={data => handleSelectChange(data, 'team')}
                 value={getSelectValue('team', producers, 'label', 'value')}/>
-            </div>
-            <div className="position-relative col-2">
-              <label className="form-label">Tags</label>
             <Select
               isMulti //@ts-ignore
-              components={{Placeholder: GenericPlaceholder, Option: CustomOption}}
-              controlShouldRenderValue={false}
+              className="basic-multi-select position-relative col-3"
+              classNamePrefix="select"
               options={arrayStringToTOps(tags)}
               isLoading={dataRequest.isLoading}
               closeMenuOnSelect={false}
-              labelKey={"dashboard.filters.tag.label"}
-              labelKeyAll={"dashboard.filters.all.tags.label"}
-              getCount={getTotalForTags}
-              classNamePrefix="daikoku-select"
-              className="tag__selector filter__select reactSelect"
-              styles={menuStyle}
+              styles={colourStyles}
               onChange={data => handleSelectChange(data, 'tag')}
               value={getSelectStringValue('tag', tags)}/>
-            </div>
             <div className="position-relative  col-2">
-              <label className="form-label">{translate('dashboard.filters.subscribe.apis.only.label')}</label>
-            <div className="form-check form-switch">
-              <input
-                className={classNames('form-check-input', {active: subscribedOnly})}
-                type="checkbox"
-                role="switch"
-                id="flexSwitchCheckDefault"
-                aria-pressed={subscribedOnly}
-                onClick={() => {
-                 const filters = columnFilters.filter(f => f.id !== 'subscribedOnly')
-                 setColumnFilters([...filters, {id: 'subscribedOnly', value: true}])
-                }}
-              />
-              <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Désactivé</label>
-            </div>
+              <div className="form-check form-switch">
+                <input
+                  className={classNames('form-check-input', {active: subscribedOnly})}
+                  type="checkbox"
+                  role="switch"
+                  id="flexSwitchCheckDefault"
+                  aria-pressed={subscribedOnly}
+                  checked={columnFilters.some(f => f.id === 'subscribedOnly' && f.value)}
+                  onClick={() => {
+                    const isActive = columnFilters.some(f => f.id === 'subscribedOnly' && f.value);
+                    setColumnFilters(
+                      isActive
+                        ? columnFilters.filter(f => f.id !== 'subscribedOnly')
+                        : [...columnFilters.filter(f => f.id !== 'subscribedOnly'), { id: 'subscribedOnly', value: true }]
+                    );
+                  }}
+                />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
+                  {translate('dashboard.filters.subscribe.apis.only.label')}
+                </label>
+              </div>
             </div>
 
             {!!columnFilters.length &&
@@ -733,45 +737,54 @@ export const ApiList = (props: ApiListProps) => {
                 {translate('notifications.page.filters.clear.label')}
               </button>}
           </div>
-
-          <div className="">{dataRequest.data?.pages[0].totalFiltered} APIs</div>
-
         </div>
-        {displayFilters()}
+        <div style={{color:"#8a8a8a", marginTop: '10px'}}>
+          {
+            table.getSelectedRowModel().rows.length !== 0 ? (
+              <div className="d-flex" style={{backgroundColor:"lightgray"}}>
+                <div className="p-2 flex-grow-1">
+                  <strong>{table.getSelectedRowModel().rows.length}</strong>{translate({ key: "dashboard.apis.selected.count", replacements: [dataRequest.data ? dataRequest.data.totalFiltered.toString() : ""]})}
+                </div>
+                <button className="btn btn-outline-secondary btn-sm" onClick={() => {}}>
+                  <div className="d-flex gap-2 ">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                       className="bi bi-key" viewBox="0 0 16 16">
+                    <path
+                      d="M0 8a4 4 0 0 1 7.465-2H14a.5.5 0 0 1 .354.146l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0L13 9.207l-.646.647a.5.5 0 0 1-.708 0L11 9.207l-.646.647a.5.5 0 0 1-.708 0L9 9.207l-.646.647A.5.5 0 0 1 8 10h-.535A4 4 0 0 1 0 8m4-3a3 3 0 1 0 2.712 4.285A.5.5 0 0 1 7.163 9h.63l.853-.854a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.793-.793-1-1h-6.63a.5.5 0 0 1-.451-.285A3 3 0 0 0 4 5"/>
+                    <path d="M4 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                  </svg>
+                  {translate("dashboard.filters.selected.apis.apiKeys.subscribe.button")}
+                  </div>
+                </button>
+              </div>
+            ) : (
+              getSelectValue('team', producers, 'label', 'value').length > 0 || getSelectValue('tags', producers, 'label', 'value').length > 0) ? (
+              <div><strong>{dataRequest.data?.totalFiltered}</strong>{translate({ key: "dashboard.apis.filterd.count", replacements: [dataRequest.data ? dataRequest.data.total.toString() : ""]})}
+
+              </div>
+            ) : (
+              <div><strong>{dataRequest.data?.totalFiltered}</strong> APIs</div>
+            )
+          }
+        </div>
         <div className="table-container mt-3">
           {dataRequest.isLoading && <Spinner/>}
           {dataRequest.data && (
             <>
               <div className="api-table table-rows">
-                <div className='select-all-row table-row'>
-                  {/* <label className='notification-table-header'>
-                        <input
-                          type="checkbox"
-                          aria-label={translate('notifications.page.table.select.all.label')}
-                          className='form-check-input'
-                          checked={table.getIsAllPageRowsSelected()}
-                          onChange={(e) => {
-                            if (selectAll)
-                              setSelectAll(!selectAll)
-                            table.getToggleAllPageRowsSelectedHandler()(e)
-                          }}
-                        />
-
-                      </label> */}
-                  {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
-                  {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
-                        <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>{translate('notifications.page.table.read.bulk.action.label')}</button>
-                      )} */}
-                  {/* {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
-                        <button className='btn btn-sm btn-outline-secondary ms-3' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
-                      )} */}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span></span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.api')}</span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.tags')}</span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.team')}</span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.status')}</span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.subscriptions')}</span>}
-                  {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>}
+                <div className='select-all-row table-row table-header'>
+                  <input
+                    type="checkbox"
+                    checked={table.getIsAllRowsSelected()}
+                    onChange={table.getToggleAllRowsSelectedHandler()}
+                  />
+                   <span>{translate('')}</span>
+                   <span>{translate('dashboard.apis.table.header.label.api')}</span>
+                   <span>{translate('dashboard.apis.table.header.label.tags')}</span>
+                   <span>{translate('dashboard.apis.table.header.label.team')}</span>
+                   <span>{translate('dashboard.apis.table.header.label.status')}</span>
+                   <span>{translate('dashboard.apis.table.header.label.subscriptions')}</span>
+                   <span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>
                 </div>
                 <ul className='table-rows' role="list">
                   {table.getRowModel().rows.map((row, idx) => {
@@ -795,17 +808,30 @@ export const ApiList = (props: ApiListProps) => {
                 </ul>
               </div>
               <div className="mt-3 d-flex justify-content-center">
-                {dataRequest.hasNextPage && (
-                  <FeedbackButton
-                    type="info"
-                    className="a-fake"
-                    onPress={() => dataRequest.fetchNextPage()}
-                    feedbackTimeout={300}
-                    disabled={dataRequest.isFetchingNextPage}
-                  >
-                    {translate('dashboard.api.table.more.button.label')}
-                  </FeedbackButton>
-                )}
+                <nav aria-label="Page navigation example">
+                  <ul className="pagination">
+                    <li className="page-item">
+                    <button className="page-link" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
+                      Précédent
+                    </button>
+                    </li>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPage(i)}
+                        className={`page-link ${page === i ? 'page-link active' : 'page-link '}`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <li className="page-item">
+                    <button className="page-link" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
+                      Suivant
+                    </button>
+                    </li>
+
+                  </ul>
+                </nav>
               </div>
             </>
           )}
