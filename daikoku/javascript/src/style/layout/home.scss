@@ -2,10 +2,9 @@
 
 
 .organisation__header {
-  margin-top: variables.$topbar-height;
+  margin-top: 10px;
   max-height: 10rem;
   position: relative;
-  overflow-y: scroll;
 
   .organisation__logo {
     max-width: 25%;
@@ -18,7 +17,7 @@
   }
 }
 
-$tile_background_color: variables.$level2_bg-color;
+$tile_background_color: variables.$level3_bg-color;
 $tile_text_color: variables.$level2_text-color;
 $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
 
@@ -127,18 +126,14 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
     }
   }
 
-  .api_list_container {
-    background-color: #FFFFFF;
-    background: $tile_background_color;
-    border: 1px solid $tile_border_color;
-    border-radius: 5px;
 
-    padding: 20px;
+}
+.api_list_container {
+  background: $tile_background_color;
+  border-radius: 10px;
+  padding: 20px;
 
-    color: #000;
-
-    .api_list__title {
-      font-size: 20px;
-    }
+  .api_list__title {
+    font-size: 20px;
   }
 }
