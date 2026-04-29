@@ -2964,7 +2964,8 @@ class ApiService(
         otoroshiClient.getApikey(subscription.apiKey.clientId)(using
           otoroshiSettings
         )
-      ) newApk = apk.copy(
+      )
+      newApk = apk.copy(
         clientName =
           s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${newTeam.humanReadableId}-${System
               .currentTimeMillis()}-${api.currentVersion.value}",
@@ -2972,7 +2973,7 @@ class ApiService(
           apk.metadata + ("daikoku_transfer_to_team_id" -> newTeam.id.value) + ("daikoku_transfer_to_team" -> newTeam.name)
       )
       _ <- EitherT[Future, AppError, ActualOtoroshiApiKey](
-        otoroshiClient.updateApiKey(newApk)(usingotoroshiSettings)
+        otoroshiClient.updateApiKey(newApk)(using otoroshiSettings)
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.notificationRepo

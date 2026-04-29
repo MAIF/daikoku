@@ -209,7 +209,7 @@ class OtoroshiClient(env: Env) {
     ) {
       Future.failed(new RuntimeException(s"Bad group id"))
     } else {
-      getServiceGroup(groupId)(usingotoroshiSettings)
+      getServiceGroup(groupId)(using otoroshiSettings)
         .flatMap(g => f)
         .recoverWith { case e =>
           Future.failed(e)

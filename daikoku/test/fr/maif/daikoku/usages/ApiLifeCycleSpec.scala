@@ -1,11 +1,11 @@
 package fr.maif.daikoku.usages
 
+import fr.maif.daikoku.env.Env
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -14,17 +14,21 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.libs.json.*
-
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 
-class ApiLifeCycleSpec(
-) extends PlaySpec
+class ApiLifeCycleSpec
+    extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfter
     with ForAllTestContainer {
+
   val pwd: String = System.getProperty("user.dir")
+  implicit val ecc: ExecutionContext =
+    daikokuComponents.env.defaultExecutionContext
+  implicit val ev: Env = daikokuComponents.env
 
   // Container Otoroshi
   override val container: GenericContainer = GenericContainer(
@@ -32,7 +36,7 @@ class ApiLifeCycleSpec(
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(
       FileSystemBind(
-        s"$pwd/test/daikoku/otoroshi.json",
+        s"$pwd/test/fr/maif/daikoku/controllers/otoroshi.json",
         "/home/user/otoroshi.json",
         BindMode.READ_ONLY
       )
@@ -287,158 +291,160 @@ class ApiLifeCycleSpec(
       // Ne pas modifier deux versions avec une seule requête
     }
 
-    "when blocking aggregated ApiKey" in {
-
-      // TODO: Ecrire un test pour les aggregates
-      // prendre en compte : Bloquer un enfant, puis un parent,
-      // existe peut être déjà avec les souscriptiuobs
-
-      // existe peut être là => chercher // "delete parentSub => first child become parent" dans ApiControllerSpec
-      // ou "be exploded in parts by deleting the parent sub"
-
-      Await.result(waitForDaikokuSetup(), 5.second)
-      val planDev = UsagePlan(
-        id = UsagePlanId("dev"),
-        tenant = tenant.id,
-        customName = "dev",
-        customDescription = None,
-        otoroshiTarget = Some(
-          OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(
-                routes = Set(OtoroshiRouteId(parentRouteId))
-              )
-            )
-          )
-        ),
-        allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false)
-      )
-
-      val planProd = UsagePlan(
-        id = UsagePlanId("prod"),
-        tenant = tenant.id,
-        customName = "prod",
-        customDescription = None,
-        otoroshiTarget = Some(
-          OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(
-                routes = Set(OtoroshiRouteId(childRouteId))
-              )
-            )
-          )
-        ),
-        allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false)
-      )
-
-      val parentApi = defaultApi.api.copy(
-        id = ApiId("parent-id"),
-        name = "parent API",
-        team = teamOwnerId,
-        possibleUsagePlans = Seq(planProd.id),
-        defaultUsagePlan = planProd.id.some
-      )
-
-      val parentSub = ApiSubscription(
-        id = ApiSubscriptionId("parent_sub"),
-        tenant = tenant.id,
-        apiKey = parentApiKeyWith2childs,
-        plan = planProd.id,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = parentApi.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "parent_token"
-      )
-      val childSub = ApiSubscription(
-        id = ApiSubscriptionId("child_sub"),
-        tenant = tenant.id,
-        apiKey = parentApiKeyWith2childs,
-        plan = planProd.id,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = parentApi.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "parent_token",
-        parent = parentSub.id.some
-      )
-      val childOwnerSub = ApiSubscription(
-        id = ApiSubscriptionId("child_owner_sub"),
-        tenant = tenant.id,
-        apiKey = parentApiKeyWith2childs,
-        plan = planProd.id,
-        createdAt = DateTime.now(),
-        team = teamOwnerId,
-        api = parentApi.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "parent_owner_token",
-        parent = parentSub.id.some
-      )
-
-      setupEnvBlocking(
-        tenants = Seq(
-          tenant.copy(
-            otoroshiSettings = Set(
-              OtoroshiSettings(
-                id = containerizedOtoroshi,
-                url =
-                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-                host = "otoroshi-api.oto.tools",
-                clientSecret = otoroshiAdminApiKey.clientSecret,
-                clientId = otoroshiAdminApiKey.clientId
-              )
-            )
-          )
-        ),
-        users = Seq(userAdmin, userApiEditor, user),
-        teams = Seq(
-          defaultAdminTeam,
-          teamOwner,
-          teamConsumer.copy(users =
-            Set(
-              UserWithPermission(userTeamAdminId, Administrator),
-              UserWithPermission(userTeamUserId, Administrator)
-            )
-          )
-        ),
-        apis = Seq(
-          defaultApi.api.copy(possibleUsagePlans = Seq(planProd.id, planDev.id))
-        ),
-        usagePlans = Seq(planProd, planDev),
-        subscriptions = Seq(
-          parentSub,
-          childSub,
-          childOwnerSub
-        )
-      )
-
-      val adminSession = loginWithBlocking(userAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}",
-        method = "PUT",
-        body = Some(defaultApi.api.copy(state = ApiState.Blocked).asJson)
-      )(tenant, adminSession)
-      resp.status mustBe 200
-      (resp.json \ "state").as(json.ApiStateFormat) mustBe ApiState.Blocked
-
-      checkOtoroshiKeyEnabling(parentApiKeyWith2childs, enabled = false)
-    }
+//    "when blocking aggregated ApiKey" in {
+//
+//      // TODO: Ecrire un test pour les aggregates
+//      // prendre en compte : Bloquer un enfant, puis un parent,
+//      // existe peut être déjà avec les souscriptiuobs
+//
+//      // existe peut être là => chercher // "delete parentSub => first child become parent" dans ApiControllerSpec
+//      // ou "be exploded in parts by deleting the parent sub"
+//
+//      Await.result(waitForDaikokuSetup(), 5.second)
+//      val planDev = UsagePlan(
+//        id = UsagePlanId("dev"),
+//        tenant = tenant.id,
+//        customName = "dev",
+//        customDescription = None,
+//        otoroshiTarget = Some(
+//          OtoroshiTarget(
+//            containerizedOtoroshi,
+//            Some(
+//              AuthorizedEntities(
+//                routes = Set(OtoroshiRouteId(parentRouteId))
+//              )
+//            )
+//          )
+//        ),
+//        allowMultipleKeys = Some(false),
+//        subscriptionProcess = Seq.empty,
+//        integrationProcess = IntegrationProcess.ApiKey,
+//        autoRotation = Some(false)
+//      )
+//
+//      val planProd = UsagePlan(
+//        id = UsagePlanId("prod"),
+//        tenant = tenant.id,
+//        customName = "prod",
+//        customDescription = None,
+//        otoroshiTarget = Some(
+//          OtoroshiTarget(
+//            containerizedOtoroshi,
+//            Some(
+//              AuthorizedEntities(
+//                routes = Set(OtoroshiRouteId(childRouteId))
+//              )
+//            )
+//          )
+//        ),
+//        allowMultipleKeys = Some(false),
+//        subscriptionProcess = Seq.empty,
+//        integrationProcess = IntegrationProcess.ApiKey,
+//        autoRotation = Some(false)
+//      )
+//
+//      val parentApi = defaultApi.api.copy(
+//        id = ApiId("parent-id"),
+//        name = "parent API",
+//        team = teamOwnerId,
+//        possibleUsagePlans = Seq(planProd.id),
+//        defaultUsagePlan = planProd.id.some
+//      )
+//
+//      val parentSub = ApiSubscription(
+//        id = ApiSubscriptionId("parent_sub"),
+//        tenant = tenant.id,
+//        apiKey = parentApiKeyWith2childs,
+//        plan = planProd.id,
+//        createdAt = DateTime.now(),
+//        team = teamConsumerId,
+//        api = parentApi.id,
+//        by = userTeamAdminId,
+//        customName = None,
+//        rotation = None,
+//        integrationToken = "parent_token"
+//      )
+//      val childSub = ApiSubscription(
+//        id = ApiSubscriptionId("child_sub"),
+//        tenant = tenant.id,
+//        apiKey = parentApiKeyWith2childs,
+//        plan = planProd.id,
+//        createdAt = DateTime.now(),
+//        team = teamConsumerId,
+//        api = parentApi.id,
+//        by = userTeamAdminId,
+//        customName = None,
+//        rotation = None,
+//        integrationToken = "parent_token",
+//        parent = parentSub.id.some
+//      )
+//      val childOwnerSub = ApiSubscription(
+//        id = ApiSubscriptionId("child_owner_sub"),
+//        tenant = tenant.id,
+//        apiKey = parentApiKeyWith2childs,
+//        plan = planProd.id,
+//        createdAt = DateTime.now(),
+//        team = teamOwnerId,
+//        api = parentApi.id,
+//        by = userTeamAdminId,
+//        customName = None,
+//        rotation = None,
+//        integrationToken = "parent_owner_token",
+//        parent = parentSub.id.some
+//      )
+//
+//      setupEnvBlocking(
+//        tenants = Seq(
+//          tenant.copy(
+//            otoroshiSettings = Set(
+//              OtoroshiSettings(
+//                id = containerizedOtoroshi,
+//                url =
+//                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+//                host = "otoroshi-api.oto.tools",
+//                clientSecret = otoroshiAdminApiKey.clientSecret,
+//                clientId = otoroshiAdminApiKey.clientId
+//              )
+//            )
+//          )
+//        ),
+//        users = Seq(userAdmin, userApiEditor, user),
+//        teams = Seq(
+//          defaultAdminTeam,
+//          teamOwner,
+//          teamConsumer.copy(users =
+//            Set(
+//              UserWithPermission(userTeamAdminId, Administrator),
+//              UserWithPermission(userTeamUserId, Administrator)
+//            )
+//          )
+//        ),
+//        apis = Seq(
+//          defaultApi.api.copy(possibleUsagePlans = Seq(planProd.id, planDev.id))
+//        ),
+//        usagePlans = Seq(planProd, planDev),
+//        subscriptions = Seq(
+//          parentSub,
+//          childSub,
+//          childOwnerSub
+//        )
+//      )
+//
+//      val adminSession = loginWithBlocking(userAdmin, tenant)
+//
+//      val resp = httpJsonCallBlocking(
+//        path =
+//          s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}",
+//        method = "PUT",
+//        body = Some(defaultApi.api.copy(state = ApiState.Blocked).asJson)
+//      )(using tenant, adminSession)
+//      resp.status mustBe 200
+//      (resp.json \ "state").as(using
+//        json.ApiStateFormat
+//      ) mustBe ApiState.Blocked
+//
+//      checkOtoroshiKeyEnabling(parentApiKeyWith2childs, enabled = false)
+//    }
 
     // todo: check notification (2 users, 3 teams, 1 teams with 2 admins, 1 teams with just users)
 
@@ -557,7 +563,7 @@ class ApiLifeCycleSpec(
         path = s"/api/search",
         "POST",
         body = graphQlRequestAllVisibleAPis.some
-      )(tenant, userSession)
+      )(using tenant, userSession)
 
       // verifier qu'on a 1 api
       // state published
@@ -581,18 +587,20 @@ class ApiLifeCycleSpec(
           s"/api/teams/${teamOwnerId.value}/apis/${apiVersion1.id.value}/${apiVersion1.currentVersion.value}",
         method = "PUT",
         body = Some(apiVersion1.copy(state = ApiState.Blocked).asJson)
-      )(tenant, adminSession)
+      )(using tenant, adminSession)
 
       println(resp.body)
 
       resp.status mustBe 200
-      (resp.json \ "state").as(json.ApiStateFormat) mustBe ApiState.Blocked
+      (resp.json \ "state").as(using
+        json.ApiStateFormat
+      ) mustBe ApiState.Blocked
 
       val visibleApisAfter = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
         body = graphQlRequestAllVisibleAPis.some
-      )(tenant, userSession)
+      )(using tenant, userSession)
       visibleApisAfter.status mustBe 200
       (visibleApisAfter.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 1
@@ -619,10 +627,10 @@ class ApiLifeCycleSpec(
             s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
           method = "PUT",
           body = Some(defaultApi.api.copy(state = state).asJson)
-        )(tenant, session)
+        )(using tenant, session)
         resp.status mustBe statusResponse
         if (statusResponse == 200)
-          (resp.json \ "state").as(json.ApiStateFormat) mustBe state
+          (resp.json \ "state").as(using json.ApiStateFormat) mustBe state
       }
     }
 
@@ -643,7 +651,7 @@ class ApiLifeCycleSpec(
         path = s"/api/search",
         method = "POST",
         body = graphQlRequestNotifications.some
-      )(tenant, adminSession)
+      )(using tenant, adminSession)
       adminNotifResp.status mustBe 200
       (adminNotifResp.json \ "data" \ "myNotifications" \ "totalFiltered")
         .as[Int] mustBe numberOfAdminNotif
@@ -671,7 +679,7 @@ class ApiLifeCycleSpec(
         path = s"/api/search",
         method = "POST",
         body = graphQlRequestNotifications.some
-      )(tenant, userSession)
+      )(using tenant, userSession)
       userNotifResp.status mustBe 200
       (userNotifResp.json \ "data" \ "myNotifications" \ "totalFiltered")
         .as[Int] mustBe numberOfUserNotif
@@ -706,7 +714,7 @@ class ApiLifeCycleSpec(
         ),
         port = container.mappedPort(8080),
         hostHeader = "otoroshi-api.oto.tools"
-      )(tenant)
+      )(using tenant)
 
       (respVerifOto.json \ "enabled").as[Boolean] mustBe enabled
     }

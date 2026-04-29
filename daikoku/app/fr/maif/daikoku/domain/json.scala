@@ -2374,7 +2374,7 @@ object json {
                 case _: JsUndefined => None
               },
             state = (json \ "state")
-              .asOpt(ApiSubscriptionStateFormat)
+              .asOpt(using ApiSubscriptionStateFormat)
               .getOrElse(Active)
           )
         )
@@ -3095,7 +3095,7 @@ object json {
       Try {
         JsSuccess(
           ApiDepreciationWarning(
-            api = (json \ "api").as(ApiIdFormat)
+            api = (json \ "api").as(using ApiIdFormat)
           )
         )
       } recover { case e =>
@@ -3114,8 +3114,8 @@ object json {
       Try {
         JsSuccess(
           ApiBlockingWarning(
-            api = (json \ "api").as(ApiIdFormat),
-            subscription = (json \ "sub").as(ApiSubscriptionIdFormat)
+            api = (json \ "api").as(using ApiIdFormat),
+            subscription = (json \ "sub").as(using ApiSubscriptionIdFormat)
           )
         )
       } recover { case e =>

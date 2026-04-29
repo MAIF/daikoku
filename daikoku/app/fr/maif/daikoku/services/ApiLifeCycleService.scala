@@ -424,7 +424,7 @@ class ApiLifeCycleService(
                 "value" -> false
               )
             )
-          )(os, mat)
+          )(using os, mat)
         }
     )
 

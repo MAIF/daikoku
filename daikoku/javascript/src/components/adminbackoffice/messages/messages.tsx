@@ -29,7 +29,8 @@ const unknownUser = (id: string): IUserSimple => ({
   isGuest: true,
   starredApis: [],
   name: 'unknown user',
-  twoFactorAuthentication: null
+  twoFactorAuthentication: null,
+  metadata: []
 })
 
 export const AdminMessages = () => {

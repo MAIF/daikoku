@@ -649,7 +649,7 @@ object testUtils {
     )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq: _*)
+        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
@@ -1000,22 +1000,22 @@ object testUtils {
 
     def cleanOtoroshiServer(
         otoroshiPort: Int,
-        apks: Seq[JsValue] = otoroshiApkForTest
+        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
     ) = {
-//      val apikeys = daikokuComponents.env.wsClient
-//        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-//        .withHttpHeaders(
-//          Map(
-//            "Otoroshi-Client-Id"     -> otoroshiAdminApiKey.clientId,
-//            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-//            "Host"                   -> "otoroshi-api.oto.tools"
-//          ).toSeq*
-//        )
-//        .withFollowRedirects(false)
-//        .withRequestTimeout(10.seconds)
-//        .withMethod("GET")
-//        .execute()
-//        .map(_.json.as[JsArray].value.toSeq)
+      //      val apikeys = daikokuComponents.env.wsClient
+      //        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+      //        .withHttpHeaders(
+      //          Map(
+      //            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+      //            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+      //            "Host" -> "otoroshi-api.oto.tools"
+      //          ).toSeq*
+      //        )
+      //        .withFollowRedirects(false)
+      //        .withRequestTimeout(10.seconds)
+      //        .withMethod("GET")
+      //        .execute()
+      //        .map(_.json.as[JsArray].value.toSeq)
 
       def fetchApiKeysWithRetry(
           maxRetries: Int = 3,

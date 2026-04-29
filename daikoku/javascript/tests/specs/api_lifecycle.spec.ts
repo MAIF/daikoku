@@ -148,7 +148,7 @@ test('When API pass to Blocked, team mates should not have the API in their dash
   await page.getByRole('button', { name: 'user menu' }).click();
   const context = page.context();
   const pageLogin =  await context.newPage();
-  pageLogin.goto("http://localhost:5173/auth/LDAP/login")
+  pageLogin.goto("http://localhost:${exposedPort}/auth/LDAP/login")
 
   await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
   await pageLogin.locator('input[name="password"]').fill('password');
@@ -165,7 +165,7 @@ test('When API pass to Blocked, team mates should not have access to API page de
   await page.getByRole('button', { name: 'user menu' }).click();
   const context = page.context();
   const pageLogin =  await context.newPage();
-  await pageLogin.goto("http://localhost:5173/auth/LDAP/login")
+  await pageLogin.goto("http://localhost:${exposedPort}/auth/LDAP/login")
 
   await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
   await pageLogin.locator('input[name="password"]').fill('password');
@@ -175,7 +175,7 @@ test('When API pass to Blocked, team mates should not have access to API page de
   const contextDwight = pageDwight.context();
   const pageDescApi =  await contextDwight.newPage();
   const responsePromise = pageDescApi.waitForResponse('http://localhost:5173/api/me/visible-apis/api-papier/1.0.0');
-  await pageDescApi.goto('http://localhost:5173/api-division/api-papier/1.0.0/description');
+  await pageDescApi.goto('http://localhost:${exposedPort}/api-division/api-papier/1.0.0/description');
   const response = await responsePromise;
   expect(response.status()).toBe(401)
 });
@@ -255,32 +255,3 @@ test('When API pass vdvto Blocked, check if shared subscription that Oto ApiKey 
   
 
 })
-
-test('laisse betom ', async ({ page }) => {
-  await page.goto(ACCUEIL);
-  await loginAs(MICHAEL, page);
-  await passAPIToPublished({page}, 'papier')
-  await passAPIToBlocked({page}, 'papier')
-
-  const result = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq`, {
-        headers: {
-          "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-          "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-          "Host": "otoroshi-api.oto.tools",
-        }
-      }).then(reponse => reponse.json() )
-      console.log(result)
-    
-  // const context = page.context();
-  // const pageOto = await context.newPage();
-  // await pageOto.setExtraHTTPHeaders({
-  //       "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-  //       "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-  //   },
-  // );
-  // pageOto.goto("http://otoroshi-api.oto.tools:8080/api/apikeys/6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq")
-})
-
-//Verifier par un autre test au blocage (qui ne fonctionnera pas pour le moment) 
-// que les souscriptions soient bloquées, et vérifier que la souscription partagée 
-// cible une clé d'api Oto qui soit toujours enabled

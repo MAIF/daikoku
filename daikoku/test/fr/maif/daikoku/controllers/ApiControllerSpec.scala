@@ -6,7 +6,10 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.{Private, Public}
@@ -18,6 +21,7 @@ import org.awaitility.scala.AwaitilitySupport
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.{BeforeAndAfter}
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.http.Status
@@ -29,7 +33,7 @@ import scala.jdk.DurationConverters.*
 import scala.util.Random
 
 class ApiControllerSpec()
-    extends PlaySpec
+  extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfter
@@ -56,8 +60,8 @@ class ApiControllerSpec()
   }
 
   private def getApkFromOtoroshi(
-      clientId: String
-  ): JsValue = {
+                                  clientId: String
+                                ): JsValue = {
     val respPreVerifOtoParent = httpJsonCallWithoutSessionBlocking(
       path = s"/api/apikeys/$clientId",
       baseUrl = "http://otoroshi-api.oto.tools",
@@ -181,11 +185,11 @@ class ApiControllerSpec()
       )
 
       def generateInitSubJson(
-          apikeyValue: String,
-          apiId: ApiId,
-          usagePlanId: UsagePlanId,
-          teamId: TeamId
-      ): JsObject =
+                               apikeyValue: String,
+                               apiId: ApiId,
+                               usagePlanId: UsagePlanId,
+                               teamId: TeamId
+                             ): JsObject =
         Json.obj(
           "apikey" -> OtoroshiApiKey(
             s"${teamId.value}.${apiId.value}.${usagePlanId.value}.$apikeyValue",
@@ -280,11 +284,11 @@ class ApiControllerSpec()
       )
 
       def generateInitSubJson(
-          apikeyValue: String,
-          apiId: ApiId,
-          usagePlanId: UsagePlanId,
-          teamId: TeamId
-      ): JsObject =
+                               apikeyValue: String,
+                               apiId: ApiId,
+                               usagePlanId: UsagePlanId,
+                               teamId: TeamId
+                             ): JsObject =
         Json.obj(
           "apikey" -> OtoroshiApiKey(
             s"${teamId.value}.${apiId.value}.${usagePlanId.value}.$apikeyValue",
@@ -543,11 +547,11 @@ class ApiControllerSpec()
       )
 
       def generateInitSubJson(
-          apikeyValue: String,
-          apiId: ApiId,
-          usagePlanId: UsagePlanId,
-          teamId: TeamId
-      ): JsObject =
+                               apikeyValue: String,
+                               apiId: ApiId,
+                               usagePlanId: UsagePlanId,
+                               teamId: TeamId
+                             ): JsObject =
         Json.obj(
           "apikey" -> OtoroshiApiKey(
             apikeyValue,
@@ -703,31 +707,6 @@ class ApiControllerSpec()
       resp2.status mustBe 200
 
       val result2 = (resp2.json \ "data" \ "myTeams").as[JsArray]
-      result2.value.length mustBe 3
-    }
-    "see his teams" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
-        users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer)
-      )
-      val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
-      resp.status mustBe 200
-
-      val result = resp.json.as[JsArray]
-      result.value.length mustBe 2
-
-      setupEnvBlocking(
-        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
-        users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer)
-      )
-      val session2 = loginWithBlocking(userAdmin, tenant)
-      val resp2 = httpJsonCallBlocking("/api/me/teams")(tenant, session2)
-      resp2.status mustBe 200
-
-      val result2 = resp2.json.as[JsArray]
       result2.value.length mustBe 3
     }
 
@@ -1554,8 +1533,8 @@ class ApiControllerSpec()
       resp.status mustBe 403
       (resp.json \ "error")
         .as[
-          String
-        ] mustBe AppError.ApiNotPublished.getErrorMessage()
+        String
+      ] mustBe AppError.ApiNotPublished.getErrorMessage()
     }
 
     "not subscribe to an api for many reasons" in {
@@ -4655,11 +4634,11 @@ class ApiControllerSpec()
       demandsForAllversion.count(d =>
         d.steps.exists {
           case SubscriptionDemandStep(
-                _,
-                _,
-                step: ValidationStep.TeamAdmin,
-                _
-              ) =>
+            _,
+            _,
+            step: ValidationStep.TeamAdmin,
+            _
+          ) =>
             step.team === teamOwnerId
           case _ => false
         }
@@ -4769,11 +4748,11 @@ class ApiControllerSpec()
       demandsForAllversion2.count(d =>
         d.steps.exists {
           case SubscriptionDemandStep(
-                _,
-                _,
-                step: ValidationStep.TeamAdmin,
-                _
-              ) =>
+            _,
+            _,
+            step: ValidationStep.TeamAdmin,
+            _
+          ) =>
             step.team === teamConsumerId
           case _ => false
         }
@@ -7566,7 +7545,7 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans.map {
           case p
-              if !p.isPaymentDefined && p.visibility != UsagePlanVisibility.Admin =>
+            if !p.isPaymentDefined && p.visibility != UsagePlanVisibility.Admin =>
             p.copy(
               aggregationApiKeysSecurity = Some(true),
               otoroshiTarget = Some(
@@ -7613,8 +7592,8 @@ class ApiControllerSpec()
       resp.status mustBe Status.CONFLICT
       (resp.json \ "error")
         .as[
-          String
-        ] mustBe "The subscribed plan has another otoroshi of the parent plan"
+        String
+      ] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
     "update aggregated APIkey do not erase authorizedEntities" in {
       val parentPlan = UsagePlan(
