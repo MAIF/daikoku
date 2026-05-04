@@ -2,26 +2,35 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuUnauthenticatedAction
+}
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.ApiState.Published
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.jobs
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.services.{ApiLifeCycleService, MailService}
-import fr.maif.daikoku.services.{ApiService, DeletionService}
+import fr.maif.daikoku.services.{ApiLifeCycleService, ApiService, MailService}
+import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  OtoroshiClient,
+  RegexUtil,
+  Time,
+  Translator
+}
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
@@ -42,7 +51,6 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
-import fr.maif.daikoku.utils.StringImplicits.BetterString
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}

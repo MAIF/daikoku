@@ -1000,7 +1000,13 @@ object testUtils {
 
     def cleanOtoroshiServer(
         otoroshiPort: Int,
-        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
+        apks: Seq[JsValue] = Seq(
+          parentApkAsJson,
+          parent2ApkAsJson,
+          setOtoroshiApiKeyJson(otoroshiApiKey1),
+          setOtoroshiApiKeyJson(otoroshiApiKey2),
+          setOtoroshiApiKeyJson(otoroshiApiKey3)
+        )
     ) = {
       //      val apikeys = daikokuComponents.env.wsClient
       //        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")

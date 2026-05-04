@@ -52,6 +52,9 @@ class OtoroshiClient(env: Env) {
   def client(
       path: String
   )(implicit otoroshiSettings: OtoroshiSettings): WSRequest = {
+    println(s"otoroshiSettings.clientSecret:${otoroshiSettings.clientSecret}")
+    println(s"otoroshiSettings.clientId:${otoroshiSettings.clientId}")
+
     ws.url(s"${otoroshiSettings.url}$path")
       .addHttpHeaders(
         "Host" -> otoroshiSettings.host
@@ -61,6 +64,7 @@ class OtoroshiClient(env: Env) {
         otoroshiSettings.clientSecret,
         WSAuthScheme.BASIC
       )
+
   }
 
   def getServiceGroups()(implicit
@@ -293,7 +297,7 @@ class OtoroshiClient(env: Env) {
       .patch(patch)
       .map { resp =>
         if (resp.status == 200) {
-          resp.json.validate(ActualOtoroshiApiKeyFormat) match {
+          resp.json.validate(using ActualOtoroshiApiKeyFormat) match {
             case JsSuccess(k, _) => Right(k)
             case JsError(e) =>
               Left(
@@ -322,7 +326,7 @@ class OtoroshiClient(env: Env) {
     val otoroshiApiKeys = clientIds
       .map(id =>
         Json.obj(
-          "id" -> id,
+          "clientId" -> id,
           "patch" -> patch
         )
       )
@@ -330,7 +334,7 @@ class OtoroshiClient(env: Env) {
       .mkString("\n")
 
     val clientInstance = client(s"/apis/apim.otoroshi.io/v1/apikeys/_bulk")
-      .withHttpHeaders(
+      .addHttpHeaders(
         "Content-Type" -> "application/x-ndjson"
       )
 
@@ -341,19 +345,21 @@ class OtoroshiClient(env: Env) {
       .map(bulk => ByteString(bulk))
       .mapAsync(1) { bulk => // 1 seule requête bulk
         val req = bulk.utf8String
-        val post = clientInstance.post(req)
+        val patch = clientInstance.patch(req)
 
-        post.onComplete {
+        patch.onComplete {
           case Success(resp) =>
             if (resp.status >= 400) {
               AppLogger.error(
                 s"Error patching otoroshi apikeys: ${resp.status}, ${resp.body} --- apikeys: $otoroshiApiKeys"
               )
+            } else {
+              AppLogger.info(Json.stringify(resp.json))
             }
           case Failure(e) =>
             AppLogger.error(s"Error patching otoroshi apikeys", e)
         }
-        post
+        patch
       }
       .runWith(Sink.head) // Récupérer le résultat
       .map(_ => Right(())) // Retourner Either[AppError, Unit]

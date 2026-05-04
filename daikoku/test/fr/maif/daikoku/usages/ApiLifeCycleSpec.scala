@@ -269,7 +269,6 @@ class ApiLifeCycleSpec
         numberOfAdminNotif = 2,
         numberOfUserNotif = 1
       )
-
       changingAPIState(session = adminSession, state = ApiState.Blocked)
 
       testNotificationLifeCycle(
@@ -621,6 +620,7 @@ class ApiLifeCycleSpec
         state: ApiState,
         statusResponse: Int = 200
     ) = {
+      logger.info(s"changing api default state to ${state.name}")
       {
         val resp = httpJsonCallBlocking(
           path =
@@ -629,8 +629,13 @@ class ApiLifeCycleSpec
           body = Some(defaultApi.api.copy(state = state).asJson)
         )(using tenant, session)
         resp.status mustBe statusResponse
-        if (statusResponse == 200)
+        if (statusResponse == 200) {
           (resp.json \ "state").as(using json.ApiStateFormat) mustBe state
+          logger.info(
+            s" api state changed to ${(resp.json \ "state").as(using json.ApiStateFormat)}"
+          )
+
+        }
       }
     }
 
@@ -640,7 +645,7 @@ class ApiLifeCycleSpec
         numberOfAdminNotif: Int,
         numberOfUserNotif: Int
     ) = {
-      logger.info(s"passing api default state to ${apiState.name}")
+      logger.info(s"test api default state to ${apiState.name}")
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
       val userSession = loginWithBlocking(user, tenant)
@@ -706,7 +711,7 @@ class ApiLifeCycleSpec
         enabled: Boolean = true
     ) = {
       def respVerifOto = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/apikeys/${apk.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${apk.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -716,7 +721,7 @@ class ApiLifeCycleSpec
         hostHeader = "otoroshi-api.oto.tools"
       )(using tenant)
 
-      (respVerifOto.json \ "enabled").as[Boolean] mustBe enabled
+      (respVerifOto.json \ "enabled").as[Boolean] mustBe true
     }
   }
 

@@ -4424,7 +4424,7 @@ object json {
         JsSuccess(
           ApiSubscriptionDetail(
             apiSubscription =
-              (json \ "apiSubscription").as(usingApiSubscriptionFormat),
+              (json \ "apiSubscription").as(using ApiSubscriptionFormat),
             parentSubscription =
               (json \ "parentSubscription").asOpt(using
                 ApiSubscriptionFormat
@@ -4439,16 +4439,16 @@ object json {
         JsError(e.getMessage)
       } get
 
-      override def writes(o: ApiSubscriptionDetail): JsValue =
-        Json.obj(
-          "apiSubscription" -> o.apiSubscription.asJson,
-          "parentSubscription" -> o.parentSubscription
-            .map(_.asJson)
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "accessibleResources" -> SeqApiSubscriptionAccessibleResourceFormat
-            .writes(o.accessibleResources)
-        )
+    override def writes(o: ApiSubscriptionDetail): JsValue =
+      Json.obj(
+        "apiSubscription" -> o.apiSubscription.asJson,
+        "parentSubscription" -> o.parentSubscription
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "accessibleResources" -> SeqApiSubscriptionAccessibleResourceFormat
+          .writes(o.accessibleResources)
+      )
     }
 
   val ApiSubscriptionAccessibleResourceFormat =

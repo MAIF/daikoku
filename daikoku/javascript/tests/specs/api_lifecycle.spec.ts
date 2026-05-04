@@ -148,7 +148,7 @@ test('When API pass to Blocked, team mates should not have the API in their dash
   await page.getByRole('button', { name: 'user menu' }).click();
   const context = page.context();
   const pageLogin =  await context.newPage();
-  pageLogin.goto("http://localhost:${exposedPort}/auth/LDAP/login")
+  pageLogin.goto(`http://localhost:${exposedPort}/auth/LDAP/login`)
 
   await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
   await pageLogin.locator('input[name="password"]').fill('password');
@@ -165,7 +165,7 @@ test('When API pass to Blocked, team mates should not have access to API page de
   await page.getByRole('button', { name: 'user menu' }).click();
   const context = page.context();
   const pageLogin =  await context.newPage();
-  await pageLogin.goto("http://localhost:${exposedPort}/auth/LDAP/login")
+  await pageLogin.goto(`http://localhost:${exposedPort}/auth/LDAP/login`)
 
   await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
   await pageLogin.locator('input[name="password"]').fill('password');
@@ -174,8 +174,8 @@ test('When API pass to Blocked, team mates should not have access to API page de
 
   const contextDwight = pageDwight.context();
   const pageDescApi =  await contextDwight.newPage();
-  const responsePromise = pageDescApi.waitForResponse('http://localhost:5173/api/me/visible-apis/api-papier/1.0.0');
-  await pageDescApi.goto('http://localhost:${exposedPort}/api-division/api-papier/1.0.0/description');
+  const responsePromise = pageDescApi.waitForResponse(`http://localhost:${exposedPort}/api/me/visible-apis/api-papier/1.0.0`);
+  await pageDescApi.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/description`);
   const response = await responsePromise;
   expect(response.status()).toBe(401)
 });
@@ -187,7 +187,7 @@ test('Mail has been received by admin for Api deprecated', async ({ page }) => {
   await passAPIToDeprecated({page}, 'Commande')
   const context = page.context();
   const pageMail = await context.newPage();
-  pageMail.goto("http://localhost:1080")
+  await pageMail.goto("http://localhost:1080")
   await pageMail.getByText('l\'API API Commande a été dépr').first().click();
   expect(pageMail.getByText('Bonjour Jim Halpert, En tant qu\'administrateur de l\'équipe Vendeurs, nous vous')).toBeVisible;;
   await pageMail.getByText('l\'API API Commande a été dépr').nth(2).click();
@@ -232,7 +232,7 @@ test('Mail has been received by whole team API blocked', async ({ page }) => {
   await passAPIToBlocked({page}, 'papier')
   const context = page.context();
   const pageMail = await context.newPage();
-  pageMail.goto("http://localhost:1080")
+  await pageMail.goto("http://localhost:1080")
   await pageMail.locator('div').filter({ hasText: /^dwight\.schrute@dundermifflin\.com$/ }).click();
   expect(await pageMail.getByText('Bonjour Dwight Schrute, En')).toBeVisible;;
   await pageMail.locator('div').filter({ hasText: /^jim\.halpert@dundermifflin\.com$/ }).click();
