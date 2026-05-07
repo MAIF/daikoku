@@ -52,14 +52,14 @@ class LoginController(
     translator: Translator,
     assets: Assets,
     accountCreationService: AccountCreationService,
-    userService: UserService
+    userService: UserService,
+    localLoginSupport: LocalLoginSupport
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
   implicit val as: ActorSystem = env.defaultActorSystem
 
-  val loginDelayDuration = 3
   def maintenanceLogin(provider: String) =
     Action.async { request =>
       {
@@ -104,8 +104,8 @@ class LoginController(
                           localConfig.sessionMaxAge,
                           tenant,
                           request.request,
-                          LocalLoginSupport
-                            .bindUser(username, password, tenant, env)
+                          localLoginSupport
+                            .bindUser(username, password, tenant)
                             .flatMap {
                               case Some(user) if user.isDaikokuAdmin =>
                                 Future.successful(Some(user))
@@ -129,25 +129,21 @@ class LoginController(
                             }
                         )
                       case _ =>
-                        userService.delayForAttempt(username).flatMap { delay =>
-                          after(delay.seconds)(
-                            Errors.craftResponseResultF(
-                              "No matching provider found",
-                              Results.BadRequest
-                            )
+                        after(3.seconds)(
+                          Errors.craftResponseResultF(
+                            "No matching provider found",
+                            Results.BadRequest
                           )
-                        }
+                        )
 
                     }
                   case _ =>
-                    userService.delayForAttempt().flatMap { delay =>
-                      after(delay.seconds)(
-                        Errors.craftResponseResultF(
-                          "No credentials found",
-                          Results.BadRequest
-                        )
+                    after(3.seconds)(
+                      Errors.craftResponseResultF(
+                        "No credentials found",
+                        Results.BadRequest
                       )
-                    }
+                    )
 
                 }
             }
@@ -255,9 +251,17 @@ class LoginController(
   ): Future[Result] = {
     f.flatMap {
       case None =>
-        userService.delayForAttempt().flatMap { delay =>
-          after(delay.seconds)(
+        after(3.seconds)(
+          {
             FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          }
+        )
+      case Some(user) if user.failedLoginAttempts != 0 =>
+        userService.delayForAttempt(user).flatMap { delay =>
+          after(delay.seconds)(
+            {
+              FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+            }
           )
         }
       case Some(user) =>
@@ -279,12 +283,11 @@ class LoginController(
                 case true =>
                   FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false =>
-                  userService.delayForAttempt().flatMap { delay =>
-                    after(delay.seconds)(
-                      FastFuture
-                        .successful(BadRequest(Json.obj("error" -> true)))
-                    )
-                  }
+                  after(3.seconds)(
+                    FastFuture
+                      .successful(BadRequest(Json.obj("error" -> true)))
+                  )
+
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
@@ -326,11 +329,9 @@ class LoginController(
 
     value.foldF(
       error =>
-        userService.delayForAttempt().flatMap { delay =>
-          after(delay.seconds)(
-            error.renderF()
-          )
-        },
+        after(3.seconds)(
+          error.renderF()
+        ),
       r => r.future
     )
   }
@@ -380,11 +381,10 @@ class LoginController(
           )
           FastFuture.successful(Redirect(s"/informations?error=$errorMsg"))
         case error =>
-          userService.delayForAttempt().flatMap { delay =>
-            after(delay.seconds)(
-              error.renderF()
-            )
-          }
+          after(3.seconds)(
+            error.renderF()
+          )
+
       },
       r => r.future
     )
@@ -463,24 +463,20 @@ class LoginController(
   ): Future[Result] = {
     AuthProvider(provider) match {
       case None =>
-        userService.delayForAttempt().flatMap { delay =>
-          after(delay.seconds)(
-            Errors.craftResponseResultF(
-              "Bad authentication provider",
-              Results.BadRequest
-            )
+        after(3.seconds)(
+          Errors.craftResponseResultF(
+            "Bad authentication provider",
+            Results.BadRequest
           )
-        }
+        )
 
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
-        userService.delayForAttempt().flatMap { delay =>
-          after(delay.seconds)(
-            Errors.craftResponseResultF(
-              "Bad authentication provider",
-              Results.BadRequest
-            )
+        after(3.seconds)(
+          Errors.craftResponseResultF(
+            "Bad authentication provider",
+            Results.BadRequest
           )
-        }
+        )
       case Some(p) if p == AuthProvider.OAuth2 =>
         val maybeOAuth2Config =
           OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
@@ -495,14 +491,12 @@ class LoginController(
                 .bindUser(ctx.request, authConfig, ctx.tenant, env)
             )
           case Left(e) =>
-            userService.delayForAttempt().flatMap { delay =>
-              after(delay.seconds)(
-                Errors.craftResponseResultF(
-                  "Invalid OAuth Config",
-                  Results.BadRequest
-                )
+            after(3.seconds)(
+              Errors.craftResponseResultF(
+                "Invalid OAuth Config",
+                Results.BadRequest
               )
-            }
+            )
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
@@ -525,13 +519,15 @@ class LoginController(
                     val localConfig = LocalLoginConfig.fromJsons(
                       ctx.tenant.authProviderSettings
                     )
+
                     bindUser(
                       localConfig.sessionMaxAge,
                       ctx.tenant,
                       ctx.request,
-                      LocalLoginSupport
-                        .bindUser(username, password, ctx.tenant, env)
+                      localLoginSupport
+                        .bindUser(username, password, ctx.tenant)
                     )
+
                   case AuthProvider.Otoroshi =>
                     // as otoroshi already done the job, nothing to do here
                     AuditTrailEvent(
@@ -569,17 +565,14 @@ class LoginController(
                         val localConfig = LocalLoginConfig.fromJsons(
                           ctx.tenant.authProviderSettings
                         )
-                        userService.delayForAttempt(username).flatMap { delay =>
-                          after(delay.seconds)(
-                            bindUser(
-                              localConfig.sessionMaxAge,
-                              ctx.tenant,
-                              ctx.request,
-                              LocalLoginSupport
-                                .bindUser(username, password, ctx.tenant, env)
-                            )
-                          )
-                        }
+
+                        bindUser(
+                          localConfig.sessionMaxAge,
+                          ctx.tenant,
+                          ctx.request,
+                          localLoginSupport
+                            .bindUser(username, password, ctx.tenant)
+                        )
 
                       case Right(user) =>
                         bindUser(
@@ -590,24 +583,21 @@ class LoginController(
                         )
                     }
                   case _ =>
-                    userService.delayForAttempt(username).flatMap { delay =>
-                      after(delay.seconds)(
-                        Errors.craftResponseResultF(
-                          "No matching provider found",
-                          Results.BadRequest
-                        )
+                    after(3.seconds)(
+                      Errors.craftResponseResultF(
+                        "No matching provider found",
+                        Results.BadRequest
                       )
-                    }
+                    )
+
                 }
               case _ =>
-                userService.delayForAttempt().flatMap { delay =>
-                  after(delay.seconds)(
-                    Errors.craftResponseResultF(
-                      "No credentials found",
-                      Results.BadRequest
-                    )
+                after(3.seconds)(
+                  Errors.craftResponseResultF(
+                    "No credentials found",
+                    Results.BadRequest
                   )
-                }
+                )
             }
         }
     }

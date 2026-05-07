@@ -36,7 +36,7 @@ case class User(
     starredApis: Set[ApiId] = Set.empty[ApiId],
     twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
     invitation: Option[UserInvitation] = None,
-    failedLoginAttempts: Long = 0,
+    failedLoginAttempts: Int = 0,
     lastFailedLogin: Option[DateTime] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)

@@ -1469,6 +1469,16 @@ object SchemaDefinition {
               resolve = _.value.isDaikokuAdmin
             ),
             Field(
+              "password",
+              OptionType(StringType),
+              resolve = _.value.password
+            ),
+            Field(
+              "hardwareKeyRegistrations",
+              ListType(JsonType),
+              resolve = _.value.hardwareKeyRegistrations
+            ),
+            Field(
               "lastTenant",
               OptionType(TenantType),
               resolve = ctx =>
@@ -1501,7 +1511,7 @@ object SchemaDefinition {
             ),
             Field(
               "failedLoginAttempts",
-              OptionType(LongType),
+              OptionType(IntType),
               resolve = _.value.failedLoginAttempts
             ),
             Field(
@@ -2714,6 +2724,7 @@ object SchemaDefinition {
             "api",
             OptionType(ApiType),
             resolve = ctx => apisFetcher.defer(ctx.value.api)
+
           )
 //          Field(
 //            "subscription",

@@ -2010,7 +2010,7 @@ object json {
             invitation =
               (json \ "invitation").asOpt(using UserInvitationFormat),
             failedLoginAttempts =
-              (json \ "failedLoginAttempts").asOpt[Long].getOrElse(0),
+              (json \ "failedLoginAttempts").asOpt[Int].getOrElse(0),
             lastFailedLogin =
               (json \ "lastFailedLogin").asOpt(using DateTimeFormat)
           )
@@ -2055,10 +2055,10 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "failedLoginAttempts" -> o.failedLoginAttempts,
-        "lastFailedLogin" -> DateTimeFormat.writes(o.lastFailedLogin match {
-          case Some(lastFailedLogin) => lastFailedLogin
-          case None                  => DateTime.now()
-        })
+        "lastFailedLogin" -> o.lastFailedLogin
+          .map(DateTimeFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
   }
 
