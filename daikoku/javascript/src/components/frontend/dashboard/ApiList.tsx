@@ -1,26 +1,25 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
 import classNames from "classnames"
 import debounce from "lodash/debounce"
-import {ChangeEvent, useContext, useEffect, useMemo, useRef, useState} from "react"
+import {ChangeEvent, useContext, useMemo, useState} from "react"
 import Plus from 'react-feather/dist/icons/plus'
-import MoreVertical from 'react-feather/dist/icons/more-vertical'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import Select, { StylesConfig, components, MultiValue, OptionProps } from "react-select"
+import Select, { StylesConfig, components, MultiValue } from "react-select"
 import { toast } from "sonner"
 
 import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
-import { IApiAuthoWithCount, IApiWithAuthorization, ITeamSimple, TOption } from "../../../types"
+import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
 import { isError } from "../../../types/api"
 import { ActionWithTeamSelector, Option } from "../../utils"
-import { FeedbackButton } from "../../utils/FeedbackButton"
 import { arrayStringToTOps } from "../../utils/function"
 import { api as API, CanIDoAction, manage } from "../../utils/permissions"
 import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
+import Pagination from "react-paginate";
 
 //--- MARK: Types
 type Option = {
@@ -40,7 +39,7 @@ type ExtraProps = {
 type ColourOption = {
    value: string;
    label: string;
-   color: string;
+   color?: string;
    isFixed?: boolean;
    isDisabled?: boolean;
 }
@@ -130,8 +129,14 @@ export const ApiList = (props: ApiListProps) => {
 
   const [page, setPage] = useState(0);
 
+  const handlePageClick = (data) => {
+    setPage(data.selected);
+    setOffset(data.selected)
+  };
+  const [offset, setOffset] = useState<number>(0)
+
   const dataRequest = useQuery({
-    queryKey: ["listOfMyVisiblesApis", limit, columnFilters, page],
+    queryKey: ["listOfMyVisiblesApis", limit, columnFilters, offset],
     queryFn: () => {
       return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
         Services.graphql.myVisibleApis,
@@ -154,24 +159,24 @@ export const ApiList = (props: ApiListProps) => {
   // --- MARK: Table
   const columnHelper = createColumnHelper<IApiWithAuthorization>();
   const columns = [
-    columnHelper.display({
-      id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          onChange={table.getToggleAllRowsSelectedHandler()}
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={row.getIsSelected()}
-          disabled={!row.getCanSelect()}
-          onChange={row.getToggleSelectedHandler()}
-        />
-      ),
-    }),
+    // columnHelper.display({
+    //   id: 'select',
+    //   header: ({ table }) => (
+    //     <input
+    //       type="checkbox"
+    //       checked={table.getIsAllRowsSelected()}
+    //       onChange={table.getToggleAllRowsSelectedHandler()}
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <input
+    //       type="checkbox"
+    //       checked={row.getIsSelected()}
+    //       disabled={!row.getCanSelect()}
+    //       onChange={row.getToggleSelectedHandler()}
+    //     />
+    //   ),
+    // }),
     columnHelper.display({
       id: 'favorite',
       enableColumnFilter: false,
@@ -220,7 +225,7 @@ export const ApiList = (props: ApiListProps) => {
 
         return (
           <div className='notification__actions d-flex flex-row gap-1 justify-content-end'>
-            {accessButton()}
+            {/*{accessButton()}*/}
             <StarsButton
               starred={starred}
               classnames="notification-link-color"
@@ -306,43 +311,37 @@ export const ApiList = (props: ApiListProps) => {
 
         const api = info.row.original.api
         const apiState = info.row.original.api.state
-        console.dir(apiState)
         return <div className="d-flex gap-1 status ">
-          {api.state}
           {(apiState === 'published' || apiState == 'created') &&
             <span
               className="badge badge-custom-success d-flex align-items-center gap-2"
               style={{ border: 'none'}}
               onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-              <span className="bg-success rounded-circle"
-                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
-              <span>{"Active"}</span>
+              {/*<span className="bg-success rounded-circle"></span>*/}
+              <span>{translate("api.published")}</span>
             </span>}
           { apiState == 'deprecated' &&
             <span
-            className="badge  badge-custom-danger d-flex align-items-center gap-2"
+            className="badge badge-custom-warning d-flex align-items-center gap-2"
             style={{ border: 'none'}}
             onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-              <span className="bg-danger rounded-circle"
-                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
-              <span>{"Dépréciée"}</span>
+              {/*<span className="bg-warning rounded-circle"></span>*/}
+              <span>{translate("api.deprecated")}</span>
             </span>
             }
           {(apiState == 'blocked' || apiState == 'deleted')  &&
             <span
-              className="badge  badge-custom-success d-flex align-items-center gap-2"
+              className="badge badge-custom-danger d-flex align-items-center gap-2"
               style={{ border: 'none'}}>
-              <span className="bg-info rounded-circle"
-                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
-              <span>{"Retirée"}</span>
+              {/*<span className="bg-danger rounded-circle"></span>*/}
+              <span>{translate("api.blocked")}</span>
             </span>
           }
           {(!apiState)  &&
             <span
-              className="badge  badge-custom-info d-flex align-items-center gap-2"
+              className="badge badge-custom-info d-flex align-items-center gap-2"
               style={{ border: 'none'}}>
-              <span className="bg-info rounded-circle"
-                    style={{ width: '15px', height: '15px', display: 'inline-block', flexShrink: 0 }}></span>
+              {/*<span className="bg-info rounded-circle"></span>*/}
               <span>{"Stateless"}</span>
             </span>
           }
@@ -351,93 +350,94 @@ export const ApiList = (props: ApiListProps) => {
     }),
     columnHelper.display({
       id: translate("dashboard.apis.table.header.label.subscriptions"),
-      meta: { className: "subscription-cell" },
+      meta: { className: "subscription-cell d-flex gap-2 align-items-center" },
       cell: (info) => {
         const subscriptionCount = info.row.original.subscriptionCount;
         const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
         return (
-        <div className="d-flex gap-2">
-        <a href='#' onClick={() => handleSelectChange([{ label: "subscriptionCount", value: subscriptionCount.toString() }], 'subscriptions')}>
-          {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 0 ? 's' : ''}`}
-        </a>
+        <>
+          <a href='#' onClick={() => handleSelectChange([{ label: "subscriptionCount", value: subscriptionCount.toString() }], 'subscriptions')}>
+            {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount == 0 ? 's' : ''}`}
+          </a>
           {subscriptionDemandsCount > 0 &&
-        <span className="badge badge-custom-demands-subscription">{subscriptionDemandsCount} en attente</span>}
-        </div>)
+          <span className="badge badge-custom-demands-subscription">{subscriptionDemandsCount} en attente</span>}
+        </>)
       }
-    }),
-    columnHelper.display({
-      id: 'action',
-      enableColumnFilter: false,
-      meta: { className: "action-cell" },
-      cell: (info) => {
-        const api = info.row.original.api;
-        const myTeams = !isError(myTeamsRequest.data) && myTeamsRequest.data ? myTeamsRequest.data : []
-
-        const starred = connectedUser.starredApis.includes(api._id)
-        const authorizations = info.row.original.authorizations
-        const allTeamsAreAuthorized =
-          api.visibility === 'Public' || (authorizations.length === myTeams.length && authorizations.every((a) => a.authorized));
-        const isPending =
-          authorizations.length === myTeams.length && authorizations.every((a) => a.pending && !a.authorized);
-
-
-        // const accessButton = () => {
-        //   if (
-        //     !allTeamsAreAuthorized &&
-        //     !['Private', 'AdminOnly'].includes(api.visibility)
-        //   ) {
-        //     return (
-        //       <ActionWithTeamSelector
-        //         title={translate("api.access.modal.title")}
-        //         description={translate({ key: 'api.access.request', replacements: [api.name] })}
-        //         pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
-        //         acceptedTeams={authorizations
-        //           .filter((auth) => auth.authorized)
-        //           .map((auth) => auth.team)}
-        //         teams={myTeams?.filter((t) => t.type !== 'Admin')}
-        //         action={(teams) => askForApiAccess(info.row.original, teams)}
-        //         actionLabel={translate("Ask access to API")}
-        //         allTeamSelector={true}
-        //       >
-        //         {isPending ? (
-        //
-        //
-        //           <button className="btn btn-sm btn-outline-info">
-        //             {translate('Pending request')}
-        //           </button>
-        //         ) : (
-        //           <button className="btn btn-sm btn-outline-info">
-        //             <i className="far fa-comment-dots me-2" />{translate('Access')}
-        //           </button>
-        //         )}
-        //       </ActionWithTeamSelector>
-        //     );
-        //   }
-        //   return null;
-        // };
-
-        return (
-
-          <div className="nav_item dropdown">
-            <button type="button" className='btn btn-outline-secondary btn-icon d-flex align-items-center gap-2'
-                    data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
-              <MoreVertical />
-            </button>
-            <div className="dropdown-menu">
-              <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-                <div className="blocks">
-                  <div className="mb-3 block">
-                    <div className="ms-2 block__entries block__border d-flex flex-column">
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      },
     })
+    //,
+    // columnHelper.display({
+    //   id: 'action',
+    //   enableColumnFilter: false,
+    //   meta: { className: "action-cell" },
+    //   cell: (info) => {
+    //     const api = info.row.original.api;
+    //     const myTeams = !isError(myTeamsRequest.data) && myTeamsRequest.data ? myTeamsRequest.data : []
+    //
+    //     const starred = connectedUser.starredApis.includes(api._id)
+    //     const authorizations = info.row.original.authorizations
+    //     const allTeamsAreAuthorized =
+    //       api.visibility === 'Public' || (authorizations.length === myTeams.length && authorizations.every((a) => a.authorized));
+    //     const isPending =
+    //       authorizations.length === myTeams.length && authorizations.every((a) => a.pending && !a.authorized);
+    //
+    //
+    //     // const accessButton = () => {
+    //     //   if (
+    //     //     !allTeamsAreAuthorized &&
+    //     //     !['Private', 'AdminOnly'].includes(api.visibility)
+    //     //   ) {
+    //     //     return (
+    //     //       <ActionWithTeamSelector
+    //     //         title={translate("api.access.modal.title")}
+    //     //         description={translate({ key: 'api.access.request', replacements: [api.name] })}
+    //     //         pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
+    //     //         acceptedTeams={authorizations
+    //     //           .filter((auth) => auth.authorized)
+    //     //           .map((auth) => auth.team)}
+    //     //         teams={myTeams?.filter((t) => t.type !== 'Admin')}
+    //     //         action={(teams) => askForApiAccess(info.row.original, teams)}
+    //     //         actionLabel={translate("Ask access to API")}
+    //     //         allTeamSelector={true}
+    //     //       >
+    //     //         {isPending ? (
+    //     //
+    //     //
+    //     //           <button className="btn btn-sm btn-outline-info">
+    //     //             {translate('Pending request')}
+    //     //           </button>
+    //     //         ) : (
+    //     //           <button className="btn btn-sm btn-outline-info">
+    //     //             <i className="far fa-comment-dots me-2" />{translate('Access')}
+    //     //           </button>
+    //     //         )}
+    //     //       </ActionWithTeamSelector>
+    //     //     );
+    //     //   }
+    //     //   return null;
+    //     // };
+    //
+    //     return (
+    //
+    //       <div className="nav_item dropdown">
+    //         <button type="button" className='btn btn-outline-secondary btn-icon d-flex align-items-center gap-2'
+    //                 data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
+    //           <MoreVertical />
+    //         </button>
+    //         <div className="dropdown-menu">
+    //           <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+    //             <div className="blocks">
+    //               <div className="mb-3 block">
+    //                 <div className="ms-2 block__entries block__border d-flex flex-column">
+    //
+    //                 </div>
+    //               </div>
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     )
+    //   },
+    // })
   ]
   const defaultData = useMemo(() => [], [])
   const table = useReactTable({
@@ -521,34 +521,6 @@ export const ApiList = (props: ApiListProps) => {
     }
   };
 
-  const getTotalForTeam = (teamId: string) => {
-     return Option(dataRequest.data?.producers.find(t => t.team._id === teamId))
-       .map(team => team.total)
-       .getOrNull()
-  }
-
-  const getTotalForTags = (tag: string) => {
-    return Option(dataRequest.data?.tags.find(t => t.value === tag))
-      .map(tag => tag.total)
-      .getOrNull()
-  }
-
-
-
-  const menuStyle = {
-    MenuPortal: (base) => ({ ...base, zIndex: 9999 }),
-    menu: (base) => ({
-      ...base,
-      width: 'max-content',
-      minWidth: '100%',
-      zIndex: 100,
-    }),
-    menuList: (base) => ({
-      ...base,
-      whiteSpace: 'nowrap',
-    }),
-  };
-
   const getSelectValue = <T extends object>(id: string, data: Array<T>, labelKey: string, idKey: string): Array<{ label: string, value: string }> => {
     const filter = columnFilters.find(f => f.id === id);
     const selectedValues = filter?.value as Array<string> ?? [];
@@ -565,26 +537,6 @@ export const ApiList = (props: ApiListProps) => {
       .map(t => ({ label: t, value: t }));
   }
 
-  const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraProps }) => {
-    const { data, innerRef, innerProps } = props;
-    const total = props.selectProps.getCount(data.value)
-
-    return (
-      <div ref={innerRef} {...innerProps} className="d-flex justify-content-between align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
-        <span>{data.label}</span>
-
-        {!!total && <span className="badge badge-custom-warning">
-          {total}
-        </span>}
-      </div>
-    );
-  };
-
-  const clearFilter = (id: string, value: string) => {
-    const columnFilterValues = columnFilters.find(c => c.id === id)?.value as Array<string> ?? []
-    setColumnFilters([...columnFilters.filter(c => c.id !== id), { id, value: columnFilterValues.filter(v => v !== value) }])
-  }
-
   //--- MARK: Rendering
   if (myTeamsRequest.isLoading) {
     return <Spinner />
@@ -594,7 +546,8 @@ export const ApiList = (props: ApiListProps) => {
     const canCreateApi = !connectedUser.isGuest && !props.apiGroupId && (!tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
     const totalPages = Math.ceil((dataRequest.data?.total ?? 0) / limit);
     const colourStyles: StylesConfig<ColourOption, true> = {
-      control: (styles) => ({ ...styles }),      option: (styles, { isDisabled, isFocused, isSelected }) => {
+      control: (styles) => ({ ...styles }),
+      option: (styles, { isDisabled, isFocused, isSelected }) => {
         return {
           ...styles,
           backgroundColor: isDisabled
@@ -630,9 +583,6 @@ export const ApiList = (props: ApiListProps) => {
         },
       }),
     };
-
-    // const ref = useRef<HTMLInputElement>(null);
-    console.log(dataRequest.data)
 
     return (
       <div className="col-12 api_list_container">
@@ -769,22 +719,23 @@ export const ApiList = (props: ApiListProps) => {
         </div>
         <div className="table-container mt-3">
           {dataRequest.isLoading && <Spinner/>}
+
           {dataRequest.data && (
             <>
               <div className="api-table table-rows">
                 <div className='select-all-row table-row table-header'>
-                  <input
-                    type="checkbox"
-                    checked={table.getIsAllRowsSelected()}
-                    onChange={table.getToggleAllRowsSelectedHandler()}
-                  />
+                  {/*<input*/}
+                  {/*  type="checkbox"*/}
+                  {/*  checked={table.getIsAllRowsSelected()}*/}
+                  {/*  onChange={table.getToggleAllRowsSelectedHandler()}*/}
+                  {/*/>*/}
                    <span>{translate('')}</span>
                    <span>{translate('dashboard.apis.table.header.label.api')}</span>
                    <span>{translate('dashboard.apis.table.header.label.tags')}</span>
                    <span>{translate('dashboard.apis.table.header.label.team')}</span>
                    <span>{translate('dashboard.apis.table.header.label.status')}</span>
                    <span>{translate('dashboard.apis.table.header.label.subscriptions')}</span>
-                   <span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>
+                   {/*<span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>*/}
                 </div>
                 <ul className='table-rows' role="list">
                   {table.getRowModel().rows.map((row, idx) => {
@@ -807,32 +758,47 @@ export const ApiList = (props: ApiListProps) => {
                   })}
                 </ul>
               </div>
-              <div className="mt-3 d-flex justify-content-center">
-                <nav aria-label="Page navigation example">
-                  <ul className="pagination">
-                    <li className="page-item">
-                    <button className="page-link" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
-                      Précédent
-                    </button>
-                    </li>
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setPage(i)}
-                        className={`page-link ${page === i ? 'page-link active' : 'page-link '}`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    <li className="page-item">
-                    <button className="page-link" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
-                      Suivant
-                    </button>
-                    </li>
-
-                  </ul>
-                </nav>
+              <div className="apis__pagination d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
+                <Pagination
+                  previousLabel={translate('Previous')}
+                  nextLabel={translate('Next')}
+                  breakLabel={'...'}
+                  breakClassName={'break'}
+                  pageCount={Math.ceil(dataRequest.data.total / limit)}
+                  marginPagesDisplayed={1}
+                  pageRangeDisplayed={5}
+                  onPageChange={(data) => handlePageClick(data)}
+                  containerClassName={'pagination'}
+                  pageClassName={'page-selector'}
+                  forcePage={page}
+                  activeClassName={'active'} />
               </div>
+              {/*<div className="mt-3 d-flex justify-content-center">*/}
+              {/*  <nav aria-label="Page navigation example">*/}
+              {/*    <ul className="pagination">*/}
+              {/*      <li className="page-item">*/}
+              {/*      <button className="page-link" onClick={() => setPage(p => p - 1)} disabled={page === 0}>*/}
+              {/*        Précédent*/}
+              {/*      </button>*/}
+              {/*      </li>*/}
+              {/*      {Array.from({ length: totalPages }, (_, i) => (*/}
+              {/*        <button*/}
+              {/*          key={i}*/}
+              {/*          onClick={() => setPage(i)}*/}
+              {/*          className={`page-link ${page === i ? 'page-link active' : 'page-link '}`}*/}
+              {/*        >*/}
+              {/*          {i + 1}*/}
+              {/*        </button>*/}
+              {/*      ))}*/}
+              {/*      <li className="page-item">*/}
+              {/*      <button className="page-link" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>*/}
+              {/*        Suivant*/}
+              {/*      </button>*/}
+              {/*      </li>*/}
+
+              {/*    </ul>*/}
+              {/*  </nav>*/}
+              {/*</div>*/}
             </>
           )}
         </div>

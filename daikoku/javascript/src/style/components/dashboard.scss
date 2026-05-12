@@ -25,11 +25,17 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     // }
   }
 
+  .rounded-circle-deprecated {
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+  }
+
 
   .table-rows {
     display: flex;
     flex-direction: column;
-    background-color: variables.$level3_bg-color;
+    background-color: variables.$level2_bg-color;
     color: variables.$level3_text-color;
     padding: 0;
     margin: 0;
@@ -48,7 +54,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   .table-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 15fr 15fr 15fr 15fr 15fr 1fr;
+    grid-template-columns: 1fr 15fr 15fr 15fr 15fr 15fr;
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
