@@ -17,7 +17,7 @@
   }
 }
 
-$tile_background_color: variables.$level3_bg-color;
+$tile_background_color: variables.$level2_bg-color;
 $tile_text_color: variables.$level2_text-color;
 $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
 
