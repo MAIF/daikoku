@@ -20,6 +20,7 @@ import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
 import Pagination from "react-paginate";
+import {MoreVertical} from "react-feather";
 
 //--- MARK: Types
 type Option = {
@@ -600,6 +601,10 @@ export const ApiList = (props: ApiListProps) => {
               </button>
 
               <div className="nav_item dropdown" style={{ color: '#fff' }}>
+                <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+                        data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
+                  <MoreVertical />
+                </button>
                 <div className="dropdown-menu">
                   <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
                     <div className="blocks">

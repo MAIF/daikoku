@@ -400,7 +400,7 @@ test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions').click();
+  await page.getByText('Souscriptions', { exact: true }).click();
   const oldName = await page.locator('td', { hasText: 'commande-prod' }).innerText();
   await expect(page.locator('tbody')).toContainText('daikoku-api-key-api-commande-prod-logistique-1737463823426-1.0.0');
   await expect(page.locator('tbody')).toContainText(oldName);
@@ -418,7 +418,7 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions').click();
+  await page.getByText('Souscriptions', { exact: true }).click();
   await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription' }).click();
   //wait return of api
   await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=false') && r.status() === 200);
@@ -459,7 +459,7 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions').click();
+  await page.getByText('Souscriptions', { exact: true }).click();
   await page.getByRole('row', { name: 'api-commande-prod' })
     .getByRole('button', { name: 'Supprimer la souscription' })
     .click();

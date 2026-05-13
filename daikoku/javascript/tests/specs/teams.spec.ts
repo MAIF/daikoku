@@ -50,7 +50,9 @@ test("un admin daikoku peut creer une équipe quelque soit la securité", async 
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' })).toBeHidden();
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Réglage du tenant' }).click();
+
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Équipes', { exact: true }).click();
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
@@ -99,7 +101,8 @@ test("un admin de tenant peut creer une équipe quelque soit la securité", asyn
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' })).toBeHidden();
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Réglage du tenant' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Équipes', { exact: true }).click();
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
