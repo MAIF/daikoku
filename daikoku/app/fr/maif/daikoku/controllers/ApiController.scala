@@ -19,7 +19,12 @@ import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiLifeCycleService, ApiService, MailService}
+import fr.maif.daikoku.services.{
+  ApiLifeCycleService,
+  ApiService,
+  MailService,
+  DeletionService
+}
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
@@ -69,7 +74,8 @@ class ApiController(
     translator: Translator,
     paymentClient: PaymentClient,
     mailService: MailService,
-    apiLifeCycleService: ApiLifeCycleService
+    apiLifeCycleService: ApiLifeCycleService,
+    deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
 
