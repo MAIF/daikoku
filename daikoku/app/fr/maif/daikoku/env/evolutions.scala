@@ -1746,32 +1746,31 @@ object evolution_1860 extends EvolutionScript {
     }
 }
 
-object evolution_1890 extends EvolutionScript {
-  override def version: String = "18.9.0"
+object evolution_1892 extends EvolutionScript {
+  override def version: String = "18.9.2"
 
   override def script: (
-      Option[DatastoreId],
+    Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-  ) => Future[Done] = {
+    ) => Future[Done] = {
 
     (
-        _: Option[DatastoreId],
-        dataStore: DataStore,
-        mat: Materializer,
-        ec: ExecutionContext,
-        _: OtoroshiClient
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
     ) =>
       {
         logger.info(
-          s"Begin evolution $version - clean orphaned entities in database"
+          s"Begin evolution $version - re-run 18.9.0 clean orphaned entities (fixed)"
         )
 
         given ExecutionContext = ec
 
-        // clean teams with unknown or deleted users
         val cleanTeamUsers = dataStore.teamRepo
           .forAllTenant()
           .execute(
@@ -1808,7 +1807,6 @@ object evolution_1890 extends EvolutionScript {
                |""".stripMargin
           )
 
-        // clean usage plans not used by any API
         val cleanUnusedPlans = dataStore.usagePlanRepo
           .forAllTenant()
           .execute(
@@ -1825,14 +1823,14 @@ object evolution_1890 extends EvolutionScript {
               |);
               |""".stripMargin
           )
-        // clean notifications related to deleted API
+
         val cleanApiNotifications = dataStore.notificationRepo
           .forAllTenant()
           .execute(
             query = """
               |DELETE FROM notifications n
               |WHERE n.content->'action'->>'api' IS NOT NULL
-              |  AND n.content->'action'->>'type' <>  'OtoroshiSyncApiError'
+              |  AND n.content->'action'->>'type' <> 'OtoroshiSyncApiError'
               |  AND NOT EXISTS (
               |    SELECT 1
               |    FROM apis a
@@ -1842,14 +1840,13 @@ object evolution_1890 extends EvolutionScript {
               |""".stripMargin
           )
 
-        // clean notifications related to deleted usage plan
         val cleanPlanNotifications = dataStore.notificationRepo
           .forAllTenant()
           .execute(
             query = """
               |DELETE FROM notifications n
               |WHERE n.content->'action'->>'plan' IS NOT NULL
-              |  AND n.content->'action'->>'type' <>  'OtoroshiSyncApiError'
+              |  AND n.content->'action'->>'type' <> 'OtoroshiSyncApiError'
               |  AND NOT EXISTS (
               |    SELECT 1
               |    FROM usage_plans p
@@ -1858,7 +1855,7 @@ object evolution_1890 extends EvolutionScript {
               |);
               |""".stripMargin
           )
-        // clean subscription related to deleted API or usage plan
+
         val cleanOrphanedSubscription = dataStore.apiSubscriptionRepo
           .forAllTenant()
           .execute(
@@ -1872,15 +1869,15 @@ object evolution_1890 extends EvolutionScript {
               |        WHERE a.content->>'_id' = s.content->>'api'
               |          AND a._deleted = false
               |    )
-              |        OR NOT EXISTS (
+              |    OR NOT EXISTS (
               |        SELECT 1 FROM usage_plans p
               |        WHERE p.content->>'_id' = s.content->>'plan'
               |          AND p._deleted = false
               |    )
-              |    );
+              |  );
               |""".stripMargin
           )
-        // clean notification related to deleted subscription demand
+
         val cleanSubscriptionDemandNotification = dataStore.notificationRepo
           .forAllTenant()
           .execute(
@@ -1908,7 +1905,6 @@ object evolution_1890 extends EvolutionScript {
               |""".stripMargin
           )
 
-        // clean legacy notifications
         val cleanLegacyNotifs = dataStore.notificationRepo
           .forAllTenant()
           .execute(
@@ -1940,54 +1936,6 @@ object evolution_1890 extends EvolutionScript {
   }
 }
 
-object evolution_1891 extends EvolutionScript {
-  override def version: String = "18.9.1"
-
-  override def script: (
-      Option[DatastoreId],
-      DataStore,
-      Materializer,
-      ExecutionContext,
-      OtoroshiClient
-  ) => Future[Done] = {
-
-    (
-        _: Option[DatastoreId],
-        dataStore: DataStore,
-        _: Materializer,
-        ec: ExecutionContext,
-        _: OtoroshiClient
-    ) =>
-      {
-        logger.info(
-          s"Begin evolution $version - fix clean orphaned API notifications (18.9.0 hotfix)"
-        )
-
-        given ExecutionContext = ec
-
-        dataStore.notificationRepo
-          .forAllTenant()
-          .execute(
-            query = """
-              |DELETE FROM notifications n
-              |WHERE n.content->'action'->>'api' IS NOT NULL
-              |  AND n.content->'action'->>'type' <> 'OtoroshiSyncApiError'
-              |  AND NOT EXISTS (
-              |    SELECT 1
-              |    FROM apis a
-              |    WHERE (a.content->>'_id' = n.content->'action'->>'api')
-              |      AND a._deleted = false
-              |);
-              |""".stripMargin
-          )
-          .map { _ =>
-            logger.info(s"Evolution $version done")
-            Done
-          }
-      }
-  }
-}
-
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2012,8 +1960,7 @@ object evolutions {
       evolution_1840_b,
       evolution_1840_c,
       evolution_1860,
-      evolution_1890,
-      evolution_1891
+      evolution_1892
     )
   def run(
       dataStore: DataStore,
