@@ -1146,7 +1146,9 @@ object CommonServices {
       val CTE = s"""
                    |WITH my_teams as (SELECT *
                    |                  FROM teams
-                   |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}", "teamPermission": "Administrator"}]')
+                   |                  WHERE _deleted IS FALSE
+                   |                    AND content->>'_tenant' = '${ctx.tenant.id.value}'
+                   |                    AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}", "teamPermission": "Administrator"}]')
                    |                  """
 
       val actionTypes =
@@ -1185,8 +1187,8 @@ object CommonServices {
                |    count(1) OVER() AS total_filtered
                |  FROM notifications n
                |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
-               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |  WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |           LEFT JOIN apis a ON a._deleted IS FALSE AND a.content->>'_tenant' = '${ctx.tenant.id.value}' AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE n._deleted IS FALSE AND n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |      OR n.content ->> 'team' = t._id::text)
                |    AND CASE
                |            WHEN array_length($$1::text[], 1) IS NULL THEN true

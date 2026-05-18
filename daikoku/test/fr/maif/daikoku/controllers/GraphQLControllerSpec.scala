@@ -1572,4 +1572,89 @@ class GraphQLControllerSpec()
 
   }
 
+  "myNotifications query" should {
+    "return only notifications from the current tenant" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val apiTenant1 = defaultApi.api
+        .copy(
+          possibleUsagePlans = Seq.empty,
+          defaultUsagePlan = None
+        )
+      val teamConsumerTenant1 = teamConsumer
+      val teamOwnerTenant1 = teamOwner
+      val notifTenant1 = Notification(
+        id = NotificationId("notif-tenant-1"),
+        tenant = tenant.id,
+        team = teamOwnerTenant1.id.some,
+        sender = userAdmin.asNotificationSender,
+        action = NotificationAction.ApiAccess(apiTenant1.id, teamConsumerTenant1.id)
+      )
+
+      val teamConsumerTenant2 = teamConsumer.copy(
+        id = TeamId(IdGenerator.token(16)),
+        tenant = tenant2.id,
+      )
+      val teamOwnerTenant2 = teamOwner.copy(
+        id = TeamId(IdGenerator.token(16)),
+        tenant = tenant2.id,
+      )
+      val apiTenant2 = defaultApi.api.copy(
+        id = ApiId(IdGenerator.token(16)),
+        tenant = tenant2.id,
+        possibleUsagePlans = Seq.empty,
+        team = teamOwnerTenant2.id
+      )
+
+      val notifTenant2 = Notification(
+        id = NotificationId("notif-tenant-2"),
+        tenant = tenant2.id,
+        team = teamOwnerTenant2.id.some,
+        sender = userAdmin.asNotificationSender,
+        action = NotificationAction.ApiAccess(defaultApi.api.id, teamConsumerTenant2.id)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant, tenant2),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwnerTenant1, teamConsumerTenant1, teamOwnerTenant2, teamConsumerTenant2),
+        apis = Seq(apiTenant1, apiTenant2),
+        notifications = Seq(notifTenant1, notifTenant2)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val query =
+        """|query getMyNotifications ($limit : Int, $offset: Int, $filterTable: JsArray) {
+           |      myNotifications (limit: $limit, offset: $offset, filterTable: $filterTable) {
+           |        notifications {
+           |          _id
+           |        }
+           |        total,
+           |        totalFiltered,
+           |      }
+           |}""".stripMargin
+
+      val resp = httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Json.obj(
+          "variables" -> Json.obj("filter" -> Json.arr(), "sort" -> Json.arr(), "limit" -> 10, "offset" -> 0),
+          "query" -> query
+        ).some
+      )(using tenant, session)
+
+      logger.warn(Json.prettyPrint(resp.json))
+      resp.status mustBe 200
+      val total = (resp.json \ "data" \ "myNotifications" \ "total").as[Int]
+      val ids = (resp.json \ "data" \ "myNotifications" \ "notifications")
+        .as[Seq[play.api.libs.json.JsValue]]
+        .map(n => (n \ "_id").as[String])
+
+      total mustBe 1
+      ids must contain("notif-tenant-1")
+      ids must not contain "notif-tenant-2"
+    }
+  }
+
 }
