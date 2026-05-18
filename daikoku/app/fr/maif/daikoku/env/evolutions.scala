@@ -1836,8 +1836,8 @@ object evolution_1890 extends EvolutionScript {
               |  AND NOT EXISTS (
               |    SELECT 1
               |    FROM apis a
-              |    WHERE (p.content->>'_id' = n.content->'action'->>'api')
-              |      AND p._deleted = false
+              |    WHERE (a.content->>'_id' = n.content->'action'->>'api')
+              |      AND a._deleted = false
               |);
               |""".stripMargin
           )
@@ -1940,6 +1940,54 @@ object evolution_1890 extends EvolutionScript {
   }
 }
 
+object evolution_1891 extends EvolutionScript {
+  override def version: String = "18.9.1"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] = {
+
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      _: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      logger.info(
+        s"Begin evolution $version - fix clean orphaned API notifications (18.9.0 hotfix)"
+      )
+
+      given ExecutionContext = ec
+
+      dataStore.notificationRepo
+        .forAllTenant()
+        .execute(
+          query =
+            """
+              |DELETE FROM notifications n
+              |WHERE n.content->'action'->>'api' IS NOT NULL
+              |  AND n.content->'action'->>'type' <> 'OtoroshiSyncApiError'
+              |  AND NOT EXISTS (
+              |    SELECT 1
+              |    FROM apis a
+              |    WHERE (a.content->>'_id' = n.content->'action'->>'api')
+              |      AND a._deleted = false
+              |);
+              |""".stripMargin
+        )
+        .map { _ =>
+          logger.info(s"Evolution $version done")
+          Done
+        }
+    }
+  }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1964,7 +2012,8 @@ object evolutions {
       evolution_1840_b,
       evolution_1840_c,
       evolution_1860,
-      evolution_1890
+      evolution_1890,
+      evolution_1891
     )
   def run(
       dataStore: DataStore,
