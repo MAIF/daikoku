@@ -1750,19 +1750,19 @@ object evolution_1892 extends EvolutionScript {
   override def version: String = "18.9.2"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] = {
+  ) => Future[Done] = {
 
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
     ) =>
       {
         logger.info(
