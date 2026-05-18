@@ -936,3 +936,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v18.9.1] - 2026-05-18
+
+## :beetle: Bug Fixes
+
+- evolution 18.9.0 error for notification clean up [#1061](https://github.com/MAIF/daikoku/issues/1061)
+
