@@ -1588,16 +1588,17 @@ class GraphQLControllerSpec()
         tenant = tenant.id,
         team = teamOwnerTenant1.id.some,
         sender = userAdmin.asNotificationSender,
-        action = NotificationAction.ApiAccess(apiTenant1.id, teamConsumerTenant1.id)
+        action =
+          NotificationAction.ApiAccess(apiTenant1.id, teamConsumerTenant1.id)
       )
 
       val teamConsumerTenant2 = teamConsumer.copy(
         id = TeamId(IdGenerator.token(16)),
-        tenant = tenant2.id,
+        tenant = tenant2.id
       )
       val teamOwnerTenant2 = teamOwner.copy(
         id = TeamId(IdGenerator.token(16)),
-        tenant = tenant2.id,
+        tenant = tenant2.id
       )
       val apiTenant2 = defaultApi.api.copy(
         id = ApiId(IdGenerator.token(16)),
@@ -1611,13 +1612,21 @@ class GraphQLControllerSpec()
         tenant = tenant2.id,
         team = teamOwnerTenant2.id.some,
         sender = userAdmin.asNotificationSender,
-        action = NotificationAction.ApiAccess(defaultApi.api.id, teamConsumerTenant2.id)
+        action = NotificationAction.ApiAccess(
+          defaultApi.api.id,
+          teamConsumerTenant2.id
+        )
       )
 
       setupEnvBlocking(
         tenants = Seq(tenant, tenant2),
         users = Seq(userAdmin),
-        teams = Seq(teamOwnerTenant1, teamConsumerTenant1, teamOwnerTenant2, teamConsumerTenant2),
+        teams = Seq(
+          teamOwnerTenant1,
+          teamConsumerTenant1,
+          teamOwnerTenant2,
+          teamConsumerTenant2
+        ),
         apis = Seq(apiTenant1, apiTenant2),
         notifications = Seq(notifTenant1, notifTenant2)
       )
@@ -1638,10 +1647,17 @@ class GraphQLControllerSpec()
       val resp = httpJsonCallBlocking(
         path = "/api/search",
         method = "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("filter" -> Json.arr(), "sort" -> Json.arr(), "limit" -> 10, "offset" -> 0),
-          "query" -> query
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(
+              "filter" -> Json.arr(),
+              "sort" -> Json.arr(),
+              "limit" -> 10,
+              "offset" -> 0
+            ),
+            "query" -> query
+          )
+          .some
       )(using tenant, session)
 
       logger.warn(Json.prettyPrint(resp.json))
