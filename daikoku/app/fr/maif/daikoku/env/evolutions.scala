@@ -1944,31 +1944,31 @@ object evolution_1891 extends EvolutionScript {
   override def version: String = "18.9.1"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] = {
+  ) => Future[Done] = {
 
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      _: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
-    ) => {
-      logger.info(
-        s"Begin evolution $version - fix clean orphaned API notifications (18.9.0 hotfix)"
-      )
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) =>
+      {
+        logger.info(
+          s"Begin evolution $version - fix clean orphaned API notifications (18.9.0 hotfix)"
+        )
 
-      given ExecutionContext = ec
+        given ExecutionContext = ec
 
-      dataStore.notificationRepo
-        .forAllTenant()
-        .execute(
-          query =
-            """
+        dataStore.notificationRepo
+          .forAllTenant()
+          .execute(
+            query = """
               |DELETE FROM notifications n
               |WHERE n.content->'action'->>'api' IS NOT NULL
               |  AND n.content->'action'->>'type' <> 'OtoroshiSyncApiError'
@@ -1979,12 +1979,12 @@ object evolution_1891 extends EvolutionScript {
               |      AND a._deleted = false
               |);
               |""".stripMargin
-        )
-        .map { _ =>
-          logger.info(s"Evolution $version done")
-          Done
-        }
-    }
+          )
+          .map { _ =>
+            logger.info(s"Evolution $version done")
+            Done
+          }
+      }
   }
 }
 
