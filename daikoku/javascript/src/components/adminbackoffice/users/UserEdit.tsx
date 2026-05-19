@@ -83,7 +83,7 @@ const Avatar = ({
     <div className="">
       <div className="float-right mb-4 position-relative">
         <img
-          src={`${rawValues?.picture}${rawValues?.picture.startsWith('http') ? '' : `?${Date.now()}`
+          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
             }`}
           style={{
             width: 100,
