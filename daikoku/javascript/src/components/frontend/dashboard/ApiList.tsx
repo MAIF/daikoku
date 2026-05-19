@@ -185,13 +185,13 @@ export const ApiList = (props: ApiListProps) => {
         const authorizations = info.row.original.authorizations;
         const isApiGroup = !!info.row.original.api.apis?.length;
         const path = isApiGroup ? 'apis' : 'description';
-
+        let apiName = ['deprecated','blocked'].includes(api.state) ? <p className="line-through">{api.name}</p> : <p>{api.name}</p>
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
           return <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
-            {api.name}
+            {apiName}
           </Link>
         } else {
-          return <p id={`api-${api._humanReadableId}`}>{api.name}</p>
+          return <p id={`api-${api._humanReadableId}`}>{apiName}</p>
         }
       }
     }),
@@ -233,19 +233,45 @@ export const ApiList = (props: ApiListProps) => {
         const api = info.row.original.api
         const activeCount = info.row.original.subscriptionCount
         const pendingCount = info.row.original.subscriptionDemands.length
+        const state = info.row.original.api.state
         const expireCount = info.row.original.expireCount
-
         return <div className="d-flex gap-1 status">
-          {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
+          {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.deprecated.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
           </span>}
-          {!!expireCount && <span
-            className="badge badge-custom-danger"
-            onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {expireCount} {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', plural: expireCount > 1 })}
+          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.blocked.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
+          {!!activeCount && <span className="badge badge-custom-success" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.actives.subscription.tag.label',
+              replacements: [activeCount.toString()],
+              plural: activeCount > 1 }
+            )}
+          </span>}
+          {!!expireCount && <span className="badge badge-custom-danger" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {expireCount} {translate({
+              key: 'dashboard.api.list.expires.subscription.tag.label',
+
+              plural: expireCount > 1 }
+            )}
           </span>}
           {!!pendingCount && <span className="badge badge-custom-warning">
-            {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
+            {translate({
+              key: 'dashboard.api.list.pending.subscription.tag.label',
+              replacements: [pendingCount.toString()],
+              plural: pendingCount > 1 }
+            )}
           </span>}
         </div>
 
@@ -383,20 +409,21 @@ export const ApiList = (props: ApiListProps) => {
         } else {
           return openRightPanel({
             title: isApiGroup ? translate('apigroup.creation.right.panel.title') : translate('api.creation.right.panel.title'),
-            content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) => Services.createTeamApi(team._id, api)
-              .then((maybeApi) => {
-                queryClient.invalidateQueries({ queryKey: ["data"] })
-                return maybeApi
-              })
-              .then((maybeApi) => {
-                toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
-                return maybeApi
-              })
-              .then((maybeApi) => {
-                if (!isError(maybeApi)) {
-                  navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
-                }
-              })
+            content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) =>
+              Services.createTeamApi(team._id, api)
+                  .then((maybeApi) => {
+                    queryClient.invalidateQueries({queryKey: ["data"]})
+                    return maybeApi
+                  })
+                  .then((maybeApi) => {
+                    toast.success(translate({key: "api.created.successful.toast", replacements: [api.name]}))
+                    return maybeApi
+                  })
+                  .then((maybeApi) => {
+                    if (!isError(maybeApi)) {
+                      navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                    }
+                  })
             } />
           })
         }
@@ -644,7 +671,7 @@ export const ApiList = (props: ApiListProps) => {
                             table.getToggleAllPageRowsSelectedHandler()(e)
                           }}
                         />
-  
+
                       </label> */}
                   {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
                   {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (

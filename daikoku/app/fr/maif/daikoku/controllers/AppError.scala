@@ -10,10 +10,10 @@ import play.api.mvc.Results.*
 import scala.concurrent.Future
 
 sealed trait AppError {
-  def render(): Result = AppError.render(this)
-  def renderF(): Future[Result] = AppError.renderF(this)
-  def toJson(): JsObject = AppError.toJson(this)
-  def future(): Future[AppError] = FastFuture.successful(this)
+  def render()         : Result = AppError.render(this)
+  def renderF()        : Future[Result] = AppError.renderF(this)
+  def toJson()         : JsObject = AppError.toJson(this)
+  def future()         : Future[AppError] = FastFuture.successful(this)
   def getErrorMessage(): String = AppError.getErrorMessage(this)
 }
 
@@ -40,34 +40,34 @@ object AppError {
   case object PlanNotFound extends AppError
   case object ApiNotLinked extends AppError
   case class UserNotTeamAdmin(userId: String, teamId: String) extends AppError
-  case class OtoroshiError(message: JsObject) extends AppError
-  case class PaymentError(message: String) extends AppError
-  case object SubscriptionConflict extends AppError
-  case object ApiKeyRotationConflict extends AppError
-  case class EntityConflict(entityName: String) extends AppError
-  case class ApiKeyRotationError(message: JsObject) extends AppError
-  case object ApiKeyCustomMetadataNotPrivided extends AppError
-  case object SubscriptionNotFound extends AppError
-  case object SubscriptionParentExisted extends AppError
-  case object SubscriptionAggregationTeamConflict extends AppError
-  case object SubscriptionAggregationOtoroshiConflict extends AppError
-  case object SubscriptionAggregationDisabled extends AppError
-  case object EnvironmentSubscriptionAggregationDisabled extends AppError
-  case object MissingParentSubscription extends AppError
-  case object TranslationNotFound extends AppError
-  case object Unauthorized extends AppError
-  case class UnauthorizedExplicit(message: String) extends AppError
-  case class Forbidden(message: String) extends AppError
-  case object TeamForbidden extends AppError
-  case class ParsingPayloadError(message: String) extends AppError
-  case object NameAlreadyExists extends AppError
-  case object TeamAlreadyVerified extends AppError
-  case object ThirdPartyPaymentSettingsNotFound extends AppError
-  case class SecurityError(security: String) extends AppError
-  case object UnexpectedError extends AppError
-  case class InternalServerError(message: String) extends AppError
-  case class BadRequestError(message: String) extends AppError
-  case class AuthenticationError(message: String) extends AppError
+  case class OtoroshiError(message: JsObject)                 extends AppError
+  case class PaymentError(message: String)                    extends AppError
+  case object SubscriptionConflict                            extends AppError
+  case object ApiKeyRotationConflict                          extends AppError
+  case class EntityConflict(entityName: String)               extends AppError
+  case class ApiKeyRotationError(message: JsObject)           extends AppError
+  case object ApiKeyCustomMetadataNotPrivided                 extends AppError
+  case object SubscriptionNotFound                            extends AppError
+  case object SubscriptionParentExisted                       extends AppError
+  case object SubscriptionAggregationTeamConflict             extends AppError
+  case object SubscriptionAggregationOtoroshiConflict         extends AppError
+  case object SubscriptionAggregationDisabled                 extends AppError
+  case object EnvironmentSubscriptionAggregationDisabled      extends AppError
+  case object MissingParentSubscription                       extends AppError
+  case object TranslationNotFound                             extends AppError
+  case object Unauthorized                                    extends AppError
+  case class UnauthorizedExplicit(message: String)                    extends AppError
+  case class Forbidden(message: String)                       extends AppError
+  case object TeamForbidden                                   extends AppError
+  case class ParsingPayloadError(message: String)             extends AppError
+  case object NameAlreadyExists                               extends AppError
+  case object TeamAlreadyVerified                             extends AppError
+  case object ThirdPartyPaymentSettingsNotFound               extends AppError
+  case class SecurityError(security: String)                  extends AppError
+  case object UnexpectedError                                 extends AppError
+  case class InternalServerError(message: String)             extends AppError
+  case class BadRequestError(message: String)                 extends AppError
+  case class AuthenticationError(message: String)             extends AppError
   case class UserNotAllowed(email: String) extends AppError
   case class AppErrors(errors: Seq[AppError]) extends AppError
 
@@ -115,18 +115,17 @@ object AppError {
       case SubscriptionAggregationDisabled => BadRequest(toJson(error))
       case EnvironmentSubscriptionAggregationDisabled =>
         BadRequest(toJson(error))
-      case SubscriptionAggregationTeamConflict     => Conflict(toJson(error))
-      case SubscriptionAggregationOtoroshiConflict => Conflict(toJson(error))
-      case MissingParentSubscription               => NotFound(toJson(error))
-      case TranslationNotFound                     => NotFound(toJson(error))
-      case Unauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
-      case UnauthorizedExplicit(_) =>
-        play.api.mvc.Results.Unauthorized(toJson(error))
-      case Forbidden(_) => play.api.mvc.Results.Forbidden(toJson(error))
-      case ParsingPayloadError(message)      => BadRequest(toJson(error))
-      case NameAlreadyExists                 => Conflict(toJson(error))
-      case ThirdPartyPaymentSettingsNotFound => NotFound(toJson(error))
-      case SecurityError(security) =>
+      case SubscriptionAggregationTeamConflict        => Conflict(toJson(error))
+      case SubscriptionAggregationOtoroshiConflict    => Conflict(toJson(error))
+      case MissingParentSubscription                  => NotFound(toJson(error))
+      case TranslationNotFound                        => NotFound(toJson(error))
+      case Unauthorized                               => play.api.mvc.Results.Unauthorized(toJson(error))
+      case UnauthorizedExplicit(_)                            => play.api.mvc.Results.Unauthorized(toJson(error))
+      case Forbidden(_)                               => play.api.mvc.Results.Forbidden(toJson(error))
+      case ParsingPayloadError(message)               => BadRequest(toJson(error))
+      case NameAlreadyExists                          => Conflict(toJson(error))
+      case ThirdPartyPaymentSettingsNotFound          => NotFound(toJson(error))
+      case SecurityError(security)                    =>
         play.api.mvc.Results.Forbidden(toJson(error))
       case TeamAlreadyVerified => Conflict(toJson(error))
       case UnexpectedError     => BadRequest(toJson(error))
@@ -151,7 +150,7 @@ object AppError {
       case ApiVersionConflict       => "This version already existed"
       case TeamNameAlreadyExists    => "The name of this team already exists"
       case ApiNotFound              => "API not found"
-      case ApiNotPublished          => "API not published"
+      case ApiNotPublished          => "API not subscribable"
       case PageNotFound             => "Page not found"
       case ApiGroupNotFound         => "API group not found"
       case TeamNotFound             => "Team not found"
@@ -193,12 +192,12 @@ object AppError {
         "The subscribed plan has another otoroshi of the parent plan"
       case MissingParentSubscription =>
         "The parent of this subscription is missing"
-      case TranslationNotFound           => "Translation not found"
-      case Unauthorized                  => "You're not authorized here"
-      case UnauthorizedExplicit(message) => message
-      case Forbidden(message)            => message
-      case NameAlreadyExists => "Resource with same name already exists"
-      case ThirdPartyPaymentSettingsNotFound =>
+      case TranslationNotFound                        => "Translation not found"
+      case Unauthorized                               => "You're not authorized here"
+      case UnauthorizedExplicit(message)                      => message
+      case Forbidden(message)                         => message
+      case NameAlreadyExists                          => "Resource with same name already exists"
+      case ThirdPartyPaymentSettingsNotFound          =>
         "Third-party payment settings not found"
       case SecurityError(s)    => s"Forbidden action due to security : $s"
       case TeamAlreadyVerified => "This team is already verified"
@@ -208,8 +207,7 @@ object AppError {
       case UserNotAllowed(email) =>
         s"User $email is not allowed to access this application"
       case AppErrors(errors) =>
-        errors.map(_.getErrorMessage()).mkString("\n")
-
+        errors.map(_                                          .getErrorMessage()).mkString("\n")
     }
 
   def toJson(error: AppError) = {

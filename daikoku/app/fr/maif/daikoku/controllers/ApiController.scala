@@ -9,9 +9,6 @@ import fr.maif.daikoku.actions.{
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
@@ -20,13 +17,31 @@ import fr.maif.daikoku.domain.NotificationAction.{
 import fr.maif.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.jobs
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiService, DeletionService}
+import fr.maif.daikoku.services.{
+  ApiLifeCycleService,
+  ApiService,
+  MailService,
+  DeletionService
+}
+import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
-import fr.maif.daikoku.utils.*
+import fr.maif.daikoku.utils.StringImplicits.BetterString
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  OtoroshiClient,
+  RegexUtil,
+  Time,
+  Translator
+}
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
+import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestBody
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import org.apache.pekko.NotUsed
@@ -41,8 +56,8 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
-import fr.maif.daikoku.utils.StringImplicits.BetterString
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -58,6 +73,8 @@ class ApiController(
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
     translator: Translator,
     paymentClient: PaymentClient,
+    mailService: MailService,
+    apiLifeCycleService: ApiLifeCycleService,
     deletionService: DeletionService
 ) extends AbstractController(cc)
     with I18nSupport {
@@ -454,7 +471,7 @@ class ApiController(
       if (
         (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
-          .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))
+          .nonEmpty) && (api.isSubscribable || myTeams.exists(_.id == api.team))
       ) {
         if (ctx.user.isDaikokuAdmin) {
           EitherT.pure[Future, AppError](UserLevel.Admin)
@@ -560,7 +577,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -616,7 +633,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -977,7 +994,7 @@ class ApiController(
             )
           )
           .map {
-            case None      => AppError.render(ApiNotFound)
+            case None      => AppError.render(AppError.ApiNotFound)
             case Some(api) => Ok(ApiFormat.writes(api))
           }
       }
@@ -1067,6 +1084,7 @@ class ApiController(
               customName = Some(data.apiKey.clientName),
               rotation = None,
               integrationToken = IdGenerator.token(64)
+
             )
           )
 
@@ -2154,13 +2172,13 @@ class ApiController(
   private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
     subscription.parent match {
       case None =>
-        EitherT.leftT[Future, JsObject](MissingParentSubscription).value
+        EitherT.leftT[Future, JsObject](AppError.MissingParentSubscription).value
       case Some(parentSubscriptionId) =>
         plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
           tenant.otoroshiSettings.find(_.id == id)
         } match {
           case None =>
-            FastFuture.successful(Left(OtoroshiSettingsNotFound))
+            FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
           case Some(otoroshiSettings) =>
             implicit val o: OtoroshiSettings = otoroshiSettings
             import cats.implicits.*
@@ -3019,6 +3037,7 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
+        implicit val c = ctx
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
@@ -3035,6 +3054,7 @@ class ApiController(
             ctx.tenant.id
           ))
           _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
+          _ <- EitherT.cond[Future][AppError, Unit](newApi.state.checkPreviousState(oldApi.state), (), AppError.EntityConflict("api state"))
           anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .exists(
@@ -3049,6 +3069,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .save(newApi))
+          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi, ctx.tenant, ctx.user)
           _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.run(newApi.id, ctx.tenant))
           _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
           _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))
@@ -3817,7 +3838,7 @@ class ApiController(
                     )
                     .flatMap {
                       case None =>
-                        FastFuture.successful(AppError.render(ApiNotFound))
+                        FastFuture.successful(AppError.render(AppError.ApiNotFound))
                       case Some(api) =>
                         env.dataStore.apiIssueRepo
                           .forTenant(ctx.tenant.id)
@@ -4191,7 +4212,7 @@ class ApiController(
                 case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
                   AppError.ForbiddenAction.renderF()
                 case Some(api) if api.currentVersion.value == newVersion =>
-                  ApiVersionConflict.renderF()
+                  AppError.ApiVersionConflict.renderF()
                 case Some(api) =>
                   apiRepo
                     .exists(
@@ -4438,7 +4459,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findByVersion(ctx.tenant, apiId, version)
           .flatMap {
-            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case None => FastFuture.successful(AppError.render(AppError.ApiNotFound))
             case Some(api) =>
               ctx.setCtxValue("api.name", api.name)
 
@@ -4508,13 +4529,13 @@ class ApiController(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
-            AppError.render(TeamNotFound)
+            AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(apiId),
-            AppError.render(ApiNotFound)
+            AppError.render(AppError.ApiNotFound)
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),

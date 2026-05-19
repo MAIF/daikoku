@@ -62,7 +62,8 @@ object testUtils {
   trait DaikokuSpecHelper
       extends TestSuiteMixin
       with OneServerPerSuiteWithComponents
-      with ScalaFutures { suite: TestSuite =>
+      with ScalaFutures {
+    suite: TestSuite =>
 
     lazy val daikokuComponents = {
       val components =
@@ -648,7 +649,7 @@ object testUtils {
     )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq: _*)
+        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
@@ -891,7 +892,102 @@ object testUtils {
       "tags" -> Json.arr(),
       "metadata" -> Json.obj()
     )
+    // Route => parentRoute
+    val otoroshiApiKey1 = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_1",
+      clientId = "5w24yl2ly3dlnn93",
+      clientSecret =
+        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
 
+    val otoroshiApiKey2 = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_2",
+      clientId = "5w24yl2ly3dlnn94",
+      clientSecret =
+        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
+
+    val otoroshiApiKey3 = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_3",
+      clientId = "5w24yl2ly3dlnn95",
+      clientSecret =
+        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
+
+    val otoroshiApiKey1AsJson: JsObject =
+      setOtoroshiApiKeyJson(otoroshiApiKey1);
+    val otoroshiApiKey2AsJson: JsObject =
+      setOtoroshiApiKeyJson(otoroshiApiKey2);
+    val otoroshiApiKey3AsJson: JsObject =
+      setOtoroshiApiKeyJson(otoroshiApiKey3);
+
+    def setOtoroshiApiKeyJson(otoroshiApiKey: OtoroshiApiKey): JsObject = {
+      Json.obj(
+        "_loc" -> Json.obj(
+          "tenant" -> "default",
+          "teams" -> Json.arr("default")
+        ),
+        "clientId" -> otoroshiApiKey.clientId,
+        "clientSecret" -> otoroshiApiKey.clientSecret,
+        "clientName" -> otoroshiApiKey.clientName,
+        "description" -> "",
+        "authorizedGroup" -> JsNull,
+        "authorizedEntities" -> Json.arr(
+          s"route_$parentRouteId",
+          s"route_$childRouteId",
+          s"route_$otherRouteId"
+        ),
+        "authorizations" -> Json.arr(
+          Json.obj(
+            "kind" -> "route",
+            "id" -> parentRouteId
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> childRouteId
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> otherRouteId
+          )
+        ),
+        "enabled" -> true,
+        "readOnly" -> false,
+        "allowClientIdOnly" -> false,
+        "throttlingQuota" -> 10000000,
+        "dailyQuota" -> 10000000,
+        "monthlyQuota" -> 10000000,
+        "constrainedServicesOnly" -> false,
+        "restrictions" -> Json.obj(
+          "enabled" -> false,
+          "allowLast" -> true,
+          "allowed" -> Json.arr(),
+          "forbidden" -> Json.arr(),
+          "notFound" -> Json.arr()
+        ),
+        "rotation" -> Json.obj(
+          "enabled" -> false,
+          "rotationEvery" -> 744,
+          "gracePeriod" -> 168,
+          "nextSecret" -> JsNull
+        ),
+        "validUntil" -> JsNull,
+        "tags" -> Json.arr(),
+        "metadata" -> Json.obj(
+          "daikoku__metadata" -> "| foo",
+          "foo" -> "bar"
+        )
+      )
+    }
+
+    val otoroshiApkForTest =
+      Seq(
+        parentApkAsJson,
+        parent2ApkAsJson,
+        otoroshiApiKey1AsJson,
+        otoroshiApiKey2AsJson,
+        otoroshiApiKey3AsJson
+      )
     def cleanMailerServer(
         mailerPort: Int
     ) = {
@@ -904,22 +1000,28 @@ object testUtils {
 
     def cleanOtoroshiServer(
         otoroshiPort: Int,
-        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
+        apks: Seq[JsValue] = Seq(
+          parentApkAsJson,
+          parent2ApkAsJson,
+          setOtoroshiApiKeyJson(otoroshiApiKey1),
+          setOtoroshiApiKeyJson(otoroshiApiKey2),
+          setOtoroshiApiKeyJson(otoroshiApiKey3)
+        )
     ) = {
-//      val apikeys = daikokuComponents.env.wsClient
-//        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-//        .withHttpHeaders(
-//          Map(
-//            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-//            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-//            "Host" -> "otoroshi-api.oto.tools"
-//          ).toSeq*
-//        )
-//        .withFollowRedirects(false)
-//        .withRequestTimeout(10.seconds)
-//        .withMethod("GET")
-//        .execute()
-//        .map(_.json.as[JsArray].value.toSeq)
+      //      val apikeys = daikokuComponents.env.wsClient
+      //        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+      //        .withHttpHeaders(
+      //          Map(
+      //            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+      //            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+      //            "Host" -> "otoroshi-api.oto.tools"
+      //          ).toSeq*
+      //        )
+      //        .withFollowRedirects(false)
+      //        .withRequestTimeout(10.seconds)
+      //        .withMethod("GET")
+      //        .execute()
+      //        .map(_.json.as[JsArray].value.toSeq)
 
       def fetchApiKeysWithRetry(
           maxRetries: Int = 3,

@@ -76,7 +76,8 @@ case class ApiSubscription(
     parent: Option[ApiSubscriptionId] = None,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
-    ] = None
+    ] = None,
+    state: ApiSubscriptionState = ApiSubscriptionState.Active
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(

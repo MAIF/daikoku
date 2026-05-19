@@ -94,7 +94,9 @@ object CommonServices {
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] =
           (publicApis ++ almostPublicApis ++ privateApis)
-            .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
+            .filter(api =>
+              api.isSubscribable || myTeams.exists(api.team == _.id)
+            )
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
             .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
               val apiPlans =
@@ -129,28 +131,28 @@ object CommonServices {
             }
 
         val apis: Seq[ApiWithAuthorizations] =
-          (if (user.isDaikokuAdmin)
-             adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) {
-               case (acc, api) =>
-                 acc :+ ApiWithAuthorizations(
-                   api = api,
-                   plans =
-                     plans.filter(p => api.possibleUsagePlans.contains(p.id)),
-                   authorizations = myTeams.foldLeft(
-                     Seq.empty[AuthorizationApi]
-                   ) { case (acc, team) =>
-                     acc :+ AuthorizationApi(
-                       team = team.id.value,
-                       authorized =
-                         user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
-                           .exists(u => u.userId == user.id),
-                       pending = false
-                     )
-                   }
-                 )
-             } ++ sortedApis
-           else
-             sortedApis)
+          if (user.isDaikokuAdmin)
+            adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) {
+              case (acc, api) =>
+                acc :+ ApiWithAuthorizations(
+                  api = api,
+                  plans =
+                    plans.filter(p => api.possibleUsagePlans.contains(p.id)),
+                  authorizations = myTeams.foldLeft(
+                    Seq.empty[AuthorizationApi]
+                  ) { case (acc, team) =>
+                    acc :+ AuthorizationApi(
+                      team = team.id.value,
+                      authorized =
+                        user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
+                          .exists(u => u.userId == user.id),
+                      pending = false
+                    )
+                  }
+                )
+            } ++ sortedApis
+          else
+            sortedApis
 
         apis
           .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
@@ -387,7 +389,7 @@ object CommonServices {
           |                   WHERE (
           |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
-          |                             (a.content ->> 'state' = 'published' OR
+          |                             (a.content ->> 'state' IN ('published','deprecated') OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
           |                             (case

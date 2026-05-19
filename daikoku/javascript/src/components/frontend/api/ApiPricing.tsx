@@ -42,6 +42,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import {CmsViewerByPath} from "../CmsViewer";
 
 type Option = {
   label: string;
@@ -727,7 +728,7 @@ type ApiPricingCardProps = {
   plans: Array<IUsagePlan>
 };
 const ApiPricingCard = (props: ApiPricingCardProps) => {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, language } = useContext(I18nContext);
   const {
     openFormModal,
     openLoginOrRegisterModal,
@@ -735,7 +736,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openCustomModal,
     close,
     closeRightPanel,
-    openRightPanel
+    openRightPanel,
+    confirm
   } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
@@ -871,22 +873,48 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
   const openTeamSelectorModal = () => {
-    openCustomModal({
-      title: translate('team.selection.title'),
-      content: <TeamSelector
-        teams={authorizedTeams
-          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
-          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-        pendingTeams={props.inProgressDemands.map((s) => s.team)}
-        acceptedTeams={props.subscriptions
-          .filter((f) => !f._deleted)
-          .map((subs) => subs.team)}
-        allowMultipleDemand={plan.allowMultipleKeys}
-        showApiKeySelectModal={showApiKeySelectModal}
-        plan={props.plan}
-      />
-    })
+
+    const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
+          title: translate({
+            key: 'team.api.state.information.title',
+            replacements:
+                [props.api.name]
+          }),
+          message:
+              <div>
+                <CmsViewerByPath
+                    path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
+                    fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
+                                                     fallBack={() => <div>{translate({
+                                                       key: 'team.api.state.information.message',
+                                                       replacements:
+                                                           [props.api.name,
+                                                             props.api.state]
+                                                     })}</div>}/>}/>
+              </div>
+    }) : Promise.resolve(true)
+
+    alertAPIStatus
+        .then(ok => {
+          if (ok) {
+            openCustomModal({
+              title: translate('team.selection.title'),
+              content: <TeamSelector
+                  teams={authorizedTeams
+                      .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                      .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id) //todo: test authorizedteam ???
+                      .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+                  pendingTeams={props.inProgressDemands.map((s) => s.team)}
+                  acceptedTeams={props.subscriptions
+                      .filter((f) => !f._deleted)
+                      .map((subs) => subs.team)}
+                  allowMultipleDemand={plan.allowMultipleKeys}
+                  showApiKeySelectModal={showApiKeySelectModal}
+                  plan={props.plan}
+              />
+            })
+          }
+        })
   }
 
   const editPlan = () => props.updatePlan(props.plan)
@@ -1238,7 +1266,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {customDescription && <span>{customDescription}</span>}
         </p>
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api))
+            && props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button inactive"
@@ -1249,7 +1278,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
             props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            isPublish(props.api) && (
+            (isPublish(props.api) && props.api.state !== 'blocked') && (
               <Can
                 I={access}
                 a={apikey}
@@ -1275,7 +1304,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   )}
               </Can>
             )}
-          {connectedUser.isGuest && (
+          {connectedUser.isGuest && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button"

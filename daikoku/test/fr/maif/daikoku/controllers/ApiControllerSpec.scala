@@ -8,7 +8,8 @@ import fr.maif.daikoku.controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
-  ApiSubscriptionDemand
+  ApiSubscriptionDemand,
+  TransferApiOwnership
 }
 import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
@@ -21,6 +22,7 @@ import org.awaitility.scala.AwaitilitySupport
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.http.Status

@@ -44,6 +44,7 @@ case class ApiSubscriptionId(value: String)
     with CanJson[ApiSubscriptionId] {
   def asJson: JsValue = JsString(value)
 }
+
 case class ApiDocumentationId(value: String)
     extends ValueType
     with CanJson[ApiDocumentationId] {

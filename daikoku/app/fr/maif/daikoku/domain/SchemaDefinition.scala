@@ -2923,6 +2923,63 @@ object SchemaDefinition {
         )
       )
     )
+
+    lazy val ApiDepreciationWarningType = new PossibleObject(
+      ObjectType(
+        "ApiDepreciationWarning",
+        "A notification triggered when an API is deprecated",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiDepreciationWarning
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiDepreciationWarning
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          )
+        )
+      )
+    )
+
+    lazy val ApiBlockingWarningType = new PossibleObject(
+      ObjectType(
+        "ApiBlockingWarning",
+        "A notification triggered when an API is blocked",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockingWarning
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockingWarning
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          )
+        )
+      )
+    )
+
     lazy val AccountCreationType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       AccountCreation
@@ -3120,7 +3177,9 @@ object SchemaDefinition {
             ApiSubscriptionAcceptType,
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
-            AccountCreationAttemptType
+            AccountCreationAttemptType,
+            ApiDepreciationWarningType,
+            ApiBlockingWarningType
           )
         )
       )
@@ -3727,14 +3786,15 @@ object SchemaDefinition {
     )
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
-    val TO = Argument("to", OptionInputType(LongType), description = "Date to")
-    val VERSION = Argument("version", StringType, description = "a version")
-    val API_IDS = Argument(
+
+    val TO                                                                               = Argument("to", OptionInputType(LongType), description = "Date to")
+    val VERSION                                                                          = Argument("version", StringType, description = "a version")
+    val API_IDS                                                                          = Argument(
       "apiIds",
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
-    val NAME: Argument[Option[String]] = Argument(
+    val NAME                                                                             : Argument[Option[String]] = Argument(
       "name",
       OptionInputType(StringType),
       description = "A filter about name of value"
@@ -3744,8 +3804,7 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A cms filter about path of page"
     )
-    def teamQueryFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "myTeams",
@@ -4347,7 +4406,7 @@ object SchemaDefinition {
               "$or" -> Json.arr(
                 Json
                   .obj(
-                    "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                    "_id"         -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                   ),
                 Json.obj(
                   "_humanReadableId" -> Json
@@ -4360,7 +4419,7 @@ object SchemaDefinition {
             Json.obj(
               "$or" -> Json.arr(
                 Json.obj(
-                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                  "_id"              -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                 ),
                 Json.obj(
                   "_humanReadableId" -> Json
@@ -4465,7 +4524,7 @@ object SchemaDefinition {
           // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
           getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
           getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
-          // format: off
+        // format: off
           getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
           getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
           // format: off
