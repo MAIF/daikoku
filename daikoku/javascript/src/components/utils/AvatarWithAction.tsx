@@ -17,7 +17,7 @@ type Props = {
   }[];
 };
 
-export const userHasAvatar = (user: IUserSimple) => user.isGuest || !user.picture.includes('anonymous')
+export const userHasAvatar = (user: IUserSimple) => user.isGuest || !user.picture?.includes('anonymous')
 
 export const getInitials = (fullName: string): string | undefined => {
   if (!fullName) return "";
