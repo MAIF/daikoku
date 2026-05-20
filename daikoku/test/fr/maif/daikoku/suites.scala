@@ -622,7 +622,8 @@ object testUtils {
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
         port: Int = port,
-        hostHeader: String = tenant.domain
+        hostHeader: String = tenant.domain,
+        formUrlEncoded: Boolean = false
     )(implicit tenant: Tenant): WSResponse =
       Await.result(
         httpJsonCallWithoutSession(
@@ -648,7 +649,7 @@ object testUtils {
     )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq: _*)
+        .withHttpHeaders((Map("Host" -> hostHeader) ++ headers).toSeq*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)

@@ -5,7 +5,11 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.*
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.daikoku.controllers.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant,
+  _UberPublicUserAccess
+}
 import fr.maif.daikoku.controllers.authorizations.isTeamApiKeyVisible
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
@@ -13,12 +17,22 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
 import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.storage.graphql.{AuthorizationException, RequiresAuthentication, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import fr.maif.daikoku.storage.graphql.{
+  AuthorizationException,
+  RequiresAuthentication,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.*
 import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
-import sangria.execution.deferred.{DeferredResolver, Fetcher, FetcherConfig, HasId}
+import sangria.execution.deferred.{
+  DeferredResolver,
+  Fetcher,
+  FetcherConfig,
+  HasId
+}
 import sangria.macros.derive.*
 import sangria.schema.{Context, *}
 import sangria.validation.ValueCoercionViolation
@@ -1469,6 +1483,16 @@ object SchemaDefinition {
               resolve = _.value.isDaikokuAdmin
             ),
             Field(
+              "password",
+              OptionType(StringType),
+              resolve = _.value.password
+            ),
+            Field(
+              "hardwareKeyRegistrations",
+              ListType(JsonType),
+              resolve = _.value.hardwareKeyRegistrations
+            ),
+            Field(
               "lastTenant",
               OptionType(TenantType),
               resolve = ctx =>
@@ -1498,6 +1522,16 @@ object SchemaDefinition {
               "_humanReadableId",
               StringType,
               resolve = _.value.humanReadableId
+            ),
+            Field(
+              "failedLoginAttempts",
+              OptionType(IntType),
+              resolve = _.value.failedLoginAttempts
+            ),
+            Field(
+              "lastFailedLogin",
+              OptionType(DateTimeUnitype),
+              resolve = _.value.lastFailedLogin
             )
           )
       )
@@ -1540,10 +1574,13 @@ object SchemaDefinition {
     )
 
     def requireApiKeyAccess(
-        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription]
+        ctx: Context[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscription
+        ]
     ): Future[Unit] = {
       val actionCtx = ctx.ctx._2
-      val dataStore  = ctx.ctx._1
+      val dataStore = ctx.ctx._1
       if (actionCtx.user.isDaikokuAdmin) {
         Future.unit
       } else {
@@ -1582,7 +1619,8 @@ object SchemaDefinition {
           Field(
             "bearerToken",
             OptionType(StringType),
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
+            resolve =
+              ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
           ),
           Field(
             "plan",
@@ -1629,7 +1667,8 @@ object SchemaDefinition {
           Field(
             "integrationToken",
             StringType,
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.integrationToken)
+            resolve = ctx =>
+              requireApiKeyAccess(ctx).map(_ => ctx.value.integrationToken)
           ),
           Field(
             "customMetadata",
@@ -3036,7 +3075,12 @@ object SchemaDefinition {
       ),
       ReplaceField(
         "email",
-        Field("email", StringType, tags = List(RequiresAuthentication), resolve = _.value.email)
+        Field(
+          "email",
+          StringType,
+          tags = List(RequiresAuthentication),
+          resolve = _.value.email
+        )
       ),
       ReplaceField("name", Field("name", StringType, resolve = _.value.name))
     )
@@ -4454,23 +4498,37 @@ object SchemaDefinition {
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
       List(
-        // Frontend repos — no extra restriction beyond existing resolver guards
-        getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
+        getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo) ++
+          getRepoFields(
+            "userSession",
+            UserSessionType,
+            ctx => ctx.ctx._1.userSessionRepo
+          ) ++
+          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo) ++
+          getRepoFields(
+            "passwordReset",
+            PasswordResetType,
+            ctx => ctx.ctx._1.passwordResetRepo
+          ) ++
+          getRepoFields(
+            "accountCreation",
+            AccountCreationType,
+            ctx => ctx.ctx._1.accountCreationRepo
+          ) ++
+          // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
+          getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
           getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
+          // format: off
+          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
+          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
+          // format: off
+          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo) ++
+          getTenantFields("apiDocumentationPage", ApiDocumentationPageType, ctx => ctx.ctx._1.apiDocumentationPageRepo) ++
+          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo) ++
+          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
+          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
+          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo) ++
           getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
-          // Raw POJO repos — admin-api only (RequiresDaikokuAdmin blocks non-admin access)
-          getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo, adminOnly) ++
-          getRepoFields("userSession", UserSessionType, ctx => ctx.ctx._1.userSessionRepo, adminOnly) ++
-          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo, adminOnly) ++
-          getRepoFields("passwordReset", PasswordResetType, ctx => ctx.ctx._1.passwordResetRepo, adminOnly) ++
-          getRepoFields("accountCreation", AccountCreationType, ctx => ctx.ctx._1.accountCreationRepo, adminOnly) ++
-          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo, adminOnly) ++
-          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo, adminOnly) ++
-          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo, adminOnly) ++
-          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo, adminOnly) ++
-          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo, adminOnly) ++
-          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo, adminOnly) ++
-          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo, adminOnly) ++
           getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo, adminOnly) *
       )
     }

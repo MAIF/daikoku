@@ -19,7 +19,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.*
 import fr.maif.daikoku.login.AuthProvider.*
-import fr.maif.daikoku.services.AccountCreationService
+import fr.maif.daikoku.services.{AccountCreationService, UserService}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.Cypher.decrypt
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -51,7 +51,9 @@ class LoginController(
     cc: ControllerComponents,
     translator: Translator,
     assets: Assets,
-    accountCreationService: AccountCreationService
+    accountCreationService: AccountCreationService,
+    userService: UserService,
+    localLoginSupport: LocalLoginSupport
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -102,8 +104,8 @@ class LoginController(
                           localConfig.sessionMaxAge,
                           tenant,
                           request.request,
-                          LocalLoginSupport
-                            .bindUser(username, password, tenant, env)
+                          localLoginSupport
+                            .bindUser(username, password, tenant)
                             .flatMap {
                               case Some(user) if user.isDaikokuAdmin =>
                                 Future.successful(Some(user))
@@ -133,6 +135,7 @@ class LoginController(
                             Results.BadRequest
                           )
                         )
+
                     }
                   case _ =>
                     after(3.seconds)(
@@ -141,6 +144,7 @@ class LoginController(
                         Results.BadRequest
                       )
                     )
+
                 }
             }
           }
@@ -248,8 +252,18 @@ class LoginController(
     f.flatMap {
       case None =>
         after(3.seconds)(
-          FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          {
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          }
         )
+      case Some(user) if user.failedLoginAttempts != 0 =>
+        userService.delayForAttempt(user).flatMap { delay =>
+          after(delay.seconds)(
+            {
+              FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+            }
+          )
+        }
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -261,7 +275,8 @@ class LoginController(
             env.dataStore.userRepo
               .save(
                 user.copy(
-                  twoFactorAuthentication = Some(auth.copy(token = token))
+                  twoFactorAuthentication = Some(auth.copy(token = token)),
+                  failedLoginAttempts = 0
                 )
               )
               .flatMap {
@@ -269,8 +284,10 @@ class LoginController(
                   FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false =>
                   after(3.seconds)(
-                    FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+                    FastFuture
+                      .successful(BadRequest(Json.obj("error" -> true)))
                   )
+
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
@@ -311,7 +328,10 @@ class LoginController(
     }
 
     value.foldF(
-      error => after(3.seconds)(error.renderF()),
+      error =>
+        after(3.seconds)(
+          error.renderF()
+        ),
       r => r.future
     )
   }
@@ -360,7 +380,11 @@ class LoginController(
             "UTF-8"
           )
           FastFuture.successful(Redirect(s"/informations?error=$errorMsg"))
-        case error => after(3.seconds)(error.renderF())
+        case error =>
+          after(3.seconds)(
+            error.renderF()
+          )
+
       },
       r => r.future
     )
@@ -495,13 +519,15 @@ class LoginController(
                     val localConfig = LocalLoginConfig.fromJsons(
                       ctx.tenant.authProviderSettings
                     )
+
                     bindUser(
                       localConfig.sessionMaxAge,
                       ctx.tenant,
                       ctx.request,
-                      LocalLoginSupport
-                        .bindUser(username, password, ctx.tenant, env)
+                      localLoginSupport
+                        .bindUser(username, password, ctx.tenant)
                     )
+
                   case AuthProvider.Otoroshi =>
                     // as otoroshi already done the job, nothing to do here
                     AuditTrailEvent(
@@ -539,13 +565,15 @@ class LoginController(
                         val localConfig = LocalLoginConfig.fromJsons(
                           ctx.tenant.authProviderSettings
                         )
+
                         bindUser(
                           localConfig.sessionMaxAge,
                           ctx.tenant,
                           ctx.request,
-                          LocalLoginSupport
-                            .bindUser(username, password, ctx.tenant, env)
+                          localLoginSupport
+                            .bindUser(username, password, ctx.tenant)
                         )
+
                       case Right(user) =>
                         bindUser(
                           ldapConfig.sessionMaxAge,
@@ -561,6 +589,7 @@ class LoginController(
                         Results.BadRequest
                       )
                     )
+
                 }
               case _ =>
                 after(3.seconds)(

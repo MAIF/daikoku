@@ -6,8 +6,8 @@ import fr.maif.daikoku.domain.{Tenant, User}
 import fr.maif.daikoku.env.Env
 import org.mindrot.jbcrypt.BCrypt
 import play.api.Logger
-import play.api.libs.json._
-
+import play.api.libs.json.*
+import fr.maif.daikoku.services.UserService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -55,11 +55,12 @@ case class LocalLoginConfig(sessionMaxAge: Int = 86400) {
     )
 }
 
-object LocalLoginSupport {
-  def bindUser(username: String, password: String, tenant: Tenant, _env: Env)(
-      implicit ec: ExecutionContext
+class LocalLoginSupport(env: Env, userService: UserService) {
+
+  def bindUser(username: String, password: String, tenant: Tenant)(implicit
+      ec: ExecutionContext
   ): Future[Option[User]] = {
-    _env.dataStore.userRepo
+    env.dataStore.userRepo
       .findOne(
         Json.obj(
           "_deleted" -> false,
@@ -68,11 +69,21 @@ object LocalLoginSupport {
       )
       .map {
         case Some(user)
+            if user.password.isDefined && !BCrypt.checkpw(
+              password,
+              user.password.get
+            ) =>
+          userService.incrementAttempts(user)
+          Some(user)
+        case Some(user)
             if user.password.isDefined && BCrypt.checkpw(
               password,
               user.password.get
             ) =>
           Some(user)
+        case Some(user) =>
+          val failedUser = userService.incrementAttempts(user)
+          Some(failedUser)
         case _ => None
       }
   }
