@@ -298,9 +298,13 @@ class TeamController(
                     if (emailVerification.validUntil.isAfter(DateTime.now)) {
                       val newTeam = team.copy(verified = true)
                       val result: EitherT[Future, AppError, Result] = (for {
-                        _ <- EitherT.liftF(teamRepo.save(newTeam))
                         _ <- EitherT.liftF(
-                          emailVerificationRepo.deleteById(emailVerification.id)
+                          env.dataStore.withTransaction {
+                            for {
+                              _ <- teamRepo.save(newTeam)
+                              _ <- emailVerificationRepo.deleteById(emailVerification.id)
+                            } yield ()
+                          }
                         )
                       } yield {
                         Status(302)(
