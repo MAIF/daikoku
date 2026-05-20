@@ -55,14 +55,14 @@ class DeletionService(
     )
 
     AppLogger.debug(s"add **user**[${user.name}] to deletion queue")
-    for {
-      _ <- EitherT.right[AppError](
-        env.dataStore.userRepo.deleteByIdLogically(user.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.operationRepo.forTenant(tenant).save(operation)
-      )
-    } yield ()
+    EitherT.right[AppError](
+      env.dataStore.withTransaction {
+        for {
+          _ <- env.dataStore.userRepo.deleteByIdLogically(user.id)
+          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+        } yield ()
+      }
+    )
   }
 
   /** Delete logically a team Add an operation in deletion queue to process
@@ -83,14 +83,14 @@ class DeletionService(
     AppLogger.debug(
       s"[deletion service] :: add **team**[${team.name}] to deletion queue"
     )
-    for {
-      _ <- EitherT.right[AppError](
-        env.dataStore.teamRepo.forTenant(tenant).deleteByIdLogically(team.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.operationRepo.forTenant(tenant).save(operation)
-      )
-    } yield ()
+    EitherT.right[AppError](
+      env.dataStore.withTransaction {
+        for {
+          _ <- env.dataStore.teamRepo.forTenant(tenant).deleteByIdLogically(team.id)
+          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+        } yield ()
+      }
+    )
   }
 
   private case class SubscriptionContext(
@@ -259,6 +259,9 @@ class DeletionService(
         )
       )
       // Phase 1 — disable subs in DB so the synchronizer sees them as disabled
+      // TODO(transactions): le updateManyByQuery (DB) et les appels otoroshiSynchronizerJob (HTTP) ci-dessous
+      // ne sont pas atomiques. Si le sync Otoroshi échoue après le disable en DB, les subs restent disabled
+      // en base mais actives côté Otoroshi. Non transactionnable sans saga ou compensation explicite.
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -833,19 +836,19 @@ class DeletionService(
         AppError.EntityNotFound("Subscription demand")
       )
       _ <- EitherT.right[AppError](
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .deleteById(demand.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .delete(Json.obj("action.demand" -> demand.id.asJson))
+        env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.subscriptionDemandRepo
+                   .forTenant(tenant)
+                   .deleteById(demand.id)
+            _ <- env.dataStore.stepValidatorRepo
+                   .forTenant(tenant)
+                   .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
+            _ <- env.dataStore.notificationRepo
+                   .forTenant(tenant)
+                   .delete(Json.obj("action.demand" -> demand.id.asJson))
+          } yield ()
+        }
       )
     } yield ()
   }

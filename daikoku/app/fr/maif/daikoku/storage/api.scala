@@ -3,6 +3,7 @@ package fr.maif.daikoku.storage
 import cats.data.OptionT
 import fr.maif.daikoku.domain._
 import fr.maif.daikoku.env.Env
+import io.vertx.sqlclient.SqlConnection
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
@@ -11,6 +12,22 @@ import play.api.libs.json._
 import fr.maif.daikoku.services.CmsPage
 
 import scala.concurrent.{ExecutionContext, Future}
+
+// DbConn is threaded through all Repo methods as an implicit parameter.
+// NoConn (the default given) preserves the existing behavior: each call
+// borrows a fresh connection from the pool.  ActiveConn wraps a Vert.x
+// SqlConnection opened by withTransaction, so every Repo method executed
+// inside a withTransaction block automatically uses the same connection and
+// participates in the same DB transaction — without any change at call sites.
+sealed abstract class DbConn
+case object NoConn extends DbConn
+case class ActiveConn(conn: SqlConnection) extends DbConn
+
+object DbConn {
+  // Available everywhere via implicit resolution; callers outside a
+  // transaction don't need to import or declare anything.
+  implicit val default: DbConn = NoConn
+}
 
 sealed trait SortingOrder {
   def name: String
@@ -44,10 +61,12 @@ trait Repo[Of, Id <: ValueType] {
 
   def extractId(value: Of): String
 
-  def count()(implicit ec: ExecutionContext): Future[Long]
+  def count()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
-  def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
+  def count(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
+  // Streaming methods are intentionally excluded from DbConn: they return a
+  // lazy Source that materialises outside any transaction window.
   def streamAllRaw(query: JsObject = Json.obj())(implicit
       ec: ExecutionContext
   ): Source[JsValue, NotUsed]
@@ -60,25 +79,30 @@ trait Repo[Of, Id <: ValueType] {
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1
-  )(implicit ec: ExecutionContext): Future[Seq[JsValue]]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]]
 
-  def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
-      implicit ec: ExecutionContext
+  def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Seq[Of]]
 
   def findWithProjection(query: JsObject, projection: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[JsObject]]
 
   def findOneRaw(query: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsValue]]
 
   def findOne(query: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]]
 
   def findOneWithProjection(query: JsObject, projection: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsObject]]
 
@@ -88,39 +112,42 @@ trait Repo[Of, Id <: ValueType] {
       pageSize: Int,
       sort: Option[JsObject] = None,
       order: Option[SortingOrder] = None
-  )(implicit
-      ec: ExecutionContext
-  ): Future[(Seq[Of], Long)]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)]
 
-  def delete(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
+  def delete(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
-  def save(value: Of)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def save(value: Of)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     val payload = format.writes(value).as[JsObject]
     save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   def save(query: JsObject, value: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long]
+  def insertMany(values: Seq[Of])(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
   def updateMany(query: JsObject, Value: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long]
 
   def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long]
 
-  def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
+  def exists(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
   def findMaxByQuery(query: JsObject = Json.obj(), field: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Long]]
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def findByIdOrHrId(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
     findOneNotDeleted(
@@ -131,6 +158,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrId(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
     findOneNotDeleted(
@@ -144,7 +172,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrId(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj(
         "$or" -> Json.arr(
@@ -155,6 +183,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrIdNotDeleted(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
     findOneNotDeleted(
@@ -166,6 +195,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrIdNotDeleted(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
     findOneNotDeleted(
@@ -180,7 +210,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrIdNotDeleted(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
     findOneNotDeleted(
       Json.obj(
         "_deleted" -> false,
@@ -193,6 +223,7 @@ trait Repo[Of, Id <: ValueType] {
   }
 
   def findByIdOrHrIdRaw(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
@@ -203,6 +234,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrIdRaw(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
@@ -216,7 +248,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrIdRaw(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[JsValue]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
       Json.obj(
         "$or" -> Json.arr(
@@ -227,6 +259,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrIdNotDeletedRaw(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
@@ -238,6 +271,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def findByIdOrHrIdNotDeletedRaw(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
@@ -252,7 +286,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrIdNotDeletedRaw(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[JsValue]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
     findOneNotDeletedRaw(
       Json.obj(
         "_deleted" -> false,
@@ -264,6 +298,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def deleteByIdOrHrId(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     delete(
@@ -274,6 +309,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def deleteByIdOrHrId(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     delete(
@@ -286,6 +322,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def deleteLogicallyByIdOrHrId(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     deleteLogically(
@@ -296,6 +333,7 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def deleteLogicallyByIdOrHrId(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     deleteLogically(
@@ -308,31 +346,36 @@ trait Repo[Of, Id <: ValueType] {
     )
 
   def existsByIdOrHrId(id: String, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   def existsByIdOrHrId(id: Id, hrid: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def deleteByIdLogically(id: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean]
 
   def deleteByIdLogically(id: Id)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean]
 
   def deleteLogically(query: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
+  def deleteAllLogically()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
-  def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
+  def findAllNotDeleted()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     find(
       Json.obj(
         "$or" -> Json
@@ -344,40 +387,37 @@ trait Repo[Of, Id <: ValueType] {
       query: JsObject,
       maxDocs: Int = -1,
       sort: Option[JsObject] = None
-  )(implicit ec: ExecutionContext): Future[Seq[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
 
   def findOneNotDeletedRaw(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Option[JsValue]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
     findOneRaw(query ++ Json.obj("_deleted" -> false))
 
   def findOneNotDeleted(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(query ++ Json.obj("_deleted" -> false))
 
   def findByIdNotDeleted(
       id: String
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_deleted" -> false, "_id" -> id))
 
   def findByIdNotDeleted(
       id: Id
-  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
     findByIdNotDeleted(id.value)
   }
 
-  def findById(id: String)(implicit ec: ExecutionContext): Future[Option[Of]] =
+  def findById(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id))
 
-  def findById(id: Id)(implicit ec: ExecutionContext): Future[Option[Of]] =
+  def findById(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id.value))
 
-//  def findByIds(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Of]] =
-//    find(Json.obj("_id" -> JsArray(ids.map(JsString.apply))))
-
-  def findByIds(ids: Seq[Id])(implicit ec: ExecutionContext): Future[Seq[Of]] =
+  def findByIds(ids: Seq[Id])(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     find(
       Json.obj(
         "_id" -> Json.obj("$in" -> JsArray(ids.map(id => JsString(id.value))))
@@ -386,38 +426,37 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdsNotDeleted(
       ids: Seq[Id]
-  )(implicit ec: ExecutionContext): Future[Seq[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     findNotDeleted(
       Json.obj(
         "_id" -> Json.obj("$in" -> JsArray(ids.map(id => JsString(id.value))))
       )
     )
 
-//  def findByIdsNotDeleted(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Of]] =
-//    findNotDeleted(Json.obj("_id" -> JsArray(ids.map(JsString.apply))))
-
-  def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]] =
+  def findAll()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     find(Json.obj())
 
-  def deleteById(id: String)(implicit ec: ExecutionContext): Future[Boolean] =
+  def deleteById(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id))
 
-  def deleteById(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
+  def deleteById(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id.value))
 
-  def deleteAll()(implicit ec: ExecutionContext): Future[Boolean] =
+  def deleteAll()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj())
 
-  def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean] =
+  def exists(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id))
 
-  def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
+  def exists(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
   def queryOne(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]]
   def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]]
   def queryPaginated(
@@ -425,12 +464,12 @@ trait Repo[Of, Id <: ValueType] {
       params: Seq[AnyRef] = Seq.empty,
       offset: Int,
       limit: Int
-  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)]
 
   def execute(
       query: String,
       params: Seq[AnyRef] = Seq.empty
-  )(implicit ec: ExecutionContext): Future[Long]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -666,4 +705,9 @@ trait DataStore {
   def queryString(query: String, name: String, params: Seq[AnyRef] = Seq.empty)(
       implicit ec: ExecutionContext
   ): Future[Seq[String]]
+
+  // Runs f inside a single DB transaction.  All Repo calls inside f
+  // automatically receive ActiveConn(conn) via the implicit DbConn —
+  // no changes required at the call sites inside f.
+  def withTransaction[A](f: DbConn ?=> Future[A])(implicit ec: ExecutionContext): Future[A]
 }
