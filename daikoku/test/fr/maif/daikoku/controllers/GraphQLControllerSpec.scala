@@ -1,8 +1,8 @@
 package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.ApiWithPlans
@@ -11,10 +11,11 @@ import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, JsValue, Json}
 
+import java.util.Base64
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class GraphQLControllerSpec()
     extends PlaySpec
@@ -537,7 +538,6 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(using _tenant, daikokuAdminSession)
       respApiGroupDaikokuAdmin.status mustBe 200
-      logger.warn(Json.prettyPrint(respApiGroupDaikokuAdmin.json))
       (respApiGroupDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 14
 
@@ -614,7 +614,6 @@ class GraphQLControllerSpec()
           )
           .some
       )(using _tenant, teamOwnerAdminSession)
-      logger.warn(Json.prettyPrint(respOwnerAdminByTags.json))
       respOwnerAdminByTags.status mustBe 200
       (respOwnerAdminByTags.json \ "data" \ "visibleApis" \ "totalFiltered")
         .as[Int] mustBe 2
@@ -1444,7 +1443,6 @@ class GraphQLControllerSpec()
           )
           .some
       )(using _tenant, daikokuAdminSession)
-      logger.info(Json.prettyPrint(respAllCatWithGroupDaikokuAdmin.json))
       respAllCatWithGroupDaikokuAdmin.status mustBe 200
       (respAllCatWithGroupDaikokuAdmin.json \ "data" \ "allCategories")
         .as[Seq[String]]
@@ -1670,6 +1668,328 @@ class GraphQLControllerSpec()
       total mustBe 1
       ids must contain("notif-tenant-1")
       ids must not contain "notif-tenant-2"
+    }
+  }
+
+  "GraphQL security" should {
+
+    "block non-admin users from accessing admin-only POJO entities" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner.copy(
+            tenant = tenant.id,
+            users = Set(UserWithPermission(userAdmin.id, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
+
+      def assertAdminOnlyQuery(query: String): Unit = {
+        val resp = httpJsonCallBlocking(
+          path = "/api/search",
+          method = "POST",
+          body = Json.obj("query" -> query).some
+        )(using tenant, session)
+        resp.status mustBe 200
+        val errors = (resp.json \ "errors").asOpt[JsArray]
+        errors.isDefined mustBe true
+        val firstError = errors.get.value.head
+        (firstError \ "extensions" \ "code").asOpt[String] mustBe Some("UNAUTHORIZED")
+      }
+
+      assertAdminOnlyQuery("""{ users { _id } }""")
+      assertAdminOnlyQuery("""{ passwordResets { _id } }""")
+      assertAdminOnlyQuery("""{ apiSubscriptions { _id } }""")
+      assertAdminOnlyQuery("""{ userSessions { _id } }""")
+      assertAdminOnlyQuery("""{ notifications { _id } }""")
+      assertAdminOnlyQuery("""{ auditEvents { _id } }""")
+    }
+
+    "allow daikoku admin to access admin-only POJO entities" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam.copy(tenant = tenant.id))
+      )
+      val session = loginWithBlocking(daikokuAdmin.copy(tenants = Set(tenant.id)), tenant)
+
+      def assertAdminCanQuery(query: String): Unit = {
+        val resp = httpJsonCallBlocking(
+          path = "/api/search",
+          method = "POST",
+          body = Json.obj("query" -> query).some
+        )(using tenant, session)
+        resp.status mustBe 200
+        (resp.json \ "errors").isDefined mustBe false
+      }
+
+      assertAdminCanQuery("""{ users { _id } }""")
+      assertAdminCanQuery("""{ userSessions { _id } }""")
+      assertAdminCanQuery("""{ notifications { _id } }""")
+    }
+
+    "allow admin-api endpoint to access admin-only POJO entities using an admin API key" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam.copy(tenant = tenant.id)),
+        subscriptions = Seq(adminApiSubscription)
+      )
+
+      val adminApiHeader = Map(
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+          s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+        )}"
+      )
+
+      def assertAdminApiCanQuery(query: String): Unit = {
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = "/admin-api/search",
+          method = "POST",
+          headers = adminApiHeader,
+          body = Json.obj("query" -> query).some
+        )(using tenant)
+        resp.status mustBe 200
+        (resp.json \ "errors").isDefined mustBe false
+      }
+
+      assertAdminApiCanQuery("""{ users { id } }""")
+      assertAdminApiCanQuery("""{ userSessions { _id } }""")
+      assertAdminApiCanQuery("""{ notifications { _id } }""")
+    }
+
+    "allow authenticated users to access email via RequiresAuthentication" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner.copy(
+            tenant = tenant.id,
+            users = Set(UserWithPermission(userAdmin.id, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
+
+      val query = """{ myTeams { users { user { email } } } }"""
+      val resp = httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Json.obj("query" -> query).some
+      )(using tenant, session)
+
+      resp.status mustBe 200
+      (resp.json \ "errors").isDefined mustBe false
+      val emails = (resp.json \ "data" \ "myTeams")
+        .as[Seq[play.api.libs.json.JsValue]]
+        .flatMap(t => (t \ "users").as[Seq[play.api.libs.json.JsValue]])
+        .flatMap(u => (u \ "user").asOpt[play.api.libs.json.JsValue].flatMap(v => (v \ "email").asOpt[String]))
+      emails must not be empty
+    }
+
+    "prevent guests from accessing team member emails" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      val _tenant = tenant.copy(isPrivate = false)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("guest-email-test-plan"),
+        tenant = _tenant.id,
+        customName = "guest-email-test-plan",
+        otoroshiTarget = None,
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = Api(
+        id = ApiId("guest-email-test-api"),
+        tenant = _tenant.id,
+        team = teamOwnerId,
+        lastUpdate = org.joda.time.DateTime.now(),
+        name = "guest-email-test-api",
+        smallDescription = "test",
+        description = "test",
+        currentVersion = Version("1.0.0"),
+        supportedVersions = Set(Version("1.0.0")),
+        state = ApiState.Published,
+        visibility = ApiVisibility.Public,
+        documentation = ApiDocumentation(
+          id = ApiDocumentationId(IdGenerator.token(32)),
+          tenant = _tenant.id,
+          pages = Seq.empty,
+          lastModificationAt = org.joda.time.DateTime.now()
+        ),
+        swagger = None,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(_tenant),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner.copy(
+            tenant = _tenant.id,
+            users = Set(UserWithPermission(userAdmin.id, Administrator))
+          )
+        ),
+        apis = Seq(api),
+        usagePlans = Seq(plan)
+      )
+
+      val query =
+        """|query {
+           |  visibleApis(limit: 10, offset: 0) {
+           |    apis {
+           |      api {
+           |        team {
+           |          users {
+           |            user {
+           |              email
+           |              isDaikokuAdmin
+           |            }
+           |          }
+           |        }
+           |      }
+           |    }
+           |  }
+           |}""".stripMargin
+
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Json.obj("query" -> query).some
+      )(using _tenant)
+
+      resp.status mustBe 200
+      // The query is valid and succeeds — but team.users returns [] for non-members,
+      // so no User object (and no email/isDaikokuAdmin) is ever resolved for a guest.
+      (resp.json \ "errors").isDefined mustBe false
+      val users = (resp.json \ "data" \ "visibleApis" \ "apis")
+        .as[Seq[JsValue]]
+        .flatMap(a => (a \ "api" \ "team" \ "users").as[Seq[JsValue]])
+      users mustBe empty
+    }
+
+    "block non-admin team member from accessing apiKey when apiKeyVisibility=Administrator" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("sec-test-plan"),
+        tenant = tenant.id,
+        customName = "sec-test-plan",
+        otoroshiTarget = None,
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = Api(
+        id = ApiId("sec-test-api"),
+        tenant = tenant.id,
+        team = teamOwnerId,
+        lastUpdate = org.joda.time.DateTime.now(),
+        name = "sec-test-api",
+        smallDescription = "sec test",
+        description = "sec test",
+        currentVersion = Version("1.0.0"),
+        supportedVersions = Set(Version("1.0.0")),
+        state = ApiState.Published,
+        visibility = ApiVisibility.Public,
+        documentation = ApiDocumentation(
+          id = ApiDocumentationId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          pages = Seq.empty,
+          lastModificationAt = org.joda.time.DateTime.now()
+        ),
+        swagger = None,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+      val subscription = ApiSubscription(
+        id = ApiSubscriptionId("sec-test-sub"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("sec-test-key", "sec-client-id", "sec-secret"),
+        plan = plan.id,
+        createdAt = org.joda.time.DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userAdmin.id,
+        customName = None,
+        rotation = None,
+        integrationToken = IdGenerator.token(32)
+      )
+
+      // teamConsumer with apiKeyVisibility=Administrator: only Admins see the key
+      val secTeamConsumer = teamConsumer.copy(
+        tenant = tenant.id,
+        apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator),
+        users = Set(
+          UserWithPermission(userTeamAdminId, Administrator),
+          UserWithPermission(userApiEditorId, ApiEditor)
+        )
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, userAdmin, userApiEditor),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          secTeamConsumer
+        ),
+        apis = Seq(api),
+        usagePlans = Seq(plan),
+        subscriptions = Seq(subscription)
+      )
+
+      val apiEditorSession = loginWithBlocking(userApiEditor, tenant)
+      val adminSession     = loginWithBlocking(userAdmin, tenant)
+      val daikokuAdminSession = loginWithBlocking(daikokuAdmin, tenant)
+
+      val query =
+        s"""|{
+            |  apiSubscriptionDetails(subscriptionId: "sec-test-sub", teamId: "${teamConsumerId.value}") {
+            |    apiSubscription {
+            |      apiKey { clientSecret }
+            |    }
+            |  }
+            |}""".stripMargin
+
+      // ApiEditor in team: apiKeyVisibility=Administrator → blocked
+      val respEditor = httpJsonCallBlocking(
+        path = "/api/search", method = "POST",
+        body = Json.obj("query" -> query).some
+      )(using tenant, apiEditorSession)
+      respEditor.status mustBe 200
+      (respEditor.json \ "errors").isDefined mustBe true
+      ((respEditor.json \ "errors").as[JsArray].value.head \ "message").as[String] mustBe "Access to API key denied"
+
+      // Administrator in team: allowed
+      val respAdmin = httpJsonCallBlocking(
+        path = "/api/search", method = "POST",
+        body = Json.obj("query" -> query).some
+      )(using tenant, adminSession)
+      respAdmin.status mustBe 200
+      (respAdmin.json \ "errors").isDefined mustBe false
+      (respAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+        .asOpt[String] mustBe Some("sec-secret")
+
+      // DaikokuAdmin: always allowed regardless of team role
+      val respDaikokuAdmin = httpJsonCallBlocking(
+        path = "/api/search", method = "POST",
+        body = Json.obj("query" -> query).some
+      )(using tenant, daikokuAdminSession)
+      respDaikokuAdmin.status mustBe 200
+      (respDaikokuAdmin.json \ "errors").isDefined mustBe false
+      (respDaikokuAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+        .asOpt[String] mustBe Some("sec-secret")
     }
   }
 

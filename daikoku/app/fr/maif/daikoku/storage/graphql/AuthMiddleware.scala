@@ -47,6 +47,7 @@ case class AuthorizationException(message: String) extends Exception(message)
 
 case object RequiresTenantAdmin extends FieldTag
 case object RequiresDaikokuAdmin extends FieldTag
+case object RequiresAuthentication extends FieldTag
 
 class DaikokuAuthMiddleware()
     extends Middleware[(DataStore, DaikokuActionContext[JsValue])]
@@ -82,6 +83,10 @@ class DaikokuAuthMiddleware()
 
         case RequiresDaikokuAdmin =>
           daikokuCtx.requireDaikokuAdmin()
+
+        case RequiresAuthentication =>
+          if (daikokuCtx.isGuest)
+            throw AuthorizationException("Authentication required")
 
         case _ =>
       }
