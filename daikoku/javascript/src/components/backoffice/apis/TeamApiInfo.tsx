@@ -47,6 +47,19 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
       type: type.bool,
       label: translate('team_api_info.isDefault'), //@ts-ignore //FIXME
       expert: true,
+      constraints: [
+        constraints.when(
+          'state',
+          (state) => state === 'created',
+          [
+            constraints.test(
+              'state-not-created',
+              `En état, l'api ne sera pas visible au catalogue pour les autres équipes`,
+              (isDefault) => isDefault !== true
+            )
+          ],
+          [])
+      ]
     },
     name: {
       type: type.string,
