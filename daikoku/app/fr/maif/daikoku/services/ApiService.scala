@@ -96,11 +96,13 @@ class ApiService(
       customMaxPerMonth: Option[Long] = None,
       customReadOnly: Option[Boolean] = None,
       maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
-  ) = {
+  ): ActualOtoroshiApiKey = {
 
     val date = DateTime.now()
     val createdAtMillis = date.getMillis.toString
     val createdAt = date.toString()
+    
+    val clientId = maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
       s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
@@ -123,17 +125,20 @@ class ApiService(
       "tenant.humanReadableId" -> tenant.humanReadableId,
       "tenant.name" -> tenant.name,
       "createdAt" -> createdAt,
-      "createdAtMillis" -> createdAtMillis
+      "createdAtMillis" -> createdAtMillis,
+      "subscription.clientId" -> clientId
     ) ++ team.metadata.map(t =>
       ("team.metadata." + t._1, t._2)
-    ) ++ user.metadata.map(t => ("user.metadata." + t._1, t._2)) ++ api.metadata
-      .map(t => ("api.metadata." + t._1, t._2)) ++ plan.metadata.map(t =>
-      ("plan.metadata." + t._1, t._2)
-    )
+    ) ++ user.metadata.map(t => ("user.metadata." + t._1, t._2))
+      ++ api.metadata.map(t => ("api.metadata." + t._1, t._2))
+      ++ plan.metadata.map(t => ("plan.metadata." + t._1, t._2))
+      ++ customMetadata
+        .fold(Map.empty[String, String])(_.as[Map[String, String]])
+        .map(t => ("subscription.metadata." + t._1, t._2))
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
-        clientId = IdGenerator.token(32),
+        clientId = clientId,
         clientSecret = IdGenerator.token(64),
         clientName = tenant.clientNamePattern
           .map(OtoroshiTarget.processValue(_, baseContext))

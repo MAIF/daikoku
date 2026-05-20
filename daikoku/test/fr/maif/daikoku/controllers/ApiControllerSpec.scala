@@ -469,7 +469,7 @@ class ApiControllerSpec()
         tenants = Seq(
           tenant.copy(
             clientNamePattern = Some(
-              "apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}"
+              "apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}::id=${subscription.clientId}"
             ),
             otoroshiSettings = Set(
               OtoroshiSettings(
@@ -509,7 +509,7 @@ class ApiControllerSpec()
       val sub =
         (resp.json \ "subscription").as(using json.ApiSubscriptionFormat)
       val expectedName =
-        s"apk-test::api=${api.name}:${api.currentVersion.value}/${plan.customName}::team=${teamConsumer.name}"
+        s"apk-test::api=${api.name}:${api.currentVersion.value}/${plan.customName}::team=${teamConsumer.name}::id=${sub.apiKey.clientId}"
       sub.apiKey.clientName mustBe expectedName
     }
 

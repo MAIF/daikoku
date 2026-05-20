@@ -1,12 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { CONTENT_TYPES } from './cmsUtils';
 import { ICmsPageGQL } from '../../../types';
+import { Table, TableRef } from '../../inputs';
 
 type PagesProps = {
   pages: Array<ICmsPageGQL>
