@@ -157,7 +157,7 @@ export const DaikokuApp = () => {
           <div className="d-flex flex-row">
             <SideBar />
             <RightPanel />
-            <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto' }}>
+            <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto'}}>
               {/*<Breadcrumb /> */}
               <Routes>
                 <Route

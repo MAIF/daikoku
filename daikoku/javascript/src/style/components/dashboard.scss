@@ -6,12 +6,13 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 .api-table {
   display: flex;
   flex-direction: column;
-  border-radius: 5px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, variables.$level1_bg-color 90%, #000);
 
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
+
 
   .select-all-row {
     background-color: variables.$level3_bg-color;
@@ -24,16 +25,27 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     // }
   }
 
+  .rounded-circle-deprecated {
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+  }
+
 
   .table-rows {
     display: flex;
     flex-direction: column;
-    background-color: variables.$level1_bg-color;
+    background-color: variables.$level2_bg-color;
     color: variables.$level3_text-color;
     padding: 0;
     margin: 0;
-
+    white-space: nowrap;
     list-style: none;
+  }
+
+  .table-header {
+    background-color: variables.$level1_bg-color;
+
   }
 
   li:last-of-type .table-row{
@@ -42,12 +54,13 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   .table-row {
     display: grid;
-    grid-template-columns: 15fr 15fr 15fr 30fr 15fr;
+    grid-template-columns: 1fr 15fr 15fr 15fr 15fr 15fr;
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
     font-size: 0.875rem;
-    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
+    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 50%, #000);
+
 
 
     &:not(.select-all-row):hover {
@@ -148,14 +161,21 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     div.action-cell {
       text-align: end;
+    }
 
+    div.favorite-cell {
+      color: variables.$primary-color;
       .favorite-btn {
         color: variables.$primary-color;
-
         &:hover {
           color: variables.$level1_link-hover-color;
         }
       }
+    }
+
+    .btn-action{
+      width: 30px;
+      height: 30px;
     }
   }
 

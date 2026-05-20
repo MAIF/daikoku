@@ -1,5 +1,5 @@
 $level1_text-color: #{"var(--level1_text-color, #f1f3f6)"}; //body
-$level1_bg-color: #{"var(--level1_bg-color, #8a8a8a)"}; //body
+$level1_bg-color: #{"var(--level1_bg-color, #F9F9F9)"}; //body
 $level1_link-color: #{"var(--level1_link-color, #4c4c4d)"};
 $level1_link-hover-color: #{"var(--level1_link-hover-color, orange)"};
 
@@ -52,6 +52,8 @@ $info-color: #{"var(--info-color, #17a2b8)"}; //status
 $warning-color: #{"var(--warning-color, #ffc107)"}; //status
 $danger-color: #{"var(--danger-color, #dc3545)"}; //status
 $neutral-color: #{"var(--neutral-color, #4e5760)"}; //status
+$demands-subscription-bg-count: #{"var(--demands-subscription-bg-count, #FFFCD3)"};
+$demands-subscription-color-count: #{"var(--demands-subscription-color-count, #856404)"};
 
 $primary-color: #{"var(--primary-color, #29438D)"};
 
