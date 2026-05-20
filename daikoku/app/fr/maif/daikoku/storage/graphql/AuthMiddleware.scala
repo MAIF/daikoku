@@ -90,13 +90,6 @@ class DaikokuAuthMiddleware()
 
         case _ =>
       }
-      if (!daikokuCtx.isDaikokuAdmin) {
-        if (!ctx.field.tags.contains(CustomField)) {
-          throw AuthorizationException(
-            "API key does not have access to this field"
-          )
-        }
-      }
 
       continue
     } catch {
