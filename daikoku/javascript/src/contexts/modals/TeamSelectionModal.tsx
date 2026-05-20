@@ -26,7 +26,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     if (selectedTeams.length === allTeams.length) {
       setSelectedTeams([]);
     } else {
-      setSelectedTeams([...allTeams.map((t) => t._id)]);
+      setSelectedTeams(allTeams.map((t) => t._id));
     }
   };
 

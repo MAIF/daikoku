@@ -1,15 +1,13 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
+import { useContext, useEffect, useRef } from 'react';
 
-import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../contexts';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';
-import { deleteOtoroshiSettings } from '../../../../services';
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const table = useRef<TableRef>(undefined);
@@ -137,7 +135,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   }
 
   const deleteSettings = (paymentSetttings: IThirdPartyPaymentSettings) => {
-    const thirdPartyPaymentSettings = [...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== paymentSetttings._id)];
+    const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== paymentSetttings._id);
 
     confirm({
       message: translate('third-party.payment.settings.delete.confirm.message'),
@@ -176,7 +174,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
           .then(() => table.current?.update())
       },
-      actionLabel: !!paymentSetttings ? translate('Update') : translate('Create')
+      actionLabel: paymentSetttings ? translate('Update') : translate('Create')
     })
   }
 

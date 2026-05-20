@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, ReactElement, ReactNode, useContext } from 'react';
+import React, { PropsWithChildren, ReactElement, useContext } from 'react';
 import { ModalContext, TeamSelectorModalProps } from '../../contexts';
 
 

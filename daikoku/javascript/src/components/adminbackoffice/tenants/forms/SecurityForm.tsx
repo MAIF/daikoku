@@ -167,7 +167,7 @@ export const SecurityForm = (props: {
       type: 'teamAdmin',
       id: nanoid(),
       title: 'admin validation',
-      team: teamQuery.data?._id!
+      team: teamQuery.data!._id
     }];
 
     return (
@@ -212,7 +212,7 @@ export const SecurityForm = (props: {
       content: <SubscriptionProcessEditor
         save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
         process={props.tenant?.accountCreationProcess ?? []}
-        team={teamQuery.data?._id!}
+        team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
       />
@@ -279,7 +279,7 @@ export const SecurityForm = (props: {
                 return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
               },
               deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
-              render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities", teamId: teamQuery.data?._id! }),
+              render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities", teamId: teamQuery.data!._id }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
               help: translate('authorized.entities.help'),

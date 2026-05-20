@@ -7,17 +7,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import * as Services from '../../../services';
-import { IState, ITenant, IUser } from '../../../types';
-import { Can, daikoku, manage, Spinner } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { ITenant, IUser } from '../../../types';
+import { Can, daikoku, manage, Spinner } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 
 const Avatar = ({
   setValue,
   rawValues,
   getValue,
-  value,
   onChange,
   tenant
 }: {

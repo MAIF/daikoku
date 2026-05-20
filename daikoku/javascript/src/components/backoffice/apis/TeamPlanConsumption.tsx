@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect } from 'react';
 import { useMatch } from 'react-router-dom';
 
-import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApi, IGlobalInformations, ITeamSimple, isError } from '../../../types';
+import { IApi, IGlobalInformations, isError, ITeamSimple } from '../../../types';
 import { formatDate, OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { IgqlConsumption } from "./TeamApiConsumption";
-import { GlobalContext } from '../../../contexts/globalContext';
 
 type TeamPlanConsumptionProps = {
   apiGroup?: boolean,
@@ -18,7 +18,7 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
-  const urlMatching = !!props.apiGroup
+  const urlMatching = props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
     : '/:teamId/:apiId/:version/consumption/plan/:planId';
   const match = useMatch(urlMatching);

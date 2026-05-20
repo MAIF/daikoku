@@ -1,7 +1,8 @@
-import { FormEvent, useContext, useEffect, useRef, useState } from 'react';
-import * as Services from '../../services/index';
-import { I18nContext } from '../../contexts';
+import { FormEvent, useContext, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+
+import { I18nContext } from '../../contexts';
+import * as Services from '../../services/index';
 
 export function LoginPage() {
   const { Translation, translate } = useContext(I18nContext);
@@ -33,23 +34,23 @@ export function LoginPage() {
     e.preventDefault();
     const { username, password } = state;
     const action = `/auth/${provider}/callback`;
-      Services.login(username, password, action, searchParams.get('redirect'))
-        .then((res) => {
-          if (res.status === 400) {
-            setState({
-              ...state,
-              loginError: true,
-            });
-            setLoading(false);
-            buttonRef.current?.classList.add('active', 'btn-outline-danger')
-            setTimeout(() => {
-              buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-            }, 800);
-          }
-          else if (res.redirected) {
-            window.location.href = res.url;
-          }
-        });
+    Services.login(username, password, action, searchParams.get('redirect'))
+      .then((res) => {
+        if (res.status === 400) {
+          setState({
+            ...state,
+            loginError: true,
+          });
+          setLoading(false);
+          buttonRef.current?.classList.add('active', 'btn-outline-danger')
+          setTimeout(() => {
+            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
+          }, 800);
+        }
+        else if (res.redirected) {
+          window.location.href = res.url;
+        }
+      });
   };
 
   const { loginError } = state;

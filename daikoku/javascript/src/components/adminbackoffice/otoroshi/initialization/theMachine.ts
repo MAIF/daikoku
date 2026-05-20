@@ -15,34 +15,34 @@ type MachineEvents =
   | { type: 'CREATE_APIS'; createdApis: any[]; callBackCreation: () => void }
   | { type: 'CREATE_APIKEYS'; createdSubs: any[]; callBackCreation: () => void }
   | {
-      type: 'DONE_SERVICES';
-      tenant: string;
-      otoroshi: any;
-      groups: any[];
-      services: any[];
-      routes: any[];
-    }
+    type: 'DONE_SERVICES';
+    tenant: string;
+    otoroshi: any;
+    groups: any[];
+    services: any[];
+    routes: any[];
+  }
   | {
-      type: 'DONE_APIKEYS';
-      tenant: string;
-      otoroshi: any;
-      groups: any[];
-      services: any[];
-      apikeys: any[];
-      routes: any[];
-    }
+    type: 'DONE_APIKEYS';
+    tenant: string;
+    otoroshi: any;
+    groups: any[];
+    services: any[];
+    apikeys: any[];
+    routes: any[];
+  }
   | { type: 'DONE' }
   | {
-      type: 'DONE_COMPLETE';
-      groups?: any[];
-      services?: any[];
-      routes?: any[];
-      tenant?: string;
-      otoroshi?: any;
-      newServices?: any[];
-      newRoutes?: any[];
-      newApikeys?: any[];
-    }
+    type: 'DONE_COMPLETE';
+    groups?: any[];
+    services?: any[];
+    routes?: any[];
+    tenant?: string;
+    otoroshi?: any;
+    newServices?: any[];
+    newRoutes?: any[];
+    newApikeys?: any[];
+  }
   | { type: 'DONE_MORE'; newApikeys: any[]; nextPage: number }
   | { type: 'CREATION_DONE' }
   | { type: 'FAILURE'; error: any };
@@ -56,22 +56,6 @@ type MachineContext = {
   routes: any[];
   apikeys: any[];
   error: any | undefined;
-};
-
-const apikeyCustomization = {
-  clientIdOnly: false,
-  constrainedServicesOnly: false,
-  readOnly: false,
-  metadata: {},
-  customMetadata: [],
-  tags: [],
-  restrictions: {
-    enabled: false,
-    allowLast: true,
-    allowed: [],
-    forbidden: [],
-    notFound: [],
-  },
 };
 
 export const theMachine = createMachine({
@@ -320,7 +304,7 @@ export const theMachine = createMachine({
               tenant: context.tenant,
             };
           }
-          return { createdApis: [], callBackCreation: () => {}, tenant: context.tenant };
+          return { createdApis: [], callBackCreation: () => { }, tenant: context.tenant };
         },
       },
       on: {
@@ -443,7 +427,7 @@ export const theMachine = createMachine({
               tenant: context.tenant,
             };
           }
-          return { createdSubs: [], callBackCreation: () => {}, tenant: context.tenant };
+          return { createdSubs: [], callBackCreation: () => { }, tenant: context.tenant };
         },
       },
       on: {

@@ -1,7 +1,5 @@
-import React from 'react';
-import Trash2 from 'react-feather/dist/icons/trash-2';
 
-import {Action, Props as ActionProps} from './Action';
+import { Action, Props as ActionProps } from './Action';
 
 export function Remove(props: ActionProps) {
   return (

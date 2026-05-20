@@ -229,7 +229,6 @@ const TwoFactorAuthentication = ({
 const Avatar = ({
   setValue,
   rawValues,
-  value,
   onChange,
   tenant
 }: any) => {

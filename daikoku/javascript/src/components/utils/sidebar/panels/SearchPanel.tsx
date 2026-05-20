@@ -204,7 +204,7 @@ export const SearchPanel = () => {
 
   return (
     <div>
-      <button type='button' className='search-button' onClick={(e) => openModal()}>
+      <button type='button' className='search-button' onClick={() => openModal()}>
         <div className='d-flex flex-row align-items-center gap-2'>
           <SearchIcon className="fake-placeholder" />
           <div className='fake-placeholder px-3' dangerouslySetInnerHTML={{ __html: translate({ key: 'topbar.search.placeholder', replacements: ['<kbd className="mx-1">/</kbd>'] }) }} />

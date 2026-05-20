@@ -1,4 +1,3 @@
-import { IUser } from './team';
 import { ITenant } from './tenant';
 
 export type TOption = {

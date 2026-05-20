@@ -1,12 +1,12 @@
 import { TBaseObject } from "@maif/react-forms";
-import React, { JSX, useEffect, useState } from "react";
+import React, { JSX, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IWithTesting } from "../types";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
-import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiSelectModal";
+import { ApiSelectModal, IApiSelectModalProps } from "./modals/ApiSelectModal";
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
@@ -115,7 +115,7 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const openTestingApikeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T>) => {
     open(<TestingApiKeyModal {...props} close={close} />)
   }
-  const openSubMetadataModal = <T extends IWithTesting>(props: SubscriptionMetadataModalProps<T>) => open(<SubscriptionMetadataModal {...props} close={close} />)
+  const openSubMetadataModal = (props: SubscriptionMetadataModalProps) => open(<SubscriptionMetadataModal {...props} close={close} />)
   const openApiDocumentationSelectModal = (props: IApiDocumentationSelectModalProps) => open(<ApiDocumentationSelectModal {...props} close={close} />)
   const openTeamSelectorModal = (props: TeamSelectorModalProps) => open(<TeamSelectorModal {...props} close={close} />)
   const openInvitationTeamModal = (props: ITeamInvitationModalProps) => open(<TeamInvitationModal {...props} close={close} />)

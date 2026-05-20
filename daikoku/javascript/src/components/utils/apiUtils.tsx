@@ -1,8 +1,9 @@
 import { constraints, format, TBaseObject, type } from "@maif/react-forms";
-import { IFormModalProps, TranslateParams } from "../../contexts";
-import { IApi, IApiGQL, isError, ITeamFullGql, ITeamSimple, ITenant } from "../../types";
-import * as Services from '../../services';
 import { toast } from "sonner";
+
+import { IFormModalProps, TranslateParams } from "../../contexts";
+import * as Services from '../../services';
+import { IApi, IApiGQL, isError, ITeamSimple, ITenant } from "../../types";
 
 export const deleteApi = ({ api, versions, team, translate, openFormModal, handleSubmit }:
   {

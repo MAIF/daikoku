@@ -1,25 +1,25 @@
 import { constraints, type } from '@maif/react-forms';
 import uniq from 'lodash/uniq';
+import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 
-import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../contexts';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import { randomColor } from '../../../utils';
-import { nanoid } from 'nanoid';
+import { IApi } from '../../../../types';
 
-export function TeamApiIssueTags({ value, onChange }: any) {
+export function TeamApiIssueTags({ value, onChange }: { value: IApi, onChange: (_api: IApi) => void }) {
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
 
-  function deleteTag(id: any) {
+  function deleteTag(id: string) {
     const updatedApi = {
       ...api,
-      issuesTags: [...api.issuesTags.filter((iss: any) => iss.id !== id)],
+      issuesTags: api.issuesTags.filter((iss) => iss.id !== id),
     };
     onChange(updatedApi);
     setApi(updatedApi);
@@ -99,8 +99,8 @@ export function TeamApiIssueTags({ value, onChange }: any) {
         <label className="col-xs-12 col-sm-2">{translate('issues.tags')}</label>
         <div className="col-sm-10">
           {api.issuesTags
-            .sort((a: any, b: any) => a.id.localeCompare(b.id))
-            .map((issueTag: any, i: any) => (
+            .sort((a, b) => a.id.localeCompare(b.id))
+            .map((issueTag, i) => (
               <div
                 key={`issueTag${i}`}
                 className="d-flex align-items-center mt-2"
@@ -121,7 +121,7 @@ export function TeamApiIssueTags({ value, onChange }: any) {
                   onChange={(e) => {
                     setApi({
                       ...api,
-                      issuesTags: api.issuesTags.map((issue: any, j: any) => {
+                      issuesTags: api.issuesTags.map((issue, j) => {
                         if (i === j) issue.name = e.target.value;
                         return issue;
                       }),
@@ -135,7 +135,7 @@ export function TeamApiIssueTags({ value, onChange }: any) {
                   handleColorChange={(color: any) => {
                     setApi({
                       ...api,
-                      issuesTags: api.issuesTags.map((issue: any, j: any) => {
+                      issuesTags: api.issuesTags.map((issue, j) => {
                         if (i === j) issue.color = color;
                         return issue;
                       }),

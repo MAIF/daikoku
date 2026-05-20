@@ -2,7 +2,6 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 
-import { toast } from "sonner";
 import { I18nContext } from '../../../../contexts';
 import { testMailConnection } from "../../../../services";
 import { IMailerSettings, isError, ITenantFull, MailerType } from '../../../../types';
@@ -31,7 +30,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         return (
           <FeedbackButton
             type='info'
-            onPress={() => testMailConnection(props.tenant?._id!, mailerType, rawValues)
+            onPress={() => testMailConnection(props.tenant!._id, mailerType, rawValues)
               .then(r => isError(r) ? Promise.reject(r) : r)
             }
             feedbackTimeout={1000}

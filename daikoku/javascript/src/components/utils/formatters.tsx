@@ -1,8 +1,8 @@
-import { differenceInDays, differenceInMinutes, format, formatDistance } from "date-fns";
+import { differenceInDays, format, formatDistance } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 
-import frFRAntd from 'antd/es/date-picker/locale/fr_FR';
 import enUSAntd from 'antd/es/date-picker/locale/en_US';
+import frFRAntd from 'antd/es/date-picker/locale/fr_FR';
 
 import find from "lodash/find";
 import { useContext } from "react";
@@ -200,10 +200,9 @@ export const formatMessageDate = (date: number, language: string, translate: (pa
   const now = new Date();
   const diffToNow = differenceInDays(messageDate, now);
   if (diffToNow === 0) {
-    const minDiff = differenceInMinutes(messageDate, now);
     return formatDistance(messageDate, now, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
   } else if (messageDate.getFullYear() === now.getFullYear()) {
-    return format(messageDate, translate("date.format.message.info"),{ locale: getLanguageFns(language) });
+    return format(messageDate, translate("date.format.message.info"), { locale: getLanguageFns(language) });
   } else {
     return format(messageDate, translate("date.format.message.info.year"), { locale: getLanguageFns(language) });
   }

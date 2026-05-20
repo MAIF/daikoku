@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { ITeamSimple, ITenantFull, IUser, isError } from '../../../types';
@@ -26,7 +26,7 @@ const AdminList = () => {
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState<Array<IUser>>([]);
   const [admins, setAdmins] = useState<Array<IUser>>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [team, setTeam] = useState<ITeamSimple>();
   const [tenant, setTenant] = useState<ITenantFull>();
   const [filteredAdmins, setFilteredAdmins] = useState<Array<IUser>>([]);
@@ -47,9 +47,9 @@ const AdminList = () => {
         setAdmins(maybeAdministration.admins);
         setTeam(maybeAdministration.team);
       }
-      if (!isError(tenant)){
+      if (!isError(tenant)) {
         setTenant(tenant);
-      } 
+      }
       setAddableAdmins(addableAdmins);
       setLoading(false);
     });

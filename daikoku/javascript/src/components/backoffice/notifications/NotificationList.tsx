@@ -1,12 +1,12 @@
+import { constraints, format, type } from '@maif/react-forms';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import { useContext, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
 
-import { constraints, format, type } from '@maif/react-forms';
-import { useSearchParams } from 'react-router-dom';
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -17,6 +17,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
 declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
 }
 

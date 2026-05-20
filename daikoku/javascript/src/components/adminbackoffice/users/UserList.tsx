@@ -15,7 +15,7 @@ export const UserList = () => {
   const { connectedUser } = useContext(GlobalContext);
   useDaikokuBackOffice();
 
-  const { alert, confirm, openFormModal } = useContext(ModalContext);
+  const { alert, openFormModal } = useContext(ModalContext);
 
   const [users, setUsers] = useState<Array<IUserSimple>>([]);
   const [search, setSearch] = useState<string>();

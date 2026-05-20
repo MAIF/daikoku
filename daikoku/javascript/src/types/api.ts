@@ -1,9 +1,8 @@
 import { constraints, Schema } from '@maif/react-forms';
+import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
-import { IApiSubscriptionGql } from '../components';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
@@ -172,40 +171,40 @@ export interface ISwagger {
 
 export type IValidationStep =
   | {
-      type: 'email';
-      id: string;
-      emails: Array<string>;
-      message: string;
-      title: string;
-    }
+    type: 'email';
+    id: string;
+    emails: Array<string>;
+    message: string;
+    title: string;
+  }
   | {
-      type: 'httpRequest';
-      id: string;
-      title: string;
-      url: string;
-      headers: object;
-    }
+    type: 'httpRequest';
+    id: string;
+    title: string;
+    url: string;
+    headers: object;
+  }
   | {
-      type: 'form';
-      id: string;
-      schema: Schema;
-      formatter: string;
-      title: string;
-      formKeysToMetadata?: Array<string>;
-      info?: string;
-    }
+    type: 'form';
+    id: string;
+    schema: Schema;
+    formatter: string;
+    title: string;
+    formKeysToMetadata?: Array<string>;
+    info?: string;
+  }
   | {
-      type: 'payment';
-      id: string;
-      thirdPartyPaymentSettingsId: string;
-      title?: string;
-    }
+    type: 'payment';
+    id: string;
+    thirdPartyPaymentSettingsId: string;
+    title?: string;
+  }
   | {
-      type: 'teamAdmin';
-      id: string;
-      title?: string;
-      team: string;
-    };
+    type: 'teamAdmin';
+    id: string;
+    title?: string;
+    team: string;
+  };
 
 export interface IBaseUsagePlan {
   _id: string;

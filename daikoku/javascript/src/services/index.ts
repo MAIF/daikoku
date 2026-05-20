@@ -53,7 +53,7 @@ const HEADERS = {
 };
 
 type PromiseWithError<T> = Promise<ResponseError | T>;
-const customFetch = <T>(
+const customFetch = (
   url: string,
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
 ) =>

@@ -198,7 +198,7 @@ export const InitializeFromOtoroshi = () => {
           ])
         }
         resetService={() =>
-          setCreatedApis([...createdApis.filter((a) => (a as any).id !== (s as any).id)])
+          setCreatedApis(createdApis.filter((a) => (a as any).id !== (s as any).id))
         }
         getFilteredServices={filterServices}
         tenant={tenant}

@@ -32,29 +32,6 @@ export const Pages = ({
 
   const columnHelper = createColumnHelper<ICmsPageGQL>();
   const columns = [
-    columnHelper.display({
-      header: ' ',
-      meta: {
-        style: {
-          textAlign: 'center',
-          width: '60px',
-        }
-      },
-      enableColumnFilter: false,
-      enableSorting: false,
-      cell: (info) => {
-        const { contentType } = info.row.original;
-        const item = CONTENT_TYPES.find((f) => f.value === contentType);
-        return (
-          <img
-            style={{ width: '24px' }}
-            src={`/assets/file-icons/${item?.value
-              .replace('text/', '')
-              .replace('application/', '')}.svg`}
-          />
-        );
-      },
-    }),
     columnHelper.accessor('name', {
       header: translate('cms.pages.name'),
       meta: { style: { textAlign: 'left' } },

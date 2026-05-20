@@ -607,7 +607,7 @@ const mimeTypes = [
   {
     label: '.cms : Page from CMS',
     value: 'cms/page',
-    render: ({ api, page }: RenderProps) => {
+    render: ({ page }: RenderProps) => {
       return page.remoteContentUrl
     }
   },
@@ -649,7 +649,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
         if (isError(envs)) {
           return []
         } else {
-          setSelectedEnvironment(prev => !!prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs.find(e => !!e.documentation) || envs[0])
+          setSelectedEnvironment(prev => prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs.find(e => !!e.documentation) || envs[0])
           return envs
         }
       }),

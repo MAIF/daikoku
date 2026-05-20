@@ -1,10 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { I18nContext, ModalContext } from '../../contexts';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { GlobalContext } from '../../contexts/globalContext';
 import * as Services from "../../services";
 import { IApi, isError, ISubscription, ITeamSimple, IUsagePlan } from '../../types';
-import { GlobalContext } from '../../contexts/globalContext';
-import { useNavigate, useParams } from 'react-router-dom';
 
 export const SubscriptionRetrieve = () => {
   const { connectedUser, tenant } = useContext(GlobalContext);
@@ -45,7 +45,7 @@ export const SubscriptionRetrieve = () => {
           key: "subscription.retrieve.select.team.modal.message",
           replacements: [
             data.ownerTeam.name,
-            `${data.subscription.customName ?? ""} (${data.api.name}/${data.plan.customName})` 
+            `${data.subscription.customName ?? ""} (${data.api.name}/${data.plan.customName})`
           ]
         }),
         teams: teamRequest.data,
@@ -58,8 +58,8 @@ export const SubscriptionRetrieve = () => {
           okLabel: translate("subscription.retrieve.confirm.modal.ok.button.label"),
         })
           .then((_) => Services.retrieveSubscription(token, team[0], data.subscription._id)
-          .then(() => navigate("/apis"))
-        ),
+            .then(() => navigate("/apis"))
+          ),
         allowMultipleDemand: false,
         actionLabel: translate("subscription.retrieve.select.team.button.label")
       });

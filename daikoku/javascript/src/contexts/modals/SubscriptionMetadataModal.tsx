@@ -1,12 +1,12 @@
 import { constraints, Form, format, FormRef, type } from "@maif/react-forms";
+import { useQuery } from "@tanstack/react-query";
 import sortBy from "lodash/sortBy";
 import { useContext, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 import { Option, Spinner } from "../../components/utils";
 import { I18nContext } from "../../contexts";
 import * as Services from "../../services";
-import { IApi, isError, IUsagePlan, IWithTesting } from "../../types";
+import { IApi, isError, IUsagePlan } from "../../types";
 import { IBaseModalProps, SubscriptionMetadataModalProps } from "./types";
 
 export type OverwriteSubscriptionData = {
@@ -30,8 +30,8 @@ export type CustomSubscriptionData = {
   validUntil: number;
 };
 
-export const SubscriptionMetadataModal = <T extends IWithTesting>(
-  props: SubscriptionMetadataModalProps<T> & IBaseModalProps
+export const SubscriptionMetadataModal = (
+  props: SubscriptionMetadataModalProps & IBaseModalProps
 ) => {
   const { translate, Translation } = useContext(I18nContext);
 
@@ -138,7 +138,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
         key: "mandatory.metadata.label",
         replacements: [
           plan?.otoroshiTarget?.apikeyCustomization?.customMetadata.length.toString() ||
-            "",
+          "",
         ],
       }),
       schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization?.customMetadata, [
@@ -192,7 +192,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
     (!props.api && planQuery.data) ||
     (apiQuery.data && !isError(apiQuery.data))
   ) {
-    const plan = !!props.plan
+    const plan = props.plan
       ? !isError(planQuery.data)
         ? planQuery.data
         : undefined

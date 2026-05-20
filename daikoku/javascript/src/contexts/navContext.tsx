@@ -1,15 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
-import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { teamPermissions } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, INavMenu, ITeamSimple, ITenant, IUsagePlan, isError, isUsagePlan } from '../types';
+import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
-import { NavContext, navMode, officeMode, TNavContext } from './navUtils';
+import { NavContext, navMode, officeMode } from './navUtils';
 
 const fakeMenu = {
   blocks: {
@@ -65,7 +65,7 @@ export const NavProvider = (props: PropsWithChildren) => {
 };
 
 export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsagePlan[]) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext);
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
@@ -173,14 +173,14 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         order: 2,
         links: {
           contact: {
-            component: ( connectedUser.isGuest ? 
+            component: (connectedUser.isGuest ?
               <a
                 className="btn btn-sm btn-outline-primary mb-2"
                 href={`mailto:${team?.contact}`}
               >
                 {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
               </a> :
-               <button
+              <button
                 className="btn btn-sm btn-outline-primary mb-2"
                 onClick={() =>
                   openContactModal({
@@ -483,7 +483,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   return { addMenu, tenant };
 };
 
-export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
+export const useDaikokuBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 

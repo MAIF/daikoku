@@ -1,12 +1,8 @@
 import { Link, useLocation } from "react-router-dom"
 
-
-type BreadcrumbProps = {
-}
-export const Breadcrumb = ({  }: BreadcrumbProps) => {
+export const Breadcrumb = () => {
 
   const location = useLocation();
-  const segments = location.pathname.split('/').filter(Boolean)
 
 
   return (

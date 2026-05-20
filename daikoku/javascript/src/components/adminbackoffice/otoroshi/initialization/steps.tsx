@@ -1,22 +1,21 @@
+import { useQuery } from '@tanstack/react-query';
+import { createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import orderBy from 'lodash/orderBy';
 import { useContext, useEffect, useRef, useState } from 'react';
 import Select, { components } from 'react-select';
 import AsyncSelect from 'react-select/async';
 import Creatable from 'react-select/creatable';
-
-import { createColumnHelper } from '@tanstack/react-table';
-import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { GlobalContext } from '../../../../contexts/globalContext';
-import * as Services from '../../../../services';
-import { IApi, IApiAuthoWithCount, IApiKey, IApiWithTeam, ISubscription, IUsagePlan } from '../../../../types/api';
-import { Table, TableRef } from '../../../inputs';
-import { BeautifulTitle, Option, Spinner, newPossibleUsagePlan } from '../../../utils';
-import { ITeamFullGql, ITeamSimple, ITenant } from '../../../../types';
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepWizardChildProps } from 'react-step-wizard';
+
+import { ModalContext } from '../../../../contexts';
+import { GlobalContext } from '../../../../contexts/globalContext';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import * as Services from '../../../../services';
+import { ITeamFullGql, ITeamSimple, ITenant } from '../../../../types';
+import { IApiAuthoWithCount, IApiKey, IApiWithTeam, IUsagePlan } from '../../../../types/api';
+import { Table, TableRef } from '../../../inputs';
+import { BeautifulTitle, Option, Spinner } from '../../../utils';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -704,8 +703,6 @@ type ApiKeyProps = {
 
 const ApiKey = (props: ApiKeyProps & ApiKeyStepProps) => {
   const { translate } = useContext(I18nContext);
-  const { tenant } = useContext(GlobalContext)
-  const queryClient = useQueryClient();
 
   const getSub = (apikey: IApiKey) => {
     return Option(props.createdSubs.find((s) => apikey.clientId === s.clientId))
@@ -716,7 +713,7 @@ const ApiKey = (props: ApiKeyProps & ApiKeyStepProps) => {
   const [selectedTeam, setSelectedTeam] = useState<ITeamFullGql>();
 
   const [newTeam, setNewTeam] = useState(undefined);
-  const [newPlan, setNewPlan] = useState(undefined);
+  const [_newPlan, setNewPlan] = useState(undefined);
   const [loading, setLoading] = useState(false);
 
   // useEffect(() => {
@@ -750,25 +747,6 @@ const ApiKey = (props: ApiKeyProps & ApiKeyStepProps) => {
     }
   }, [newTeam]);
 
-  const getAuthorizedEntitiesFromOtoroshiApiKey = (autorizedOn: any) => {
-    const regex = /(group|service)_(.*)/;
-    return autorizedOn.reduce(
-      ({
-        groups,
-        services
-      }: any, entitie: any) => {
-        // eslint-disable-next-line no-unused-vars
-        const [_value, type, id] = entitie.match(regex);
-        switch (type) {
-          case 'group':
-            return { groups: [...groups, id], services };
-          case 'service':
-            return { groups, services: [...services, id] };
-        }
-      },
-      { groups: [], services: [] }
-    );
-  };
 
   //add new plan effect
   // useEffect(() => {

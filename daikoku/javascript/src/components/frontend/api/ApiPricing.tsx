@@ -6,7 +6,7 @@ import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
-import { useMatch, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
@@ -340,7 +340,7 @@ const CustomMetadataInput = (props: {
       ...(props.value || []).filter((x) => x.key !== key),
       { ...oldValue, key, possibleValues },
     ];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const changeKey = (
@@ -356,13 +356,13 @@ const CustomMetadataInput = (props: {
       ...(props.value || []).filter((x) => x.key !== oldName),
       { ...oldValue, key: e.target.value },
     ];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const addFirst = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
-      props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
+      props.onChange?.([{ key: '', possibleValues: [] }]);
       alert({
         message: props.translate('custom.metadata.process.change.to.manual'),
         title: props.translate('Information'),
@@ -374,14 +374,13 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = { key: '', possibleValues: [] };
     const newValues = [...(props.value || []), newItem];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const remove = (e: React.MouseEvent<HTMLElement>, key: string) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    props.onChange &&
-      props.onChange((props.value || []).filter((x: any) => x.key !== key));
+    props.onChange?.((props.value || []).filter((x: any) => x.key !== key));
   };
 
   return (
@@ -1480,8 +1479,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     queryFn: () =>
       Services.getVisiblePlans(props.api._id, props.api.currentVersion),
   });
-
-  const match = useMatch('/:team/:api/:version/pricing/:env/:tab');
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['plans'] });

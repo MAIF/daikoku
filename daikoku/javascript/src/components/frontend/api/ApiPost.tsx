@@ -22,7 +22,7 @@ type ApiPostProps = {
 
 
 export function ApiPost(props: ApiPostProps) {
-  const { translate, language } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { openRightPanel, closeRightPanel, confirm } = useContext(ModalContext);
   const { connectedUser } = useContext(GlobalContext);
   const queryClient = useQueryClient();
@@ -52,17 +52,6 @@ export function ApiPost(props: ApiPostProps) {
       ]
     },
   };
-
-  function savePost(post: any) {
-    Services.savePost(props.api._id, props.ownerTeam._id, post._id, post)
-      .then((res) => {
-        if (res.error) {
-          toast.error(translate('team_api_post.failed'));
-        } else {
-          toast.success(translate('team_api_post.saved'));
-        }
-      });
-  }
 
   function publishPost(post: IApiPost) {
     Services.publishNewPost(props.api._id, props.ownerTeam._id, {

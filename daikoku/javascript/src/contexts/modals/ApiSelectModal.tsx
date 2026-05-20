@@ -1,12 +1,12 @@
-import { JSX, useContext, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { JSX, useContext, useState } from 'react';
 import Select from 'react-select';
 
+import { Spinner } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IApi, IUsagePlan, isError } from '../../types';
 import { IBaseModalProps } from './types';
-import { useQuery } from '@tanstack/react-query';
-import { Spinner } from '../../components/utils';
 
 
 export interface IModalProps {
@@ -31,11 +31,12 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
   const [selectedPlan, setSelectedPlan] = useState<IUsagePlan>()
   const { translate } = useContext(I18nContext);
 
-  const parentRequest = useQuery({ 
-    queryKey: ['root'], 
-    queryFn: () => Services.getRootApi(props.api._humanReadableId)})
-  const plansRequest = useQuery({ 
-    queryKey: ['root_plans'], 
+  const parentRequest = useQuery({
+    queryKey: ['root'],
+    queryFn: () => Services.getRootApi(props.api._humanReadableId)
+  })
+  const plansRequest = useQuery({
+    queryKey: ['root_plans'],
     queryFn: () => Services.getAllPlanOfApi(props.teamId, (parentRequest.data as IApi)._id, (parentRequest.data as IApi).currentVersion),
     enabled: parentRequest.data && !isError(parentRequest.data)
   })

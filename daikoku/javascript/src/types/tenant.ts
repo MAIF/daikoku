@@ -75,11 +75,6 @@ export interface IThirdPartyPaymentSettings {
   type: ThirdPartyPaymentType;
 }
 
-interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
-  publicKey: string;
-  secretKey: string;
-}
-
 export type MailerType = 'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient';
 
 export interface IMailerSettings {
@@ -87,38 +82,6 @@ export interface IMailerSettings {
   template?: string;
 }
 
-interface IMailerConsole extends IMailerSettings {
-  type: 'console';
-  fromTitle: string;
-  fromEmail: string;
-}
-interface IMailerMailgun extends IMailerSettings {
-  type: 'mailgun';
-  domain: string;
-  eu: boolean;
-  key: string;
-  fromTitle: string;
-  fromEmail: string;
-}
-interface IMailerMailjet extends IMailerSettings {
-  type: 'mailjet';
-  apiKeyPublic: string;
-  apiKeyPrivate: string;
-  fromTitle: string;
-  fromEmail: string;
-}
-interface IMailerSendgrid extends IMailerSettings {
-  type: 'sendgrid';
-  apikey: string;
-  fromEmail: string;
-}
-interface IMailerSmtpClient extends IMailerSettings {
-  type: 'smtpClient';
-  host: string;
-  port: string;
-  fromTitle: string;
-  fromEmail: string;
-}
 export interface ISafeOtoroshiSettings {
   _id: string;
   url: string;
@@ -313,30 +276,30 @@ export interface ISimpleSession {
 
 type AlgoSettings =
   | {
-      type: 'HSAlgoSettings';
-      size: number;
-      secret: string;
-    }
+    type: 'HSAlgoSettings';
+    size: number;
+    secret: string;
+  }
   | {
-      type: 'RSAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'RSAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'ESAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'ESAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'JWKSAlgoSettings';
-      url: string;
-      timeout: number;
-      headers: { [x: string]: string };
-      ttl: number;
-      kty: string;
-    };
+    type: 'JWKSAlgoSettings';
+    url: string;
+    timeout: number;
+    headers: { [x: string]: string };
+    ttl: number;
+    kty: string;
+  };
 
 export type OAuthSettings = {
   sessionMaxAge: number;

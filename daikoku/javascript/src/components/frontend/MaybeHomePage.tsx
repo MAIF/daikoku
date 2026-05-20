@@ -1,11 +1,9 @@
 import { useContext, useEffect } from 'react';
-import { redirect, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { I18nContext } from '../../contexts/i18n-context';
 
-import { GlobalContext } from '../../contexts/globalContext';
+import { I18nContext } from '../../contexts/i18n-context';
 import { ITenant } from '../../types';
-import { CmsViewer } from './CmsViewer';
 
 export const MaybeHomePage = ({
   tenant
@@ -27,7 +25,7 @@ export const MaybeHomePage = ({
       try {
         const redirect = atob(rawRedirect);
         window.location.href = redirect
-      } catch (err) {
+      } catch {
         window.location.href = rawRedirect
       }
       return

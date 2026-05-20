@@ -1,14 +1,13 @@
-import { useContext, useEffect } from "react";
 import Select from "react-select";
 
 export const AtomicDesign = () => {
   const demoList = [
-    {label: "Service groups", options: ['1'] },
-    {label: "Services", options: ['1'] },
-    {label: "Routes", options: ['1'] },
-    ].map((team) => {
-      return { value: team, label: team.label }
-    });
+    { label: "Service groups", options: ['1'] },
+    { label: "Services", options: ['1'] },
+    { label: "Routes", options: ['1'] },
+  ].map((team) => {
+    return { value: team, label: team.label }
+  });
 
   return (
     <main role="main">
@@ -69,7 +68,7 @@ export const AtomicDesign = () => {
                 var(--danger-color)
               </span>
             </div>
-            
+
             <h1 className="mt-3">Buttons</h1>
             Customizable :
             <button className="btn-outline-primary btn ms-2">
@@ -186,15 +185,15 @@ export const AtomicDesign = () => {
             </div>
             <h1 className="mt-3">Form</h1>
             <input placeholder="class form-control" className="form-control" />
-           
-  
-  <Select
-            name="demo"
-            className="reactSelect"
-            value={demoList[0]}
-            classNamePrefix="reactSelect"
-            options={demoList}
-          />
+
+
+            <Select
+              name="demo"
+              className="reactSelect"
+              value={demoList[0]}
+              classNamePrefix="reactSelect"
+              options={demoList}
+            />
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
@@ -63,9 +63,6 @@ export const TeamApis = () => {
         const viewUrl = api.apis
           ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis`
           : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
-        const editUrl = api.apis
-          ? `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-          : `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
         return (
           <div>
             <Link

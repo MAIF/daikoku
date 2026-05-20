@@ -41,7 +41,7 @@ class Period {
     if (consumptions && consumptions.length) { //FIXME: test it becaus eit's weird
       const maxDate = maxBy(consumptions, (o) => o.to)?.to;
       if (maxDate && isEqual(startOfDay(maxDate), startOfToday())) {
-        time = formatDate(maxDate, translate('date.locale'),'HH:mm');
+        time = formatDate(maxDate, translate('date.locale'), 'HH:mm');
       }
     }
 
@@ -51,7 +51,7 @@ class Period {
       }
       return formatDate(this.from, translate('date.locale'), translate('date.format.short'));
     }
-    return `${formatDate(this.from, translate('date.locale'), translate('date.format.short'))} - ${formatDate(this.to, translate('date.locale'), translate('date.format.short')) }`;
+    return `${formatDate(this.from, translate('date.locale'), translate('date.format.short'))} - ${formatDate(this.to, translate('date.locale'), translate('date.format.short'))}`;
   };
 }
 
@@ -97,13 +97,6 @@ const periods = (translate: (params: string | TranslateParams) => string) => ({
     value: 'BILLING',
   })
 });
-type IGlobalInformations= {
-  avgDuration?: number,
-  avgOverhead?: number,
-  dataIn: number,
-  dataOut: number,
-  hits: number
-}
 
 type Iprops = {
   sync: () => Promise<Array<IConsumption> | ResponseError>
@@ -277,9 +270,9 @@ export function OtoroshiStatsVizualization(props: Iprops) {
         />
 
         <span className="col ms-2 period-display">{state.period.format(state.consumptions, translate)}</span>
-          <button className="btn btn-outline-primary" onClick={sync}>
-            <i className="fas fa-sync-alt" />
-          </button>
+        <button className="btn btn-outline-primary" onClick={sync}>
+          <i className="fas fa-sync-alt" />
+        </button>
 
       </div>
 

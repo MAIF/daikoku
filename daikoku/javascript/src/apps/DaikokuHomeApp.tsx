@@ -1,13 +1,13 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { BrowserRouter as Router, Route, Routes, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 
+import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import * as Services from '../services';
 import { AuthProvider, IUserSimple } from '../types';
-import { GlobalContext } from '../contexts/globalContext';
 
 const AvatarInput = ({
   rawValues,
@@ -222,7 +222,7 @@ export const ResetPassword = () => {
   };
 
   useEffect(() => {
-    if(tenant.authProvider !== AuthProvider.local)
+    if (tenant.authProvider !== AuthProvider.local)
       navigate('/apis')
   }, [])
 
@@ -260,7 +260,7 @@ export const ResetPassword = () => {
         schema={schema}
         flow={flow}
         onSubmit={resetPassword}
-        footer={({ reset, valid }) => {
+        footer={({ valid }) => {
           return (
             <div className="d-flex justify-content-end">
               <button className="btn btn-outline-danger m-3" onClick={() => navigate(-1)}>

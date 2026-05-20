@@ -20,7 +20,6 @@ type AvatarProps = {
 }
 const Avatar = ({
   rawValues,
-  value,
   getValue,
   onChange,
   team,
@@ -137,7 +136,7 @@ export const TeamEditForm = ({
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
-  const { confirm, openFormModal } = useContext(ModalContext);
+  const { openFormModal } = useContext(ModalContext);
 
   if (!team) {
     return null;

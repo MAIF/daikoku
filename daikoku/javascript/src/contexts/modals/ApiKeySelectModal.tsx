@@ -1,14 +1,13 @@
-import React, { useContext, useState } from 'react';
+import classNames from 'classnames';
+import { useContext, useState } from 'react';
 import { I18nContext } from '../../contexts';
 import {
-  IApiKey,
   IFastPlan,
   ISubscription,
   ISubscriptionWithApiInfo,
-  IUsagePlan,
+  IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
-import classNames from 'classnames';
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void;

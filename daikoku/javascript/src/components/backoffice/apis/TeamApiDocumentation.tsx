@@ -1,18 +1,16 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
-import { nanoid } from 'nanoid';
 import { useContext } from 'react';
 import { toast } from 'sonner';
 
-import { IFormModalProps, ModalContext } from '../../../contexts';
+import { I18nContext, IFormModalProps, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IAsset, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, ITeamSimple, ITenant } from '../../../types';
+import { IApi, IAsset, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, ITeamSimple } from '../../../types';
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -113,7 +111,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
-  const { tenant, customGraphQLClient } = useContext(GlobalContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
 
@@ -357,16 +355,17 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const deletePage = (page: IDocumentationPage) => {
-    const apiDocPageToList = (page: IDocumentationPage, list: Array<string>) => {
+    const apiDocPageToList = (page: IDocumentationPage, list: Array<IDocumentationPage>): Array<IDocumentationPage> => {
       if (page.children.length) {
         return [page, ...page.children.flatMap(child => apiDocPageToList(child, list))]
       } else {
         return [page, ...list]
       }
     }
-    Promise.all([
-      apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(props.team._id, apiDoc.id)))
-    ]).then(() => {
+    Promise.all(
+      apiDocPageToList(page, [])
+        .map((apiDoc => Services.deleteDocPage(props.team._id, apiDoc.id)))
+    ).then(() => {
       toast.success(translate('doc.page.deletion.successfull'))
       queryClient.invalidateQueries({ queryKey: ['details'] })
     })

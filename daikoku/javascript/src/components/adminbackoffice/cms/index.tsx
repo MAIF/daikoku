@@ -52,7 +52,7 @@ export const CMSOffice = () => {
       .then((r) => setPages(r.pages));
   };
 
-  const Index = ({ }) => {
+  const Index = () => {
     return (<div className="p-3">
       <div className="d-flex flex-row align-items-center justify-content-between mb-2">
         <h1 className="mb-0">Pages</h1>
@@ -83,7 +83,7 @@ export const CMSOffice = () => {
   return (
     <Can I={manage} a={tenant} dispatchError>
       <Routes>
-        <Route path={`/:id`} element={<Create pages={cmsPages} />} />
+        <Route path={`/:id`} element={<Create />} />
         <Route path="*" element={<Index />} />
       </Routes>
     </Can>

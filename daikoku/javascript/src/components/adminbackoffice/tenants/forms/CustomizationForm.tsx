@@ -1,15 +1,14 @@
-import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
+import { Flow, Form, format, FormRef, Schema, SchemaEntry, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useRef } from 'react';
-import Select from 'react-select';
 
+import { toast } from 'sonner';
 import { ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
-import { ICmsPageGQL, isError, ITenantFull } from '../../../../types';
 import * as Services from '../../../../services';
-import { toast } from 'sonner';
+import { ICmsPageGQL, isError, ITenantFull } from '../../../../types';
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
   const { translate } = useContext(I18nContext);
@@ -71,7 +70,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const urlWithAssetButton = (label: string, buttonLabel: string, filter?: any): SchemaEntry => ({
     type: type.string,
     label,
-    render: ({ value, onChange, setValue }) => {
+    render: ({ value, onChange }) => {
       const domain = tenant!.domain
       const origin =
         window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
