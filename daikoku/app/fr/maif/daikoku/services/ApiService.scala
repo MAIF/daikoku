@@ -16,17 +16,8 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{
-  ApiKeyStatsJob,
-  OtoroshiSynchronizerJob,
-  SyncInformation
-}
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  JsonOperationsHelper,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob, SyncInformation}
+import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
@@ -132,10 +123,12 @@ class ApiService(
     ) ++ user.metadata.map(t => ("user.metadata." + t._1, t._2))
       ++ api.metadata.map(t => ("api.metadata." + t._1, t._2))
       ++ plan.metadata.map(t => ("plan.metadata." + t._1, t._2))
-      ++ customMetadata
-        .fold(Map.empty[String, String])(_.as[Map[String, String]])
-        .map(t => ("subscription.metadata." + t._1, t._2))
-
+      ++ metadataObjectToMap(
+      customMetadata
+        .flatMap(_.asOpt[Map[String, JsValue]])
+        .getOrElse(Map.empty[String, JsValue]))
+      .map(t => ("subscription.metadata." + t._1, t._2))
+    
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
         clientId = clientId,
