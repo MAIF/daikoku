@@ -3,8 +3,6 @@ import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, ge
 import classNames from "classnames"
 import debounce from "lodash/debounce"
 import { ChangeEvent, useContext, useMemo, useState } from "react"
-import Plus from 'react-feather/dist/icons/plus'
-import MoreVertical from 'react-feather/dist/icons/more-vertical'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import Select, { components, MultiValue, OptionProps } from "react-select"
 import { toast } from "sonner"
@@ -21,6 +19,7 @@ import { api as API, CanIDoAction, manage } from "../../utils/permissions"
 import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
+import {EllipsisVertical, MessageCircle, Plus, RefreshCw, X} from "lucide-react";
 
 //--- MARK: Types
 type Option = {
@@ -293,7 +292,7 @@ export const ApiList = (props: ApiListProps) => {
                   </button>
                 ) : (
                   <button className="btn btn-sm btn-outline-info">
-                    <i className="far fa-comment-dots me-2" />{translate('Access')}
+                    <MessageCircle className="me-2" />{translate('Access')}
                   </button>
                 )}
               </ActionWithTeamSelector>
@@ -491,7 +490,7 @@ export const ApiList = (props: ApiListProps) => {
                       return (
                         <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                           {teamName}
-                          <i className='fas fa-xmark' />
+                          <X />
                         </button>
                       )
                     }))
@@ -501,7 +500,7 @@ export const ApiList = (props: ApiListProps) => {
                       return (
                         <button key={tag} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, tag)}>
                           {tag}
-                          <i className='fas fa-xmark' />
+                          <X />
                         </button>
                       )
                     }))
@@ -532,14 +531,14 @@ export const ApiList = (props: ApiListProps) => {
           {canCreateApi && (
             <div className="d-flex gap-1">
               <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi({})}>
-                <Plus />
+                <Plus color="#ffffff" />
                 <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
               </button>
 
               <div className="nav_item dropdown" style={{ color: '#fff' }}>
                 <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
                   data-bs-toggle="dropdown" aria-expanded="false" aria-label={translate('dashboard.more.creation.option.button.label')}>
-                  <MoreVertical />
+                  <EllipsisVertical color="#ffffff" />
                 </button>
                 <div className="dropdown-menu">
                   <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
@@ -617,7 +616,7 @@ export const ApiList = (props: ApiListProps) => {
             </button>
 
             {!!columnFilters.length && <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
-              <i className='fas fa-rotate me-2' />
+              <RefreshCw className="me-2" />
               {translate('notifications.page.filters.clear.label')}
             </button>}
           </div>
@@ -644,7 +643,7 @@ export const ApiList = (props: ApiListProps) => {
                             table.getToggleAllPageRowsSelectedHandler()(e)
                           }}
                         />
-  
+
                       </label> */}
                   {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
                   {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (

@@ -10,6 +10,7 @@ import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
+import {Share, Trash2} from "lucide-react";
 
 export const TeamApis = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice()
@@ -71,7 +72,7 @@ export const TeamApis = () => {
               className="btn btn-sm btn-outline-info me-1"
               title="View this Api"
             >
-              <i className="fas fa-share-from-square" />
+              <Share />
             </Link>
             <Can I={manage} a={API} team={currentTeam}>
               {api.visibility !== 'AdminOnly' && (
@@ -82,7 +83,7 @@ export const TeamApis = () => {
                   title={translate("Delete this Api")}
                   onClick={() => getVersionsAndDeleteApi(api)}
                 >
-                  <i className="fas fa-trash" />
+                  <Trash2 />
                 </button>
               )}
             </Can>

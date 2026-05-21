@@ -11,6 +11,7 @@ import * as Services from '../../../services';
 import { IOtoroshiSettings, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, tenant as TENANT, manage } from '../../utils';
+import {Pen, Trash2} from "lucide-react";
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useContext(GlobalContext);
@@ -57,7 +58,7 @@ export const TenantOtoroshis = () => {
                   className="btn btn-outline-info me-1"
                   title={translate('Edit this settings')}
                 >
-                  <i className="fas fa-pen" />
+                  <Pen />
                 </button>
               </Link>
             )}
@@ -68,7 +69,7 @@ export const TenantOtoroshis = () => {
                 title={translate('Delete this settings')}
                 onClick={() => onDelete(otoroshi._id)}
               >
-                <i className="fas fa-trash" />
+                <Trash2 />
               </button>
             )}
           </div>

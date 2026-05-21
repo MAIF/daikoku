@@ -37,6 +37,7 @@ import {
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import {Copy, Eye, Key, Link as LucideLink, Menu} from "lucide-react";
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -450,7 +451,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 .catch(() =>
                   toast.warning(translate('credential.copy.error'))
                 );
-            }}><i className='fas fa-link me-1' />{translate("subscriptions.copy.link.button.label")}</button>
+            }}><LucideLink className="me-1" />{translate("subscriptions.copy.link.button.label")}</button>
           })
         }
       }
@@ -627,7 +628,7 @@ export const ApiKeyCard = ({
         apiSubscription {
           _id
           api { name }
-          plan { 
+          plan {
             customName
             autoRotation
           }
@@ -659,10 +660,10 @@ export const ApiKeyCard = ({
             _id
             _humanReadableId
             name
-            tenant { 
-              id 
+            tenant {
+              id
             }
-            team { 
+            team {
               _id
               _humanReadableId
             }
@@ -671,7 +672,7 @@ export const ApiKeyCard = ({
           apiSubscription {
             _id
             customName
-            api { 
+            api {
               _id
               name
             }
@@ -682,9 +683,9 @@ export const ApiKeyCard = ({
               _id
               _humanReadableId
             }
-            plan { 
-              _id  
-              customName 
+            plan {
+              _id
+              customName
             }
           }
           usagePlan {
@@ -784,7 +785,7 @@ export const ApiKeyCard = ({
         {isPending && <Placeholder />}
         <div className="api-subscription__container flex-column flex-xl-row gap-3">
           <div className='api-subscription__icon flex-row flex-xl-column'>
-            {subscription.children.length === 0 && <i className={"fa-solid icon fa-key"} />}
+            {subscription.children.length === 0 && <Key />}
             {subscription.children.length > 0 && <svg
               width="32"
               viewBox="-18.91 0 122.88 122.88"
@@ -820,7 +821,7 @@ export const ApiKeyCard = ({
                         toast.warning(translate('credential.copy.error'))
                       );
                   }}>
-                  <i className="fa fa-copy me-1" />
+                  <Copy className="me-1" />
                   {translate("subscription.copy.apikey.label")}
                 </button>
               </BeautifulTitle>}
@@ -837,7 +838,7 @@ export const ApiKeyCard = ({
                         toast.warning(translate('credential.copy.error'))
                       );
                   }}>
-                  <i className="fa fa-copy me-1" />
+                  <Copy className="me-1" />
                   {translate("subscription.copy.token.label")}
                 </button>
               </BeautifulTitle>}
@@ -854,7 +855,7 @@ export const ApiKeyCard = ({
                         toast.warning(translate('credential.copy.error'))
                       );
                   }}>
-                  <i className="fa fa-copy me-1" />
+                  <Copy className="me-1" />
                   {translate("subscription.copy.bearer.token.label")}
                 </button>
               </BeautifulTitle>}
@@ -871,7 +872,7 @@ export const ApiKeyCard = ({
                         toast.warning(translate('credential.copy.error'))
                       );
                   }}>
-                  <i className="fa fa-copy me-1" />
+                  <Copy className="me-1" />
                   {translate("subscription.copy.basic.auth.label")}
                 </button>
               </BeautifulTitle>}
@@ -888,7 +889,7 @@ export const ApiKeyCard = ({
                         toast.warning(translate('credential.copy.error'))
                       );
                   }}>
-                  <i className="fa fa-copy me-1" />
+                  <Copy className="me-1" />
                   {translate("subscription.copy.cli.auth.label")}
                 </button>
               </BeautifulTitle>}
@@ -902,7 +903,7 @@ export const ApiKeyCard = ({
                       <li><strong>Client Secret</strong>: {subscription.apiKey.clientSecret}</li>
                     </ul>
                   })}>
-                  <i className="fa fa-eye" />
+                  <Eye />
                 </button>
               </BeautifulTitle>}
             </div>
@@ -946,13 +947,7 @@ export const ApiKeyCard = ({
             right: '15px'
           }}
         >
-          <i
-            className="fa fa-bars cursor-pointer dropdown-menu-button"
-            style={{ fontSize: '20px' }}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id="dropdownMenuButton"
-          />
+          <Menu className="cursor-pointer dropdown-menu-button" style={{ fontSize: '20px' }} data-bs-toggle="dropdown" aria-expanded={false} id="dropdownMenuButton" />
           <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
             <span
               className="dropdown-item cursor-pointer"
@@ -1069,7 +1064,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <i className="fa fa-copy me-1" />
+                <Copy className="me-1" />
                 {translate("subscription.copy.apikey.label")}
               </button>
             </BeautifulTitle>}
@@ -1084,7 +1079,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <i className="fa fa-copy me-1" />
+                <Copy className="me-1" />
                 {translate("subscription.copy.token.label")}
               </button>
             </BeautifulTitle>}
@@ -1099,7 +1094,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <i className="fa fa-copy me-1" />
+                <Copy className="me-1" />
                 {translate("subscription.copy.basic.auth.label")}
               </button>
             </BeautifulTitle>}
@@ -1116,7 +1111,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                       toast.warning(translate('credential.copy.error'))
                     );
                 }}>
-                <i className="fa fa-copy me-1" />
+                <Copy className="me-1" />
                 {translate("subscription.copy.cli.auth.label")}
               </button>
             </BeautifulTitle>}

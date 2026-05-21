@@ -1,7 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
-import Moon from 'react-feather/dist/icons/moon';
-import Sun from 'react-feather/dist/icons/sun';
+import { Moon, Sun } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { GlobalContext } from '../../../../contexts/globalContext';
@@ -31,7 +30,7 @@ export const DarkModeActivator = (props: { className: string }) => {
       title={label}
     >
       {theme === 'DARK' ? (
-        <Sun aria-hidden="true" focusable="false" />
+        <Sun color="#ffffff" aria-hidden="true" focusable="false" />
       ) : (
         <Moon aria-hidden="true" focusable="false" />
       )}

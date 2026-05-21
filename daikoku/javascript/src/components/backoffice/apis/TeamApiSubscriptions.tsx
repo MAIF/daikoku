@@ -27,6 +27,7 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
+import {Pen, RefreshCw, Trash2} from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -234,7 +235,7 @@ export const TeamApiSubscriptions = ({
                 aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
-                <i className="fas fa-pen" />
+                <Pen />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("Refresh secret")}>
@@ -245,7 +246,7 @@ export const TeamApiSubscriptions = ({
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
               >
-                <i className="fas fa-sync" />
+                <RefreshCw />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("api.delete.subscription")}>
@@ -256,7 +257,7 @@ export const TeamApiSubscriptions = ({
                 aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >
-                <i className="fas fa-trash-alt"></i>
+                <Trash2 />
               </button>
             </BeautifulTitle>
           </div>

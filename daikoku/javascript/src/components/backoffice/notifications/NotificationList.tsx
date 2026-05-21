@@ -16,6 +16,7 @@ import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
+import {ArrowRight, Ban, Check, RefreshCw, X} from "lucide-react";
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
@@ -342,14 +343,14 @@ export const NotificationList = () => {
       case 'Accepted':
         return (
           <div className='d-flex justify-content-end align-items-center gap-2 color-success'>
-            <i className='fas fa-check' />
+            <Check />
             {translate("notification.page.status.accepted.label")}
           </div>
         );
       case 'Rejected':
         return (
           <div className='d-flex  justify-content-end align-items-center gap-2 color-danger'>
-            <i className='fas fa-ban' />
+            <Ban />
             {translate("notification.page.status.rejected.label")}
           </div>
         );
@@ -370,7 +371,7 @@ export const NotificationList = () => {
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
-                <i className="fas fa-arrow-right" />
+                <ArrowRight />
               </a>
             </div>
             {notification.status.status === 'Pending' && <button
@@ -380,7 +381,7 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>}
           </div>
         );
@@ -398,7 +399,7 @@ export const NotificationList = () => {
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
-                <i className="fas fa-arrow-right" />
+                <ArrowRight />
               </a>
             </div>
             {notification.status.status === 'Pending' && <button
@@ -408,7 +409,7 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>}
           </div>
         );
@@ -441,7 +442,7 @@ export const NotificationList = () => {
                       })
                   }
                 >
-                  <i className="fas fa-check" />
+                  <Check />
                 </button>
                 <button
                   className="nav_item cursor-pointer bg-danger"
@@ -465,7 +466,7 @@ export const NotificationList = () => {
                     })
                   }}
                 >
-                  <i className="fas fa-ban" />
+                  <Ban />
                 </button>
               </div>
               <button
@@ -476,7 +477,7 @@ export const NotificationList = () => {
                 aria-label={translate('notifications.page.table.read.action.label')}
                 onClick={() => { }}
               >
-                <i className="fas fa-times" />
+                <X />
               </button>
             </div>
           );
@@ -520,7 +521,7 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>}
           </div>
         );
@@ -534,7 +535,7 @@ export const NotificationList = () => {
                 aria-label={translate('Accept')}
                 onClick={() => accept(notification._id)}
               >
-                <i className="fas fa-check" />
+                <Check />
               </button>}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
                 <button
@@ -543,7 +544,7 @@ export const NotificationList = () => {
                   aria-label={translate('Reject')}
                   onClick={() => reject(notification._id)}
                 >
-                  <i className="fas fa-ban" />
+                  <Ban />
                 </button>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && (
@@ -558,7 +559,7 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>}
           </div>
         );
@@ -1116,7 +1117,7 @@ export const NotificationList = () => {
                     return (
                       <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {teamName}
-                        <i className='fas fa-xmark' />
+                        <X />
                       </button>
                     )
                   }))
@@ -1126,7 +1127,7 @@ export const NotificationList = () => {
                     return (
                       <button key={apiName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {apiName}
-                        <i className='fas fa-xmark' />
+                        <X />
                       </button>
                     )
                   }))
@@ -1136,7 +1137,7 @@ export const NotificationList = () => {
                     return (
                       <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
-                        <i className='fas fa-xmark' />
+                        <X />
                       </button>
                     )
                   }))
@@ -1147,7 +1148,7 @@ export const NotificationList = () => {
                     return (
                       <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
-                        <i className='fas fa-xmark' />
+                        <X />
                       </button>
                     )
                   }))
@@ -1229,7 +1230,7 @@ export const NotificationList = () => {
                 </button>
               </div>
               <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
-                <i className='fas fa-rotate me-2' />
+                <RefreshCw className="me-2" />
                 {translate('notifications.page.filters.clear.label')}
               </button>
             </div>

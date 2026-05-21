@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useEffect } from 'react';
-import X from 'react-feather/dist/icons/x';
+import { X } from 'lucide-react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { ModalContext } from '../../../contexts';

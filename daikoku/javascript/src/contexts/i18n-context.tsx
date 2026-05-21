@@ -7,6 +7,7 @@ import {Language, TOptions} from '../types/types';
 import {TranslationItem} from '../types/tenant';
 import {isError} from '../types';
 import {GlobalContext} from './globalContext';
+import {Check, X} from "lucide-react";
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
@@ -205,14 +206,14 @@ export const I18nProvider = ({
               style={{ minWidth: '38px' }}
               onClick={() => setShowEditButton(false)}
             >
-              <i className="fas fa-check" />
+              <Check />
             </button>
             <button
               className="btn btn-sm btn-outline-danger"
               style={{ minWidth: '38px' }}
               onClick={() => setShowEditButton(false)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>
           </div>
         );

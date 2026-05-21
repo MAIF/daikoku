@@ -8,6 +8,7 @@ import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import * as Services from '../services';
 import { AuthProvider, IUserSimple } from '../types';
+import {UserCircle} from "lucide-react";
 
 const AvatarInput = ({
   rawValues,
@@ -32,7 +33,7 @@ const AvatarInput = ({
           onChange={(e) => onChange(e.target.value)}
         />
         <button type="button" className="btn btn-outline-primary btn-block" onClick={setGravatarLink}>
-          <i className="fas fa-user-circle me-1" />
+          <UserCircle className="me-1" />
           <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
       </div>

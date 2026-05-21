@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState } from 'react';
+import React, {ReactNode, useEffect, useState} from 'react';
 import { BeautifulTitle } from './BeautifulTitle';
 
 import { IUserSimple } from '../../types';
@@ -12,7 +12,7 @@ type Props = {
     action?: ((...args: any[]) => any) | any[];
     redirect?: () => void,
     link?: string;
-    iconClass: string;
+    icon: ReactNode;
     tooltip?: string;
   }[];
 };
@@ -48,6 +48,7 @@ export const AvatarWithAction = (props: Props) => {
       setSecondaryActions([]);
     }
     action();
+
   };
 
   const getAction = (action: any) => {
@@ -57,30 +58,26 @@ export const AvatarWithAction = (props: Props) => {
     if (Array.isArray(action.action)) {
       ActionComponent = (
         <span>
-          <i
-            className={action.iconClass}
-            onClick={() => {
-              // ReactToolTip.hide();
-              setSecondaryActions(action.action);
-            }}
-          />
+          {React.cloneElement(action.icon, { onClick: () => setSecondaryActions(action.action) })}
         </span>
       );
     } else if (action.link) {
       ActionComponent = (
         <a href={action.link} target='_blank' aria-label={action.ariaLabel}>
-          <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+          {React.cloneElement(action.icon, { onClick: () => handleAction(action.action) })}
         </a>
       );
     } else if (action.redirect) {
       ActionComponent = (
         <span onClick={() => action.redirect()} aria-label={action.ariaLabel}>
-          <i className={action.iconClass} />
+          {action.icon}
         </span>
       );
     } else {
       ActionComponent = (
-        <i className={action.iconClass} onClick={() => handleAction(action.action)} aria-label={action.ariaLabel} />
+        <a href={action.link} target='_blank' aria-label={action.ariaLabel}>
+          {React.cloneElement(action.icon, { onClick: () => handleAction(action.action) })}
+        </a>
       );
     }
 

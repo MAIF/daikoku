@@ -10,6 +10,7 @@ import * as Services from '../../../services';
 import { IAsset, ITeamSimple } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, tenant as TENANT, asset, manage } from '../../utils';
+import {Download, Eye, Pen, RefreshCw, Trash2} from "lucide-react";
 
 
 const mimeTypes = [
@@ -119,7 +120,7 @@ const ReplaceButton = (props: any) => {
   return (
     <>
       <button type="button" onClick={trigger} className="btn btn-sm btn-outline-info">
-        <i className="fas fa-retweet" />
+        <RefreshCw />
       </button>
       <input
         ref={(r) => setInput(r)}
@@ -283,7 +284,7 @@ export const AssetsList = ({
                 onClick={() => readAndUpdate(item)}
                 className="btn btn-sm btn-outline-info"
               >
-                <i className="fas fa-pen" />
+                <Pen />
               </button>
             )}
             <ReplaceButton
@@ -298,7 +299,7 @@ export const AssetsList = ({
                 className="btn btn-sm btn-outline-info"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                <i className="fas fa-eye" />
+                <Eye />
               </button>
             </a>
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
@@ -306,7 +307,7 @@ export const AssetsList = ({
                 className="btn btn-sm btn-outline-info me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
-                <i className="fas fa-download" />
+                <Download />
               </button>
             </a>
             <button
@@ -314,7 +315,7 @@ export const AssetsList = ({
               onClick={() => deleteAsset(item)}
               className="btn btn-sm btn-outline-danger"
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
           </div>
         );

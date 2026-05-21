@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
-import Clock from 'react-feather/dist/icons/clock'
-import Sliders from 'react-feather/dist/icons/sliders'
+
 import { useNavigate } from "react-router-dom"
 
 
@@ -10,6 +9,7 @@ import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { isError } from "../../../types"
 import { ApiList } from "./ApiList"
+import {Clock, SlidersVertical} from "lucide-react";
 
 type NewHomeProps = {
   teamId?: string
@@ -55,12 +55,12 @@ export const Dashboard = (_: NewHomeProps) => {
               <button
                 onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')}
                 className="btn btn-outline-secondary">
-                <Clock className="me-2" />{translate('dashboard.demands.tile.title')}
+                <Clock color="#ffffff" />{translate('dashboard.demands.tile.title')}
               </button>
             )}
             {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
               className="organisation_header_settings_button btn btn-outline-secondary">
-              <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
+              <SlidersVertical color="blue" />{translate('dashboard.page.tenant.setting.button.label')}
             </button>}
           </div>
         </div>

@@ -8,6 +8,7 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';
+import {Edit, Trash2} from "lucide-react";
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const table = useRef<TableRef>(undefined);
@@ -89,7 +90,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
               title={translate('Edit')}
               onClick={() => editSettings(settings.type, settings)}
             >
-              <i className="fas fa-edit" />
+              <Edit />
             </button>
             <button
               type="button"
@@ -97,7 +98,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
               title={translate('Delete')}
               onClick={() => deleteSettings(settings)}
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
           </div>
         );

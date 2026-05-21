@@ -10,6 +10,7 @@ import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
+import {RefreshCw} from "lucide-react";
 
 
 type TeamIncomeGql = {
@@ -143,7 +144,7 @@ export const TeamIncome = () => {
                       getBillingData(date);
                     }} value={date} />
                     <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
-                      <i className="fas fa-sync-alt" />
+                      <RefreshCw />
                     </button>
                     {lastDate ? (<i className="ms-1">
                       <Translation i18nkey="date.update" replacements={[lastDate]}>

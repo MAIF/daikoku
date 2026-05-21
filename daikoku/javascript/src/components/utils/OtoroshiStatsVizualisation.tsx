@@ -11,6 +11,7 @@ import { IgqlConsumption } from '../backoffice/apis/TeamApiConsumption';
 import { Histogram, RoundChart } from './Recharts';
 import { Spinner } from './Spinner';
 import { formatDate } from './formatters';
+import {RefreshCw} from "lucide-react";
 
 (Number.prototype as any).prettify = function () {
   return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '');
@@ -271,7 +272,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
 
         <span className="col ms-2 period-display">{state.period.format(state.consumptions, translate)}</span>
         <button className="btn btn-outline-primary" onClick={sync}>
-          <i className="fas fa-sync-alt" />
+          <RefreshCw />
         </button>
 
       </div>

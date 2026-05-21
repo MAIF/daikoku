@@ -3,7 +3,7 @@ import uniq from 'lodash/uniq';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
+import { RefreshCcw } from 'lucide-react';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
 import { randomColor } from '../../../utils';
