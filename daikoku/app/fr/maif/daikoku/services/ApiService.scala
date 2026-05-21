@@ -400,20 +400,20 @@ class ApiService(
         integrationToken = IdGenerator.token(64)
       )
 
-      val r: EitherT[Future, AppError, ApiSubscription] = for {
-        _ <- EitherT.liftF(
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .save(apiSubscription)
-        )
-        _ <- EitherT.liftF(
-          env.dataStore.tenantRepo.save(
-            tenant.copy(adminSubscriptions =
-              tenant.adminSubscriptions :+ apiSubscription.id
-            )
-          )
-        )
-      } yield apiSubscription
+      val r: EitherT[Future, AppError, ApiSubscription] = EitherT.liftF(
+        env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.apiSubscriptionRepo
+                   .forTenant(tenant.id)
+                   .save(apiSubscription)
+            _ <- env.dataStore.tenantRepo.save(
+                   tenant.copy(adminSubscriptions =
+                     tenant.adminSubscriptions :+ apiSubscription.id
+                   )
+                 )
+          } yield apiSubscription
+        }
+      )
 
       r.value
     }
@@ -2306,23 +2306,25 @@ class ApiService(
                 )
             )
             _ <- EitherT.liftF(
-              env.dataStore.subscriptionDemandRepo
-                .forTenant(tenant)
-                .save(demand.copy(state = SubscriptionDemandState.Accepted))
-            )
-            newNotification = Notification(
-              id = NotificationId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              team = Some(team.id),
-              sender = currentUser.asNotificationSender,
-              notificationType = NotificationType.AcceptOnly,
-              action = NotificationAction
-                .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
-            )
-            _ <- EitherT.liftF(
-              env.dataStore.notificationRepo
-                .forTenant(tenant)
-                .save(newNotification)
+              env.dataStore.withTransaction {
+                val newNotification = Notification(
+                  id = NotificationId(IdGenerator.token(32)),
+                  tenant = tenant.id,
+                  team = Some(team.id),
+                  sender = currentUser.asNotificationSender,
+                  notificationType = NotificationType.AcceptOnly,
+                  action = NotificationAction
+                    .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
+                )
+                for {
+                  _ <- env.dataStore.subscriptionDemandRepo
+                         .forTenant(tenant)
+                         .save(demand.copy(state = SubscriptionDemandState.Accepted))
+                  _ <- env.dataStore.notificationRepo
+                         .forTenant(tenant)
+                         .save(newNotification)
+                } yield ()
+              }
             )
             _ <- EitherT.liftF(
               Future.sequence((administrators ++ Seq(from)).map(admin => {
@@ -2667,35 +2669,41 @@ class ApiService(
         AppError.EntityNotFound("Subscription demand")
       )
       _ <- EitherT.liftF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .save(
-            demand.copy(
-              state = SubscriptionDemandState.Refused,
-              steps = demand.steps.map(s =>
-                if (s.id == stepId)
-                  s.copy(
-                    state = SubscriptionDemandState.Refused,
-                    metadata = Json.obj("by" -> sender.asJson)
-                  )
-                else s
-              )
+        env.dataStore.withTransaction {
+          val newNotification = Notification(
+            id = NotificationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = demand.team.some,
+            sender = sender,
+            notificationType = NotificationType.AcceptOnly,
+            action = NotificationAction.ApiSubscriptionReject(
+              maybeMessage,
+              demand.api,
+              demand.plan,
+              demand.team
             )
           )
-      )
-
-      newNotification = Notification(
-        id = NotificationId(IdGenerator.token(32)),
-        tenant = tenant.id,
-        team = demand.team.some,
-        sender = sender,
-        notificationType = NotificationType.AcceptOnly,
-        action = NotificationAction.ApiSubscriptionReject(
-          maybeMessage,
-          demand.api,
-          demand.plan,
-          demand.team
-        )
+          for {
+            _ <- env.dataStore.subscriptionDemandRepo
+                   .forTenant(tenant)
+                   .save(
+                     demand.copy(
+                       state = SubscriptionDemandState.Refused,
+                       steps = demand.steps.map(s =>
+                         if (s.id == stepId)
+                           s.copy(
+                             state = SubscriptionDemandState.Refused,
+                             metadata = Json.obj("by" -> sender.asJson)
+                           )
+                         else s
+                       )
+                     )
+                   )
+            _ <- env.dataStore.notificationRepo
+                   .forTenant(tenant)
+                   .save(newNotification)
+          } yield ()
+        }
       )
       from <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(demand.from),
@@ -2766,9 +2774,6 @@ class ApiService(
             tenant.mailer.send(title, Seq(admin.email), body, tenant)
           }).flatten
         }))
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
       )
     } yield Ok(Json.obj("creation" -> "refused"))
   }

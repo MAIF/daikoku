@@ -276,7 +276,7 @@ object testUtils {
         _ <- Source(tenants.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.tenantRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -284,7 +284,7 @@ object testUtils {
         _ <- Source(users.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.userRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -292,7 +292,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.teamRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -300,7 +300,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.usagePlanRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -308,7 +308,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -316,7 +316,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiSubscriptionRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -324,7 +324,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.notificationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -332,28 +332,28 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.consumptionRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(sessions.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.userSessionRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(resets.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.passwordResetRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(creations.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.accountCreationRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -361,7 +361,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.messageRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -369,7 +369,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiIssueRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -377,7 +377,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiPostRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -385,7 +385,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.cmsRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -393,7 +393,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiDocumentationPageRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -401,7 +401,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.operationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -409,7 +409,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.subscriptionDemandRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -417,7 +417,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.translationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
