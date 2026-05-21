@@ -2,18 +2,14 @@ package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{
-  Container,
-  ForAllTestContainer,
-  GenericContainer
-}
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.Wait
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 
 class BasicUsageSpec()
     extends PlaySpec
@@ -193,6 +189,98 @@ class BasicUsageSpec()
       )(using tenant, session)
 
       resp.status mustBe 400
+    }
+  }
+
+  "Daikoku security" should {
+
+    "reject SQL injection in /api/_search" in {
+      val api1 = generateApi("public-1", tenant.id, teamOwnerId, Seq.empty).api
+      val api2 = generateApi("public-2", tenant.id, teamOwnerId, Seq.empty).api
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner),
+        apis = Seq(api1, api2)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val injectionPayloads = Seq(
+        "' or 1=1 union all select _id, _deleted, content from apis WHERE content::text='",
+        "' OR '1'='1",
+        "'; DROP TABLE apis; --",
+        "' UNION SELECT * FROM apis --"
+      )
+
+      injectionPayloads.foreach { payload =>
+        val resp = httpJsonCallBlocking(
+          path = "/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> payload))
+        )(using tenant, session)
+
+        resp.status mustBe 200
+
+        val apisOptions = resp.json
+          .as[JsArray]
+          .value
+          .find(entry => (entry \ "label").as[String] == "Apis")
+          .map(entry => (entry \ "options").as[JsArray].value)
+          .getOrElse(Seq.empty)
+
+        // injection must not leak all apis — only exact matches (none expected)
+        apisOptions.length mustBe 0
+      }
+    }
+
+    "return only matched apis for a legitimate search" in {
+      val api1 = generateApi("public-1", tenant.id, teamOwnerId, Seq.empty).api
+      val api2 = generateApi("public-2", tenant.id, teamOwnerId, Seq.empty).api
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner),
+        apis = Seq(api1, api2)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = "/api/_search",
+        method = "POST",
+        body = Some(Json.obj("search" -> "public-1"))
+      )(using tenant, session)
+
+      resp.status mustBe 200
+
+      val apisOptions = resp.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Apis")
+        .map(entry => (entry \ "options").as[JsArray].value)
+        .getOrElse(Seq.empty)
+
+      apisOptions.length mustBe 1
+      (apisOptions.head \ "label").as[String] mustBe api1.name
+
+      val resp2 = httpJsonCallBlocking(
+        path = "/api/_search",
+        method = "POST",
+        body = Some(Json.obj("search" -> ""))
+      )(using tenant, session)
+
+      resp2.status mustBe 200
+      logger.warn(Json.stringify(resp2.json))
+
+      val apisOptions2 = resp2.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Apis")
+        .map(entry => (entry \ "options").as[JsArray].value)
+        .getOrElse(Seq.empty)
+
+      apisOptions2.length mustBe 2
     }
   }
 }
