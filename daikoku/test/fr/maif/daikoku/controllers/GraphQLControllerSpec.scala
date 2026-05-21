@@ -685,6 +685,7 @@ class GraphQLControllerSpec()
     }
 
     "list all tags" in {
+      Await.result(waitForDaikokuSetup(), 5.seconds)
       val _tenant = tenant.copy(isPrivate = false)
 
       val simplePlan = UsagePlan(
