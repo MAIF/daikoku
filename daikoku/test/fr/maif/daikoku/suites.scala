@@ -622,8 +622,7 @@ object testUtils {
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
         port: Int = port,
-        hostHeader: String = tenant.domain,
-        formUrlEncoded: Boolean = false
+        hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): WSResponse =
       Await.result(
         httpJsonCallWithoutSession(

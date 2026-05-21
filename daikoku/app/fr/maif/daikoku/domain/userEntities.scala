@@ -91,7 +91,6 @@ object GuestUser {
       defaultLanguage = None,
       personalToken = None,
       isGuest = true,
-      lastFailedLogin = Option.apply(DateTime.now())
     )
 }
 

@@ -433,7 +433,6 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.locator('article')).toHaveCount(50)
   await expect(page.getByRole('button', { name: "Afficher plus de notifications", exact: true })).toBeEnabled();
   await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
-  await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
   await expect(page.locator('article')).toHaveCount(58)
   await expect(page.getByRole('button', { name: "Afficher plus de notifications", exact: true })).toBeHidden();
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Toutes les équipes/ }).locator('svg').click();

@@ -1483,16 +1483,6 @@ object SchemaDefinition {
               resolve = _.value.isDaikokuAdmin
             ),
             Field(
-              "password",
-              OptionType(StringType),
-              resolve = _.value.password
-            ),
-            Field(
-              "hardwareKeyRegistrations",
-              ListType(JsonType),
-              resolve = _.value.hardwareKeyRegistrations
-            ),
-            Field(
               "lastTenant",
               OptionType(TenantType),
               resolve = ctx =>
