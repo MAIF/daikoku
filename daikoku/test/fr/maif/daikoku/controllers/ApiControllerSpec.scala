@@ -542,7 +542,7 @@ class ApiControllerSpec()
     "not initialize tenant subscriptions" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin, userAdmin, userApiEditor),
+        users = Seq(tenantAdmin, userAdmin, userApiEditor, user),
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(defaultApi.api)
       )
