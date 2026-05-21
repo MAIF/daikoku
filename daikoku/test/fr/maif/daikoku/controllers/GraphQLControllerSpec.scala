@@ -685,6 +685,7 @@ class GraphQLControllerSpec()
     }
 
     "list all tags" in {
+      Await.result(waitForDaikokuSetup(), 5.seconds)
       val _tenant = tenant.copy(isPrivate = false)
 
       val simplePlan = UsagePlan(
@@ -1658,7 +1659,6 @@ class GraphQLControllerSpec()
           .some
       )(using tenant, session)
 
-      logger.warn(Json.prettyPrint(resp.json))
       resp.status mustBe 200
       val total = (resp.json \ "data" \ "myNotifications" \ "total").as[Int]
       val ids = (resp.json \ "data" \ "myNotifications" \ "notifications")
@@ -1703,12 +1703,12 @@ class GraphQLControllerSpec()
         )
       }
 
-      assertAdminOnlyQuery("""{ users { _id } }""")
+      assertAdminOnlyQuery("""{ users { id } }""")
       assertAdminOnlyQuery("""{ passwordResets { _id } }""")
       assertAdminOnlyQuery("""{ apiSubscriptions { _id } }""")
       assertAdminOnlyQuery("""{ userSessions { _id } }""")
       assertAdminOnlyQuery("""{ notifications { _id } }""")
-      assertAdminOnlyQuery("""{ auditEvents { _id } }""")
+      assertAdminOnlyQuery("""{ auditEvents { id } }""")
     }
 
     "allow daikoku admin to access admin-only POJO entities" in {
@@ -1731,7 +1731,7 @@ class GraphQLControllerSpec()
         (resp.json \ "errors").isDefined mustBe false
       }
 
-      assertAdminCanQuery("""{ users { _id } }""")
+      assertAdminCanQuery("""{ users { id } }""")
       assertAdminCanQuery("""{ userSessions { _id } }""")
       assertAdminCanQuery("""{ notifications { _id } }""")
     }
