@@ -2068,10 +2068,13 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
             query ++ Json.obj("_tenant" -> tenant.value)
           )
 
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit",
-            params
-          ) {
+          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
+          params.zipWithIndex.reverse.foreach { case (param, i) =>
+            val escaped = param.toString.replace("'", "''")
+            out = out.replace("$" + (i + 1), s"'$escaped'")
+          }
+
+          reactivePg.querySeq(out) {
             _.optJsObject("content")
           }
         }
@@ -2131,10 +2134,13 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
             query ++ Json.obj("_tenant" -> tenant.value)
           )
 
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit",
-            params
-          ) {
+          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
+          params.zipWithIndex.reverse.foreach { case (param, i) =>
+            val escaped = param.toString.replace("'", "''")
+            out = out.replace("$" + (i + 1), s"'$escaped'")
+          }
+
+          reactivePg.querySeq(out) {
             rowToJson(_, format)
           }
         }
@@ -2437,8 +2443,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       (s"WHERE ${tuple._1}", tuple._2)
     }
 
+    var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
+    params2.zipWithIndex.reverse.foreach { case (param, i) =>
+      val escaped = param.toString.replace("'", "''")
+      out = out.replace("$" + (i + 1), s"'$escaped'")
+    }
+
     reactivePg
-      .execute(s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id", params2)
+      .rawQuery(out)
       .map(_ => 1L)
   }
 
