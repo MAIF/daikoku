@@ -542,7 +542,7 @@ class ApiControllerSpec()
     "not initialize tenant subscriptions" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin, userAdmin),
+        users = Seq(tenantAdmin, userAdmin, userApiEditor),
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(defaultApi.api)
       )
@@ -640,7 +640,7 @@ class ApiControllerSpec()
     "see his teams (graphQl)" in {
       setupEnvBlocking(
         tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
-        users = Seq(userAdmin, user),
+        users = Seq(userAdmin, user, userApiEditor),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3740,7 +3740,7 @@ class ApiControllerSpec()
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(userApiEditor, user),
+        users = Seq(userApiEditor, user, userAdmin),
         teams = Seq(teamOwner)
       )
       val session = loginWithBlocking(userApiEditor, tenant)
@@ -4689,7 +4689,7 @@ class ApiControllerSpec()
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(user),
+        users = Seq(user, userApiEditor, userAdmin),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(user, tenant)

@@ -177,17 +177,17 @@ case class Child(
     plan: PlanForSync
 ) {
 
-  private def metadataObjectToMap(
-      obj: Map[String, JsValue]
-  ): Map[String, String] = {
-    obj.map {
-      case (k, JsString(v))  => k -> v
-      case (k, JsBoolean(v)) => k -> v.toString
-      case (k, JsNumber(v))  => k -> v.toString
-      case (k, JsNull)       => k -> ""
-      case (k, v)            => k -> Json.stringify(v)
-    }
-  }
+//  private def metadataObjectToMap(
+//      obj: Map[String, JsValue]
+//  ): Map[String, String] = {
+//    obj.map {
+//      case (k, JsString(v))  => k -> v
+//      case (k, JsBoolean(v)) => k -> v.toString
+//      case (k, JsNumber(v))  => k -> v.toString
+//      case (k, JsNull)       => k -> ""
+//      case (k, v)            => k -> Json.stringify(v)
+//    }
+//  }
 
   def getContext(team: Team, tenant: Tenant): Map[String, String] = Map(
     "user.id" -> user.id.value,
