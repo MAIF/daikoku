@@ -70,6 +70,7 @@ object AppError {
   case class AuthenticationError(message: String) extends AppError
   case class UserNotAllowed(email: String) extends AppError
   case class AppErrors(errors: Seq[AppError]) extends AppError
+  case class LoginRateLimited(delaySeconds: Int) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -139,6 +140,7 @@ object AppError {
         play.api.mvc.Results.Unauthorized(toJson(error))
       case i: AppErrors =>
         BadRequest(toJson(i))
+      case LoginRateLimited(_) => TooManyRequests(Json.obj("error" -> true))
     }
 
   def getErrorMessage(error: AppError) =
@@ -209,7 +211,7 @@ object AppError {
         s"User $email is not allowed to access this application"
       case AppErrors(errors) =>
         errors.map(_.getErrorMessage()).mkString("\n")
-
+      case LoginRateLimited(delay) => s"Too many login attempts, retry after ${delay}s"
     }
 
   def toJson(error: AppError) = {

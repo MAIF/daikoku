@@ -6,6 +6,7 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
+import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
@@ -93,6 +94,7 @@ class LoginControllerSpec()
         )
       )
 
+      // delay = 2^(count-1) seconds: 1s, 2s, 4s, ... capped at 30s
       for (num <- 1 to 3) {
         val t0 = java.lang.System.currentTimeMillis()
         Await.result(
@@ -100,7 +102,7 @@ class LoginControllerSpec()
             .map(b => builder.withBody(b)(using writeableOf_urlEncodedForm))
             .getOrElse(builder)
             .execute(),
-          8.seconds
+          6.seconds
         )
         val t1 = java.lang.System.currentTimeMillis()
         val time = t1 - t0
@@ -111,15 +113,111 @@ class LoginControllerSpec()
             5.seconds
           )
         userFetch.get.failedLoginAttempts mustBe num
+        if (num === 1) {
+          time must be > 500L
+          time must be < 1800L
+        }
         if (num === 2) {
           time must be > 2000L
-          time must be < 2500L
+          time must be < 3000L
         }
         if (num === 3) {
           time must be > 4000L
-          time must be < 4500L
+          time must be < 5000L
         }
       }
+    }
+
+    "reset counter after successful login" in {
+
+      val userWithFailures = user.copy(
+        failedLoginAttempts = 2,
+        lastFailedLogin = Some(DateTime.now().minusMinutes(1))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, userWithFailures, userAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val adminApiHeader = "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
+
+      val path = s"/auth/${AuthProvider.Local}/callback"
+      val baseUrl = "http://127.0.0.1"
+
+      val resp = Await.result(
+        daikokuComponents.env.wsClient
+          .url(s"$baseUrl:$port$path")
+          .withHttpHeaders(
+            (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
+          )
+          .withFollowRedirects(false)
+          .withMethod("POST")
+          .withBody(
+            Map(
+              "username" -> Seq(user.email),
+              "password" -> Seq("password")
+            )
+          )(using writeableOf_urlEncodedForm)
+          .execute(),
+        5.seconds
+      )
+
+      resp.status mustBe 303
+
+      val userFetch = Await.result(
+        daikokuComponents.env.dataStore.userRepo.findByIdNotDeleted(userTeamUserId),
+        5.seconds
+      )
+      userFetch.get.failedLoginAttempts mustBe 0
+      userFetch.get.lastFailedLogin mustBe None
+    }
+
+    "not increment counter for user without local password" in {
+
+      val userWithoutPassword = user.copy(password = None)
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, userWithoutPassword, userAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val adminApiHeader = "Authorization" -> s"Basic ${
+        Base64.getEncoder.encodeToString(
+          s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+        )
+      }"
+
+      val path = s"/auth/${AuthProvider.Local}/callback"
+      val baseUrl = "http://127.0.0.1"
+
+      Await.result(
+        daikokuComponents.env.wsClient
+          .url(s"$baseUrl:$port$path")
+          .withHttpHeaders(
+            (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
+          )
+          .withFollowRedirects(false)
+          .withMethod("POST")
+          .withBody(
+            Map(
+              "username" -> Seq(user.email),
+              "password" -> Seq("anyPassword")
+            )
+          )(using writeableOf_urlEncodedForm)
+          .execute(),
+        5.seconds
+      )
+
+      val userFetch = Await.result(
+        daikokuComponents.env.dataStore.userRepo.findByIdNotDeleted(userTeamUserId),
+        5.seconds
+      )
+      userFetch.get.failedLoginAttempts mustBe 0
     }
   }
 
@@ -149,24 +247,17 @@ class LoginControllerSpec()
         teams = Seq(defaultAdminTeam)
       )
 
-      def getAdminApiHeader(
-          adminApiSubscription: ApiSubscription
-      ): Map[String, String] = {
-        Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
-          )}")
-      }
+      val adminApiHeader = "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+        s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+      )}"
 
       val path = s"/auth/${AuthProvider.LDAP}/callback"
       val baseUrl = "http://127.0.0.1"
-      val _headers = Map("Content-Type" -> "application/x-www-form-urlencoded")
 
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders(
-          (Map("Host" -> tenant.domain) ++ _headers ++ getAdminApiHeader(
-            adminApiSubscription
-          )).toSeq*
+          (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
         )
         .withFollowRedirects(true)
         .withMethod("POST")
@@ -185,7 +276,7 @@ class LoginControllerSpec()
             .map(b => builder.withBody(b)(using writeableOf_urlEncodedForm))
             .getOrElse(builder)
             .execute(),
-          8.seconds
+          6.seconds
         )
         val t1 = java.lang.System.currentTimeMillis()
         val time = t1 - t0
@@ -195,15 +286,18 @@ class LoginControllerSpec()
               .findByIdNotDeleted(userTeamUserId),
             5.seconds
           )
-        logger.warn(userFetch.get.failedLoginAttempts.toString)
         userFetch.get.failedLoginAttempts mustBe num
+        if (num === 1) {
+          time must be > 500L
+          time must be < 1500L
+        }
         if (num === 2) {
           time must be > 2000L
-          time must be < 2500L
+          time must be < 3000L
         }
         if (num === 3) {
           time must be > 4000L
-          time must be < 4500L
+          time must be < 5000L
         }
       }
     }

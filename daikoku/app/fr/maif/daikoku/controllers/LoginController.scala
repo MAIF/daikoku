@@ -100,32 +100,30 @@ class LoginController(
                         val localConfig = LocalLoginConfig.fromJsons(
                           tenant.authProviderSettings
                         )
-                        bindUser(
+                        bindLocalUser(
                           localConfig.sessionMaxAge,
                           tenant,
                           request.request,
                           localLoginSupport
                             .bindUser(username, password, tenant)
-                            .flatMap {
-                              case Some(user) if user.isDaikokuAdmin =>
-                                Future.successful(Some(user))
-                              case Some(user) =>
-                                env.dataStore.teamRepo
-                                  .forTenant(tenant)
-                                  .exists(
-                                    Json.obj(
-                                      "type" -> "Admin",
-                                      "users.userId" -> user.id.asJson
+                            .flatMap { user =>
+                              if (user.isDaikokuAdmin)
+                                EitherT.pure[Future, AppError](user)
+                              else
+                                EitherT(
+                                  env.dataStore.teamRepo
+                                    .forTenant(tenant)
+                                    .exists(
+                                      Json.obj(
+                                        "type" -> "Admin",
+                                        "users.userId" -> user.id.asJson
+                                      )
                                     )
-                                  )
-                                  .map(isTenantAdmin => {
-                                    if (isTenantAdmin) {
-                                      Some(user)
-                                    } else {
-                                      None
-                                    }
-                                  })
-                              case None => None.future
+                                    .map(isTenantAdmin =>
+                                      if (isTenantAdmin) Right(user)
+                                      else Left(AppError.Unauthorized: AppError)
+                                    )
+                                )
                             }
                         )
                       case _ =>
@@ -257,13 +255,9 @@ class LoginController(
           }
         )
       case Some(user) if user.failedLoginAttempts != 0 =>
-        userService.delayForAttempt(user).flatMap { delay =>
-          after(delay.seconds)(
-            {
-              FastFuture.successful(BadRequest(Json.obj("error" -> true)))
-            }
-          )
-        }
+        val delay = userService.delayForAttempt(user)
+        after(delay.seconds)(BadRequest(Json.obj("error" -> true)).future)
+        
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -332,6 +326,50 @@ class LoginController(
         after(3.seconds)(
           error.renderF()
         ),
+      r => r.future
+    )
+  }
+
+  private def bindLocalUser(
+      sessionMaxAge: Int,
+      tenant: Tenant,
+      request: RequestHeader,
+      f: => EitherT[Future, AppError, User]
+  ): Future[Result] = {
+    val result: EitherT[Future, AppError, Result] = f.flatMap { user =>
+      EitherT.liftF(userService.resetAttempts(user)).flatMap { cleanUser =>
+        cleanUser.twoFactorAuthentication match {
+          case Some(auth) if auth.enabled =>
+            val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+            keyGenerator.init(160)
+            val token =
+              new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+            EitherT(
+              env.dataStore.userRepo
+                .save(
+                  cleanUser.copy(twoFactorAuthentication =
+                    Some(auth.copy(token = token))
+                  )
+                )
+                .map {
+                  case true  => Right(Redirect(s"/2fa?token=$token"))
+                  case false => Left(AppError.InternalServerError("Failed to save user"))
+                }
+            )
+          case _ =>
+            EitherT.liftF(createSession(sessionMaxAge, cleanUser, request, tenant))
+        }
+      }
+    }
+
+    result.foldF(
+      {
+        case AppError.LoginRateLimited(delay) =>
+          after(delay.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+        case error =>
+          after(3.seconds)(error.renderF())
+      },
       r => r.future
     )
   }
@@ -520,12 +558,11 @@ class LoginController(
                       ctx.tenant.authProviderSettings
                     )
 
-                    bindUser(
+                    bindLocalUser(
                       localConfig.sessionMaxAge,
                       ctx.tenant,
                       ctx.request,
-                      localLoginSupport
-                        .bindUser(username, password, ctx.tenant)
+                      localLoginSupport.bindUser(username, password, ctx.tenant)
                     )
 
                   case AuthProvider.Otoroshi =>
@@ -566,12 +603,11 @@ class LoginController(
                           ctx.tenant.authProviderSettings
                         )
 
-                        bindUser(
+                        bindLocalUser(
                           localConfig.sessionMaxAge,
                           ctx.tenant,
                           ctx.request,
-                          localLoginSupport
-                            .bindUser(username, password, ctx.tenant)
+                          localLoginSupport.bindUser(username, password, ctx.tenant)
                         )
 
                       case Right(user) =>

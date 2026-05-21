@@ -4,10 +4,12 @@ import cats.data.EitherT
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.{Tenant, User}
 import fr.maif.daikoku.env.Env
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.mindrot.jbcrypt.BCrypt
 import play.api.Logger
 import play.api.libs.json.*
 import fr.maif.daikoku.services.UserService
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -59,32 +61,23 @@ class LocalLoginSupport(env: Env, userService: UserService) {
 
   def bindUser(username: String, password: String, tenant: Tenant)(implicit
       ec: ExecutionContext
-  ): Future[Option[User]] = {
-    env.dataStore.userRepo
-      .findOne(
-        Json.obj(
-          "_deleted" -> false,
-          "email" -> username.trim
-        )
+  ): EitherT[Future, AppError, User] = {
+    EitherT
+      .fromOptionF(
+        env.dataStore.userRepo.findOne(Json.obj("_deleted" -> false, "email" -> username.trim)),
+        AppError.Unauthorized: AppError
       )
-      .map {
-        case Some(user)
-            if user.password.isDefined && !BCrypt.checkpw(
-              password,
-              user.password.get
-            ) =>
-          userService.incrementAttempts(user)
-          Some(user)
-        case Some(user)
-            if user.password.isDefined && BCrypt.checkpw(
-              password,
-              user.password.get
-            ) =>
-          Some(user)
-        case Some(user) =>
-          val failedUser = userService.incrementAttempts(user)
-          Some(failedUser)
-        case _ => None
+      .flatMap { user =>
+        if (user.password.isEmpty)
+          EitherT.leftT[Future, User](AppError.Unauthorized: AppError)
+        else if (BCrypt.checkpw(password, user.password.get))
+          EitherT.pure[Future, AppError](user)
+        else
+          EitherT(
+            userService.incrementAttempts(user).map { updatedUser =>
+              Left(AppError.LoginRateLimited(userService.delayForAttempt(updatedUser))): Either[AppError, User]
+            }
+          )
       }
   }
 

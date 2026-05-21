@@ -3,6 +3,7 @@ package fr.maif.daikoku.services
 import fr.maif.daikoku.domain.User
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.{OtoroshiClient, Translator}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -18,32 +19,29 @@ class UserService(
     otoroshiSynchronisator: OtoroshiSynchronizerJob
 )(implicit ec: ExecutionContext) {
 
-  def incrementAttempts(user: User): User = {
+  def incrementAttempts(user: User): Future[User] = {
     val isStaledFailure = user.lastFailedLogin
       .exists(_.isBefore(DateTime.now().minusMinutes(30)))
     val attemptsIncremented: Int =
-      if (!isStaledFailure) user.failedLoginAttempts + 1 else 0
-    env.dataStore.userRepo
-      .save(
-        user.copy(
-          failedLoginAttempts = attemptsIncremented,
-          lastFailedLogin = Some(DateTime.now())
-        )
-      )
-    user.copy(
+      if (!isStaledFailure) user.failedLoginAttempts + 1 else 1
+    val updated = user.copy(
       failedLoginAttempts = attemptsIncremented,
       lastFailedLogin = Some(DateTime.now())
     )
+    env.dataStore.userRepo.save(updated).map(_ => updated)
   }
 
-  def delayForAttempt(user: User): Future[Int] = {
+  def resetAttempts(user: User): Future[User] = {
+    val updated = user.copy(failedLoginAttempts = 0, lastFailedLogin = None)
+    env.dataStore.userRepo.save(updated).map(_ => updated)
+  }
+
+  def delayForAttempt(user: User): Int = {
     val isRecentFailure = user.lastFailedLogin
       .exists(_.isAfter(DateTime.now().minusMinutes(30)))
-    val attemptsIncremented =
-      if (isRecentFailure) user.failedLoginAttempts + 1 else 0
-    val delay = {
-      math.min(math.pow(2, user.failedLoginAttempts.toDouble).toInt, 28)
-    }
-    Future.successful(delay)
+    if (!isRecentFailure) return 0
+    val delay = math.min(math.pow(2, (user.failedLoginAttempts - 1).toDouble).toInt, 30)
+    
+    delay
   }
 }
