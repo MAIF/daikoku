@@ -4495,40 +4495,26 @@ object SchemaDefinition {
       )
 
     def allFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
+    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
       List(
-        getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo) ++
-          getRepoFields(
-            "userSession",
-            UserSessionType,
-            ctx => ctx.ctx._1.userSessionRepo
-          ) ++
-          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo) ++
-          getRepoFields(
-            "passwordReset",
-            PasswordResetType,
-            ctx => ctx.ctx._1.passwordResetRepo
-          ) ++
-          getRepoFields(
-            "accountCreation",
-            AccountCreationType,
-            ctx => ctx.ctx._1.accountCreationRepo
-          ) ++
-          // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
-          getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
+        // Frontend repos — no extra restriction beyond existing resolver guards
+        getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
           getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
-          // format: off
-          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
-          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
-          // format: off
-          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo) ++
-          getTenantFields("apiDocumentationPage", ApiDocumentationPageType, ctx => ctx.ctx._1.apiDocumentationPageRepo) ++
-          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo) ++
-          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
-          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
-          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo) ++
           getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
+          // Raw POJO repos — admin-api only (RequiresDaikokuAdmin blocks non-admin access)
+          getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo, adminOnly) ++
+          getRepoFields("userSession", UserSessionType, ctx => ctx.ctx._1.userSessionRepo, adminOnly) ++
+          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo, adminOnly) ++
+          getRepoFields("passwordReset", PasswordResetType, ctx => ctx.ctx._1.passwordResetRepo, adminOnly) ++
+          getRepoFields("accountCreation", AccountCreationType, ctx => ctx.ctx._1.accountCreationRepo, adminOnly) ++
+          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo, adminOnly) ++
+          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo, adminOnly) ++
+          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo, adminOnly) ++
+          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo, adminOnly) ++
+          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo, adminOnly) ++
+          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo, adminOnly) ++
+          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo, adminOnly) ++
           getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo, adminOnly) *
       )
     }
