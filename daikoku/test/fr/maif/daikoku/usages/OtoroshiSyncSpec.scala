@@ -6,7 +6,6 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.ValidationStep.HttpRequest
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
-import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
@@ -831,7 +830,6 @@ class OtoroshiSyncSpec()
         ),
         port = container.mappedPort(8080)
       )(using tenant, session)
-      logger.warn(Json.prettyPrint(respPreVerifOtoParent.json))
 
       val metadataJson = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
       (metadataJson \ "env").as[String] mustBe "prod"
@@ -1871,7 +1869,6 @@ class OtoroshiSyncSpec()
         method = "POST"
       )(using tenant, session)
       resp.status mustBe 200
-      logger.json(resp.json)
 
       val metadata = getApkMetadataFromOtoroshi(
         consumerParentDevSubscription.apiKey.clientId
