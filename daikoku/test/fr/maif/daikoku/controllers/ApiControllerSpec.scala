@@ -640,7 +640,7 @@ class ApiControllerSpec()
     "see his teams (graphQl)" in {
       setupEnvBlocking(
         tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
-        users = Seq(userAdmin, user),
+        users = Seq(userAdmin, user, userApiEditor),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
