@@ -2280,12 +2280,6 @@ export const graphql = {
 `,
 };
 
-export const downloadCmsFiles = () =>
-  fetch('/api/cms/download', {
-    method: 'POST',
-    credentials: 'include',
-  });
-
 export const getDiffOfCmsPage = (id: any, diffId: any, showDiffs: any) =>
   customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`);
 
