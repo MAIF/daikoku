@@ -107,6 +107,8 @@ class PaymentClient(
             stripeClient(s"/v1/prices/${priceIds.basePriceId}")
               .post(Map("active" -> "false"))
               .map {
+                case response if response.status == 404 =>
+                  Right[AppError, JsValue](Json.obj("status" -> "already_inactive"))
                 case response if response.status >= 400 =>
                   Left(
                     AppError.PaymentError(
@@ -123,6 +125,8 @@ class PaymentClient(
                 stripeClient(s"/v1/prices/$additionalPriceId")
                   .post(Map("active" -> "false"))
                   .map {
+                    case response if response.status == 404 =>
+                      Right[AppError, JsValue](Json.obj("status" -> "already_inactive"))
                     case response if response.status >= 400 =>
                       Left[AppError, JsValue](
                         AppError.PaymentError(
@@ -155,6 +159,8 @@ class PaymentClient(
             stripeClient(s"/v1/products/$productId")
               .post(Map("active" -> "false"))
               .map {
+                case response if response.status == 404 =>
+                  Right[AppError, JsValue](Json.obj("status" -> "already_archived"))
                 case response if response.status >= 400 =>
                   Left[AppError, JsValue](
                     AppError.PaymentError(

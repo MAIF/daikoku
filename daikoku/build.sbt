@@ -156,6 +156,7 @@ dependencyOverrides ++= Seq(
 )
 
 Test / fork := true
+Test / parallelExecution := false
 Test / javaOptions ++= Seq(
   "-Dconfig.resource=application.test.conf",
   "--enable-native-access=ALL-UNNAMED"

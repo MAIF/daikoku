@@ -1,6 +1,7 @@
 package fr.maif.daikoku.storage.drivers.postgres
 
-import io.vertx.sqlclient.{Pool, Row, RowSet}
+import fr.maif.daikoku.storage.{ActiveConn, DbConn, NoConn}
+import io.vertx.sqlclient.{Pool, Row, RowSet, SqlConnection}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.{
   Materializer,
@@ -99,31 +100,26 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
     .getOptional[Boolean]("daikoku.postgres.logQueries")
     .getOrElse(false)
 
+  // Central dispatch: uses the transaction connection when inside withTransaction,
+  // otherwise borrows a connection from the pool as before.
+  // Note: the lambda must be written inline for Scala's SAM conversion to
+  // java.util.function.Function (which pool.withConnection expects).
   private def queryRaw[A](
       query: String,
       params: Seq[Any],
       debug: Boolean
-  )(f: Seq[Row] => A): Future[A] = {
+  )(f: Seq[Row] => A)(implicit dbConn: DbConn): Future[A] = {
     if (debug || debugQueries)
       logger.debug(s"""query: "$query", params: "${params.mkString(", ")}"""")
 
-    val isRead = query.toLowerCase().trim.startsWith("select")
-    (if (isRead) {
-       pool
-         .withConnection(c =>
-           c.preparedQuery(query)
-             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-         )
-         .scala
-     } else {
-       pool
-         .withConnection(c =>
-           c.preparedQuery(query)
-             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-         )
-         .scala
-     })
-      .flatMap { _rows =>
+    (dbConn match {
+      case NoConn =>
+        pool.withConnection(c =>
+          c.preparedQuery(query).execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        ).scala
+      case ActiveConn(conn) =>
+        conn.preparedQuery(query).execute(io.vertx.sqlclient.Tuple.from(params.toArray)).scala
+    }).flatMap { _rows =>
         Try {
           val rows = _rows.asScala.toSeq
           f(rows)
@@ -145,7 +141,7 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
       query: String,
       params: Seq[AnyRef] = Seq.empty,
       debug: Boolean = true
-  )(f: Row => Option[A]): Future[Seq[A]] = {
+  )(f: Row => Option[A])(implicit dbConn: DbConn): Future[Seq[A]] = {
     queryRaw[Seq[A]](query, params, debug)(rows => rows.flatMap(f))
   }
 
@@ -153,23 +149,31 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
       query: String,
       params: Seq[AnyRef] = Seq.empty,
       debug: Boolean = true
-  )(f: Row => Option[A]): Future[Option[A]] = {
+  )(f: Row => Option[A])(implicit dbConn: DbConn): Future[Option[A]] = {
     queryRaw[Option[A]](query, params, debug)(rows =>
       rows.headOption.flatMap(row => f(row))
     )
   }
 
-  def rawQuery(sql: String): Future[RowSet[Row]] =
-    pool.query(sql).executeAsync()
+  // rawQuery runs a non-parameterised statement; dispatches to the transaction
+  // connection when available.
+  def rawQuery(sql: String)(implicit dbConn: DbConn): Future[RowSet[Row]] =
+    dbConn match {
+      case NoConn           => pool.query(sql).executeAsync()
+      case ActiveConn(conn) => conn.query(sql).executeAsync()
+    }
 
-  def query(sql: String, params: Seq[AnyRef] = Seq.empty) =
-    pool
-      .withConnection(c =>
-        c.preparedQuery(sql)
-          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-      )
-      .scala
+  def query(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit dbConn: DbConn): Future[RowSet[Row]] =
+    dbConn match {
+      case NoConn =>
+        pool.withConnection(c =>
+          c.preparedQuery(sql).execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        ).scala
+      case ActiveConn(conn) =>
+        conn.preparedQuery(sql).execute(io.vertx.sqlclient.Tuple.from(params.toArray)).scala
+    }
 
+  // Streaming always opens its own transaction for cursor support; excluded from DbConn.
   def queryStreamSource[A](
       sql: String,
       params: Seq[AnyRef] = Seq.empty,
@@ -221,24 +225,39 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
     source.mapConcat(row => f(row).toList)
   }
 
-  def execute(sql: String, params: Seq[AnyRef] = Seq.empty): Future[Long] = {
+  def execute(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit dbConn: DbConn): Future[Long] = {
     val promise = Promise[Long]()
 
-    pool
-      .withConnection(c =>
-        c.preparedQuery(sql)
-          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-      )
-      .onComplete { ar =>
-        if (ar.succeeded()) {
-          promise.success(ar.result().rowCount().toLong)
-        } else {
-          logger.warn(ar.cause().getLocalizedMessage)
-          promise.success(0L)
-        }
-      }
+    val resultFuture: Future[RowSet[Row]] = dbConn match {
+      case NoConn =>
+        pool.withConnection(c =>
+          c.preparedQuery(sql).execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        ).scala
+      case ActiveConn(conn) =>
+        conn.preparedQuery(sql).execute(io.vertx.sqlclient.Tuple.from(params.toArray)).scala
+    }
+
+    resultFuture.onComplete {
+      case Success(rows) => promise.success(rows.rowCount().toLong)
+      case Failure(e) =>
+        logger.warn(e.getLocalizedMessage)
+        promise.success(0L)
+    }
 
     promise.future
   }
 
+  // Opens a Vert.x transaction, injects ActiveConn(conn) as the implicit DbConn
+  // inside f, then commits on success or rolls back on failure.
+  def withTransaction[A](f: DbConn ?=> Future[A]): Future[A] = {
+    pool.withTransaction { conn =>
+      val p = io.vertx.core.Promise.promise[A]()
+      val result: Future[A] = f(using ActiveConn(conn))
+      result.onComplete {
+        case Success(v) => p.complete(v)
+        case Failure(e) => p.fail(e)
+      }
+      p.future()
+    }.scala
+  }
 }

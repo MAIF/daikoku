@@ -1,4 +1,4 @@
-import { FormEvent, useContext, useRef, useState } from 'react';
+import { SubmitEvent, useContext, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { I18nContext } from '../../contexts';
@@ -28,7 +28,7 @@ export function LoginPage() {
     });
   };
 
-  const submit = (e: FormEvent<HTMLElement>) => {
+  const submit = (e: SubmitEvent<HTMLElement>) => {
     setLoading(true);
 
     e.preventDefault();
@@ -36,7 +36,7 @@ export function LoginPage() {
     const action = `/auth/${provider}/callback`;
     Services.login(username, password, action, searchParams.get('redirect'))
       .then((res) => {
-        if (res.status === 400) {
+        if (res.status >= 400) {
           setState({
             ...state,
             loginError: true,
