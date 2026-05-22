@@ -1685,7 +1685,8 @@ class GraphQLControllerSpec()
           )
         )
       )
-      val session = loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
+      val session =
+        loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
 
       def assertAdminOnlyQuery(query: String): Unit = {
         val resp = httpJsonCallBlocking(
@@ -1697,7 +1698,9 @@ class GraphQLControllerSpec()
         val errors = (resp.json \ "errors").asOpt[JsArray]
         errors.isDefined mustBe true
         val firstError = errors.get.value.head
-        (firstError \ "extensions" \ "code").asOpt[String] mustBe Some("UNAUTHORIZED")
+        (firstError \ "extensions" \ "code").asOpt[String] mustBe Some(
+          "UNAUTHORIZED"
+        )
       }
 
       assertAdminOnlyQuery("""{ users { id } }""")
@@ -1715,7 +1718,8 @@ class GraphQLControllerSpec()
         users = Seq(daikokuAdmin),
         teams = Seq(defaultAdminTeam.copy(tenant = tenant.id))
       )
-      val session = loginWithBlocking(daikokuAdmin.copy(tenants = Set(tenant.id)), tenant)
+      val session =
+        loginWithBlocking(daikokuAdmin.copy(tenants = Set(tenant.id)), tenant)
 
       def assertAdminCanQuery(query: String): Unit = {
         val resp = httpJsonCallBlocking(
@@ -1743,8 +1747,8 @@ class GraphQLControllerSpec()
 
       val adminApiHeader = Map(
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-          s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
-        )}"
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
       )
 
       def assertAdminApiCanQuery(query: String): Unit = {
@@ -1775,7 +1779,8 @@ class GraphQLControllerSpec()
           )
         )
       )
-      val session = loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
+      val session =
+        loginWithBlocking(userAdmin.copy(tenants = Set(tenant.id)), tenant)
 
       val query = """{ myTeams { users { user { email } } } }"""
       val resp = httpJsonCallBlocking(
@@ -1789,7 +1794,11 @@ class GraphQLControllerSpec()
       val emails = (resp.json \ "data" \ "myTeams")
         .as[Seq[play.api.libs.json.JsValue]]
         .flatMap(t => (t \ "users").as[Seq[play.api.libs.json.JsValue]])
-        .flatMap(u => (u \ "user").asOpt[play.api.libs.json.JsValue].flatMap(v => (v \ "email").asOpt[String]))
+        .flatMap(u =>
+          (u \ "user")
+            .asOpt[play.api.libs.json.JsValue]
+            .flatMap(v => (v \ "email").asOpt[String])
+        )
       emails must not be empty
     }
 
@@ -1941,7 +1950,9 @@ class GraphQLControllerSpec()
         users = Seq(daikokuAdmin, userAdmin, userApiEditor),
         teams = Seq(
           defaultAdminTeam,
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamOwner.copy(users =
+            Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
           secTeamConsumer
         ),
         apis = Seq(api),
@@ -1950,7 +1961,7 @@ class GraphQLControllerSpec()
       )
 
       val apiEditorSession = loginWithBlocking(userApiEditor, tenant)
-      val adminSession     = loginWithBlocking(userAdmin, tenant)
+      val adminSession = loginWithBlocking(userAdmin, tenant)
       val daikokuAdminSession = loginWithBlocking(daikokuAdmin, tenant)
 
       val query =
@@ -1964,16 +1975,19 @@ class GraphQLControllerSpec()
 
       // ApiEditor in team: apiKeyVisibility=Administrator → blocked
       val respEditor = httpJsonCallBlocking(
-        path = "/api/search", method = "POST",
+        path = "/api/search",
+        method = "POST",
         body = Json.obj("query" -> query).some
       )(using tenant, apiEditorSession)
       respEditor.status mustBe 200
       (respEditor.json \ "errors").isDefined mustBe true
-      ((respEditor.json \ "errors").as[JsArray].value.head \ "message").as[String] mustBe "Access to API key denied"
+      ((respEditor.json \ "errors").as[JsArray].value.head \ "message")
+        .as[String] mustBe "Access to API key denied"
 
       // Administrator in team: allowed
       val respAdmin = httpJsonCallBlocking(
-        path = "/api/search", method = "POST",
+        path = "/api/search",
+        method = "POST",
         body = Json.obj("query" -> query).some
       )(using tenant, adminSession)
       respAdmin.status mustBe 200
@@ -1983,7 +1997,8 @@ class GraphQLControllerSpec()
 
       // DaikokuAdmin: always allowed regardless of team role
       val respDaikokuAdmin = httpJsonCallBlocking(
-        path = "/api/search", method = "POST",
+        path = "/api/search",
+        method = "POST",
         body = Json.obj("query" -> query).some
       )(using tenant, daikokuAdminSession)
       respDaikokuAdmin.status mustBe 200

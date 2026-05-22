@@ -83,7 +83,10 @@ export const GuestPanel = () => {
                         ref={buttonRef}
                         className="btn btn-outline-success ms-2 shake"
                         disabled={loading}
-                        onClick={valid}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          valid();
+                        }}
                       >
                         <span>{translate('Login')}</span>
                       </button>
