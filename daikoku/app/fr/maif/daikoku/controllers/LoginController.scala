@@ -605,12 +605,22 @@ class LoginController(
                           ctx.tenant.authProviderSettings
                         )
 
-                        bindLocalUser(
-                          localConfig.sessionMaxAge,
-                          ctx.tenant,
-                          ctx.request,
-                          localLoginSupport.bindUser(username, password, ctx.tenant)
+                        // For users without a local password (e.g. pure LDAP users), local.scala skips
+                        // the increment. We handle it here so that LDAP failures are always counted.
+                        val auth: EitherT[Future, AppError, User] = EitherT(
+                          env.dataStore.userRepo
+                            .findOne(Json.obj("_deleted" -> false, "email" -> username.trim))
+                            .flatMap {
+                              case Some(u) if u.password.isEmpty =>
+                                userService.incrementAttempts(u).map { updated =>
+                                  Left(AppError.LoginRateLimited(userService.delayForAttempt(updated))): Either[AppError, User]
+                                }
+                              case _ =>
+                                localLoginSupport.bindUser(username, password, ctx.tenant).value
+                            }
                         )
+
+                        bindLocalUser(localConfig.sessionMaxAge, ctx.tenant, ctx.request, auth)
 
                       case Right(user) =>
                         bindLocalUser(

@@ -12,6 +12,7 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
+import play.api.libs.json.Json
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedForm
 
 import java.util.Base64
@@ -50,8 +51,8 @@ class LoginControllerSpec()
     ),
     searchBase = "dc=dundermifflin,dc=com",
     userBase = "ou=scranton".some,
-    groupFilter = "ou=employees".some,
-    adminGroupFilter = "ou=managers".some,
+    groupFilter = "cn=employees".some,
+    adminGroupFilter = "cn=managers".some,
     adminUsername = "cn=admin,dc=dundermifflin,dc=com".some,
     adminPassword = "adminpassword".some,
     nameFields = Seq("cn")
@@ -342,8 +343,8 @@ class LoginControllerSpec()
           )
         userFetch.get.failedLoginAttempts mustBe num
         if (num === 1) {
-          time must be > 500L
-          time must be < 1500L
+          time must be > 1000L
+          time must be < 2000L
         }
         if (num === 2) {
           time must be > 2000L
