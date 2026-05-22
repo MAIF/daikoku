@@ -43,6 +43,8 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
   await page.locator('input[name="tags\\.1\\.value"]').fill('important');
   //todo: find a way to fill description by playwright
+  await page.getByRole('checkbox').check();
+
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
