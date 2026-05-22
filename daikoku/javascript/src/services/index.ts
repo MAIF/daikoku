@@ -994,12 +994,6 @@ export const closeMessageChat = (chatId: string) =>
 export const lastDateChat = (chatId: string, date: number) =>
   customFetch(`/api/messages/${chatId}/last-date?date=${date}`);
 
-export const migrateMongoToPostgres = () =>
-  customFetch('/api/state/migrate', {
-    method: 'POST',
-    credentials: 'include',
-  });
-
 export const enableMaintenanceMode = () =>
   customFetch('/api/state/lock', {
     method: 'POST',
