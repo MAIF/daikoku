@@ -365,7 +365,7 @@ class LoginFilter(env: Env)(implicit
                 LoginFilter
                   .handleWhitelistedRoute(request, tenant, nextFilter, env)
                   .getOrElse {
-                    AppLogger.info("no session found")
+                    AppLogger.debug("no session found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   }
               case Some(sessionId) =>
