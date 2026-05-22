@@ -2018,7 +2018,7 @@ class ApiController(
       enabled: Option[Boolean]
   ) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2289,7 +2289,7 @@ class ApiController(
 
   def regenerateApiKeySecret(teamId: String, subscriptionId: String) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has regenerate apikey secret @{subscription.id} of @{team.name} - @{team.id}"
         )
