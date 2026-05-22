@@ -82,7 +82,7 @@ class LoginControllerSpec()
         .withHttpHeaders(
           (Map("Host" -> tenant.domain) ++ _headers ++ getAdminApiHeader(
             adminApiSubscription
-          )).toSeq*
+          )).toSeq *
         )
         .withFollowRedirects(true)
         .withMethod("POST")
@@ -94,7 +94,6 @@ class LoginControllerSpec()
         )
       )
 
-      // delay = 2^(count-1) seconds: 1s, 2s, 4s, ... capped at 30s
       for (num <- 1 to 3) {
         val t0 = java.lang.System.currentTimeMillis()
         Await.result(
@@ -141,7 +140,8 @@ class LoginControllerSpec()
         teams = Seq(defaultAdminTeam)
       )
 
-      val adminApiHeader = "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+      val adminApiHeader =
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
             s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
           )}"
 
@@ -152,7 +152,10 @@ class LoginControllerSpec()
         daikokuComponents.env.wsClient
           .url(s"$baseUrl:$port$path")
           .withHttpHeaders(
-            (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
+            (Map(
+              "Host" -> tenant.domain,
+              "Content-Type" -> "application/x-www-form-urlencoded"
+            ) + adminApiHeader).toSeq *
           )
           .withFollowRedirects(false)
           .withMethod("POST")
@@ -169,11 +172,55 @@ class LoginControllerSpec()
       resp.status mustBe 303
 
       val userFetch = Await.result(
-        daikokuComponents.env.dataStore.userRepo.findByIdNotDeleted(userTeamUserId),
+        daikokuComponents.env.dataStore.userRepo
+          .findByIdNotDeleted(userTeamUserId),
         5.seconds
       )
       userFetch.get.failedLoginAttempts mustBe 0
       userFetch.get.lastFailedLogin mustBe None
+    }
+
+    "return an error for an unknown user" in {
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user, userAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val adminApiHeader =
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
+
+      val path = s"/auth/${AuthProvider.Local}/callback"
+      val baseUrl = "http://127.0.0.1"
+
+      val t0 = java.lang.System.currentTimeMillis()
+      val resp = Await.result(
+        daikokuComponents.env.wsClient
+          .url(s"$baseUrl:$port$path")
+          .withHttpHeaders(
+            (Map(
+              "Host" -> tenant.domain,
+              "Content-Type" -> "application/x-www-form-urlencoded"
+            ) + adminApiHeader).toSeq *
+          )
+          .withFollowRedirects(false)
+          .withMethod("POST")
+          .withBody(
+            Map(
+              "username" -> Seq("unknown@example.com"),
+              "password" -> Seq("anyPassword")
+            )
+          )(using writeableOf_urlEncodedForm)
+          .execute(),
+        5.seconds
+      )
+      val time = java.lang.System.currentTimeMillis() - t0
+
+      resp.status mustBe 400
+      time must be > 3000L
     }
 
     "not increment counter for user without local password" in {
@@ -186,11 +233,10 @@ class LoginControllerSpec()
         teams = Seq(defaultAdminTeam)
       )
 
-      val adminApiHeader = "Authorization" -> s"Basic ${
-        Base64.getEncoder.encodeToString(
-          s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
-        )
-      }"
+      val adminApiHeader =
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
 
       val path = s"/auth/${AuthProvider.Local}/callback"
       val baseUrl = "http://127.0.0.1"
@@ -199,7 +245,10 @@ class LoginControllerSpec()
         daikokuComponents.env.wsClient
           .url(s"$baseUrl:$port$path")
           .withHttpHeaders(
-            (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
+            (Map(
+              "Host" -> tenant.domain,
+              "Content-Type" -> "application/x-www-form-urlencoded"
+            ) + adminApiHeader).toSeq *
           )
           .withFollowRedirects(false)
           .withMethod("POST")
@@ -214,7 +263,8 @@ class LoginControllerSpec()
       )
 
       val userFetch = Await.result(
-        daikokuComponents.env.dataStore.userRepo.findByIdNotDeleted(userTeamUserId),
+        daikokuComponents.env.dataStore.userRepo
+          .findByIdNotDeleted(userTeamUserId),
         5.seconds
       )
       userFetch.get.failedLoginAttempts mustBe 0
@@ -232,7 +282,7 @@ class LoginControllerSpec()
         email = "michael.scott@dundermifflin.com",
         lastTenant = None,
         personalToken = Some("001"),
-        password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+        password = None,
         defaultLanguage = None
       )
 
@@ -247,9 +297,10 @@ class LoginControllerSpec()
         teams = Seq(defaultAdminTeam)
       )
 
-      val adminApiHeader = "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-        s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
-      )}"
+      val adminApiHeader =
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
 
       val path = s"/auth/${AuthProvider.LDAP}/callback"
       val baseUrl = "http://127.0.0.1"
@@ -257,7 +308,10 @@ class LoginControllerSpec()
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders(
-          (Map("Host" -> tenant.domain, "Content-Type" -> "application/x-www-form-urlencoded") + adminApiHeader).toSeq*
+          (Map(
+            "Host" -> tenant.domain,
+            "Content-Type" -> "application/x-www-form-urlencoded"
+          ) + adminApiHeader).toSeq *
         )
         .withFollowRedirects(true)
         .withMethod("POST")
@@ -265,7 +319,7 @@ class LoginControllerSpec()
       val formData: Option[Map[String, Seq[String]]] = Some(
         Map(
           "username" -> Seq(userLDAP.email),
-          "password" -> Seq(userLDAP.password.get)
+          "password" -> Seq("wrongPassword")
         )
       )
 
@@ -300,6 +354,70 @@ class LoginControllerSpec()
           time must be < 5000L
         }
       }
+    }
+
+    "reset counter after successful LDAP login" in {
+
+      val userLDAPWithFailures = User(
+        id = userTeamUserId,
+        tenants = Set(tenant.id),
+        origins = Set(AuthProvider.LDAP),
+        name = "Michael Scott",
+        email = "michael.scott@dundermifflin.com",
+        lastTenant = None,
+        personalToken = Some("001"),
+        password = None,
+        defaultLanguage = None,
+        failedLoginAttempts = 2,
+        lastFailedLogin = Some(DateTime.now().minusMinutes(1))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            authProvider = AuthProvider.LDAP,
+            authProviderSettings = authProviderSettings
+          )
+        ),
+        users = Seq(daikokuAdmin, user, userLDAPWithFailures),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val adminApiHeader =
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+          )}"
+
+      val resp = Await.result(
+        daikokuComponents.env.wsClient
+          .url(s"http://127.0.0.1:$port/auth/${AuthProvider.LDAP}/callback")
+          .withHttpHeaders(
+            (Map(
+              "Host" -> tenant.domain,
+              "Content-Type" -> "application/x-www-form-urlencoded"
+            ) + adminApiHeader).toSeq *
+          )
+          .withFollowRedirects(false)
+          .withMethod("POST")
+          .withBody(
+            Map(
+              "username" -> Seq(userLDAPWithFailures.email),
+              "password" -> Seq("password")
+            )
+          )(using writeableOf_urlEncodedForm)
+          .execute(),
+        5.seconds
+      )
+
+      resp.status mustBe 303
+
+      val userFetch = Await.result(
+        daikokuComponents.env.dataStore.userRepo
+          .findByIdNotDeleted(userTeamUserId),
+        5.seconds
+      )
+      userFetch.get.failedLoginAttempts mustBe 0
+      userFetch.get.lastFailedLogin mustBe None
     }
   }
 }

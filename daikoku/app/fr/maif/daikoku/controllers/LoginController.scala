@@ -367,6 +367,8 @@ class LoginController(
       {
         case AppError.LoginRateLimited(delay) =>
           after(delay.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+        case AppError.Unauthorized =>
+          after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
         case error =>
           after(3.seconds)(error.renderF())
       },
@@ -611,11 +613,11 @@ class LoginController(
                         )
 
                       case Right(user) =>
-                        bindUser(
+                        bindLocalUser(
                           ldapConfig.sessionMaxAge,
                           ctx.tenant,
                           ctx.request,
-                          user.map(u => Some(u))
+                          EitherT.liftF(user)
                         )
                     }
                   case _ =>
