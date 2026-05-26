@@ -1043,7 +1043,7 @@ object CommonServices {
           |      FROM api_subscriptions s
           |               JOIN apis a ON s.content ->> 'api' = a._id
           |               JOIN usage_plans p ON s.content ->> 'plan' = p._id
-          |      WHERE (s._id = $1 OR s.content ->> 'parent' = $1) AND s._id <> $2) _;
+          |      WHERE s.content ->> 'keyring' = $1 AND s._id <> $2) _;
           |""".stripMargin
 
       (for {
@@ -1053,13 +1053,13 @@ object CommonServices {
             .findById(apiSubscriptionId),
           AppError.EntityNotFound("ApiSubscription")
         )
-        maybeParent <-
-          sub.parent
-            .map(p =>
-              EitherT.liftF[Future, AppError, Option[ApiSubscription]](
-                env.dataStore.apiSubscriptionRepo
+        maybeKeyring <-
+          sub.keyring
+            .map(kid =>
+              EitherT.liftF[Future, AppError, Option[Keyring]](
+                env.dataStore.keyringRepo
                   .forTenant(ctx.tenant)
-                  .findById(p)
+                  .findById(kid.value)
               )
             )
             .getOrElse(EitherT.pure[Future, AppError](None))
@@ -1070,7 +1070,7 @@ object CommonServices {
                 sql,
                 "detail",
                 Seq(
-                  maybeParent.map(_.id.value).getOrElse(sub.id.value),
+                  sub.keyring.map(_.value).getOrElse(""),
                   sub.id.value
                 )
               )
@@ -1082,7 +1082,7 @@ object CommonServices {
             )
       } yield ApiSubscriptionDetail(
         apiSubscription = sub,
-        parentSubscription = maybeParent,
+        keyring = maybeKeyring,
         accessibleResources = accessibleResources
       )).value
 

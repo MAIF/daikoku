@@ -142,6 +142,20 @@ case class PostgresTenantCapableApiSubscriptionRepo(
     _repo()
 }
 
+case class PostgresTenantCapableKeyringRepo(
+    _repo: () => PostgresRepo[Keyring, KeyringId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[Keyring, KeyringId]
+) extends PostgresTenantCapableRepo[Keyring, KeyringId]
+    with KeyringRepo {
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Keyring, KeyringId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[Keyring, KeyringId] =
+    _repo()
+}
+
 case class PostgresTenantCapableApiDocumentationPageRepo(
     _repo: () => PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[
@@ -506,7 +520,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "assets" -> true,
     "reports_info" -> true,
     "api_subscription_transfers" -> true,
-    "job_informations" -> true
+    "job_informations" -> true,
+    "keyrings" -> true
   )
 
   private lazy val reactivePg =
@@ -528,6 +543,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     PostgresTenantCapableApiSubscriptionRepo(
       () => new PostgresApiSubscriptionRepo(env, reactivePg),
       t => new PostgresTenantApiSubscriptionRepo(env, reactivePg, t)
+    )
+  private val _keyringRepo: KeyringRepo =
+    PostgresTenantCapableKeyringRepo(
+      () => new PostgresKeyringRepo(env, reactivePg),
+      t => new PostgresTenantKeyringRepo(env, reactivePg, t)
     )
   private val _apiDocumentationPageRepo: ApiDocumentationPageRepo =
     PostgresTenantCapableApiDocumentationPageRepo(
@@ -641,6 +661,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   override def apiRepo: ApiRepo = _apiRepo
 
   override def apiSubscriptionRepo: ApiSubscriptionRepo = _apiSubscriptionRepo
+
+  override def keyringRepo: KeyringRepo = _keyringRepo
 
   override def apiDocumentationPageRepo: ApiDocumentationPageRepo =
     _apiDocumentationPageRepo
@@ -876,11 +898,16 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_subscription_api ON api_subscriptions ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_plan ON api_subscriptions ((content->>'plan'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_parent ON api_subscriptions ((content->>'parent'));",
+      "CREATE INDEX IF NOT EXISTS idx_subscription_keyring ON api_subscriptions ((content->>'keyring'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_by ON api_subscriptions ((content->>'by'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_enabled ON api_subscriptions ((content->>'enabled'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_created_at ON api_subscriptions ((content->>'createdAt'));",
-      "CREATE INDEX IF NOT EXISTS idx_subscription_clientId ON api_subscriptions ((content-> 'apiKey' ->> 'clientId));",
+      "CREATE INDEX IF NOT EXISTS idx_subscription_clientId ON api_subscriptions ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_team ON api_subscriptions ((content->>'team'));",
+      "CREATE INDEX IF NOT EXISTS idx_keyring_id ON keyrings ((content->>'_id'));",
+      "CREATE INDEX IF NOT EXISTS idx_keyring_tenant ON keyrings ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_keyring_deleted ON keyrings ((content->>'_deleted'));",
+      "CREATE INDEX IF NOT EXISTS idx_keyring_clientId ON keyrings ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
@@ -962,7 +989,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       stepValidatorRepo.forAllTenant(),
       subscriptionDemandRepo.forAllTenant(),
       usagePlanRepo.forAllTenant(),
-      apiSubscriptionTransferRepo.forAllTenant()
+      apiSubscriptionTransferRepo.forAllTenant(),
+      keyringRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -1090,6 +1118,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
               apiSubscriptionTransferRepo
                 .forAllTenant()
                 .save(json.ApiSubscriptionTransferFormat.reads(payload).get)
+            case ("keyrings", payload) =>
+              keyringRepo
+                .forAllTenant()
+                .save(json.KeyringFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)
@@ -1369,6 +1401,22 @@ class PostgresTenantApiSubscriptionRepo(
   override def extractId(value: ApiSubscription): String = value.id.value
 }
 
+class PostgresTenantKeyringRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Keyring, KeyringId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+  override def tableName: String = "keyrings"
+
+  override def format: Format[Keyring] = json.KeyringFormat
+
+  override def extractId(value: Keyring): String = value.id.value
+}
+
 class PostgresTenantApiDocumentationPageRepo(
     env: Env,
     reactivePg: ReactivePg,
@@ -1627,6 +1675,15 @@ class PostgresApiSubscriptionRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
 
   override def extractId(value: ApiSubscription): String = value.id.value
+}
+
+class PostgresKeyringRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[Keyring, KeyringId](env, reactivePg) {
+  override def tableName: String = "keyrings"
+
+  override def format: Format[Keyring] = json.KeyringFormat
+
+  override def extractId(value: Keyring): String = value.id.value
 }
 
 class PostgresApiDocumentationPageRepo(env: Env, reactivePg: ReactivePg)

@@ -74,6 +74,7 @@ case class ApiSubscription(
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
     parent: Option[ApiSubscriptionId] = None,
+    keyring: Option[KeyringId] = None,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
     ] = None
@@ -117,6 +118,23 @@ case class ApiSubscription(
         .as[JsValue],
       "enabled" -> JsBoolean(enabled)
     )
+}
+
+case class Keyring(
+    id: KeyringId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    customName: Option[String] = None,
+    apiKey: OtoroshiApiKey,
+    otoroshiSettings: OtoroshiSettingsId,
+    createdAt: DateTime,
+    rotation: Option[ApiSubscriptionRotation] = None,
+    bearerToken: Option[String] = None,
+    thirdPartySubscriptionInformations: Option[
+      ThirdPartySubscriptionInformations
+    ] = None
+) extends CanJson[Keyring] {
+  override def asJson: JsValue = json.KeyringFormat.writes(this)
 }
 
 object RemainingQuotas {
@@ -300,7 +318,7 @@ case class SubscriptionDemand(
     from: UserId,
     date: DateTime = DateTime.now,
     motivation: Option[JsObject] = None,
-    parentSubscriptionId: Option[ApiSubscriptionId] = None,
+    keyring: Option[KeyringId] = None,
     customReadOnly: Option[Boolean] = None,
     customMetadata: Option[JsObject] = None,
     customMaxPerSecond: Option[Long] = None,

@@ -11,6 +11,7 @@ import fr.maif.daikoku.services.{
   ApiService,
   AssetsService,
   DeletionService,
+  KeyringService,
   TranslationsService
 }
 import fr.maif.daikoku.utils.*
@@ -57,6 +58,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val otoroshiClient = wire[OtoroshiClient]
   lazy val paymentClient = wire[PaymentClient]
 
+  lazy val keyringService = wire[KeyringService]
   lazy val apiService = wire[ApiService]
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]

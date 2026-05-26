@@ -221,7 +221,7 @@ object NotificationAction {
       team: TeamId,
       demand: DemandId,
       step: SubscriptionDemandStepId,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      keyring: Option[KeyringId] = None,
       motivation: Option[String]
   ) extends NotificationAction
 

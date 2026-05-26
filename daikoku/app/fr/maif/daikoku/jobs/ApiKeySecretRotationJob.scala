@@ -3,7 +3,10 @@ package fr.maif.daikoku.jobs
 import cats.data.EitherT
 import fr.maif.daikoku.audit.ApiKeyRotationEvent
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.domain.json.ApiSubscriptionyRotationFormat
+import fr.maif.daikoku.domain.json.{
+  ApiSubscriptionyRotationFormat,
+  OtoroshiApiKeyFormat
+}
 import fr.maif.daikoku.domain.{
   ApiId,
   ApiSubscription,
@@ -12,6 +15,7 @@ import fr.maif.daikoku.domain.{
   JobInformation,
   JobName,
   JobStatus,
+  Keyring,
   Notification,
   NotificationAction,
   NotificationId,
@@ -137,32 +141,42 @@ class ApiKeySecretRotationJob(
   // FIXME: better perf
   private def checkRotation(query: JsObject) = {
     for {
-      allSubscriptions <-
+      candidates <-
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .findNotDeleted(query)
-      // Get just parent sub (childs will be processed after)
-      subscriptions <-
-        env.dataStore.apiSubscriptionRepo
+      // the keyrings (each owns one shared Otoroshi key) whose rotation is enabled
+      keyrings <-
+        env.dataStore.keyringRepo
           .forAllTenant()
           .findNotDeleted(
             Json.obj(
               "_id" -> Json.obj(
                 "$in" -> JsArray(
-                  Set
-                    .from(
-                      allSubscriptions
-                        .map(s => s.parent.map(_.asJson).getOrElse(s.id.asJson))
-                    )
-                    .toSeq
+                  candidates.flatMap(_.keyring).distinct.map(_.asJson)
                 )
               ),
               "rotation.enabled" -> true
             )
           )
+      // all members of those keyrings, to pick one representative per keyring
+      members <-
+        env.dataStore.apiSubscriptionRepo
+          .forAllTenant()
+          .findNotDeleted(
+            Json.obj(
+              "keyring" -> Json.obj("$in" -> JsArray(keyrings.map(_.id.asJson)))
+            )
+          )
     } yield {
       implicit val language: String = "en"
-      subscriptions.map(subscription =>
+      val keyringById = keyrings.map(k => k.id -> k).toMap
+      // one representative subscription per keyring (for api/plan/team context)
+      val representatives = members
+        .groupBy(_.keyring)
+        .collect { case (Some(_), subs) if subs.nonEmpty => subs.head }
+        .toSeq
+      representatives.map(subscription =>
         for {
           tenant <- EitherT.fromOptionF(
             env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
@@ -256,20 +270,21 @@ class ApiKeySecretRotationJob(
             )
           )
         } yield {
+          val keyring = keyringById(subscription.keyring.get)
           if (!apk.rotation.exists(r => r.enabled)) {
             client.updateApiKey(
-              apk.copy(rotation = subscription.rotation.map(_.toApiKeyRotation))
+              apk.copy(rotation = keyring.rotation.map(_.toApiKeyRotation))
             )(using otoroshiSettings)
           } else {
             val otoroshiNextSecret: Option[String] =
               apk.rotation.flatMap(_.nextSecret)
             val otoroshiActualSecret: String = apk.clientSecret
-            val daikokuActualSecret: String = subscription.apiKey.clientSecret
+            val daikokuActualSecret: String = keyring.apiKey.clientSecret
             val pendingRotation: Boolean =
-              subscription.rotation.exists(_.pendingRotation)
+              keyring.rotation.exists(_.pendingRotation)
 
             var notification: Option[Notification] = None
-            var newSubscription: Option[ApiSubscription] = None
+            var newKeyring: Option[Keyring] = None
 
             if (
               !pendingRotation && otoroshiNextSecret.isDefined && otoroshiActualSecret == daikokuActualSecret
@@ -277,11 +292,11 @@ class ApiKeySecretRotationJob(
               logger.info(
                 s"rotation state updated to Pending for ${apk.clientName}"
               )
-              newSubscription = subscription
+              newKeyring = keyring
                 .copy(
                   rotation =
-                    subscription.rotation.map(_.copy(pendingRotation = true)),
-                  apiKey = subscription.apiKey
+                    keyring.rotation.map(_.copy(pendingRotation = true)),
+                  apiKey = keyring.apiKey
                     .copy(clientSecret = otoroshiNextSecret.get)
                 )
                 .some
@@ -321,11 +336,11 @@ class ApiKeySecretRotationJob(
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some
-              newSubscription = subscription
+              newKeyring = keyring
                 .copy(
                   rotation =
-                    subscription.rotation.map(_.copy(pendingRotation = true)),
-                  apiKey = subscription.apiKey
+                    keyring.rotation.map(_.copy(pendingRotation = true)),
+                  apiKey = keyring.apiKey
                     .copy(clientSecret = otoroshiActualSecret)
                 )
                 .some
@@ -338,30 +353,25 @@ class ApiKeySecretRotationJob(
                 )
             }
 
-            (newSubscription, notification) match {
-              case (Some(subscription), Some(notification)) =>
+            (newKeyring, notification) match {
+              case (Some(updatedKeyring), Some(notification)) =>
                 for {
+                  // the keyring is the source of truth for the shared api key
+                  _ <-
+                    env.dataStore.keyringRepo
+                      .forTenant(updatedKeyring.tenant)
+                      .save(updatedKeyring)
+                  // propagate the rotated api key + rotation state to every member
                   _ <-
                     env.dataStore.apiSubscriptionRepo
-                      .forTenant(subscription.tenant)
-                      .save(subscription)
-                  aggSubs <-
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(subscription.tenant)
-                      .findNotDeleted(
-                        Json.obj("parent" -> subscription.id.asJson)
-                      )
-                  _ <-
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(subscription.tenant)
+                      .forTenant(updatedKeyring.tenant)
                       .updateManyByQuery(
-                        Json.obj(
-                          "_id" -> Json
-                            .obj("$in" -> JsArray(aggSubs.map(_.id.asJson)))
-                        ),
+                        Json.obj("keyring" -> updatedKeyring.id.asJson),
                         Json.obj(
                           "$set" -> Json.obj(
-                            "rotation" -> subscription.rotation
+                            "apiKey" -> OtoroshiApiKeyFormat
+                              .writes(updatedKeyring.apiKey),
+                            "rotation" -> updatedKeyring.rotation
                               .map(ApiSubscriptionyRotationFormat.writes)
                               .getOrElse(JsNull)
                               .as[JsValue]
@@ -370,7 +380,7 @@ class ApiKeySecretRotationJob(
                       )
                   _ <-
                     env.dataStore.notificationRepo
-                      .forTenant(subscription.tenant)
+                      .forTenant(updatedKeyring.tenant)
                       .save(notification)
                 } yield ()
               case (_, _) =>

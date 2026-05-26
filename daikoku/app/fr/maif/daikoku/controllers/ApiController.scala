@@ -329,13 +329,13 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.asJson))
-          parentSubs <-
+          keyringSiblings <-
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
                 Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+                  "keyring" -> Json.obj(
+                    "$in" -> subscriptions.flatMap(s => s.keyring).map(_.value)
                   )
                 )
               )
@@ -346,7 +346,7 @@ class ApiController(
                 Json.obj(
                   "_id" -> Json.obj(
                     "$in" -> JsArray(
-                      (parentSubs ++ subscriptions).map(_.api.asJson)
+                      (keyringSiblings ++ subscriptions).map(_.api.asJson)
                     )
                   )
                 )
@@ -1223,7 +1223,7 @@ class ApiController(
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
           motivation = motivation,
-          parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
+          keyringId = Some(KeyringId(apiKeyId))
         )
       }
     }
@@ -1754,9 +1754,11 @@ class ApiController(
             apiTeam: Team,
             plan: UsagePlan,
             sub: ApiSubscription,
-            parentSub: Option[ApiSubscription]
+            keyringSiblings: Seq[ApiSubscription]
         ): Future[JsValue] = {
           val name: String = plan.customName
+          // the subscription shares its keyring with at least one other one
+          val aggregated = keyringSiblings.nonEmpty
           val r = sub
             .asAuthorizedJson(
               teamPermission,
@@ -1768,28 +1770,10 @@ class ApiController(
             Json.obj("apiName" -> api.name) ++
             Json.obj("apiVersion" -> api.currentVersion.value) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
-            Json.obj("parentUp" -> false) ++
+            Json.obj("aggregated" -> aggregated) ++
             Json.obj("apiLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/description") ++
             Json.obj("planLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing")
-          sub.parent match {
-            case None => FastFuture.successful(r)
-            case Some(parentId) =>
-              parentSub match {
-                case Some(parent) =>
-                  FastFuture.successful(
-                    r ++ Json.obj("parentUp" -> parent.enabled)
-                  )
-                case None =>
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(ctx.tenant.id)
-                    .findById(parentId.value)
-                    .map {
-                      case None    => r
-                      case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
-                    }
-              }
-
-          }
+          FastFuture.successful(r)
         }
 
         def findSubscriptions(
@@ -1819,23 +1803,21 @@ class ApiController(
               repo
                 .findNotDeleted(
                   Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
+                    "keyring" -> Json
+                      .obj("$in" -> subscriptions.flatMap(_.keyring).map(_.value))
                   )
                 )
-                .flatMap { subs =>
+                .flatMap { keyringMembers =>
+                  val all = (subscriptions ++ keyringMembers).distinctBy(_.id)
                   Future
                     .sequence(
-                      (subscriptions ++ subs)
+                      all
                         .map(sub => {
-                          (sub.parent match {
-                            case Some(_) =>
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .findByIdNotDeleted(sub.api.value)
-                            case None => FastFuture.successful(Some(api))
-                          }).flatMap {
-                            case Some(api) =>
+                          env.dataStore.apiRepo
+                            .forTenant(ctx.tenant.id)
+                            .findByIdNotDeleted(sub.api.value)
+                            .flatMap {
+                            case Some(subApi) =>
                               env.dataStore.usagePlanRepo
                                 .forTenant(ctx.tenant)
                                 .findByIdNotDeleted(sub.plan)
@@ -1844,15 +1826,19 @@ class ApiController(
                                     FastFuture.successful(Json.obj()) //FIXME
                                   case Some(plan) =>
                                     env.dataStore.teamRepo.forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(api.team)
+                                      .findByIdNotDeleted(subApi.team)
                                       .flatMap {
                                         case Some(team) => subscriptionToJson(
-                                          api = api,
+                                          api = subApi,
                                           apiTeam = team,
                                           plan = plan,
                                           sub = sub,
-                                          parentSub = sub.parent.flatMap(p =>
-                                            subscriptions.find(s => s.id == p)
+                                          keyringSiblings = sub.keyring.fold(
+                                            Seq.empty[ApiSubscription]
+                                          )(kid =>
+                                            all.filter(s =>
+                                              s.keyring.contains(kid) && s.id != sub.id
+                                            )
                                           )
                                         )
                                         case None => FastFuture.successful(Json.obj()) //FIXME
@@ -1904,14 +1890,14 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.value))
-          parentSubs <-
+          keyringSiblings <-
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
                 Json.obj(
-                  "_id" -> Json.obj(
+                  "keyring" -> Json.obj(
                     "$in" -> JsArray(
-                      subscriptions.flatMap(s => s.parent).map(_.asJson)
+                      subscriptions.flatMap(s => s.keyring).map(_.asJson)
                     )
                   )
                 )
@@ -1923,7 +1909,7 @@ class ApiController(
                 Json.obj(
                   "_id" -> Json.obj(
                     "$in" -> JsArray(
-                      (subscriptions ++ parentSubs).map(_.api.asJson)
+                      (subscriptions ++ keyringSiblings).map(_.api.asJson)
                     )
                   )
                 )
@@ -2088,7 +2074,11 @@ class ApiController(
         (for {
           subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
             AppError.SubscriptionNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+          keyringSize <- EitherT.liftF[Future, AppError, Long](subscription.keyring match {
+            case Some(kid) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).count(Json.obj("keyring" -> kid.asJson, "_deleted" -> false))
+            case None => Future.successful(0L)
+          })
+          _ <- EitherT.cond[Future][AppError, Unit](keyringSize <= 1, (), AppError.EntityConflict("Subscription is part of aggregation"))
 
           transfer = ApiSubscriptionTransfer(
             id = DatastoreId(IdGenerator.token(16)),
@@ -2152,56 +2142,15 @@ class ApiController(
     }
 
   private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
-    subscription.parent match {
+    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+      tenant.otoroshiSettings.find(_.id == id)
+    } match {
       case None =>
-        EitherT.leftT[Future, JsObject](MissingParentSubscription).value
-      case Some(parentSubscriptionId) =>
-        plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-          tenant.otoroshiSettings.find(_.id == id)
-        } match {
-          case None =>
-            FastFuture.successful(Left(OtoroshiSettingsNotFound))
-          case Some(otoroshiSettings) =>
-            implicit val o: OtoroshiSettings = otoroshiSettings
-            import cats.implicits.*
-            (for {
-              apikey <- EitherT(
-                apiService.extractSubscriptionFromAggregation(
-                  subscription,
-                  tenant,
-                  user
-                )
-              )
-              createdApiKey <-
-                EitherT(otoroshiClient.createApiKey(apikey)(using o))
-              _ <- EitherT.right[AppError](
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant.id)
-                  .save(
-                    subscription.copy(
-                      parent = None,
-                      metadata = Some(
-                        JsObject(
-                          apikey.metadata
-                            .filterNot(i => i._1.startsWith("daikoku_"))
-                            .view
-                            .mapValues(i => JsString(i))
-                            .toSeq
-                        )
-                      ),
-                      apiKey = subscription.apiKey.copy(
-                        clientId = createdApiKey.clientId,
-                        clientSecret = createdApiKey.clientSecret,
-                        clientName = createdApiKey.clientName
-                      ),
-                      bearerToken = createdApiKey.bearer
-                    )
-                  )
-              )
-            } yield {
-              Json.obj("created" -> true)
-            }).value
-        }
+        FastFuture.successful(Left(OtoroshiSettingsNotFound))
+      case Some(otoroshiSettings) =>
+        apiService.makeSubscriptionUnique(subscription, tenant, user)(using
+          otoroshiSettings
+        )
     }
   }
 
@@ -2313,7 +2262,7 @@ class ApiController(
       }
     }
 
-  def deleteApiSubscription(teamId: String, subscriptionId: String, action: Option[String], childId: Option[String]): Action[AnyContent] =
+  def deleteApiSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2328,48 +2277,15 @@ class ApiController(
           (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
 
-            val cleanupPrivatePlan: EitherT[Future, AppError, Unit] =
-              if (plan.visibility == Private)
-                EitherT.right(env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-                  .save(plan.removeAuthorizedTeam(team.id)).map(_ => ()))
-              else EitherT.pure(())
-
             val done = Json.obj("archive" -> "done", "subscriptionId" -> subscriptionId)
 
-            EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-              .find(Json.obj("parent" -> subscription.id.asJson)))
-              .flatMap {
-                case Nil =>
-                  // standalone or child: delegate entirely to DeletionService
-                  for {
-                    _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                    _ <- if (subscription.parent.isEmpty) cleanupPrivatePlan else EitherT.pure[Future, AppError](())
-                  } yield done
-
-                case childs: Seq[ApiSubscription] => action match {
-                  case Some("delete") =>
-                    // delete all children + parent in one shot
-                    for {
-                      _ <- deletionService.deleteSubscriptions(childs ++ Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
-                    } yield done
-
-                  case Some("extraction") =>
-                    // extract each child to a standalone key, then delete parent
-                    for {
-                      _ <- apiService.condenseEitherT(childs.map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user))))
-                      _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
-                    } yield done
-
-                  case _ =>
-                    // promote a specific child (or oldest) then delete parent
-                    val electedId = childId.flatMap(id => childs.find(_.id.value == id)).map(_.id)
-                    for {
-                      _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant, electedChildId = electedId)
-                    } yield done
-                }
-              }.value
+            (for {
+              _ <- deletionService.deleteSubscriptions(
+                Seq(subscription),
+                api,
+                ctx.tenant
+              )
+            } yield done).value
           })
         )
       }

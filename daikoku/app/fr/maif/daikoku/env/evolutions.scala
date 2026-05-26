@@ -883,9 +883,6 @@ object evolution_1613_b extends EvolutionScript {
           val apiId = (action \ "api").as(using json.ApiIdFormat)
           val planId = (action \ "plan").as(using json.UsagePlanIdFormat)
           val teamId = (value \ "team").as(using json.TeamIdFormat)
-          val parentSubscriptionId = (action \ "parentSubscriptionId").asOpt(
-            using json.ApiSubscriptionIdFormat
-          )
           val motivation = (action \ "motivation")
             .asOpt[String]
             .map(m => Json.obj("motivation" -> m))
@@ -921,7 +918,7 @@ object evolution_1613_b extends EvolutionScript {
               from = sender.id.get,
               date = date,
               motivation = motivation,
-              parentSubscriptionId = parentSubscriptionId
+              keyring = None
             )
             _ <- OptionT.liftF(
               dataStore.subscriptionDemandRepo
@@ -943,7 +940,7 @@ object evolution_1613_b extends EvolutionScript {
                 team = teamId,
                 demand = demand.id,
                 step = demand.steps.head.id,
-                parentSubscriptionId = parentSubscriptionId,
+                keyring = None,
                 motivation = (action \ "motivation").asOpt[String]
               )
             )
@@ -1936,6 +1933,120 @@ object evolution_1892 extends EvolutionScript {
   }
 }
 
+object evolution_1900 extends EvolutionScript {
+  override def version: String = "19.0.0"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] = {
+
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) =>
+      {
+        logger.info(
+          s"Begin evolution $version - migrate parent/child subscriptions to keyrings"
+        )
+
+        given ExecutionContext = ec
+
+        // The whole migration is idempotent (each step is guarded so it only
+        // touches not-yet-migrated rows) and ordered (steps are chained, not
+        // run as eager vals). A keyring reuses its root subscription's id, which
+        // keeps the linking self-contained.
+        for {
+          // 1. create one keyring per root subscription (no parent) targeting an
+          // otoroshi instance. Admin/keyless subscriptions are skipped.
+          _ <- dataStore.keyringRepo
+            .forAllTenant()
+            .execute(
+              query = """
+                |INSERT INTO keyrings (_id, _deleted, content)
+                |SELECT s._id,
+                |       false,
+                |       jsonb_build_object(
+                |         '_id', s._id,
+                |         '_tenant', s.content->>'_tenant',
+                |         '_deleted', false,
+                |         'apiKey', s.content->'apiKey',
+                |         'otoroshiSettings', p.content->'otoroshiTarget'->>'otoroshiSettings',
+                |         'createdAt', s.content->'createdAt',
+                |         'rotation', s.content->'rotation',
+                |         'bearerToken', s.content->'bearerToken',
+                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations'
+                |       )
+                |FROM api_subscriptions s
+                |JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
+                |WHERE s._deleted = false
+                |  AND s.content->>'parent' IS NULL
+                |  AND s.content->>'keyring' IS NULL
+                |  AND p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL;
+                |""".stripMargin
+            )
+          // 2. attach root subscriptions to their keyring (= own id), drop 'parent'
+          _ <- dataStore.apiSubscriptionRepo
+            .forAllTenant()
+            .execute(
+              query = """
+                |UPDATE api_subscriptions s
+                |SET content = jsonb_set(s.content - 'parent', '{keyring}', to_jsonb(s._id))
+                |WHERE s._deleted = false
+                |  AND s.content->>'parent' IS NULL
+                |  AND s.content->>'keyring' IS NULL
+                |  AND EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s._id);
+                |""".stripMargin
+            )
+          // 3. attach child subscriptions to their parent's keyring, drop 'parent'
+          _ <- dataStore.apiSubscriptionRepo
+            .forAllTenant()
+            .execute(
+              query = """
+                |UPDATE api_subscriptions s
+                |SET content = jsonb_set(s.content - 'parent', '{keyring}', to_jsonb(s.content->>'parent'))
+                |WHERE s._deleted = false
+                |  AND s.content->>'parent' IS NOT NULL
+                |  AND s.content->>'keyring' IS NULL
+                |  AND EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s.content->>'parent');
+                |""".stripMargin
+            )
+          // 4. pending demands: 'parentSubscription' (a sub id) -> the keyring of
+          // that subscription
+          _ <- dataStore.subscriptionDemandRepo
+            .forAllTenant()
+            .execute(
+              query = """
+                |UPDATE subscription_demands d
+                |SET content = jsonb_set(d.content - 'parentSubscription', '{keyring}', to_jsonb(s.content->>'keyring'))
+                |FROM api_subscriptions s
+                |WHERE d.content->>'parentSubscription' = s._id
+                |  AND s.content->>'keyring' IS NOT NULL;
+                |""".stripMargin
+            )
+          // 5. same for pending ApiSubscriptionDemand notifications
+          _ <- dataStore.notificationRepo
+            .forAllTenant()
+            .execute(
+              query = """
+                |UPDATE notifications n
+                |SET content = jsonb_set(n.content #- '{action,parentSubscriptionId}', '{action,keyring}', to_jsonb(s.content->>'keyring'))
+                |FROM api_subscriptions s
+                |WHERE n.content->'action'->>'parentSubscriptionId' = s._id
+                |  AND s.content->>'keyring' IS NOT NULL;
+                |""".stripMargin
+            )
+        } yield Done
+      }
+  }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1960,7 +2071,8 @@ object evolutions {
       evolution_1840_b,
       evolution_1840_c,
       evolution_1860,
-      evolution_1892
+      evolution_1892,
+      evolution_1900
     )
   def run(
       dataStore: DataStore,

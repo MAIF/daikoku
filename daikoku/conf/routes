@@ -139,7 +139,7 @@ GET		  /api/teams/:teamId/subscriptions/:id/_transfer          fr.maif.daikoku.c
 PUT		  /api/teams/:teamId/subscriptions/:id/_retrieve          fr.maif.daikoku.controllers.ApiController.transferSubscription(teamId, id)
 POST	  /api/teams/:teamId/subscriptions/:id/_makeUnique        fr.maif.daikoku.controllers.ApiController.makeUniqueSubscription(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.updateApiSubscription(teamId, id)
-DELETE  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.deleteApiSubscription(teamId, id, action: Option[String] ?= Some("promotion"), child: Option[String] ?= None)
+DELETE  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.deleteApiSubscription(teamId, id)
 POST    /api/teams/:teamId/subscriptions/:id/_rotation          fr.maif.daikoku.controllers.ApiController.toggleApiKeyRotation(teamId, id)
 POST    /api/teams/:teamId/subscriptions/:id/_refresh           fr.maif.daikoku.controllers.ApiController.regenerateApiKeySecret(teamId, id)
 POST    /api/subscriptions/_init                                fr.maif.daikoku.controllers.ApiController.initSubscriptions()

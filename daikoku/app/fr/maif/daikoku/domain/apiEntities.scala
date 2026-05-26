@@ -752,6 +752,15 @@ case class AuthorizedEntities(
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
+
+  /** The authorized entities as a flat list of [[OtoroshiEntity]], used to
+    * scope api key restrictions. Legacy `services` have no matching kind and
+    * are ignored.
+    */
+  def asOtoroshiEntities: Seq[OtoroshiEntity] =
+    groups.toSeq.map(g =>
+      OtoroshiEntity(OtoroshiEntityKind.Group, g.value)
+    ) ++ routes.toSeq.map(r => OtoroshiEntity(OtoroshiEntityKind.Route, r.value))
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
       a.groups.contains(g)

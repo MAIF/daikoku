@@ -495,6 +495,8 @@ trait ApiIssueRepo extends TenantCapableRepo[ApiIssue, ApiIssueId]
 trait ApiSubscriptionRepo
     extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
 
+trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId]
+
 trait JobInformationRepo extends TenantCapableRepo[JobInformation, DatastoreId]
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
@@ -600,6 +602,8 @@ trait DataStore {
   def apiRepo: ApiRepo
 
   def apiSubscriptionRepo: ApiSubscriptionRepo
+
+  def keyringRepo: KeyringRepo
 
   def apiDocumentationPageRepo: ApiDocumentationPageRepo
 

@@ -209,6 +209,16 @@ object SchemaDefinition {
           .forTenant(ctx._2.tenant)
           .findByIds(demands)
     )(using HasId[SubscriptionDemand, DemandId](_.id))
+    lazy val keyringsFetcher = Fetcher(
+      config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
+      fetch = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          keyrings: Seq[KeyringId]
+      ) =>
+        ctx._1.keyringRepo
+          .forTenant(ctx._2.tenant)
+          .findByIds(keyrings)
+    )(using HasId[Keyring, KeyringId](_.id))
     lazy val usagePlansFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
@@ -550,10 +560,31 @@ object SchemaDefinition {
       )
     )
 
+    lazy val OtoroshiEntityType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      OtoroshiEntity
+    ](
+      ObjectTypeDescription(
+        "An Otoroshi entity (api, group or route) an api key is authorized on"
+      ),
+      ReplaceField(
+        "kind",
+        Field("kind", StringType, resolve = _.value.kind.value)
+      )
+    )
     lazy val ApiKeyRestrictionPathType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictionPath
-    ]()
+    ](
+      ReplaceField(
+        "authorizedEntity",
+        Field(
+          "authorizedEntity",
+          OptionType(OtoroshiEntityType),
+          resolve = _.value.authorizedEntity
+        )
+      )
+    )
     lazy val ApiKeyRestrictionsType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictions
@@ -1560,6 +1591,46 @@ object SchemaDefinition {
       )
     )
 
+    lazy val KeyringType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      Keyring
+    ] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+      "KeyringType",
+      "A keyring: the entity owning the Otoroshi api key shared by aggregated subscriptions",
+      () =>
+        fields[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+          Field("_id", StringType, resolve = _.value.id.value),
+          Field(
+            "tenant",
+            OptionType(TenantType),
+            resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
+          ),
+          Field("deleted", BooleanType, resolve = _.value.deleted),
+          Field(
+            "customName",
+            OptionType(StringType),
+            resolve = _.value.customName
+          ),
+          Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
+          Field(
+            "otoroshiSettings",
+            StringType,
+            resolve = _.value.otoroshiSettings.value
+          ),
+          Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
+          Field(
+            "rotation",
+            OptionType(ApiSubscriptionRotationType),
+            resolve = _.value.rotation
+          ),
+          Field(
+            "bearerToken",
+            OptionType(StringType),
+            resolve = _.value.bearerToken
+          )
+        )
+    )
+
     lazy val ApiSubscriptionType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiSubscription
@@ -1663,6 +1734,11 @@ object SchemaDefinition {
             "parent",
             OptionType(ApiSubscriptionType),
             resolve = ctx => apiSubscriptionsFetcher.deferOpt(ctx.value.parent)
+          ),
+          Field(
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field(
             "lastUsage",
@@ -2046,9 +2122,9 @@ object SchemaDefinition {
               resolve = _.value.apiSubscription
             ),
             Field(
-              "parentSubscription",
-              OptionType(ApiSubscriptionType),
-              resolve = _.value.parentSubscription
+              "keyring",
+              OptionType(KeyringType),
+              resolve = _.value.keyring
             ),
             Field(
               "accessibleResources",
@@ -2378,10 +2454,9 @@ object SchemaDefinition {
             resolve = _.value.motivation
           ),
           Field(
-            "parentSubscriptionId",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx =>
-              apiSubscriptionsFetcher.deferOpt(ctx.value.parentSubscriptionId)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           )
         )
     )
@@ -2414,10 +2489,9 @@ object SchemaDefinition {
             resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
           ),
           Field(
-            "parentSubscriptionId",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx =>
-              apiSubscriptionsFetcher.deferOpt(ctx.value.parentSubscriptionId)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field(
             "motivation",
