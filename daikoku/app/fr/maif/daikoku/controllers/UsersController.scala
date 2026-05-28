@@ -44,6 +44,7 @@ import javax.imageio.ImageIO
 class UsersController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     cc: ControllerComponents,
     deletionService: DeletionService
@@ -511,7 +512,7 @@ class UsersController(
     }
 
   def checkTokenInvitation() =
-    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
+    DaikokuUnauthenticatedAction.async(parse.json) { ctx =>
       // todo: log audit trace
       val body = ctx.request.body
 
