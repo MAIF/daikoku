@@ -37,6 +37,8 @@ type ExtraProps = {
   getCount: (data: string) => number
 };
 
+
+
 const GenericPlaceholder = (props: any & { selectProps: ExtraProps }) => {
   const { translate } = useContext(I18nContext);
   const { selectProps } = props;
@@ -386,13 +388,7 @@ export const ApiList = (props: ApiListProps) => {
             content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) => Services.createTeamApi(team._id, api)
               .then((maybeApi) => {
                 queryClient.invalidateQueries({ queryKey: ["data"] })
-                return maybeApi
-              })
-              .then((maybeApi) => {
                 toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
-                return maybeApi
-              })
-              .then((maybeApi) => {
                 if (!isError(maybeApi)) {
                   navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
                 }
@@ -512,7 +508,6 @@ export const ApiList = (props: ApiListProps) => {
     }
   }
 
-
   //--- MARK: Rendering
   if (myTeamsRequest.isLoading) {
     return <Spinner />
@@ -531,7 +526,11 @@ export const ApiList = (props: ApiListProps) => {
           </div>
           {canCreateApi && (
             <div className="d-flex gap-1">
-              <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi({})}>
+              <button
+                type="button"
+                className='btn btn-outline-primary d-flex align-items-center gap-2'
+                onClick={() => createApi({})}
+              >
                 <Plus />
                 <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
               </button>
@@ -644,7 +643,7 @@ export const ApiList = (props: ApiListProps) => {
                             table.getToggleAllPageRowsSelectedHandler()(e)
                           }}
                         />
-  
+
                       </label> */}
                   {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
                   {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
