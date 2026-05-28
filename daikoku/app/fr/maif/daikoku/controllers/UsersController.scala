@@ -539,7 +539,7 @@ class UsersController(
               case _ =>
                 BadRequest(
                   Json.obj(
-                    "error" -> "You're token is invalid, expired or you are already in the team"
+                    "error" -> "Your token is invalid, expired or you are already in the team"
                   )
                 )
             }

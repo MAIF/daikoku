@@ -302,7 +302,8 @@ class TeamController(
                           env.dataStore.withTransaction {
                             for {
                               _ <- teamRepo.save(newTeam)
-                              _ <- emailVerificationRepo.deleteById(emailVerification.id)
+                              _ <- emailVerificationRepo
+                                .deleteById(emailVerification.id)
                             } yield ()
                           }
                         )
@@ -820,14 +821,21 @@ class TeamController(
           )
 
           (for {
-            save <- EitherT.liftF[Future, AppError, Boolean](
-              env.dataStore.userRepo.save(invitedUser)
+            _ <- EitherT(
+              env.dataStore.userRepo.save(invitedUser).map {
+                case true  => Right(())
+                case false => Left(AppError.UnexpectedError)
+              }
             )
-            _ <- EitherT.cond[Future][AppError, Unit](
-              save,
-              (),
-              AppError.UnexpectedError
-            )
+
+//            save <- EitherT.liftF[Future, AppError, Boolean](
+//              env.dataStore.userRepo.save(invitedUser)
+//            )
+//            _ <- EitherT.cond[Future][AppError, Unit](
+//              save,
+//              (),
+//              AppError.UnexpectedError
+//            )
             notifSave <- EitherT.liftF[Future, AppError, Boolean](
               env.dataStore.notificationRepo
                 .forTenant(ctx.tenant)
