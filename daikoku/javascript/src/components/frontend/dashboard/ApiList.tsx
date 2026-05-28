@@ -504,13 +504,7 @@ export const ApiList = (props: ApiListProps) => {
             content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) => Services.createTeamApi(team._id, api)
               .then((maybeApi) => {
                 queryClient.invalidateQueries({ queryKey: ["data"] })
-                return maybeApi
-              })
-              .then((maybeApi) => {
                 toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
-                return maybeApi
-              })
-              .then((maybeApi) => {
                 if (!isError(maybeApi)) {
                   navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
                 }
@@ -595,7 +589,11 @@ export const ApiList = (props: ApiListProps) => {
           </div>
           {canCreateApi && (
             <div className="d-flex gap-1">
-              <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi({})}>
+              <button
+                type="button"
+                className='btn btn-outline-primary d-flex align-items-center gap-2'
+                onClick={() => createApi({})}
+              >
                 <Plus />
                 <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
               </button>

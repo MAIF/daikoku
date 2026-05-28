@@ -13,7 +13,7 @@ export const Widget = (props: PropsWithChildren<WidgetProps>) => {
     <div className={classNames("widget d-flex flex-column", props.size)}>
       <h4 className='widget-title'>{props.title}</h4>
       {props.isLoading && <Spinner />}
-      {props.isError && <div className='error'>oops</div>}
+      {props.isError && <div className='error'>An Error occured on fetching demands</div>}
       {!props.isLoading && !props.isError && <div className='flex-grow widget-body'>{props.children}</div>}
     </div>
   )
