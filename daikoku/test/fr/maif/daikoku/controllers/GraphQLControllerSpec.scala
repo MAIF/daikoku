@@ -6,6 +6,7 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.ApiWithPlans
+import fr.maif.daikoku.domain.ApiState.Created
 import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
@@ -234,7 +235,7 @@ class GraphQLControllerSpec()
         tenant = _tenant.id,
         team = teamOwnerId,
         lastUpdate = DateTime.now(),
-        name = s"Api - public v1",
+        name = s"Api - public",
         smallDescription = "A small API to play with Daikoku exposition",
         tags = Set.empty,
         description = "# My Awesome API",
@@ -278,7 +279,7 @@ class GraphQLControllerSpec()
         tenant = _tenant.id,
         team = teamOwnerId,
         lastUpdate = DateTime.now(),
-        name = s"Api - public v2",
+        name = s"Api - public",
         smallDescription = "A small API to play with Daikoku exposition",
         tags = Set.empty,
         description = "# My Awesome API",
@@ -324,7 +325,7 @@ class GraphQLControllerSpec()
         tenant = _tenant.id,
         team = teamOwnerId,
         lastUpdate = DateTime.now(),
-        name = s"Api - public v3",
+        name = s"Api - public",
         smallDescription = "A small API to play with Daikoku exposition",
         tags = Set("test_tag"),
         categories = Set("test_category"),
@@ -485,9 +486,6 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPis.some
       )(using _tenant, daikokuAdminSession)
       respDaikokuAdmin.status mustBe 200
-
-      logger.info(Json.prettyPrint(respDaikokuAdmin.json))
-      pending
 
       (respDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 17
@@ -686,6 +684,51 @@ class GraphQLControllerSpec()
       respOwnerAdminByResearch.status mustBe 200
       (respOwnerAdminByResearch.json \ "data" \ "visibleApis" \ "totalFiltered")
         .as[Int] mustBe 1
+
+
+      // pass apiV3 to draft ==> all user see v2 but owner see v3
+      // 10 public API + private + pwa + versionedV2 + apigroup = 14
+      Await.result(daikokuComponents.env.dataStore.apiRepo.forTenant(tenant)
+        .save(publicApiV3.copy(state = Created)), 5.seconds)
+
+      val respConsumerAdminWithDraft = httpJsonCallBlocking(
+        path = s"/api/search",
+        "POST",
+        body = graphQlRequestAllVisibleAPis.some
+      )(using _tenant, teamConsumerAdminSession)
+      respConsumerAdminWithDraft.status mustBe 200
+      (respConsumerAdminWithDraft.json \ "data" \ "visibleApis" \ "total")
+      .as[Int] mustBe 14
+      //check v2 instead of v3
+      logger.info(Json.prettyPrint(respConsumerAdminWithDraft.json))
+      (respConsumerAdminWithDraft.json \ "data" \ "visibleApis" \ "apis")
+        .as[JsArray]
+        .value
+        .find(jsValue => (jsValue \ "api" \ "_id").as[String] == "public_api_V2") mustBe defined
+      (respConsumerAdminWithDraft.json \ "data" \ "visibleApis" \ "apis")
+        .as[JsArray]
+        .value
+        .find(jsValue => (jsValue \ "api" \ "_id").as[String] == "public_api_V3") mustBe empty
+
+      //10 public API + draft + private + pwa + versionedV3 + apigroup = 15
+      val respOwnerAdminWithDraft = httpJsonCallBlocking(
+        path = s"/api/search",
+        "POST",
+        body = graphQlRequestAllVisibleAPis.some
+      )(using _tenant, teamOwnerAdminSession)
+      respOwnerAdminWithDraft.status mustBe 200
+      (respOwnerAdminWithDraft.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 15
+      //check v2 instead of v3
+      (respOwnerAdminWithDraft.json \ "data" \ "visibleApis" \ "apis")
+        .as[JsArray]
+        .value
+        .find(jsValue => (jsValue \ "api" \ "_id").as[String] == "public_api_V3") mustBe defined
+      (respOwnerAdminWithDraft.json \ "data" \ "visibleApis" \ "apis")
+        .as[JsArray]
+        .value
+        .find(jsValue => (jsValue \ "api" \ "_id").as[String] == "public_api_V2") mustBe empty
+
     }
 
     "list all tags" in {
