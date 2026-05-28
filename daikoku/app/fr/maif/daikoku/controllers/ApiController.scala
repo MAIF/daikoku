@@ -2988,14 +2988,6 @@ class ApiController(
               case JsSuccess(api, _) =>
                 checkApiNameUniqueness(id, name, ctx.tenant.id)
                   .flatMap {
-                    case true if api.state == ApiState.Created && api.isDefault =>
-                      FastFuture.successful(
-                        Conflict(
-                          Json.obj(
-                            "error" -> "Api is draft and isDefault"
-                          )
-                        )
-                      )
                     case true =>
                       FastFuture.successful(
                         Conflict(
