@@ -603,3 +603,39 @@ export type Issue = {
   by: IUserSimple;
   tags: Array<IIssuesTag>;
 };
+
+export interface ApiPricingProps {
+  api: IApi;
+  myTeams: Array<ITeamSimple>;
+  ownerTeam: ITeamSimple;
+  subscriptions: Array<ISubscription>;
+  inProgressDemands: Array<ISubscriptionDemand>;
+  askForApikeys: (x: {
+    team: string;
+    plan: IUsagePlan;
+    apiKey?: ISubscription;
+    motivation?: object;
+  }) => Promise<void>;
+}
+
+
+export interface ITeamSelector {
+  teams: Array<ITeamSimple>;
+  pendingTeams: Array<string>;
+  acceptedTeams: Array<string>;
+  allowMultipleDemand?: boolean;
+  showApiKeySelectModal: (teamId: string) => void;
+  plan: IUsagePlan;
+}
+export interface OtoroshiEntitiesSelectorProps {
+  rawValues: IOtoroshiTarget
+  onChange: (item: any) => void,
+  translate: (x: string) => string
+  ownerTeam: ITeamSimple
+}
+export interface OtoroshiEntity {
+  label: string
+  value: string
+  type: 'route' | 'group' | 'service'
+  enabled: boolean
+}

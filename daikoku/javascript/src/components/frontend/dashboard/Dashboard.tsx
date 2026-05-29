@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
 import Clock from 'react-feather/dist/icons/clock'
-import Sliders from 'react-feather/dist/icons/sliders'
 import { useNavigate } from "react-router-dom"
 
 
@@ -10,6 +9,7 @@ import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { isError } from "../../../types"
 import { ApiList } from "./ApiList"
+import {Sliders} from "react-feather";
 
 type NewHomeProps = {
   teamId?: string
