@@ -1363,25 +1363,24 @@ class ApiControllerSpec()
         )
       }
 
-      // await until operation is run by queuejob
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // test if user subscriptions deleted
+        val _maybeSubscription = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(personalSubscription.id),
+          5.second
+        )
+        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-      // test if user subscriptions deleted
-      val _maybeSubscription = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(personalSubscription.id),
-        5.second
-      )
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+
 
       // test if plans are deleted
       val _maybePlans = Await.result(

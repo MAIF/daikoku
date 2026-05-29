@@ -376,7 +376,14 @@ class DeletionServiceSpec
 
       // await until operation is run by queuejob
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // test if user subscriptions deleted
+        val _maybeSubscription = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(personalSubscription.id),
+          5.second
+        )
+        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -384,15 +391,7 @@ class DeletionServiceSpec
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-      // test if user subscriptions deleted
-      val _maybeSubscription = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(personalSubscription.id),
-        5.second
-      )
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+
 
       // test if plans are deleted
       val _maybePlans = Await.result(
@@ -966,9 +965,15 @@ class DeletionServiceSpec
         )
       }
 
-      // await until operation is run by queuejob
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // test if user subscriptions deleted
+        val _maybeSubscription = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(personalSubscription.id),
+          5.second
+        )
+        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -976,15 +981,6 @@ class DeletionServiceSpec
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-      // test if user subscriptions deleted
-      val _maybeSubscription = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(personalSubscription.id),
-        5.second
-      )
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
 
       // test if plans are deleted
       val _maybePlans = Await.result(
@@ -1244,21 +1240,19 @@ class DeletionServiceSpec
 
       // await until operation is run by queuejob
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // test if user subscriptions deleted
+        val _maybeSubscription = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(personalSubscription.id),
+          5.second
+        )
+        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
-
-      // test if user subscriptions deleted
-      val _maybeSubscription = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(personalSubscription.id),
-        5.second
-      )
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
 
       // test if plans are deleted
       val _maybePlans = Await.result(
@@ -1448,21 +1442,20 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // child subscription must be marked deleted
+        val maybeChildSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(childSub.id),
+          5.second
+        )
+        maybeChildSub.isDefined && maybeChildSub.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
-      // child subscription must be marked deleted
-      val maybeChildSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(childSub.id),
-        5.second
-      )
-      maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.deleted) mustBe true
+
 
       // parent subscription must still be alive
       val maybeParentSub = Await.result(
@@ -1625,9 +1618,20 @@ class DeletionServiceSpec
           5.second
         )
 
+
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // parent subscription must mark as deleted
+        val maybeParentSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(parentSub.id),
+          5.second
+        )
+        logger.warn(s"$maybeParentSub")
+        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
@@ -1642,17 +1646,6 @@ class DeletionServiceSpec
       maybeChildSub.isDefined mustBe true
       maybeChildSub.forall(_.deleted) mustBe false
       maybeChildSub.forall(_.parent.isEmpty) mustBe true
-
-      // parent subscription must mark as deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      logger.warn(s"$maybeParentSub")
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
 
       // otoroshi key must still exist with only childRoute as authorized entity
       val respOto = httpJsonCallBlocking(
@@ -1849,21 +1842,19 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // parent subscription must be deleted
+        val maybeParentSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(parentSub.id),
+          5.second
+        )
+        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
-      // parent subscription must be deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
 
       // childSub1 (oldest) must be elected as new parent: alive, no parent field
       val maybeChildSub1 = Await.result(
@@ -2036,21 +2027,21 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // child sub must be deleted
+        val maybeChildSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(childSub.id),
+          5.second
+        )
+        maybeChildSub.isDefined && maybeChildSub.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
-      // child sub must be deleted
-      val maybeChildSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(childSub.id),
-        5.second
-      )
-      maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.deleted) mustBe true
+
 
       // parent sub must still be alive
       val maybeParentSub = Await.result(
@@ -2204,21 +2195,20 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // parent sub must be deleted
+        val maybeParentSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(parentSub.id),
+          5.second
+        )
+        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
-      // parent sub must be deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
+
 
       // child sub must be alive and promoted to standalone (no parent)
       val maybeChildSub = Await.result(
@@ -2379,21 +2369,19 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // parent sub must be deleted
+        val maybeParentSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(parentSub.id),
+          5.second
+        )
+        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
-
-      // parent sub must be deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
 
       // child sub must be alive and promoted to standalone (no parent)
       val maybeChildSub = Await.result(
@@ -2563,21 +2551,20 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // parent sub must be deleted
+        val maybeParentSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(parentSub.id),
+          5.second
+        )
+        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
-      // parent sub must be deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
+
 
       // child sub must be alive and promoted to standalone (no parent)
       val maybeChildSub = Await.result(
@@ -2687,21 +2674,19 @@ class DeletionServiceSpec
         )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // consumer subscription must be deleted
+        val maybeSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(consumerSub.id),
+          5.second
+        )
+        maybeSub.isDefined && maybeSub.forall(_.deleted)
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
-
-      // consumer subscription must be deleted
-      val maybeSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(consumerSub.id),
-        5.second
-      )
-      maybeSub.isDefined mustBe true
-      maybeSub.forall(_.deleted) mustBe true
 
       // otoroshi key must be deleted
       val respOto = httpJsonCallBlocking(
@@ -3405,47 +3390,41 @@ class DeletionServiceSpec
       )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        val remaining = Await
+          .result(
+            daikokuComponents.env.dataStore.notificationRepo
+              .forTenant(tenant)
+              .findNotDeleted(Json.obj()),
+            5.second
+          )
+          .map(_.id.value)
+          .toSet
+
+        // deleted — action.subscription = sub.id
+        !remaining.contains("n-sub-transfer-success") &&
+        !remaining.contains("n-key-deletion-v2") &&
+        !remaining.contains("n-key-rotation-in-progress-v2") &&
+        !remaining.contains("n-key-rotation-ended-v2") &&
+        !remaining.contains("n-key-refresh-v2") &&
+        // deleted — action.plan = plan.id
+        !remaining.contains("n-sub-accept") &&
+        !remaining.contains("n-sub-reject") &&
+        !remaining.contains("n-sub-demand") &&
+        !remaining.contains("n-checkout") &&
+        // survived
+        remaining.contains("n-api-access") &&
+        remaining.contains("n-team-invitation") &&
+        remaining.contains("n-account-creation") &&
+        remaining.contains("n-oto-sync-sub-error") &&
+        remaining.contains("n-oto-sync-api-error") &&
+        remaining.contains("n-new-post") &&
+        remaining.contains("n-new-issue") &&
+        remaining.contains("n-new-comment") &&
+        remaining.contains("n-new-post-v2") &&
+        remaining.contains("n-new-issue-v2") &&
+        remaining.contains("n-new-comment-v2") &&
+        remaining.contains("n-transfer-ownership")
       }
-      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().isEmpty
-      }
-
-      val remaining = Await
-        .result(
-          daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
-          5.second
-        )
-        .map(_.id.value)
-        .toSet
-
-      // deleted — action.subscription = sub.id
-      remaining must not contain "n-sub-transfer-success"
-      remaining must not contain "n-key-deletion-v2"
-      remaining must not contain "n-key-rotation-in-progress-v2"
-      remaining must not contain "n-key-rotation-ended-v2"
-      remaining must not contain "n-key-refresh-v2"
-      // deleted — action.plan = plan.id
-      remaining must not contain "n-sub-accept"
-      remaining must not contain "n-sub-reject"
-      remaining must not contain "n-sub-demand"
-      remaining must not contain "n-checkout"
-
-      // survived
-      remaining must contain("n-api-access")
-      remaining must contain("n-team-invitation")
-      remaining must contain("n-account-creation")
-      remaining must contain("n-oto-sync-sub-error")
-      remaining must contain("n-oto-sync-api-error")
-      remaining must contain("n-new-post")
-      remaining must contain("n-new-issue")
-      remaining must contain("n-new-comment")
-      remaining must contain("n-new-post-v2")
-      remaining must contain("n-new-issue-v2")
-      remaining must contain("n-new-comment-v2")
-      remaining must contain("n-transfer-ownership")
     }
 
     "clean up action.api and action.subscription notifications when an api is deleted" in {
@@ -3530,47 +3509,41 @@ class DeletionServiceSpec
       )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        val remaining = Await
+          .result(
+            daikokuComponents.env.dataStore.notificationRepo
+              .forTenant(tenant)
+              .findNotDeleted(Json.obj()),
+            5.second
+          )
+          .map(_.id.value)
+          .toSet
+
+        // deleted — action.subscription = sub.id
+        !remaining.contains("n-sub-transfer-success") &&
+        // deleted — action.api = api.id (V2 types + typed actions)
+        !remaining.contains("n-api-access") &&
+        !remaining.contains("n-sub-accept") &&
+        !remaining.contains("n-sub-reject") &&
+        !remaining.contains("n-sub-demand") &&
+        !remaining.contains("n-key-deletion-v2") &&
+        !remaining.contains("n-key-rotation-in-progress-v2") &&
+        !remaining.contains("n-key-rotation-ended-v2") &&
+        !remaining.contains("n-key-refresh-v2") &&
+        !remaining.contains("n-new-post-v2") &&
+        !remaining.contains("n-new-issue-v2") &&
+        !remaining.contains("n-new-comment-v2") &&
+        !remaining.contains("n-transfer-ownership") &&
+        !remaining.contains("n-checkout") &&
+        !remaining.contains("n-new-post") &&
+        !remaining.contains("n-new-issue") &&
+        !remaining.contains("n-new-comment") &&
+        // survived — legacy types whose api field is not an id, or no api field
+        remaining.contains("n-team-invitation") &&
+        remaining.contains("n-account-creation") &&
+        remaining.contains("n-oto-sync-sub-error") &&
+        remaining.contains("n-oto-sync-api-error")
       }
-      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().isEmpty
-      }
-
-      val remaining = Await
-        .result(
-          daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
-          5.second
-        )
-        .map(_.id.value)
-        .toSet
-
-      // deleted — action.subscription = sub.id
-      remaining must not contain "n-sub-transfer-success"
-      // deleted — action.api = api.id (V2 types + typed actions)
-      remaining must not contain "n-api-access"
-      remaining must not contain "n-sub-accept"
-      remaining must not contain "n-sub-reject"
-      remaining must not contain "n-sub-demand"
-      remaining must not contain "n-key-deletion-v2"
-      remaining must not contain "n-key-rotation-in-progress-v2"
-      remaining must not contain "n-key-rotation-ended-v2"
-      remaining must not contain "n-key-refresh-v2"
-      remaining must not contain "n-new-post-v2"
-      remaining must not contain "n-new-issue-v2"
-      remaining must not contain "n-new-comment-v2"
-      remaining must not contain "n-transfer-ownership"
-      remaining must not contain "n-checkout"
-      remaining must not contain "n-new-post"
-      remaining must not contain "n-new-issue"
-      remaining must not contain "n-new-comment"
-
-      // survived — legacy types whose api field is not an id, or no api field
-      remaining must contain("n-team-invitation")
-      remaining must contain("n-account-creation")
-      remaining must contain("n-oto-sync-sub-error")
-      remaining must contain("n-oto-sync-api-error")
     }
 
     "clean up api, subscription and team notifications when a team is deleted" in {
@@ -3655,44 +3628,40 @@ class DeletionServiceSpec
         5.second
       )
 
+      var remaining = Set[String]()
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
-      }
-      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().isEmpty
-      }
+        remaining = Await
+          .result(
+            daikokuComponents.env.dataStore.notificationRepo
+              .forTenant(tenant)
+              .findNotDeleted(Json.obj()),
+            5.second
+          )
+          .map(_.id.value)
+          .toSet
 
-      val remaining = Await
-        .result(
-          daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
-          5.second
-        )
-        .map(_.id.value)
-        .toSet
-
-      // deleted — via deleteSubscriptions (action.subscription)
-      remaining must not contain "n-sub-transfer-success"
-      remaining must not contain "n-key-deletion-v2"
-      remaining must not contain "n-key-rotation-in-progress-v2"
-      remaining must not contain "n-key-rotation-ended-v2"
-      remaining must not contain "n-key-refresh-v2"
-      // deleted — via deleteTeamNotifications (type filter + action.team = teamOwnerId)
-      remaining must not contain "n-team-invitation" // TeamInvitation + team=teamOwnerId
-      remaining must not contain "n-transfer-ownership" // TransferApiOwnership + team=teamOwnerId
-      // deleted — via deleteApiNotifications (action.api = api.id)
-      remaining must not contain "n-api-access"
-      remaining must not contain "n-sub-accept"
-      remaining must not contain "n-sub-reject"
-      remaining must not contain "n-sub-demand"
-      remaining must not contain "n-new-post-v2"
-      remaining must not contain "n-new-issue-v2"
-      remaining must not contain "n-new-comment-v2"
-      remaining must not contain "n-checkout"
-      remaining must not contain "n-new-post"
-      remaining must not contain "n-new-issue"
-      remaining must not contain "n-new-comment"
+        // deleted — via deleteSubscriptions (action.subscription)
+        !remaining.contains("n-sub-transfer-success") &&
+        !remaining.contains("n-key-deletion-v2") &&
+        !remaining.contains("n-key-rotation-in-progress-v2") &&
+        !remaining.contains("n-key-rotation-ended-v2") &&
+        !remaining.contains("n-key-refresh-v2") &&
+        // deleted — via deleteTeamNotifications (type filter + action.team = teamOwnerId)
+        !remaining.contains("n-team-invitation") && // TeamInvitation + team=teamOwnerId
+        !remaining.contains("n-transfer-ownership") && // TransferApiOwnership + team=teamOwnerId
+        // deleted — via deleteApiNotifications (action.api = api.id)
+        !remaining.contains("n-api-access") &&
+        !remaining.contains("n-sub-accept") &&
+        !remaining.contains("n-sub-reject") &&
+        !remaining.contains("n-sub-demand") &&
+        !remaining.contains("n-new-post-v2") &&
+        !remaining.contains("n-new-issue-v2") &&
+        !remaining.contains("n-new-comment-v2") &&
+        !remaining.contains("n-checkout") &&
+        !remaining.contains("n-new-post") &&
+        !remaining.contains("n-new-issue") &&
+        !remaining.contains("n-new-comment")
+      }
 
       // survived
       remaining must contain("n-account-creation")
@@ -3769,26 +3738,22 @@ class DeletionServiceSpec
         5.second
       )
 
+      var remaining = Set[String]()
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
-      }
-      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().isEmpty
+        remaining = Await
+          .result(
+            daikokuComponents.env.dataStore.notificationRepo
+              .forTenant(tenant)
+              .findNotDeleted(Json.obj()),
+            5.second
+          )
+          .map(_.id.value)
+          .toSet
+
+        // deleted — action.user = user.id
+        !remaining.contains("n-team-invitation") && !remaining.contains("n-new-comment-v2")
       }
 
-      val remaining = Await
-        .result(
-          daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
-          5.second
-        )
-        .map(_.id.value)
-        .toSet
-
-      // deleted — action.user = user.id
-      remaining must not contain "n-team-invitation" // TeamInvitation(_, user.id)
-      remaining must not contain "n-new-comment-v2" // NewCommentOnIssueV2(_, _, user.id)
 
       // survived — all 23 others
       remaining must contain("n-api-access")
