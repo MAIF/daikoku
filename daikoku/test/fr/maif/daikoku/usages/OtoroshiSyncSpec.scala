@@ -1314,7 +1314,7 @@ class OtoroshiSyncSpec()
           Seq(consumerParentDevSubscription, consumerChildDevSubscription)
       )
 
-      val session = loginWithBlocking(user, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/subscriptions/${consumerChildDevSubscription.id.value}/_archive",
@@ -1464,7 +1464,7 @@ class OtoroshiSyncSpec()
           Seq(consumerParentDevSubscription, consumerChildDevSubscription)
       )
 
-      val session = loginWithBlocking(user, tenant)
+      val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/subscriptions/${consumerParentDevSubscription.id.value}/_archive",
