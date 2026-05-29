@@ -1628,6 +1628,16 @@
   "notifications.page.filters.all.notifications.label": "Toutes",
   "notifications.page.filters.unread.notifications.label": "À traiter",
   "notifications.page.filters.clear.label": "Réinitialiser les filtres",
+  "table.filters.clear.label": "Réinitialiser les filtres",
+  "table.filter.summary.label": {
+    "s": "%s sélectionné",
+    "p": "%s sélectionnés"
+  },
+  "table.rows.selected.count.label": {
+    "s": "%s ligne sélectionnée",
+    "p": "%s lignes sélectionnées"
+  },
+  "table.select.all.label": "Sélectionner les %s éléments",
   "notifications.page.table.title": "Notifications",
   "notifications.page.table.select.all.label": "tout sélectionner",
   "notifications.page.table.selected.count.label": {

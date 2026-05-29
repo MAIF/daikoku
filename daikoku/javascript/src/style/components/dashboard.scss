@@ -48,13 +48,13 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   }
 
-  li:last-of-type .table-row{
+  li:last-of-type .table-row {
     border: none;
   }
 
   .table-row {
     display: grid;
-    grid-template-columns: 1fr 15fr 15fr 15fr 15fr 15fr;
+    grid-template-columns: 1fr 15fr 15fr 15fr 15fr 15fr 1fr;
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
@@ -165,15 +165,17 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     div.favorite-cell {
       color: variables.$primary-color;
+
       .favorite-btn {
         color: variables.$primary-color;
+
         &:hover {
           color: variables.$level1_link-hover-color;
         }
       }
     }
 
-    .btn-action{
+    .btn-action {
       width: 30px;
       height: 30px;
     }

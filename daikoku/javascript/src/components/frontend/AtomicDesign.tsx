@@ -97,6 +97,55 @@ export const AtomicDesign = () => {
             <div className="badge badge-custom-success ms-2">badge-custom-success</div>
             <div className="badge badge-custom-warning ms-2">badge-custom-warning</div>
             <div className="badge badge-custom-danger ms-2">badge-custom-danger</div>
+
+            <h1>Tags</h1>
+            <div className="d-flex gap-2">
+              <span className="tag --primary">primary tag</span>
+              <span className="tag --warning">warning tag</span>
+              <span className="tag --info">info tag</span>
+              <span className="tag --danger">danger tag</span>
+              <span className="tag --success">success tag</span>
+              <span className="tag --finished">finished tag</span>
+              <span className="tag --inactive">inactive tag</span>
+            </div>
+            <div className="d-flex gap-2 mt-2">
+              <span className="tag --primary --ghost">primary tag</span>
+              <span className="tag --warning --ghost">warning tag</span>
+              <span className="tag --info --ghost">info tag</span>
+              <span className="tag --danger --ghost">danger tag</span>
+              <span className="tag --success --ghost">success tag</span>
+              <span className="tag --finished --ghost">finished tag</span>
+              <span className="tag --inactive --ghost">inactive tag</span>
+            </div>
+            <h1>Badges</h1>
+            <div className="d-flex gap-2">
+              <span className="badge --primary">primary badge</span>
+              <span className="badge --warning">warning badge</span>
+              <span className="badge --info">info badge</span>
+              <span className="badge --danger">danger badge</span>
+              <span className="badge --success">success badge</span>
+              <span className="badge --finished">finished badge</span>
+              <span className="badge --inactive">inactive badge</span>
+            </div>
+            <div className="d-flex gap-2 mt-2">
+              <span className="badge --primary --ghost">primary ghost badge</span>
+              <span className="badge --warning --ghost">warning ghost badge</span>
+              <span className="badge --info --ghost">info ghost badge</span>
+              <span className="badge --danger --ghost">danger ghost badge</span>
+              <span className="badge --success --ghost">success ghost badge</span>
+              <span className="badge --finished --ghost">finished ghost badge</span>
+              <span className="badge --inactive --ghost">inactive ghost badge</span>
+            </div>
+            <div className="d-flex gap-2 mt-2">
+              <span className="badge --primary --state">primary ghost badge</span>
+              <span className="badge --warning --state">warning ghost badge</span>
+              <span className="badge --info --state">info ghost badge</span>
+              <span className="badge --danger --state">danger ghost badge</span>
+              <span className="badge --success --state">success ghost badge</span>
+              <span className="badge --finished --state">finished ghost badge</span>
+              <span className="badge --inactive --state">inactive ghost badge</span>
+            </div>
+
             <h1 className="mt-3">Content</h1>
             <div className="d-flex flex-column">
               <div className="d-flex">

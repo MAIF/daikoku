@@ -115,7 +115,7 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
         .data__value {
           font-size: 14px;
           font-weight: 700;
-          color: variables.$error-color;
+          color: variables.$danger-color;
         }
 
         .data__description {
@@ -128,6 +128,7 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
 
 
 }
+
 .api_list_container {
   background: $tile_background_color;
   border-radius: 10px;

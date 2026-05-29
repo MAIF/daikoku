@@ -1627,6 +1627,16 @@
     "notifications.page.filters.all.notifications.label": "All",
     "notifications.page.filters.unread.notifications.label": "To treat",
     "notifications.page.filters.clear.label": "Reset filters",
+    "table.filters.clear.label": "Reset filters",
+    "table.filter.summary.label": {
+        "s": "%s selected",
+        "p": "%s selected"
+    },
+    "table.rows.selected.count.label": {
+        "s": "%s row selected",
+        "p": "%s rows selected"
+    },
+    "table.select.all.label": "Select all %s items",
     "notifications.page.table.title": "Notifications",
     "notifications.page.table.select.all.label": "Select all",
     "notifications.page.table.selected.count.label": {

@@ -20,12 +20,6 @@ $badge-colors: (
   success: (bg: variables.$success-color, text: color-mix(in srgb, variables.$success-color 10%, #000)),
   warning: (bg: variables.$warning-color, text: color-mix(in srgb, variables.$warning-color 20%, #000)),
   danger: (bg: variables.$danger-color, text: color-mix(in srgb, variables.$danger-color 0%, #fff)),
-  demands-subscription: (
-          bg: variables.$demands-subscription-bg-count,
-          text: color-mix(in srgb, variables.$demands-subscription-bg-count 0%, #856404),
-  )
-
-
 );
 
 @each $name, $colors in $badge-colors {
@@ -35,7 +29,8 @@ $badge-colors: (
   }
 }
 
-.badge-custom-primary, .badge-custom-demands-subscription {
+.badge-custom-primary,
+.badge-custom-demands-subscription {
   border-radius: 40px;
 }
 
@@ -55,4 +50,69 @@ $badge-colors: (
   font-size: 15px;
   padding: 0 7px;
   white-space: nowrap;
+}
+
+@mixin colored-tag($color, $bg-color) {
+  color: $color;
+  background-color: $bg-color;
+  border-color: $color;
+}
+
+$theme-colors: (
+  primary: (color: variables.$primary-color, bg: variables.$primary-color-bg),
+  success: (color: variables.$success-color, bg: variables.$success-color-bg),
+  info: (color: variables.$info-color, bg: variables.$info-color-bg),
+  warning: (color: variables.$warning-color, bg: variables.$warning-color-bg),
+  danger: (color: variables.$danger-color, bg: variables.$danger-color-bg),
+  neutral: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
+  inactive: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
+  finished: (color: #fff, bg: #000),
+);
+
+@each $name, $colors in $theme-colors {
+  .--#{$name} {
+    background-color: map.get($colors, bg);
+    color: map.get($colors, color);
+
+    &.--ghost {
+      background-color: transparent;
+      border: 1px solid map.get($colors, color);
+    }
+
+    &.--state::before {
+      content: '';
+      display: block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: map.get($colors, color);
+    }
+  }
+}
+
+
+.tag {
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  letter-spacing: -3%;
+
+  &.tag-finished {
+    border-color: #000;
+  }
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -3%;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
 }
