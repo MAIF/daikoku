@@ -101,7 +101,7 @@ object testUtils {
           val newDuration = timeout * 2
           runIfDatabaseAvailable(newDuration)
         } else {
-          FailedStatus
+          fail("Failed to setup tests")
         }
       }
 
