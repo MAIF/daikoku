@@ -232,5 +232,5 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: ./daikoku/tests/playwright-report/
+          path: daikoku/javascript/tests/playwright-report/
           retention-days: 30
