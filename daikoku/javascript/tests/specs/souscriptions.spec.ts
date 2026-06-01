@@ -1,13 +1,11 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
-<<<<<<< HEAD
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
-=======
 import { DWIGHT, IUser, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
->>>>>>> 6a688bd0f (test: key edition burger button should not be visible in frontend for non admin)
+
 
 test.beforeEach(async () => {
   await Promise.all([
