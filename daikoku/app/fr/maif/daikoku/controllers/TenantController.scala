@@ -14,7 +14,7 @@ import fr.maif.daikoku.domain.json.TenantFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.OAuth2Config
-import fr.maif.daikoku.services.ApiService
+import fr.maif.daikoku.services.{ApiService, DeletionService}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.utils.JWKSAlgoSettings
@@ -31,6 +31,7 @@ import scala.util.Try
 class TenantController(
     DaikokuAction: DaikokuAction,
     apiService: ApiService,
+    deletionService: DeletionService,
     env: Env,
     cc: ControllerComponents,
     translator: Translator
@@ -363,11 +364,10 @@ class TenantController(
                                       ),
                                     AppError.ApiNotFound
                                   )
-                                  _ <- apiService.deleteUsagePlan(
-                                    plan,
-                                    api,
-                                    ctx.tenant,
-                                    ctx.user
+                                  _ <- deletionService.deleteUsagePlanByQueue(
+                                    plan.id,
+                                    api.id,
+                                    ctx.tenant.id
                                   )
                                 } yield api
                               })

@@ -7,7 +7,6 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.ApiService
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -19,7 +18,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DeletionService(
     env: Env,
-    apiService: ApiService,
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
     otoroshiSynchronizerJob: OtoroshiSynchronizerJob
@@ -378,12 +376,18 @@ class DeletionService(
       }
       .mapAsync(5) { case (api, plan) =>
         for {
-          _ <- apiService.deleteApiPlansSubscriptions(
-            Seq(plan),
-            api,
-            tenant,
-            systemUser
-          )
+          subscriptions <- env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findNotDeleted(
+              Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
+            )
+          _ <- deleteSubscriptions(subscriptions, api, tenant).value.map {
+            case Left(e) =>
+              AppLogger.error(
+                s"[deletion service] :: error while deleting subscriptions of plan ${plan.id.value}: ${e.getErrorMessage()}"
+              )
+            case Right(_) => ()
+          }
           _ <- plan.paymentSettings match {
             case Some(paymentSettings) =>
               env.dataStore.operationRepo
