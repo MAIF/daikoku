@@ -20,7 +20,7 @@ class TransactionSpec
 
     "commit both saves when everything succeeds" in {
       Await.result(waitForDaikokuSetup(), 5.second)
-      flushBlocking()
+      //flushBlocking()
 
       val ds = daikokuComponents.env.dataStore
       val userId = UserId(IdGenerator.token(32))
