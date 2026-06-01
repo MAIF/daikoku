@@ -25,7 +25,7 @@ export const permissions: {
 } = {
   User: [
     {
-      action: manage,
+      action: read,
       what: apikey,
       condition: (team: ITeamSimple) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
     },
@@ -38,7 +38,7 @@ export const permissions: {
   ApiEditor: [
     { action: manage, what: api },
     {
-      action: manage,
+      action: read,
       what: apikey,
       condition: (team: any) => team.apiKeyVisibility !== 'Administrator',
     },

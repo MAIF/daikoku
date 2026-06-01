@@ -34,6 +34,7 @@ import {
   apikey,
   escapeRegExp,
   formatDate,
+  manage,
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
@@ -938,90 +939,92 @@ export const ApiKeyCard = ({
           {translate("subscription.nota.part.2")}
           <Link className='cursor-pointer underline mx-1' to={statsLink}>{translate("subscription.nota.link.statistics")}</Link>
         </div>
-        <div
-          className="dropdown"
-          style={{
-            position: 'absolute',
-            top: '15px',
-            right: '15px'
-          }}
-        >
-          <i
-            className="fa fa-bars cursor-pointer dropdown-menu-button"
-            style={{ fontSize: '20px' }}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id="dropdownMenuButton"
-          />
-          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openFormModal({
-                title: translate("subscription.custom.name.update.label"),
-                actionLabel: translate('Save'),
-                schema: {
-                  customName: {
-                    type: type.string,
-                    placeholder: translate('subscription.custom.name.update.placeholder'),
-                    label: translate('subscription.custom.name.update.message'),
-                  }
-                },
-                onSubmit: (data) => {
-                  updateCustomName(data.customName ?? '')
-                },
-                value: { customName: subscription.customName }
-              })}
-            >
-              {translate("subscription.custom.name.update.label")}
-            </span>
-            <div className="dropdown-divider" />
-            {!subscription.parent && !disableRotation && <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openFormModal({
-                title: translate("ApiKey rotation"),
-                actionLabel: translate('Save'),
-                schema: settingsSchema,
-                onSubmit: (data) => handleChanges(data),
-                value: subscription.rotation
-              })}
-            >
-              {translate("subscription.rotation.update.label")}
-            </span>}
-            {!subscription.parent && <span
-              className="dropdown-item cursor-pointer "
-              onClick={() => withLoader(transferKey)}
-            >
-              {translate("subscription.transfer.label")}
-            </span>}
-            <span
-              className={classNames("dropdown-item cursor-pointer", {
-                disabled: subscription.parent && !subscription.parentUp
-              })}
-              onClick={() => withLoader(toggle)}
-            >
-              {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-            </span>
-            <div className="dropdown-divider" />
-            {!subscription.parent && <span
-              className="dropdown-item cursor-pointer danger"
-              onClick={() => withLoader(regenerateSecret)}
-            >
-              {translate("subscription.reset.secret.label")}
-            </span>}
-            {subscription.parent && <span
-              className="dropdown-item cursor-pointer danger"
-              onClick={() => withLoader(() => makeUniqueApiKey(detailQuery.data))}
-            >
-              {translate("subscription.extract.button.label")}
-            </span>}
-            <span
-              className="dropdown-item cursor-pointer danger"
-              onClick={() => withLoader(() => deleteApiKey(detailQuery.data))}
-            >
-              {translate("subscription.delete.button.label")}
-            </span>
+        <Can I={manage} a={apikey} team={currentTeam} >
+          <div
+            className="dropdown"
+            style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px'
+            }}
+          >
+            <i
+              className="fa fa-bars cursor-pointer dropdown-menu-button"
+              style={{ fontSize: '20px' }}
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              id="dropdownMenuButton"
+            />
+            <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() => openFormModal({
+                  title: translate("subscription.custom.name.update.label"),
+                  actionLabel: translate('Save'),
+                  schema: {
+                    customName: {
+                      type: type.string,
+                      placeholder: translate('subscription.custom.name.update.placeholder'),
+                      label: translate('subscription.custom.name.update.message'),
+                    }
+                  },
+                  onSubmit: (data) => {
+                    updateCustomName(data.customName ?? '')
+                  },
+                  value: { customName: subscription.customName }
+                })}
+              >
+                {translate("subscription.custom.name.update.label")}
+              </span>
+              <div className="dropdown-divider" />
+              {!subscription.parent && !disableRotation && <span
+                className="dropdown-item cursor-pointer"
+                onClick={() => openFormModal({
+                  title: translate("ApiKey rotation"),
+                  actionLabel: translate('Save'),
+                  schema: settingsSchema,
+                  onSubmit: (data) => handleChanges(data),
+                  value: subscription.rotation
+                })}
+              >
+                {translate("subscription.rotation.update.label")}
+              </span>}
+              {!subscription.parent && <span
+                className="dropdown-item cursor-pointer "
+                onClick={() => withLoader(transferKey)}
+              >
+                {translate("subscription.transfer.label")}
+              </span>}
+              <span
+                className={classNames("dropdown-item cursor-pointer", {
+                  disabled: subscription.parent && !subscription.parentUp
+                })}
+                onClick={() => withLoader(toggle)}
+              >
+                {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
+              </span>
+              <div className="dropdown-divider" />
+              {!subscription.parent && <span
+                className="dropdown-item cursor-pointer danger"
+                onClick={() => withLoader(regenerateSecret)}
+              >
+                {translate("subscription.reset.secret.label")}
+              </span>}
+              {subscription.parent && <span
+                className="dropdown-item cursor-pointer danger"
+                onClick={() => withLoader(() => makeUniqueApiKey(detailQuery.data))}
+              >
+                {translate("subscription.extract.button.label")}
+              </span>}
+              <span
+                className="dropdown-item cursor-pointer danger"
+                onClick={() => withLoader(() => deleteApiKey(detailQuery.data))}
+              >
+                {translate("subscription.delete.button.label")}
+              </span>
+            </div>
           </div>
-        </div>
+        </Can>
       </div>
     )
   } else {
