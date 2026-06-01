@@ -73,8 +73,7 @@ case class ApiSubscription(
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
-    parent: Option[ApiSubscriptionId] = None,
-    keyring: Option[KeyringId] = None,
+    keyring: KeyringId,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
     ] = None
@@ -120,13 +119,17 @@ case class ApiSubscription(
     )
 }
 
+enum KeyringOtoroshiBinding:
+  case Otoroshi(id: OtoroshiSettingsId)
+  case Internal
+
 case class Keyring(
     id: KeyringId,
     tenant: TenantId,
     deleted: Boolean = false,
     customName: Option[String] = None,
     apiKey: OtoroshiApiKey,
-    otoroshiSettings: OtoroshiSettingsId,
+    otoroshiSettings: KeyringOtoroshiBinding,
     createdAt: DateTime,
     rotation: Option[ApiSubscriptionRotation] = None,
     bearerToken: Option[String] = None,

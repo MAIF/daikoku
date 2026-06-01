@@ -51,7 +51,11 @@ type NotificationActionGQL =
     api: IApiGQL;
     team: ITeamFullGql;
     plan: IUsagePlan;
-    parentSubscriptionId: IApiSubscriptionGql;
+    keyring?: {
+      _id: string;
+      customName: string | null;
+      apiKey: { clientName: string; clientId: string; clientSecret: string };
+    };
     motivation: string;
     demand: ISubscriptionDemandGQL;
   }

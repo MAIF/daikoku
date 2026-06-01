@@ -16,11 +16,7 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{
-  ApiKeyStatsJob,
-  OtoroshiSynchronizerJob,
-  SyncInformation
-}
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.utils.{
   IdGenerator,
   JsonOperationsHelper,
@@ -290,7 +286,7 @@ class ApiService(
             tenant = tenant.id,
             customName = customName,
             apiKey = tunedApiKey.asOtoroshiApiKey,
-            otoroshiSettings = otoroshiSettings.id,
+            otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
             createdAt = DateTime.now(),
             rotation = plan.autoRotation.map(rotation =>
               ApiSubscriptionRotation(enabled = rotation)
@@ -324,7 +320,7 @@ class ApiService(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
-          keyring = Some(keyring.id),
+          keyring = keyring.id,
           thirdPartySubscriptionInformations =
             thirdPartySubscriptionInformations,
           bearerToken = None
@@ -403,17 +399,25 @@ class ApiService(
         api: Api,
         plan: UsagePlan
     ): Future[Either[AppError, ApiSubscription]] = {
-      import cats.implicits.*
       // TODO: verify if group is in authorized groups (if some)
 
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =
         s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
+      val adminApiKey = OtoroshiApiKey(clientName, clientId, clientSecret)
+      val keyring = Keyring(
+        id = KeyringId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        apiKey = adminApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Internal,
+        createdAt = DateTime.now(),
+        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation())
+      )
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(IdGenerator.token(32)),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
+        apiKey = adminApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         validUntil = None,
@@ -422,10 +426,16 @@ class ApiService(
         by = user.id,
         customName = None,
         rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
-        integrationToken = IdGenerator.token(64)
+        integrationToken = IdGenerator.token(64),
+        keyring = keyring.id
       )
 
       val r: EitherT[Future, AppError, ApiSubscription] = for {
+        _ <- EitherT.liftF(
+          env.dataStore.keyringRepo
+            .forTenant(tenant.id)
+            .save(keyring)
+        )
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
@@ -481,261 +491,6 @@ class ApiService(
 
         }
     }
-  }
-
-  case class SyncInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      team: Team,
-      parentApi: Api,
-      apk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  case class ComputedInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      apk: ActualOtoroshiApiKey,
-      computedApk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  def getListFromMeta(
-      key: String,
-      metadata: Map[String, String]
-  ): Set[String] = {
-    metadata
-      .get(key)
-      .map(_.split('|').toSeq.map(_.trim).toSet)
-      .getOrElse(Set.empty)
-  }
-
-  def mergeMetaValue(
-      key: String,
-      meta1: Map[String, String],
-      meta2: Map[String, String]
-  ): String = {
-    val list1 = getListFromMeta(key, meta1)
-    val list2 = getListFromMeta(key, meta2)
-    (list1 ++ list2).mkString(" | ")
-  }
-
-  private def computeAPIKey(
-      infos: SyncInformation
-  ): Future[Either[AppError, ComputedInformation]] = {
-    val seq = (infos.childs :+ infos.parent)
-      .map(subscription => {
-        for {
-          api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo
-              .forAllTenant()
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> subscription.api.value
-//                  "state" -> ApiState.publishedJsonFilter
-                )
-              ),
-            AppError.EntityNotFound(
-              s"Api ${subscription.api.value} (for subscription ${subscription.id.value})"
-            )
-          )
-          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo
-              .forTenant(infos.tenant)
-              .findById(subscription.plan),
-            AppError.EntityNotFound(
-              s"usage plan ${subscription.plan.value} (for subscription ${subscription.id.value})"
-            )
-          )
-          user <-
-            EitherT
-              .fromOptionF[Future, AppError, User](
-                env.dataStore.userRepo.findById(subscription.by),
-                AppError.UserNotFound(subscription.by.some)
-              )
-        } yield {
-          val ctx: Map[String, String] = Map(
-            "user.id" -> user.id.value,
-            "user.name" -> user.name,
-            "user.email" -> user.email,
-            "api.id" -> infos.parent.api.value,
-            "api.name" -> infos.parentApi.name,
-            "team.id" -> infos.parent.team.value,
-            "team.name" -> infos.team.name,
-            "tenant.id" -> infos.tenant.id.value,
-            "tenant.name" -> infos.tenant.name,
-            "client.id" -> infos.apk.clientId,
-            "client.name" -> infos.apk.clientName
-          ) ++ infos.team.metadata
-            .map(t => ("team.metadata." + t._1, t._2)) ++
-            user.metadata.map(t => ("user.metadata." + t._1, t._2))
-
-          // ********************
-          // process new tags
-          // ********************
-          val planTags = plan.otoroshiTarget
-            .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
-            .getOrElse(Set.empty[String])
-
-//          val tagsFromDk =
-//            getListFromMeta("daikoku__tags", infos.apk.metadata)
-          val newTagsFromDk =
-            planTags.map(OtoroshiTarget.processValue(_, ctx))
-
-          // todo: unnecessary ??
-          // val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
-
-          // ********************
-          // process new metadata
-          // ********************
-          val planMeta = plan.otoroshiTarget
-            .map(_.apikeyCustomization.metadata.as[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
-
-          val metaFromDk = infos.apk.metadata
-            .get("daikoku__metadata")
-            .map(
-              _.split('|').toSeq
-                .map(_.trim)
-                .map(key => key -> infos.apk.metadata.get(key).orNull)
-            )
-            .getOrElse(planMeta.map { case (a, b) =>
-              a -> OtoroshiTarget.processValue(b, ctx)
-            })
-            .toMap
-
-          val customMetaFromSub = subscription.customMetadata
-            .flatMap(_.asOpt[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
-
-          val newMetaFromDk = (planMeta ++ customMetaFromSub).map {
-            case (a, b) => a -> OtoroshiTarget.processValue(b, ctx)
-          }
-          val newMeta = infos.apk.metadata
-            .removedAll(metaFromDk.keys) ++ newMetaFromDk ++ Map(
-            "daikoku__metadata" -> newMetaFromDk.keys
-              .mkString(" | "),
-            "daikoku__tags" -> newTagsFromDk.mkString(" | ")
-          )
-
-          // ********************
-          // process new metadata
-          // ********************
-
-          infos.apk.copy(
-            tags = newTagsFromDk,
-            enabled = subscription.enabled,
-            metadata = newMeta,
-            constrainedServicesOnly = plan.otoroshiTarget
-              .exists(_.apikeyCustomization.constrainedServicesOnly),
-            allowClientIdOnly =
-              plan.otoroshiTarget.exists(_.apikeyCustomization.clientIdOnly),
-            restrictions = plan.otoroshiTarget
-              .map(_.apikeyCustomization.restrictions)
-              .getOrElse(ApiKeyRestrictions()),
-            throttlingQuota = subscription.customMaxPerSecond
-              .orElse(plan.maxPerSecond)
-              .getOrElse(infos.apk.throttlingQuota),
-            dailyQuota = subscription.customMaxPerDay
-              .orElse(plan.maxPerDay)
-              .getOrElse(infos.apk.dailyQuota),
-            monthlyQuota = subscription.customMaxPerMonth
-              .orElse(plan.maxPerMonth)
-              .getOrElse(infos.apk.monthlyQuota),
-            authorizedEntities = plan.otoroshiTarget
-              .flatMap(_.authorizedEntities)
-              .getOrElse(AuthorizedEntities()),
-            readOnly = subscription.customReadOnly
-              .orElse(
-                plan.otoroshiTarget
-                  .map(_.apikeyCustomization.readOnly)
-              )
-              .getOrElse(infos.apk.readOnly),
-            rotation = infos.apk.rotation
-              .map(r =>
-                r.copy(enabled =
-                  r.enabled || subscription.rotation
-                    .exists(_.enabled) || plan.autoRotation
-                    .exists(e => e)
-                )
-              )
-              .orElse(
-                subscription.rotation.map(r =>
-                  ApiKeyRotation(
-                    enabled = r.enabled || plan.autoRotation.exists(e => e),
-                    rotationEvery = r.rotationEvery,
-                    gracePeriod = r.gracePeriod
-                  )
-                )
-              )
-              .orElse(
-                plan.autoRotation
-                  .map(enabled => ApiKeyRotation(enabled = enabled))
-              )
-          )
-
-        }
-      })
-
-    seq
-      .reduce((info1, info2) => {
-        for {
-          apikey1 <- info1
-          apikey2 <- info2
-        } yield apikey1.copy(
-          tags = apikey1.tags ++ apikey2.tags,
-          metadata = apikey1.metadata ++
-            apikey2.metadata ++
-            Map(
-              "daikoku__metadata" -> mergeMetaValue(
-                "daikoku__metadata",
-                apikey1.metadata,
-                apikey2.metadata
-              ),
-              "daikoku__tags" -> mergeMetaValue(
-                "daikoku__tags",
-                apikey1.metadata,
-                apikey2.metadata
-              )
-            ),
-          restrictions = ApiKeyRestrictions(
-            enabled =
-              apikey1.restrictions.enabled && apikey2.restrictions.enabled,
-            allowLast =
-              apikey1.restrictions.allowLast || apikey2.restrictions.allowLast,
-            allowed =
-              apikey1.restrictions.allowed ++ apikey2.restrictions.allowed,
-            forbidden =
-              apikey1.restrictions.forbidden ++ apikey2.restrictions.forbidden,
-            notFound =
-              apikey1.restrictions.notFound ++ apikey2.restrictions.notFound
-          ),
-          authorizedEntities = AuthorizedEntities(
-            groups =
-              apikey1.authorizedEntities.groups | apikey2.authorizedEntities.groups,
-            services =
-              apikey1.authorizedEntities.services | apikey2.authorizedEntities.services,
-            routes =
-              apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
-          )
-        )
-      })
-      .map(computedApk => {
-        ComputedInformation(
-          parent = infos.parent,
-          childs = infos.childs,
-          apk = infos.apk,
-          computedApk = computedApk,
-          otoroshiSettings = infos.otoroshiSettings,
-          tenant = infos.tenant,
-          tenantAdminTeam = infos.tenantAdminTeam
-        )
-      })
-      .value
   }
 
   def updateSubscription(
@@ -813,105 +568,6 @@ class ApiService(
       "archive" -> "done",
       "subscriptionId" -> subscription.id.asJson
     )).value
-  }
-
-  def computeOtoroshiApiKey(
-      subscription: ApiSubscription
-  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    val r = for {
-      tenant <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
-        AppError.TenantNotFound
-      )
-      // get tenant team admin
-      tenantAdminTeam <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOne(Json.obj("type" -> "Admin")),
-        AppError.EntityNotFound(
-          s"Tenant admin team for tenant ${tenant.id.value}"
-        )
-      )
-
-      // GET parent API
-      parentApi <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo
-          .forAllTenant()
-          .findOneNotDeleted(
-            Json.obj(
-              "_id" -> subscription.api.value
-//              "state" -> ApiState.publishedJsonFilter
-            )
-          ),
-        AppError.ApiNotFound
-      )
-
-      // Get parent plan
-      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findById(subscription.plan),
-        AppError.PlanNotFound
-      )
-
-      // get ototoshi target from parent plan
-      otoroshiTarget <- EitherT.fromOption[Future](
-        plan.otoroshiTarget,
-        AppError.EntityNotFound(s"Otoroshi target for plan ${plan.id.value}")
-      )
-
-      // get otoroshi settings from parent plan
-      otoroshiSettings <- EitherT.fromOption[Future](
-        tenant.otoroshiSettings
-          .find(_.id == otoroshiTarget.otoroshiSettings),
-        AppError.EntityNotFound(
-          s"otoroshi settings (${otoroshiTarget.otoroshiSettings.value}"
-        )
-      )
-
-      // get previous apikey from otoroshi
-      apk <- EitherT(
-        otoroshiClient.getApikey(subscription.apiKey.clientId)(using
-          otoroshiSettings
-        )
-      )
-
-      // get subscription team
-      team <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findById(subscription.team),
-        AppError.TeamNotFound
-      )
-
-      childs <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forAllTenant()
-          .findNotDeleted(
-            Json.obj(
-              "parent" -> subscription.id.asJson,
-              "enabled" -> true
-            )
-          )
-      )
-
-      computedInformation <- EitherT(
-        computeAPIKey(
-          SyncInformation(
-            parent = subscription,
-            childs = childs,
-            apk = apk,
-            otoroshiSettings = otoroshiSettings,
-            tenant = tenant,
-            team = team,
-            parentApi = parentApi,
-            tenantAdminTeam = tenantAdminTeam
-          )
-        )
-      )
-    } yield computedInformation.computedApk
-
-    r.value
   }
 
   def archiveApiKey(
@@ -1289,7 +945,7 @@ class ApiService(
         tenant = tenant.id,
         customName = subscription.customName,
         apiKey = created.asOtoroshiApiKey,
-        otoroshiSettings = o.id,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(o.id),
         createdAt = DateTime.now(),
         rotation = subscription.rotation,
         bearerToken = created.bearer
@@ -1302,7 +958,7 @@ class ApiService(
           .forTenant(tenant)
           .save(
             subscription.copy(
-              keyring = Some(newKeyring.id),
+              keyring = newKeyring.id,
               apiKey = newKeyring.apiKey,
               bearerToken = created.bearer
             )

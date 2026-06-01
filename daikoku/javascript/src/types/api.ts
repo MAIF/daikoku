@@ -378,8 +378,8 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent: string | null;
-  parentUp: boolean;
+  keyring: string | null;
+  aggregated: boolean;
 }
 
 export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
@@ -436,7 +436,6 @@ export interface ISubscriptionCustomization {
 }
 
 export interface ISubscriptionExtended extends ISubscription {
-  parentUp: boolean;
   planType: string;
   planName: string;
   apiName: string;
@@ -548,7 +547,7 @@ export interface ISubscriptionDemand {
   from: string;
   date: string;
   motivation?: object;
-  parentSubscriptionId?: string;
+  keyring?: string;
   customReadOnly?: boolean;
   customMetadata?: object;
   customMaxPerSecond?: number;

@@ -1731,11 +1731,6 @@ object SchemaDefinition {
             resolve = _.value.customReadOnly
           ),
           Field(
-            "parent",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx => apiSubscriptionsFetcher.deferOpt(ctx.value.parent)
-          ),
-          Field(
             "keyring",
             OptionType(KeyringType),
             resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)

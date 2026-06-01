@@ -635,14 +635,14 @@ class ApiSubscriptionAdminApiController(
         env.dataStore.userRepo.findById(entity.by),
         AppError.ParsingPayloadError("By not found")
       )
-      _ <- entity.parent match {
-        case Some(parent) =>
+      _ <- entity.keyring match {
+        case Some(keyring) =>
           EitherT
-            .fromOptionF[Future, AppError, ApiSubscription](
-              env.dataStore.apiSubscriptionRepo
+            .fromOptionF[Future, AppError, Keyring](
+              env.dataStore.keyringRepo
                 .forTenant(entity.tenant)
-                .findById(parent),
-              AppError.ParsingPayloadError(s"Parent subscription not found")
+                .findById(keyring),
+              AppError.ParsingPayloadError(s"Keyring not found")
             )
             .map(_ => ())
         case None => EitherT.pure[Future, AppError](())

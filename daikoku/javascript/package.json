@@ -25,7 +25,6 @@
     "@popperjs/core": "^2.11.8",
     "@tanstack/react-query": "5.90.21",
     "@tanstack/react-table": "^8.21.3",
-    "@xstate/react": "6.0.0",
     "antd": "5.26.6",
     "asciidoctor": "^3.0.4",
     "bootstrap": "^5.3.8",

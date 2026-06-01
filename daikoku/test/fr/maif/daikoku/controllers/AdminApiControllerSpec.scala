@@ -1386,7 +1386,7 @@ class AdminApiControllerSpec
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
           body =
-            sub.copy(parent = ApiSubscriptionId("notFound").some).asJson.some
+            sub.copy(keyring = KeyringId("notFound").some).asJson.some
         )(using tenant)
         respParent.status mustBe 400
         getMsg(respParent) mustBe "Parent subscription not found"
@@ -1462,7 +1462,7 @@ class AdminApiControllerSpec
           method = "PUT",
           headers = getAdminApiHeader(adminApiSubscription),
           body =
-            sub.copy(parent = ApiSubscriptionId("notFound").some).asJson.some
+            sub.copy(keyring = KeyringId("notFound").some).asJson.some
         )(using tenant)
         respParent.status mustBe 400
         getMsg(respParent) mustBe "Parent subscription not found"

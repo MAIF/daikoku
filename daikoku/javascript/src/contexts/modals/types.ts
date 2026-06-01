@@ -165,8 +165,9 @@ type NotificationGQL = {
       id: string;
       name: string;
     };
-    parentSubscriptionId?: {
+    keyring?: {
       _id: string;
+      customName?: string;
       apiKey: {
         clientName: string;
         clientId: string;

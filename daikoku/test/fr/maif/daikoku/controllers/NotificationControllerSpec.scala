@@ -524,7 +524,7 @@ class NotificationControllerSpec()
         from = userAdmin.id,
         date = DateTime.now().minusDays(1),
         motivation = Json.obj("motivation" -> "test").some,
-        parentSubscriptionId = None,
+        keyring = None,
         customReadOnly = None,
         customMetadata = None,
         customMaxPerSecond = None,
@@ -1762,7 +1762,7 @@ class NotificationControllerSpec()
               api = defaultApi.api.id,
               plan = defaultApi.api.defaultUsagePlan.get,
               team = teamConsumerId,
-              parentSubscriptionId = None,
+              keyring = None,
               motivation = Some("please"),
               demand = demand.id,
               step = demand.steps.head.id

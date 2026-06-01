@@ -75,7 +75,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
       apiKey
         ? Services.extendApiKey(
           apiId,
-          apiKey._id,
+          apiKey.keyring!,
           team._id,
           plan._id,
           motivation

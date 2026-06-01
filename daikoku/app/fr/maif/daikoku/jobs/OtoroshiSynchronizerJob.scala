@@ -49,13 +49,6 @@ object SyncMode {
   case object Delete extends SyncMode
 }
 
-case class SyncApiSubscriptionContext(
-    subscription: ApiSubscription,
-    api: Api,
-    usagePlan: UsagePlan,
-    by: User
-)
-
 object LongExtensions {
   implicit class HumanReadableExtension(duration: Long) {
     final def toHumanReadable: String = {
@@ -317,16 +310,6 @@ object Child {
   }
 }
 
-case class SyncInformation(
-    parent: SyncApiSubscriptionContext,
-    childs: Seq[SyncApiSubscriptionContext],
-    team: Team,
-    apk: ActualOtoroshiApiKey,
-    otoroshiSettings: OtoroshiSettings,
-    tenant: Tenant,
-    tenantAdminTeam: Team
-)
-
 class OtoroshiSynchronizerJob(
     client: OtoroshiClient,
     env: Env,
@@ -363,16 +346,6 @@ class OtoroshiSynchronizerJob(
     val list2 = getListFromMeta(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
-
-  case class ComputedInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      apk: ActualOtoroshiApiKey,
-      computedApk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
 
   def start(): Unit = {
     val syncAvalaible =

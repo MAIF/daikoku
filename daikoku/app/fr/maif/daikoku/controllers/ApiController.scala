@@ -335,7 +335,7 @@ class ApiController(
               .findNotDeleted(
                 Json.obj(
                   "keyring" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.keyring).map(_.value)
+                    "$in" -> subscriptions.map(_.keyring.value)
                   )
                 )
               )
@@ -1009,108 +1009,6 @@ class ApiController(
         apiService.getApis(ctx)
       }
   }
-
-  case class subscriptionData(
-      apiKey: OtoroshiApiKey,
-      plan: UsagePlanId,
-      team: TeamId,
-      api: ApiId
-  )
-
-  def byteStringToApiSubscription: Flow[ByteString, subscriptionData, NotUsed] =
-    Flow[ByteString]
-      .via(JsonFraming.objectScanner(Int.MaxValue))
-      .map(_.utf8String)
-      .filterNot(_.isEmpty)
-      .map(Json.parse)
-      .map(value =>
-        subscriptionData(
-          apiKey = (value \ "apikey").as(using OtoroshiApiKeyFormat),
-          plan = (value \ "plan").as(using UsagePlanIdFormat),
-          team = (value \ "team").as(using TeamIdFormat),
-          api = (value \ "api").as(using ApiIdFormat)
-        )
-      )
-
-  val sourceApiSubscriptionsDataBodyParser
-      : BodyParser[Source[subscriptionData, ?]] =
-    BodyParser("Streaming BodyParser") { req =>
-      req.contentType match {
-        case Some("application/json") =>
-          Accumulator
-            .source[ByteString]
-            .map(s => Right(s.via(byteStringToApiSubscription)))
-        case _ =>
-          Accumulator.source[ByteString].map(_ => Left(UnsupportedMediaType))
-      }
-    }
-
-  def initSubscriptions() =
-    DaikokuAction.async(sourceApiSubscriptionsDataBodyParser) { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has init an apikey for @{api.name} - @{api.id}"
-        )
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        val subSource = ctx.request.body
-          .map(data =>
-            ApiSubscription(
-              id = ApiSubscriptionId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              apiKey = data.apiKey,
-              plan = data.plan,
-              createdAt = DateTime.now(),
-              validUntil = None,
-              team = data.team,
-              api = data.api,
-              by = ctx.user.id,
-              customName = Some(data.apiKey.clientName),
-              rotation = None,
-              integrationToken = IdGenerator.token(64)
-            )
-          )
-
-        val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
-          Flow[ApiSubscription]
-            .mapAsync(10)(sub =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant.id)
-                .save(sub)
-                .map(done => sub -> done)
-            )
-            .filter(_._2)
-            .map(_._1)
-
-        val source = subSource
-          .via(createSubFlow)
-
-        val transformFlow = Flow[ApiSubscription]
-          .map(_.apiKey.clientName)
-          .map(json => ByteString(Json.stringify(JsString(json))))
-          .intersperse(ByteString("["), ByteString(","), ByteString("]"))
-          .watchTermination() { (mt, d) =>
-            d.onComplete {
-              case Success(done) =>
-                AppLogger.debug(
-                  s"init subscirptions for tenant ${tenant.id.value} is $done"
-                )
-              case Failure(exception) =>
-                AppLogger.error("Error processing stream", exception)
-            }
-            mt
-          }
-
-        FastFuture.successful(
-          Created.sendEntity(
-            HttpEntity.Streamed(
-              source.via(transformFlow),
-              None,
-              Some("application/json")
-            )
-          )
-        )
-      }
-    }
 
   def byteStringToApi: Flow[ByteString, Api, NotUsed] =
     Flow[ByteString]
@@ -1804,7 +1702,7 @@ class ApiController(
                 .findNotDeleted(
                   Json.obj(
                     "keyring" -> Json
-                      .obj("$in" -> subscriptions.flatMap(_.keyring).map(_.value))
+                      .obj("$in" -> subscriptions.map(_.keyring.value))
                   )
                 )
                 .flatMap { keyringMembers =>
@@ -1896,9 +1794,7 @@ class ApiController(
               .findNotDeleted(
                 Json.obj(
                   "keyring" -> Json.obj(
-                    "$in" -> JsArray(
-                      subscriptions.flatMap(s => s.keyring).map(_.asJson)
-                    )
+                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson))
                   )
                 )
               )

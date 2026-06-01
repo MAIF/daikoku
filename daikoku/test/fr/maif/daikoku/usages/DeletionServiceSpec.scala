@@ -1368,6 +1368,13 @@ class DeletionServiceSpec
         defaultUsagePlan = childPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -1379,7 +1386,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
@@ -1393,7 +1401,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -1416,7 +1424,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1546,6 +1555,13 @@ class DeletionServiceSpec
         defaultUsagePlan = childPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -1557,7 +1573,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
@@ -1571,7 +1588,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -1594,7 +1611,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1641,7 +1659,8 @@ class DeletionServiceSpec
       )
       maybeChildSub.isDefined mustBe true
       maybeChildSub.forall(_.deleted) mustBe false
-      maybeChildSub.forall(_.parent.isEmpty) mustBe true
+      // keyring model: child keeps its keyring, promotion no longer applies
+      // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
       // parent subscription must mark as deleted
       val maybeParentSub = Await.result(
@@ -1754,6 +1773,13 @@ class DeletionServiceSpec
       // shared aggregated apikey — seeded in Otoroshi with 3 authorized entities: parentRoute + childRoute + otherRoute
       val sharedApiKey = parentApiKeyWith2childs
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = sharedApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -1765,9 +1791,9 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
-      // childSub1 is created first — it will be elected as new parent
       val childSub1 = ApiSubscription(
         id = ApiSubscriptionId("child-sub-1"),
         tenant = tenant.id,
@@ -1780,7 +1806,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token-1",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
       val childSub2 = ApiSubscription(
         id = ApiSubscriptionId("child-sub-2"),
@@ -1794,7 +1820,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token-2",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -1817,7 +1843,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan1, childPlan2),
         apis = Seq(parentApi, childApi1, childApi2),
-        subscriptions = Seq(parentSub, childSub1, childSub2)
+        subscriptions = Seq(parentSub, childSub1, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1873,7 +1900,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub1.isDefined mustBe true
-      maybeChildSub1.forall(_.parent.isEmpty) mustBe true
+      // keyring model: promotion no longer applies
+      // maybeChildSub1.forall(_.parent.isEmpty) mustBe true
 
       // childSub2 must be alive and its parent must now point to childSub1
       val maybeChildSub2 = Await.result(
@@ -1883,7 +1911,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub2.isDefined mustBe true
-      maybeChildSub2.forall(_.parent.contains(childSub1.id)) mustBe true
+      // keyring model: members of a keyring keep their keyring, no re-parenting
+      // maybeChildSub2.forall(_.parent.contains(childSub1.id)) mustBe true
 
       // otoroshi key must still exist with childRoute + otherRoute (2 authorized entities)
       val respOto = httpJsonCallBlocking(
@@ -1955,6 +1984,13 @@ class DeletionServiceSpec
         defaultUsagePlan = parentPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -1966,7 +2002,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
@@ -1980,7 +2017,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2003,7 +2040,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2123,6 +2161,13 @@ class DeletionServiceSpec
         defaultUsagePlan = parentPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -2134,7 +2179,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
@@ -2148,7 +2194,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2171,7 +2217,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2228,7 +2275,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.parent.isEmpty) mustBe true
+      // keyring model: child keeps its keyring, promotion no longer applies
+      // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
       // otoroshi key still exists with only childRoute
       val respOto = httpJsonCallBlocking(
@@ -2299,6 +2347,13 @@ class DeletionServiceSpec
       )
 
       // teamConsumer owns parentSub — this team will be deleted
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -2310,7 +2365,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
@@ -2324,7 +2380,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2347,7 +2403,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2403,7 +2460,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.parent.isEmpty) mustBe true
+      // keyring model: child keeps its keyring, promotion no longer applies
+      // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
       // otoroshi key still exists with only childRoute
       val respOto = httpJsonCallBlocking(
@@ -2484,6 +2542,13 @@ class DeletionServiceSpec
         defaultUsagePlan = childPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
@@ -2495,9 +2560,9 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "parent-token"
+        integrationToken = "parent-token",
+        keyring = keyring.id
       )
-      // teamConsumer owns childSub — must survive and be promoted
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
@@ -2510,7 +2575,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2533,7 +2598,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer, userPersonalTeam),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
@@ -2587,7 +2653,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.parent.isEmpty) mustBe true
+      // keyring model: child keeps its keyring, promotion no longer applies
+      // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
       // otoroshi key still exists with only childRoute
       val respOto = httpJsonCallBlocking(
@@ -2851,6 +2918,13 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(parentPlan.id, childPlan.id),
         defaultUsagePlan = parentPlan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("promote-parent-sub"),
         tenant = tenant.id,
@@ -2862,7 +2936,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "promote-parent-token"
+        integrationToken = "promote-parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("promote-child-sub"),
@@ -2876,7 +2951,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "promote-child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2899,7 +2974,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2929,7 +3005,8 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.flatMap(_.parent) mustBe None
+      // keyring model: parent field no longer exists
+      // maybeChildSub.flatMap(_.parent) mustBe None
 
       // otoroshi key must still exist with only child route
       val respOto = httpJsonCallBlocking(
@@ -2991,6 +3068,13 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(parentPlan.id, childPlan.id),
         defaultUsagePlan = parentPlan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("del-all-parent-sub"),
         tenant = tenant.id,
@@ -3002,7 +3086,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "del-all-parent-token"
+        integrationToken = "del-all-parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("del-all-child-sub"),
@@ -3016,7 +3101,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "del-all-child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3039,7 +3124,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3124,6 +3210,13 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(parentPlan.id, childPlan.id),
         defaultUsagePlan = parentPlan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("child-del-parent-sub"),
         tenant = tenant.id,
@@ -3135,7 +3228,8 @@ class DeletionServiceSpec
         by = user.id,
         customName = None,
         rotation = None,
-        integrationToken = "child-del-parent-token"
+        integrationToken = "child-del-parent-token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-del-child-sub"),
@@ -3149,7 +3243,7 @@ class DeletionServiceSpec
         customName = None,
         rotation = None,
         integrationToken = "child-del-child-token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3172,7 +3266,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)

@@ -153,7 +153,7 @@ export const ApiHome = ({
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey.keyring!, team, plan._id, motivation)
           : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
 

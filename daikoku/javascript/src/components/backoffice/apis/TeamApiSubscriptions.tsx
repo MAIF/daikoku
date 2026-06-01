@@ -63,19 +63,12 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  parent?: {
+  aggregated: boolean;
+  keyring?: {
     _id: string;
-    adminCustomName: string;
-    enabled: boolean;
-    validUntil: number;
-    api: {
-      _id: string;
-      name: string;
-    };
-    plan: {
-      _id: string;
-      customName: string;
-      type: string;
+    customName: string | null;
+    apiKey: {
+      clientName: string;
     };
   };
 }
@@ -131,13 +124,11 @@ export const TeamApiSubscriptions = ({
         enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
-          if (sub.parent) {
+          if (sub.aggregated) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
-              <li>${translate("Api")}: ${sub.parent.api.name}</li>
-              <li>${translate("Plan")}: ${sub.parent.plan.customName}</li>
-              <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
+              <li>${translate("aggregated.apikey.badge.keyring.name")}: ${sub.keyring?.customName ?? sub.keyring?.apiKey.clientName ?? ''}</li>
             </ul>
           </div>`;
             return (
@@ -179,7 +170,7 @@ export const TeamApiSubscriptions = ({
         const sub = info.row.original;
         return (
           <SwitchButton
-            disabled={sub.parent && !sub.parent?.enabled}
+            disabled={false}
             ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             onSwitch={(value) => {
               return Services.archiveSubscriptionByOwner(
@@ -351,7 +342,7 @@ export const TeamApiSubscriptions = ({
 
   const deleteApiSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
+      Services.deleteApiSubscription(sub.team._id, sub._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });

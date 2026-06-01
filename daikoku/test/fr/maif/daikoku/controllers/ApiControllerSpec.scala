@@ -1909,7 +1909,7 @@ class ApiControllerSpec()
         date = DateTime.now().minusDays(1),
         motivation =
           Json.obj("motivation" -> Json.obj("type" -> "string")).some,
-        parentSubscriptionId = None,
+        keyring = None,
         customReadOnly = None,
         customMetadata = None,
         customMaxPerSecond = None,
@@ -2259,6 +2259,13 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -2270,7 +2277,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -2284,7 +2292,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2308,7 +2316,8 @@ class ApiControllerSpec()
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2378,6 +2387,20 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val consumerKeyring = Keyring(
+        id = KeyringId("consumer-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
+      val ownerKeyring = Keyring(
+        id = KeyringId("owner-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -2389,7 +2412,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = consumerKeyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -2403,7 +2427,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = consumerKeyring.id
       )
 
       val parentOwnerSub = ApiSubscription(
@@ -2417,7 +2441,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_owner_token"
+        integrationToken = "parent_owner_token",
+        keyring = ownerKeyring.id
       )
       val childOwnerSub = ApiSubscription(
         id = ApiSubscriptionId("child_owner_sub"),
@@ -2431,7 +2456,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_owner_token",
-        parent = parentSub.id.some
+        keyring = ownerKeyring.id
       )
 
       setupEnvBlocking(
@@ -2459,7 +2484,8 @@ class ApiControllerSpec()
           parentSub,
           childSub,
           parentOwnerSub
-        )
+        ),
+        keyrings = Seq(consumerKeyring, ownerKeyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2540,6 +2566,20 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val consumerKeyring = Keyring(
+        id = KeyringId("consumer-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
+      val ownerKeyring = Keyring(
+        id = KeyringId("owner-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -2551,7 +2591,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = consumerKeyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -2565,7 +2606,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = consumerKeyring.id
       )
 
       val parentOwnerSub = ApiSubscription(
@@ -2579,7 +2620,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_owner_token"
+        integrationToken = "parent_owner_token",
+        keyring = ownerKeyring.id
       )
       val childOwnerSub = ApiSubscription(
         id = ApiSubscriptionId("child_owner_sub"),
@@ -2593,7 +2635,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_owner_token",
-        parent = parentSub.id.some
+        keyring = ownerKeyring.id
       )
 
       setupEnvBlocking(
@@ -2621,7 +2663,8 @@ class ApiControllerSpec()
           parentSub,
           childSub,
           childOwnerSub
-        )
+        ),
+        keyrings = Seq(consumerKeyring, ownerKeyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2703,6 +2746,20 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val consumerKeyring = Keyring(
+        id = KeyringId("consumer-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
+      val ownerKeyring = Keyring(
+        id = KeyringId("owner-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -2714,7 +2771,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = consumerKeyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -2728,7 +2786,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = consumerKeyring.id
       )
 
       val parentOwnerSub = ApiSubscription(
@@ -2742,7 +2800,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_owner_token"
+        integrationToken = "parent_owner_token",
+        keyring = ownerKeyring.id
       )
       val childOwnerSub = ApiSubscription(
         id = ApiSubscriptionId("child_owner_sub"),
@@ -2756,7 +2815,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_owner_token",
-        parent = parentSub.id.some
+        keyring = ownerKeyring.id
       )
 
       setupEnvBlocking(
@@ -2784,7 +2843,8 @@ class ApiControllerSpec()
           parentSub,
           childSub,
           parentOwnerSub
-        )
+        ),
+        keyrings = Seq(consumerKeyring, ownerKeyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2865,6 +2925,20 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val consumerKeyring = Keyring(
+        id = KeyringId("consumer-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
+      val ownerKeyring = Keyring(
+        id = KeyringId("owner-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -2876,7 +2950,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = consumerKeyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -2890,7 +2965,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = consumerKeyring.id
       )
 
       val parentOwnerSub = ApiSubscription(
@@ -2904,7 +2979,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_owner_token"
+        integrationToken = "parent_owner_token",
+        keyring = ownerKeyring.id
       )
       val childOwnerSub = ApiSubscription(
         id = ApiSubscriptionId("child_owner_sub"),
@@ -2918,7 +2994,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_owner_token",
-        parent = parentSub.id.some
+        keyring = ownerKeyring.id
       )
 
       setupEnvBlocking(
@@ -2947,7 +3023,8 @@ class ApiControllerSpec()
           childSub,
           parentOwnerSub,
           childOwnerSub
-        )
+        ),
+        keyrings = Seq(consumerKeyring, ownerKeyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3031,6 +3108,13 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -3042,7 +3126,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -3056,7 +3141,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3083,7 +3168,8 @@ class ApiControllerSpec()
         subscriptions = Seq(
           parentSub,
           childSub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3166,6 +3252,13 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -3177,7 +3270,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -3191,7 +3285,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3218,7 +3312,8 @@ class ApiControllerSpec()
         subscriptions = Seq(
           parentSub,
           childSub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3302,6 +3397,13 @@ class ApiControllerSpec()
         authorizedTeams = Seq(teamOwner.id)
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -3313,7 +3415,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -3327,7 +3430,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3354,7 +3457,8 @@ class ApiControllerSpec()
         subscriptions = Seq(
           parentSub,
           childSub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3437,6 +3541,13 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanProd.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -3448,7 +3559,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -3462,7 +3574,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        parent = parentSub.id.some
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3489,7 +3601,8 @@ class ApiControllerSpec()
         subscriptions = Seq(
           parentSub,
           childSub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -5477,6 +5590,13 @@ class ApiControllerSpec()
     }
 
     "list all subscribed apis" in {
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -5488,7 +5608,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "test"
+        integrationToken = "test",
+        keyring = keyring.id
       )
 
       val secondApi =
@@ -5505,7 +5626,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "test2",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -5514,7 +5635,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner),
         usagePlans = defaultApi.plans ++ secondApi.plans,
         apis = Seq(defaultApi.api, secondApi.api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val sessionTest = loginWithBlocking(userAdmin, tenant)
@@ -7070,6 +7192,13 @@ class ApiControllerSpec()
       resp.status mustBe Status.FORBIDDEN
     }
     "not be extended subscription that we have already a parent" in {
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -7081,7 +7210,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "test"
+        integrationToken = "test",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -7095,7 +7225,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "test2",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -7103,7 +7233,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val resp = httpJsonCallBlocking(
@@ -7225,6 +7356,13 @@ class ApiControllerSpec()
         }
     }
     "be transformed in unique api key when the subscription hasn't parent" in {
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -7236,7 +7374,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "test"
+        integrationToken = "test",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -7250,7 +7389,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "test2",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -7258,7 +7397,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val apiKeyPath = otoroshiGetApikeyPath(parentSub.apiKey.clientId)
@@ -7332,6 +7472,13 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -7343,7 +7490,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "test"
+        integrationToken = "test",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -7357,7 +7505,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "test2",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -7379,7 +7527,8 @@ class ApiControllerSpec()
         teams = Seq(teamConsumer, teamOwner),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val resp = httpJsonCallBlocking(
@@ -7541,6 +7690,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -7552,7 +7708,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -7566,7 +7723,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -7589,7 +7746,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
         apis = Seq(parentApi, childApi, adminApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -7684,6 +7842,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -7695,7 +7860,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -7709,7 +7875,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -7732,7 +7898,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
         apis = Seq(parentApi, childApi, adminApi),
-        subscriptions = Seq(parentSub, childSub)
+        subscriptions = Seq(parentSub, childSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -7900,6 +8067,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -7911,7 +8085,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -7925,7 +8100,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
       val childSub2 = ApiSubscription(
         id = ApiSubscriptionId("child_sub_2"),
@@ -7939,7 +8114,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -7962,7 +8137,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -8083,6 +8259,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -8094,7 +8277,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -8108,7 +8292,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo" -> "bar").some
       )
       val childSub2 = ApiSubscription(
@@ -8123,7 +8307,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -8146,7 +8330,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -8302,6 +8487,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -8313,7 +8505,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -8327,7 +8520,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
       val childSub2 = ApiSubscription(
         id = ApiSubscriptionId("child_sub_2"),
@@ -8341,7 +8534,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -8364,7 +8557,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -8485,6 +8679,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -8496,7 +8697,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -8510,7 +8712,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo" -> "bar").some
       )
       val childSub2 = ApiSubscription(
@@ -8525,7 +8727,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -8548,7 +8750,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -8705,6 +8908,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -8716,7 +8926,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -8730,7 +8941,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo" -> "bar").some
       )
       val childSub2 = ApiSubscription(
@@ -8745,7 +8956,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -8768,7 +8979,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -8920,6 +9132,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -8932,7 +9151,8 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "parent_token",
-        customMetadata = Json.obj("parent-foo" -> "parent-bar").some
+        customMetadata = Json.obj("parent-foo" -> "parent-bar").some,
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -8946,7 +9166,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo" -> "bar").some
       )
       val childSub2 = ApiSubscription(
@@ -8961,7 +9181,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id)
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -8984,7 +9204,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -9171,6 +9392,13 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("child2.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -9182,7 +9410,8 @@ class ApiControllerSpec()
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "parent_token"
+        integrationToken = "parent_token",
+        keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child_sub"),
@@ -9196,7 +9425,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo" -> "bar").some
       )
       val childSub2 = ApiSubscription(
@@ -9211,7 +9440,7 @@ class ApiControllerSpec()
         customName = None,
         rotation = None,
         integrationToken = "child_token",
-        parent = Some(parentSub.id),
+        keyring = keyring.id,
         customMetadata = Json.obj("foo2" -> "bar2").some
       )
 
@@ -9235,7 +9464,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
         apis = Seq(parentApi, childApi, childApi2, adminApi),
-        subscriptions = Seq(parentSub, childSub, childSub2)
+        subscriptions = Seq(parentSub, childSub, childSub2),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)

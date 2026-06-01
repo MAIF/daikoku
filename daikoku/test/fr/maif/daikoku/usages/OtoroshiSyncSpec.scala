@@ -443,6 +443,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -455,7 +462,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("region" -> "eu-west").some
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
       )
       val consumerChildDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-child-dev"),
@@ -469,7 +477,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
       )
 
@@ -493,7 +501,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -562,6 +571,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlanId.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -574,7 +590,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("region" -> "eu-west").some
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
       )
       val consumerChildDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-child-dev"),
@@ -588,7 +605,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
       )
 
@@ -612,7 +629,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1113,6 +1131,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1125,7 +1150,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
+        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some,
+        keyring = keyring.id
       )
 
       val consumerChildDevSubscription = ApiSubscription(
@@ -1140,7 +1166,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("region" -> "eu-west").some
       )
 
@@ -1164,7 +1190,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1262,6 +1289,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1274,7 +1308,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
+        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some,
+        keyring = keyring.id
       )
 
       val consumerChildDevSubscription = ApiSubscription(
@@ -1289,7 +1324,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("region" -> "eu-west").some
       )
 
@@ -1313,7 +1348,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(user, tenant)
@@ -1412,6 +1448,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1424,7 +1467,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
+        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some,
+        keyring = keyring.id
       )
 
       val consumerChildDevSubscription = ApiSubscription(
@@ -1439,7 +1483,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("region" -> "eu-west").some
       )
 
@@ -1463,7 +1507,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(user, tenant)
@@ -1657,6 +1702,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1669,7 +1721,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("region" -> "eu-west").some
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
       )
       val consumerChildDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-child-dev"),
@@ -1683,7 +1736,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
       )
 
@@ -1707,7 +1760,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1811,6 +1865,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1823,7 +1884,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("region" -> "eu-west").some
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
       )
       val consumerChildDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-child-dev"),
@@ -1837,7 +1899,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
       )
 
@@ -1861,7 +1923,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1981,6 +2044,13 @@ class OtoroshiSyncSpec()
         defaultUsagePlan = childDevPlan.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = containerizedOtoroshi,
+        createdAt = DateTime.now()
+      )
       val consumerParentDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-parent-dev"),
         tenant = tenant.id,
@@ -1993,7 +2063,8 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        customMetadata = Json.obj("region" -> "eu-west").some
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
       )
       val consumerChildDevSubscription = ApiSubscription(
         id = ApiSubscriptionId("consumer-child-dev"),
@@ -2007,7 +2078,7 @@ class OtoroshiSyncSpec()
         customName = Some("Parent dev"),
         rotation = None,
         integrationToken = "test",
-        parent = consumerParentDevSubscription.id.some,
+        keyring = keyring.id,
         customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
       )
 
@@ -2031,7 +2102,8 @@ class OtoroshiSyncSpec()
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentDevPlan, childDevPlan),
         subscriptions =
-          Seq(consumerParentDevSubscription, consumerChildDevSubscription)
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)

@@ -21,7 +21,6 @@ import {
   AuditTrailList,
   CMSOffice,
   ImportExport,
-  InitializeFromOtoroshi,
   MailingInternalization,
   SessionList,
   TeamList,
@@ -396,14 +395,6 @@ export const DaikokuApp = () => {
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
                       <TenantAdminList />
-                    </RouteWithTitle>
-                  }
-                />
-                <Route
-                  path="/settings/init"
-                  element={
-                    <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
-                      <InitializeFromOtoroshi />
                     </RouteWithTitle>
                   }
                 />

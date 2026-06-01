@@ -2396,8 +2396,7 @@ object json {
             customMaxPerMonth =
               (json \ "customMaxPerMonth").asOpt(using LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            parent = (json \ "parent").asOpt(using ApiSubscriptionIdFormat),
-            keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
+            keyring = (json \ "keyring").as(using KeyringIdFormat),
             thirdPartySubscriptionInformations =
               (json \ "thirdPartySubscriptionInformations") match {
                 case JsDefined(value) =>
@@ -2470,19 +2469,32 @@ object json {
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "parent" -> o.parent
-          .map(ApiSubscriptionIdFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "keyring" -> o.keyring
-          .map(KeyringIdFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "keyring" -> KeyringIdFormat.writes(o.keyring),
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue]
       )
+  }
+
+  val KeyringOtoroshiBindingFormat = new Format[KeyringOtoroshiBinding] {
+    override def reads(json: JsValue): JsResult[KeyringOtoroshiBinding] =
+      (json \ "type").asOpt[String] match {
+        case Some("Otoroshi") =>
+          (json \ "id").validate(using OtoroshiSettingsIdFormat)
+            .map(KeyringOtoroshiBinding.Otoroshi(_))
+        case Some("Internal") => JsSuccess(KeyringOtoroshiBinding.Internal)
+        case Some(other) =>
+          JsError(s"Unknown KeyringOtoroshiBinding type: $other")
+        case None => JsError("Missing KeyringOtoroshiBinding type")
+      }
+
+    override def writes(o: KeyringOtoroshiBinding): JsValue = o match {
+      case KeyringOtoroshiBinding.Otoroshi(id) =>
+        Json.obj("type" -> "Otoroshi", "id" -> OtoroshiSettingsIdFormat.writes(id))
+      case KeyringOtoroshiBinding.Internal =>
+        Json.obj("type" -> "Internal")
+    }
   }
 
   val KeyringFormat = new Format[Keyring] {
@@ -2496,7 +2508,7 @@ object json {
             customName = (json \ "customName").asOpt[String],
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
             otoroshiSettings =
-              (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
+              (json \ "otoroshiSettings").as(using KeyringOtoroshiBindingFormat),
             createdAt = (json \ "createdAt").as(using DateTimeFormat),
             rotation =
               (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
@@ -2532,7 +2544,7 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
-        "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(o.otoroshiSettings),
+        "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(o.otoroshiSettings),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "rotation" -> o.rotation
           .map(ApiSubscriptionyRotationFormat.writes)

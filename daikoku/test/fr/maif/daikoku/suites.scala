@@ -197,6 +197,10 @@ object testUtils {
           daikokuComponents.env.dataStore.translationRepo
             .forAllTenant()
             .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.keyringRepo
+            .forAllTenant()
+            .deleteAll()
       } yield (logger.info("[DaikokuSpecHelper] :: flush database finished"))
     }
 
@@ -219,7 +223,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -241,7 +246,8 @@ object testUtils {
           operations,
           subscriptionDemands,
           usagePlans,
-          translations
+          translations,
+          keyrings
         ),
         5.second
       )
@@ -266,7 +272,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ): Future[Unit] = {
       for {
 //        _ <- waitForDaikokuSetup()
@@ -307,6 +314,14 @@ object testUtils {
         _ <- Source(apis.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiRepo
+              .forAllTenant()
+              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+          )
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(keyrings.toList)
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.keyringRepo
               .forAllTenant()
               .save(i)(using daikokuComponents.env.defaultExecutionContext)
           )

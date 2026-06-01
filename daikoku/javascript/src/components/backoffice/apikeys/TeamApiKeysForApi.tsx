@@ -38,10 +38,6 @@ import {
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
 
-type ISubscriptionWithChildren = ISubscriptionExtended & {
-  children: Array<ISubscriptionExtended>;
-};
-
 const DisplayLink = ({ value }: { value: string }) => {
   const [DisplayLink, setDisplayLink] = useState(false)
   const { translate } = useContext(I18nContext);
@@ -210,14 +206,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             <li dangerouslySetInnerHTML={{
               __html: translate({
                 key: 'team_apikey_for_api.ask_for_make_unique.2', replacements: [
-                  `<strong>${details.parentSubscription?.api.name}/${details.parentSubscription?.plan.customName}</strong>`
-                ]
-              })
-            }}></li>
-            <li dangerouslySetInnerHTML={{
-              __html: translate({
-                key: 'team_apikey_for_api.ask_for_make_unique.3', replacements: [
-                  `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
+                  `<strong>${details.keyring?.customName ?? ''}</strong>`
                 ]
               })
             }}></li>
@@ -252,7 +241,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     )
   };
 
-  const deleteApiKey = (subscription: ISubscriptionWithChildren, details: IApiSubscriptionDetails) => {
+  const deleteApiKey = (subscription: ISubscriptionExtended, details: IApiSubscriptionDetails) => {
     const afterDeletionFunction = () => {
       const keyToInvalidate = ["data", "subscriptions", "mySubscription"]
       return queryClient.invalidateQueries({
@@ -262,130 +251,37 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           translate("apikeys.delete.success.message")
         ));
     }
-    if (subscription.children.length) {
-      openFormModal({
-        title: translate("apikeys.delete.modal.title"),
-        schema: {
-          choice: {
-            type: type.string,
-            format: format.buttonsSelect,
-            label: translate("apikeys.delete.choice.label"),
-            options: [
-              {
-                label: translate("apikeys.delete.choice.promotion"),
-                value: "promotion"
-              },
-              {
-                label: translate("apikeys.delete.choice.extraction"),
-                value: "extraction"
-              },
-              {
-                label: translate("apikeys.delete.choice.delete"),
-                value: "delete"
-              },
-            ]
-          },
-          childId: {
-            type: type.string,
-            format: format.select,
-            label: translate("apikeys.delete.child.label"),
-            options: subscription.children,
-            transformer: (s: ISubscriptionExtended) => ({ value: s._id, label: `${s.apiName}/${s.planName}` }),
-            visible: (d) => d.rawValues.choice === 'promotion',
-          }
-        },
-        onSubmit: ({ choice, childId }) => openFormModal(
-          {
-            title: translate("apikeys.delete.confirm.modal.title"),
-            description: <div className="alert alert-danger" role="alert">
-              <h4 className="alert-heading">{translate('Warning')}</h4>
-              <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
-              {!details.parentSubscription && choice === 'delete' && <>
-                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll")}</p>
-                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll.list")}</p>
-                <ul>
-                  {details.accessibleResources.map((resource) => (<li key={resource.apiSubscription._id}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
-                </ul>
-              </>}
-
-              {!details.parentSubscription && choice === 'extraction' && <>
-                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren")}</p>
-                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren.list")}</p>
-                <ul>
-                  {details.accessibleResources.map(resource => (<li key={resource.apiSubscription._id}>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
-                </ul>
-              </>}
-
-              {!details.parentSubscription && choice === 'promotion' &&
-                <p dangerouslySetInnerHTML={{
-                  __html: translate({
-                    key: "delete.subscription.confirm.modal.description.parent.promoteChild",
-                    replacements: [
-                      `<strong>${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.api.name}/${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.plan.customName}</strong>`,
-                      `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
-                    ]
-                  })
-                }}></p>}
-            </div>,
-            schema: {
-              validation: {
-                type: type.string,
-                label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
-                constraints: [
-                  constraints.required(translate('constraints.required.value')),
-                  constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
-                ],
-                defaultValue: ""
-              }
-            },
-            actionLabel: translate('Confirm'),
-            onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
-              .then(afterDeletionFunction)
-          }
-        ),
-        actionLabel: translate('Delete'),
-        noClose: true
-      })
-    } else {
-      openFormModal(
-        {
-          title: translate("apikeys.delete.confirm.modal.title"),
-          description: <div className="alert alert-danger" role="alert">
-            <h4 className="alert-heading">{translate('Warning')}</h4>
-            <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
-            <ul>
-              {!details.parentSubscription && <p>{translate("delete.subscription.confirm.modal.description.single")}</p>}
-              {!!details.parentSubscription &&
-                <li dangerouslySetInnerHTML={{
-                  __html:
-                    translate({
-                      key: "delete.subscription.confirm.modal.description.child",
-                      replacements: [
-                        `<strong>${details.parentSubscription.api.name
-                        } / ${details.parentSubscription.plan.customName}</strong>`,
-                        `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`,
-                      ]
-                    })
-                }}></li>}
-            </ul>
-          </div>,
-          schema: {
-            validation: {
-              type: type.string,
-              label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
-              constraints: [
-                constraints.required(translate('constraints.required.value')),
-                constraints.matches(new RegExp(`${escapeRegExp(subscription.apiName)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(subscription.planName)}`), translate('constraints.match.subscription'))
-              ],
-              defaultValue: ""
-            }
-          },
-          actionLabel: translate('Confirm'),
-          onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
-            .then(afterDeletionFunction)
+    openFormModal({
+      title: translate("apikeys.delete.confirm.modal.title"),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
+        {subscription.aggregated && details.keyring && (
+          <p dangerouslySetInnerHTML={{
+            __html: translate({
+              key: "delete.subscription.confirm.modal.description.keyring",
+              replacements: [
+                `<strong>${details.keyring.customName ?? details.keyring.apiKey.clientName}</strong>`
+              ]
+            })
+          }}></p>
+        )}
+      </div>,
+      schema: {
+        validation: {
+          type: type.string,
+          label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
+          constraints: [
+            constraints.required(translate('constraints.required.value')),
+            constraints.matches(new RegExp(`${escapeRegExp(subscription.apiName)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(subscription.planName)}`), translate('constraints.match.subscription'))
+          ],
+          defaultValue: ""
         }
-      )
-    }
+      },
+      actionLabel: translate('Confirm'),
+      onSubmit: _ => Services.deleteApiSubscription(props.team._id, subscription._id)
+        .then(afterDeletionFunction)
+    })
   };
 
   const toggleApiKeyRotation = (
@@ -483,22 +379,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             subs.tags.map(t => t.toLocaleLowerCase()).includes(search.toLocaleLowerCase())
         });
 
-    const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
-    const sortedApiKeys = sorted
-      .filter((f) => f.parent)
-      .reduce<Array<ISubscriptionWithChildren>>(
-        (acc, sub) => {
-          return acc.find((a) => a._id === sub.parent)
-            ? acc.map((a) => {
-              if (a._id === sub.parent) a.children.push(sub);
-              return a;
-            })
-            : [...acc, { ...sub, children: [] }];
-        },
-        sorted
-          .filter((f) => !f.parent)
-          .map((sub) => ({ ...sub, children: [] }))
-      );
+    const sortedApiKeys = sortBy(filteredApiKeys, ['plan', 'customName']);
 
     const apiLink = `/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/description`;
     return (
@@ -565,7 +446,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
 type ApiKeyCardProps = {
   api: IApi;
-  subscription: ISubscriptionWithChildren;
+  subscription: ISubscriptionExtended;
   updateCustomName: (
     name: string
   ) => Promise<void>;
@@ -627,31 +508,18 @@ export const ApiKeyCard = ({
         apiSubscription {
           _id
           api { name }
-          plan { 
+          plan {
             customName
             autoRotation
           }
-          parent { _id }
+          aggregated
           customName
         }
-        parentSubscription {
+        keyring {
           _id
           customName
-          api {
-            _id
-            _humanReadableId
-            name
-            tenant {
-              id
-            }
-            team {
-              _id
-              _humanReadableId
-            }
-            currentVersion
-          }
-          plan {
-            customName
+          apiKey {
+            clientName
           }
         }
         accessibleResources {
@@ -784,8 +652,8 @@ export const ApiKeyCard = ({
         {isPending && <Placeholder />}
         <div className="api-subscription__container flex-column flex-xl-row gap-3">
           <div className='api-subscription__icon flex-row flex-xl-column'>
-            {subscription.children.length === 0 && <i className={"fa-solid icon fa-key"} />}
-            {subscription.children.length > 0 && <svg
+            {!subscription.aggregated && <i className={"fa-solid icon fa-key"} />}
+            {subscription.aggregated && <svg
               width="32"
               viewBox="-18.91 0 122.88 122.88"
               version="1.1"
@@ -975,7 +843,7 @@ export const ApiKeyCard = ({
               {translate("subscription.custom.name.update.label")}
             </span>
             <div className="dropdown-divider" />
-            {!subscription.parent && !disableRotation && <span
+            {!subscription.aggregated && !disableRotation && <span
               className="dropdown-item cursor-pointer"
               onClick={() => openFormModal({
                 title: translate("ApiKey rotation"),
@@ -987,28 +855,26 @@ export const ApiKeyCard = ({
             >
               {translate("subscription.rotation.update.label")}
             </span>}
-            {!subscription.parent && <span
+            {!subscription.aggregated && <span
               className="dropdown-item cursor-pointer "
               onClick={() => withLoader(transferKey)}
             >
               {translate("subscription.transfer.label")}
             </span>}
             <span
-              className={classNames("dropdown-item cursor-pointer", {
-                disabled: subscription.parent && !subscription.parentUp
-              })}
+              className="dropdown-item cursor-pointer"
               onClick={() => withLoader(toggle)}
             >
               {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             </span>
             <div className="dropdown-divider" />
-            {!subscription.parent && <span
+            {!subscription.aggregated && <span
               className="dropdown-item cursor-pointer danger"
               onClick={() => withLoader(regenerateSecret)}
             >
               {translate("subscription.reset.secret.label")}
             </span>}
-            {subscription.parent && <span
+            {subscription.aggregated && <span
               className="dropdown-item cursor-pointer danger"
               onClick={() => withLoader(() => makeUniqueApiKey(detailQuery.data))}
             >

@@ -215,17 +215,6 @@ export const apisInit = (apis: any) =>
     body: JSON.stringify(apis),
   });
 
-export const subscriptionsInit = (subscriptions: any) =>
-  customFetch('/api/subscriptions/_init', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify(subscriptions),
-  });
-
 export const archiveApiKey = (
   teamId: string,
   subscriptionId: string,
@@ -1173,16 +1162,11 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 
 export const deleteApiSubscription = (
   teamId: string,
-  subscriptionId: string,
-  action: string,
-  childId?: string
+  subscriptionId: string
 ): Promise<ResponseError | any> =>
-  customFetch(
-    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}`, {
+    method: 'DELETE',
+  });
 
 export const extendApiKey = (
   apiId: string,
@@ -1692,18 +1676,12 @@ export const graphql = {
           customMaxPerMonth
           customReadOnly
           adminCustomName
-          parent {
+          aggregated
+          keyring {
             _id
-            adminCustomName
-            enabled
-            validUntil
-            api {
-              _id
-              name
-            }
-            plan {
-              _id
-              customName
+            customName
+            apiKey {
+              clientName
             }
           }
         }
@@ -1766,8 +1744,9 @@ export const graphql = {
                 _id
                 customName
               }
-              parentSubscriptionId {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId

@@ -91,33 +91,39 @@ type ApiKeysViewProps = {
 
 const ApiKeysView = (props: ApiKeysViewProps) => {
   const { translate } = useContext(I18nContext);
+  // an aggregated keyring appears once per member in props.apiKeys, dedupe by keyring id
+  const seen = new Set<string>();
+  const keyringReps = props.apiKeys
+    .filter((a) => {
+      if (!a.keyring || seen.has(a.keyring)) return false;
+      seen.add(a.keyring);
+      return true;
+    })
+    .sort(
+      (a, b) =>
+        a.apiName.localeCompare(b.apiName) ||
+        (a.customName || a.planName).localeCompare(b.customName || b.planName)
+    );
   return (
     <div>
       <h5 className="modal-title" id="modal-title">
-        {translate('apikey_select_modal.select_your_api_key')}
+        {translate('apikey_select_modal.select_your_keyring')}
       </h5>
       <div className="team-selection__container">
-        {props.apiKeys
-          .filter((a) => !a.parent)
-          .sort(
-            (a, b) =>
-              a.apiName.localeCompare(b.apiName) ||
-              (a.customName || a.planName).localeCompare(
-                b.customName || b.planName
-              )
-          )
-          .map((apiKey) => {
-            return (
-              <div
-                key={apiKey._id}
-                className="team-selection team-selection__team selectable mt-1"
-                onClick={() => props.extendApiKey(apiKey)}
-              >
-                <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName || apiKey.planName
-                  }`}</span>
-              </div>
-            );
-          })}
+        {keyringReps.map((apiKey) => (
+          <div
+            key={apiKey.keyring as string}
+            className="team-selection team-selection__team selectable mt-1"
+            onClick={() => props.extendApiKey(apiKey)}
+          >
+            <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName}`}</span>
+            {!apiKey.aggregated && (
+              <small className="ms-2 text-muted">
+                {translate('apikey_select_modal.create_keyring_with_this_key')}
+              </small>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
