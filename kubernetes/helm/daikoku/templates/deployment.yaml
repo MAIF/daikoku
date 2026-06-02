@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "daikoku.fullname" . }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # maxSurge:0 guarantees we never run two pods sharing INSTANCE_NUMBER=0 during a rollout.
+  strategy:
+    {{- toYaml .Values.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "daikoku.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Roll pods when configuration or provided secret values change.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secrets: {{ printf "%v|%v|%v" .Values.secrets .Values.postgresql.auth.password .Values.externalDatabase.existingSecret | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "daikoku.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if and .Values.postgresql.enabled .Values.waitForDatabase.enabled }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.postgresql.image | quote }}
+          imagePullPolicy: {{ .Values.postgresql.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ include "daikoku.database.host" . }} -p {{ include "daikoku.database.port" . }} -U {{ .Values.postgresql.auth.username | quote }}; do
+                echo "waiting for postgres at {{ include "daikoku.database.host" . }}:{{ include "daikoku.database.port" . }} ..."
+                sleep 2
+              done
+      {{- end }}
+      containers:
+        - name: daikoku
+          image: {{ include "daikoku.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "daikoku.fullname" . }}
+          env:
+            - name: PLAY_CRYPTO_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.secretName" . }}
+                  key: PLAY_CRYPTO_SECRET
+            - name: DAIKOKU_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.secretName" . }}
+                  key: DAIKOKU_SIGNING_KEY
+            - name: DAIKOKU_CYPHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.secretName" . }}
+                  key: DAIKOKU_CYPHER_SECRET
+            - name: DAIKOKU_INIT_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.secretName" . }}
+                  key: DAIKOKU_INIT_ADMIN_PASSWORD
+            - name: DAIKOKU_HEALTH_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.secretName" . }}
+                  key: DAIKOKU_HEALTH_ACCESS_KEY
+            - name: DAIKOKU_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.postgresSecretName" . }}
+                  key: {{ include "daikoku.database.passwordKey" . }}
+            {{- with .Values.daikoku.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- $probeHost := include "daikoku.initHost" . }}
+          {{- with .Values.probes.startup }}
+          startupProbe:
+            {{- include "daikoku.probe" (dict "probe" . "host" $probeHost) | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
+          livenessProbe:
+            {{- include "daikoku.probe" (dict "probe" . "host" $probeHost) | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
+          readinessProbe:
+            {{- include "daikoku.probe" (dict "probe" . "host" $probeHost) | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

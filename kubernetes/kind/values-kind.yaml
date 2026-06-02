@@ -1,0 +1,31 @@
+# Chart overrides for local kind testing. Use with:
+#   helm install daikoku ./kubernetes/helm/daikoku -n daikoku --create-namespace \
+#     -f kubernetes/kind/values-kind.yaml
+ingress:
+  host: daikoku.127.0.0.1.nip.io
+  annotations:
+    # Override the default letsencrypt-prod with the local self-signed issuer.
+    cert-manager.io/cluster-issuer: selfsigned
+  tls:
+    enabled: true
+    secretName: daikoku-tls
+
+daikoku:
+  # initHost, exposedOn and sslEnabled are derived from ingress.host / ingress.tls automatically.
+  extraEnv:
+    # Make the JVM honour the container memory limit.
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:MaxRAMPercentage=75"
+
+# Trim resources so it fits comfortably on a laptop kind node.
+resources:
+  requests:
+    cpu: 250m
+    memory: 768Mi
+  limits:
+    cpu: "2"
+    memory: 1536Mi
+
+postgresql:
+  persistence:
+    size: 2Gi

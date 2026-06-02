@@ -1,0 +1,211 @@
+# Default values for the Daikoku chart.
+# Override what you need with `-f my-values.yaml` or `--set key=value`.
+
+# -- Number of Daikoku pods.
+# ⚠️ Keep this at 1 unless you give each pod a UNIQUE INSTANCE_NUMBER (Snowflake worker id).
+# Two pods sharing INSTANCE_NUMBER can mint colliding IDs. See the README to scale out.
+replicaCount: 1
+
+image:
+  repository: maif/daikoku
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Optional registry pull secrets, e.g. [{name: my-regcred}]
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Rollout strategy. maxSurge:0 ensures two INSTANCE_NUMBER=0 pods never overlap.
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Daikoku application configuration (non-secret -> rendered into a ConfigMap)
+# ---------------------------------------------------------------------------
+daikoku:
+  mode: prod
+  # Initial tenant hostname. Empty -> defaults to ingress.host (kept aligned automatically).
+  # With tenantProvider=Hostname this MUST be the hostname users hit.
+  initHost: ""
+  # External port advertised in Daikoku's absolute URLs. Empty -> derived from the ingress
+  # (443 with TLS, 80 without) or the Service port. Set only for a non-standard port.
+  exposedOn: ""
+  # Tenant resolution: Hostname (match the request Host header) | local | header.
+  tenantProvider: Hostname
+  admin:
+    name: "Daikoku admin"
+    email: "admin@example.com"
+  session:
+    # true behind TLS (default). Set false only when served over plain HTTP.
+    secure: true
+  postgres:
+    schema: public
+    poolSize: 30
+    ssl:
+      enabled: false
+      mode: verify-ca
+  # Extra raw env vars for any other DAIKOKU_* setting, e.g.:
+  #   - name: DAIKOKU_NOTIFICATIONS_PURGE_CRON
+  #     value: "true"
+  extraEnv: []
+
+# ---------------------------------------------------------------------------
+# Secrets. Leave a value empty to auto-generate it on first install and KEEP it
+# stable across upgrades (rotating cypherSecret would make stored data unreadable).
+# Provide `existingSecret` to bring your own (must hold all DAIKOKU_* keys below).
+# ---------------------------------------------------------------------------
+secrets:
+  existingSecret: ""
+  playCryptoSecret: ""   # PLAY_CRYPTO_SECRET  (Play session/crypto)
+  signingKey: ""         # DAIKOKU_SIGNING_KEY (JWT)
+  cypherSecret: ""       # DAIKOKU_CYPHER_SECRET (data encryption)
+  adminPassword: ""      # DAIKOKU_INIT_ADMIN_PASSWORD
+  healthAccessKey: ""    # DAIKOKU_HEALTH_ACCESS_KEY (guards /health/details)
+
+# ---------------------------------------------------------------------------
+# Embedded PostgreSQL (StatefulSet + PVC). Set enabled:false to use externalDatabase.
+# Daikoku creates its schema and tables on first boot — no migration job needed.
+# ---------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  imagePullPolicy: IfNotPresent
+  auth:
+    username: daikoku
+    database: daikoku
+    # Empty -> auto-generated and stored in the chart's Postgres Secret.
+    password: ""
+  persistence:
+    size: 10Gi
+    # Empty -> cluster default StorageClass.
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  # postgres:16-alpine runs as uid/gid 70.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 70
+    runAsGroup: 70
+    fsGroup: 70
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: false
+
+# Used only when postgresql.enabled = false.
+externalDatabase:
+  host: ""
+  port: 5432
+  database: daikoku
+  username: daikoku
+  # Secret holding the DB password (required for an external DB).
+  existingSecret: ""
+  passwordKey: postgres-password
+
+# Optional init container that blocks until Postgres accepts connections.
+waitForDatabase:
+  enabled: true
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  # cert-manager terminates TLS. Adjust the issuer or remove for a provided cert.
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: daikoku.example.com
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: true
+    secretName: daikoku-tls
+
+# ---------------------------------------------------------------------------
+# Probes. Calibrated to Daikoku's behaviour:
+#  - /api/versions/_daikoku answers without the DB  -> startup probe
+#  - /health ALWAYS returns 200 (ready|initializing) -> good liveness, poor readiness
+#  - readiness is a TCP check so traffic isn't routed to a not-yet-listening pod.
+#    For strict DB gating, swap readiness to an exec that greps `"ready"` (needs a shell).
+# ---------------------------------------------------------------------------
+probes:
+  startup:
+    httpGet:
+      path: /api/versions/_daikoku
+      port: http
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+  liveness:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# The container runs as uid 1001 / gid 0 (sbt-native-packager default).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 0
+  fsGroup: 0
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  # Hardening: set true, then add an emptyDir for any path Daikoku writes (a writable
+  # /tmp is already mounted). No PID file is written, so this is feasible.
+  readOnlyRootFilesystem: false
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable: ""
+
+podAnnotations: {}
+nodeSelector: {}
+affinity: {}
+tolerations: []
+extraVolumes: []
+extraVolumeMounts: []
