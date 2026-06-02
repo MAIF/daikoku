@@ -1,5 +1,5 @@
 $level1_text-color: #{"var(--level1_text-color, #f1f3f6)"}; //body
-$level1_bg-color: #{"var(--level1_bg-color, #8a8a8a)"}; //body
+$level1_bg-color: #{"var(--level1_bg-color, #F9F9F9)"}; //body
 $level1_link-color: #{"var(--level1_link-color, #4c4c4d)"};
 $level1_link-hover-color: #{"var(--level1_link-hover-color, orange)"};
 
@@ -46,21 +46,30 @@ $badge-tags-bg-color: #{"var(--badge-tags-bg-color, #ffc107)"}; //components
 $badge-tags-bg-hover-color: #{"var(--badge-tags-bg-hover-color, #ffe1a7)"}; //components
 $badge-tags-text-color: #{"var(--badge-tags-text-color, #212529)"}; //components
 
-$error-color: #{"var(--error-color, #ff6347)"}; //status
-$success-color: #{"var(--success-color, #65B741)"}; //status
-$info-color: #{"var(--info-color, #17a2b8)"}; //status
-$warning-color: #{"var(--warning-color, #ffc107)"}; //status
-$danger-color: #{"var(--danger-color, #dc3545)"}; //status
-$neutral-color: #{"var(--neutral-color, #4e5760)"}; //status
+$success-color: #{"var(--success-color, #006300)"}; //status
+$success-color-bg: #{"var(--success-color-bg, #eefbef)"}; //status
 
-$primary-color: #{"var(--primary-color, #29438D)"};
+$info-color: #{"var(--info-color, #11379b)"}; //status
+$info-color-bg: #{"var(--info-color-bg, #ebf0fa)"}; //status
+
+$warning-color: #{"var(--warning-color, #856404)"}; //status
+$warning-color-bg: #{"var(--warning-color-bg, #fffcd3)"};
+
+$danger-color: #{"var(--danger-color, #95090f)"}; //status
+$danger-color-bg: #{"var(--danger-color-bg, #fceff0)"}; //status
+
+$neutral-color: #{"var(--neutral-color, #828282)"}; //status
+$neutral-color-bg: #{"var(--neutral-color-bg, #e6e6e6)"}; //status
+
+$primary-color: #{"var(--primary-color, #29438d)"};
+$primary-color-bg: #{"var(--primary-bg-color, #d6dbe9)"};
 
 $card-header-bg-color : #{"var(--card_header-bg-color, #404040)"};
 $card-header-text-color : #{"var(--card_header-text-color, #fff)"};
-$card-bg-color:  #{"var(--card_bg-color, #282828)"};
+$card-bg-color: #{"var(--card_bg-color, #282828)"};
 $card-text-color: #{"var(--card_text-color, #FFF)"};
 $card-link-color: #{"var(--card_link-color, #97b0c7)"};
-$card-link-hover-color:  #{"var(--card_link-hover-color, #a9cbea)"};
+$card-link-hover-color: #{"var(--card_link-hover-color, #a9cbea)"};
 
 $topbar-height: 50px;
 

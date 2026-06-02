@@ -1632,6 +1632,16 @@
   "notifications.page.filters.all.notifications.label": "Toutes",
   "notifications.page.filters.unread.notifications.label": "À traiter",
   "notifications.page.filters.clear.label": "Réinitialiser les filtres",
+  "table.filters.clear.label": "Réinitialiser les filtres",
+  "table.filter.summary.label": {
+    "s": "%s sélectionné",
+    "p": "%s sélectionnés"
+  },
+  "table.rows.selected.count.label": {
+    "s": "%s ligne sélectionnée",
+    "p": "%s lignes sélectionnées"
+  },
+  "table.select.all.label": "Sélectionner les %s éléments",
   "notifications.page.table.title": "Notifications",
   "notifications.page.table.select.all.label": "tout sélectionner",
   "notifications.page.table.selected.count.label": {
@@ -1733,6 +1743,7 @@
   "dashboard.tile.error": "Désolé, une erreur est survenue",
   "dashboard.tile.error.button.label": "Récupérer les données",
   "dashboard.page.tenant.setting.button.label": "Réglage du tenant",
+  "dashboard.page.tenant.demands.button.label": "Demandes à valider",
   "dashboard.apis.tile.title": "Mes APIs",
   "dashboard.apikeys.tile.title": "Mes clé d'API",
   "dashboard.demands.tile.title": "Demandes à valider",
@@ -1745,6 +1756,8 @@
   "dashboard.apis.table.header.label.tags": "Tags",
   "dashboard.apis.table.header.label.team": "Équipe",
   "dashboard.apis.table.header.label.status": "Statut",
+  "dashboard.apis.table.header.label.subscriptions": "Souscriptions",
+  "dashboard.apis.table.header.label.subscriptions.cells": "souscription",
   "dashboard.apis.table.header.label.actions": "Action",
   "dashboard.filters.tag.label": {
     "s": "Tag",
@@ -1774,8 +1787,11 @@
   "search.team.placeholder": "Rechercher une équipe",
   "dashboard.create.team.button.label": "Créer une équipe",
   "dashboard.api.table.more.button.label": "afficher plus d'APIs",
-  "dashboard.filters.subscribe.apis.only.label": "APIs souscrites seulement",
-    "dashboard.api.list.title": "Liste des APIs",
+  "dashboard.filters.subscribe.apis.only.label": "APIs souscrites",
+  "dashboard.apis.selected.count": " apis selectionnées (sur %s affichées)",
+  "dashboard.apis.filterd.count": " apis trouvées (sur %s)",
+  "dashboard.filters.selected.apis.apiKeys.subscribe.button": "Obtenir les clés",
+  "dashboard.api.list.title": "Liste des APIs",
   "oauth2.form.role.claim.label": "Nom du claim des rôles",
   "oauth2.form.role.claim.help": "Nom du claim OpenID contenant les rôles de l’utilisateur.",
   "oauth2.form.admin.role.label": "Rôle administrateur",

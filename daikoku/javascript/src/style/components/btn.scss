@@ -39,23 +39,23 @@ button {
 
 .btn-danger {
   color: #fff;
-  border-color: variables.$error-color;
-  background-color: variables.$error-color;
+  border-color: variables.$danger-color;
+  background-color: variables.$danger-color;
 
   &-negative {
-    color: variables.$error-color;
-    border-color: variables.$error-color;
+    color: variables.$danger-color;
+    border-color: variables.$danger-color;
     background-color: variables.$btn-bg-color;
 
     &:hover {
       color: #fff;
-      background-color: variables.$error-color;
+      background-color: variables.$danger-color;
     }
   }
 
   &:hover {
     color: #fff;
-    background-color: variables.$error-color;
+    background-color: variables.$danger-color;
   }
 }
 
