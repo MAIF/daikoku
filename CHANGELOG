@@ -960,3 +960,26 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v18.10.0] - 2026-06-02
+
+## :star: New Features
+
+- Add subscription.metadata as accessible pattern for apikey name [#1064](https://github.com/MAIF/daikoku/issues/1064)
+
+## :beetle: Bug Fixes
+
+- API pricing dosen't work correctly if plan is private [#1097](https://github.com/MAIF/daikoku/issues/1097)
+- API subscriptions page shows inconsistent results depending on the user [#1096](https://github.com/MAIF/daikoku/issues/1096)
+- Delete API key button is visible for simple team user but does not work [#1080](https://github.com/MAIF/daikoku/issues/1080)
+- "oops" in "pending request" block [#1078](https://github.com/MAIF/daikoku/issues/1078)
+- Migration button mongo -> pg should be hidden when already in PG [#1072](https://github.com/MAIF/daikoku/issues/1072)
+- cms.export_all button does not work [#1071](https://github.com/MAIF/daikoku/issues/1071)
+- Search from UI crash with ' character [#1069](https://github.com/MAIF/daikoku/issues/1069)
+- When viewing an issue that has a comment posted by a deleted user or a user without avatar, the app crashes with: [#1065](https://github.com/MAIF/daikoku/issues/1065)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
