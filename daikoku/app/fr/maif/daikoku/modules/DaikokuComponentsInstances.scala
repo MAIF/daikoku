@@ -98,6 +98,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val auditTrailController = wire[AuditTrailController]
   lazy val entitiesController = wire[EntitiesController]
   lazy val sessionController = wire[SessionController]
+  lazy val loggersController = wire[LoggersController]
   lazy val jobsController = wire[JobsController]
   lazy val consumptionController = wire[ConsumptionController]
   lazy val teamAssetsController = wire[TeamAssetsController]

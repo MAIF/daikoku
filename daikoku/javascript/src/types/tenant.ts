@@ -274,6 +274,11 @@ export interface ISimpleSession {
   ttl: number;
 }
 
+export interface ILogger {
+  name: string;
+  level: string;
+}
+
 type AlgoSettings =
   | {
       type: 'HSAlgoSettings';
