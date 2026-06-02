@@ -1380,8 +1380,6 @@ class ApiControllerSpec()
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-
-
       // test if plans are deleted
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo

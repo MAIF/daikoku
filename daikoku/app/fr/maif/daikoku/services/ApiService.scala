@@ -16,8 +16,18 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob, SyncInformation}
-import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
+import fr.maif.daikoku.jobs.{
+  ApiKeyStatsJob,
+  OtoroshiSynchronizerJob,
+  SyncInformation
+}
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  JsonOperationsHelper,
+  OtoroshiClient,
+  Translator,
+  metadataObjectToMap
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -89,8 +99,9 @@ class ApiService(
     val date = DateTime.now()
     val createdAtMillis = date.getMillis.toString
     val createdAt = date.toString()
-    
-    val clientId = maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
+
+    val clientId =
+      maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
       s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
@@ -121,11 +132,12 @@ class ApiService(
       ++ api.metadata.map(t => ("api.metadata." + t._1, t._2))
       ++ plan.metadata.map(t => ("plan.metadata." + t._1, t._2))
       ++ metadataObjectToMap(
-      customMetadata
-        .flatMap(_.asOpt[Map[String, JsValue]])
-        .getOrElse(Map.empty[String, JsValue]))
-      .map(t => ("subscription.metadata." + t._1, t._2))
-    
+        customMetadata
+          .flatMap(_.asOpt[Map[String, JsValue]])
+          .getOrElse(Map.empty[String, JsValue])
+      )
+        .map(t => ("subscription.metadata." + t._1, t._2))
+
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
         clientId = clientId,
@@ -401,13 +413,13 @@ class ApiService(
         env.dataStore.withTransaction {
           for {
             _ <- env.dataStore.apiSubscriptionRepo
-                   .forTenant(tenant.id)
-                   .save(apiSubscription)
+              .forTenant(tenant.id)
+              .save(apiSubscription)
             _ <- env.dataStore.tenantRepo.save(
-                   tenant.copy(adminSubscriptions =
-                     tenant.adminSubscriptions :+ apiSubscription.id
-                   )
-                 )
+              tenant.copy(adminSubscriptions =
+                tenant.adminSubscriptions :+ apiSubscription.id
+              )
+            )
           } yield apiSubscription
         }
       )
@@ -2093,11 +2105,11 @@ class ApiService(
                 )
                 for {
                   _ <- env.dataStore.subscriptionDemandRepo
-                         .forTenant(tenant)
-                         .save(demand.copy(state = SubscriptionDemandState.Accepted))
+                    .forTenant(tenant)
+                    .save(demand.copy(state = SubscriptionDemandState.Accepted))
                   _ <- env.dataStore.notificationRepo
-                         .forTenant(tenant)
-                         .save(newNotification)
+                    .forTenant(tenant)
+                    .save(newNotification)
                 } yield ()
               }
             )
@@ -2460,23 +2472,23 @@ class ApiService(
           )
           for {
             _ <- env.dataStore.subscriptionDemandRepo
-                   .forTenant(tenant)
-                   .save(
-                     demand.copy(
-                       state = SubscriptionDemandState.Refused,
-                       steps = demand.steps.map(s =>
-                         if (s.id == stepId)
-                           s.copy(
-                             state = SubscriptionDemandState.Refused,
-                             metadata = Json.obj("by" -> sender.asJson)
-                           )
-                         else s
-                       )
-                     )
-                   )
+              .forTenant(tenant)
+              .save(
+                demand.copy(
+                  state = SubscriptionDemandState.Refused,
+                  steps = demand.steps.map(s =>
+                    if (s.id == stepId)
+                      s.copy(
+                        state = SubscriptionDemandState.Refused,
+                        metadata = Json.obj("by" -> sender.asJson)
+                      )
+                    else s
+                  )
+                )
+              )
             _ <- env.dataStore.notificationRepo
-                   .forTenant(tenant)
-                   .save(newNotification)
+              .forTenant(tenant)
+              .save(newNotification)
           } yield ()
         }
       )

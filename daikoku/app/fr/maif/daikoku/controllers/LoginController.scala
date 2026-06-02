@@ -257,7 +257,7 @@ class LoginController(
       case Some(user) if user.failedLoginAttempts != 0 =>
         val delay = userService.delayForAttempt(user)
         after(delay.seconds)(BadRequest(Json.obj("error" -> true)).future)
-        
+
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -353,12 +353,14 @@ class LoginController(
                   )
                 )
                 .map {
-                  case true  => Right(Redirect(s"/2fa?token=$token"))
-                  case false => Left(AppError.InternalServerError("Failed to save user"))
+                  case true => Right(Redirect(s"/2fa?token=$token"))
+                  case false =>
+                    Left(AppError.InternalServerError("Failed to save user"))
                 }
             )
           case _ =>
-            EitherT.liftF(createSession(sessionMaxAge, cleanUser, request, tenant))
+            EitherT
+              .liftF(createSession(sessionMaxAge, cleanUser, request, tenant))
         }
       }
     }
@@ -366,9 +368,13 @@ class LoginController(
     result.foldF(
       {
         case AppError.LoginRateLimited(delay) =>
-          after(delay.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+          after(delay.seconds)(
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          )
         case AppError.Unauthorized =>
-          after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+          after(3.seconds)(
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          )
         case error =>
           after(3.seconds)(error.renderF())
       },
@@ -609,18 +615,35 @@ class LoginController(
                         // the increment. We handle it here so that LDAP failures are always counted.
                         val auth: EitherT[Future, AppError, User] = EitherT(
                           env.dataStore.userRepo
-                            .findOne(Json.obj("_deleted" -> false, "email" -> username.trim))
+                            .findOne(
+                              Json.obj(
+                                "_deleted" -> false,
+                                "email" -> username.trim
+                              )
+                            )
                             .flatMap {
                               case Some(u) if u.password.isEmpty =>
-                                userService.incrementAttempts(u).map { updated =>
-                                  Left(AppError.LoginRateLimited(userService.delayForAttempt(updated))): Either[AppError, User]
+                                userService.incrementAttempts(u).map {
+                                  updated =>
+                                    Left(
+                                      AppError.LoginRateLimited(
+                                        userService.delayForAttempt(updated)
+                                      )
+                                    ): Either[AppError, User]
                                 }
                               case _ =>
-                                localLoginSupport.bindUser(username, password, ctx.tenant).value
+                                localLoginSupport
+                                  .bindUser(username, password, ctx.tenant)
+                                  .value
                             }
                         )
 
-                        bindLocalUser(localConfig.sessionMaxAge, ctx.tenant, ctx.request, auth)
+                        bindLocalUser(
+                          localConfig.sessionMaxAge,
+                          ctx.tenant,
+                          ctx.request,
+                          auth
+                        )
 
                       case Right(user) =>
                         bindLocalUser(

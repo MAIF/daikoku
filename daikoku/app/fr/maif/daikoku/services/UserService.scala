@@ -40,8 +40,9 @@ class UserService(
     val isRecentFailure = user.lastFailedLogin
       .exists(_.isAfter(DateTime.now().minusMinutes(30)))
     if (!isRecentFailure) return 0
-    val delay = math.min(math.pow(2, (user.failedLoginAttempts - 1).toDouble).toInt, 30)
-    
+    val delay =
+      math.min(math.pow(2, (user.failedLoginAttempts - 1).toDouble).toInt, 30)
+
     delay
   }
 }

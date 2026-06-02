@@ -276,30 +276,30 @@ export interface ISimpleSession {
 
 type AlgoSettings =
   | {
-    type: 'HSAlgoSettings';
-    size: number;
-    secret: string;
-  }
+      type: 'HSAlgoSettings';
+      size: number;
+      secret: string;
+    }
   | {
-    type: 'RSAlgoSettings';
-    size: number;
-    publicKey: string;
-    privateKey?: string;
-  }
+      type: 'RSAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
   | {
-    type: 'ESAlgoSettings';
-    size: number;
-    publicKey: string;
-    privateKey?: string;
-  }
+      type: 'ESAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
   | {
-    type: 'JWKSAlgoSettings';
-    url: string;
-    timeout: number;
-    headers: { [x: string]: string };
-    ttl: number;
-    kty: string;
-  };
+      type: 'JWKSAlgoSettings';
+      url: string;
+      timeout: number;
+      headers: { [x: string]: string };
+      ttl: number;
+      kty: string;
+    };
 
 export type OAuthSettings = {
   sessionMaxAge: number;

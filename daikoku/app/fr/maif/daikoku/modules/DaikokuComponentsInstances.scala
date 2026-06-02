@@ -7,7 +7,14 @@ import fr.maif.daikoku.controllers.*
 import fr.maif.daikoku.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.daikoku.jobs.*
 import fr.maif.daikoku.login.LocalLoginSupport
-import fr.maif.daikoku.services.{AccountCreationService, ApiService, AssetsService, DeletionService, TranslationsService, UserService}
+import fr.maif.daikoku.services.{
+  AccountCreationService,
+  ApiService,
+  AssetsService,
+  DeletionService,
+  TranslationsService,
+  UserService
+}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx
