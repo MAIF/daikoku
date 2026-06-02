@@ -8,7 +8,6 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.ApiService
 import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json.*
 
@@ -59,7 +58,7 @@ class QueueJob(
 
     env.dataStore.notificationRepo
       .forTenant(api.tenant)
-      .deleteLogically(
+      .delete(
         Json.obj(
           "$or" -> Json.arr(
             Json.obj("action.api" -> api.id.asJson),
@@ -87,7 +86,7 @@ class QueueJob(
             case Some(doc) =>
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(o.tenant)
-                .deleteLogically(
+                .delete(
                   Json.obj(
                     "_id" -> Json.obj(
                       "$in" -> JsArray(doc.docIds().map(JsString.apply))
@@ -118,7 +117,10 @@ class QueueJob(
         _ <- OptionT.liftF(
           env.dataStore.notificationRepo
             .forTenant(o.tenant)
-            .deleteLogically(Json.obj("action.plan" -> JsString(o.itemId)))
+            .delete(Json.obj("action.plan" -> JsString(o.itemId)))
+        )
+        _ <- OptionT.liftF(
+          env.dataStore.usagePlanRepo.forTenant(o.tenant).deleteById(plan.id)
         )
         _ <- OptionT.liftF(
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
@@ -145,7 +147,7 @@ class QueueJob(
   )(implicit dbConn: DbConn): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(subscription.tenant)
-      .deleteLogically(
+      .delete(
         Json.obj(
           "action.type" ->
             Json.obj(
@@ -169,7 +171,7 @@ class QueueJob(
   private def deleteTeamNotifications(team: Team)(implicit dbConn: DbConn): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(team.tenant)
-      .deleteLogically(
+      .delete(
         Json.obj(
           "action.type" ->
             Json.obj(
@@ -205,7 +207,7 @@ class QueueJob(
   )(implicit dbConn: DbConn): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(tenant)
-      .deleteLogically(
+      .delete(
         Json.obj(
           "action.type" ->
             Json.obj(
@@ -220,7 +222,7 @@ class QueueJob(
       )
   }
 
-  private def deleteUserMessages(user: User, tenant: TenantId)(implicit dbConn: DbConn): Future[Long] = {
+  private def deleteUserMessages(user: User, tenant: TenantId)(implicit dbConn: DbConn): Future[Boolean] = {
     env.dataStore.teamRepo
       .forTenant(tenant)
       .findOne(Json.obj("type" -> "Admin"))
@@ -229,16 +231,15 @@ class QueueJob(
             if !adminTeam.users.exists(u => u.userId == user.id) =>
           env.dataStore.messageRepo
             .forTenant(tenant)
-            .updateMany(
+            .delete(
               Json.obj(
                 "$or" -> Json.arr(
                   Json.obj("sender" -> user.id.asJson),
                   Json.obj("participants" -> user.id.asJson)
                 )
-              ),
-              Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime))
+              )
             )
-        case _ => FastFuture.successful(0L)
+        case _ => FastFuture.successful(false)
       }
   }
 
@@ -262,21 +263,21 @@ class QueueJob(
         _ <- OptionT.liftF(
           env.dataStore.apiPostRepo
             .forTenant(o.tenant)
-            .deleteLogically(
+            .delete(
               Json.obj("_id" -> Json.obj("$in" -> JsArray(api.posts.map(_.asJson))))
             )
         )
         _ <- OptionT.liftF(
           env.dataStore.apiIssueRepo
             .forTenant(o.tenant)
-            .deleteLogically(
+            .delete(
               Json.obj("_id" -> Json.obj("$in" -> JsArray(api.issues.map(_.asJson))))
             )
         )
         _ <- OptionT.liftF(
           env.dataStore.apiDocumentationPageRepo
             .forTenant(o.tenant)
-            .deleteLogically(
+            .delete(
               Json.obj(
                 "_id" -> Json.obj(
                   "$in" -> JsArray(api.documentation.docIds().map(JsString.apply))
@@ -287,7 +288,7 @@ class QueueJob(
         _ <- OptionT.liftF(
           env.dataStore.usagePlanRepo
             .forTenant(o.tenant)
-            .deleteLogically(
+            .delete(
               Json.obj(
                 "_id" -> Json.obj(
                   "$in" -> JsArray(api.possibleUsagePlans.map(_.asJson))
@@ -313,6 +314,9 @@ class QueueJob(
                  |""".stripMargin,
               Seq(api.tenant.value, api.id.value)
             )
+        )
+        _ <- OptionT.liftF(
+          env.dataStore.apiRepo.forTenant(o.tenant).deleteById(api.id)
         )
         _ <- OptionT.liftF(
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
@@ -380,7 +384,7 @@ class QueueJob(
           for {
             _ <- env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .deleteByIdLogically(subscription.id)
+              .deleteById(subscription.id)
             _ <- deleteSubscriptionNotifications(subscription)
           } yield ()
         }
@@ -418,6 +422,9 @@ class QueueJob(
         )
         _ <- OptionT.liftF(deleteTeamNotifications(team))
         _ <- OptionT.liftF(
+          env.dataStore.teamRepo.forTenant(o.tenant).deleteById(team.id)
+        )
+        _ <- OptionT.liftF(
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
         )
       } yield ()).value
@@ -444,6 +451,7 @@ class QueueJob(
         )
         _ <- OptionT.liftF(deleteUserNotifications(user, o.tenant))
         _ <- OptionT.liftF(deleteUserMessages(user, o.tenant))
+        _ <- OptionT.liftF(env.dataStore.userRepo.deleteById(user.id))
         _ <- OptionT.liftF(
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
         )

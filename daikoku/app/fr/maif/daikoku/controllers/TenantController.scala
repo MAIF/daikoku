@@ -280,20 +280,20 @@ class TenantController(
             ctx.setCtxValue("tenant.name", tenant.name)
             ctx.setCtxValue("tenant.id", tenant.id)
             for {
-              _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAllLogically()
+              _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAll()
               _ <-
                 env.dataStore.apiSubscriptionRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
+                  .deleteAll()
               _ <-
                 env.dataStore.apiDocumentationPageRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
+                  .deleteAll()
               _ <-
                 env.dataStore.notificationRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
-              _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAllLogically()
+                  .deleteAll()
+              _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()
               _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
               _ <- env.dataStore.userRepo.updateMany(
                 Json.obj("lastTenant" -> tenant.id.asJson),

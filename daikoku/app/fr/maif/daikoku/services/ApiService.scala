@@ -804,39 +804,6 @@ class ApiService(
     r.value
   }
 
-  def deleteApiKey(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan
-  ): Future[Either[AppError, JsObject]] = {
-    (for {
-      maybeOtoroshiSettings <- EitherT.pure[Future, AppError](
-        plan.otoroshiTarget
-          .map(_.otoroshiSettings)
-          .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant.id)
-          .deleteByIdLogically(subscription.id)
-      )
-      shouldDeleteApiKey =
-        subscription.parent.isEmpty &&
-          !(plan.visibility == Admin && plan.otoroshiTarget.isEmpty)
-
-      _ <- (shouldDeleteApiKey, maybeOtoroshiSettings) match {
-        case (true, Some(otoorshiSettings)) =>
-          otoroshiClient
-            .deleteApiKey(subscription.apiKey.clientId)(using otoorshiSettings)
-        case _ =>
-          EitherT.pure[Future, AppError](Json.obj())
-      }
-    } yield Json.obj(
-      "archive" -> "done",
-      "subscriptionId" -> subscription.id.asJson
-    )).value
-  }
-
   def computeOtoroshiApiKey(
       subscription: ApiSubscription
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
