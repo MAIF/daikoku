@@ -29,7 +29,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsString, JsValue, Json}
 import play.api.mvc.*
 import play.api.routing.Router.RequestImplicits.WithHandlerDef
 
@@ -436,6 +436,17 @@ class LoginController(
     )
   }
 
+  /** Deletes a session and any impersonation session spawned from it, so that
+    * leaving/logging out never leaves a reusable impersonation session behind.
+    */
+  private def deleteSessionWithImpersonations(session: UserSession) =
+    for {
+      _ <- env.dataStore.userSessionRepo.deleteById(session.id)
+      _ <- env.dataStore.userSessionRepo.delete(
+        Json.obj("impersonatorSessionId" -> session.sessionId.value)
+      )
+    } yield ()
+
   private def createSession(
       sessionMaxAge: Int,
       user: User,
@@ -444,7 +455,9 @@ class LoginController(
       idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
-      .findOne(Json.obj("userEmail" -> user.email))
+      .findOne(
+        Json.obj("userEmail" -> user.email, "impersonatorId" -> JsNull)
+      )
       .map {
         case Some(session) =>
           session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
@@ -698,7 +711,7 @@ class LoginController(
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Otoroshi provider]"
             ).logTenantAuditEvent(
@@ -713,7 +726,7 @@ class LoginController(
           }
         case Some(AuthProvider.OAuth2) =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [OAuth2 provider]"
             ).logTenantAuditEvent(
@@ -761,7 +774,7 @@ class LoginController(
           }
         case _ =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Local/Other provider]"
             ).logTenantAuditEvent(

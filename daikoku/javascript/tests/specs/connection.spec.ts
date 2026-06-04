@@ -68,6 +68,44 @@ test('Se connecter depuis la modale de la page des plan de souscription conserve
   await expect(page).toHaveURL(`${HOME}api-division/api-papier/1.0.0/pricing`)
 });
 
+test("[#1102] - Se connecter ne récupère jamais une session d'impersonation laissée ouverte", async ({ page, browser }) => {
+  // Un admin impersonne un user puis abandonne sa session sans quitter
+  // l'impersonation : la session d'impersonation (qui porte l'email du user
+  // impersonné) reste en base. Le vrai user ne doit jamais la récupérer à la
+  // connexion.
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`${HOME}settings/users`);
+  const popupPromise = page.waitForEvent('popup');
+  await page.getByLabel('Jim Halpert').getByRole('link').filter({ hasText: /^$/ }).click();
+  const impersonationPage = await popupPromise;
+  await impersonationPage.getByRole('button', { name: 'user menu' }).click();
+  await expect(impersonationPage.locator('#app')).toContainText(JIM.email);
+  // On laisse volontairement l'impersonation en cours (pas de "Quitter l'impersonation").
+
+  // Le vrai Jim se connecte dans un contexte navigateur isolé (pas de cookie partagé).
+  const jimContext = await browser.newContext();
+  const jimPage = await jimContext.newPage();
+  await jimPage.goto(ACCUEIL);
+  await loginAs(JIM, jimPage);
+
+  await jimPage.getByRole('img', { name: 'user menu' }).click();
+  await expect(jimPage.locator('#app')).toContainText(JIM.email);
+  // La session de Jim doit être une vraie session, sans bannière d'impersonation.
+  await expect(jimPage.getByRole('link', { name: 'Quitter l\'impersonation' })).toHaveCount(0);
+
+  // 3 sessions en base (Michael + impersonation orpheline + nouvelle session de Jim).
+  const sessions = await fetch(`http://localhost:${exposedPort}/admin-api/sessions`, {
+    headers: {
+      Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+    },
+  }).then((r) => r.json());
+  expect(sessions).toHaveLength(3);
+
+  await jimContext.close();
+});
+
 test.describe('Tenant privé', () => {
   const setTenantPrivate = async (isPrivate: boolean) =>
     fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
