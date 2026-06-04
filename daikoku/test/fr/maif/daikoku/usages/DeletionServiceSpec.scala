@@ -52,6 +52,7 @@ class DeletionServiceSpec
       api: Api,
       plan: UsagePlan,
       sub: ApiSubscription,
+      keyring: Keyring,
       demandId: DemandId,
       stepId: SubscriptionDemandStepId
   ): Seq[Notification] = {
@@ -115,12 +116,12 @@ class DeletionServiceSpec
       notif(
         "n-key-deletion",
         NotificationAction
-          .ApiKeyDeletionInformation(api.id.value, sub.apiKey.clientId)
+          .ApiKeyDeletionInformation(api.id.value, keyring.apiKey.clientId)
       ),
       notif(
         "n-key-rotation-in-progress",
         NotificationAction.ApiKeyRotationInProgress(
-          sub.apiKey.clientId,
+          keyring.apiKey.clientId,
           api.id.value,
           plan.id.value
         )
@@ -128,7 +129,7 @@ class DeletionServiceSpec
       notif(
         "n-key-rotation-ended",
         NotificationAction
-          .ApiKeyRotationEnded(sub.apiKey.clientId, api.id.value, plan.id.value)
+          .ApiKeyRotationEnded(keyring.apiKey.clientId, api.id.value, plan.id.value)
       ),
       notif(
         "n-key-refresh",
@@ -155,7 +156,7 @@ class DeletionServiceSpec
       notif(
         "n-key-deletion-v2",
         NotificationAction
-          .ApiKeyDeletionInformationV2(api.id, sub.apiKey.clientId, sub.id)
+          .ApiKeyDeletionInformationV2(api.id, keyring.apiKey.clientId, sub.id)
       ),
       notif(
         "n-key-rotation-in-progress-v2",
@@ -167,7 +168,7 @@ class DeletionServiceSpec
       ),
       notif(
         "n-key-refresh-v2",
-        NotificationAction.ApiKeyRefreshV2(sub.id, api.id, plan.id)
+        NotificationAction.ApiKeyRefreshV2(keyring.id)
       ),
       notif(
         "n-new-post-v2",
@@ -210,18 +211,25 @@ class DeletionServiceSpec
         users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val subscribedPlan = defaultApi.plans.reverse.head.id
@@ -340,6 +348,7 @@ class DeletionServiceSpec
         posts = Seq(post),
         issues = Seq(issue),
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif)
       )
@@ -454,7 +463,7 @@ class DeletionServiceSpec
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
         path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubscription.apiKey.clientId}",
+          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -479,18 +488,25 @@ class DeletionServiceSpec
         users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val teamInvitationNotif = Notification(
@@ -547,6 +563,7 @@ class DeletionServiceSpec
         apis = Seq(defaultApi.api),
         usagePlans = defaultApi.plans,
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif, teamInvitationNotif),
         teams = Seq(
@@ -641,18 +658,25 @@ class DeletionServiceSpec
           Set(UserWithPermission(randomUser.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = randomUser.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val teamInvitationNotif = Notification(
@@ -709,6 +733,7 @@ class DeletionServiceSpec
         apis = Seq(defaultApi.api),
         usagePlans = defaultApi.plans,
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif, teamInvitationNotif),
         teams = Seq(
@@ -801,18 +826,25 @@ class DeletionServiceSpec
         users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val subscribedPlan = defaultApi.plans.reverse.head.id
@@ -931,6 +963,7 @@ class DeletionServiceSpec
         posts = Seq(post),
         issues = Seq(issue),
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif)
       )
@@ -1046,7 +1079,7 @@ class DeletionServiceSpec
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
         path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubscription.apiKey.clientId}",
+          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -1071,18 +1104,25 @@ class DeletionServiceSpec
         users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val subscribedPlan = defaultApi.plans.head.id
@@ -1207,6 +1247,7 @@ class DeletionServiceSpec
         posts = Seq(post),
         issues = Seq(issue),
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif)
       )
@@ -1302,7 +1343,7 @@ class DeletionServiceSpec
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
         path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubscription.apiKey.clientId}",
+          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -1371,36 +1412,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = parentApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = childApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -1558,36 +1595,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = parentApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = childApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -1776,50 +1809,43 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = sharedApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = sharedApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = parentApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub1 = ApiSubscription(
         id = ApiSubscriptionId("child-sub-1"),
         tenant = tenant.id,
-        apiKey = sharedApiKey,
         plan = childPlan1.id,
         createdAt = DateTime.now().minusSeconds(10),
         team = teamConsumerId,
         api = childApi1.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token-1",
         keyring = keyring.id
       )
       val childSub2 = ApiSubscription(
         id = ApiSubscriptionId("child-sub-2"),
         tenant = tenant.id,
-        apiKey = sharedApiKey,
         plan = childPlan2.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = childApi2.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token-2",
         keyring = keyring.id
       )
 
@@ -1987,36 +2013,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -2164,36 +2186,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -2350,36 +2368,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = parentApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumer.id,
         api = childApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -2545,36 +2559,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = parentApi.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = childApi.id,
         by = userAdmin.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-token",
         keyring = keyring.id
       )
 
@@ -2676,18 +2686,25 @@ class DeletionServiceSpec
     "delete team consumer subscriptions when the team is deleted" in {
       val plan = defaultApi.plans.head
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "consumer-token"
+      )
       val consumerSub = ApiSubscription(
         id = ApiSubscriptionId("consumer-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "consumer-token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2722,7 +2739,8 @@ class DeletionServiceSpec
           )
         ),
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(consumerSub)
+        subscriptions = Seq(consumerSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2808,18 +2826,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "standalone-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("standalone-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "standalone-token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -2841,7 +2866,8 @@ class DeletionServiceSpec
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(plan),
         apis = Seq(api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -2921,36 +2947,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "promote-parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("promote-parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now().minusHours(2),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "promote-parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("promote-child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "promote-child-token",
         keyring = keyring.id
       )
 
@@ -3071,36 +3093,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "del-all-parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("del-all-parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now().minusHours(2),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "del-all-parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("del-all-child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "del-all-child-token",
         keyring = keyring.id
       )
 
@@ -3213,36 +3231,32 @@ class DeletionServiceSpec
       val keyring = Keyring(
         id = KeyringId("test-keyring"),
         tenant = tenant.id,
+        team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = containerizedOtoroshi,
-        createdAt = DateTime.now()
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "child-del-parent-token"
       )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("child-del-parent-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = parentPlan.id,
         createdAt = DateTime.now().minusHours(2),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-del-parent-token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
         id = ApiSubscriptionId("child-del-child-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = childPlan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "child-del-child-token",
         keyring = keyring.id
       )
 
@@ -3335,18 +3349,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3371,7 +3392,8 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        keyrings = Seq(keyring),
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3432,18 +3454,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3468,7 +3497,8 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        keyrings = Seq(keyring),
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3558,18 +3588,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3594,7 +3631,8 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        keyrings = Seq(keyring),
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3683,18 +3721,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3719,7 +3764,8 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        keyrings = Seq(keyring),
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       // delete teamOwner (owns the API) — cascades into sub + api deletion
@@ -3801,18 +3847,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3833,7 +3886,8 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        keyrings = Seq(keyring),
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       // user deletes themselves — DeletionService.deleteUserNotifications removes
@@ -3917,18 +3971,25 @@ class DeletionServiceSpec
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "notif-token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("notif-sub"),
         tenant = tenant.id,
-        apiKey = parentApiKey,
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = None,
-        integrationToken = "notif-token"
+        keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
       val stepId = SubscriptionDemandStepId("notif-step")
@@ -3958,8 +4019,9 @@ class DeletionServiceSpec
         usagePlans = Seq(plan),
         apis = Seq(api),
         subscriptions = Seq(sub),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(demand),
-        notifications = makeAllNotifs(api, plan, sub, demandId, stepId)
+        notifications = makeAllNotifs(api, plan, sub, keyring, demandId, stepId)
       )
 
       // cancelProcess deletes: demand, stepValidators, and notifs where action.demand = demandId

@@ -1634,6 +1634,15 @@ class ApiControllerSpec()
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -1643,7 +1652,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -1656,7 +1665,8 @@ class ApiControllerSpec()
             possibleUsagePlans = Seq(plan.id)
           )
         ),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1703,6 +1713,15 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -1712,7 +1731,7 @@ class ApiControllerSpec()
         api = api.id,
         by = userAdmin.id,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(
@@ -1739,7 +1758,8 @@ class ApiControllerSpec()
         ),
         usagePlans = Seq(plan),
         apis = Seq(api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
       val otoroshiTarget = plan.otoroshiTarget
       val otoApiKey = ActualOtoroshiApiKey(
@@ -1768,7 +1788,7 @@ class ApiControllerSpec()
               customMaxPerMonth = Some(42),
               customReadOnly = Some(true)
             )
-            .asSafeJson
+            .asSafeJson(keyring)
         )
       )(using tenant, session)
       resp.status mustBe 200
@@ -1817,6 +1837,15 @@ class ApiControllerSpec()
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -1826,7 +1855,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1837,7 +1866,8 @@ class ApiControllerSpec()
             possibleUsagePlans = Seq(plan.id)
           )
         ),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val otoroshiTarget = plan.otoroshiTarget
@@ -1861,7 +1891,9 @@ class ApiControllerSpec()
           s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
         body = Some(
-          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson
+          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson(
+            keyring
+          )
         )
       )(using tenant, session)
       resp.status mustBe 403
@@ -2132,6 +2164,15 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq(usagePlan.id),
         defaultUsagePlan = usagePlan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "token"
+      )
       val subscription = ApiSubscription(
         id = ApiSubscriptionId("test_sub"),
         tenant = tenant.id,
@@ -2141,7 +2182,7 @@ class ApiControllerSpec()
         api = api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "token",
+        keyring = keyring.id,
         metadata = Json.obj("foo" -> "bar").some
       )
       // 2 equipes
@@ -2169,7 +2210,8 @@ class ApiControllerSpec()
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(api),
         usagePlans = Seq(usagePlan),
-        subscriptions = Seq(subscription)
+        subscriptions = Seq(subscription),
+        keyrings = Seq(keyring)
       )
 
       // get transfer link (no need to give team)
@@ -2304,7 +2346,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
 
@@ -3107,7 +3148,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
@@ -3119,7 +3159,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
 
@@ -3249,7 +3288,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
@@ -3261,7 +3299,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
 
@@ -3392,7 +3429,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
@@ -3404,7 +3440,6 @@ class ApiControllerSpec()
         api = childApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
 
@@ -3534,7 +3569,6 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
       val childSub = ApiSubscription(
@@ -3546,7 +3580,6 @@ class ApiControllerSpec()
         api = childApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token",
         keyring = keyring.id
       )
 
@@ -3629,6 +3662,15 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent_token"
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -3638,7 +3680,7 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -3661,7 +3703,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, adminApiPlan),
         apis = Seq(parentApi, adminApi),
-        subscriptions = Seq(parentSub)
+        subscriptions = Seq(parentSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -3690,7 +3733,7 @@ class ApiControllerSpec()
             .copy(
               validUntil = validUntil.some
             )
-            .asSafeJson
+            .asSafeJson(keyring)
         )
       )(using tenant, session)
       respUpdate.status mustBe 200
@@ -4012,6 +4055,15 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent_token"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -4021,7 +4073,7 @@ class ApiControllerSpec()
         api = api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -4052,7 +4104,8 @@ class ApiControllerSpec()
         ),
         usagePlans = Seq(plan, adminApiPlan),
         apis = Seq(api, adminApi),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userApiEditor, tenant)
@@ -4945,6 +4998,15 @@ class ApiControllerSpec()
 
     "get his team visible apis" in {
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -4954,7 +5016,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -4963,6 +5025,7 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(sub),
+        keyrings = Seq(keyring),
         notifications = Seq(
           Notification(
             id = NotificationId("untreated-notification"),
@@ -5009,6 +5072,15 @@ class ApiControllerSpec()
 
     "not get team visible apis if he's not a member of this team" in {
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -5018,7 +5090,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -5032,6 +5104,7 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(sub),
+        keyrings = Seq(keyring),
         notifications = Seq(
           Notification(
             id = NotificationId("untreated-notification"),
@@ -5065,6 +5138,15 @@ class ApiControllerSpec()
 
     "not get team visible apis if this api doesn't exists" in {
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -5074,7 +5156,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -5083,6 +5165,7 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(sub),
+        keyrings = Seq(keyring),
         notifications = Seq(
           Notification(
             id = NotificationId("untreated-notification"),
@@ -5585,7 +5668,6 @@ class ApiControllerSpec()
         api = secondApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test2",
         keyring = keyring.id
       )
 
@@ -5648,6 +5730,15 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent_token"
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -5657,7 +5748,7 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -5681,7 +5772,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, adminApiPlan),
         apis = Seq(parentApi, adminApi),
-        subscriptions = Seq(parentSub)
+        subscriptions = Seq(parentSub),
+        keyrings = Seq(keyring)
       )
       // check if api is published
       val maybeParentApi = Await.result(
@@ -5973,6 +6065,15 @@ class ApiControllerSpec()
         subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.ApiKey
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-removal"
+      )
       val payperUseSub = ApiSubscription(
         id = ApiSubscriptionId("test-removal"),
         tenant = tenant.id,
@@ -5982,7 +6083,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
-        integrationToken = "test-removal"
+        keyring = keyring.id
       )
 
       val api = defaultApi.api.copy(
@@ -5995,7 +6096,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(api),
         usagePlans = Seq(plan),
-        subscriptions = Seq(payperUseSub)
+        subscriptions = Seq(payperUseSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -6046,6 +6148,15 @@ class ApiControllerSpec()
         subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.ApiKey
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-removal"
+      )
       val payperUseSub = ApiSubscription(
         id = ApiSubscriptionId("test-removal"),
         tenant = tenant.id,
@@ -6055,7 +6166,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
-        integrationToken = "test-removal"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -6071,7 +6182,8 @@ class ApiControllerSpec()
             possibleUsagePlans = Seq(plan.id)
           )
         ),
-        subscriptions = Seq(payperUseSub)
+        subscriptions = Seq(payperUseSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -6131,6 +6243,15 @@ class ApiControllerSpec()
         subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.ApiKey
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-removal"
+      )
       val payperUseSub = ApiSubscription(
         id = ApiSubscriptionId("test-removal"),
         tenant = tenant.id,
@@ -6140,7 +6261,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
-        integrationToken = "test-removal"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -6156,7 +6277,8 @@ class ApiControllerSpec()
             possibleUsagePlans = Seq(plan.id)
           )
         ),
-        subscriptions = Seq(payperUseSub)
+        subscriptions = Seq(payperUseSub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -6589,6 +6711,15 @@ class ApiControllerSpec()
     "restrict the collection of usage stats for a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = subId,
         tenant = tenant.id,
@@ -6598,7 +6729,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -6609,7 +6740,8 @@ class ApiControllerSpec()
         ),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
@@ -6656,6 +6788,15 @@ class ApiControllerSpec()
     "restrict rotation setup for a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = subId,
         tenant = tenant.id,
@@ -6665,7 +6806,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -6676,7 +6817,8 @@ class ApiControllerSpec()
         ),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
@@ -6756,6 +6898,15 @@ class ApiControllerSpec()
     "restrict custom name update setup for a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = subId,
         tenant = tenant.id,
@@ -6765,7 +6916,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -6776,7 +6927,8 @@ class ApiControllerSpec()
         ),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
@@ -7005,6 +7157,15 @@ class ApiControllerSpec()
     "restrict the reset of the secret of a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = subId,
         tenant = tenant.id,
@@ -7014,7 +7175,7 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -7025,7 +7186,8 @@ class ApiControllerSpec()
         ),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
@@ -7102,6 +7264,15 @@ class ApiControllerSpec()
   "aggregate api keys" can {
     "not be used when the mode is disabled on plan" in {
       val subId = ApiSubscriptionId("test")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user),
@@ -7112,16 +7283,16 @@ class ApiControllerSpec()
           ApiSubscription(
             id = subId,
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", "id", "secret"),
             plan = UsagePlanId("5"),
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-                integrationToken = "test"
+            keyring = keyring.id
           )
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val resp = httpJsonCallBlocking(
@@ -7163,7 +7334,6 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test2",
         keyring = keyring.id
       )
       setupEnvBlocking(
@@ -7251,6 +7421,15 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq(copiedPlan.id)
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent"
+      )
       setupEnvBlocking(
         tenants = Seq(tenant.copy(aggregationApiKeysSecurity = Some(true))),
         users = Seq(user),
@@ -7264,16 +7443,16 @@ class ApiControllerSpec()
           ApiSubscription(
             id = parentSubId,
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
             plan = copiedPlan.id,
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-                integrationToken = "parent"
+            keyring = keyring.id
           )
-        )
+        ),
+        keyrings = Seq(keyring)
       )
 
       val resp = httpJsonCallBlocking(
@@ -7323,7 +7502,6 @@ class ApiControllerSpec()
         api = defaultApi.api.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test2",
         keyring = keyring.id
       )
       setupEnvBlocking(
@@ -7436,7 +7614,6 @@ class ApiControllerSpec()
         api = childApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "test2",
         keyring = keyring.id
       )
 
@@ -7497,6 +7674,15 @@ class ApiControllerSpec()
     "failed when aggregated apikey has an otoroshi target different than parent" in {
       val parentSubId = ApiSubscriptionId("parent")
       val parentApiKeyClientId = "clientId"
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent"
+      )
       setupEnvBlocking(
         tenants = Seq(tenant.copy(aggregationApiKeysSecurity = Some(true))),
         users = Seq(user),
@@ -7527,16 +7713,16 @@ class ApiControllerSpec()
           ApiSubscription(
             id = parentSubId,
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", parentApiKeyClientId, "secret"),
             plan = UsagePlanId("5"),
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-                integrationToken = "parent"
+            keyring = keyring.id
           )
-        )
+        ),
+        keyrings = Seq(keyring)
       )
       val planId = defaultApi.api.possibleUsagePlans.head.value
       val resp = httpJsonCallBlocking(
@@ -9562,6 +9748,15 @@ class ApiControllerSpec()
         defaultUsagePlan = childPlanDev.id.some
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKeyWith2childs,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "parent_token"
+      )
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("parent_sub"),
         tenant = tenant.id,
@@ -9571,7 +9766,7 @@ class ApiControllerSpec()
         api = parentApi.id,
         by = userTeamAdminId,
         customName = None,
-        integrationToken = "parent_token"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -9595,7 +9790,8 @@ class ApiControllerSpec()
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
-        subscriptions = Seq(parentSub)
+        subscriptions = Seq(parentSub),
+        keyrings = Seq(keyring)
       )
 
       val consumerSession = loginWithBlocking(userAdmin, tenant)
@@ -9640,7 +9836,8 @@ class ApiControllerSpec()
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
-        subscriptions = Seq(parentSub)
+        subscriptions = Seq(parentSub),
+        keyrings = Seq(keyring)
       )
 
       // test extend parent prod sub with child dev ==> KO
@@ -9683,7 +9880,8 @@ class ApiControllerSpec()
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
-        subscriptions = Seq(parentSub)
+        subscriptions = Seq(parentSub),
+        keyrings = Seq(keyring)
       )
 
       val consumerSession3 = loginWithBlocking(userAdmin, tenant)

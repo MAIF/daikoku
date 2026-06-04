@@ -1,6 +1,6 @@
 # Memory index
 
-- [Keyring migration](keyring-migration.md) — refactor en cours : agrégation de clés `parent` → entité `Keyring`, étapes 1-5/10 faites au 2026-05-19
+- [Keyring migration](keyring-migration.md) — dossier complet du refactor `ApiSubscription.parent` → entité `Keyring` : carte des fichiers, signatures (`asSafeJson(keyring)`, `ApiKeyRefreshV2`), recettes de fixtures. Code prod + tests compilent (2026-06-04) ; reste à exécuter la suite
 - [Daikoku build](daikoku-build.md) — le projet sbt est dans le sous-dossier `daikoku/`, lancer sbt depuis là
 - [Working style](working-style.md) — l'utilisateur revoit chaque edit : expliquer avant, découper petit, idiomes Scala 3
 - [Keyring fixtures pairing](feedback-keyring-fixtures.md) — un `val keyring` local doit toujours être suivi de `keyrings = Seq(keyring)` dans `setupEnvBlocking`

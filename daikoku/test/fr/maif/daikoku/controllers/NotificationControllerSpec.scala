@@ -57,7 +57,6 @@ class NotificationControllerSpec()
               id = (json \ "_id").as(using ApiSubscriptionIdFormat),
               tenant = (json \ "_tenant").as(using TenantIdFormat),
               deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-              apiKey = OtoroshiApiKey("***", "***", "***"),
               plan = (json \ "plan").as(using UsagePlanIdFormat),
               team = (json \ "team").as(using TeamIdFormat),
               api = (json \ "api").as(using ApiIdFormat),
@@ -65,9 +64,7 @@ class NotificationControllerSpec()
               by = (json \ "by").as(using UserIdFormat),
               customName = (json \ "customName").asOpt[String],
               enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-              rotation =
-                (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
-              integrationToken = "***",
+              keyring = (json \ "keyring").as(using KeyringIdFormat),
               customMetadata = (json \ "customMetadata").asOpt[JsObject],
               customMaxPerSecond =
                 (json \ "customMaxPerSecond").asOpt(using LongFormat),
@@ -86,7 +83,6 @@ class NotificationControllerSpec()
           "_id" -> ApiSubscriptionIdFormat.writes(o.id),
           "_tenant" -> o.tenant.asJson,
           "_deleted" -> o.deleted,
-          "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
           "plan" -> UsagePlanIdFormat.writes(o.plan),
           "team" -> TeamIdFormat.writes(o.team),
           "api" -> ApiIdFormat.writes(o.api),
@@ -97,11 +93,7 @@ class NotificationControllerSpec()
             .getOrElse(JsNull)
             .as[JsValue],
           "enabled" -> o.enabled,
-          "rotation" -> o.rotation
-            .map(ApiSubscriptionyRotationFormat.writes)
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "integrationToken" -> o.integrationToken,
+          "keyring" -> KeyringIdFormat.writes(o.keyring),
           "customMetadata" -> o.customMetadata,
           "customMaxPerSecond" -> o.customMaxPerSecond
             .map(JsNumber(_))
@@ -337,18 +329,25 @@ class NotificationControllerSpec()
         .as[String] mustBe "NewIssueOpenV2"
     }
     "reveive a notification - post created" in {
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = UsagePlanId("1"),
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -362,7 +361,8 @@ class NotificationControllerSpec()
         apis = Seq(defaultApi.api),
         subscriptions = Seq(
           sub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
       val userAdminSession = loginWithBlocking(userAdmin, tenant)
       val post = httpJsonCallBlocking(
@@ -1002,18 +1002,25 @@ class NotificationControllerSpec()
         )
       )
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1021,7 +1028,8 @@ class NotificationControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
@@ -1096,18 +1104,25 @@ class NotificationControllerSpec()
       )
 
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       val thirdTeam = teamConsumer.copy(
         id = TeamId("third"),
@@ -1116,18 +1131,25 @@ class NotificationControllerSpec()
         users = Set(UserWithPermission(userApiEditor.id, Administrator))
       )
 
+      val keyringThird = Keyring(
+        id = KeyringId("test-keyring-3"),
+        tenant = tenant.id,
+        team = thirdTeam.id,
+        apiKey = OtoroshiApiKey("name", "id3", "secret3"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test3"
+      )
       val subThird = ApiSubscription(
         id = ApiSubscriptionId("test-3"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id3", "secret3"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = thirdTeam.id,
         api = defaultApi.api.id,
         by = userApiEditor.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test3"
+        keyring = keyringThird.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1157,7 +1179,8 @@ class NotificationControllerSpec()
             )
           )
         ),
-        subscriptions = Seq(sub, subThird)
+        subscriptions = Seq(sub, subThird),
+        keyrings = Seq(keyring, keyringThird)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
