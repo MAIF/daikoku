@@ -2372,7 +2372,6 @@ object json {
             id = (json \ "_id").as(using ApiSubscriptionIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
             api = (json \ "api").as(using ApiIdFormat),
@@ -2382,10 +2381,6 @@ object json {
             customName = (json \ "customName").asOpt[String],
             adminCustomName = (json \ "adminCustomName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation =
-              (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
-            integrationToken = (json \ "integrationToken").as[String],
-            bearerToken = (json \ "bearerToken").asOpt[String],
             metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             tags = (json \ "tags").asOpt[Set[String]],
@@ -2423,7 +2418,6 @@ object json {
         "_id" -> ApiSubscriptionIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
         "_deleted" -> o.deleted,
-        "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "plan" -> UsagePlanIdFormat.writes(o.plan),
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
@@ -2442,12 +2436,6 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "enabled" -> o.enabled,
-        "rotation" -> o.rotation
-          .map(ApiSubscriptionyRotationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "integrationToken" -> o.integrationToken,
-        "bearerToken" -> o.bearerToken,
         "metadata" -> o.metadata,
         "customMetadata" -> o.customMetadata,
         "tags" -> JsArray(
@@ -2504,6 +2492,7 @@ object json {
           Keyring(
             id = (json \ "_id").as(using KeyringIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
+            team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             customName = (json \ "customName").asOpt[String],
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
@@ -2512,6 +2501,7 @@ object json {
             createdAt = (json \ "createdAt").as(using DateTimeFormat),
             rotation =
               (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
+            integrationToken = (json \ "integrationToken").as[String],
             bearerToken = (json \ "bearerToken").asOpt[String],
             thirdPartySubscriptionInformations =
               (json \ "thirdPartySubscriptionInformations") match {
@@ -2538,6 +2528,7 @@ object json {
       Json.obj(
         "_id" -> KeyringIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
+        "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
         "customName" -> o.customName
           .map(JsString.apply)
@@ -2550,6 +2541,7 @@ object json {
           .map(ApiSubscriptionyRotationFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
+        "integrationToken" -> o.integrationToken,
         "bearerToken" -> o.bearerToken,
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
@@ -3623,10 +3615,7 @@ object json {
       Try {
         JsSuccess(
           ApiKeyRefreshV2(
-            subscription =
-              (json \ "subscription").as(using ApiSubscriptionIdFormat),
-            api = (json \ "api").as(using ApiIdFormat),
-            plan = (json \ "plan").as(using UsagePlanIdFormat),
+            keyring = (json \ "keyring").as(using KeyringIdFormat),
             message = (json \ "message").asOpt[String]
           )
         )
@@ -3636,9 +3625,7 @@ object json {
 
     override def writes(o: ApiKeyRefreshV2): JsValue =
       Json.obj(
-        "subscription" -> o.subscription.value,
-        "api" -> o.api.value,
-        "plan" -> o.plan.value,
+        "keyring" -> o.keyring.value,
         "message" -> o.message
       )
   }

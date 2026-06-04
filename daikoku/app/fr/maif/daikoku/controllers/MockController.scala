@@ -103,16 +103,16 @@ class MockController(
 
   def fakeOtoroshiApiKey(clientId: String) =
     Action.async {
-      env.dataStore.apiSubscriptionRepo
+      env.dataStore.keyringRepo
         .forAllTenant()
         .findOne(Json.obj("apiKey.clientId" -> clientId))
         .map {
-          case Some(subscription) =>
+          case Some(keyring) =>
             Ok(
               ActualOtoroshiApiKey(
                 clientId = clientId,
-                clientSecret = subscription.apiKey.clientSecret,
-                clientName = subscription.apiKey.clientName,
+                clientSecret = keyring.apiKey.clientSecret,
+                clientName = keyring.apiKey.clientName,
                 authorizedEntities = AuthorizedEntities(),
                 throttlingQuota = 10,
                 dailyQuota = 10000,
@@ -123,7 +123,7 @@ class MockController(
                 rotation = None
               ).asJson
             )
-          case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+          case _ => BadRequest(Json.obj("error" -> "Keyring not found"))
         }
     }
 

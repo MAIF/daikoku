@@ -53,7 +53,6 @@ case class ApiSubscription(
     id: ApiSubscriptionId,
     tenant: TenantId,
     deleted: Boolean = false,
-    apiKey: OtoroshiApiKey, // TODO: add the actual plan at the time of the subscription
     plan: UsagePlanId,
     createdAt: DateTime,
     validUntil: Option[DateTime] = None,
@@ -63,9 +62,6 @@ case class ApiSubscription(
     customName: Option[String],
     adminCustomName: Option[String] = None,
     enabled: Boolean = true,
-    rotation: Option[ApiSubscriptionRotation],
-    integrationToken: String,
-    bearerToken: Option[String] = None,
     customMetadata: Option[JsObject] = None,
     metadata: Option[JsObject] = None,
     tags: Option[Set[String]] = None,
@@ -80,23 +76,24 @@ case class ApiSubscription(
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(
+      keyring: Keyring,
       permission: TeamPermission,
       planIntegration: IntegrationProcess,
       isDaikokuAdmin: Boolean
-  ): JsValue =
-    (permission, planIntegration) match {
-      case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
-      case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.ApiKey) =>
-        json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.Automatic) =>
-        json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
-    }
-  def asSafeJson: JsValue =
+  ): JsValue = {
+    val base = json.ApiSubscriptionFormat.writes(this).as[JsObject]
+    val keyringExposed =
+      isDaikokuAdmin ||
+        permission == Administrator ||
+        planIntegration == IntegrationProcess.ApiKey
+    if (keyringExposed) base ++ Json.obj("keyring" -> keyring.asJson)
+    else base
+  }
+  def asSafeJson(keyring: Keyring): JsValue =
     json.ApiSubscriptionFormat
       .writes(this)
-      .as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj(
-      "apiKey" -> Json.obj("clientName" -> apiKey.clientName)
+      .as[JsObject] ++ Json.obj(
+      "keyring" -> Json.obj("clientName" -> keyring.apiKey.clientName)
     )
   def asSimpleJson: JsValue =
     Json.obj(
@@ -126,12 +123,14 @@ enum KeyringOtoroshiBinding:
 case class Keyring(
     id: KeyringId,
     tenant: TenantId,
+    team: TeamId,
     deleted: Boolean = false,
     customName: Option[String] = None,
     apiKey: OtoroshiApiKey,
     otoroshiSettings: KeyringOtoroshiBinding,
     createdAt: DateTime,
     rotation: Option[ApiSubscriptionRotation] = None,
+    integrationToken: String,
     bearerToken: Option[String] = None,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations

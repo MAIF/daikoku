@@ -394,9 +394,10 @@ object evolution_157 extends EvolutionScript {
                           .find(o => o.id.value == otoSettingsId)
                       )
 
+                      legacyClientId = (value \ "apiKey" \ "clientId").as[String]
                       realApk <- OptionT.liftF(
                         otoroshiClient
-                          .getApikey(sub.apiKey.clientId)(using otoSettings)
+                          .getApikey(legacyClientId)(using otoSettings)
                       )
 
                       metadata =
@@ -1618,6 +1619,9 @@ object evolution_1840_b extends EvolutionScript {
 object evolution_1840_c extends EvolutionScript {
   override def version: String = "18.4.0_c"
 
+  // Originally populated subscription.bearerToken from Otoroshi. The bearer
+  // is now stored on the Keyring entity (see evolution_1900), so this is a
+  // no-op on the new data model. Kept for ordering in the evolution chain.
   override def script: (
       Option[DatastoreId],
       DataStore,
@@ -1627,60 +1631,13 @@ object evolution_1840_c extends EvolutionScript {
   ) => Future[Done] =
     (
         _: Option[DatastoreId],
-        dataStore: DataStore,
-        mat: Materializer,
-        ec: ExecutionContext,
-        otoroshiClient: OtoroshiClient
+        _: DataStore,
+        _: Materializer,
+        _: ExecutionContext,
+        _: OtoroshiClient
     ) => {
-      logger.info(
-        s"Begin evolution $version - get bearer token for all existing key"
-      )
-
-      implicit val _ec: ExecutionContext = ec
-
-      dataStore.tenantRepo
-        .streamAllRawFormatted()
-        .flatMapConcat(tenant => {
-          dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .streamAllRawFormatted()
-            .mapAsync(10)(subscription => {
-              (for {
-                usagePlan <-
-                  EitherT.fromOptionF[Future, Option[Unit], UsagePlan](
-                    dataStore.usagePlanRepo
-                      .forTenant(tenant)
-                      .findByIdNotDeleted(subscription.plan),
-                    None
-                  )
-                _ <- EitherT.cond[Future][Option[Unit], Unit](
-                  usagePlan.visibility != Admin,
-                  (),
-                  None
-                )
-                otoroshiSettings <-
-                  EitherT.fromOption[Future][Option[Unit], OtoroshiSettings](
-                    tenant.otoroshiSettings.find(s =>
-                      usagePlan.otoroshiTarget
-                        .exists(_.otoroshiSettings == s.id)
-                    ),
-                    None
-                  )
-                keyWithBearer <- EitherT(
-                  otoroshiClient
-                    .getApikey(subscription.apiKey.clientId)(using
-                      otoroshiSettings
-                    )
-                ).leftMap[Option[Unit]](_ => None)
-                _ <- EitherT.liftF[Future, Option[Unit], Boolean](
-                  dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .save(subscription.copy(bearerToken = keyWithBearer.bearer))
-                )
-              } yield Some(())).merge
-            })
-        })
-        .runWith(Sink.ignore)(using mat)
+      logger.info(s"Skip evolution $version - now subsumed by evolution_1900")
+      Future.successful(Done)
     }
 }
 

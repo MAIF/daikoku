@@ -141,7 +141,7 @@ POST	  /api/teams/:teamId/subscriptions/:id/_makeUnique        fr.maif.daikoku.c
 PUT		  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.updateApiSubscription(teamId, id)
 DELETE  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.deleteApiSubscription(teamId, id)
 POST    /api/teams/:teamId/subscriptions/:id/_rotation          fr.maif.daikoku.controllers.ApiController.toggleApiKeyRotation(teamId, id)
-POST    /api/teams/:teamId/subscriptions/:id/_refresh           fr.maif.daikoku.controllers.ApiController.regenerateApiKeySecret(teamId, id)
+POST    /api/teams/:teamId/keyrings/:id/_refresh                fr.maif.daikoku.controllers.ApiController.regenerateKeyringSecret(teamId, id)
 POST    /api/teams/:teamId/subscriptions/_lastUsage             fr.maif.daikoku.controllers.ApiController.getApiSubscriptionsUsage(teamId)
 POST    /api/apis/_init                                         fr.maif.daikoku.controllers.ApiController.initApis()
 GET     /api/teams/:teamId/subscription/:id/informations        fr.maif.daikoku.controllers.ApiController.getSubscriptionInformations(teamId, id)

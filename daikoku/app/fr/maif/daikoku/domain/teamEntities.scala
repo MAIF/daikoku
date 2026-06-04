@@ -298,9 +298,7 @@ object NotificationAction {
   ) extends NotificationAction
 
   case class ApiKeyRefreshV2(
-      subscription: ApiSubscriptionId,
-      api: ApiId,
-      plan: UsagePlanId,
+      keyring: KeyringId,
       message: Option[String] = None
   ) extends NotificationAction
 

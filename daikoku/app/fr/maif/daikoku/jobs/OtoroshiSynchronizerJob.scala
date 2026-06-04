@@ -112,7 +112,6 @@ object UserForSync {
 }
 
 case class SubscriptionForSync(
-    apiKey: OtoroshiApiKey,
     customMetadata: Option[JsObject],
     metadata: Option[JsObject],
     enabled: Boolean,
@@ -125,7 +124,6 @@ case class SubscriptionForSync(
 )
 object SubscriptionForSync {
   def readFromJson(json: JsValue): SubscriptionForSync = SubscriptionForSync(
-    apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
     customMetadata = (json \ "customMetadata").asOpt[JsObject],
     metadata = (json \ "metadata").asOpt[JsObject],
     enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
@@ -182,7 +180,11 @@ case class Child(
     }
   }
 
-  def getContext(team: Team, tenant: Tenant): Map[String, String] = Map(
+  def getContext(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Map[String, String] = Map(
     "user.id" -> user.id.value,
     "user.name" -> user.name,
     "user.email" -> user.email,
@@ -194,23 +196,33 @@ case class Child(
     "team.name" -> team.name,
     "tenant.id" -> tenant.id.value,
     "tenant.name" -> tenant.name,
-    "client.id" -> subscription.apiKey.clientId,
-    "client.name" -> subscription.apiKey.clientName
+    "client.id" -> keyringApiKey.clientId,
+    "client.name" -> keyringApiKey.clientName
   ) ++
     team.metadata.map(t => ("team.metadata." + t._1, t._2)) ++
     user.metadata.map(t => ("user.metadata." + t._1, t._2)) ++
     plan.metadata.map(t => ("plan.metadata." + t._1, t._2)) ++
     api.metadata.map(t => ("api.metadata." + t._1, t._2))
 
-  def computeTags(team: Team, tenant: Tenant): Set[String] = {
+  def computeTags(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Set[String] = {
     val planTags = plan.otoroshiTarget
       .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
       .getOrElse(Set.empty[String])
 
-    planTags.map(OtoroshiTarget.processValue(_, getContext(team, tenant)))
+    planTags.map(
+      OtoroshiTarget.processValue(_, getContext(team, tenant, keyringApiKey))
+    )
   }
 
-  def computeMetadata(team: Team, tenant: Tenant): Map[String, String] = {
+  def computeMetadata(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Map[String, String] = {
     val planMeta = metadataObjectToMap(
       plan.otoroshiTarget
         .flatMap(
@@ -233,23 +245,30 @@ case class Child(
 
     val newMetaFromDk =
       (planMeta ++ customMetaFromSub ++ metadataFromSub).map { case (a, b) =>
-        a -> OtoroshiTarget.processValue(b, getContext(team, tenant))
+        a -> OtoroshiTarget.processValue(
+          b,
+          getContext(team, tenant, keyringApiKey)
+        )
       }
 
     newMetaFromDk
   }
 
-  def asOtoroshiApikey(team: Team, tenant: Tenant): ActualOtoroshiApiKey = {
+  def asOtoroshiApikey(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): ActualOtoroshiApiKey = {
     val maybeTarget: Option[OtoroshiTarget] = plan.otoroshiTarget
     val maybeCustomization: Option[ApikeyCustomization] =
       maybeTarget.map(_.apikeyCustomization)
-    val meta = computeMetadata(team, tenant)
-    val tags = computeTags(team, tenant)
+    val meta = computeMetadata(team, tenant, keyringApiKey)
+    val tags = computeTags(team, tenant, keyringApiKey)
 
     ActualOtoroshiApiKey(
-      clientId = subscription.apiKey.clientId,
-      clientSecret = subscription.apiKey.clientSecret,
-      clientName = subscription.apiKey.clientName,
+      clientId = keyringApiKey.clientId,
+      clientSecret = keyringApiKey.clientSecret,
+      clientName = keyringApiKey.clientName,
       authorizedEntities = maybeTarget
         .flatMap(t => t.authorizedEntities)
         .getOrElse(AuthorizedEntities()),
@@ -580,13 +599,14 @@ class OtoroshiSynchronizerJob(
     subscriptions.filter(_.subscription.enabled).toList match {
       case Nil => None
       case head :: tail =>
-        val merged = tail.foldLeft(head.asOtoroshiApikey(team, tenant)) {
-          case (acc, item) =>
-            mergeOtoroshiApikeys(
-              acc,
-              item.asOtoroshiApikey(team, tenant),
-              strategy = tenant.keyringQuotaConflictStrategy
-            )
+        val merged = tail.foldLeft(
+          head.asOtoroshiApikey(team, tenant, keyring.apiKey)
+        ) { case (acc, item) =>
+          mergeOtoroshiApikeys(
+            acc,
+            item.asOtoroshiApikey(team, tenant, keyring.apiKey),
+            strategy = tenant.keyringQuotaConflictStrategy
+          )
         }
         // The keyring is authoritative for the api key identity.
         Some(

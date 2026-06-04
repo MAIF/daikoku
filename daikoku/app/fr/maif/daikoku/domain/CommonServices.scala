@@ -1054,15 +1054,11 @@ object CommonServices {
           AppError.EntityNotFound("ApiSubscription")
         )
         maybeKeyring <-
-          sub.keyring
-            .map(kid =>
-              EitherT.liftF[Future, AppError, Option[Keyring]](
-                env.dataStore.keyringRepo
-                  .forTenant(ctx.tenant)
-                  .findById(kid.value)
-              )
-            )
-            .getOrElse(EitherT.pure[Future, AppError](None))
+          EitherT.liftF[Future, AppError, Option[Keyring]](
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findById(sub.keyring.value)
+          )
         accessibleResources <-
           EitherT
             .liftF[Future, AppError, Seq[JsValue]](
@@ -1070,7 +1066,7 @@ object CommonServices {
                 sql,
                 "detail",
                 Seq(
-                  sub.keyring.map(_.value).getOrElse(""),
+                  sub.keyring.value,
                   sub.id.value
                 )
               )

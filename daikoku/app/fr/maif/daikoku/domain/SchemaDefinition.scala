@@ -1614,8 +1614,11 @@ object SchemaDefinition {
           Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
           Field(
             "otoroshiSettings",
-            StringType,
-            resolve = _.value.otoroshiSettings.value
+            OptionType(StringType),
+            resolve = _.value.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) => Some(id.value)
+              case KeyringOtoroshiBinding.Internal     => None
+            }
           ),
           Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
           Field(
@@ -1646,12 +1649,6 @@ object SchemaDefinition {
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
-          Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
-          Field(
-            "bearerToken",
-            OptionType(StringType),
-            resolve = _.value.bearerToken
-          ),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -1689,16 +1686,6 @@ object SchemaDefinition {
             resolve = _.value.adminCustomName
           ),
           Field("enabled", BooleanType, resolve = _.value.enabled),
-          Field(
-            "rotation",
-            OptionType(ApiSubscriptionRotationType),
-            resolve = _.value.rotation
-          ),
-          Field(
-            "integrationToken",
-            StringType,
-            resolve = _.value.integrationToken
-          ),
           Field(
             "customMetadata",
             OptionType(JsonType),
@@ -2733,26 +2720,15 @@ object SchemaDefinition {
     lazy val ApiKeyRefreshV2Type = new PossibleObject(
       ObjectType(
         "ApiKeyRefreshV2",
-        "An Otoroshi notification triggered when an api key has been refreshed",
+        "A notification triggered when a keyring's secret has been refreshed",
         interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
           NotificationActionType
         ),
         fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
           Field(
-            "api",
-            OptionType(ApiType),
-            resolve = ctx => apisFetcher.defer(ctx.value.api)
-          ),
-          Field(
-            "subscription",
-            OptionType(ApiSubscriptionType),
-            resolve =
-              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
-          ),
-          Field(
-            "plan",
-            OptionType(UsagePlanType),
-            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field("message", OptionType(StringType), resolve = _.value.message)
         )

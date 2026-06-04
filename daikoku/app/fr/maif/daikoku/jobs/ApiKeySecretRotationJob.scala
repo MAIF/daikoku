@@ -153,7 +153,7 @@ class ApiKeySecretRotationJob(
             Json.obj(
               "_id" -> Json.obj(
                 "$in" -> JsArray(
-                  candidates.flatMap(_.keyring).distinct.map(_.asJson)
+                  candidates.map(_.keyring).distinct.map(_.asJson)
                 )
               ),
               "rotation.enabled" -> true
@@ -174,7 +174,7 @@ class ApiKeySecretRotationJob(
       // one representative subscription per keyring (for api/plan/team context)
       val representatives = members
         .groupBy(_.keyring)
-        .collect { case (Some(_), subs) if subs.nonEmpty => subs.head }
+        .collect { case (_, subs) if subs.nonEmpty => subs.head }
         .toSeq
       representatives.map(subscription =>
         for {
@@ -254,9 +254,9 @@ class ApiKeySecretRotationJob(
               .reduce((_, _) => ())
           )
           apk <- EitherT(
-            client.getApikey(subscription.apiKey.clientId)(using
-              otoroshiSettings
-            )
+            client.getApikey(
+              keyringById(subscription.keyring).apiKey.clientId
+            )(using otoroshiSettings)
           ).leftMap(e =>
             JobUtils.sendErrorNotification(
               NotificationAction.OtoroshiSyncSubscriptionError(
@@ -270,7 +270,7 @@ class ApiKeySecretRotationJob(
             )
           )
         } yield {
-          val keyring = keyringById(subscription.keyring.get)
+          val keyring = keyringById(subscription.keyring)
           if (!apk.rotation.exists(r => r.enabled)) {
             client.updateApiKey(
               apk.copy(rotation = keyring.rotation.map(_.toApiKeyRotation))
@@ -317,7 +317,7 @@ class ApiKeySecretRotationJob(
                 .logJobEvent(
                   tenant,
                   JobUtils.jobUser,
-                  Json.obj("token" -> subscription.integrationToken)
+                  Json.obj("token" -> keyring.integrationToken)
                 )
 
             } else if (pendingRotation && otoroshiNextSecret.isEmpty) {
@@ -349,7 +349,7 @@ class ApiKeySecretRotationJob(
                 .logJobEvent(
                   tenant,
                   JobUtils.jobUser,
-                  Json.obj("token" -> subscription.integrationToken)
+                  Json.obj("token" -> keyring.integrationToken)
                 )
             }
 

@@ -1256,22 +1256,30 @@ object testUtils {
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
+    val adminApiKey = OtoroshiApiKey(
+      clientName = "admin-apikey-test",
+      clientId = IdGenerator.token(10),
+      clientSecret = IdGenerator.token(10)
+    )
+    val adminApiKeyring = Keyring(
+      id = KeyringId("admin-keyring-test"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      apiKey = adminApiKey,
+      otoroshiSettings = KeyringOtoroshiBinding.Internal,
+      createdAt = DateTime.now(),
+      integrationToken = IdGenerator.token(64)
+    )
     val adminApiSubscription = ApiSubscription(
       id = ApiSubscriptionId(IdGenerator.token(32)),
       tenant = Tenant.Default,
-      apiKey = OtoroshiApiKey(
-        clientName = "admin-apikey-test",
-        clientId = IdGenerator.token(10),
-        clientSecret = IdGenerator.token(10)
-      ),
       plan = adminApiPlan.id,
       createdAt = DateTime.now(),
       team = defaultAdminTeam.id,
       api = adminApi.id,
       by = tenantAdmin.id,
       customName = Some("admin key for test"),
-      rotation = None,
-      integrationToken = IdGenerator.token(64)
+      keyring = adminApiKeyring.id
     )
 
     val adminApi2plan = UsagePlan(

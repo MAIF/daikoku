@@ -95,6 +95,7 @@ class DeletionService(
 
   private case class SubscriptionContext(
       subscription: ApiSubscription,
+      keyring: Keyring,
       api: Api,
       plan: UsagePlan,
       notif: Notification
@@ -116,6 +117,12 @@ class DeletionService(
           .findById(subscription.plan),
         AppError.PlanNotFound
       )
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(subscription.keyring),
+        AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
+      )
       notif = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -124,11 +131,11 @@ class DeletionService(
         notificationType = NotificationType.AcceptOnly,
         action = NotificationAction.ApiKeyDeletionInformationV2(
           api.id,
-          subscription.apiKey.clientId,
+          keyring.apiKey.clientId,
           subscription.id
         )
       )
-    } yield SubscriptionContext(subscription, api, plan, notif)).value
+    } yield SubscriptionContext(subscription, keyring, api, plan, notif)).value
 
   private def processOtoroshiForSubscription(
       ctx: SubscriptionContext,
@@ -144,7 +151,7 @@ class DeletionService(
           tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings),
           AppError.EntityNotFound("Otoroshi settings")
         )
-        _ <- otoroshiClient.deleteApiKey(ctx.subscription.apiKey.clientId)(using
+        _ <- otoroshiClient.deleteApiKey(ctx.keyring.apiKey.clientId)(using
           settings
         )
       } yield ()
@@ -215,7 +222,7 @@ class DeletionService(
 
     for {
       // the keyrings impacted by this deletion
-      affectedKeyringIds = subscriptions.flatMap(_.keyring).distinct
+      affectedKeyringIds = subscriptions.map(_.keyring).distinct
       // Phase 1 — disable subs in DB so the synchronizer sees them as disabled
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
