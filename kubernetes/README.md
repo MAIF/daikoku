@@ -66,3 +66,66 @@ kubectl apply -k kustomize/base
 - **Serve over HTTPS** → keep `DAIKOKU_SESSION_SECURE=true` (default). Set it `false` only behind plain HTTP.
 - Daikoku **creates its schema and tables on first boot** — no migration job. The target database must exist (the embedded Postgres creates it) and the DB user must have `CREATE`.
 - TLS is terminated at the Ingress; do not set `HTTPS_PORT` / keystore variables.
+
+## Seeding the default tenant (Otoroshi / S3 / mailer / auth / …)
+
+The Helm chart can pre-configure the **default tenant** straight from `values.yaml`,
+under `daikoku.initTenant`. These values are translated into `DAIKOKU_INIT_*`
+environment variables and applied **only on the very first boot, when the
+database is empty** (same lifecycle as `DAIKOKU_INIT_DATA_FROM`). Afterwards the
+database is the source of truth and changing them has **no effect** — you then
+edit the tenant from the Daikoku admin UI.
+
+Everything is optional; leave a field empty (`""`) or `null` to skip it. Each
+block is documented inline in [`values.yaml`](./helm/daikoku/values.yaml):
+
+| Block | What it seeds |
+|---|---|
+| `initTenant.name/title/defaultLanguage/…` | tenant identity & locale |
+| `initTenant.creationSecurity/…` | account / team / subscription security flags |
+| `initTenant.otoroshi` | an Otoroshi instance (external; no bundled Otoroshi) |
+| `initTenant.s3` | S3 bucket for asset storage |
+| `initTenant.mailer` | mailer backend — `console` (default) / `mailgun` / `mailjet` / `smtpClient` / `sendgrid` |
+| `initTenant.auth` | auth module — `Local` (default) / `Otoroshi` / `OAuth2` / `LDAP` |
+| `initTenant.audit` | audit trail destinations (alert emails, Elasticsearch) |
+
+Secret-bearing fields (mailer keys, S3 secret, client secrets, passwords) are
+rendered into a dedicated `*-init-tenant` Secret, never the ConfigMap.
+
+```sh
+helm install daikoku ./helm/daikoku \
+  --set ingress.host=daikoku.example.com \
+  --set daikoku.initTenant.mailer.type=smtpClient \
+  --set daikoku.initTenant.mailer.host=smtp.example.com \
+  --set daikoku.initTenant.mailer.fromEmail=daikoku@example.com \
+  --set daikoku.initTenant.s3.bucket=daikoku-assets \
+  --set daikoku.initTenant.s3.endpoint=https://s3.eu-west-1.amazonaws.com \
+  --set daikoku.initTenant.s3.access=AKIA... \
+  --set daikoku.initTenant.s3.secret=...
+```
+
+### Optional in-cluster dependencies
+
+For demos/dev you can bundle a backend instead of wiring an external one. Each is
+**disabled by default**; when enabled it auto-fills the matching `initTenant.*`
+fields so the tenant is seeded to use it (you don't repeat the coordinates):
+
+| Toggle | Bundles | Seeds |
+|---|---|---|
+| `garage.enabled` | [Garage](https://garagehq.deuxfleurs.fr/) S3 (StatefulSet + a bootstrap Job that creates a bucket & access key) | `initTenant.s3.*` |
+| `openldap.enabled` | OpenLDAP directory (osixia, ephemeral, seed users) | `initTenant.auth` → `LDAP` + `ldap.*` |
+| `mailpit.enabled` | [Mailpit](https://mailpit.axllent.org/) dev SMTP sink + web UI | `initTenant.mailer` → `smtpClient` |
+
+```sh
+# Self-contained demo stack (Postgres + Garage + Mailpit), no external services:
+helm install daikoku ./helm/daikoku \
+  --set ingress.host=daikoku.example.com \
+  --set garage.enabled=true \
+  --set mailpit.enabled=true --set mailpit.ui.ingress=true
+```
+
+> These bundles are convenience/dev backends — for production prefer managed
+> services. Garage's bootstrap Job (cluster layout + bucket + key creation via
+> the Garage admin API, credentials stored in a `*-garage-keys` Secret) should be
+> smoke-tested on your cluster; the Daikoku pod waits on that Secret before it
+> can start when `garage.enabled=true`.

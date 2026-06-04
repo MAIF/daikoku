@@ -67,6 +67,40 @@ app.kubernetes.io/part-of: daikoku
 {{- end }}
 
 {{/*
+Bundled dependency names (Garage S3 / OpenLDAP / Mailpit).
+*/}}
+{{- define "daikoku.garage.fullname" -}}
+{{- printf "%s-garage" (include "daikoku.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- define "daikoku.openldap.fullname" -}}
+{{- printf "%s-openldap" (include "daikoku.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- define "daikoku.mailpit.fullname" -}}
+{{- printf "%s-mailpit" (include "daikoku.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/* OpenLDAP base DN derived from the domain (example.org -> dc=example,dc=org). */}}
+{{- define "daikoku.openldap.baseDN" -}}
+{{- printf "dc=%s" (.Values.openldap.domain | replace "." ",dc=") -}}
+{{- end }}
+
+{{- define "daikoku.garage.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "daikoku.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: garage
+{{- end }}
+{{- define "daikoku.openldap.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "daikoku.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: openldap
+{{- end }}
+{{- define "daikoku.mailpit.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "daikoku.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: mailpit
+{{- end }}
+
+{{/*
 ServiceAccount name.
 */}}
 {{- define "daikoku.serviceAccountName" -}}

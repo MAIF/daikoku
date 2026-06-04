@@ -34,3 +34,5 @@ data:
   DAIKOKU_POSTGRES_SSL_ENABLED: "true"
   DAIKOKU_POSTGRES_SSL_MODE: {{ .Values.daikoku.postgres.ssl.mode | quote }}
   {{- end }}
+  # --- Default-tenant seeding (first boot only; non-secret values) ---
+  {{- include "daikoku.initTenant.config" . | nindent 2 }}
