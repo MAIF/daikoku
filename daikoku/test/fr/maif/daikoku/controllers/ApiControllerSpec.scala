@@ -1380,8 +1380,6 @@ class ApiControllerSpec()
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-
-
       // test if plans are deleted
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
@@ -6642,15 +6640,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 
@@ -6720,15 +6718,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 
@@ -6996,15 +6994,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 

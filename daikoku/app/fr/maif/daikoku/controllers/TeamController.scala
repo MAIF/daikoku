@@ -302,7 +302,8 @@ class TeamController(
                           env.dataStore.withTransaction {
                             for {
                               _ <- teamRepo.save(newTeam)
-                              _ <- emailVerificationRepo.deleteById(emailVerification.id)
+                              _ <- emailVerificationRepo
+                                .deleteById(emailVerification.id)
                             } yield ()
                           }
                         )

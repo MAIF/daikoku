@@ -1,8 +1,9 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
-import { JIM, MICHAEL } from './users';
+import { JIM, MICHAEL, IUser, DWIGHT } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
+
 
 test.beforeEach(async () => {
   await Promise.all([
@@ -956,3 +957,58 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByText('Environnements').click();
   await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
 })
+test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async({page, context}) => {
+
+  async function checkBurgerButtonVisibility(visible: Boolean) {
+    const keyUrl = `${HOME}vendeurs/settings/apikeys/api-commande/1.0.0`
+    const burgerLocator = page.locator('.api-subscription').first().locator('#dropdownMenuButton')
+    await page.goto(keyUrl)
+
+    if(visible) {
+      await expect(burgerLocator).toBeVisible()
+    } else {
+      // Ensure that api key card is displayed before asserting on burger button absence
+      await expect(page.getByRole("button", {name: "Copier le clientId et le clientSecret"})).toBeVisible()
+      await expect(burgerLocator).not.toBeVisible()
+    }
+  }
+
+  async function updateDwightRightsOnVendeurTeam(right: "Editor" | "Admin") {
+    const dwightUserLocator = page.locator(".container", { hasText: DWIGHT.name })
+    await page.goto(`${HOME}vendeurs/settings/members`)
+    await dwightUserLocator.locator(".overlay").hover()
+    await dwightUserLocator.locator(".fa-user-cog").click();
+    if(right === "Editor") {
+      await dwightUserLocator.locator(".fa-pencil-alt").click();
+      await expect(page.getByText("Dwight Schrute est maintenant ApiEditor")).toBeVisible()
+    } else {
+      await dwightUserLocator.locator(".fa-shield-alt").click();
+      await expect(page.getByText("Dwight Schrute est maintenant Administrator")).toBeVisible()
+    }
+  }
+
+
+  await page.goto(ACCUEIL);
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(false);
+
+  await logout(page)
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await checkBurgerButtonVisibility(true);
+  await updateDwightRightsOnVendeurTeam("Editor")
+
+  await logout(page)
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(false);
+
+  await logout(page)
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await updateDwightRightsOnVendeurTeam("Admin")
+
+  await logout(page)
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(true);
+})
+

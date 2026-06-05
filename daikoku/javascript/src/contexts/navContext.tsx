@@ -511,6 +511,11 @@ export const useDaikokuBackOffice = () => {
               action: () => navigateTo('sessions'),
               className: { active: currentTab === 'sessions' },
             },
+            loggers: {
+              label: translate('Loggers'),
+              action: () => navigateTo('loggers'),
+              className: { active: currentTab === 'loggers' },
+            },
             importexport: {
               label: translate('Import / Export'),
               action: () => navigateTo('import-export'),

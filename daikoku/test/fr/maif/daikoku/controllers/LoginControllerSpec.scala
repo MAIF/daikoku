@@ -83,7 +83,7 @@ class LoginControllerSpec()
         .withHttpHeaders(
           (Map("Host" -> tenant.domain) ++ _headers ++ getAdminApiHeader(
             adminApiSubscription
-          )).toSeq *
+          )).toSeq*
         )
         .withFollowRedirects(true)
         .withMethod("POST")
@@ -156,7 +156,7 @@ class LoginControllerSpec()
             (Map(
               "Host" -> tenant.domain,
               "Content-Type" -> "application/x-www-form-urlencoded"
-            ) + adminApiHeader).toSeq *
+            ) + adminApiHeader).toSeq*
           )
           .withFollowRedirects(false)
           .withMethod("POST")
@@ -205,7 +205,7 @@ class LoginControllerSpec()
             (Map(
               "Host" -> tenant.domain,
               "Content-Type" -> "application/x-www-form-urlencoded"
-            ) + adminApiHeader).toSeq *
+            ) + adminApiHeader).toSeq*
           )
           .withFollowRedirects(false)
           .withMethod("POST")
@@ -249,7 +249,7 @@ class LoginControllerSpec()
             (Map(
               "Host" -> tenant.domain,
               "Content-Type" -> "application/x-www-form-urlencoded"
-            ) + adminApiHeader).toSeq *
+            ) + adminApiHeader).toSeq*
           )
           .withFollowRedirects(false)
           .withMethod("POST")
@@ -312,7 +312,7 @@ class LoginControllerSpec()
           (Map(
             "Host" -> tenant.domain,
             "Content-Type" -> "application/x-www-form-urlencoded"
-          ) + adminApiHeader).toSeq *
+          ) + adminApiHeader).toSeq*
         )
         .withFollowRedirects(true)
         .withMethod("POST")
@@ -396,7 +396,7 @@ class LoginControllerSpec()
             (Map(
               "Host" -> tenant.domain,
               "Content-Type" -> "application/x-www-form-urlencoded"
-            ) + adminApiHeader).toSeq *
+            ) + adminApiHeader).toSeq*
           )
           .withFollowRedirects(false)
           .withMethod("POST")

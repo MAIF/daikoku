@@ -391,8 +391,6 @@ class DeletionServiceSpec
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-
-
       // test if plans are deleted
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
@@ -981,7 +979,6 @@ class DeletionServiceSpec
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
 
-
       // test if plans are deleted
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
@@ -1455,8 +1452,6 @@ class DeletionServiceSpec
         operationsPending().isEmpty
       }
 
-
-
       // parent subscription must still be alive
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -1617,8 +1612,6 @@ class DeletionServiceSpec
             ),
           5.second
         )
-
-
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         // parent subscription must mark as deleted
@@ -1855,7 +1848,6 @@ class DeletionServiceSpec
         operationsPending().isEmpty
       }
 
-
       // childSub1 (oldest) must be elected as new parent: alive, no parent field
       val maybeChildSub1 = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -2041,8 +2033,6 @@ class DeletionServiceSpec
         operationsPending().isEmpty
       }
 
-
-
       // parent sub must still be alive
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -2207,8 +2197,6 @@ class DeletionServiceSpec
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
-
-
 
       // child sub must be alive and promoted to standalone (no parent)
       val maybeChildSub = Await.result(
@@ -2563,8 +2551,6 @@ class DeletionServiceSpec
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
-
-
 
       // child sub must be alive and promoted to standalone (no parent)
       val maybeChildSub = Await.result(
@@ -3647,8 +3633,12 @@ class DeletionServiceSpec
         !remaining.contains("n-key-rotation-ended-v2") &&
         !remaining.contains("n-key-refresh-v2") &&
         // deleted — via deleteTeamNotifications (type filter + action.team = teamOwnerId)
-        !remaining.contains("n-team-invitation") && // TeamInvitation + team=teamOwnerId
-        !remaining.contains("n-transfer-ownership") && // TransferApiOwnership + team=teamOwnerId
+        !remaining.contains(
+          "n-team-invitation"
+        ) && // TeamInvitation + team=teamOwnerId
+        !remaining.contains(
+          "n-transfer-ownership"
+        ) && // TransferApiOwnership + team=teamOwnerId
         // deleted — via deleteApiNotifications (action.api = api.id)
         !remaining.contains("n-api-access") &&
         !remaining.contains("n-sub-accept") &&
@@ -3751,9 +3741,10 @@ class DeletionServiceSpec
           .toSet
 
         // deleted — action.user = user.id
-        !remaining.contains("n-team-invitation") && !remaining.contains("n-new-comment-v2")
+        !remaining.contains("n-team-invitation") && !remaining.contains(
+          "n-new-comment-v2"
+        )
       }
-
 
       // survived — all 23 others
       remaining must contain("n-api-access")

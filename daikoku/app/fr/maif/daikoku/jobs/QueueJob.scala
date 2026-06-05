@@ -51,7 +51,9 @@ class QueueJob(
   // *** ELEMENTS DELETION ***
   // *************************
 
-  private def deleteApiNotifications(api: Api)(implicit dbConn: DbConn): Future[Boolean] = {
+  private def deleteApiNotifications(
+      api: Api
+  )(implicit dbConn: DbConn): Future[Boolean] = {
     logger.debug("*** DeLEte api notifications AS OPERATION***")
     logger.debug(Json.prettyPrint(api.asJson))
     logger.debug("**********************************************")
@@ -168,7 +170,9 @@ class QueueJob(
       )
   }
 
-  private def deleteTeamNotifications(team: Team)(implicit dbConn: DbConn): Future[Boolean] = {
+  private def deleteTeamNotifications(
+      team: Team
+  )(implicit dbConn: DbConn): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(team.tenant)
       .delete(

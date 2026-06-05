@@ -298,6 +298,10 @@ DELETE  /api/admin/sessions                             fr.maif.daikoku.controll
 GET     /api/admin/sessions                             fr.maif.daikoku.controllers.SessionController.allSessions()
 POST    /api/session/_renew                             fr.maif.daikoku.controllers.SessionController.sessionRenew()
 
+GET     /api/admin/loggers                               fr.maif.daikoku.controllers.LoggersController.getAllLoggers()
+GET     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.getLogLevel(name)
+PUT     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.changeLogLevel(name, newLevel: Option[String])
+
 GET     /api/entities/tenant                            fr.maif.daikoku.controllers.EntitiesController.newTenant()
 GET     /api/entities/team                              fr.maif.daikoku.controllers.EntitiesController.newTeam()
 GET     /api/entities/api                               fr.maif.daikoku.controllers.EntitiesController.newApi()

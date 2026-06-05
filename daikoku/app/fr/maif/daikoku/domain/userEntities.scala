@@ -90,7 +90,7 @@ object GuestUser {
       lastTenant = None,
       defaultLanguage = None,
       personalToken = None,
-      isGuest = true,
+      isGuest = true
     )
 }
 

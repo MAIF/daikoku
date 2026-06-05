@@ -83,7 +83,9 @@ class DeletionService(
     EitherT.right[AppError](
       env.dataStore.withTransaction {
         for {
-          _ <- env.dataStore.teamRepo.forTenant(tenant).deleteByIdLogically(team.id)
+          _ <- env.dataStore.teamRepo
+            .forTenant(tenant)
+            .deleteByIdLogically(team.id)
           _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
         } yield ()
       }
@@ -833,14 +835,14 @@ class DeletionService(
         env.dataStore.withTransaction {
           for {
             _ <- env.dataStore.subscriptionDemandRepo
-                   .forTenant(tenant)
-                   .deleteById(demand.id)
+              .forTenant(tenant)
+              .deleteById(demand.id)
             _ <- env.dataStore.stepValidatorRepo
-                   .forTenant(tenant)
-                   .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
+              .forTenant(tenant)
+              .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
             _ <- env.dataStore.notificationRepo
-                   .forTenant(tenant)
-                   .delete(Json.obj("action.demand" -> demand.id.asJson))
+              .forTenant(tenant)
+              .delete(Json.obj("action.demand" -> demand.id.asJson))
           } yield ()
         }
       )

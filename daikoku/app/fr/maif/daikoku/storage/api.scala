@@ -63,7 +63,9 @@ trait Repo[Of, Id <: ValueType] {
 
   def count()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
-  def count(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
+  def count(
+      query: JsObject
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
   // Streaming methods are intentionally excluded from DbConn: they return a
   // lazy Source that materialises outside any transaction window.
@@ -81,7 +83,8 @@ trait Repo[Of, Id <: ValueType] {
       maxDocs: Int = -1
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]]
 
-  def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(implicit
+  def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]]
@@ -114,9 +117,13 @@ trait Repo[Of, Id <: ValueType] {
       order: Option[SortingOrder] = None
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)]
 
-  def delete(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
+  def delete(
+      query: JsObject
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
-  def save(value: Of)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
+  def save(
+      value: Of
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     val payload = format.writes(value).as[JsObject]
     save(Json.obj("_id" -> extractId(value)), payload)
   }
@@ -126,7 +133,9 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def insertMany(values: Seq[Of])(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
+  def insertMany(
+      values: Seq[Of]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
   def updateMany(query: JsObject, Value: JsObject)(implicit
       dbConn: DbConn,
@@ -138,7 +147,9 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Long]
 
-  def exists(query: JsObject)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
+  def exists(
+      query: JsObject
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
   def findMaxByQuery(query: JsObject = Json.obj(), field: String)(implicit
       dbConn: DbConn,
@@ -373,9 +384,15 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def deleteAllLogically()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
+  def deleteAllLogically()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean]
 
-  def findAllNotDeleted()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
+  def findAllNotDeleted()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Of]] =
     find(
       Json.obj(
         "$or" -> Json
@@ -411,13 +428,19 @@ trait Repo[Of, Id <: ValueType] {
     findByIdNotDeleted(id.value)
   }
 
-  def findById(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
+  def findById(
+      id: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id))
 
-  def findById(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
+  def findById(
+      id: Id
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id.value))
 
-  def findByIds(ids: Seq[Id])(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
+  def findByIds(
+      ids: Seq[Id]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
     find(
       Json.obj(
         "_id" -> Json.obj("$in" -> JsArray(ids.map(id => JsString(id.value))))
@@ -433,22 +456,36 @@ trait Repo[Of, Id <: ValueType] {
       )
     )
 
-  def findAll()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
+  def findAll()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Of]] =
     find(Json.obj())
 
-  def deleteById(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+  def deleteById(
+      id: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id))
 
-  def deleteById(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+  def deleteById(
+      id: Id
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id.value))
 
-  def deleteAll()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+  def deleteAll()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
     delete(Json.obj())
 
-  def exists(id: String)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+  def exists(
+      id: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id))
 
-  def exists(id: Id)(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+  def exists(
+      id: Id
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
   def queryOne(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
@@ -709,5 +746,7 @@ trait DataStore {
   // Runs f inside a single DB transaction.  All Repo calls inside f
   // automatically receive ActiveConn(conn) via the implicit DbConn —
   // no changes required at the call sites inside f.
-  def withTransaction[A](f: DbConn ?=> Future[A])(implicit ec: ExecutionContext): Future[A]
+  def withTransaction[A](f: DbConn ?=> Future[A])(implicit
+      ec: ExecutionContext
+  ): Future[A]
 }
