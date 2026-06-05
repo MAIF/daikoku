@@ -2417,7 +2417,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
         )
     ).map(_ => true)
-      .recover(_ => false)
+      .recover { e =>
+        logger.error(
+          s"$tableName.save(${Json.prettyPrint(query)}) failed",
+          e
+        )
+        false
+      }
   }
 
   def insertMany(values: Seq[Of], addToPayload: JsObject)(implicit

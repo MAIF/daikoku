@@ -244,7 +244,11 @@ object Helper {
           try {
             _inOperatorToString(value.as[List[String]], params)
           } catch {
-            case _: Throwable =>
+            case e: Throwable =>
+              logger.error(
+                s"Failed to convert \$in operator for value $value, falling back to default",
+                e
+              )
               ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
           }
 
