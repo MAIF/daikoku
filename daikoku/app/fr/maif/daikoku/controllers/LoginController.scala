@@ -1011,7 +1011,7 @@ class LoginController(
               case Some(accountCreation)
                   if accountCreation.validUntil.isBefore(DateTime.now()) =>
                 env.dataStore.accountCreationRepo
-                  .deleteByIdLogically(accountCreation.id.value)
+                  .deleteById(accountCreation.id.value)
                   .map { _ =>
                     Redirect("/signup?error=not.valid.anymore")
                   }
@@ -1070,7 +1070,7 @@ class LoginController(
                         _ <- env.dataStore.userRepo.save(user)
                         _ <-
                           env.dataStore.accountCreationRepo
-                            .deleteByIdLogically(accountCreation.id.value)
+                            .deleteById(accountCreation.id.value)
                       } yield ()
                       userCreation.map { _ =>
                         Status(302)(

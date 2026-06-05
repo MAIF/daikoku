@@ -1364,14 +1364,14 @@ class ApiControllerSpec()
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        // test if user subscriptions deleted
+        // test if user subscriptions are physically deleted
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
             .findById(personalSubscription.id),
           5.second
         )
-        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
+        _maybeSubscription.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>

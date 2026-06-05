@@ -395,7 +395,7 @@ class TeamController(
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
-                    .deleteLogically(Json.obj("teamId" -> team.id.value))
+                    .delete(Json.obj("teamId" -> team.id.value))
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
@@ -501,7 +501,7 @@ class TeamController(
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)
-                          .deleteLogically(Json.obj("teamId" -> team.id.value))
+                          .delete(Json.obj("teamId" -> team.id.value))
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)

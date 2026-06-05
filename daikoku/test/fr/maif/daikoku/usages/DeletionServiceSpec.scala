@@ -383,7 +383,7 @@ class DeletionServiceSpec
             .findById(personalSubscription.id),
           5.second
         )
-        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
+        _maybeSubscription.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -594,8 +594,7 @@ class DeletionServiceSpec
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation
@@ -757,8 +756,7 @@ class DeletionServiceSpec
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation
@@ -971,7 +969,7 @@ class DeletionServiceSpec
             .findById(personalSubscription.id),
           5.second
         )
-        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
+        _maybeSubscription.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -1244,7 +1242,7 @@ class DeletionServiceSpec
             .findById(personalSubscription.id),
           5.second
         )
-        _maybeSubscription.isDefined && _maybeSubscription.forall(_.deleted)
+        _maybeSubscription.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
@@ -1446,7 +1444,7 @@ class DeletionServiceSpec
             .findById(childSub.id),
           5.second
         )
-        maybeChildSub.isDefined && maybeChildSub.forall(_.deleted)
+        maybeChildSub.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -1622,7 +1620,7 @@ class DeletionServiceSpec
           5.second
         )
         logger.warn(s"$maybeParentSub")
-        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
+        maybeParentSub.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
@@ -1659,7 +1657,7 @@ class DeletionServiceSpec
       (authorizations.head \ "id").as[String] mustBe childRouteId
     }
 
-    "delete parent api subscriptions and elect a new parent among multiple children" in {
+    "delete parent api subscriptions and select a new parent among multiple children" in {
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent-plan"),
         tenant = tenant.id,
@@ -1842,7 +1840,7 @@ class DeletionServiceSpec
             .findById(parentSub.id),
           5.second
         )
-        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
+        maybeParentSub.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -2026,7 +2024,7 @@ class DeletionServiceSpec
             .findById(childSub.id),
           5.second
         )
-        maybeChildSub.isDefined && maybeChildSub.forall(_.deleted)
+        maybeChildSub.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
@@ -2192,7 +2190,7 @@ class DeletionServiceSpec
             .findById(parentSub.id),
           5.second
         )
-        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
+        maybeParentSub.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -2364,7 +2362,7 @@ class DeletionServiceSpec
             .findById(parentSub.id),
           5.second
         )
-        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
+        maybeParentSub.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
@@ -2546,7 +2544,7 @@ class DeletionServiceSpec
             .findById(parentSub.id),
           5.second
         )
-        maybeParentSub.isDefined && maybeParentSub.forall(_.deleted)
+        maybeParentSub.isEmpty
       }
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
@@ -2667,7 +2665,7 @@ class DeletionServiceSpec
             .findById(consumerSub.id),
           5.second
         )
-        maybeSub.isDefined && maybeSub.forall(_.deleted)
+        maybeSub.isEmpty
       }
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
@@ -2762,8 +2760,7 @@ class DeletionServiceSpec
           .findById(sub.id),
         5.second
       )
-      maybeSub.isDefined mustBe true
-      maybeSub.forall(_.deleted) mustBe true
+      maybeSub mustBe empty
 
       // otoroshi key must be deleted
       val respOto = httpJsonCallBlocking(
@@ -2889,8 +2886,7 @@ class DeletionServiceSpec
           .findById(parentSub.id),
         5.second
       )
-      maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe true
+      maybeParentSub mustBe empty
 
       // child sub must be promoted (parent field removed)
       val maybeChildSub = Await.result(

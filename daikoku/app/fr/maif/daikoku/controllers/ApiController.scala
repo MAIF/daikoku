@@ -1328,7 +1328,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.stepValidatorRepo
               .forTenant(ctx.tenant)
-              .deleteByIdLogically(validator.id)
+              .deleteById(validator.id)
           )
         } yield Redirect("/apis"))
           .leftMap(_.render())
@@ -3177,7 +3177,7 @@ class ApiController(
         ctx.setCtxValue("page.id", pageId)
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
-          .deleteByIdLogically(pageId)
+          .deleteById(pageId)
           .map { _ =>
             Ok(Json.obj("done" -> true))
           }

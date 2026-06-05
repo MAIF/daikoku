@@ -245,8 +245,8 @@ class UserControllerSpec()
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      //subscription is now fully deleted
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation
@@ -585,8 +585,8 @@ class UserControllerSpec()
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      //subscription is fully deleted
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation
