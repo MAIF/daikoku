@@ -69,7 +69,8 @@ $theme-colors: (
   danger: (color: variables.$danger-color, bg: variables.$danger-color-bg),
   neutral: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
   inactive: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
-  finished: (color: variables.$neutral-color-000, bg: #000), // pas de token sémantique pour le noir
+  finished: (color: variables.$neutral-color-000, bg: #000),
+  // pas de token sémantique pour le noir
 );
 
 
@@ -167,7 +168,7 @@ $theme-colors: (
 
       &.--ghost {
         background-color: transparent;
-        border: 1px solid map.get($colors, color);
+        border: 1px solid variables.$neutral-color-200;
       }
 
       &.--state::before {

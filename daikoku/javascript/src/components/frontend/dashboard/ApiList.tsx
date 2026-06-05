@@ -87,12 +87,18 @@ export const ApiList = (props: ApiListProps) => {
           const path = isApiGroup ? 'apis' : 'description'
           if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
             return (
-              <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
-                {api.name}
-              </Link>
+              <div className="d-flex gap-2">
+                <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
+                  {api.name}
+                </Link>
+                {!!api.apis?.length && <span className="tag --primary --ghost">Groupe</span>}
+              </div>
             )
           }
-          return <p id={`api-${api._humanReadableId}`}>{api.name}</p>
+          return <div className="d-flex gap-2">
+            <p id={`api-${api._humanReadableId}`}>{api.name}</p>
+            {!!api.apis?.length && <span className="tag --primary --ghost">Groupe</span>}
+          </div>
         },
       }),
       columnHelper.accessor('api.tags', {
@@ -129,7 +135,13 @@ export const ApiList = (props: ApiListProps) => {
           const apiState = api.state
           return (
             <div className="d-flex gap-1 status">
-              {(apiState === 'published' || apiState === 'created') && (
+              {(apiState === 'created') && (
+                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}
+                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+                  <span>{translate('api.created')}</span>
+                </span>
+              )}
+              {(apiState === 'published') && (
                 <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}
                   onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.published')}</span>
@@ -141,8 +153,8 @@ export const ApiList = (props: ApiListProps) => {
                   <span>{translate('api.deprecated')}</span>
                 </span>
               )}
-              {(apiState === 'blocked' || apiState === 'deleted') && (
-                <span className="badge --danger --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+              {(apiState === 'blocked') && (
+                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
                   <span>{translate('api.blocked')}</span>
                 </span>
               )}
@@ -167,7 +179,7 @@ export const ApiList = (props: ApiListProps) => {
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
               </span>
               {subscriptionDemandsCount > 0 && (
-                <span className="badge badge-custom-demands-subscription">{subscriptionDemandsCount} en attente</span>
+                <span className="tag --warning">{subscriptionDemandsCount} en attente</span>
               )}
             </>
           )

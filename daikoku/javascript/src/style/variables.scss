@@ -72,6 +72,7 @@ $neutral-color-900: #{"var(--neutral-color-900, var(--primitive-neutral-900, #1e
 $neutral-color-800: #{"var(--neutral-color-800, var(--primitive-neutral-800, #373737))"}; //status
 $neutral-color-700: #{"var(--neutral-color-700, var(--primitive-neutral-700, #505050))"}; //status
 $neutral-color-600: #{"var(--neutral-color-600, var(--primitive-neutral-600, #696969))"}; //status
+$neutral-color-500: #{"var(--neutral-color-500, var(--primitive-neutral-500, #828282))"}; //status
 $neutral-color-400: #{"var(--neutral-color-400, var(--primitive-neutral-400, #9b9b9b))"}; //status
 $neutral-color-300: #{"var(--neutral-color-300, var(--primitive-neutral-300, #b4b4b4))"}; //status
 $neutral-color-200: #{"var(--neutral-color-200, var(--primitive-neutral-200, #cdcdcd))"}; //status
@@ -85,6 +86,12 @@ $primary-color-bg: #{"var(--primary-color-bg, var(--primitive-primary-100, #d6db
 $primary-color-050: #{"var(--primary-color-050, var(--primitive-primary-050, #f4f5f9))"};
 $primary-color-400: #{"var(--primary-color-400, var(--primitive-primary-400, #3b57a6))"};
 $primary-color-800: #{"var(--primary-color-800, var(--primitive-primary-800, #0a1e57))"};
+
+$text-color-white: #{"var(--neutral-color-000, var(--primitive-neutral-000, #fff))"};
+$text-color-primary: #{"var(--primary-color-600, var(--primitive-primary-600, #29438d))"};
+$text-color-black: #{"var(--netral-color-900, var(--primitive-neutral-900, #1e1e1e))"};
+$text-color-secondary: #{"var(--neutral-color-500, var(--neutral-primary-500, #828282))"};
+$text-color-white: #{"var(--neutral-color-700, var(--neutral-primary-700, #505050))"};
 
 $card-header-bg-color : #{"var(--card_header-bg-color, #404040)"};
 $card-header-text-color : #{"var(--card_header-text-color, #fff)"};

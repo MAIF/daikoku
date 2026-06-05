@@ -45,6 +45,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   .table-header {
     background-color: variables.$level1_bg-color;
+    font-weight: bold;
 
   }
 
@@ -167,10 +168,10 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
       color: variables.$primary-color;
 
       .favorite-btn {
-        color: variables.$primary-color;
+        color: variables.$text-color-black;
 
         &:hover {
-          color: variables.$level1_link-hover-color;
+          color: variables.$primary-color;
         }
       }
     }

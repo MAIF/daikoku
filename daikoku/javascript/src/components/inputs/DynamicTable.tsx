@@ -390,11 +390,10 @@ export function DynamicTable<T>({
             const boolVal = !!columnFilters.find(cf => cf.id === f.id)?.value;
             if (f.style === 'checkbox') {
               return (
-                <div key={f.id} className="form-check form-switch">
+                <div key={f.id} className="form-check">
                   <input
                     id={`filter-${f.id}`}
                     type="checkbox"
-                    role="switch"
                     className="form-check-input"
                     checked={boolVal}
                     onChange={e =>
@@ -598,23 +597,6 @@ export function DynamicTable<T>({
               activeClassName="active"
             />
           </div>
-
-          {/* <div className="d-flex justify-content-center mt-3">
-            <Pagination
-              previousLabel={translate('Previous')}
-              nextLabel={translate('Next')}
-              breakLabel="..."
-              breakClassName="break"
-              pageCount={Math.ceil(total / pageSize)}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={data => setPage(data.selected)}
-              containerClassName="pagination"
-              pageClassName="page-selector"
-              forcePage={page}
-              activeClassName="active"
-            />
-          </div> */}
         </>
       )}
     </div>
