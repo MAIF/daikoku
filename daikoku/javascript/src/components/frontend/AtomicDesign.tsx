@@ -3,7 +3,7 @@ import Pagination from "react-paginate";
 import Select from "react-select";
 
 export const AtomicDesign = () => {
-  const [, setPage] = useState(0);
+  const [page, setPage] = useState(0);
 
   const demoList = [
     { label: "Service groups", options: ['1'] },
@@ -13,8 +13,7 @@ export const AtomicDesign = () => {
     return { value: team, label: team.label }
   });
 
-  const buttonTypes = ['filled', 'outline', 'neutral'] as const;
-  const buttonColors = ['primary', 'success', 'info', 'warning', 'danger'] as const;
+  const buttonVariants = ['primary', 'secondary', 'tertiary', 'ghost'] as const;
 
   return (
     <main role="main">
@@ -78,55 +77,51 @@ export const AtomicDesign = () => {
 
             <h1 className="mt-3">Buttons</h1>
             <small className="text-muted">hover / focus / pressed : états interactifs (survol, tab, clic)</small>
-            {buttonTypes.map((type) => {
-              const typeClass = type === 'filled' ? '' : `--${type}`;
-              return (
-                <div key={type} className="mb-3">
-                  <h5 className="mt-2 text-capitalize">{type}{type === 'filled' ? ' (défaut)' : ''}</h5>
-                  <div className="d-flex gap-2 align-items-center flex-wrap">
-                    {buttonColors.map((color) => (
-                      <button key={color} className={`btn ${typeClass} --${color}`}>
-                        {color} par defaut
-                      </button>
-                    ))}
-                  </div>
-                  <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
-                    {buttonColors.map((color) => (
-                      <button key={color} className={`btn ${typeClass} --${color} --small`}>
-                        {color} small
-                      </button>
-                    ))}
-                  </div>
-                  <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
-                    {buttonColors.map((color) => (
-                      <button key={color} className={`btn ${typeClass} --${color}`} disabled>
-                        {color} disabled
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <div className="d-flex gap-2 align-items-center flex-wrap">
+              {buttonVariants.map((variant) => (
+                <button key={variant} className={`btn --${variant}`}>
+                  {variant}
+                </button>
+              ))}
+            </div>
+            <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
+              {buttonVariants.map((variant) => (
+                <button key={variant} className={`btn --${variant} --small`}>
+                  {variant} small
+                </button>
+              ))}
+            </div>
+            <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
+              {buttonVariants.map((variant) => (
+                <button key={variant} className={`btn --${variant}`} disabled>
+                  {variant} disabled
+                </button>
+              ))}
+            </div>
 
 
             <h1 className="mt-3">Pagination</h1>
-            <Pagination
-              containerClassName="pagination pagination--ds justify-content-start"
-              previousLabel="<"
-              nextLabel=">"
-              breakLabel="..."
-              breakClassName="break"
-              pageCount={8}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={({ selected }) => setPage(selected)}
-              pageClassName="page-selector"
-              pageLinkClassName="btn --outline --primary"
-              previousLinkClassName="btn --outline --primary"
-              nextLinkClassName="btn --outline --primary"
-              disabledLinkClassName="--disabled"
-              activeClassName="active"
-            />
+            <div className="d-flex align-items-center" style={{ gap: 16 }}>
+              <Pagination
+                containerClassName="pagination pagination--ds"
+                previousLabel="<"
+                nextLabel=">"
+                breakLabel="..."
+                breakClassName="break"
+                breakLinkClassName="btn --ghost"
+                pageCount={48}
+                forcePage={page}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={3}
+                onPageChange={({ selected }) => setPage(selected)}
+                pageClassName="page-selector"
+                pageLinkClassName="btn --ghost"
+                previousLinkClassName="btn --tertiary"
+                nextLinkClassName="btn --tertiary"
+                disabledLinkClassName="--disabled"
+                activeClassName="active"
+              />
+            </div>
 
             <h1>Tags</h1>
             <div className="d-flex gap-2">

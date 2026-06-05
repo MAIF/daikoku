@@ -578,7 +578,28 @@ export function DynamicTable<T>({
             </ul>
           </div>
 
-          <div className="d-flex justify-content-center mt-3">
+          <div className="d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
+            <Pagination
+              containerClassName="pagination pagination--ds"
+              previousLabel="<"
+              nextLabel=">"
+              breakLabel="..."
+              breakClassName="break"
+              breakLinkClassName="btn --ghost"
+              pageCount={Math.ceil(total / pageSize)}
+              marginPagesDisplayed={1}
+              pageRangeDisplayed={3}
+              onPageChange={({ selected }) => setPage(selected)}
+              pageClassName="page-selector"
+              pageLinkClassName="btn --ghost"
+              previousLinkClassName="btn --tertiary"
+              nextLinkClassName="btn --tertiary"
+              disabledLinkClassName="--disabled"
+              activeClassName="active"
+            />
+          </div>
+
+          {/* <div className="d-flex justify-content-center mt-3">
             <Pagination
               previousLabel={translate('Previous')}
               nextLabel={translate('Next')}
@@ -593,7 +614,7 @@ export function DynamicTable<T>({
               forcePage={page}
               activeClassName="active"
             />
-          </div>
+          </div> */}
         </>
       )}
     </div>
