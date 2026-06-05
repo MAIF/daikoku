@@ -1938,8 +1938,8 @@ object evolution_1892 extends EvolutionScript {
   }
 }
 
-object evolution_18next extends EvolutionScript {
-  override def version: String = "18next"
+object evolution_18110 extends EvolutionScript {
+  override def version: String = "18.11.0"
 
   // All tables created with `allFields = true` carry a `_deleted` column.
   // (messages, audit_events, user_sessions, evolutions don't have it.)
@@ -2030,7 +2030,7 @@ object evolutions {
       evolution_1840_c,
       evolution_1860,
       evolution_1892,
-      evolution_18next
+      evolution_18110
     )
   def run(
       dataStore: DataStore,
