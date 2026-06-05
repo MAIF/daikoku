@@ -84,3 +84,34 @@
     margin-left: -1px;
   }
 }
+
+// Pagination "design system" : chaque unité est un bouton DS (.btn --outline --primary),
+// 16px entre chaque, page active en filled. Neutralise le style li hérité de .pagination.
+.pagination.pagination--ds {
+  gap: 16px;
+
+  li.page-selector,
+  li.next,
+  li.previous,
+  li.break {
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  // page active -> filled primary (override de l'outline, hover/focus inclus).
+  // .--outline dans le sélecteur sert à dépasser la spécificité du :hover du bouton.
+  li.active > a.btn.--outline {
+    &,
+    &:hover,
+    &:focus-visible {
+      background-color: variables.$primary-color;
+      border-color: variables.$primary-color;
+      color: variables.$neutral-color-000;
+      box-shadow: none;
+    }
+  }
+}

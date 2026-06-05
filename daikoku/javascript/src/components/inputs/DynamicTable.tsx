@@ -27,6 +27,8 @@ declare module '@tanstack/react-table' {
 
 type DynamicTableColumnMeta = {
   className?: string;
+  /** Already-translated label used to draw the column header. */
+  title?: string;
 };
 
 type FilterOption = {
@@ -184,13 +186,11 @@ export type DynamicTableProps<T> = {
   toolbar?: ReactNode;
   getRowId?: (row: T) => string;
   getRowAriaLabel?: (row: T) => string;
-  columnHeaders?: ReactNode;
   /** CSS class added to the `<div>` wrapping the rows. Default: 'notification-table table-rows' */
   dataClassName?: string;
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
-  title?: ReactNode;
 };
 
 export function DynamicTable<T>({
@@ -207,11 +207,9 @@ export function DynamicTable<T>({
   toolbar,
   getRowId,
   getRowAriaLabel,
-  columnHeaders,
   dataClassName = 'notification-table table-rows',
   countLabelKey,
   tableClassName,
-  title,
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -464,6 +462,18 @@ export function DynamicTable<T>({
     );
   };
 
+  // When the table has a leading selection column, its header slot is the
+  // "select all" checkbox rendered in renderBulkRow, so we skip it here.
+  const renderColumnHeaders = (skipFirst = false) =>
+    table
+      .getVisibleLeafColumns()
+      .slice(skipFirst ? 1 : 0)
+      .map(column => (
+        <div key={column.id} className={column.columnDef.meta?.className}>
+          {column.columnDef.meta?.title}
+        </div>
+      ));
+
   const renderBulkRow = () => {
     if (!hasBulkActions) return null;
     return (
@@ -515,7 +525,7 @@ export function DynamicTable<T>({
               })}
             </button>
           )}
-        {!someSelected && columnHeaders}
+        {!someSelected && renderColumnHeaders(true)}
       </div>
     );
   };
@@ -523,9 +533,8 @@ export function DynamicTable<T>({
   return (
     <div className={classNames('flex-grow-1', tableClassName)}>
       <div className="table-header">
-        {(title || toolbar) && (
-          <div className="d-flex flex-row justify-content-between align-items-center">
-            {title && <div className="d-flex align-items-center gap-3">{title}</div>}
+        {(toolbar) && (
+          <div className="d-flex flex-row justify-content-end align-items-center">
             {toolbar && <div>{toolbar}</div>}
           </div>
         )}
@@ -548,9 +557,9 @@ export function DynamicTable<T>({
           <div className={dataClassName}>
             {hasBulkActions
               ? renderBulkRow()
-              : columnHeaders && (
+              : (
                 <div className="select-all-row table-row table-header">
-                  {columnHeaders}
+                  {renderColumnHeaders()}
                 </div>
               )
             }

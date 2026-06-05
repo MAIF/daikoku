@@ -284,7 +284,7 @@ export const NotificationList = () => {
               <button type="button" className="nav_item cursor-pointer no-bg" disabled={true}
                 title={translate('notifications.page.table.read.action.label')}
                 aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => {}}>
+                onClick={() => { }}>
                 <i className="fas fa-times" />
               </button>
             </div>
@@ -303,7 +303,7 @@ export const NotificationList = () => {
                   Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
                     .then(r => window.location.href = r.checkoutUrl)
                 }
-                onSuccess={() => {}} feedbackTimeout={100} disabled={false}>
+                onSuccess={() => { }} feedbackTimeout={100} disabled={false}>
                 {translate('Checkout')}
               </FeedbackButton>
             </div>
@@ -624,7 +624,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'api',
-      meta: { className: 'api-cell' },
+      meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api') },
       cell: (info) => {
         const notification = info.row.original;
         const api = getApiFromNotification(notification, visibleApisRequest.data);
@@ -643,7 +643,7 @@ export const NotificationList = () => {
     }),
     columnHelper.accessor('action.__typename', {
       id: 'type',
-      meta: { className: 'type-cell' },
+      meta: { className: 'type-cell', title: translate('notifications.page.table.header.label.type') },
       enableColumnFilter: true,
       cell: (info) => {
         const typeName = info.getValue();
@@ -665,7 +665,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'description',
-      meta: { className: 'description-cell' },
+      meta: { className: 'description-cell', title: translate('notifications.page.table.header.label.description') },
       cell: (info) => (
         <div className='notification d-flex align-items-center gap-3'>
           <div className='notification__description'>
@@ -676,7 +676,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'team',
-      meta: { className: 'team-cell' },
+      meta: { className: 'team-cell', title: translate('notifications.page.table.header.label.team') },
       cell: (info) => {
         const team = info.row.original.team;
         if (!team) return null;
@@ -694,7 +694,7 @@ export const NotificationList = () => {
     }),
     columnHelper.accessor('sender.name', {
       id: 'sender',
-      meta: { className: 'sender-cell' },
+      meta: { className: 'sender-cell', title: translate('notifications.page.table.header.label.sender') },
       enableColumnFilter: true,
       cell: (info) => {
         const sender = info.getValue();
@@ -710,7 +710,7 @@ export const NotificationList = () => {
     columnHelper.display({
       id: 'date',
       enableColumnFilter: false,
-      meta: { className: 'date-cell' },
+      meta: { className: 'date-cell', title: translate('notifications.page.table.header.label.date') },
       cell: (info) => {
         const date = formatDistanceToNow(info.row.original.date, {
           includeSeconds: false, addSuffix: true, locale: getLanguageFns(language),
@@ -721,7 +721,7 @@ export const NotificationList = () => {
     columnHelper.display({
       id: 'action',
       enableColumnFilter: false,
-      meta: { className: 'action-cell' },
+      meta: { className: 'action-cell', title: translate('notifications.page.table.header.label.actions') },
       cell: (info) => (
         <div className='notification__actions'>{actionFormatter(info.row.original)}</div>
       ),
@@ -823,36 +823,25 @@ export const NotificationList = () => {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <DynamicTable<NotificationGQL>
-      queryKey={['notifications']}
-      columns={buildColumns}
-      fetchData={fetchData}
-      filters={filters}
-      defaultFilters={defaultColumnFilters}
-      enableRowSelection={row => {
-        const n = row.original;
-        return n.status.status === 'Pending' && n.notificationType.value === 'AcceptOnly';
-      }}
-      bulkActions={bulkActions}
-      pageSize={25}
-      getRowId={row => row._id}
-      getRowAriaLabel={getRowAriaLabel}
-      columnHeaders={
-        <>
-          <span>{translate('notifications.page.table.header.label.api')}</span>
-          <span>{translate('notifications.page.table.header.label.type')}</span>
-          <span>{translate('notifications.page.table.header.label.description')}</span>
-          <span>{translate('notifications.page.table.header.label.team')}</span>
-          <span>{translate('notifications.page.table.header.label.sender')}</span>
-          <span>{translate('notifications.page.table.header.label.date')}</span>
-          <span>{translate('notifications.page.table.header.label.actions')}</span>
-        </>
-      }
-      title={
-        <h1 className="jumbotron-heading" id='notif-label'>
-          {translate('notifications.page.table.title')}
-        </h1>
-      }
-    />
+    <>
+      <h1 className="jumbotron-heading" id='notif-label'>
+        {translate('notifications.page.table.title')}
+      </h1>
+      <DynamicTable<NotificationGQL>
+        queryKey={['notifications']}
+        columns={buildColumns}
+        fetchData={fetchData}
+        filters={filters}
+        defaultFilters={defaultColumnFilters}
+        enableRowSelection={row => {
+          const n = row.original;
+          return n.status.status === 'Pending' && n.notificationType.value === 'AcceptOnly';
+        }}
+        bulkActions={bulkActions}
+        pageSize={25}
+        getRowId={row => row._id}
+        getRowAriaLabel={getRowAriaLabel}
+      />
+    </>
   );
 };

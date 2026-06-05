@@ -1,6 +1,7 @@
 @use "../variables";
 
 @use 'sass:color';
+@use 'sass:map';
 
 button {
   background-color: #fff;
@@ -320,5 +321,166 @@ button {
 
   100% {
     transform: translate(0, 0);
+  }
+}
+
+
+//--- new UI : design system buttons
+//
+// Base : .btn (Bootstrap) + une couleur DS. Le type FILLED (fond coloré) est le DÉFAUT ;
+// on le surcharge avec --outline (contour coloré) ou --neutral (contour gris).
+//   .btn --primary            -> filled (défaut)
+//   .btn --outline --primary  -> contour coloré
+//   .btn --neutral --primary  -> contour gris
+//   + --small pour la taille réduite.
+// Couleurs : --primary | --success | --info | --warning | --danger, pilotées par map
+// (comme .tag/.badge) via la chaîne de fallback de variables.scss.
+//
+// Échelle Figma (primary seul pour l'instant) :
+//   base 600/500 · hover(filled) 400 · focus = fond clair + bordure 2px base · pressed 800 · disabled neutral-600
+// NB status (success/info/warning/danger) : pas de primitive -400 ni -050/-100, on retombe
+// sur le -bg (200) pour hover/focus en attendant les valeurs de la designer.
+
+$button-colors: (
+  primary: (base: variables.$primary-color, light: variables.$primary-color-050, hover: variables.$primary-color-400, strong: variables.$primary-color-800),
+  success: (base: variables.$success-color, light: variables.$success-color-bg, hover: variables.$success-color-bg, strong: variables.$success-color-800),
+  info: (base: variables.$info-color, light: variables.$info-color-bg, hover: variables.$info-color-bg, strong: variables.$info-color-800),
+  warning: (base: variables.$warning-color, light: variables.$warning-color-bg, hover: variables.$warning-color-bg, strong: variables.$warning-color-800),
+  danger: (base: variables.$danger-color, light: variables.$danger-color-bg, hover: variables.$danger-color-bg, strong: variables.$danger-color-800),
+);
+
+$button-disabled: variables.$neutral-color-600; // contour/texte (ou fond pour --filled) désactivé
+$button-on-color: variables.$neutral-color-000; // blanc : texte sur fond plein, fond des types blancs
+
+// focus commun : fond clair + bordure 2px, sans layout shift (1px border + 1px box-shadow inset)
+@mixin button-focus($base, $light) {
+  &:focus-visible {
+    background-color: $light;
+    border-color: $base;
+    color: $base;
+    box-shadow: inset 0 0 0 1px $base;
+    outline: none;
+  }
+}
+
+// Base commune à tout bouton DS (= .btn portant une couleur DS). Scopé via :is() pour ne PAS
+// toucher les .btn legacy, et neutralise les défauts Bootstrap qui parasitent le DS.
+.btn:is(.--primary, .--success, .--info, .--warning, .--danger) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  box-sizing: border-box;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -4%;
+
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+
+  &.--small {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  // disabled géré par la couleur (neutral-600), pas par l'opacité Bootstrap
+  &:disabled,
+  &.--disabled {
+    opacity: 1;
+    cursor: not-allowed;
+  }
+}
+
+@each $name, $c in $button-colors {
+  $base: map.get($c, base);
+  $light: map.get($c, light);
+  $hover: map.get($c, hover);
+  $strong: map.get($c, strong);
+
+  // FILLED = défaut (aucun modifier de type) : fond coloré, texte blanc
+  .btn.--#{$name} {
+    background-color: $base;
+    border-color: $base;
+    color: $button-on-color;
+
+    &:not(:disabled):not(.--disabled):hover {
+      background-color: $hover;
+      border-color: $hover;
+    }
+
+    @include button-focus($base, $light);
+
+    &:not(:disabled):not(.--disabled):active {
+      background-color: $strong;
+      border-color: $strong;
+      color: $button-on-color;
+    }
+
+    &:disabled,
+    &.--disabled {
+      background-color: $button-disabled;
+      border-color: $button-disabled;
+      color: $button-on-color;
+    }
+  }
+
+  // OUTLINE (surcharge) : contour coloré, fond blanc, texte coloré
+  .btn.--outline.--#{$name} {
+    background-color: $button-on-color;
+    border-color: $base;
+    color: $base;
+
+    &:not(:disabled):not(.--disabled):hover {
+      background-color: $light;
+    }
+
+    @include button-focus($base, $light);
+
+    &:not(:disabled):not(.--disabled):active {
+      background-color: $strong;
+      border-color: $strong;
+      color: $button-on-color;
+    }
+
+    &:disabled,
+    &.--disabled {
+      background-color: $button-on-color;
+      border-color: $button-disabled;
+      color: $button-disabled;
+    }
+  }
+
+  // NEUTRAL (surcharge) : contour gris, fond blanc, texte coloré
+  .btn.--neutral.--#{$name} {
+    background-color: $button-on-color;
+    border-color: variables.$neutral-color-100;
+    color: $base;
+
+    &:not(:disabled):not(.--disabled):hover {
+      background-color: variables.$neutral-color-050;
+      border-color: variables.$neutral-color-100;
+    }
+
+    @include button-focus($base, $light);
+
+    &:not(:disabled):not(.--disabled):active {
+      background-color: $strong;
+      border-color: $strong;
+      color: $button-on-color;
+    }
+
+    &:disabled,
+    &.--disabled {
+      background-color: $button-on-color;
+      border-color: $button-disabled;
+      color: $button-disabled;
+    }
   }
 }

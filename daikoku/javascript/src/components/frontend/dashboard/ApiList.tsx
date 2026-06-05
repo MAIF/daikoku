@@ -62,7 +62,7 @@ export const ApiList = (props: ApiListProps) => {
       columnHelper.display({
         id: 'favorite',
         enableColumnFilter: false,
-        meta: { className: 'favorite-cell' },
+        meta: { className: 'favorite-cell', title: translate('') },
         cell: (info) => {
           const api = info.row.original.api
           const starred = connectedUser.starredApis.includes(api._id)
@@ -79,7 +79,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'api',
-        meta: { className: 'api-cell' },
+        meta: { className: 'api-cell', title: translate('dashboard.apis.table.header.label.api') },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
@@ -97,12 +97,12 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.accessor('api.tags', {
         id: 'tags',
-        meta: { className: 'tags-cell' },
+        meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags') },
         cell: (info) => (
           <div className="d-flex gap-1">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
-                className="tag tag-primary"
+                className="tag --primary"
                 style={{ fontWeight: 'normal' }}
                 onClick={() => {
                   // handled via filter toolbar; clicking badge is a shortcut
@@ -115,7 +115,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'team',
-        meta: { className: 'team-cell' },
+        meta: { className: 'team-cell', title: translate('dashboard.apis.table.header.label.team') },
         cell: (info) => {
           const team = info.row.original.api.team
           return <span>{team.name}</span>
@@ -123,31 +123,31 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'Status',
-        meta: { className: 'status-cell' },
+        meta: { className: 'status-cell', title: translate('dashboard.apis.table.header.label.status') },
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
           return (
             <div className="d-flex gap-1 status">
               {(apiState === 'published' || apiState === 'created') && (
-                <span className="badge badge-custom-success d-flex align-items-center gap-2" style={{ border: 'none' }}
+                <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}
                   onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.published')}</span>
                 </span>
               )}
               {apiState === 'deprecated' && (
-                <span className="badge badge-custom-warning d-flex align-items-center gap-2" style={{ border: 'none' }}
+                <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}
                   onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.deprecated')}</span>
                 </span>
               )}
               {(apiState === 'blocked' || apiState === 'deleted') && (
-                <span className="badge badge-custom-danger d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span className="badge --danger --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
                   <span>{translate('api.blocked')}</span>
                 </span>
               )}
               {!apiState && (
-                <span className="badge badge-custom-info d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span className="badge --info --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
                   <span>{'Stateless'}</span>
                 </span>
               )}
@@ -157,7 +157,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: translate('dashboard.apis.table.header.label.subscriptions'),
-        meta: { className: 'subscription-cell d-flex gap-2 align-items-center' },
+        meta: { className: 'subscription-cell d-flex gap-2 align-items-center', title: translate('dashboard.apis.table.header.label.subscriptions') },
         cell: (info) => {
           const subscriptionCount = info.row.original.subscriptionCount
           const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
@@ -176,7 +176,7 @@ export const ApiList = (props: ApiListProps) => {
       columnHelper.display({
         id: 'action',
         enableColumnFilter: false,
-        meta: { className: 'action-cell' },
+        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions') },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
@@ -349,11 +349,6 @@ export const ApiList = (props: ApiListProps) => {
       tableClassName="col-12 api_list_container"
       dataClassName="api-table table-rows"
       countLabelKey="API"
-      title={
-        <h2 className="api_list__title" id='api-list-label'>
-          {translate('dashboard.api.list.title')}
-        </h2>
-      }
       toolbar={
         canCreateApi ? (
           <div className="d-flex gap-1">
@@ -386,17 +381,6 @@ export const ApiList = (props: ApiListProps) => {
             </div>
           </div>
         ) : undefined
-      }
-      columnHeaders={
-        <>
-          <span>{translate('')}</span>
-          <span>{translate('dashboard.apis.table.header.label.api')}</span>
-          <span>{translate('dashboard.apis.table.header.label.tags')}</span>
-          <span>{translate('dashboard.apis.table.header.label.team')}</span>
-          <span>{translate('dashboard.apis.table.header.label.status')}</span>
-          <span>{translate('dashboard.apis.table.header.label.subscriptions')}</span>
-          <span>{translate('dashboard.apis.table.header.label.actions')}</span>
-        </>
       }
     />
   )

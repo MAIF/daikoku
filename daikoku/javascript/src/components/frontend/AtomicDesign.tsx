@@ -1,6 +1,10 @@
+import { useState } from "react";
+import Pagination from "react-paginate";
 import Select from "react-select";
 
 export const AtomicDesign = () => {
+  const [, setPage] = useState(0);
+
   const demoList = [
     { label: "Service groups", options: ['1'] },
     { label: "Services", options: ['1'] },
@@ -8,6 +12,9 @@ export const AtomicDesign = () => {
   ].map((team) => {
     return { value: team, label: team.label }
   });
+
+  const buttonTypes = ['filled', 'outline', 'neutral'] as const;
+  const buttonColors = ['primary', 'success', 'info', 'warning', 'danger'] as const;
 
   return (
     <main role="main">
@@ -70,33 +77,56 @@ export const AtomicDesign = () => {
             </div>
 
             <h1 className="mt-3">Buttons</h1>
-            Customizable :
-            <button className="btn-outline-primary btn ms-2">
-              btn btn-outline-primary
-            </button>
-            <br />
-            Mix with customizable Colors :
-            <button className="btn-outline-danger btn my-1 ms-2">
-              btn btn-outline-danger
-            </button>
-            <button className="btn-outline-success btn mx-1 my-1">
-              btn btn-outline-success
-            </button>
-            <button className="btn-outline-info btn mx-1 my-1">
-              btn btn-outline-info
-            </button>
-            <h2>Buttons size</h2>
-            <button className="btn-danger btn">button (default)</button>
-            <button className="btn-danger btn btn-sm mx-2">btn-sm</button>
-            <button className="btn-danger btn btn-lg">btn-lg</button>
-            <h1 className="mt-3">Badges</h1>
-            Customizable :
-            <div className="badge badge-custom ms-2">badge-custom</div>
-            <div className="badge badge-custom-custom ms-2">badge-custom-custom</div>
-            <div className="badge badge-custom-info ms-2">badge-custom-info</div>
-            <div className="badge badge-custom-success ms-2">badge-custom-success</div>
-            <div className="badge badge-custom-warning ms-2">badge-custom-warning</div>
-            <div className="badge badge-custom-danger ms-2">badge-custom-danger</div>
+            <small className="text-muted">hover / focus / pressed : états interactifs (survol, tab, clic)</small>
+            {buttonTypes.map((type) => {
+              const typeClass = type === 'filled' ? '' : `--${type}`;
+              return (
+                <div key={type} className="mb-3">
+                  <h5 className="mt-2 text-capitalize">{type}{type === 'filled' ? ' (défaut)' : ''}</h5>
+                  <div className="d-flex gap-2 align-items-center flex-wrap">
+                    {buttonColors.map((color) => (
+                      <button key={color} className={`btn ${typeClass} --${color}`}>
+                        {color} par defaut
+                      </button>
+                    ))}
+                  </div>
+                  <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    {buttonColors.map((color) => (
+                      <button key={color} className={`btn ${typeClass} --${color} --small`}>
+                        {color} small
+                      </button>
+                    ))}
+                  </div>
+                  <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    {buttonColors.map((color) => (
+                      <button key={color} className={`btn ${typeClass} --${color}`} disabled>
+                        {color} disabled
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+
+            <h1 className="mt-3">Pagination</h1>
+            <Pagination
+              containerClassName="pagination pagination--ds justify-content-start"
+              previousLabel="<"
+              nextLabel=">"
+              breakLabel="..."
+              breakClassName="break"
+              pageCount={8}
+              marginPagesDisplayed={1}
+              pageRangeDisplayed={5}
+              onPageChange={({ selected }) => setPage(selected)}
+              pageClassName="page-selector"
+              pageLinkClassName="btn --outline --primary"
+              previousLinkClassName="btn --outline --primary"
+              nextLinkClassName="btn --outline --primary"
+              disabledLinkClassName="--disabled"
+              activeClassName="active"
+            />
 
             <h1>Tags</h1>
             <div className="d-flex gap-2">
@@ -137,13 +167,13 @@ export const AtomicDesign = () => {
               <span className="badge --inactive --ghost">inactive ghost badge</span>
             </div>
             <div className="d-flex gap-2 mt-2">
-              <span className="badge --primary --state">primary ghost badge</span>
-              <span className="badge --warning --state">warning ghost badge</span>
-              <span className="badge --info --state">info ghost badge</span>
-              <span className="badge --danger --state">danger ghost badge</span>
-              <span className="badge --success --state">success ghost badge</span>
-              <span className="badge --finished --state">finished ghost badge</span>
-              <span className="badge --inactive --state">inactive ghost badge</span>
+              <span className="badge --primary --state">primary state badge</span>
+              <span className="badge --warning --state">warning state badge</span>
+              <span className="badge --info --state">info state badge</span>
+              <span className="badge --danger --state">danger state badge</span>
+              <span className="badge --success --state">success state badge</span>
+              <span className="badge --finished --state">finished state badge</span>
+              <span className="badge --inactive --state">inactive state badge</span>
             </div>
 
             <h1 className="mt-3">Content</h1>

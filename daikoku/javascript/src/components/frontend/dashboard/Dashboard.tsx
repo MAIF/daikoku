@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
 import Clock from 'react-feather/dist/icons/clock'
-import Sliders from 'react-feather/dist/icons/sliders'
 import { useNavigate } from "react-router-dom"
 
 
@@ -33,7 +32,7 @@ export type TDashboardData = {
 }
 
 export const Dashboard = (_: NewHomeProps) => {
-  const { tenant, connectedUser, isTenantAdmin } = useContext(GlobalContext)
+  const { tenant, connectedUser } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
 
   const navigate = useNavigate()
@@ -61,6 +60,9 @@ export const Dashboard = (_: NewHomeProps) => {
           </div>
         </div>
       </section>
+      <h2 className="api_list__title" id='api-list-label'>
+        {translate('dashboard.api.list.title')}
+      </h2>
       <ApiList />
     </main>
   )
