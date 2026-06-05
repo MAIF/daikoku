@@ -162,15 +162,22 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
 
   // rawQuery runs a non-parameterised statement; dispatches to the transaction
   // connection when available.
-  def rawQuery(sql: String)(implicit dbConn: DbConn): Future[RowSet[Row]] =
+  def rawQuery(sql: String)(implicit dbConn: DbConn): Future[RowSet[Row]] = {
+    if (debugQueries)
+      logger.debug(s"""rawQuery: "$sql"""")
+
     dbConn match {
       case NoConn           => pool.query(sql).executeAsync()
       case ActiveConn(conn) => conn.query(sql).executeAsync()
     }
+  }
 
   def query(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn
-  ): Future[RowSet[Row]] =
+  ): Future[RowSet[Row]] = {
+    if (debugQueries)
+      logger.debug(s"""query: "$sql", params: "${params.mkString(", ")}"""")
+
     dbConn match {
       case NoConn =>
         pool
@@ -185,6 +192,7 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
           .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
           .scala
     }
+  }
 
   // Streaming always opens its own transaction for cursor support; excluded from DbConn.
   def queryStreamSource[A](
@@ -241,6 +249,9 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
   def execute(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn
   ): Future[Long] = {
+    if (debugQueries)
+      logger.debug(s"""execute: "$sql", params: "${params.mkString(", ")}"""")
+
     val promise = Promise[Long]()
 
     val resultFuture: Future[RowSet[Row]] = dbConn match {
@@ -261,7 +272,11 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
     resultFuture.onComplete {
       case Success(rows) => promise.success(rows.rowCount().toLong)
       case Failure(e) =>
-        logger.warn(e.getLocalizedMessage)
+        logger.error(
+          s"""Failed to execute query: "$sql" with params: "${params
+              .mkString(", ")}"""",
+          e
+        )
         promise.success(0L)
     }
 
