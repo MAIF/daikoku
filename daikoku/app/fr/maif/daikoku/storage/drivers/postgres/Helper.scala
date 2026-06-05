@@ -246,7 +246,7 @@ object Helper {
           } catch {
             case e: Throwable =>
               logger.error(
-                s"Failed to convert \$in operator for value $value, falling back to default",
+                s"Failed to convert \\$$in operator for value $value, falling back to default",
                 e
               )
               ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
