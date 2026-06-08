@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
-import Edit2 from 'react-feather/dist/icons/edit-2';
+import {Edit2, Plus, Settings, Trash2} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -392,7 +392,7 @@ const CustomMetadataInput = (props: {
             className="btn btn-outline-info"
             onClick={(e) => addFirst(e)}
           >
-            <i className="fas fa-plus" />{' '}
+            <Plus />{' '}
           </button>
         </div>
       )}
@@ -427,7 +427,7 @@ const CustomMetadataInput = (props: {
               className="input-group-text btn btn-outline-danger"
               onClick={(e) => remove(e, key)}
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
             {idx === (props.value?.length || 0) - 1 && (
               <button
@@ -435,7 +435,7 @@ const CustomMetadataInput = (props: {
                 className="input-group-text btn btn-outline-info"
                 onClick={addNext}
               >
-                <i className="fas fa-plus" />{' '}
+                <Plus />{' '}
               </button>
             )}
           </div>
@@ -1197,11 +1197,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               zIndex: '100',
             }}
           >
-            <i
-              className="fas fa-gear cursor-pointer dropdown-menu-button"
+            <Settings
+              className="cursor-pointer dropdown-menu-button"
               style={{ fontSize: '20px', fill: 'tomato' }}
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              data-bs-toggle="dropdown" aria-expanded={false}
               id={`${plan._id}-dropdownMenuButton`}
             />
             <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>

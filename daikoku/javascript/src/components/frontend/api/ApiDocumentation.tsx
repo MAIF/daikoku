@@ -21,6 +21,7 @@ import { CmsViewer } from '../CmsViewer';
 
 import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
+import {ChevronLeft, ChevronRight, Feather, FileImage} from "lucide-react";
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
@@ -223,7 +224,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                 title={translate('Lorem Ipsum')}
                 onClick={() => insert(loremIpsum)}
               >
-                <i className={`fas fa-feather-alt`} />
+                <Feather />
               </button>
               <button
                 type="button"
@@ -232,7 +233,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                 title={translate('Long Lorem Ipsum')}
                 onClick={() => insert(longLoremIpsum)}
               >
-                <i className={`fas fa-feather`} />
+                <Feather />
               </button>
               <BeautifulTitle
                 place="bottom"
@@ -243,7 +244,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                   onlyPreview
                   tenantMode={false}
                   team={props.ownerTeam}
-                  icon="fas fa-file-image"
+                  icon={<FileImage />}
                   classNames="btn-for-descriptionToolbar"
                   onSelect={(asset) => insert(asset.link)}
                   label={translate("Insert URL")}
@@ -372,12 +373,12 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
               'justify-content-end': !prev,
             })}>
               {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
-                <i className="fas fa-chevron-left me-1" />
+                <ChevronLeft className="me-1" />
                 <Translation i18nkey="Previous page">Previous page</Translation>
               </button>)}
               {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
                 <Translation i18nkey="Next page">Next page</Translation>
-                <i className="fas fa-chevron-right ms-1" />
+                <ChevronRight className="ms-1" />
               </button>)}
             </div>
             <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api} />

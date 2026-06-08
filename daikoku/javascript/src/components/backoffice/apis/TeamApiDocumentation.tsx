@@ -11,6 +11,7 @@ import { IApi, IAsset, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPage
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
+import {Feather, FileImage} from "lucide-react";
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -156,7 +157,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 title={translate('Lorem Ipsum')}
                 onClick={() => insert(loremIpsum)}
               >
-                <i className={`fas fa-feather-alt`} />
+                <Feather />
               </button>
               <button
                 type="button"
@@ -165,7 +166,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                 title={translate('Long Lorem Ipsum')}
                 onClick={() => insert(longLoremIpsum)}
               >
-                <i className={`fas fa-feather`} />
+                <Feather />
               </button>
               <BeautifulTitle
                 place="bottom"
@@ -176,7 +177,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   onlyPreview
                   tenantMode={false}
                   team={props.team}
-                  icon="fas fa-file-image"
+                  icon={<FileImage />}
                   classNames="btn-for-descriptionToolbar"
                   onSelect={(asset) => insert(asset.link)}
                   label={translate("Insert URL")}

@@ -9,6 +9,7 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { api as API, Can, CanIDoAction, manage } from '../../../utils';
 import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
+import {Tag} from "lucide-react";
 
 type ApiFilterProps = {
   handleFilter,
@@ -147,7 +148,7 @@ export function ApiFilter({
         <div>
           <Can I={manage} a={API} team={ownerTeam}>
             <Link to={`${basePath}/labels`} className="btn btn-outline-info">
-              <i className="fa fa-tag me-1" />
+              <Tag className="me-1" />
               {translate('issues.tags')}
             </Link>
           </Can>

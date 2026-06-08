@@ -29,6 +29,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
 import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
+import { ArrowRight, Ban, Check, RefreshCw, Smile, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -174,15 +175,15 @@ export const NotificationList = () => {
       case 'Accepted':
         return (
           <div className='d-flex justify-content-end align-items-center gap-2 color-success'>
-            <i className='fas fa-check' />
-            {translate('notification.page.status.accepted.label')}
+            <Check />
+            {translate("notification.page.status.accepted.label")}
           </div>
         );
       case 'Rejected':
         return (
-          <div className='d-flex justify-content-end align-items-center gap-2 color-danger'>
-            <i className='fas fa-ban' />
-            {translate('notification.page.status.rejected.label')}
+          <div className='d-flex  justify-content-end align-items-center gap-2 color-danger'>
+            <Ban />
+            {translate("notification.page.status.rejected.label")}
           </div>
         );
       default:
@@ -200,18 +201,20 @@ export const NotificationList = () => {
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
                 className="nav_item cursor-pointer bg-info" target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}>
-                <i className="fas fa-arrow-right" />
+                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              >
+                <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && (
-              <button type="button" className="nav_item cursor-pointer no-bg"
-                title={translate('notifications.page.table.read.action.label')}
-                aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => accept(notification._id)}>
-                <i className="fas fa-times" />
-              </button>
-            )}
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <X />
+            </button>}
           </div>
         );
       case 'NewIssueOpenV2':
@@ -224,18 +227,20 @@ export const NotificationList = () => {
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
                 className="nav_item cursor-pointer bg-info" target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}>
-                <i className="fas fa-arrow-right" />
+                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              >
+                <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && (
-              <button type="button" className="nav_item cursor-pointer no-bg"
-                title={translate('notifications.page.table.read.action.label')}
-                aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => accept(notification._id)}>
-                <i className="fas fa-times" />
-              </button>
-            )}
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <X />
+            </button>}
           </div>
         );
       }
@@ -251,17 +256,22 @@ export const NotificationList = () => {
                 <button className="nav_item cursor-pointer bg-success"
                   title={translate('Accept')} aria-label={translate('Accept')}
                   onClick={() =>
-                    Services.getSubscriptionDemand(notification.team!._id, _demand._id).then(demand => {
-                      if (!isError(demand)) {
-                        openSubMetadataModal({
-                          save: (sub) => accept(notification._id, sub),
-                          api: _api._id, plan: _plan._id, team: _team,
-                          subscriptionDemand: demand, creationMode: true,
-                        });
-                      }
-                    })
-                  }>
-                  <i className="fas fa-check" />
+                    Services.getSubscriptionDemand(notification.team!._id, _demand._id)
+                      .then(demand => {
+                        if (!isError(demand)) {
+                          openSubMetadataModal({
+                            save: (sub) => accept(notification._id, sub),
+                            api: _api._id,
+                            plan: _plan._id,
+                            team: _team,
+                            subscriptionDemand: demand,
+                            creationMode: true,
+                          })
+                        }
+                      })
+                  }
+                >
+                  <Check />
                 </button>
                 <button className="nav_item cursor-pointer bg-danger"
                   title={translate('Reject')} aria-label={translate('Reject')}
@@ -275,17 +285,19 @@ export const NotificationList = () => {
                         },
                       },
                       onSubmit: ({ message }) => reject(notification._id, message),
-                      actionLabel: translate('Send'),
-                    });
-                  }}>
-                  <i className="fas fa-ban" />
+                      actionLabel: translate('Send')
+                    })
+                  }}
+                >
+                  <Ban />
                 </button>
               </div>
               <button type="button" className="nav_item cursor-pointer no-bg" disabled={true}
                 title={translate('notifications.page.table.read.action.label')}
                 aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => { }}>
-                <i className="fas fa-times" />
+                onClick={() => { }}
+              >
+                <X />
               </button>
             </div>
           );
@@ -315,46 +327,53 @@ export const NotificationList = () => {
       case 'ApiKeyRotationEndedV2':
         return (
           <div className='action-container'>
-            <div className="d-flex justify-content-end" />
-            {notification.status.status === 'Pending' && (
-              <button type="button" className="nav_item cursor-pointer no-bg"
-                title={translate('notifications.page.table.read.action.label')}
-                aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => accept(notification._id)}>
-                <i className="fas fa-times" />
-              </button>
-            )}
+            <div className="d-flex justify-content-end">
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <X />
+            </button>}
           </div>
         );
       default:
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && <button
+                className="nav_item cursor-pointer bg-success"
+                title={translate('Accept')}
+                aria-label={translate('Accept')}
+                onClick={() => accept(notification._id)}
+              >
+                <Check />
+              </button>}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <button className="nav_item cursor-pointer bg-success"
-                  title={translate('Accept')} aria-label={translate('Accept')}
-                  onClick={() => accept(notification._id)}>
-                  <i className="fas fa-check" />
-                </button>
-              )}
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <button className="nav_item cursor-pointer bg-danger"
-                  title={translate('Reject')} aria-label={translate('Reject')}
-                  onClick={() => reject(notification._id)}>
-                  <i className="fas fa-ban" />
+                <button
+                  className="nav_item cursor-pointer bg-danger"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
+                  onClick={() => reject(notification._id)}
+                >
+                  <Ban />
                 </button>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
             </div>
-            {notification.status.status === 'Pending' && (
-              <button type="button" className="nav_item cursor-pointer no-bg"
-                disabled={notification.notificationType.value === 'AcceptOrReject'}
-                title={translate('notifications.page.table.read.action.label')}
-                aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => accept(notification._id)}>
-                <i className="fas fa-times" />
-              </button>
-            )}
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              disabled={notification.notificationType.value === 'AcceptOrReject'}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <X />
+            </button>}
           </div>
         );
     }
@@ -700,8 +719,8 @@ export const NotificationList = () => {
         const sender = info.getValue();
         const isSystem = sender.startsWith('Otoroshi');
         return (
-          <div className='sender'>
-            {!isSystem && <i className="far fa-face-smile me-1" />}
+          <div className='sender d-flex gap-2 align-items-center'>
+            {!isSystem && <Smile size={16} />}
             {sender}
           </div>
         );

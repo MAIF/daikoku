@@ -1,11 +1,12 @@
 /* eslint-disable react/jsx-no-target-blank */
-import React, { useContext, useRef, useState } from 'react';
 import { BooleanInput } from '@maif/react-forms';
+import { useContext, useRef, useState } from 'react';
+import { Download, Upload } from "lucide-react";
 
-import * as Services from '../../../services';
-import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../contexts/i18n-context';
 import { useDaikokuBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts/i18n-context';
+import * as Services from '../../../services';
+import { Can, daikoku, manage } from '../../utils';
 
 export const ImportExport = () => {
   useDaikokuBackOffice();
@@ -45,7 +46,7 @@ export const ImportExport = () => {
               target="_blank"
               className="btn btn-outline-info"
             >
-              <i className="fas fa-download me-1" />
+              <Download className="me-1" />
               <Translation i18nkey="download state">download state</Translation>
             </a>
             <button
@@ -54,7 +55,7 @@ export const ImportExport = () => {
               onClick={importState}
               className="btn btn-outline-info"
             >
-              <i className="fas fa-upload me-1" />
+              <Upload className="me-1" />
               {uploading ? translate('importing ...') : translate('import state')}
             </button>
             <div className="d-flex justify-content-start align-items-center mt-2">

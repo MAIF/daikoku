@@ -1,10 +1,11 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { I18nContext, ModalContext } from '../../../contexts';
+import {createColumnHelper} from '@tanstack/react-table';
+import {useContext, useEffect, useRef} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {I18nContext, ModalContext} from '../../../contexts';
 import * as Services from '../../../services';
-import { ICmsPageGQL } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import {ICmsPageGQL} from '../../../types';
+import {Table, TableRef} from '../../inputs';
+import {Eye, Pen, Trash2} from "lucide-react";
 
 type PagesProps = {
   pages: Array<ICmsPageGQL>
@@ -60,7 +61,7 @@ export const Pages = ({
               to={`/settings/pages/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
               <button className="btn btn-outline-info btn-sm me-1">
-                <i className="fas fa-pen" />
+                <Pen/>
               </button>
             </Link>
             <button
@@ -69,12 +70,12 @@ export const Pages = ({
               title={translate('Delete page')}
               onClick={e => {
                 e.stopPropagation();
-                confirm({ message: translate('Delete page') })
+                confirm({message: translate('Delete page')})
                   .then((ok) => {
                     if (ok) {
                       Services.removeCmsPage(value.id).then((res) => {
                         if (res.error)
-                          alert({ message: res });
+                          alert({message: res});
                         else {
                           reload()
                         }
@@ -83,7 +84,7 @@ export const Pages = ({
                   });
               }}
             >
-              <i className="fas fa-trash" />
+              <Trash2/>
             </button>
             {value.path && <Link
               to={itemPath}
@@ -93,7 +94,7 @@ export const Pages = ({
               <button
                 className="btn btn-outline-info btn-sm me-1"
               >
-                <i className="fas fa-eye" />
+                <Eye/>
               </button>
             </Link>}
           </div>

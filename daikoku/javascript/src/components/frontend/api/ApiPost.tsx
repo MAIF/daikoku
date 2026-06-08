@@ -1,8 +1,7 @@
 import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
-import ArrowLeft from 'react-feather/dist/icons/arrow-left';
-import ArrowRight from 'react-feather/dist/icons/arrow-right';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';

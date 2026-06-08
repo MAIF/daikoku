@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { manage, api as API, CanIDoAction } from "../../utils/permissions"
 import { ApiFormRightPanel } from "../../utils/sidebar/panels"
 import MoreVertical from "react-feather/dist/icons/more-vertical"
+import {Clock, SlidersVertical} from "lucide-react";
 
 type NewHomeProps = {
   teamId?: string
