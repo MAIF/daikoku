@@ -1,12 +1,28 @@
 @use "../variables";
 @use "sass:color";
 
-$level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
+// Default rendering shared by every DynamicTable. The component always applies
+// `.dynamic-table` (outer card) and `.dynamic-table__data` (the table itself),
+// so callers don't need to pass any class. Column widths are data-driven: each
+// column declares `meta.size` (fr weight, default 1) and the component exposes
+// the resulting grid track list through the `--dt-cols` custom property.
 
-.api-table {
+$cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
+
+.dynamic-table {
   display: flex;
   flex-direction: column;
-  border-radius: 5px;
+  width: 100%;
+
+  background: variables.$level2_bg-color;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.dynamic-table__data {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, variables.$level1_bg-color 90%, #000);
 
@@ -18,37 +34,42 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     padding: 1rem 1rem !important;
     font-size: 1rem !important;
     height: 3rem;
-
-    // input.form-check-input {
-    //   margin-left: .7rem!important;
-    // }
   }
 
+  .rounded-circle-deprecated {
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+  }
 
   .table-rows {
     display: flex;
     flex-direction: column;
-    background-color: variables.$level1_bg-color;
+    background-color: variables.$level2_bg-color;
     color: variables.$level3_text-color;
+    white-space: nowrap;
+    list-style: none;
     padding: 0;
     margin: 0;
-
-    list-style: none;
   }
 
-  li:last-of-type .table-row{
+  .table-header {
+    background-color: variables.$level1_bg-color;
+    font-weight: bold;
+  }
+
+  li:last-of-type .table-row {
     border: none;
   }
 
   .table-row {
     display: grid;
-    grid-template-columns: 15fr 15fr 15fr 30fr 15fr;
+    grid-template-columns: var(--dt-cols);
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
     font-size: 0.875rem;
-    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
-
+    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 50%, #000);
 
     &:not(.select-all-row):hover {
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
@@ -82,7 +103,6 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
         color: color-mix(in srgb, variables.$level1_text-color 50%, #000);
         padding: 0.2rem;
       }
-
     }
 
     div.select-cell {
@@ -91,11 +111,9 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
       align-items: baseline;
       gap: 1rem;
       padding-right: 1rem;
-
       position: relative;
 
       .indicator {
-
         &.unread:after {
           content: "";
           width: 0.85rem;
@@ -104,7 +122,6 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
           background-color: variables.$info-color;
           border-radius: 50%;
           box-sizing: content-box;
-
           flex-shrink: 0;
         }
       }
@@ -138,7 +155,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
         width: fit-content;
         padding: .3rem .6rem;
         border-radius: 4px;
-        border: 1px solid $level1-darken-color;
+        border: 1px solid $cell-border-color;
       }
     }
 
@@ -148,19 +165,31 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     div.action-cell {
       text-align: end;
+    }
+
+    div.favorite-cell {
+      color: variables.$primary-color;
 
       .favorite-btn {
-        color: variables.$primary-color;
+        color: variables.$text-color-black;
 
         &:hover {
-          color: variables.$level1_link-hover-color;
+          color: variables.$primary-color;
         }
       }
     }
+
+    .btn-action {
+      width: 30px;
+      height: 30px;
+    }
   }
+}
 
-  // .table-row:last-of-type {
-  //   border: none;
-  // }
-
+// Filter multiselect (react-select with the `daikoku-select` prefix): use a
+// light primary tint for the selected options instead of react-select's
+// default blue. Kept at the root level since the menu may render in a portal.
+.daikoku-select__option--is-selected {
+  background-color: variables.$primary-color-bg !important;
+  color: variables.$primary-color !important;
 }

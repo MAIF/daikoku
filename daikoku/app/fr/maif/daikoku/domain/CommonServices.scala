@@ -381,13 +381,14 @@ object CommonServices {
           |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
           |                         FROM me))),
-          |     base_apis as (select a.*
+          |     base_apis as (SELECT DISTINCT ON (a.content ->> '_humanReadableId') a.*
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
           |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' = 'published' OR
+          |                             a.content ->> 'state' = 'deprecated' OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
           |                             (case
@@ -398,7 +399,6 @@ object CommonServices {
           |                                        (a.content -> 'authorizedTeams' ?|
           |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
           |                                 END) AND
-          |                             (a.content ->> 'isDefault')::boolean = true AND
           |                                CASE
           |                                    WHEN $$9::text IS NULL THEN true
           |                                    ELSE a._id = ANY (
@@ -407,7 +407,12 @@ object CommonServices {
           |                                        WHERE g._id = $$9::text
           |                                    )
           |                                    END
-          |                             )),
+          |                             )
+          |                             ORDER BY
+          |                                a.content ->> '_humanReadableId',
+          |                                 (a.content ->> 'isDefault')::boolean DESC,  -- prefer default version
+          |                                  a.content ->> 'currentVersion' DESC
+          |                             ),
           |     total_apis as (select count(1) as total_count
           |                    FROM base_apis),
           |     visible_apis_no_team as (select a._id, a.content
@@ -1187,7 +1192,7 @@ object CommonServices {
                |    count(1) OVER() AS total_filtered
                |  FROM notifications n
                |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
-               |           LEFT JOIN apis a ON a._deleted IS FALSE AND a.content->>'_tenant' = '${ctx.tenant.id.value}' AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                |  WHERE n._deleted IS FALSE AND n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |      OR n.content ->> 'team' = t._id::text)
                |    AND CASE

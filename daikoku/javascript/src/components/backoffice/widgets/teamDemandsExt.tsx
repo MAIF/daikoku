@@ -24,13 +24,12 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
       subscriptionDemandsForAdmin(teamId: $teamId , limit: $limit, offset: $offset) {
         total
         subscriptionDemands {
-          id
+          _id
           api {
             name
           }
           plan {
             customName
-            type
           }
           steps {
             id

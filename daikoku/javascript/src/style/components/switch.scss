@@ -50,7 +50,7 @@
 //   background-color: variables.$success-color;
 // }
 // input:not(:checked) + .slider {
-//   background-color: variables.$error-color;
+//   background-color: variables.$danger-color;
 // }
 
 // input:focus + .slider {
@@ -163,6 +163,7 @@
 .switch-button-container.active .switch-button .slider.round {
   background-color: var(--active-color);
 }
+
 .switch-button-container .switch-button .slider.round {
   background-color: var(--inactive-color);
 }

@@ -18,11 +18,6 @@ export const ImportExport = () => {
 
   const [uploading, setUploading] = useState(false);
   const [exportAuditTrail, setExportAuditTrail] = useState(true);
-  const [migration, setMigration] = useState({
-    processing: false,
-    error: '',
-    onSuccessMessage: '',
-  });
 
   const importState = () => {
     if (inputRef.current) {
@@ -39,22 +34,6 @@ export const ImportExport = () => {
     });
   };
 
-  const migrate = () => {
-    setMigration({
-      processing: true,
-      error: '',
-      onSuccessMessage: '',
-    });
-    Services.migrateMongoToPostgres().then((res) =>
-      setMigration({
-        processing: false,
-        error: res.error || '',
-        onSuccessMessage: res.error ? '' : res.message,
-      })
-    );
-  };
-
-  const { processing, error, onSuccessMessage } = migration;
   return (
     <Can I={manage} a={daikoku} dispatchError>
       <div className="row">
@@ -90,27 +69,6 @@ export const ImportExport = () => {
               ref={inputRef}
               onChange={actuallyImportState}
             />
-          </div>
-          <h2 className="my-2">
-            <Translation i18nkey="Mongo migration">Mongo migration</Translation>
-          </h2>
-          <div className="section p-3">
-            <button type="button" onClick={migrate} className="btn btn-outline-info">
-              <Database className="me-1" />
-              {processing
-                ? translate('migration in progress ...')
-                : translate('migrate database')}
-            </button>
-            {error.length > 0 && (
-              <div className="alert alert-danger my-0 mt-3" role="alert">
-                {error}
-              </div>
-            )}
-            {onSuccessMessage.length > 0 && (
-              <div className="alert alert-success my-0 mt-3" role="alert">
-                {onSuccessMessage}
-              </div>
-            )}
           </div>
         </div>
       </div>

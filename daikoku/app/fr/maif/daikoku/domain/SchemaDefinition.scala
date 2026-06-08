@@ -5,7 +5,11 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.*
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.daikoku.controllers.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant,
+  _UberPublicUserAccess
+}
 import fr.maif.daikoku.controllers.authorizations.isTeamApiKeyVisible
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
@@ -13,12 +17,22 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
 import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.storage.graphql.{AuthorizationException, RequiresAuthentication, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import fr.maif.daikoku.storage.graphql.{
+  AuthorizationException,
+  RequiresAuthentication,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.*
 import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
-import sangria.execution.deferred.{DeferredResolver, Fetcher, FetcherConfig, HasId}
+import sangria.execution.deferred.{
+  DeferredResolver,
+  Fetcher,
+  FetcherConfig,
+  HasId
+}
 import sangria.macros.derive.*
 import sangria.schema.{Context, *}
 import sangria.validation.ValueCoercionViolation
@@ -1498,6 +1512,16 @@ object SchemaDefinition {
               "_humanReadableId",
               StringType,
               resolve = _.value.humanReadableId
+            ),
+            Field(
+              "failedLoginAttempts",
+              OptionType(IntType),
+              resolve = _.value.failedLoginAttempts
+            ),
+            Field(
+              "lastFailedLogin",
+              OptionType(DateTimeUnitype),
+              resolve = _.value.lastFailedLogin
             )
           )
       )
@@ -1540,10 +1564,13 @@ object SchemaDefinition {
     )
 
     def requireApiKeyAccess(
-        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription]
+        ctx: Context[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscription
+        ]
     ): Future[Unit] = {
       val actionCtx = ctx.ctx._2
-      val dataStore  = ctx.ctx._1
+      val dataStore = ctx.ctx._1
       if (actionCtx.user.isDaikokuAdmin) {
         Future.unit
       } else {
@@ -1582,7 +1609,8 @@ object SchemaDefinition {
           Field(
             "bearerToken",
             OptionType(StringType),
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
+            resolve =
+              ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
           ),
           Field(
             "plan",
@@ -1629,7 +1657,8 @@ object SchemaDefinition {
           Field(
             "integrationToken",
             StringType,
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.integrationToken)
+            resolve = ctx =>
+              requireApiKeyAccess(ctx).map(_ => ctx.value.integrationToken)
           ),
           Field(
             "customMetadata",
@@ -3036,7 +3065,12 @@ object SchemaDefinition {
       ),
       ReplaceField(
         "email",
-        Field("email", StringType, tags = List(RequiresAuthentication), resolve = _.value.email)
+        Field(
+          "email",
+          StringType,
+          tags = List(RequiresAuthentication),
+          resolve = _.value.email
+        )
       ),
       ReplaceField("name", Field("name", StringType, resolve = _.value.name))
     )
@@ -4451,7 +4485,7 @@ object SchemaDefinition {
       )
 
     def allFields()
-        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
+    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
       List(
         // Frontend repos — no extra restriction beyond existing resolver guards

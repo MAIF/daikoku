@@ -4,9 +4,11 @@ import cats.data.EitherT
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.{Tenant, User}
 import fr.maif.daikoku.env.Env
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.mindrot.jbcrypt.BCrypt
 import play.api.Logger
-import play.api.libs.json._
+import play.api.libs.json.*
+import fr.maif.daikoku.services.UserService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -55,25 +57,27 @@ case class LocalLoginConfig(sessionMaxAge: Int = 86400) {
     )
 }
 
-object LocalLoginSupport {
-  def bindUser(username: String, password: String, tenant: Tenant, _env: Env)(
-      implicit ec: ExecutionContext
-  ): Future[Option[User]] = {
-    _env.dataStore.userRepo
-      .findOne(
-        Json.obj(
-          "_deleted" -> false,
-          "email" -> username.trim
-        )
+class LocalLoginSupport(env: Env, userService: UserService) {
+
+  def bindUser(username: String, password: String, tenant: Tenant)(implicit
+      ec: ExecutionContext
+  ): EitherT[Future, AppError, User] = {
+    EitherT
+      .fromOptionF(
+        env.dataStore.userRepo.findOne(Json.obj("_deleted" -> false, "email" -> username.trim)),
+        AppError.Unauthorized: AppError
       )
-      .map {
-        case Some(user)
-            if user.password.isDefined && BCrypt.checkpw(
-              password,
-              user.password.get
-            ) =>
-          Some(user)
-        case _ => None
+      .flatMap { user =>
+        if (user.password.isEmpty)
+          EitherT.leftT[Future, User](AppError.Unauthorized: AppError)
+        else if (BCrypt.checkpw(password, user.password.get))
+          EitherT.pure[Future, AppError](user)
+        else
+          EitherT(
+            userService.incrementAttempts(user).map { updatedUser =>
+              Left(AppError.LoginRateLimited(userService.delayForAttempt(updatedUser))): Either[AppError, User]
+            }
+          )
       }
   }
 

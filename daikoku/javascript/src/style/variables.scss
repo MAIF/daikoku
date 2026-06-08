@@ -1,5 +1,5 @@
 $level1_text-color: #{"var(--level1_text-color, #f1f3f6)"}; //body
-$level1_bg-color: #{"var(--level1_bg-color, #8a8a8a)"}; //body
+$level1_bg-color: #{"var(--level1_bg-color, #F9F9F9)"}; //body
 $level1_link-color: #{"var(--level1_link-color, #4c4c4d)"};
 $level1_link-hover-color: #{"var(--level1_link-hover-color, orange)"};
 
@@ -46,21 +46,59 @@ $badge-tags-bg-color: #{"var(--badge-tags-bg-color, #ffc107)"}; //components
 $badge-tags-bg-hover-color: #{"var(--badge-tags-bg-hover-color, #ffe1a7)"}; //components
 $badge-tags-text-color: #{"var(--badge-tags-text-color, #212529)"}; //components
 
-$error-color: #{"var(--error-color, #ff6347)"}; //status
-$success-color: #{"var(--success-color, #65B741)"}; //status
-$info-color: #{"var(--info-color, #17a2b8)"}; //status
-$warning-color: #{"var(--warning-color, #ffc107)"}; //status
-$danger-color: #{"var(--danger-color, #dc3545)"}; //status
-$neutral-color: #{"var(--neutral-color, #4e5760)"}; //status
+// Chaîne de fallback sémantique → primitive → littéral. Le thème tenant (page CMS)
+// est la seule source de :root et l'admin peut tout supprimer ; le littéral final,
+// compilé dans le bundle app, garantit une couleur même si tout est oublié.
+$success-color: #{"var(--success-color, var(--primitive-success-500, #006300))"}; //status
+$success-color-bg: #{"var(--success-color-bg, var(--primitive-success-200, #eefbef))"}; //status
+$success-color-800: #{"var(--success-color-800, var(--primitive-success-800, #003f00))"}; //status
 
-$primary-color: #{"var(--primary-color, #29438D)"};
+$info-color: #{"var(--info-color, var(--primitive-info-500, #11379b))"}; //status
+$info-color-bg: #{"var(--info-color-bg, var(--primitive-info-200, #ebf0fa))"}; //status
+$info-color-800: #{"var(--info-color-800, var(--primitive-info-800, #112b6c))"}; //status
+
+$warning-color: #{"var(--warning-color, var(--primitive-warning-500, #856404))"}; //status
+$warning-color-bg: #{"var(--warning-color-bg, var(--primitive-warning-200, #fffcd3))"};
+$warning-color-800: #{"var(--warning-color-800, var(--primitive-warning-800, #533E02))"}; //status
+
+$danger-color: #{"var(--danger-color, var(--primitive-danger-500, #95090f))"}; //status
+$danger-color-bg: #{"var(--danger-color-bg, var(--primitive-danger-200, #fceff0))"}; //status
+$danger-color-800: #{"var(--danger-color-800, var(--primitive-danger-800, #60090d))"}; //status
+
+$neutral-color: #{"var(--neutral-color, var(--primitive-neutral-500, #828282))"}; //status
+$neutral-color-bg: #{"var(--neutral-color-bg, var(--primitive-neutral-100, #e6e6e6))"}; //status
+$neutral-color-000: #{"var(--neutral-000, var(--primitive-neutral-000, #fff))"}; //status (était --neutral-color-000, jamais défini)
+$neutral-color-900: #{"var(--neutral-color-900, var(--primitive-neutral-900, #1e1e1e))"}; //status
+$neutral-color-800: #{"var(--neutral-color-800, var(--primitive-neutral-800, #373737))"}; //status
+$neutral-color-700: #{"var(--neutral-color-700, var(--primitive-neutral-700, #505050))"}; //status
+$neutral-color-600: #{"var(--neutral-color-600, var(--primitive-neutral-600, #696969))"}; //status
+$neutral-color-500: #{"var(--neutral-color-500, var(--primitive-neutral-500, #828282))"}; //status
+$neutral-color-400: #{"var(--neutral-color-400, var(--primitive-neutral-400, #9b9b9b))"}; //status
+$neutral-color-300: #{"var(--neutral-color-300, var(--primitive-neutral-300, #b4b4b4))"}; //status
+$neutral-color-200: #{"var(--neutral-color-200, var(--primitive-neutral-200, #cdcdcd))"}; //status
+$neutral-color-100: #{"var(--neutral-color-100, var(--primitive-neutral-100, #e6e6e6))"}; //status
+$neutral-color-050: #{"var(--neutral-color-050, var(--primitive-neutral-050, #F5F5F5))"}; //status
+$neutral-color-000: #{"var(--neutral-color-000, var(--primitive-neutral-000, #ffffff))"}; //status
+
+$primary-color: #{"var(--primary-color, var(--primitive-primary-600, #29438d))"};
+$primary-color-light: #{"var(--primary-color, var(--primitive-primary-600, #29438d))"};
+$primary-color-bg: #{"var(--primary-color-bg, var(--primitive-primary-100, #d6dbe9))"};
+$primary-color-050: #{"var(--primary-color-050, var(--primitive-primary-050, #f4f5f9))"};
+$primary-color-400: #{"var(--primary-color-400, var(--primitive-primary-400, #3b57a6))"};
+$primary-color-800: #{"var(--primary-color-800, var(--primitive-primary-800, #0a1e57))"};
+
+$text-color-white: #{"var(--neutral-color-000, var(--primitive-neutral-000, #fff))"};
+$text-color-primary: #{"var(--primary-color-600, var(--primitive-primary-600, #29438d))"};
+$text-color-black: #{"var(--netral-color-900, var(--primitive-neutral-900, #1e1e1e))"};
+$text-color-secondary: #{"var(--neutral-color-500, var(--neutral-primary-500, #828282))"};
+$text-color-white: #{"var(--neutral-color-700, var(--neutral-primary-700, #505050))"};
 
 $card-header-bg-color : #{"var(--card_header-bg-color, #404040)"};
 $card-header-text-color : #{"var(--card_header-text-color, #fff)"};
-$card-bg-color:  #{"var(--card_bg-color, #282828)"};
+$card-bg-color: #{"var(--card_bg-color, #282828)"};
 $card-text-color: #{"var(--card_text-color, #FFF)"};
 $card-link-color: #{"var(--card_link-color, #97b0c7)"};
-$card-link-hover-color:  #{"var(--card_link-hover-color, #a9cbea)"};
+$card-link-hover-color: #{"var(--card_link-hover-color, #a9cbea)"};
 
 $topbar-height: 50px;
 
