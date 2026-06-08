@@ -841,11 +841,13 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec extraction de
     expect.arrayContaining([otoroshiDevCommandRouteId])
   );
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByText('1 notification')).toBeVisible();
+
   await expect(page.getByRole('article')).toContainText(`Votre clé d'API a été supprimée`);
   await page.getByRole('article', { name: 'Suppression de clé d\'API' })
     .getByRole('button', { name: 'marquer comme lu' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();
+
 
 })
 

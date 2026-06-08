@@ -34,6 +34,15 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     padding: 1rem 1rem !important;
     font-size: 1rem !important;
     height: 3rem;
+
+    // In selection mode the row holds the checkbox, the count label and the
+    // bulk-action buttons instead of column headers: lay them out as a free
+    // flex row rather than squeezing them into the column grid tracks.
+    &.--selecting {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
   }
 
   .rounded-circle-deprecated {

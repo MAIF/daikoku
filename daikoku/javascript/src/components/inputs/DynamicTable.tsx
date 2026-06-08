@@ -244,6 +244,9 @@ export function DynamicTable<T>({
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
+    // A filter change resets the result set, so go back to the first page to
+    // avoid landing on a now out-of-range (empty) page.
+    setPage(0);
     if (persistFiltersInUrl) {
       window.history.replaceState(null, '', `?filter=${JSON.stringify(columnFilters)}`);
     }
@@ -484,9 +487,10 @@ export function DynamicTable<T>({
   const renderBulkRow = () => {
     if (!hasBulkActions) return null;
     return (
-      <div className="select-all-row table-row table-header">
+      <div className={classNames('select-all-row table-row table-header', { '--selecting': someSelected })}>
         <label className="notification-table-header">
           <input
+            aria-label={translate('SelectAll')}
             type="checkbox"
             className="form-check-input"
             checked={table.getIsAllPageRowsSelected()}
@@ -537,7 +541,7 @@ export function DynamicTable<T>({
     );
   };
 
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
 
   // Data-driven column widths: each column's meta.size (fr weight, default 1)
   // builds the grid track list, shared by the header row and every data row.
