@@ -2,7 +2,7 @@ import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { AtSign ,CreditCard ,Globe ,List ,Plus ,Settings ,Trash ,User } from 'lucide-react';
+import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
@@ -11,7 +11,7 @@ import { IValidationStep } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
-import { Help } from '../apikeys/TeamApiKeysForApi';
+import { Help } from '../apikeys';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string>, info?: string }) => void;

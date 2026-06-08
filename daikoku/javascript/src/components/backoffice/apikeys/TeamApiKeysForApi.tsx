@@ -37,7 +37,7 @@ import {
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
-import {Copy, Eye, Key, Link as LucideLink, Menu} from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, CircleQuestionMark, Copy, Eye, Key, Link as LucideLink, Menu } from "lucide-react";
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -760,7 +760,7 @@ export const ApiKeyCard = ({
 
     const _customName = subscription.customName || plan.customName
 
-    const nbChildsDisplay = 2;
+    const nbChildsDisplay = 1;
     const getPartOfChildren = (start: number, end: number) => [...detailQuery.data.accessibleResources]
       .splice(start, end)
       .map((detail) => {
@@ -922,10 +922,10 @@ export const ApiKeyCard = ({
             </div>
             <div className='api-subscription__infos__creation'>
               {!!detailQuery.data.accessibleResources.length && <span>{translate('subscription.extra.resources.label')} : {getPartOfChildren(0, nbChildsDisplay)}</span>}
-              {detailQuery.data.accessibleResources.length > nbChildsDisplay && (<i className={classNames("ms-1 fas cursor-pointer a-fake", {
-                "fa-chevron-down": !more,
-                "fa-chevron-up": more,
-              })} onClick={() => setMore(!more)} />)}
+              {detailQuery.data.accessibleResources.length > nbChildsDisplay && <button className="btn --ghost" onClick={() => setMore(!more)}>
+                {!more && <ChevronDown />}
+                {!!more && <ChevronUp />}
+              </button>}
               {more && (<div className='ms-4'>{getPartOfChildren(nbChildsDisplay, detailQuery.data.accessibleResources.length)}</div>)}
             </div>
             <div>
@@ -1029,7 +1029,7 @@ type HelpProps = {
 export const Help = ({ message }: HelpProps) => {
   return (
     <BeautifulTitle place="bottom" title={message}>
-      <i className="ms-4 far fa-question-circle" />
+      <CircleQuestionMark />
     </BeautifulTitle>
   );
 };

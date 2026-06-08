@@ -9,7 +9,8 @@ import { I18nContext } from '../../../../contexts/i18n-context';
 import * as Services from '../../../../services';
 import { isError, ITeamSimple } from '../../../../types';
 import { Spinner } from '../../Spinner';
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, SquareSlash } from "lucide-react";
+import { renderToStaticMarkup } from 'react-dom/server';
 
 export type SearchOption =
   | { value: string, label: string, type: 'team' }
@@ -208,14 +209,16 @@ export const SearchPanel = () => {
         <div className='d-flex flex-row align-items-center gap-2'>
           <SearchIcon className="fake-placeholder" />
           <div className='fake-placeholder px-3'
-               dangerouslySetInnerHTML={
-            { __html: translate(
-              { key: 'topbar.search.placeholder',
-                replacements: ['<SquareSlash color="#ffffff" />']
+            dangerouslySetInnerHTML={
+              {
+                __html: translate(
+                  {
+                    key: 'topbar.search.placeholder',
+                    replacements: [renderToStaticMarkup(<SquareSlash />)]
+                  }
+                )
               }
-              )
-            }
-          } />
+            } />
         </div>
       </button>
 

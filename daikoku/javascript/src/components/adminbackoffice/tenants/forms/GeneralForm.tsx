@@ -5,7 +5,7 @@ import { useContext } from 'react';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, Language } from '../../../../types';
-import {CircleQuestionMark} from "lucide-react";
+import { CircleQuestionMark } from "lucide-react";
 
 
 
@@ -91,7 +91,7 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
               </pre>
             </div>
           })}>
-          <CircleQuestionMark color="#ffffff" />
+          <CircleQuestionMark />
         </button>
       </div>,
 

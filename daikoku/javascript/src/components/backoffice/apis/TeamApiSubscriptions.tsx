@@ -27,7 +27,7 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
-import {Pen, RefreshCw, Trash2} from "lucide-react";
+import { Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -385,7 +385,7 @@ export const TeamApiSubscriptions = ({
 
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-      <div className="d-flex flex-row justify-content-start align-items-center mb-2">
+      <div className="d-flex flex-row justify-content-start align-items-center gap-2 mb-2">
         <button
           className="btn btn-sm btn-outline-info"
           onClick={() =>
@@ -419,13 +419,13 @@ export const TeamApiSubscriptions = ({
           {translate("Filter")}
         </button>
         {!!filters && (
-          <div
-            className="clear cursor-pointer ms-1"
+          <button
+            className="btn --secondary"
             onClick={() => setFilters(undefined)}
           >
-            <i className="far fa-times-circle me-1" />
+            <RefreshCcw size={16} />
             <Translation i18nkey="clear filter">clear filter</Translation>
-          </div>
+          </button>
         )}
       </div>
       <div className="col-12">

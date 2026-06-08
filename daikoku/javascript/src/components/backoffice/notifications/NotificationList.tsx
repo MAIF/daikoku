@@ -29,7 +29,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
 import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
-import {ArrowRight, Ban, Check, RefreshCw, X} from "lucide-react";
+import { ArrowRight, Ban, Check, RefreshCw, Smile, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -719,8 +719,8 @@ export const NotificationList = () => {
         const sender = info.getValue();
         const isSystem = sender.startsWith('Otoroshi');
         return (
-          <div className='sender'>
-            {!isSystem && <i className="far fa-face-smile me-1" />}
+          <div className='sender d-flex gap-2 align-items-center'>
+            {!isSystem && <Smile size={16} />}
             {sender}
           </div>
         );

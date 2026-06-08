@@ -8,7 +8,7 @@ import {
   IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
-import {Key, Plus} from "lucide-react";
+import { Key, Plus } from "lucide-react";
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void;
@@ -165,7 +165,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
       <Button
         onClick={() => props.create(true)}
         message={translate('aggregation.button.subscription.usual.label')}
-        icon={<Plus color="#ffffff" />}
+        icon={<Plus />}
       />
       {props.aggregationApiKeysSecurity && (
         <Button
@@ -176,7 +176,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon={<Key color="#ffffff" />}
+          icon={<Key />}
         />
       )}
     </div>

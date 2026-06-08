@@ -30,7 +30,7 @@ export const DarkModeActivator = (props: { className: string }) => {
       title={label}
     >
       {theme === 'DARK' ? (
-        <Sun color="#ffffff" aria-hidden="true" focusable="false" />
+        <Sun aria-hidden="true" focusable="false" />
       ) : (
         <Moon aria-hidden="true" focusable="false" />
       )}

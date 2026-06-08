@@ -15,7 +15,7 @@ import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
-import {EllipsisVertical, MessageCircle, Plus, RefreshCw, X} from "lucide-react";
+import { EllipsisVertical, MessageCircle, MessageCircleMore, Plus, RefreshCw, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -196,19 +196,20 @@ export const ApiList = (props: ApiListProps) => {
             authorizations.length === myTeams.length &&
             authorizations.every((a) => a.pending && !a.authorized)
           const canRequestAccess = !allTeamsAreAuthorized && !['Private', 'AdminOnly'].includes(api.visibility)
-          return (
-            <div className="nav_item dropdown">
-              <button
-                type="button"
-                className="btn btn-outline-secondary btn-icon d-flex align-items-center gap-2"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                aria-label={translate('dashboard.more.creation.option.button.label')}
-              >
-                <MoreVertical size={16} />
-              </button>
-              <div className="dropdown-menu dropdown-menu-end">
-                {canRequestAccess && (
+
+          if (canRequestAccess) {
+            return (
+              <div className="nav_item dropdown">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-icon d-flex align-items-center gap-2"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-label={translate('dashboard.more.creation.option.button.label')}
+                >
+                  <MoreVertical size={16} />
+                </button>
+                <div className="dropdown-menu dropdown-menu-end">
                   <ActionWithTeamSelector
                     title={translate('api.access.modal.title')}
                     description={translate({ key: 'api.access.request', replacements: [api.name] })}
@@ -220,14 +221,14 @@ export const ApiList = (props: ApiListProps) => {
                     allTeamSelector={true}
                   >
                     <button className="dropdown-item">
-                      <i className="far fa-comment-dots me-2" />
+                      <MessageCircleMore className="me-1" />
                       {isPending ? translate('Pending request') : translate('Access')}
                     </button>
                   </ActionWithTeamSelector>
-                )}
+                </div>
               </div>
-            </div>
-          )
+            )
+          }
         },
       }),
     ]
