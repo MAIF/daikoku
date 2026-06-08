@@ -1508,6 +1508,7 @@
   "api.home.config.api.test.btn.label": "Gérer la configuration des tests",
   "api.home.config.api.test.menu.edit": "Éditer",
   "api.home.config.api.test.menu.delete": "Supprimer",
+  "api.home.config.api.test.env.badge": "Env",
   "api.home.config.api.news.btn.label": "Gérer les publications",
   "api.home.config.api.news.menu.update": "Mettre à jour la publication",
   "api.home.config.api.news.menu.create": "Créer une publication",

@@ -78,7 +78,7 @@ export function ApiIssues({
               </div>
               <div className="py-2 px-3">
                 <BeautifulTitle title={translate('issues.apiVersion')}>
-                  <span className="badge bg-info">{apiVersion}</span>
+                  <span className="badge --info">{apiVersion}</span>
                 </BeautifulTitle>
               </div>
             </div>

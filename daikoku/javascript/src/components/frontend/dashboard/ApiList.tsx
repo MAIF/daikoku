@@ -83,7 +83,7 @@ export const ApiList = (props: ApiListProps) => {
           const path = isApiGroup ? 'apis' : 'description'
           if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
             return (
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 align-items-center">
                 <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
                   {api.name}
                 </Link>
@@ -91,7 +91,7 @@ export const ApiList = (props: ApiListProps) => {
               </div>
             )
           }
-          return <div className="d-flex gap-2">
+          return <div className="d-flex gap-2 v">
             <p id={`api-${api._humanReadableId}`}>{api.name}</p>
             {!!api.apis?.length && <span className="tag --primary --ghost">Groupe</span>}
           </div>

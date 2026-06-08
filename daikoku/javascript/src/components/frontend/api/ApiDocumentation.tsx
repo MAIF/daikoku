@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
+import { ChevronLeft, ChevronRight, Feather, FileImage } from "lucide-react";
 import { useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Select from 'react-select';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 
 
 import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
@@ -19,9 +21,8 @@ import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '.
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 
+//@ts-ignore
 import 'highlight.js/styles/monokai.css';
-import { GlobalContext } from '../../../contexts/globalContext';
-import {ChevronLeft, ChevronRight, Feather, FileImage} from "lucide-react";
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
@@ -692,7 +693,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
+                <span className={`badge --primary`}>
                   {'ENV'}
                 </span>{props.data.label}
               </div>

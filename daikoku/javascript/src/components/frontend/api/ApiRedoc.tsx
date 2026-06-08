@@ -193,7 +193,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
+                <span className={`badge --primary`}>
                   {'ENV'}
                 </span>{props.data.label}
               </div>

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Form, constraints, format, type } from '@maif/react-forms';
-import {AlertCircle, MoreHorizontal, Pen, RefreshCcw, Trash2, X} from 'lucide-react';
+import { AlertCircle, MoreHorizontal, Pen, RefreshCcw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
@@ -277,7 +277,7 @@ export function ApiTimelineIssue({
           <div id="tags" className='d-flex flex-column flex-wrap'>
             {tags.map((tag) => {
               const bgColor = api.issuesTags.find((t) => t.id === tag.value)?.color || '#fff';
-              return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
+              return (<div className="badge me-1 mt-1 d-flex justify-content-between align-items-center" style={{
                 backgroundColor: bgColor,
                 color: getColorByBgColor(bgColor)
               }} key={tag.value}>

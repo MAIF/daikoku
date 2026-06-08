@@ -19,7 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
-import { ChevronLeft, ChevronRight, Ellipsis } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis, RefreshCcw, Search } from 'lucide-react';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -166,7 +166,7 @@ const menuStyle = {
   MenuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
   menu: (base: object) => ({ ...base, width: 'max-content', minWidth: '100%', zIndex: 100 }),
   menuList: (base: object) => ({ ...base, whiteSpace: 'nowrap' as const }),
-  control: (base: object) => ({ ...base, width: '220px', flexWrap: 'nowrap' as const }),
+  control: (base: object) => ({ ...base, width: '275px', flexWrap: 'nowrap' as const }),
   valueContainer: (base: object) => ({ ...base, flexWrap: 'nowrap' as const, overflow: 'hidden' }),
 };
 
@@ -387,8 +387,8 @@ export function DynamicTable<T>({
                     debouncedTextChange[f.id]?.(e);
                   }}
                 />
-                <i
-                  className="fas fa-search position-absolute"
+                <Search
+                  className="position-absolute"
                   style={{ right: '12px', top: '50%', transform: 'translateY(-50%)' }}
                 />
               </div>
@@ -451,7 +451,7 @@ export function DynamicTable<T>({
         })}
         {!!columnFilters.length && (
           <button
-            className="btn btn-outline-secondary"
+            className="btn --secondary"
             onClick={() => {
               setColumnFilters(defaultFilters);
               const textDefaults: Record<string, string> = {};
@@ -461,7 +461,7 @@ export function DynamicTable<T>({
               setTextInputVals(textDefaults);
             }}
           >
-            <i className="fas fa-rotate me-2" />
+            <RefreshCcw />
             {translate('table.filters.clear.label')}
           </button>
         )}
@@ -541,9 +541,12 @@ export function DynamicTable<T>({
 
   // Data-driven column widths: each column's meta.size (fr weight, default 1)
   // builds the grid track list, shared by the header row and every data row.
+  // `minmax(0, …)` keeps every row's tracks identical: without it a flexible
+  // `fr` track grows to its content's min-content width (worsened by the
+  // `white-space: nowrap` on rows), so a row with long content gets misaligned.
   const gridTemplateColumns = table
     .getVisibleLeafColumns()
-    .map(c => `${c.columnDef.meta?.size ?? 1}fr`)
+    .map(c => `minmax(0, ${c.columnDef.meta?.size ?? 1}fr)`)
     .join(' ');
 
   return (

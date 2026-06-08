@@ -47,7 +47,7 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     flex-direction: column;
     background-color: variables.$level2_bg-color;
     color: variables.$level3_text-color;
-    white-space: nowrap;
+    white-space: wrap;
     list-style: none;
     padding: 0;
     margin: 0;

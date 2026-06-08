@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
+import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
 import { useContext } from 'react';
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
@@ -24,12 +25,11 @@ import {
   IUser,
   IValidationStep,
 } from '../../../types';
+import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
 import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
-import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
-import { ArrowRight, Ban, Check, RefreshCw, Smile, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -669,7 +669,7 @@ export const NotificationList = () => {
         const label = translate(`notifications.page.filters.type.${typeName}.label`);
         return (
           <span
-            className="badge badge-custom-custom"
+            className="badge --primary"
             onClick={() =>
               setColumnFilters(prev => [
                 ...prev.filter(f => f.id !== 'type'),

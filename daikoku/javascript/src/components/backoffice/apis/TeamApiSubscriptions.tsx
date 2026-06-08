@@ -142,10 +142,10 @@ export const TeamApiSubscriptions = ({
             </ul>
           </div>`;
             return (
-              <div className="d-flex flex-row justify-content-between">
+              <div className="d-flex flex-row justify-content-between align-items-center">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge badge-custom">A</div>
+                  <div className="badge --primary">A</div>
                 </BeautifulTitle>
               </div>
             );

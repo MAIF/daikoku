@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
-import {Edit2, Plus, Settings, Trash2} from 'lucide-react';
+import { Edit2, Plus, Settings, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -44,6 +44,7 @@ import {
 } from '../../utils';
 
 type Option = {
+  type: 'group' | 'route';
   label: string;
   value: string;
   enabled: boolean;
@@ -60,8 +61,8 @@ const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraPro
   return (
     <div ref={innerRef} {...innerProps} className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
       <div className="col-1">
-        {!data.enabled && (
-          <span className="badge badge-custom-danger">
+        {data.type !== 'group' && !data.enabled && (
+          <span className="badge --danger">
             {translate("Disabled")}
           </span>
         )}
@@ -269,7 +270,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
           //todo: chelou, certaine route sont disable on sait pas pourquoi ?
           const enabled = [...groups, ...routes, ...services].find(i => i.value === item)?.enabled
           return enabled
-        }}
+        }} //@ts-ignore
         options={groupedOptions}
         value={value}
         onChange={onValueChange}
@@ -1199,7 +1200,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           >
             <Settings
               className="cursor-pointer dropdown-menu-button"
-              style={{ fontSize: '20px', fill: 'tomato' }}
+              style={{ fontSize: '20px' }}
               data-bs-toggle="dropdown" aria-expanded={false}
               id={`${plan._id}-dropdownMenuButton`}
             />
