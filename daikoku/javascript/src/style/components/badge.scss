@@ -187,3 +187,24 @@ $theme-colors: (
     }
   }
 }
+
+.number-indicator {
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -3%;
+  border-radius: 4px;
+
+  display: inline flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid variables.$danger-color;
+  background-color: variables.$danger-color;
+  color: variables.$neutral-color-000;
+
+  &.--inactive {
+    background-color: variables.$neutral-color-600;
+    border-color: variables.$neutral-color-600;
+  }
+}

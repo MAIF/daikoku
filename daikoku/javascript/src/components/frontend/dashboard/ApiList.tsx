@@ -1,23 +1,20 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createColumnHelper } from "@tanstack/react-table"
 import { useContext, useMemo, useState } from "react"
-import Plus from 'react-feather/dist/icons/plus'
-import { Link, useNavigate } from "react-router-dom"
 import { MoreVertical } from "react-feather"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import { I18nContext, ModalContext } from "../../../contexts"
+import { I18nContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
 import { isError } from "../../../types/api"
+import { DynamicTable, FetchData, FetchResult, FilterDef } from "../../inputs/DynamicTable"
 import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
-import { api as API, CanIDoAction, manage } from "../../utils/permissions"
-import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
-import { DynamicTable, FetchData, FetchResult, FilterDef } from "../../inputs/DynamicTable"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,11 +25,10 @@ type ApiListProps = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const ApiList = (props: ApiListProps) => {
-  const pageSize = 8;
+  const pageSize = 20;
 
-  const { tenant, customGraphQLClient, connectedUser, apiCreationPermitted } = useContext(GlobalContext)
+  const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
-  const { openRightPanel, openTeamSelectorModal } = useContext(ModalContext)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -62,7 +58,7 @@ export const ApiList = (props: ApiListProps) => {
       columnHelper.display({
         id: 'favorite',
         enableColumnFilter: false,
-        meta: { className: 'favorite-cell', title: translate('') },
+        meta: { className: 'favorite-cell', title: translate(''), size: 1 },
         cell: (info) => {
           const api = info.row.original.api
           const starred = connectedUser.starredApis.includes(api._id)
@@ -79,7 +75,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'api',
-        meta: { className: 'api-cell', title: translate('dashboard.apis.table.header.label.api') },
+        meta: { className: 'api-cell', title: translate('dashboard.apis.table.header.label.api'), size: 15 },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
@@ -103,7 +99,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.accessor('api.tags', {
         id: 'tags',
-        meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags') },
+        meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags'), size: 15 },
         cell: (info) => (
           <div className="d-flex gap-1">
             {info.getValue().map((tag, idx) => (
@@ -121,7 +117,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'team',
-        meta: { className: 'team-cell', title: translate('dashboard.apis.table.header.label.team') },
+        meta: { className: 'team-cell', title: translate('dashboard.apis.table.header.label.team'), size: 15 },
         cell: (info) => {
           const team = info.row.original.api.team
           return <span>{team.name}</span>
@@ -129,7 +125,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: 'Status',
-        meta: { className: 'status-cell', title: translate('dashboard.apis.table.header.label.status') },
+        meta: { className: 'status-cell', title: translate('dashboard.apis.table.header.label.status'), size: 15 },
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
@@ -169,7 +165,7 @@ export const ApiList = (props: ApiListProps) => {
       }),
       columnHelper.display({
         id: translate('dashboard.apis.table.header.label.subscriptions'),
-        meta: { className: 'subscription-cell d-flex gap-2 align-items-center', title: translate('dashboard.apis.table.header.label.subscriptions') },
+        meta: { className: 'subscription-cell d-flex gap-2 align-items-center', title: translate('dashboard.apis.table.header.label.subscriptions'), size: 15 },
         cell: (info) => {
           const subscriptionCount = info.row.original.subscriptionCount
           const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
@@ -188,7 +184,7 @@ export const ApiList = (props: ApiListProps) => {
       columnHelper.display({
         id: 'action',
         enableColumnFilter: false,
-        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions') },
+        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions'), size: 1 },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
@@ -295,60 +291,10 @@ export const ApiList = (props: ApiListProps) => {
     },
   ]
 
-  // ─── Create API ─────────────────────────────────────────────────────────
-
-  const createApi = ({ teamId, isApiGroup = false }: { teamId?: string; isApiGroup?: boolean }) => {
-    if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
-      if (!teamId) {
-        return openTeamSelectorModal({
-          allTeamSelector: false,
-          title: translate('api.creation.title.modal'),
-          description: translate('api.creation.description.modal'),
-          teams: myTeamsRequest.data
-            .filter((t) => t.type !== 'Admin')
-            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
-            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: (teams) => createApi({ teamId: teams[0], isApiGroup }),
-          actionLabel: translate('Create'),
-        })
-      }
-      const team = myTeamsRequest.data.find((t) => teamId === t._id)
-      if (!team) {
-        toast.warning('toast.no.team.found')
-      } else {
-        return openRightPanel({
-          title: isApiGroup
-            ? translate('apigroup.creation.right.panel.title')
-            : translate('api.creation.right.panel.title'),
-          content: (
-            <ApiFormRightPanel
-              team={team}
-              apigroup={isApiGroup}
-              handleSubmit={(api) =>
-                Services.createTeamApi(team._id, api).then((maybeApi) => {
-                  queryClient.invalidateQueries({ queryKey: ['apis'] })
-                  toast.success(translate({ key: 'api.created.successful.toast', replacements: [api.name] }))
-                  if (!isError(maybeApi)) {
-                    navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
-                  }
-                })
-              }
-            />
-          ),
-        })
-      }
-    }
-  }
-
   // ─── Render ─────────────────────────────────────────────────────────────
 
   if (myTeamsRequest.isLoading) return <Spinner />
   if (!myTeamsRequest.data || isError(myTeamsRequest.data)) return <div>oops</div>
-
-  const canCreateApi =
-    !connectedUser.isGuest &&
-    !props.apiGroupId &&
-    (!tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
 
   return (
     <DynamicTable<IApiWithAuthorization>
@@ -358,42 +304,7 @@ export const ApiList = (props: ApiListProps) => {
       filters={filters}
       pageSize={pageSize}
       getRowId={row => row.api._id}
-      tableClassName="col-12 api_list_container"
-      dataClassName="api-table table-rows"
       countLabelKey="API"
-      toolbar={
-        canCreateApi ? (
-          <div className="d-flex gap-1">
-            <button type="button"
-              className='btn btn-outline-primary d-flex align-items-center gap-2'
-              onClick={() => createApi({})}>
-              <Plus />
-              <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
-            </button>
-            <div className="nav_item dropdown" style={{ color: '#fff' }}>
-              <button type="button"
-                className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
-                data-bs-toggle="dropdown" aria-expanded="false"
-                aria-label={translate('dashboard.more.creation.option.button.label')}>
-                <MoreVertical />
-              </button>
-              <div className="dropdown-menu">
-                <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-                  <div className="blocks">
-                    <div className="mb-3 block">
-                      <div className="ms-2 block__entries block__border d-flex flex-column">
-                        <Link to={'#'} onClick={() => createApi({ isApiGroup: true })} className="block__entry__link">
-                          {translate('dashboard.create.apigroup.button.label')}
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : undefined
-      }
     />
   )
 }

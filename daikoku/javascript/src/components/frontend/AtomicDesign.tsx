@@ -15,6 +15,23 @@ export const AtomicDesign = () => {
 
   const buttonVariants = ['primary', 'secondary', 'tertiary', 'ghost'] as const;
 
+  // Une colonne par couleur, du plus sombre au plus clair (shades existantes dans variables.scss).
+  const colorScales: Record<string, string[]> = {
+    primary: ['--primary-color-800', '--primary-color', '--primary-color-400', '--primary-color-bg', '--primary-color-050'],
+    neutral: ['--neutral-color-900', '--neutral-color-800', '--neutral-color-700', '--neutral-color-600', '--neutral-color', '--neutral-color-400', '--neutral-color-300', '--neutral-color-200', '--neutral-color-100', '--neutral-color-050', '--neutral-color-000'],
+    success: ['--success-color-800', '--success-color', '--success-color-bg'],
+    warning: ['--warning-color-800', '--warning-color', '--warning-color-bg'],
+    danger: ['--danger-color-800', '--danger-color', '--danger-color-bg'],
+    info: ['--info-color-800', '--info-color', '--info-color-bg'],
+  };
+
+  // texte noir sur les shades claires (<=400, bg, 000), blanc sinon
+  const isLightShade = (v: string) => {
+    if (v.endsWith('-bg') || v.endsWith('-000')) return true;
+    const m = v.match(/-(\d{2,3})$/);
+    return m ? Number(m[1]) <= 400 : false;
+  };
+
   return (
     <main role="main">
       <section className="container">
@@ -22,57 +39,29 @@ export const AtomicDesign = () => {
           <div className="col-12">
             <h1 className="mt-3">Colors</h1>
             Customizable
-            <div style={{ display: "flex" }}>
-              <span
-                style={{
-                  width: 100,
-                  height: 100,
-                  backgroundColor: "var(--error-color)",
-                  color: "#000",
-                }}
-              >
-                var(--error-color)
-              </span>
-              <span
-                style={{
-                  width: 100,
-                  height: 100,
-                  backgroundColor: "var(--success-color)",
-                  color: "#000",
-                }}
-              >
-                var(--success-color)
-              </span>
-              <span
-                style={{
-                  width: 100,
-                  height: 100,
-                  backgroundColor: "var(--info-color)",
-                  color: "#000",
-                }}
-              >
-                var(--info-color)
-              </span>
-              <span
-                style={{
-                  width: 100,
-                  height: 100,
-                  backgroundColor: "var(--warning-color)",
-                  color: "#000",
-                }}
-              >
-                var(--warning-color)
-              </span>
-              <span
-                style={{
-                  width: 100,
-                  height: 100,
-                  backgroundColor: "var(--danger-color)",
-                  color: "#000",
-                }}
-              >
-                var(--danger-color)
-              </span>
+            <div className="d-flex gap-3 flex-wrap">
+              {Object.entries(colorScales).map(([name, shades]) => (
+                <div key={name} className="d-flex flex-column gap-1">
+                  <strong className="text-capitalize mb-1">{name}</strong>
+                  {shades.map((shade) => (
+                    <span
+                      key={shade}
+                      style={{
+                        width: 200,
+                        height: 40,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 8px",
+                        fontSize: 11,
+                        backgroundColor: `var(${shade})`,
+                        color: isLightShade(shade) ? "#000" : "#fff",
+                      }}
+                    >
+                      {shade}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
 
             <h1 className="mt-3">Buttons</h1>
@@ -170,6 +159,13 @@ export const AtomicDesign = () => {
               <span className="badge --finished --state">finished state badge</span>
               <span className="badge --inactive --state">inactive state badge</span>
             </div>
+
+            <h1 className="mt-3">Number indicator</h1>
+            <div className="d-flex gap-2">
+              <span className="number-indicator">42</span>
+              <span className="number-indicator --inactive">42</span>
+            </div>
+
 
             <h1 className="mt-3">Content</h1>
             <div className="d-flex flex-column">

@@ -601,7 +601,7 @@ export const NotificationList = () => {
   const buildColumns = ({ setColumnFilters, selectAll }: DynamicTableColumnCtx) => [
     columnHelper.display({
       id: 'select',
-      meta: { className: 'select-cell' },
+      meta: { className: 'select-cell', size: 5 },
       cell: ({ row }) => {
         const notification = row.original;
         if (row.getCanSelect())
@@ -624,7 +624,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'api',
-      meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api') },
+      meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 15 },
       cell: (info) => {
         const notification = info.row.original;
         const api = getApiFromNotification(notification, visibleApisRequest.data);
@@ -643,7 +643,7 @@ export const NotificationList = () => {
     }),
     columnHelper.accessor('action.__typename', {
       id: 'type',
-      meta: { className: 'type-cell', title: translate('notifications.page.table.header.label.type') },
+      meta: { className: 'type-cell', title: translate('notifications.page.table.header.label.type'), size: 15 },
       enableColumnFilter: true,
       cell: (info) => {
         const typeName = info.getValue();
@@ -665,7 +665,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'description',
-      meta: { className: 'description-cell', title: translate('notifications.page.table.header.label.description') },
+      meta: { className: 'description-cell', title: translate('notifications.page.table.header.label.description'), size: 30 },
       cell: (info) => (
         <div className='notification d-flex align-items-center gap-3'>
           <div className='notification__description'>
@@ -676,7 +676,7 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'team',
-      meta: { className: 'team-cell', title: translate('notifications.page.table.header.label.team') },
+      meta: { className: 'team-cell', title: translate('notifications.page.table.header.label.team'), size: 15 },
       cell: (info) => {
         const team = info.row.original.team;
         if (!team) return null;
@@ -694,7 +694,7 @@ export const NotificationList = () => {
     }),
     columnHelper.accessor('sender.name', {
       id: 'sender',
-      meta: { className: 'sender-cell', title: translate('notifications.page.table.header.label.sender') },
+      meta: { className: 'sender-cell', title: translate('notifications.page.table.header.label.sender'), size: 12 },
       enableColumnFilter: true,
       cell: (info) => {
         const sender = info.getValue();
@@ -710,7 +710,7 @@ export const NotificationList = () => {
     columnHelper.display({
       id: 'date',
       enableColumnFilter: false,
-      meta: { className: 'date-cell', title: translate('notifications.page.table.header.label.date') },
+      meta: { className: 'date-cell', title: translate('notifications.page.table.header.label.date'), size: 7 },
       cell: (info) => {
         const date = formatDistanceToNow(info.row.original.date, {
           includeSeconds: false, addSuffix: true, locale: getLanguageFns(language),
@@ -721,7 +721,7 @@ export const NotificationList = () => {
     columnHelper.display({
       id: 'action',
       enableColumnFilter: false,
-      meta: { className: 'action-cell', title: translate('notifications.page.table.header.label.actions') },
+      meta: { className: 'action-cell', title: translate('notifications.page.table.header.label.actions'), size: 15 },
       cell: (info) => (
         <div className='notification__actions'>{actionFormatter(info.row.original)}</div>
       ),
@@ -841,6 +841,7 @@ export const NotificationList = () => {
         pageSize={25}
         getRowId={row => row._id}
         getRowAriaLabel={getRowAriaLabel}
+        countLabelKey="notifications.page.total.label"
       />
     </>
   );
