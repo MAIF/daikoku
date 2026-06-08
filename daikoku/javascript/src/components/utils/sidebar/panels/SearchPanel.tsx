@@ -214,7 +214,7 @@ export const SearchPanel = () => {
                 __html: translate(
                   {
                     key: 'topbar.search.placeholder',
-                    replacements: [renderToStaticMarkup(<SquareSlash />)]
+                    replacements: ['<kbd>/</kbd>']
                   }
                 )
               }

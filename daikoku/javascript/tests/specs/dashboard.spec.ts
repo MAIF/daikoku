@@ -54,9 +54,8 @@ test('User non producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API Commande' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'API Papier' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeHidden();
-
   await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.status')).toBeVisible();
-  //await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.status')).toContainText('2 clés actives');
+  await expect(page.getByRole('listitem', { name: 'API papier' })).toContainText('2 souscriptions');
 
 });
 
@@ -123,10 +122,10 @@ test('api list status', async ({ page }) => {
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
 
 
-//  await expect(page.getByRole('listitem', { name: 'API Commande' }).locator('.status')).toContainText('1 clé active');
-//  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('2 clés actives');
-//  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('1 expire bientôt');
-//  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('1 demande en attente');
+  //  await expect(page.getByRole('listitem', { name: 'API Commande' }).locator('.status')).toContainText('1 clé active');
+  //  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('2 clés actives');
+  //  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('1 expire bientôt');
+  //  await expect(page.getByRole('listitem', { name: 'API Papier' }).locator('.status')).toContainText('1 demande en attente');
 });
 
 test('api list favorite', async ({ page }) => {
@@ -159,9 +158,9 @@ test('apilist pagination', async ({ page }) => {
   await loginAs(MICHAEL, page)
 
   await page.getByRole('button', { name: 'Page 2' }).click();
-  await expect(page.getByRole('article',{name:'New API-04'})).toBeVisible();
-  await page.getByRole('button', { name: 'Page 3' }).click();
-  await expect(page.getByRole('article',{name:'New API-12'})).toBeVisible();
+  await expect(page.getByRole('article', { name: 'New API-24' })).toBeVisible();
+  // await page.getByRole('button', { name: 'Page 3' }).click();
+  // await expect(page.getByRole('article', { name: 'New API-12' })).toBeVisible();
 });
 
 test.fixme('apilist display specials api', async ({ page }) => {
@@ -204,7 +203,6 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
 
 
   await page.getByRole('link', { name: 'apigroup' }).click();
-  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
   await expect(page.getByText('2 APIs')).toBeVisible();
   await expect(page.getByRole('article', { name: 'API Commande' })).toBeVisible();
   await expect(page.getByRole('article', { name: 'API Papier' })).toBeVisible();

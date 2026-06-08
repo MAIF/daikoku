@@ -48,11 +48,12 @@ export const Dashboard = (_: NewHomeProps) => {
     queryFn: () => Services.myTeams(),
   });
 
-  // const canCreateApi =
-  //     !connectedUser.isGuest &&
-  //     (!tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
+  const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
 
-  const canCreateApi = true
+  const canCreateApi =
+    !connectedUser.isGuest &&
+    (!tenant.creationSecurity || myTeams.some(t => t.apisCreationPermission))
+
 
   // ─── Create API ─────────────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ export const Dashboard = (_: NewHomeProps) => {
                 </div>
               </button>
             )}
-            <div className="d-flex justify-content-end gap-1">
+            {canCreateApi && <div className="d-flex justify-content-end gap-1">
               <button type="button"
                 className='btn btn-outline-primary d-flex align-items-center gap-2'
                 onClick={() => createApi({})}>
@@ -145,7 +146,7 @@ export const Dashboard = (_: NewHomeProps) => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </section>

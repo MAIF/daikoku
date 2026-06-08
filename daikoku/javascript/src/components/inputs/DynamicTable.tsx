@@ -588,7 +588,7 @@ export function DynamicTable<T>({
             }
             <ul className="table-rows">
               {table.getRowModel().rows.map(row => (
-                <li key={row.id} tabIndex={-1}>
+                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)}>
                   <article className="table-row" aria-label={getRowAriaLabel?.(row.original)}>
                     {row.getVisibleCells().map(cell => (
                       <div key={cell.id} className={cell.column.columnDef.meta?.className}>

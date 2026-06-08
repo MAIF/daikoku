@@ -305,6 +305,7 @@ export const ApiList = (props: ApiListProps) => {
       filters={filters}
       pageSize={pageSize}
       getRowId={row => row.api._id}
+      getRowAriaLabel={row => row.api.name}
       countLabelKey="API"
     />
   )
