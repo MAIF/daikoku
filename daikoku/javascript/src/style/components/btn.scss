@@ -337,12 +337,12 @@ button {
 //
 // Échelle : base 600 · hover 400 · focus = fond clair 050 + bordure 2px 600 · pressed 800 · disabled neutral-600.
 
-$btn-base:     variables.$primary-color;        // 600
-$btn-light:    variables.$primary-color-050;     // fond clair (hover des variantes claires + focus)
-$btn-hover:    variables.$primary-color-400;     // hover du fond plein
-$btn-strong:   variables.$primary-color-800;     // pressed
-$btn-on:       variables.$neutral-color-000;     // blanc : texte sur fond plein
-$btn-disabled: variables.$neutral-color-600;     // disabled (texte/bordure/fond grisés)
+$btn-base: variables.$primary-color; // 600
+$btn-light: variables.$primary-color-050; // fond clair (hover des variantes claires + focus)
+$btn-hover: variables.$primary-color-400; // hover du fond plein
+$btn-strong: variables.$primary-color-800; // pressed
+$btn-on: variables.$neutral-color-000; // blanc : texte sur fond plein
+$btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond grisés)
 
 // focus commun : fond clair + bordure 2px, sans layout shift (1px border + 1px box-shadow inset)
 @mixin button-focus {
@@ -466,7 +466,6 @@ $btn-disabled: variables.$neutral-color-600;     // disabled (texte/bordure/fond
   &:disabled,
   &.--disabled {
     background-color: $btn-on;
-    border-color: $btn-disabled;
     color: $btn-disabled;
   }
 }
@@ -495,4 +494,8 @@ $btn-disabled: variables.$neutral-color-600;     // disabled (texte/bordure/fond
     border-color: transparent;
     color: $btn-disabled;
   }
+}
+
+.btn.--icon {
+  padding: 8px;
 }

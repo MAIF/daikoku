@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
+import { ChevronLeft, ChevronRight, Ellipsis } from 'lucide-react';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -601,9 +602,9 @@ export function DynamicTable<T>({
             <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
               <Pagination
                 containerClassName="pagination pagination--ds"
-                previousLabel="<"
-                nextLabel=">"
-                breakLabel="..."
+                previousLabel={<ChevronLeft />}
+                nextLabel={<ChevronRight />}
+                breakLabel={<Ellipsis />}
                 breakClassName="break"
                 breakLinkClassName="btn --ghost"
                 pageCount={pageCount}
@@ -613,8 +614,8 @@ export function DynamicTable<T>({
                 onPageChange={({ selected }) => setPage(selected)}
                 pageClassName="page-selector"
                 pageLinkClassName="btn --ghost"
-                previousLinkClassName="btn --tertiary"
-                nextLinkClassName="btn --tertiary"
+                previousLinkClassName="btn --tertiary --icon"
+                nextLinkClassName="btn --tertiary --icon"
                 disabledLinkClassName="--disabled"
                 activeClassName="active"
               />

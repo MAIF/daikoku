@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createColumnHelper } from "@tanstack/react-table"
+import { MessageCircleMore, MoreVertical } from "lucide-react"
 import { useContext, useMemo, useState } from "react"
-import { MoreVertical } from "react-feather"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -15,7 +15,6 @@ import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
-import { EllipsisVertical, MessageCircle, MessageCircleMore, Plus, RefreshCw, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
