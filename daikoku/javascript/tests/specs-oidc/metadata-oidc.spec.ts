@@ -24,12 +24,12 @@ test('Récupérer les metadatas claims "name" et "birthdate" uniquement de OIDC'
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -76,12 +76,12 @@ test('Ne récupérer aucune metadatas claims d\'OIDC', async ({ page }) => {
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -126,12 +126,12 @@ test('Récupérer toutes les metadatas claims que d\'OIDC', async ({ page }) => 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -176,13 +176,13 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
 
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -227,7 +227,7 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -239,12 +239,12 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
 
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  // await page.getByRole('button', { name: 'Yes' }).click();
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
