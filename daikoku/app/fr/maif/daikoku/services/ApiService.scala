@@ -16,12 +16,19 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob, SyncInformation}
-import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
+import fr.maif.daikoku.jobs.{
+  ApiKeyStatsJob,
+  OtoroshiSynchronizerJob,
+  SyncInformation
+}
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  JsonOperationsHelper,
+  OtoroshiClient,
+  Translator,
+  metadataObjectToMap
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.{Done, NotUsed}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
@@ -92,8 +99,9 @@ class ApiService(
     val date = DateTime.now()
     val createdAtMillis = date.getMillis.toString
     val createdAt = date.toString()
-    
-    val clientId = maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
+
+    val clientId =
+      maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
       s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
@@ -124,11 +132,12 @@ class ApiService(
       ++ api.metadata.map(t => ("api.metadata." + t._1, t._2))
       ++ plan.metadata.map(t => ("plan.metadata." + t._1, t._2))
       ++ metadataObjectToMap(
-      customMetadata
-        .flatMap(_.asOpt[Map[String, JsValue]])
-        .getOrElse(Map.empty[String, JsValue]))
-      .map(t => ("subscription.metadata." + t._1, t._2))
-    
+        customMetadata
+          .flatMap(_.asOpt[Map[String, JsValue]])
+          .getOrElse(Map.empty[String, JsValue])
+      )
+        .map(t => ("subscription.metadata." + t._1, t._2))
+
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
         clientId = clientId,
@@ -404,13 +413,13 @@ class ApiService(
         env.dataStore.withTransaction {
           for {
             _ <- env.dataStore.apiSubscriptionRepo
-                   .forTenant(tenant.id)
-                   .save(apiSubscription)
+              .forTenant(tenant.id)
+              .save(apiSubscription)
             _ <- env.dataStore.tenantRepo.save(
-                   tenant.copy(adminSubscriptions =
-                     tenant.adminSubscriptions :+ apiSubscription.id
-                   )
-                 )
+              tenant.copy(adminSubscriptions =
+                tenant.adminSubscriptions :+ apiSubscription.id
+              )
+            )
           } yield apiSubscription
         }
       )
@@ -805,39 +814,6 @@ class ApiService(
     } yield subscription.asSafeJson.as[JsObject]
 
     r.value
-  }
-
-  def deleteApiKey(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan
-  ): Future[Either[AppError, JsObject]] = {
-    (for {
-      maybeOtoroshiSettings <- EitherT.pure[Future, AppError](
-        plan.otoroshiTarget
-          .map(_.otoroshiSettings)
-          .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant.id)
-          .deleteByIdLogically(subscription.id)
-      )
-      shouldDeleteApiKey =
-        subscription.parent.isEmpty &&
-          !(plan.visibility == Admin && plan.otoroshiTarget.isEmpty)
-
-      _ <- (shouldDeleteApiKey, maybeOtoroshiSettings) match {
-        case (true, Some(otoorshiSettings)) =>
-          otoroshiClient
-            .deleteApiKey(subscription.apiKey.clientId)(using otoorshiSettings)
-        case _ =>
-          EitherT.pure[Future, AppError](Json.obj())
-      }
-    } yield Json.obj(
-      "archive" -> "done",
-      "subscriptionId" -> subscription.id.asJson
-    )).value
   }
 
   def computeOtoroshiApiKey(
@@ -1435,228 +1411,6 @@ class ApiService(
 
       // return extracted OtoroshiApiKey
     } yield apikey).value
-  }
-
-  def deleteApiSubscriptionsAsFlow(
-      tenant: Tenant,
-      apiOrGroupId: ApiId,
-      user: User
-  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
-    Flow[(UsagePlan, Seq[ApiSubscription])]
-      .map { case (plan, subscriptions) =>
-        subscriptions.map(subscription => {
-          (
-            plan,
-            subscription,
-            Notification(
-              id = NotificationId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              team = Some(subscription.team),
-              sender = user.asNotificationSender,
-              notificationType = NotificationType.AcceptOnly,
-              action = NotificationAction.ApiKeyDeletionInformationV2(
-                apiOrGroupId,
-                subscription.apiKey.clientId,
-                subscription.id
-              )
-            )
-          )
-        })
-      }
-      .flatMapConcat(seq => Source(seq.toList))
-      .mapAsync(1) { case (plan, subscription, notification) =>
-        def deaggregateSubsAndDelete(
-            subscription: ApiSubscription,
-            childs: Seq[ApiSubscription],
-            subscriberTeam: Team
-        )(implicit otoroshiSettings: OtoroshiSettings) = {
-          subscription.parent match {
-            case Some(_) =>
-              extractSubscriptionFromAggregation(subscription, tenant, user)
-                .map(_ =>
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant.id)
-                    .deleteByIdLogically(subscription.id)
-                )
-            // no need to delete key (aggregate is saved and return new key, just we don't save it)
-            // just delete subsscription
-            case None if childs.nonEmpty =>
-              val newParent = childs.head
-              val newChilds = childs.tail
-
-              for {
-                // save new parent by removing link with old parent
-                _ <-
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .save(newParent.copy(parent = None))
-
-                // save other sub from aggregation with link to new parent
-                _ <-
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .updateManyByQuery(
-                      Json.obj(
-                        "_id" -> Json.obj(
-                          "$in" -> JsArray(newChilds.map(_.id.asJson))
-                        )
-                      ),
-                      Json.obj(
-                        "$set" -> Json
-                          .obj("parent" -> newParent.id.asJson)
-                      )
-                    )
-
-                // compute new tags, metadata...
-                _ <- otoroshiSynchronisator.run(newParent.id, tenant)
-                // delete extracted OtoroshiApiKey into Otoroshi
-                // delete extracted subscription
-                _ <-
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant.id)
-                    .deleteByIdLogically(subscription.id)
-              } yield ()
-            case _ => deleteApiKey(tenant, subscription, plan)
-          }
-        }
-
-        AppLogger.info(
-          s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}"
-        )
-
-        (for {
-          otoroshiSettings <- OptionT.fromOption[Future](
-            plan.otoroshiTarget
-              .map(_.otoroshiSettings)
-              .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-          )
-          subscriberTeam <- OptionT(
-            env.dataStore.teamRepo
-              .forTenant(tenant)
-              .findByIdNotDeleted(subscription.team)
-          )
-          childs <- OptionT.liftF(
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
-          )
-          _ <- OptionT.liftF(
-            apiKeyStatsJob
-              .syncForSubscription(subscription, tenant, completed = true)
-          )
-          _ <- OptionT.liftF(
-            deaggregateSubsAndDelete(subscription, childs, subscriberTeam)(using
-              otoroshiSettings
-            )
-          )
-          _ <- subscription.thirdPartySubscriptionInformations match {
-            case Some(thirdPartySubscriptionInformations) =>
-              OptionT.liftF(
-                env.dataStore.operationRepo
-                  .forTenant(tenant)
-                  .save(
-                    Operation(
-                      DatastoreId(IdGenerator.token(24)),
-                      tenant = tenant.id,
-                      itemId = subscription.id.value,
-                      itemType = ItemType.ThirdPartySubscription,
-                      action = OperationAction.Delete,
-                      payload = Json
-                        .obj(
-                          "paymentSettings" -> plan.paymentSettings
-                            .map(_.asJson)
-                            .getOrElse(JsNull)
-                            .as[JsValue],
-                          "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
-                        )
-                        .some
-                    )
-                  )
-              )
-            case None => OptionT.pure[Future](())
-          }
-          _ <- OptionT.liftF(
-            env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .save(notification)
-          )
-        } yield ()).value
-          .map(_ => plan)
-      }
-
-  def deleteUsagePlan(
-      plan: UsagePlan,
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): EitherT[Future, AppError, Api] = {
-    val updatedApi = api.copy(possibleUsagePlans =
-      api.possibleUsagePlans.filter(pp => pp != plan.id)
-    )
-    for {
-      _ <-
-        EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
-      _ <-
-        EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
-      _ <- EitherT.liftF(
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .deleteByIdLogically(plan.id)
-      )
-      _ <-
-        if (plan.paymentSettings.isDefined)
-          EitherT.liftF[Future, AppError, Boolean](
-            env.dataStore.operationRepo
-              .forTenant(tenant)
-              .save(
-                Operation(
-                  DatastoreId(IdGenerator.token(24)),
-                  tenant = tenant.id,
-                  itemId = plan.id.value,
-                  itemType = ItemType.ThirdPartyProduct,
-                  action = OperationAction.Delete,
-                  payload = Json
-                    .obj(
-                      "paymentSettings" -> plan.paymentSettings
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue]
-                    )
-                    .some
-                )
-              )
-          )
-        else EitherT.pure[Future, AppError](true)
-    } yield updatedApi
-  }
-
-  def deleteApiPlansSubscriptions(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): Future[Done] = {
-    implicit val mat: Materializer = env.defaultMaterializer
-
-    Source(plans.toList)
-      .mapAsync(1)(plan =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> Json
-                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-            )
-          )
-          .map(seq => (plan, seq))
-      )
-      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
-      .runWith(Sink.ignore)
-      .recover { case e =>
-        AppLogger.error(s"Error while deleting api subscriptions", e)
-        Done
-      }
   }
 
   def notifyApiSubscription(
@@ -2318,11 +2072,11 @@ class ApiService(
                 )
                 for {
                   _ <- env.dataStore.subscriptionDemandRepo
-                         .forTenant(tenant)
-                         .save(demand.copy(state = SubscriptionDemandState.Accepted))
+                    .forTenant(tenant)
+                    .save(demand.copy(state = SubscriptionDemandState.Accepted))
                   _ <- env.dataStore.notificationRepo
-                         .forTenant(tenant)
-                         .save(newNotification)
+                    .forTenant(tenant)
+                    .save(newNotification)
                 } yield ()
               }
             )
@@ -2685,23 +2439,23 @@ class ApiService(
           )
           for {
             _ <- env.dataStore.subscriptionDemandRepo
-                   .forTenant(tenant)
-                   .save(
-                     demand.copy(
-                       state = SubscriptionDemandState.Refused,
-                       steps = demand.steps.map(s =>
-                         if (s.id == stepId)
-                           s.copy(
-                             state = SubscriptionDemandState.Refused,
-                             metadata = Json.obj("by" -> sender.asJson)
-                           )
-                         else s
-                       )
-                     )
-                   )
+              .forTenant(tenant)
+              .save(
+                demand.copy(
+                  state = SubscriptionDemandState.Refused,
+                  steps = demand.steps.map(s =>
+                    if (s.id == stepId)
+                      s.copy(
+                        state = SubscriptionDemandState.Refused,
+                        metadata = Json.obj("by" -> sender.asJson)
+                      )
+                    else s
+                  )
+                )
+              )
             _ <- env.dataStore.notificationRepo
-                   .forTenant(tenant)
-                   .save(newNotification)
+              .forTenant(tenant)
+              .save(newNotification)
           } yield ()
         }
       )

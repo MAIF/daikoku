@@ -2,14 +2,7 @@ import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import AtSign from 'react-feather/dist/icons/at-sign';
-import CreditCard from 'react-feather/dist/icons/credit-card';
-import Globe from 'react-feather/dist/icons/globe';
-import List from 'react-feather/dist/icons/list';
-import Plus from 'react-feather/dist/icons/plus';
-import Settings from 'react-feather/dist/icons/settings';
-import Trash from 'react-feather/dist/icons/trash';
-import User from 'react-feather/dist/icons/user';
+import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
@@ -18,7 +11,7 @@ import { IValidationStep } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
-import { Help } from '../apikeys/TeamApiKeysForApi';
+import { Help } from '../apikeys';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string>, info?: string }) => void;

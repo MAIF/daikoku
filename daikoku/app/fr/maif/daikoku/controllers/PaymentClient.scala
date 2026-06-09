@@ -108,7 +108,9 @@ class PaymentClient(
               .post(Map("active" -> "false"))
               .map {
                 case response if response.status == 404 =>
-                  Right[AppError, JsValue](Json.obj("status" -> "already_inactive"))
+                  Right[AppError, JsValue](
+                    Json.obj("status" -> "already_inactive")
+                  )
                 case response if response.status >= 400 =>
                   Left(
                     AppError.PaymentError(
@@ -126,7 +128,9 @@ class PaymentClient(
                   .post(Map("active" -> "false"))
                   .map {
                     case response if response.status == 404 =>
-                      Right[AppError, JsValue](Json.obj("status" -> "already_inactive"))
+                      Right[AppError, JsValue](
+                        Json.obj("status" -> "already_inactive")
+                      )
                     case response if response.status >= 400 =>
                       Left[AppError, JsValue](
                         AppError.PaymentError(
@@ -160,7 +164,9 @@ class PaymentClient(
               .post(Map("active" -> "false"))
               .map {
                 case response if response.status == 404 =>
-                  Right[AppError, JsValue](Json.obj("status" -> "already_archived"))
+                  Right[AppError, JsValue](
+                    Json.obj("status" -> "already_archived")
+                  )
                 case response if response.status >= 400 =>
                   Left[AppError, JsValue](
                     AppError.PaymentError(

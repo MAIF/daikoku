@@ -1,7 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
-import Moon from 'react-feather/dist/icons/moon';
-import Sun from 'react-feather/dist/icons/sun';
+import { Moon, Sun } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { GlobalContext } from '../../../../contexts/globalContext';

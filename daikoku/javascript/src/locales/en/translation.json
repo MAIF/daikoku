@@ -60,6 +60,10 @@
     "Daikoku administration": "Daikoku administration",
     "Users": "Users",
     "User sessions": "User sessions",
+    "Loggers": "Loggers",
+    "Loggers level": "Loggers level",
+    "Level": "Level",
+    "loggers.disclaimer": "Log levels are changed in memory, for this instance only, and are not persisted: they reset to their default on restart. This is meant for debugging purposes only.",
     "Import / Export": "Import / Export",
     "apis published": {
         "s": "API published",
@@ -1508,6 +1512,7 @@
     "api.home.config.api.spec.btn.label": "Manage API specification",
     "api.home.config.api.spec.menu.edit": "Edit",
     "api.home.config.api.spec.menu.delete": "Delete",
+    "api.home.config.api.test.env.badge": "Env",
     "api.home.spec.right.panel.title": "Edit API specification",
     "api.home.config.api.test.btn.label": "Manage test configuration",
     "api.home.config.api.test.menu.edit": "Edit",
@@ -1633,12 +1638,12 @@
     "notifications.page.filters.clear.label": "Reset filters",
     "table.filters.clear.label": "Reset filters",
     "table.filter.summary.label": {
-        "s": "%s selected",
-        "p": "%s selected"
+      "s": "%s selected",
+      "p": "%s selected"
     },
     "table.rows.selected.count.label": {
-        "s": "%s row selected",
-        "p": "%s rows selected"
+      "s": "%s row selected",
+      "p": "%s rows selected"
     },
     "table.select.all.label": "Select all %s items",
     "notifications.page.table.title": "Notifications",
@@ -1743,15 +1748,15 @@
     "dashboard.newly.created.apis.tile.title": "Newly created APIs",
     "dashboard.deprecated.apis.tile.title": "Deprecated APIs",
     "dashboard.deprecated.apis.tile.secondary.label": "expire soon",
-    "dashboard.page.tenant.demands.button.label": "Demands to validate",
     "dashboard.deprecated.apikeys.tile.secondary.label": "expire soon",
+    "dashboard.page.tenant.demands.button.label": "Demands to validate",
     "dashboard.tile.error.button.label": "Reload data",
     "dashboard.apis.table.header.label.api": "API",
     "dashboard.apis.table.header.label.tags": "Tags",
     "dashboard.apis.table.header.label.team": "Team",
     "dashboard.apis.table.header.label.status": "Status",
     "dashboard.apis.table.header.label.subscriptions": "Subscriptions",
-  "dashboard.apis.table.header.label.subscriptions.cells": "subscription",
+    "dashboard.apis.table.header.label.subscriptions.cells": "subscription",
     "dashboard.apis.table.header.label.actions": "Actions",
     "dashboard.filters.tag.label": {
         "s": "Tag",
@@ -1781,7 +1786,7 @@
     "search.team.placeholder": "Search a team",
     "dashboard.create.team.button.label": "Create a team",
     "dashboard.api.table.more.button.label": "Show more APIs",
-    "dashboard.filters.subscribe.apis.only.label": "Subscribed APIs",
+    "dashboard.filters.subscribe.apis.only.label": "Subscribed APIs only",
     "dashboard.apis.selected.count": " selected apis (on %s displayed)",
     "dashboard.apis.filterd.count": " found apis (on %s)",
     "dashboard.filters.selected.apis.apiKeys.subscribe.button": "Obtain Keys",

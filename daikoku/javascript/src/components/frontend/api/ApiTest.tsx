@@ -259,8 +259,8 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
-                  {'ENV'}
+                <span className={`badge --primary text-uppercase`}>
+                  {translate('api.home.config.api.test.env.badge')}
                 </span>{props.data.label}
               </div>
             }

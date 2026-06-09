@@ -1,6 +1,5 @@
 import { useContext, useEffect } from 'react';
-import CheckCircle from 'react-feather/dist/icons/check-circle';
-import XOctagon from 'react-feather/dist/icons/x-octagon';
+import { CheckCircle, XOctagon } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { I18nContext, ModalContext } from '../../contexts';

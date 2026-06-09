@@ -54,8 +54,8 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
             return <div className='d-flex align-items-center m-0' style={{
               gap: '.5rem'
             }}>
-              <span className={`badge badge-custom`}>
-                {'TEAM'}
+              <span className={`badge --primary`}>
+                {translate('Team')}
               </span>{props.data.label}
             </div>
           }

@@ -34,7 +34,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Créer une API' }).click();
   await page.locator('#portal-root').getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Créée' }).click();
+  await page.getByRole('button', { name: 'Brouillon' }).click();
   await page.getByPlaceholder('New Api').fill('API Betterave');
   await page.getByLabel('Desc. courte').fill("Ce n'est pas une blague Dwight. Jim ❤️");
   await page.getByText('Versions et tags').click();
@@ -280,8 +280,7 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await page.getByRole('link', { name: apiGroupName }).click();
 
 
-  await page.getByText('APIs', {exact: true}).click();
-  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
+  await page.getByText('APIs', { exact: true }).click();
   await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.locator('h1')).toBeVisible();

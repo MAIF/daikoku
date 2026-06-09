@@ -100,6 +100,7 @@ const config = {
           // { to: '/blog', label: 'Blog', position: 'left' },
           { to: '/openapi', label: 'OpenAPI', position: 'left' },
           { to: '/docs/cli', label: 'CLI', position: 'left' },
+          { to: '/docs/kubernetes', label: 'Kubernetes', position: 'left' },
           {
             href: 'https://github.com/maif/daikoku',
             position: 'right',

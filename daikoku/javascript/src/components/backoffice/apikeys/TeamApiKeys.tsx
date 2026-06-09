@@ -14,11 +14,14 @@ import { Table, TableRef } from '../../inputs';
 import {
   Can,
   Spinner,
+  access,
   apikey,
   isUserIsTeamAdmin,
   manage,
+  read,
   teamPermissions,
 } from '../../utils';
+import {ExternalLink, Key, BarChart} from "lucide-react";
 
 export const TeamApiKeys = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -72,7 +75,7 @@ export const TeamApiKeys = () => {
                   title={translate("apikeys.view.api")}
                   aria-label={translate("apikeys.view.api")}
                 >
-                  <i className="fa-solid fa-arrow-up-right-from-square" />
+                  <ExternalLink />
                 </Link>
                 <Link
                   to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
@@ -80,7 +83,7 @@ export const TeamApiKeys = () => {
                   title={translate("apikeys.view.apikeys")}
                   aria-label={translate("apikeys.view.apikeys")}
                 >
-                  <i className="fas fa-key" />
+                  <Key />
                 </Link>
               </div>
             </>
@@ -94,7 +97,7 @@ export const TeamApiKeys = () => {
     return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
     return (
-      <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
+      <Can I={access} a={apikey} team={currentTeam} dispatchError={true}>
         <div className="row">
           <div className="col">
             <h1>
@@ -106,7 +109,7 @@ export const TeamApiKeys = () => {
               to={`/${currentTeam._humanReadableId}/settings/consumption`}
               className="btn btn-sm btn-outline-primary mb-2"
             >
-              <i className="fas fa-chart-bar me-1" />
+              <BarChart className="me-1" />
               <Translation i18nkey="See Stats">See Stats</Translation>
             </Link>
             <div className="section p-2">

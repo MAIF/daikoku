@@ -6,6 +6,7 @@ import {
   IAsset,
   IAuditTrail,
   IFastApiSubscription,
+  ILogger,
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
@@ -588,6 +589,15 @@ export const deleteSession = (id: any) =>
 export const deleteSessions = () =>
   customFetch('/api/admin/sessions', {
     method: 'DELETE',
+  });
+
+export const getLoggers = (): Promise<ResponseError | Array<ILogger>> =>
+  customFetch('/api/admin/loggers');
+
+export const changeLogLevel = (name: string, level: string) =>
+  customFetch(`/api/admin/loggers/${name}/level?newLevel=${level}`, {
+    method: 'PUT',
+    body: '{}',
   });
 
 export const getAnonymousState = (): Promise<IAnonymousState> =>

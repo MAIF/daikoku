@@ -50,7 +50,7 @@ object LdapConfig {
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400),
           serverUrls = (json \ "serverUrl").asOpt[String] match {
             case Some(url) => Seq(url)
-            case None      =>
+            case None =>
               (json \ "serverUrls")
                 .asOpt[Seq[String]]
                 .getOrElse(Seq.empty[String])
@@ -581,7 +581,7 @@ object LdapSupport {
 
         val result = firstSuccess.flatMap {
           case Some(Right(_)) => Future.successful(Right(()))
-          case _              =>
+          case _ =>
             Future
               .sequence(futures)
               .map(

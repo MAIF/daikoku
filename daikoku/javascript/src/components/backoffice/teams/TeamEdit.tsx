@@ -8,7 +8,8 @@ import { I18nContext, ModalContext, TranslateParams, useTeamBackOffice } from '.
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { isError, ITeamSimple } from '../../../types';
-import { getInitials, Spinner } from '../../utils';
+import { Can, getInitials, manage, Spinner, team } from '../../utils';
+import {UserCircle} from "lucide-react";
 
 
 type AvatarProps = {
@@ -57,11 +58,11 @@ const Avatar = ({
       <div className="d-flex flex-column flex-grow-1">
         <div className='d-flex justify-content-end'>
           <button type="button" className="btn btn-outline-info me-1" onClick={setNoLink} disabled={!rawValues.contact}>
-            <i className="fas fa-user-circle me-1" />
+            <UserCircle className="me-1" />
             <Translation i18nkey="Set no avatar">Set no avatar</Translation>
           </button>
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
-            <i className="fas fa-user-circle me-1" />
+            <UserCircle className="me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           <AssetChooserByModal
@@ -266,7 +267,9 @@ export const TeamEdit = () => {
           <div className="alert alert-success" role="alert">
             {translate('mail.sent')}
           </div>}
-        <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, currentTeam.contact)} />
+        <Can I={manage} a={team} team={currentTeam}>
+          <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, currentTeam.contact)} />
+        </Can>
       </div>
     )
   } else {

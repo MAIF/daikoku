@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Form, constraints, format, type } from '@maif/react-forms';
-import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
-import X from 'react-feather/dist/icons/x';
+import { AlertCircle, MoreHorizontal, Pen, RefreshCcw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
@@ -239,7 +238,7 @@ export function ApiTimelineIssue({
     </div>
     <div className="d-flex align-items-center pb-3 mb-3">
       <div style={styles.getStatus((issue as any).open)} className="d-flex justify-content-center align-items-center me-3">
-        <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }} />
+        <AlertCircle className="me-2" style={{ color: '#fff' }} />
         {(issue as any).open ? translate('issues.open') : translate('issues.closed')}
       </div>
       <div>
@@ -278,7 +277,7 @@ export function ApiTimelineIssue({
           <div id="tags" className='d-flex flex-column flex-wrap'>
             {tags.map((tag) => {
               const bgColor = api.issuesTags.find((t) => t.id === tag.value)?.color || '#fff';
-              return (<div className="issue__tag me-1 mt-1 d-flex justify-content-between align-items-center" style={{
+              return (<div className="badge me-1 mt-1 d-flex justify-content-between align-items-center" style={{
                 backgroundColor: bgColor,
                 color: getColorByBgColor(bgColor)
               }} key={tag.value}>
@@ -347,20 +346,16 @@ function Comment({
               {showActions ? (
                 <div className="ml-auto">
                   <button className="btn btn-xs btn-outline-primary me-1" onClick={editComment}>
-                    <i className="fas fa-pen align-self-center" />
+                    <Pen className="align-self-center" />
                   </button>
                   {i !== 0 && (
                     <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>
-                      <i className="fas fa-trash align-self-center" />
+                      <Trash2 className="align-self-center" />
                     </button>
                   )}
                 </div>
               ) : (
-                <i
-                  className="fas fa-ellipsis-h align-self-center ml-auto"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => toggleActions(true)}
-                />
+                <MoreHorizontal className="align-self-center ml-auto" style={{ cursor: 'pointer' }} onClick={() => toggleActions(true)} />
               )}
             </>
           )}
@@ -464,13 +459,13 @@ function NewComment({
                     <>
                       {open && (
                         <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
-                          <i className="fa fa-exclamation-circle me-2" />
+                          <AlertCircle className="me-2" />
                           {translate('issues.actions.close')}
                         </button>
                       )}
                       {!open && (
                         <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
-                          <i className="fa fa-exclamation-circle me-2" />
+                          <AlertCircle className="me-2" />
                           {translate('issues.actions.reopen')}
                         </button>
                       )}

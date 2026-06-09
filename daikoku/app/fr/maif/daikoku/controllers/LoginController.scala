@@ -29,7 +29,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsString, JsValue, Json}
 import play.api.mvc.*
 import play.api.routing.Router.RequestImplicits.WithHandlerDef
 
@@ -257,7 +257,7 @@ class LoginController(
       case Some(user) if user.failedLoginAttempts != 0 =>
         val delay = userService.delayForAttempt(user)
         after(delay.seconds)(BadRequest(Json.obj("error" -> true)).future)
-        
+
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -353,12 +353,14 @@ class LoginController(
                   )
                 )
                 .map {
-                  case true  => Right(Redirect(s"/2fa?token=$token"))
-                  case false => Left(AppError.InternalServerError("Failed to save user"))
+                  case true => Right(Redirect(s"/2fa?token=$token"))
+                  case false =>
+                    Left(AppError.InternalServerError("Failed to save user"))
                 }
             )
           case _ =>
-            EitherT.liftF(createSession(sessionMaxAge, cleanUser, request, tenant))
+            EitherT
+              .liftF(createSession(sessionMaxAge, cleanUser, request, tenant))
         }
       }
     }
@@ -366,9 +368,13 @@ class LoginController(
     result.foldF(
       {
         case AppError.LoginRateLimited(delay) =>
-          after(delay.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+          after(delay.seconds)(
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          )
         case AppError.Unauthorized =>
-          after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+          after(3.seconds)(
+            FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+          )
         case error =>
           after(3.seconds)(error.renderF())
       },
@@ -430,6 +436,17 @@ class LoginController(
     )
   }
 
+  /** Deletes a session and any impersonation session spawned from it, so that
+    * leaving/logging out never leaves a reusable impersonation session behind.
+    */
+  private def deleteSessionWithImpersonations(session: UserSession) =
+    for {
+      _ <- env.dataStore.userSessionRepo.deleteById(session.id)
+      _ <- env.dataStore.userSessionRepo.delete(
+        Json.obj("impersonatorSessionId" -> session.sessionId.value)
+      )
+    } yield ()
+
   private def createSession(
       sessionMaxAge: Int,
       user: User,
@@ -438,7 +455,9 @@ class LoginController(
       idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
-      .findOne(Json.obj("userEmail" -> user.email))
+      .findOne(
+        Json.obj("userEmail" -> user.email, "impersonatorId" -> JsNull)
+      )
       .map {
         case Some(session) =>
           session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
@@ -609,18 +628,35 @@ class LoginController(
                         // the increment. We handle it here so that LDAP failures are always counted.
                         val auth: EitherT[Future, AppError, User] = EitherT(
                           env.dataStore.userRepo
-                            .findOne(Json.obj("_deleted" -> false, "email" -> username.trim))
+                            .findOne(
+                              Json.obj(
+                                "_deleted" -> false,
+                                "email" -> username.trim
+                              )
+                            )
                             .flatMap {
                               case Some(u) if u.password.isEmpty =>
-                                userService.incrementAttempts(u).map { updated =>
-                                  Left(AppError.LoginRateLimited(userService.delayForAttempt(updated))): Either[AppError, User]
+                                userService.incrementAttempts(u).map {
+                                  updated =>
+                                    Left(
+                                      AppError.LoginRateLimited(
+                                        userService.delayForAttempt(updated)
+                                      )
+                                    ): Either[AppError, User]
                                 }
                               case _ =>
-                                localLoginSupport.bindUser(username, password, ctx.tenant).value
+                                localLoginSupport
+                                  .bindUser(username, password, ctx.tenant)
+                                  .value
                             }
                         )
 
-                        bindLocalUser(localConfig.sessionMaxAge, ctx.tenant, ctx.request, auth)
+                        bindLocalUser(
+                          localConfig.sessionMaxAge,
+                          ctx.tenant,
+                          ctx.request,
+                          auth
+                        )
 
                       case Right(user) =>
                         bindLocalUser(
@@ -675,7 +711,7 @@ class LoginController(
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Otoroshi provider]"
             ).logTenantAuditEvent(
@@ -690,7 +726,7 @@ class LoginController(
           }
         case Some(AuthProvider.OAuth2) =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [OAuth2 provider]"
             ).logTenantAuditEvent(
@@ -738,7 +774,7 @@ class LoginController(
           }
         case _ =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
-          env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          deleteSessionWithImpersonations(session).map { _ =>
             AuditTrailEvent(
               s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Local/Other provider]"
             ).logTenantAuditEvent(
@@ -975,7 +1011,7 @@ class LoginController(
               case Some(accountCreation)
                   if accountCreation.validUntil.isBefore(DateTime.now()) =>
                 env.dataStore.accountCreationRepo
-                  .deleteByIdLogically(accountCreation.id.value)
+                  .deleteById(accountCreation.id.value)
                   .map { _ =>
                     Redirect("/signup?error=not.valid.anymore")
                   }
@@ -1034,7 +1070,7 @@ class LoginController(
                         _ <- env.dataStore.userRepo.save(user)
                         _ <-
                           env.dataStore.accountCreationRepo
-                            .deleteByIdLogically(accountCreation.id.value)
+                            .deleteById(accountCreation.id.value)
                       } yield ()
                       userCreation.map { _ =>
                         Status(302)(

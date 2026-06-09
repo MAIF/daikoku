@@ -783,7 +783,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     }
   }
 
-  override def withTransaction[A](f: DbConn ?=> Future[A])(implicit ec: ExecutionContext): Future[A] =
+  override def withTransaction[A](f: DbConn ?=> Future[A])(implicit
+      ec: ExecutionContext
+  ): Future[A] =
     reactivePg.withTransaction(f)
 
   override def start(): Future[Unit] = {
@@ -1870,7 +1872,10 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     }
   }
 
-  override def count()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
+  override def count()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
     count(JsObject.empty)
 
   override def deleteByIdLogically(
@@ -2203,10 +2208,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     super.exists(query ++ Json.obj("_tenant" -> tenant.value))
 
-  override def count()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
+  override def count()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
     count(Json.obj("_tenant" -> tenant.value))
 
-  override def findWithProjection(query: JsObject, projection: JsObject)(implicit
+  override def findWithProjection(query: JsObject, projection: JsObject)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[JsObject]] =
@@ -2215,7 +2224,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       projection
     )
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(implicit
+  override def findOneWithProjection(query: JsObject, projection: JsObject)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsObject]] =
@@ -2407,7 +2417,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
         )
     ).map(_ => true)
-      .recover(_ => false)
+      .recover { e =>
+        logger.error(
+          s"$tableName.save(${Json.prettyPrint(query)}) failed",
+          e
+        )
+        false
+      }
   }
 
   def insertMany(values: Seq[Of], addToPayload: JsObject)(implicit
@@ -2446,7 +2462,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .map(_.size().toLong)
   }
 
-  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(implicit
+  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] = {
@@ -2486,7 +2503,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
   }
 
-  override def findWithProjection(query: JsObject, projection: JsObject)(implicit
+  override def findWithProjection(query: JsObject, projection: JsObject)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[JsObject]] = {
@@ -2524,7 +2542,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
   }
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(implicit
+  override def findOneWithProjection(query: JsObject, projection: JsObject)(
+      implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[JsObject]] = {

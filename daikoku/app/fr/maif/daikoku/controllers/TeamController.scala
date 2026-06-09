@@ -302,7 +302,8 @@ class TeamController(
                           env.dataStore.withTransaction {
                             for {
                               _ <- teamRepo.save(newTeam)
-                              _ <- emailVerificationRepo.deleteById(emailVerification.id)
+                              _ <- emailVerificationRepo
+                                .deleteById(emailVerification.id)
                             } yield ()
                           }
                         )
@@ -394,7 +395,7 @@ class TeamController(
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
-                    .deleteLogically(Json.obj("teamId" -> team.id.value))
+                    .delete(Json.obj("teamId" -> team.id.value))
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
@@ -500,7 +501,7 @@ class TeamController(
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)
-                          .deleteLogically(Json.obj("teamId" -> team.id.value))
+                          .delete(Json.obj("teamId" -> team.id.value))
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)

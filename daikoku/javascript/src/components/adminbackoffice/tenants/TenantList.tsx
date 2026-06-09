@@ -6,6 +6,7 @@ import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contex
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types';
 import { AvatarWithAction, Can, daikoku, manage, PaginatedComponent } from '../../utils';
+import {ChevronsRight, Pen, Trash2, UserCheck, Link} from "lucide-react";
 
 export const TenantList = () => {
   useDaikokuBackOffice();
@@ -63,7 +64,7 @@ export const TenantList = () => {
               e.preventDefault();
               createNewTenant();
             }}>
-              <i className="fas fa-plus-circle" />
+              <ChevronsRight />
             </a>
           </h1>
           <div className="col-5">
@@ -78,22 +79,22 @@ export const TenantList = () => {
           </>} actions={[
             {
               action: () => removeTenant(tenant._id),
-              iconClass: 'fas fa-trash delete-icon',
+              icon: <Trash2 className="delete-icon" />,
               tooltip: translate('Remove tenant'),
             },
             {
               link: `/api/tenants/${tenant._id}/_redirect?path=/settings/settings/general`,
-              iconClass: 'fas fa-pen',
+              icon: <Pen />,
               tooltip: translate('Edit tenant'),
             },
             {
               link: `/api/tenants/${tenant._id}/_redirect`,
-              iconClass: 'fas fa-link',
+              icon: <Link />,
               tooltip: translate('Go to tenant'),
             },
             {
               redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
-              iconClass: 'fas fa-user-shield',
+              icon: <UserCheck />,
               tooltip: translate('Admins'),
             },
           ]} />);

@@ -1,8 +1,5 @@
 import { useContext, useState } from "react";
-import ArrowLeft from 'react-feather/dist/icons/arrow-left';
-import ArrowRight from 'react-feather/dist/icons/arrow-right';
-import Eye from 'react-feather/dist/icons/eye';
-import EyeOff from 'react-feather/dist/icons/eye-off';
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 import { I18nContext } from "../../../contexts";
 import { IFastApiSubscription, IFastPlan } from "../../../types";

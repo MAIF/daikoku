@@ -1,0 +1,416 @@
+# Default values for the Daikoku chart.
+# Override what you need with `-f my-values.yaml` or `--set key=value`.
+
+# -- Number of Daikoku pods.
+# ⚠️ Keep this at 1 unless you give each pod a UNIQUE INSTANCE_NUMBER (Snowflake worker id).
+# Two pods sharing INSTANCE_NUMBER can mint colliding IDs. See the README to scale out.
+replicaCount: 1
+
+image:
+  repository: maif/daikoku
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Optional registry pull secrets, e.g. [{name: my-regcred}]
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Rollout strategy. maxSurge:0 ensures two INSTANCE_NUMBER=0 pods never overlap.
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Daikoku application configuration (non-secret -> rendered into a ConfigMap)
+# ---------------------------------------------------------------------------
+daikoku:
+  mode: prod
+  # Initial tenant hostname. Empty -> defaults to ingress.host (kept aligned automatically).
+  # With tenantProvider=Hostname this MUST be the hostname users hit.
+  initHost: ""
+  # External port advertised in Daikoku's absolute URLs. Empty -> derived from the ingress
+  # (443 with TLS, 80 without) or the Service port. Set only for a non-standard port.
+  exposedOn: ""
+  # Tenant resolution: Hostname (match the request Host header) | local | header.
+  tenantProvider: Hostname
+  admin:
+    name: "Daikoku admin"
+    email: "admin@example.com"
+  session:
+    # true behind TLS (default). Set false only when served over plain HTTP.
+    secure: true
+  postgres:
+    schema: public
+    poolSize: 30
+    ssl:
+      enabled: false
+      mode: verify-ca
+  # Extra raw env vars for any other DAIKOKU_* setting, e.g.:
+  #   - name: DAIKOKU_NOTIFICATIONS_PURGE_CRON
+  #     value: "true"
+  extraEnv: []
+
+  # ===========================================================================
+  # Optional seeding of the DEFAULT tenant.
+  #
+  # IMPORTANT: everything under `initTenant` is applied ONLY on the very first
+  # boot, when the database is EMPTY. Once the tenant exists the database is the
+  # source of truth and changing these values has NO effect — you then edit the
+  # tenant from the Daikoku admin UI. (Same lifecycle as DAIKOKU_INIT_DATA_FROM.)
+  #
+  # Leave a value as "" (string) or null (bool/int) to skip it. Fields marked
+  # "-> Secret" are rendered into a Kubernetes Secret; the rest into a ConfigMap.
+  # ===========================================================================
+  initTenant:
+    # --- Identity & locale -----------------------------------------------------
+    name: ""                       # tenant name. Empty -> "Daikoku Default Tenant"
+    title: ""                      # UI title shown in the portal. Empty -> name
+    defaultLanguage: ""            # one of: En | Fr | Es | De | It | Ru | Ar | ...
+                                   # (any language Daikoku ships). Empty -> "En"
+    defaultMessage: ""             # free text banner shown to users. Empty -> none
+    isPrivate: null                # true (login required to browse) | false (public).
+                                   # null -> true
+    # --- Account / creation security (all: true | false | null=unset) ----------
+    creationSecurity: null         # true  -> users can only join existing teams,
+                                   #          not create personal teams freely
+    teamCreationSecurity: null     # true  -> team creation requires admin approval
+    subscriptionSecurity: null     # true  -> only admins of a team can subscribe
+                                   #          its apikeys (not plain members)
+    aggregationApiKeysSecurity: null # true -> allow aggregating several plans on
+                                   #          one apikey
+
+    # --- Otoroshi instance attached to the tenant (EXTERNAL only) --------------
+    # Set `url` to enable. This registers an Otoroshi the tenant can sync apikeys
+    # with. There is intentionally NO bundled Otoroshi (always external).
+    otoroshi:
+      url: ""                      # e.g. https://otoroshi-api.your-domain.com
+      host: ""                     # Host header Otoroshi expects, e.g. otoroshi-api.your-domain.com
+      clientId: ""                 # Otoroshi admin-api apikey client id. Empty -> "admin-api-apikey-id"
+      clientSecret: ""             # -> Secret. Empty -> "admin-api-apikey-secret"
+
+    # --- S3 bucket for asset storage -------------------------------------------
+    # Set `bucket` to enable. For an in-cluster bucket, enable the bundled Garage
+    # (see the `garage:` block near the bottom of this file) — it auto-fills these
+    # fields and you can leave them empty here.
+    s3:
+      bucket: ""                   # bucket name (must already exist on the S3 backend)
+      endpoint: ""                 # S3 endpoint URL, e.g. https://s3.eu-west-1.amazonaws.com
+      region: ""                   # e.g. eu-west-1. Empty -> "us-east-1"
+      access: ""                   # access key id
+      secret: ""                   # -> Secret. secret access key
+      chunkSize: null              # multipart chunk size in bytes (int). null -> 8388608 (8MiB)
+      v4auth: null                 # true (AWS SigV4, default) | false (legacy v2). null -> true
+
+    # --- Mailer (EXTERNAL only; no bundled mailer) -----------------------------
+    # `type` selects the backend. Empty -> "console" (mails only logged, dev only).
+    # Allowed type values: console | mailgun | mailjet | smtpClient | sendgrid
+    # fromTitle/fromEmail apply to ALL non-console types. The remaining fields are
+    # grouped per type below — only fill the group matching your `type`.
+    mailer:
+      type: ""                     # console | mailgun | mailjet | smtpClient | sendgrid
+      fromTitle: ""                # sender display name. Empty -> "Daikoku"
+      fromEmail: ""                # sender address.      Empty -> "daikoku@foo.bar"
+      # type=mailgun:
+      domain: ""                   # mailgun sending domain
+      eu: null                     # true -> use mailgun EU region | false -> US. null -> false
+      key: ""                      # -> Secret. mailgun private api key
+      # type=mailjet:
+      apiKeyPublic: ""             # mailjet public api key
+      apiKeyPrivate: ""            # -> Secret. mailjet private api key
+      # type=smtpClient:
+      host: ""                     # SMTP server host
+      port: ""                     # SMTP port as a string, e.g. "25" | "587" | "465". Empty -> "25"
+      username: ""                 # SMTP username (optional)
+      password: ""                 # -> Secret. SMTP password (optional)
+      # type=sendgrid:
+      sendgridApiKey: ""           # -> Secret. sendgrid api key
+
+    # --- Authentication module -------------------------------------------------
+    # `provider` selects how users log in. Allowed values:
+    #   Local    -> Daikoku-managed accounts (default). No extra fields needed.
+    #   Otoroshi -> identity delegated to Otoroshi (uses the otoroshi block above)
+    #   OAuth2   -> fill the `oauth2` group below
+    #   LDAP     -> fill the `ldap` group below (or use ldap.internal further down)
+    auth:
+      provider: ""                 # Local | Otoroshi | LDAP | OAuth2. Empty -> Local
+      # Used only when provider=OAuth2:
+      oauth2:
+        clientId: ""               # OAuth2 client id
+        clientSecret: ""           # -> Secret. OAuth2 client secret
+        tokenUrl: ""               # token endpoint URL
+        authorizeUrl: ""           # authorize endpoint URL
+        userInfoUrl: ""            # userinfo endpoint URL
+        loginUrl: ""               # login (authorize) URL the user is redirected to
+        logoutUrl: ""              # logout URL (optional)
+        callbackUrl: ""            # Daikoku callback, e.g. https://daikoku.example.com/auth/oauth2/callback
+        scope: ""                  # OAuth2 scopes. Empty -> "openid profile email name"
+        nameField: ""              # userinfo claim for the display name. Empty -> "name"
+        emailField: ""             # userinfo claim for the email.        Empty -> "email"
+        pictureField: ""           # userinfo claim for the avatar.       Empty -> "picture"
+        roleClaim: ""              # claim holding roles (optional, enables role mapping)
+        adminRole: ""              # role value granting Daikoku admin (optional)
+        userRole: ""               # role value granting standard access (optional)
+      # Used only when provider=LDAP:
+      ldap:
+        serverUrls: ""             # comma separated, e.g. "ldap://ldap1:389,ldap://ldap2:389"
+                                   # (or enable the bundled OpenLDAP — see `openldap:`
+                                   #  near the bottom of this file — to auto-fill this)
+        searchBase: ""             # base DN, e.g. "dc=example,dc=com" (REQUIRED for LDAP)
+        userBase: ""               # sub-DN appended to searchBase for users, e.g. "ou=people" (optional)
+        searchFilter: ""           # user lookup filter. Empty -> "(mail=${username})"
+        adminUsername: ""          # bind DN used to search, e.g. "cn=admin,dc=example,dc=com" (optional)
+        adminPassword: ""          # -> Secret. bind password (optional)
+        nameFields: ""             # comma separated attrs for display name. Empty -> "cn"
+        emailField: ""             # email attribute. Empty -> "mail"
+        groupFilter: ""            # filter selecting member groups (optional)
+        adminGroupFilter: ""       # filter selecting Daikoku-admin groups (optional)
+        useSsl: null               # true (ldaps) | false. null -> inferred from URL scheme
+
+    # --- Audit trail destinations ----------------------------------------------
+    audit:
+      alertsEmails: ""             # comma separated recipients for audit alert mails
+      elastic:                     # ship audit events to Elasticsearch (set clusterUri to enable)
+        clusterUri: ""             # e.g. https://es.example.com:9200
+        index: ""                  # index name (optional)
+        type: ""                   # ES mapping type (optional, legacy ES)
+        user: ""                   # basic-auth user (optional)
+        password: ""               # -> Secret. basic-auth password (optional)
+
+# ---------------------------------------------------------------------------
+# Secrets. Leave a value empty to auto-generate it on first install and KEEP it
+# stable across upgrades (rotating cypherSecret would make stored data unreadable).
+# Provide `existingSecret` to bring your own (must hold all DAIKOKU_* keys below).
+# ---------------------------------------------------------------------------
+secrets:
+  existingSecret: ""
+  playCryptoSecret: ""   # PLAY_CRYPTO_SECRET  (Play session/crypto)
+  signingKey: ""         # DAIKOKU_SIGNING_KEY (JWT)
+  cypherSecret: ""       # DAIKOKU_CYPHER_SECRET (data encryption)
+  adminPassword: ""      # DAIKOKU_INIT_ADMIN_PASSWORD
+  healthAccessKey: ""    # DAIKOKU_HEALTH_ACCESS_KEY (guards /health/details)
+
+# ---------------------------------------------------------------------------
+# Embedded PostgreSQL (StatefulSet + PVC). Set enabled:false to use externalDatabase.
+# Daikoku creates its schema and tables on first boot — no migration job needed.
+# ---------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  imagePullPolicy: IfNotPresent
+  auth:
+    username: daikoku
+    database: daikoku
+    # Empty -> auto-generated and stored in the chart's Postgres Secret.
+    password: ""
+  persistence:
+    size: 10Gi
+    # Empty -> cluster default StorageClass.
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  # postgres:16-alpine runs as uid/gid 70.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 70
+    runAsGroup: 70
+    fsGroup: 70
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: false
+
+# Used only when postgresql.enabled = false.
+externalDatabase:
+  host: ""
+  port: 5432
+  database: daikoku
+  username: daikoku
+  # Secret holding the DB password (required for an external DB).
+  existingSecret: ""
+  passwordKey: postgres-password
+
+# Optional init container that blocks until Postgres accepts connections.
+waitForDatabase:
+  enabled: true
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  # cert-manager terminates TLS. Adjust the issuer or remove for a provided cert.
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: daikoku.example.com
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: true
+    secretName: daikoku-tls
+
+# ---------------------------------------------------------------------------
+# Probes. Calibrated to Daikoku's behaviour:
+#  - /api/versions/_daikoku answers without the DB  -> startup probe
+#  - /health ALWAYS returns 200 (ready|initializing) -> good liveness, poor readiness
+#  - readiness is a TCP check so traffic isn't routed to a not-yet-listening pod.
+#    For strict DB gating, swap readiness to an exec that greps `"ready"` (needs a shell).
+# ---------------------------------------------------------------------------
+probes:
+  startup:
+    httpGet:
+      path: /api/versions/_daikoku
+      port: http
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+  liveness:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# The container runs as uid 1001 / gid 0 (sbt-native-packager default).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 0
+  fsGroup: 0
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  # Hardening: set true, then add an emptyDir for any path Daikoku writes (a writable
+  # /tmp is already mounted). No PID file is written, so this is feasible.
+  readOnlyRootFilesystem: false
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable: ""
+
+podAnnotations: {}
+nodeSelector: {}
+affinity: {}
+tolerations: []
+extraVolumes: []
+extraVolumeMounts: []
+
+# ===========================================================================
+# Optional in-cluster dependencies. All disabled by default. When enabled, each
+# auto-fills the matching `daikoku.initTenant.*` fields so the default tenant is
+# seeded to use it on first boot — you don't repeat the coordinates above.
+# These are convenience/dev backends; for production prefer managed services.
+# ===========================================================================
+
+# Bundled S3 (Garage) for asset storage. When enabled, a bootstrap Job creates a
+# bucket + access key and Daikoku is seeded with the resulting S3 coordinates.
+garage:
+  enabled: false
+  image: dxflrs/garage:v1.0.1
+  imagePullPolicy: IfNotPresent
+  # Bucket created by the bootstrap Job and used by Daikoku.
+  bucket: daikoku
+  # Replication factor. Keep 1 for a single-node embedded setup.
+  replicationFactor: 1
+  persistence:
+    # data = object payloads, meta = index/db.
+    dataSize: 10Gi
+    metaSize: 1Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# Bundled OpenLDAP directory (osixia/openldap) for testing the LDAP auth module.
+# When enabled, the LDAP auth module is seeded to point at this directory. Storage
+# is ephemeral (emptyDir): the seed users are re-imported on every restart.
+openldap:
+  enabled: false
+  image: osixia/openldap:latest
+  imagePullPolicy: IfNotPresent
+  organisation: "Daikoku"
+  # Base DN is derived from the domain (example.org -> dc=example,dc=org). The
+  # admin bind DN is always cn=admin,<baseDN>.
+  domain: "example.org"
+  # Known test password for the cn=admin bind (this is a throwaway test directory;
+  # set your own — or "" to auto-generate — for anything real).
+  adminPassword: "admin"
+  # Seed users: comma-separated usernames + matching comma-separated passwords
+  # (same length). Created under ou=users,<baseDN> with mail=<user>@<domain>,
+  # so they log into Daikoku as e.g. user01@example.org / password1.
+  users: "user01,user02"
+  passwords: "password1,password2"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Bundled Mailpit: a dev SMTP sink with a web UI that captures all outgoing mail
+# (nothing is actually delivered). When enabled, the tenant mailer is seeded to
+# smtpClient pointing at it. For testing/demo only — never a real mailer.
+mailpit:
+  enabled: false
+  image: axllent/mailpit:v1.21
+  imagePullPolicy: IfNotPresent
+  smtpPort: 1025
+  uiPort: 8025
+  # Expose the web UI through the ingress at this path (set "" to disable).
+  ui:
+    ingress: false
+    host: ""                       # defaults to ingress.host
+    path: /mailpit
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

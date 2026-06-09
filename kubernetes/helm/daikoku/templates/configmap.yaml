@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "daikoku.fullname" . }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+data:
+  # --- Core ---
+  DAIKOKU_MODE: {{ .Values.daikoku.mode | quote }}
+  DAIKOKU_STORAGE: "postgres"
+  IS_CONTAINERIZED: "true"
+  # ⚠️ Must stay unique per running pod. With a single replica it is hardcoded to 0.
+  # Scaling out requires a StatefulSet injecting the ordinal here (see README).
+  INSTANCE_NUMBER: "0"
+  # --- Bootstrap / tenant ---
+  DAIKOKU_INIT_HOST: {{ include "daikoku.initHost" . | quote }}
+  DAIKOKU_INIT_ADMIN_NAME: {{ .Values.daikoku.admin.name | quote }}
+  DAIKOKU_INIT_ADMIN_EMAIL: {{ .Values.daikoku.admin.email | quote }}
+  DAIKOKU_TENANT_PROVIDER: {{ .Values.daikoku.tenantProvider | quote }}
+  # Public URL building: Daikoku always appends ":<exposedOn>" and sslEnabled picks the
+  # scheme. Both are aligned with the ingress so links/redirects hit the real endpoint.
+  DAIKOKU_EXPOSED_ON: {{ include "daikoku.exposedPort" . | quote }}
+  DAIKOKU_SSL_ENABLED: {{ include "daikoku.sslEnabled" . | quote }}
+  # true behind TLS (the default); set to false only when served over plain HTTP.
+  DAIKOKU_SESSION_SECURE: {{ .Values.daikoku.session.secure | quote }}
+  # --- Database (coordinates only; password comes from a Secret) ---
+  DAIKOKU_POSTGRES_HOST: {{ include "daikoku.database.host" . | quote }}
+  DAIKOKU_POSTGRES_PORT: {{ include "daikoku.database.port" . | quote }}
+  DAIKOKU_POSTGRES_DATABASE: {{ include "daikoku.database.name" . | quote }}
+  DAIKOKU_POSTGRES_USERNAME: {{ include "daikoku.database.user" . | quote }}
+  DAIKOKU_POSTGRES_SCHEMA: {{ .Values.daikoku.postgres.schema | quote }}
+  DAIKOKU_POSTGRES_POOLSIZE: {{ .Values.daikoku.postgres.poolSize | quote }}
+  {{- if .Values.daikoku.postgres.ssl.enabled }}
+  DAIKOKU_POSTGRES_SSL_ENABLED: "true"
+  DAIKOKU_POSTGRES_SSL_MODE: {{ .Values.daikoku.postgres.ssl.mode | quote }}
+  {{- end }}
+  # --- Default-tenant seeding (first boot only; non-secret values) ---
+  {{- include "daikoku.initTenant.config" . | nindent 2 }}

@@ -3,10 +3,11 @@ import {useQuery, useQueryClient} from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import {nanoid} from 'nanoid';
-import {useContext, useEffect, useMemo, useState} from 'react';
-import {Link, useNavigate, useSearchParams} from 'react-router-dom';
-import Select, {components, OptionProps} from 'react-select';
+import { nanoid } from 'nanoid';
+import { useContext, useEffect, useState, useMemo } from 'react';
+import { Edit2, Plus, Settings, Trash2 } from 'lucide-react';
+import { Link,  useNavigate, useSearchParams } from 'react-router-dom';
+import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import {toast} from 'sonner';
 
@@ -57,6 +58,7 @@ import {MoreVertical, Plus} from "react-feather";
 import {DynamicTable, FetchData, FetchResult} from "../../inputs";
 
 type Option = {
+  type: 'group' | 'route';
   label: string;
   value: string;
   enabled: boolean;
@@ -85,8 +87,8 @@ const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraPro
     <div ref={innerRef} {...innerProps}
          className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
       <div className="col-1">
-        {!data.enabled && (
-          <span className="badge badge-custom-danger">
+        {data.type !== 'group' && !data.enabled && (
+          <span className="badge --danger">
             {translate("Disabled")}
           </span>
         )}
@@ -285,7 +287,7 @@ export const OtoroshiEntitiesSelector = ({
           //todo: chelou, certaine route sont disable on sait pas pourquoi ?
           const enabled = [...groups, ...routes, ...services].find(i => i.value === item)?.enabled
           return enabled
-        }}
+        }} //@ts-ignore
         options={groupedOptions}
         value={value}
         onChange={onValueChange}
@@ -408,7 +410,7 @@ const CustomMetadataInput = (props: {
             className="btn btn-outline-info"
             onClick={(e) => addFirst(e)}
           >
-            <i className="fas fa-plus"/>{' '}
+            <Plus />{' '}
           </button>
         </div>
       )}
@@ -443,7 +445,7 @@ const CustomMetadataInput = (props: {
               className="input-group-text btn btn-outline-danger"
               onClick={(e) => remove(e, key)}
             >
-              <i className="fas fa-trash"/>
+              <Trash2 />
             </button>
             {idx === (props.value?.length || 0) - 1 && (
               <button
@@ -451,7 +453,7 @@ const CustomMetadataInput = (props: {
                 className="input-group-text btn btn-outline-info"
                 onClick={addNext}
               >
-                <i className="fas fa-plus"/>{' '}
+                <Plus />{' '}
               </button>
             )}
           </div>
@@ -1227,7 +1229,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <TeamSelector
           teams={authorizedTeams
             .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-            .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+            .filter((team) => plan.visibility === 'Public' ||
+              plan.authorizedTeams.includes(team._id) ||
+              team._id === props.ownerTeam._id
+            )
             .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
           pendingTeams={props.inProgressDemands.map((s) => s.team)}
           acceptedTeams={props.subscriptions
@@ -1718,8 +1723,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <div className="p-2">
               <Can I={manage} a={API} team={props.ownerTeam}>
                 <div>
-                  <i
-                    className="fas fa-gear cursor-pointer dropdown-menu-button"
+                  <Settings
+                    className="cursor-pointer dropdown-menu-button"
                     style={{fontSize: '20px', fill: 'tomato'}}
                     data-bs-toggle="dropdown"
                     aria-expanded="false"

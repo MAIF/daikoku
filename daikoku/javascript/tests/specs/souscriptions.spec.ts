@@ -1,7 +1,9 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
-import { JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { generateApi, generatePlan, saveApi, savePlan } from './apis';
+import { JIM, MICHAEL, IUser, DWIGHT } from './users';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
+
 
 test.beforeEach(async () => {
   await Promise.all([
@@ -41,7 +43,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+
+  await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -49,12 +52,12 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
 
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByLabel('Accepter').click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();;
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -101,20 +104,20 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.getByRole('button', { name: 'Envoyer' }).click(); //todo: ??? region ???
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByRole('button', { name: 'Rejeter' }).click();
   // await page.getByRole('dialog').locator('#message').click();
   await page.getByRole('dialog').locator('#message').fill('désolé');
   await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -134,8 +137,9 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await expect(page.locator('h1')).toContainText('API papier');
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeHidden();
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Votre demande de souscription (prod) a été refusée.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+
+  await expect(page.getByRole('article')).toContainText('Votre demande de souscription (prod) a été refusée.');
   await page.getByRole('article', { name: 'Souscription refusée' })
     .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
@@ -208,13 +212,13 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
 
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
   await page.getByRole('dialog').getByRole('button', { name: 'Accepter' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByText('1 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -323,13 +327,13 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByLabel('Rejeter').click();
   await page.locator('#message').fill('désolé');
   await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();
   await logout(page);
 
   await loginAs(JIM, page);
@@ -346,8 +350,8 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeHidden();
 
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Votre demande de souscription (prod) a été refusée.');
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Votre demande de souscription (prod) a été refusée.');
   await page.getByRole('article', { name: 'Souscription refusée' })
     .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
@@ -839,11 +843,13 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec extraction de
     expect.arrayContaining([otoroshiDevCommandRouteId])
   );
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByText('1 notification')).toBeVisible();
+
   await expect(page.getByRole('article')).toContainText(`Votre clé d'API a été supprimée`);
   await page.getByRole('article', { name: 'Suppression de clé d\'API' })
     .getByRole('button', { name: 'marquer comme lu' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+  await expect(page.getByText('0 notification')).toBeVisible();
+
 
 })
 
@@ -869,3 +875,144 @@ test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre 
   await page.getByRole('row', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeVisible();
 })
+
+test('[#1096] - visibilité du bouton de souscription selon la visibilité API/plan', async ({ page }) => {
+  // JIM est membre de Vendeurs (équipe autorisée) mais pas de "API Division" (équipe non autorisée).
+  // On construit 3 APIs (en mode environment, les plans s'appellent dev/preprod/prod) pour couvrir
+  // toute la matrice : visibilité API x visibilité plan x autorisation de l'équipe, en un seul test.
+  const publicApiPlans = [
+    generatePlan({ customName: 'dev', visibility: 'Public' }),                                      // api pub + plan pub
+    generatePlan({ customName: 'preprod', visibility: 'Private', authorizedTeams: [vendeurs] }),    // cas 1 : pub + privé + autorisé
+    generatePlan({ customName: 'prod', visibility: 'Private', authorizedTeams: [apiDivision] }),    // cas 2 : pub + privé + non autorisé
+  ];
+  const privateAuthorizedPlans = [
+    generatePlan({ customName: 'dev', visibility: 'Public' }),                                      // cas 3 : privé + plan pub + autorisé
+    generatePlan({ customName: 'prod', visibility: 'Private', authorizedTeams: [vendeurs] }),       // cas 5 : privé + privé + autorisé
+  ];
+  const privateForbiddenPlans = [
+    generatePlan({ customName: 'dev', visibility: 'Public' }),                                      // cas 4 & 6 : API privée non autorisée
+  ];
+  // API possédée par Vendeurs avec un plan ultra privé qui n'autorise QUE API Division :
+  // JIM (membre de Vendeurs = proprio, non super-admin) ne le voit que via l'échappatoire ownerTeam.
+  const ownerApiPlans = [
+    generatePlan({ customName: 'prod', visibility: 'Private', authorizedTeams: [apiDivision] }),    // cas proprio : ultra privé
+  ];
+
+  await Promise.all(
+    [...publicApiPlans, ...privateAuthorizedPlans, ...privateForbiddenPlans, ...ownerApiPlans].map(savePlan)
+  );
+
+  const apis = [
+    generateApi({
+      name: 'API test publique', _humanReadableId: 'api-test-publique',
+      visibility: 'Public', possibleUsagePlans: publicApiPlans.map((p) => p._id),
+    }),
+    generateApi({
+      name: 'API test privée autorisée', _humanReadableId: 'api-test-privee-autorisee',
+      visibility: 'Private', authorizedTeams: [vendeurs], possibleUsagePlans: privateAuthorizedPlans.map((p) => p._id),
+    }),
+    generateApi({
+      name: 'API test privée interdite', _humanReadableId: 'api-test-privee-interdite',
+      visibility: 'Private', authorizedTeams: [apiDivision], possibleUsagePlans: privateForbiddenPlans.map((p) => p._id),
+    }),
+    generateApi({
+      name: 'API test proprio', _humanReadableId: 'api-test-proprio',
+      team: vendeurs, visibility: 'Public', possibleUsagePlans: ownerApiPlans.map((p) => p._id),
+    }),
+  ];
+  await Promise.all(apis.map((a) => saveApi(a as any)));
+
+  // process automatique (subscriptionProcess vide) => le bouton porte ce libellé
+  const getKey = 'Obtenir une clé d\'API';
+
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+
+  // cas 4 & 6 : une API privée dont aucune équipe de JIM n'est autorisée n'apparaît pas du tout
+  await expect(page.getByRole('link', { name: 'API test publique' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API test privée autorisée' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API test privée interdite' })).toBeHidden();
+
+  // === API publique ===
+  await page.getByRole('link', { name: 'API test publique' }).click();
+  await page.getByText('Environnements').click();
+  // api publique + plan public => bouton visible
+  await expect(page.locator('[data-usage-plan="dev"]').getByRole('button', { name: getKey })).toBeVisible();
+  // cas 1 : api publique + plan privé + équipe autorisée => bouton visible
+  await expect(page.locator('[data-usage-plan="preprod"]').getByRole('button', { name: getKey })).toBeVisible();
+  // cas 2 : api publique + plan privé + équipe non autorisée => la carte du plan n'est pas affichée
+  await expect(page.locator('[data-usage-plan="prod"]')).toBeHidden();
+
+  // === API privée autorisée ===
+  await page.goto(ACCUEIL);
+  await page.getByRole('link', { name: 'API test privée autorisée' }).click();
+  await page.getByText('Environnements').click();
+  // cas 3 : api privée + plan public + équipe autorisée => bouton visible
+  await expect(page.locator('[data-usage-plan="dev"]').getByRole('button', { name: getKey })).toBeVisible();
+  // cas 5 : api privée + plan privé + équipe autorisée => bouton visible
+  await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
+
+  // === équipe propriétaire : accède à TOUS les plans, même ultra privés ===
+  // "API test proprio" est possédée par Vendeurs. Son plan "prod" est privé et n'autorise
+  // QUE API Division (ni Vendeurs ni Logistique). JIM est admin de Vendeurs mais n'est PAS
+  // super-admin Daikoku : s'il voit ce plan, c'est uniquement via l'échappatoire ownerTeam.
+  await page.goto(ACCUEIL);
+  await page.getByRole('link', { name: 'API test proprio' }).click();
+  await page.getByText('Environnements').click();
+  await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
+})
+test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async({page, context}) => {
+
+  async function checkBurgerButtonVisibility(visible: Boolean) {
+    const keyUrl = `${HOME}vendeurs/settings/apikeys/api-commande/1.0.0`
+    const burgerLocator = page.locator('.api-subscription').first().locator('#dropdownMenuButton')
+    await page.goto(keyUrl)
+
+    if(visible) {
+      await expect(burgerLocator).toBeVisible()
+    } else {
+      // Ensure that api key card is displayed before asserting on burger button absence
+      await expect(page.getByRole("button", {name: "Copier le clientId et le clientSecret"})).toBeVisible()
+      await expect(burgerLocator).not.toBeVisible()
+    }
+  }
+
+  async function updateDwightRightsOnVendeurTeam(right: "Editor" | "Admin") {
+    const dwightUserLocator = page.locator(".container", { hasText: DWIGHT.name })
+    await page.goto(`${HOME}vendeurs/settings/members`)
+    await dwightUserLocator.locator(".overlay").hover()
+    await dwightUserLocator.locator(".fa-user-cog").click();
+    if(right === "Editor") {
+      await dwightUserLocator.locator(".fa-pencil-alt").click();
+      await expect(page.getByText("Dwight Schrute est maintenant ApiEditor")).toBeVisible()
+    } else {
+      await dwightUserLocator.locator(".fa-shield-alt").click();
+      await expect(page.getByText("Dwight Schrute est maintenant Administrator")).toBeVisible()
+    }
+  }
+
+
+  await page.goto(ACCUEIL);
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(false);
+
+  await logout(page)
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await checkBurgerButtonVisibility(true);
+  await updateDwightRightsOnVendeurTeam("Editor")
+
+  await logout(page)
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(false);
+
+  await logout(page)
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await updateDwightRightsOnVendeurTeam("Admin")
+
+  await logout(page)
+  await loginAs(DWIGHT, page);
+  await checkBurgerButtonVisibility(true);
+})
+

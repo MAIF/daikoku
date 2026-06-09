@@ -6391,20 +6391,19 @@ class AdminApiControllerSpec
         (resp.json \ "done").as[Boolean] mustBe true
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-          operationsPending().nonEmpty
+          // test if subscriptions are physically deleted
+          val _maybeSubscription = Await.result(
+            daikokuComponents.env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findById(personalSubscription.id),
+            5.seconds
+          )
+          _maybeSubscription.isEmpty
         }
+
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
         }
-
-        val _maybeSubscription = Await.result(
-          daikokuComponents.env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findById(personalSubscription.id),
-          5.seconds
-        )
-        _maybeSubscription.isDefined mustBe true
-        _maybeSubscription.forall(_.deleted) mustBe true
 
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo
@@ -6569,8 +6568,8 @@ class AdminApiControllerSpec
             .findById(personalSubscription.id),
           5.seconds
         )
-        _maybeSubscription.isDefined mustBe true
-        _maybeSubscription.forall(_.deleted) mustBe true
+        //subscription is now fully deleted
+        _maybeSubscription mustBe empty
 
         val notifInvitation = Await.result(
           daikokuComponents.env.dataStore.notificationRepo
@@ -6723,19 +6722,18 @@ class AdminApiControllerSpec
         (resp.json \ "done").as[Boolean] mustBe true
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-          operationsPending().nonEmpty
+          val verifApi = httpJsonCallWithoutSessionBlocking(
+            path = s"/admin-api/apis/${defaultApi.api.id.value}",
+            headers = getAdminApiHeader(adminApiSubscription)
+          )(using tenant)
+
+          verifApi.status mustBe 200
+          (verifApi.json \ "_deleted").as[Boolean]
         }
+
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
         }
-
-        val verifApi = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
-        )(using tenant)
-
-        verifApi.status mustBe 200
-        (verifApi.json \ "_deleted").as[Boolean] mustBe true
 
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -6743,7 +6741,8 @@ class AdminApiControllerSpec
             .findById(personalSubscription.id),
           5.seconds
         )
-        _maybeSubscription.isDefined mustBe true
+        //subscription is now fully deleted
+        _maybeSubscription mustBe empty
         _maybeSubscription.forall(_.deleted) mustBe true
 
         val _maybePlans = Await.result(
@@ -6909,20 +6908,19 @@ class AdminApiControllerSpec
         (verifPlan.json \ "_deleted").as[Boolean] mustBe true
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-          operationsPending().nonEmpty
+          // test if subscriptions are physically deleted
+          val _maybeSubscription = Await.result(
+            daikokuComponents.env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findById(personalSubscription.id),
+            5.seconds
+          )
+          _maybeSubscription.isEmpty
         }
+
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
         }
-
-        val _maybeSubscription = Await.result(
-          daikokuComponents.env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findById(personalSubscription.id),
-          5.seconds
-        )
-        _maybeSubscription.isDefined mustBe true
-        _maybeSubscription.forall(_.deleted) mustBe true
 
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo

@@ -9,6 +9,7 @@ import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { getInitials, Spinner, userHasAvatar } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
+import {Copy, Loader, Save, Trash2, UserCircle} from "lucide-react";
 
 type TwoFactorAuthenticationProps = {
   user: IUser
@@ -95,7 +96,7 @@ const TwoFactorAuthentication = ({
                 toast.success(translate('Copied'));
               }}
             >
-              <i className="fas fa-copy" />
+              <Copy />
             </button>
           </div>
           <button
@@ -216,7 +217,7 @@ const TwoFactorAuthentication = ({
                 type="button"
                 onClick={copyToClipboard}
               >
-                <i className="fas fa-copy" />
+                <Copy />
               </button>
             </div>
           </div>
@@ -308,7 +309,7 @@ const Avatar = ({
       <div>
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
-            <i className="fas fa-user-circle me-1" />
+            <UserCircle className="me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
@@ -318,7 +319,7 @@ const Avatar = ({
               onClick={setPictureFromProvider}
               disabled={rawValues.pictureFromProvider}
             >
-              <i className="fas fa-user-circle me-1" />
+              <UserCircle className="me-1" />
               <Translation i18nkey="Set avatar from auth. provider">
                 Set avatar from auth. Provider
               </Translation>
@@ -374,7 +375,7 @@ const PictureUpload = (props: PictureUploadProps) => {
         onClick={trigger}
         style={{ width: 100, height: 100, borderRadius: '50%' }}
       >
-        {uploading && <i className="fas fa-spinner" />}
+        {uploading && <Loader />}
         {!uploading && (
           <div className="text-white">
             <Translation i18nkey="Change your picture">Change your picture</Translation>
@@ -555,7 +556,7 @@ export const MyProfile = () => {
                   style={{ marginLeft: 5 }}
                   onClick={removeUser}
                 >
-                  <i className="fas fa-trash me-1" />
+                  <Trash2 className="me-1" />
                   <Translation i18nkey="Delete my profile">Delete my profile</Translation>
                 </button>
                 <button
@@ -565,7 +566,7 @@ export const MyProfile = () => {
                   onClick={valid}
                 >
                   <span>
-                    <i className="fas fa-save me-1" />
+                    <Save className="me-1" />
                     <Translation i18nkey="Save">Save</Translation>
                   </span>
                 </button>

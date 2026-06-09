@@ -1,0 +1,19 @@
+apiVersion: v2
+name: daikoku
+description: Daikoku — open-source API management / developer portal (PostgreSQL embedded, TLS via Ingress + cert-manager)
+type: application
+# Chart version — bump on every change to the chart itself.
+version: 0.1.0
+# Daikoku version deployed by default (image tag fallback). Tracks the latest Daikoku release.
+appVersion: "18.10.0"
+home: https://maif.github.io/daikoku/
+sources:
+  - https://github.com/MAIF/daikoku
+maintainers:
+  - name: MAIF OSS Team
+    email: oss@maif.fr
+keywords:
+  - daikoku
+  - api-management
+  - developer-portal
+  - otoroshi

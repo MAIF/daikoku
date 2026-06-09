@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
+import { ChevronLeft, ChevronRight, Ellipsis, RefreshCcw, Search } from 'lucide-react';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -27,6 +28,10 @@ declare module '@tanstack/react-table' {
 
 type DynamicTableColumnMeta = {
   className?: string;
+  /** Already-translated label used to draw the column header. */
+  title?: string;
+  /** Relative width (in `fr` units) of the column in the CSS grid. Default: 1. */
+  size?: number;
 };
 
 type FilterOption = {
@@ -151,7 +156,7 @@ const CustomOption = (
     <components.Option {...props}>
       <div className="d-flex justify-content-between align-items-center gap-2 w-100">
         <span>{data.label}</span>
-        {!!total && <span className="badge badge-custom-warning">{total}</span>}
+        {!!total && <span className="number-indicator">{total}</span>}
       </div>
     </components.Option>
   );
@@ -161,7 +166,7 @@ const menuStyle = {
   MenuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
   menu: (base: object) => ({ ...base, width: 'max-content', minWidth: '100%', zIndex: 100 }),
   menuList: (base: object) => ({ ...base, whiteSpace: 'nowrap' as const }),
-  control: (base: object) => ({ ...base, width: '220px', flexWrap: 'nowrap' as const }),
+  control: (base: object) => ({ ...base, width: '275px', flexWrap: 'nowrap' as const }),
   valueContainer: (base: object) => ({ ...base, flexWrap: 'nowrap' as const, overflow: 'hidden' }),
 };
 
@@ -184,13 +189,11 @@ export type DynamicTableProps<T> = {
   toolbar?: ReactNode;
   getRowId?: (row: T) => string;
   getRowAriaLabel?: (row: T) => string;
-  columnHeaders?: ReactNode;
-  /** CSS class added to the `<div>` wrapping the rows. Default: 'notification-table table-rows' */
+  /** Extra CSS class added to the `<div>` wrapping the rows (`.dynamic-table__data` is always applied). */
   dataClassName?: string;
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
-  title?: ReactNode;
 };
 
 export function DynamicTable<T>({
@@ -202,16 +205,14 @@ export function DynamicTable<T>({
   defaultSorting = [],
   enableRowSelection,
   bulkActions = [],
-  pageSize = 25,
   persistFiltersInUrl = true,
-  toolbar,
+  pageSize: initialPageSize = 25,
+  toolbar = null,
   getRowId,
   getRowAriaLabel,
-  columnHeaders,
-  dataClassName = 'notification-table table-rows',
+  dataClassName,
   countLabelKey,
   tableClassName,
-  title,
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -226,6 +227,8 @@ export function DynamicTable<T>({
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters);
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const pageSizeRef = useRef<HTMLInputElement>(null);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const [page, setPage] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
@@ -241,10 +244,23 @@ export function DynamicTable<T>({
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
+    // A filter change resets the result set, so go back to the first page to
+    // avoid landing on a now out-of-range (empty) page.
+    setPage(0);
     if (persistFiltersInUrl) {
       window.history.replaceState(null, '', `?filter=${JSON.stringify(columnFilters)}`);
     }
   }, [columnFilters, persistFiltersInUrl]);
+
+  const commitPageSize = () => {
+    const parsed = Math.trunc(Number(pageSizeRef.current?.value));
+    const next = !parsed || Number.isNaN(parsed) ? pageSize : Math.max(parsed, 1);
+    if (pageSizeRef.current) pageSizeRef.current.value = String(next);
+    if (next !== pageSize) {
+      setPageSize(next);
+      setPage(0);
+    }
+  };
 
   const dataQuery = useQuery({
     queryKey: [...queryKey, pageSize, columnFilters, sorting, page],
@@ -289,13 +305,6 @@ export function DynamicTable<T>({
     setColumnFilters([...columnFilters.filter(f => f.id !== id), { id, value: data.map(d => d.value) }]);
   };
 
-  const clearFilter = (id: string, value: string) => {
-    const existing = (columnFilters.find(c => c.id === id)?.value as string[]) ?? [];
-    setColumnFilters([
-      ...columnFilters.filter(c => c.id !== id),
-      { id, value: existing.filter(v => v !== value) },
-    ]);
-  };
 
   const getMultiselectValue = (id: string, options: FilterOption[]) => {
     const selected = (columnFilters.find(f => f.id === id)?.value as string[]) ?? [];
@@ -381,8 +390,8 @@ export function DynamicTable<T>({
                     debouncedTextChange[f.id]?.(e);
                   }}
                 />
-                <i
-                  className="fas fa-search position-absolute"
+                <Search
+                  className="position-absolute"
                   style={{ right: '12px', top: '50%', transform: 'translateY(-50%)' }}
                 />
               </div>
@@ -392,11 +401,10 @@ export function DynamicTable<T>({
             const boolVal = !!columnFilters.find(cf => cf.id === f.id)?.value;
             if (f.style === 'checkbox') {
               return (
-                <div key={f.id} className="form-check form-switch">
+                <div key={f.id} className="form-check">
                   <input
                     id={`filter-${f.id}`}
                     type="checkbox"
-                    role="switch"
                     className="form-check-input"
                     checked={boolVal}
                     onChange={e =>
@@ -446,7 +454,7 @@ export function DynamicTable<T>({
         })}
         {!!columnFilters.length && (
           <button
-            className="btn btn-outline-secondary"
+            className="btn --secondary"
             onClick={() => {
               setColumnFilters(defaultFilters);
               const textDefaults: Record<string, string> = {};
@@ -456,7 +464,7 @@ export function DynamicTable<T>({
               setTextInputVals(textDefaults);
             }}
           >
-            <i className="fas fa-rotate me-2" />
+            <RefreshCcw />
             {translate('table.filters.clear.label')}
           </button>
         )}
@@ -464,12 +472,25 @@ export function DynamicTable<T>({
     );
   };
 
+  // When the table has a leading selection column, its header slot is the
+  // "select all" checkbox rendered in renderBulkRow, so we skip it here.
+  const renderColumnHeaders = (skipFirst = false) =>
+    table
+      .getVisibleLeafColumns()
+      .slice(skipFirst ? 1 : 0)
+      .map(column => (
+        <div key={column.id} className={column.columnDef.meta?.className}>
+          {column.columnDef.meta?.title}
+        </div>
+      ));
+
   const renderBulkRow = () => {
     if (!hasBulkActions) return null;
     return (
-      <div className="select-all-row table-row">
+      <div className={classNames('select-all-row table-row table-header', { '--selecting': someSelected })}>
         <label className="notification-table-header">
           <input
+            aria-label={translate('SelectAll')}
             type="checkbox"
             className="form-check-input"
             checked={table.getIsAllPageRowsSelected()}
@@ -515,17 +536,28 @@ export function DynamicTable<T>({
               })}
             </button>
           )}
-        {!someSelected && columnHeaders}
+        {!someSelected && renderColumnHeaders(true)}
       </div>
     );
   };
 
+  const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
+
+  // Data-driven column widths: each column's meta.size (fr weight, default 1)
+  // builds the grid track list, shared by the header row and every data row.
+  // `minmax(0, …)` keeps every row's tracks identical: without it a flexible
+  // `fr` track grows to its content's min-content width (worsened by the
+  // `white-space: nowrap` on rows), so a row with long content gets misaligned.
+  const gridTemplateColumns = table
+    .getVisibleLeafColumns()
+    .map(c => `minmax(0, ${c.columnDef.meta?.size ?? 1}fr)`)
+    .join(' ');
+
   return (
-    <div className={classNames('flex-grow-1', tableClassName)}>
+    <div className={classNames('flex-grow-1 dynamic-table', tableClassName)}>
       <div className="table-header">
-        {(title || toolbar) && (
-          <div className="d-flex flex-row justify-content-between align-items-center">
-            {title && <div className="d-flex align-items-center gap-3">{title}</div>}
+        {(toolbar) && (
+          <div className="d-flex flex-row justify-content-end align-items-center">
             {toolbar && <div>{toolbar}</div>}
           </div>
         )}
@@ -533,9 +565,10 @@ export function DynamicTable<T>({
         {dataQuery.data && countLabelKey && (
           <div className="mt-2">
             <span className="text-muted small">
+              <span className="fw-bold">{totalFiltered}</span>
               {totalFiltered < total
-                ? `${totalFiltered} ${translate({ key: countLabelKey, plural: totalFiltered > 1 })} (sur ${total})`
-                : `${totalFiltered} ${translate({ key: countLabelKey, plural: totalFiltered > 1 })}`}
+                ? ` ${translate({ key: countLabelKey, plural: totalFiltered > 1 })} (sur ${total})`
+                : ` ${translate({ key: countLabelKey, plural: totalFiltered > 1 })}`}
             </span>
           </div>
         )}
@@ -545,18 +578,21 @@ export function DynamicTable<T>({
 
       {dataQuery.data && (
         <>
-          <div className={dataClassName}>
+          <div
+            className={classNames('dynamic-table__data', dataClassName)}
+            style={{ '--dt-cols': gridTemplateColumns } as React.CSSProperties}
+          >
             {hasBulkActions
               ? renderBulkRow()
-              : columnHeaders && (
+              : (
                 <div className="select-all-row table-row table-header">
-                  {columnHeaders}
+                  {renderColumnHeaders()}
                 </div>
               )
             }
             <ul className="table-rows">
               {table.getRowModel().rows.map(row => (
-                <li key={row.id} tabIndex={-1}>
+                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)}>
                   <article className="table-row" aria-label={getRowAriaLabel?.(row.original)}>
                     {row.getVisibleCells().map(cell => (
                       <div key={cell.id} className={cell.column.columnDef.meta?.className}>
@@ -569,21 +605,46 @@ export function DynamicTable<T>({
             </ul>
           </div>
 
-          <div className="d-flex justify-content-center mt-3">
-            <Pagination
-              previousLabel={translate('Previous')}
-              nextLabel={translate('Next')}
-              breakLabel="..."
-              breakClassName="break"
-              pageCount={Math.ceil(total / pageSize)}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={data => setPage(data.selected)}
-              containerClassName="pagination"
-              pageClassName="page-selector"
-              forcePage={page}
-              activeClassName="active"
-            />
+          <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
+              <Pagination
+                containerClassName="pagination pagination--ds"
+                previousLabel={<ChevronLeft />}
+                nextLabel={<ChevronRight />}
+                breakLabel={<Ellipsis />}
+                breakClassName="break"
+                breakLinkClassName="btn --ghost"
+                pageCount={pageCount}
+                forcePage={page}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={3}
+                onPageChange={({ selected }) => setPage(selected)}
+                pageClassName="page-selector"
+                pageLinkClassName="btn --ghost"
+                previousLinkClassName="btn --tertiary --icon"
+                nextLinkClassName="btn --tertiary --icon"
+                disabledLinkClassName="--disabled"
+                activeClassName="active"
+              />
+            </div>
+            <div className="dynamic-table__page-size position-absolute end-0 d-flex align-items-center">
+              <input
+                ref={pageSizeRef}
+                type="text"
+                inputMode="numeric"
+                className="form-control"
+                style={{ width: 64 }}
+                defaultValue={pageSize}
+                onChange={e => { e.target.value = e.target.value.replace(/\D/g, ''); }}
+                onBlur={commitPageSize}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    commitPageSize();
+                    e.currentTarget.blur();
+                  }
+                }}
+              />
+            </div>
           </div>
         </>
       )}

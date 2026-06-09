@@ -1,0 +1,42 @@
+{{- $fullName := include "daikoku.fullname" . -}}
+Daikoku {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}". 🎉
+
+1. Wait for the rollout to finish:
+
+   kubectl --namespace {{ .Release.Namespace }} rollout status deployment/{{ $fullName }}
+
+2. Reach Daikoku:
+{{- if .Values.ingress.enabled }}
+
+   {{ if .Values.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}
+
+   (point DNS for {{ .Values.ingress.host }} at your ingress controller)
+{{- else }}
+
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ $fullName }} 8080:{{ .Values.service.port }}
+   # then open http://127.0.0.1:8080
+{{- end }}
+
+3. Sign in as the initial admin:
+
+   email:    {{ .Values.daikoku.admin.email }}
+{{- if .Values.secrets.existingSecret }}
+   password: in your secret "{{ .Values.secrets.existingSecret }}" (key DAIKOKU_INIT_ADMIN_PASSWORD)
+{{- else }}
+   password: kubectl --namespace {{ .Release.Namespace }} get secret {{ include "daikoku.secretName" . }} -o jsonpath="{.data.DAIKOKU_INIT_ADMIN_PASSWORD}" | base64 -d ; echo
+{{- end }}
+
+4. Check health once the DB is initialized (creates the schema on first boot):
+
+   kubectl --namespace {{ .Release.Namespace }} exec deploy/{{ $fullName }} -- \
+     sh -c 'wget -qO- 127.0.0.1:8080/health' 2>/dev/null || true
+{{- if and .Values.ingress.enabled (ne (include "daikoku.initHost" .) .Values.ingress.host) }}
+
+⚠️  daikoku.initHost ("{{ include "daikoku.initHost" . }}") differs from ingress.host ("{{ .Values.ingress.host }}").
+    With tenantProvider=Hostname, tenant resolution and login will break — use the same hostname.
+{{- end }}
+{{- if not .Values.postgresql.enabled }}
+
+ℹ️  Using an external database at {{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}.
+    Ensure the database "{{ .Values.externalDatabase.database }}" exists and the user "{{ .Values.externalDatabase.username }}" can CREATE in the schema.
+{{- end }}

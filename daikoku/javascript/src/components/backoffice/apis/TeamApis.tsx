@@ -10,6 +10,7 @@ import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
+import { Share, Trash2 } from "lucide-react";
 
 export const TeamApis = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice()
@@ -36,10 +37,13 @@ export const TeamApis = () => {
         const api = info.row.original;
         return (
           <div className="d-flex flex-row justify-content-between">
-            <span>{info.getValue()}</span>
+            <div className="d-flex gap-2 align-items-center">
+              <span>{info.getValue()}</span>
+              {api.apis && <div className="tag --primary --ghost">{translate('apis.list.apigroup.badge.label')}</div>}
+            </div>
             <div className='d-flex gap-1'>
-              {api.apis && <div className="badge badge-custom">{translate('apis.list.apigroup.badge.label')}</div>}
-              {api.isDefault && <div className="badge badge-custom">{translate('apis.list.currentVersion.badge.label')}</div>}
+
+              {api.isDefault && <div className="badge --primary">{translate('apis.list.currentVersion.badge.label')}</div>}
             </div>
           </div>
         );
@@ -52,6 +56,39 @@ export const TeamApis = () => {
     columnHelper.accessor('state', {
       header: translate('State'),
       meta: { style: { textAlign: 'center', width: '60px' } },
+      cell: (info) => {
+        const api = info.row.original
+        const apiState = api.state
+        return (
+          <div className="d-flex gap-1 status">
+            {(apiState === 'created') && (
+              <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span>{translate('api.created')}</span>
+              </span>
+            )}
+            {(apiState === 'published') && (
+              <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span>{translate('api.published')}</span>
+              </span>
+            )}
+            {apiState === 'deprecated' && (
+              <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span>{translate('api.deprecated')}</span>
+              </span>
+            )}
+            {(apiState === 'blocked') && (
+              <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span>{translate('api.blocked')}</span>
+              </span>
+            )}
+            {!apiState && (
+              <span className="badge --info --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                <span>{'Stateless'}</span>
+              </span>
+            )}
+          </div>
+        )
+      },
     }),
     columnHelper.display({
       header: translate('Actions'),
@@ -71,7 +108,7 @@ export const TeamApis = () => {
               className="btn btn-sm btn-outline-info me-1"
               title="View this Api"
             >
-              <i className="fas fa-share-from-square" />
+              <Share />
             </Link>
             <Can I={manage} a={API} team={currentTeam}>
               {api.visibility !== 'AdminOnly' && (
@@ -82,7 +119,7 @@ export const TeamApis = () => {
                   title={translate("Delete this Api")}
                   onClick={() => getVersionsAndDeleteApi(api)}
                 >
-                  <i className="fas fa-trash" />
+                  <Trash2 />
                 </button>
               )}
             </Can>

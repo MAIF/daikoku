@@ -247,7 +247,7 @@ object evolution_155 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-given ExecutionContext = ec
+      given ExecutionContext = ec
 
       logger.info(
         s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused"
@@ -1938,6 +1938,73 @@ object evolution_1892 extends EvolutionScript {
   }
 }
 
+object evolution_18110 extends EvolutionScript {
+  override def version: String = "18.11.0"
+
+  // All tables created with `allFields = true` carry a `_deleted` column.
+  // (messages, audit_events, user_sessions, evolutions don't have it.)
+  private val tablesWithDeletedFlag: Seq[String] = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "users",
+    "api_posts",
+    "api_issues",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations"
+  )
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - physically purge all logically deleted rows (_deleted = true)"
+      )
+
+      tablesWithDeletedFlag
+        .foldLeft(Future.successful(())) { (acc, table) =>
+          acc.flatMap { _ =>
+            dataStore.notificationRepo
+              .forAllTenant()
+              .execute(query = s"DELETE FROM $table WHERE _deleted = true;")
+              .map(purged =>
+                logger.info(
+                  s"[evolution $version] :: purged $purged rows from $table"
+                )
+              )
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1962,7 +2029,8 @@ object evolutions {
       evolution_1840_b,
       evolution_1840_c,
       evolution_1860,
-      evolution_1892
+      evolution_1892,
+      evolution_18110
     )
   def run(
       dataStore: DataStore,

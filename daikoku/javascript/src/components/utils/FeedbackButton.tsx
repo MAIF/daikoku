@@ -1,6 +1,7 @@
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState, useMemo, PropsWithChildren } from 'react';
+import {Check, Loader, X} from "lucide-react";
 
 type ButtonType = 'success' | 'warning' | 'info' | 'danger' | 'primary' | 'secondary'
 type Props = {
@@ -108,20 +109,13 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
       }}>
       {loading && (
         <>
-          <i
-            className="fas fa-spinner fa-spin fa-sm"
-            style={{
-              opacity: loading ? 1 : 0,
-              transition: 'opacity 2s',
-            }}
-          />
+          <Loader className="fa-sm" style={{ opacity: loading ? 1 : 0, transition: 'opacity 2s' }} />
           {props.children}
         </>
       )}
       {successed && (
         <>
-          <i
-            className="fas fa-check"
+          <Check
             style={{
               opacity: successed ? 1 : 0,
               transition: 'opacity 2s',
@@ -132,13 +126,7 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
       )}
       {failed && (
         <>
-          <i
-            className="fas fa-times"
-            style={{
-              opacity: failed ? 1 : 0,
-              transition: 'opacity 2s',
-            }}
-          />
+          <X style={{ opacity: failed ? 1 : 0, transition: 'opacity 2s' }} />
           {props.feedbackMessages?.fail}
         </>
       )}

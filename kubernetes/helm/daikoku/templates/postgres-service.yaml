@@ -1,0 +1,17 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "daikoku.postgresql.fullname" . }}
+  labels:
+    {{- include "daikoku.postgresql.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+      protocol: TCP
+  selector:
+    {{- include "daikoku.postgresql.selectorLabels" . | nindent 4 }}
+{{- end }}
