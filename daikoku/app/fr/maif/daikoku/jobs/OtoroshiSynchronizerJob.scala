@@ -776,7 +776,13 @@ class OtoroshiSynchronizerJob(
 
         (for {
           otoroshiSettings <- EitherT.fromOption[Future](
-            tenant.otoroshiSettings.find(_.id == keyring.otoroshiSettings),
+            // keyring.otoroshiSettings is a KeyringOtoroshiBinding : unwrap it
+            // before matching the tenant's OtoroshiSettings by id
+            keyring.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) =>
+                tenant.otoroshiSettings.find(_.id == id)
+              case KeyringOtoroshiBinding.Internal => None
+            },
             AppError.EntityNotFound(
               s"otoroshi settings not found for keyring ${keyring.id.value} (apikey $clientId)"
             )
