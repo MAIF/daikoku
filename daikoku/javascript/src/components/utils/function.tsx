@@ -92,7 +92,7 @@ export const FilterPreview = (props: FilterType) => {
               &nbsp;
           </span>
         )}
-        {props.seeOnlySubs === true && (
+        {/* {props.seeOnlySubs === true && (
           <span>
             {translate('fastMode.onlySubs.info')}
           </span>
@@ -101,7 +101,7 @@ export const FilterPreview = (props: FilterType) => {
           <span>
             {translate('fastMode.planSearch.info')} <strong>{props.filterPlan}</strong>
           </span>
-        )}
+        )} */}
       </div>
       <div className="clear cursor-pointer" onClick={props.clearFilter}>
         <i className="far fa-times-circle me-1" />

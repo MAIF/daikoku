@@ -49,6 +49,24 @@
   }
 }
 
+.keyring-option {
+  border: 1px solid #dfdfdf;
+  border-radius: 8px;
+  background-color: variables.$level2_bg-color;
+  color: variables.$level1_text-color;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: variables.$level1_link-hover-color;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+  }
+
+  .keyring-option__icon {
+    color: variables.$level1_link-color;
+  }
+}
+
 .asset-selection__container--column {
   display: flex;
   flex-direction: column;

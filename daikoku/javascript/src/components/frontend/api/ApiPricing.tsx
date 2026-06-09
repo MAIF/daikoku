@@ -731,7 +731,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const {
     openFormModal,
     openLoginOrRegisterModal,
-    openApiKeySelectModal,
+    openKeyringSelectModal,
     openCustomModal,
     close,
     closeRightPanel,
@@ -747,7 +747,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-  const showApiKeySelectModal = (team: string) => {
+  const showKeyringSelectModal = (team: string) => {
     const { plan } = props;
 
     const askForApikeys = (
@@ -775,8 +775,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
     type IUsagePlanGQL = {
       _id: string;
+      customName: string;
       otoroshiTarget: {
         otoroshiSettings: string;
+        apikeyCustomization?: {
+          readOnly?: boolean;
+        };
       };
       aggregationApiKeysSecurity: boolean;
     };
@@ -810,27 +814,61 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             return { subscription, api, plan };
           });
 
-          const filteredApiKeys = int
-            .filter(
-              (infos) =>
-                infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
-                (infos.plan?.aggregationApiKeysSecurity)
+          // group every candidate subscription by its keyring : a keyring can
+          // be joined only if ALL its members are compatible with the joining
+          // plan (mirror of backend controlSubscriptionExtension)
+          const byKeyring = new Map<string, typeof int>();
+          for (const i of int) {
+            const id = i.subscription.keyring?._id;
+            if (!i.plan || !id) continue;
+            if (!byKeyring.has(id)) byKeyring.set(id, []);
+            byKeyring.get(id)!.push(i);
+          }
+
+          const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
+          const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+          const envSecurity = tenant.environmentAggregationApiKeysSecurity;
+          const effectiveReadOnly = (i: (typeof int)[number]) =>
+            i.subscription.customReadOnly ??
+            !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+
+          const keyrings = [...byKeyring.entries()]
+            .filter(([, members]) =>
+              members.every(
+                (m) =>
+                  // same Otoroshi instance
+                  m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
+                  // environment aggregation security : same plan name
+                  (!envSecurity || m.subscription.planName === plan.customName) &&
+                  // uniform readOnly across the keyring
+                  effectiveReadOnly(m) === joiningReadOnly
+              )
             )
-            .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
-            .map((infos) => infos.subscription);
+            .map(([id, members]) => {
+              const rep = members[0].subscription;
+              return {
+                keyringId: id,
+                apiName: rep.apiName,
+                planName: rep.planName,
+                customName: rep.customName,
+                count: members.length,
+                aggregated: members.length > 1,
+                subscription: rep,
+              };
+            });
 
           if (
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-            filteredApiKeys.length <= 0
+            keyrings.length <= 0
           ) {
             askForApikeys(team, plan);
           } else {
-            openApiKeySelectModal({
+            openKeyringSelectModal({
               plan,
-              apiKeys: filteredApiKeys,
+              keyrings,
               onSubscribe: () => askForApikeys(team, plan),
-              extendApiKey: (apiKey: ISubscription) =>
-                askForApikeys(team, plan, apiKey),
+              onSelectKeyring: (subscription: ISubscription) =>
+                askForApikeys(team, plan, subscription),
             });
           }
         }
@@ -883,7 +921,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           .filter((f) => !f._deleted)
           .map((subs) => subs.team)}
         allowMultipleDemand={plan.allowMultipleKeys}
-        showApiKeySelectModal={showApiKeySelectModal}
+        showKeyringSelectModal={showKeyringSelectModal}
         plan={props.plan}
       />
     })
@@ -1352,7 +1390,7 @@ type ITeamSelector = {
   pendingTeams: Array<string>;
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
-  showApiKeySelectModal: (teamId: string) => void;
+  showKeyringSelectModal: (teamId: string) => void;
   plan: IUsagePlan;
 };
 
@@ -1395,7 +1433,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   })}
                   onClick={() => {
                     return allowed
-                      ? props.showApiKeySelectModal(team._id)
+                      ? props.showKeyringSelectModal(team._id)
                       : () => { };
                   }}
                 >

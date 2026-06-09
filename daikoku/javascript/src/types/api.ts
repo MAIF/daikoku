@@ -279,6 +279,7 @@ export interface IOtoroshiTarget {
   authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization?: {
     clientIdOnly: boolean;
+    readOnly?: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;
     metadata: { [key: string]: string };
@@ -369,7 +370,6 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
-  rotation: IRotation;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -379,7 +379,6 @@ export interface IBaseSubscription {
   customReadOnly?: boolean;
   adminCustomName?: string;
   keyring: string | null;
-  aggregated: boolean;
 }
 
 export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
@@ -419,10 +418,17 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
   apiKey: { clientName: string };
 }
 
-export interface ISubscription extends IBaseSubscription {
+export interface IKeyring {
+  _id: string;
+  customName: string | null;
   apiKey: IApiKey;
   integrationToken: string;
   bearerToken?: string;
+  rotation?: IRotation;
+}
+
+export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
+  keyring: IKeyring | null;
 }
 
 export interface ISubscriptionCustomization {

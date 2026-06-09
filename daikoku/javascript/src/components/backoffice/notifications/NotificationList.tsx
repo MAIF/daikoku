@@ -6,7 +6,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
 
 import { constraints, format, type } from '@maif/react-forms';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -71,9 +71,24 @@ type NotificationActionGQL =
   }
   | {
     __typename: 'ApiKeyRefreshV2';
-    api: IApiGQL;
-    subscription: IApiSubscriptionGql;
-    plan: IUsagePlan
+    keyring: {
+      _id: string;
+      customName: string | null;
+      apiKey: { clientName: string; clientId: string; clientSecret: string };
+      integrationToken: string;
+      bearerToken?: string;
+      rotation?: {
+        enabled: boolean;
+        rotationEvery: number;
+        gracePeriod: number;
+        pendingRotation: boolean;
+      };
+      subscriptions: Array<{
+        _id: string;
+        api: { _humanReadableId: string; currentVersion: string };
+        team: { _humanReadableId: string };
+      }>;
+    };
     message?: string
   }
   | {
@@ -509,7 +524,37 @@ export const NotificationList = () => {
             </div>
           </div>
         )
-      case 'ApiKeyRefreshV2':
+      case 'ApiKeyRefreshV2': {
+        const sub = notification.action.keyring.subscriptions[0]
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-end">
+              {sub && (
+                <Link
+                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`}
+                  className="nav_item cursor-pointer no-bg"
+                  title={translate('notif.apikey.refresh.see_keyring')}
+                  aria-label={translate('notif.apikey.refresh.see_keyring')}
+                  onClick={() => {
+                    if (notification.status.status === 'Pending') accept(notification._id)
+                  }}
+                >
+                  <i className="fas fa-arrow-right" />
+                </Link>
+              )}
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <i className="fas fa-times" />
+            </button>}
+          </div>
+        );
+      }
       case 'ApiKeyRotationInProgressV2':
       case 'ApiKeyRotationEndedV2':
         return (
@@ -527,6 +572,36 @@ export const NotificationList = () => {
             </button>}
           </div>
         );
+      case 'ApiSubscriptionAccept': {
+        const api = notification.action.api
+        const team = notification.action.team
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-center">
+              <Link
+                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}
+                className="nav_item cursor-pointer no-bg"
+                title={translate('notif.api.demand.accept.see_key')}
+                aria-label={translate('notif.api.demand.accept.see_key')}
+                onClick={() => {
+                  if (notification.status.status === 'Pending') accept(notification._id)
+                }}
+              >
+                <i className="fas fa-arrow-right" />
+              </Link>
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <i className="fas fa-times" />
+            </button>}
+          </div>
+        );
+      }
       default:
         return (
           <div className="action-container">
@@ -768,30 +843,9 @@ export const NotificationList = () => {
         </>
       }
       case 'ApiKeyRefreshV2': {
-        const apiKeyRefreshV2Description = translate('notif.apikey.refresh')
-        const __api = notification.action.api
-        const __plan = notification.action.plan
-        const __team = notification.action.api.team
-        const __subscription = notification.action.subscription
-        return <>
-          {apiKeyRefreshV2Description}
-          <a
-            href='#'
-            className='underline'
-            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-            onClick={() => alert({
-              title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-              message: <SimpleApiKeyCard //@ts-ignore
-                api={__api}
-                plan={__plan}
-                apiTeam={__team as ITeamSimple} //@ts-ignore
-                subscription={__subscription}
-              />
-            })}>
-            <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
-          </a>
-        </>
+        const keyring = notification.action.keyring
+        const keyringName = keyring.customName ?? keyring.apiKey.clientName
+        return translate({ key: 'notif.apikey.refresh', replacements: [keyringName] })
       }
       case 'TeamInvitation':
         return translate({
@@ -865,7 +919,6 @@ export const NotificationList = () => {
       case "ApiKeyDeletionInformationV2":
       case "ApiKeyRotationInProgressV2":
       case "ApiKeyRotationEndedV2":
-      case "ApiKeyRefreshV2":
       case "NewPostPublishedV2":
       case "NewIssueOpenV2":
       case "NewCommentOnIssueV2":
@@ -873,6 +926,7 @@ export const NotificationList = () => {
       case "CheckoutForSubscription":
         const _api = notification.action.api
         return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
+      case "ApiKeyRefreshV2":
       case "TeamInvitation":
       case "OtoroshiSyncSubscriptionError":
       case "ApiSubscriptionTransferSuccess":

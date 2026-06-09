@@ -1630,6 +1630,30 @@ object SchemaDefinition {
             "bearerToken",
             OptionType(StringType),
             resolve = _.value.bearerToken
+          ),
+          Field(
+            "integrationToken",
+            StringType,
+            resolve = _.value.integrationToken
+          ),
+          Field(
+            "subscriptions",
+            ListType(ApiSubscriptionType),
+            resolve = ctx =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
+          ),
+          Field(
+            "subscriptionsCount",
+            IntType,
+            resolve = ctx =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .count(
+                  Json.obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
+                )
+                .map(_.toInt)
           )
         )
     )
@@ -1766,6 +1790,7 @@ object SchemaDefinition {
       maybeLastUsage
         .map(_.map(r => (r \ "date").as(using json.DateTimeFormat)))
         .merge
+        .recover { case _ => None }
     }
 
     lazy val TestingAuthType = EnumType(
@@ -3607,6 +3632,29 @@ object SchemaDefinition {
             Field("total", LongType, resolve = _.value._2)
           )
       )
+    lazy val KeyringListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[Keyring], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[Keyring], Long)
+      ](
+        "Keyrings",
+        "Keyrings as a collection of keyrings and the total of",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[Keyring], Long)
+          ](
+            Field(
+              "keyrings",
+              ListType(KeyringType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2)
+          )
+      )
 
     lazy val CmsPageType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
@@ -4001,6 +4049,55 @@ object SchemaDefinition {
             ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
+              ctx,
+              ctx.arg(ID),
+              ctx.arg(TEAM_ID_NOT_OPT),
+              ctx.arg(VERSION),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
+          }
+        )
+      )
+
+    def getApiKeyrings(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        apiId: String,
+        teamId: String,
+        version: String,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
+    ) = {
+      CommonServices
+        .getApiKeyrings(
+          teamId,
+          apiId,
+          version,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(using ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
+    }
+
+    def keyringsQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "keyrings",
+          KeyringListType,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getApiKeyrings(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
@@ -4536,6 +4633,7 @@ object SchemaDefinition {
           getAllCategoriesQueryFields() ++
           apiConsumptionQuery() ++
           apiSubscriptionsQueryFields() ++
+          keyringsQueryFields() ++
           teamIncomeQuery() ++
           myNotificationQuery() ++
           allTeamsQuery() ++
@@ -4554,6 +4652,7 @@ object SchemaDefinition {
         apiDocumentationPagesFetcher,
         apiSubscriptionsFetcher,
         apiSubscriptionDemandsFetcher,
+        keyringsFetcher,
         usagePlansFetcher,
         accountCreationsFetcher,
         userSessionsFetcher,

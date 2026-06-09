@@ -20,7 +20,7 @@ import {
   ResponseDone,
   ResponseError,
 } from '../../types';
-import { IApiKeySelectModalProps } from './ApiKeySelectModal';
+import { IKeyringSelectModalProps } from './KeyringSelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
@@ -50,7 +50,7 @@ export type TModalContext = {
   openJoinTeamModal: () => void;
   openContactModal: (p: IContactModalComponentProps) => void;
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
-  openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
+  openKeyringSelectModal: (p: IKeyringSelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;

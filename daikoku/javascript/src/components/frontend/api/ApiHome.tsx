@@ -5,12 +5,11 @@ import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
 import { ApiGroupApis, TeamApiSubscriptions, read } from '../..';
-import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { NavContext } from '../../../contexts/navUtils';
 import * as Services from '../../../services';
 import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
@@ -24,7 +23,6 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
 
   const { tenant, customGraphQLClient } = useContext(GlobalContext);
-  const { openRightPanel } = useContext(ModalContext);
   const { setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
@@ -153,7 +151,7 @@ export const ApiHome = ({
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api._id, apiKey.keyring!, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)
           : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
 
@@ -162,15 +160,11 @@ export const ApiHome = ({
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (Services.isCreationDone(result)) {
-          openRightPanel({
-            title: translate('api.pricing.created.subscription.panel.title'),
-            content: <SimpleApiKeyCard
-              api={api!}
-              plan={plan!}
-              apiTeam={ownerTeamQuery.data as ITeamSimple} //FIXME: maybe better code ;)
-              subscription={result.subscription}
-            />
-          })
+          toast.success(translate('subscription.created.success'));
+          const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
+          if (teamHrId) {
+            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
+          }
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
           return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));

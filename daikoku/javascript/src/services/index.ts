@@ -246,10 +246,20 @@ export const toggleApiKeyRotation = (
 
 export const regenerateApiKeySecret = (
   teamId: string,
-  subscriptionId: string
+  keyringId: string
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_refresh`, {
     method: 'POST',
+  });
+
+export const updateKeyringCustomName = (
+  teamId: string,
+  keyringId: string,
+  customName: string
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/name`, {
+    method: 'PUT',
+    body: JSON.stringify({ customName }),
   });
 
 export const member = (teamId: string, userId: string) =>
@@ -1355,6 +1365,9 @@ export const graphql = {
             customName
             otoroshiTarget {
               otoroshiSettings
+              apikeyCustomization {
+                readOnly
+              }
             }
             aggregationApiKeysSecurity
           }
@@ -1646,11 +1659,6 @@ export const graphql = {
         subscriptions {
           _id
           lastUsage
-          apiKey {
-            clientName
-            clientId
-            clientSecret
-          }
           plan {
             _id
             customName
@@ -1676,12 +1684,57 @@ export const graphql = {
           customMaxPerMonth
           customReadOnly
           adminCustomName
-          aggregated
           keyring {
             _id
             customName
+            subscriptionsCount
             apiKey {
               clientName
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
+  getApiKeyrings: `
+    query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        keyrings {
+          _id
+          customName
+          integrationToken
+          bearerToken
+          subscriptionsCount
+          apiKey {
+            clientId
+            clientSecret
+            clientName
+          }
+          rotation {
+            enabled
+            rotationEvery
+            gracePeriod
+            pendingRotation
+          }
+          subscriptions {
+            _id
+            customName
+            adminCustomName
+            enabled
+            createdAt
+            validUntil
+            tags
+            plan {
+              _id
+              customName
+              autoRotation
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+              currentVersion
             }
           }
         }
@@ -1810,44 +1863,32 @@ export const graphql = {
             }
             ... on ApiKeyRefreshV2 {
             __typename
-              subscription {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId
                   clientSecret
                 }
-                createdAt
-                validUntil
-                by {
-                  id
-                  name
-                  email
-                }
-                customName
-                adminCustomName
-                enabled
+                integrationToken
+                bearerToken
                 rotation {
                   enabled
                   rotationEvery
                   gracePeriod
                   pendingRotation
                 }
-                integrationToken
-              }
-              api {
-                _id
-                _humanReadableId
-                name
-                team {
+                subscriptions {
                   _id
-                  _humanReadableId
-                  name
+                  api {
+                    _humanReadableId
+                    currentVersion
+                  }
+                  team {
+                    _humanReadableId
+                  }
                 }
-              }
-              plan {
-                _id
-                customName
               }
               message
             }
@@ -1885,10 +1926,12 @@ export const graphql = {
             __typename
               team {
                 _id
+                _humanReadableId
                 name
               }
               api {
                 _id
+                _humanReadableId
                 name
                 currentVersion
               }
@@ -1936,11 +1979,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -1955,13 +1993,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId
@@ -1982,11 +2027,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -2001,13 +2041,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId

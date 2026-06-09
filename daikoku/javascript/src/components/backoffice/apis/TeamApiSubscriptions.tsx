@@ -39,11 +39,6 @@ type SubscriptionsFilter = {
 };
 export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string;
-  apiKey: {
-    clientName: string;
-    clientId: string;
-    clientSecret: string;
-  };
   plan: IUsagePlan;
   team: {
     _id: string;
@@ -63,10 +58,10 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  aggregated: boolean;
   keyring?: {
     _id: string;
     customName: string | null;
+    subscriptionsCount: number;
     apiKey: {
       clientName: string;
     };
@@ -116,7 +111,7 @@ export const TeamApiSubscriptions = ({
   const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
   const columns = [
     columnHelper.accessor(
-      (row) => row.adminCustomName || row.apiKey.clientName,
+      (row) => row.adminCustomName || row.keyring?.apiKey.clientName || '',
       {
         id: "subscription",
         header: translate("Name"),
@@ -124,7 +119,7 @@ export const TeamApiSubscriptions = ({
         enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
-          if (sub.aggregated) {
+          if ((sub.keyring?.subscriptionsCount ?? 0) > 1) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
@@ -135,7 +130,7 @@ export const TeamApiSubscriptions = ({
               <div className="d-flex flex-row justify-content-between">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge badge-custom">A</div>
+                  <div className="badge badge-custom"><i className="fas fa-link" /></div>
                 </BeautifulTitle>
               </div>
             );
@@ -306,7 +301,7 @@ export const TeamApiSubscriptions = ({
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.regenerateApiKeySecret(currentTeam._id, sub._id),
+      Services.regenerateApiKeySecret(currentTeam._id, sub.keyring!._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });

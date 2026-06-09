@@ -38,7 +38,6 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { Signup } from '../components/frontend/account/signup';
 import { Dashboard } from '../components/frontend/dashboard/Dashboard';
-import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { GlobalContext } from '../contexts/globalContext';
@@ -246,18 +245,6 @@ export const DaikokuApp = () => {
                       <FrontOfficeRoute>
                         <SubscriptionRetrieve />
                       </FrontOfficeRoute>
-                    }
-                  />
-                  <Route
-                    path="/apis/fast"
-                    element={
-                      <RouteWithTitle title={
-                        translate({
-                          key: "fastMode.title.page",
-                          replacements: [tenant.title || tenant.name]
-                        })}>
-                        <FastMode />
-                      </RouteWithTitle>
                     }
                   />
                 </Route>

@@ -1943,10 +1943,13 @@ class ApiService(
               (),
               AppError.SubscriptionAggregationTeamConflict
             )
+            keyringOtoroshiSettings = keyring.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) => Some(id)
+              case KeyringOtoroshiBinding.Internal     => None
+            }
             _ <- EitherT.cond[Future][AppError, Unit](
               plan.otoroshiTarget
-                .map(_.otoroshiSettings)
-                .contains(keyring.otoroshiSettings),
+                .map(_.otoroshiSettings) == keyringOtoroshiSettings,
               (),
               AppError.SubscriptionAggregationOtoroshiConflict
             )

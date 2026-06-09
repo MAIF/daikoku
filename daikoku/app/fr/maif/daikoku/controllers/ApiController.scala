@@ -1582,6 +1582,35 @@ class ApiController(
       }
     }
 
+  def updateKeyringCustomName(teamId: String, keyringId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiKeyAction(
+        AuditTrailEvent(
+          s"@{user.name} has updated custom name for keyring @{keyring._id}"
+        )
+      )(teamId, ctx) { _ =>
+        val customName =
+          (ctx.request.body.as[JsObject] \ "customName").as[String].trim
+        env.dataStore.keyringRepo
+          .forTenant(ctx.tenant)
+          .findOneNotDeleted(
+            Json.obj("_id" -> keyringId, "team" -> teamId)
+          )
+          .flatMap {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "keyring not found"))
+              )
+            case Some(keyring) =>
+              val updated = keyring.copy(customName = Some(customName))
+              env.dataStore.keyringRepo
+                .forTenant(ctx.tenant)
+                .save(updated)
+                .map(_ => Ok(updated.asJson))
+          }
+      }
+    }
+
   def updateApiSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
