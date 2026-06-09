@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import {nanoid} from 'nanoid';
 import {useContext, useEffect, useMemo, useState} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import Select, {components, OptionProps} from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import {toast} from 'sonner';
@@ -27,7 +27,7 @@ import {
   ApiPricingProps,
   ITeamSelector,
   OtoroshiEntitiesSelectorProps,
-  OtoroshiEntity
+  OtoroshiEntity, IApiWithAuthorization, IApiAuthoWithCount, IPlansWithCount
 } from '../../../types';
 import {SubscriptionProcessEditor} from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -44,13 +44,17 @@ import {
   Spinner
 } from '../../utils';
 import {
+  ColumnDef,
+  ColumnDefBase,
   ColumnFiltersState,
-  createColumnHelper,
+  createColumnHelper, DisplayColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable
 } from "@tanstack/react-table";
+import {MoreVertical, Plus} from "react-feather";
+import {DynamicTable, FetchData, FetchResult} from "../../inputs";
 
 type Option = {
   label: string;
@@ -830,13 +834,26 @@ export const ApiPricing = (props: ApiPricingProps) => {
   } = useContext(ModalContext);
   const {translate, Translation} = useContext(I18nContext);
   const queryClient = useQueryClient();
-  const {connectedUser, tenant} = useContext(GlobalContext);
+  const {connectedUser, tenant, customGraphQLClient} = useContext(GlobalContext);
   const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
-  const usagePlansQuery = useQuery({
-    queryKey: ['plans', props.api.currentVersion],
-    queryFn: () =>
-      Services.getVisiblePlans(props.api._id, props.api.currentVersion),
-  });
+  const usagePlansFetchData: FetchData<IUsagePlan> = ({ limit, offset, filters, sorting }) =>
+    customGraphQLClient
+      .request<{ plansByApi: IPlansWithCount }>(
+        Services.graphql.plansByApi, {
+        filterTable: JSON.stringify(filters),
+        sortingTable: JSON.stringify(sorting),
+        limit,
+        offset,
+        apiId: props.api._id
+      })
+      .then(({plansByApi} ): FetchResult<IUsagePlan> => {
+        return {
+          items: plansByApi.plans,
+          total: plansByApi.total,
+          totalFiltered: plansByApi.totalFiltered,
+        }
+      })
+
   const [searchParams] = useSearchParams();
   const defaultColumnFilters = [];
 
@@ -846,16 +863,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
   }, [searchParams]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
 
-  const possibleUsagePlans = useMemo(() => {
-    if (!usagePlansQuery.data || isError(usagePlansQuery.data)) return [];
-    return (usagePlansQuery.data as Array<IUsagePlan>).filter((plan) => {
-      return (
-        plan.visibility === 'Public' ||
-        props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
-        props.myTeams.some((team) => plan.authorizedTeams.includes(team._id))
-      );
-    });
-  }, [usagePlansQuery.data, props.myTeams, props.ownerTeam._id]);
+  // const possibleUsagePlans = useMemo(() => {
+  //   if (!usagePlansFetchData || isError(usagePlansFetchData)) return [];
+  //   return (usagePlansFetchData. as Array<IUsagePlan>).filter((plan) => {
+  //     return (
+  //       plan.visibility === 'Public' ||
+  //       props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
+  //       props.myTeams.some((team) => plan.authorizedTeams.includes(team._id))
+  //     );
+  //   });
+  // }, [usagePlansFetchData, props.myTeams, props.ownerTeam._id]);
 
   useEffect(() => {
     queryClient.invalidateQueries({queryKey: ['plans']});
@@ -879,7 +896,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
           .then(() => queryClient.invalidateQueries({queryKey: ['plans', props.api.currentVersion]}))
           .then(closeRightPanel)
       )
-
     }
   }
 
@@ -919,7 +935,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   };
 
   const basicInformationSchema = (plan: IUsagePlan) => ({
-    ...customNameSchemaPart(usagePlansQuery.data as Array<IUsagePlan>, props.api, plan),
+    ...customNameSchemaPart(usagePlansFetchData as Array<IUsagePlan>, props.api, plan),
     customDescription: {
       type: type.string,
       format: format.text,
@@ -1237,11 +1253,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const columnHelper = createColumnHelper<IUsagePlan>();
 
-  const columns = [
+  const columns: ((ColumnDef<IUsagePlan, any>))[] = useMemo(():((ColumnDef<IUsagePlan, any>))[] => {
+
+    return [
     columnHelper.display({
       id: 'plan',
       meta: {className: "plan-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         return (
           <div>
             {plan.customName}
@@ -1252,7 +1271,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'description',
       meta: {className: "description-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         return (
           <div>
             {plan.customDescription}
@@ -1263,7 +1283,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'quotas',
       meta: {className: "quotas-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
 
         const editQuotas = () => {
           if (userCanUpadtePlan)
@@ -1294,7 +1315,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'tarifs',
       meta: {className: "tarifs-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         const setupPayment = (plan: IUsagePlan) => {
           return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
             .then((response) => {
@@ -1332,7 +1354,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'otoroshi-cible',
       meta: {className: "otoroshi-cible-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         const pathes = {
           type: type.object,
           format: format.form,
@@ -1543,7 +1566,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'process',
       meta: {className: "process-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         const editProcess = () => openRightPanel({
           title: translate("api.pricings.subscription.process.panel.title"),
           content: <SubscriptionProcessEditor
@@ -1572,7 +1596,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     columnHelper.display({
       id: 'action',
       meta: {className: "action-cell"},
-      cell: ({row: {original: plan}}) => {
+      cell: (info) => {
+       const plan = info.cell.row.original
         const {
           otoroshiTargetIsDefined,
           otoroshiEntitiesIsDefined,
@@ -1734,27 +1759,87 @@ export const ApiPricing = (props: ApiPricingProps) => {
         )
       }
     })
-  ]
+  ] as ColumnDef<IUsagePlan, any>[]
+  }, [])
 
-  const table = useReactTable({
-    data: possibleUsagePlans,
-    columns: columns,
-    getRowId: row => row._id,
-    state: {
-      columnFilters
-    },
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    getSortedRowModel: getSortedRowModel(),
-    enableMultiRowSelection: true,
-    enableSubRowSelection: true,
-    enableRowSelection: true
-  })
+  // const table = useReactTable({
+  //   data: possibleUsagePlans,
+  //   columns: columns,
+  //   getRowId: row => row._id,
+  //   state: {
+  //     columnFilters
+  //   },
+  //   getCoreRowModel: getCoreRowModel(),
+  //   manualPagination: true,
+  //   getSortedRowModel: getSortedRowModel(),
+  //   enableMultiRowSelection: true,
+  //   enableSubRowSelection: true,
+  //   enableRowSelection: true
+  // })
 
-  if (usagePlansQuery.isLoading) return <Spinner />;
-  if (!usagePlansQuery.data || isError(usagePlansQuery.data)) return null;
+  // if (usagePlansQuery.isLoading) return <Spinner />;
+  // if (!usagePlansQuery.data || isError(usagePlansQuery.data)) return null;
   return (
       <>
+x
+
+        <DynamicTable<IUsagePlan>
+          queryKey={['apis']}
+          columns={columns}
+          fetchData={usagePlansFetchData}
+          getRowId={plan => plan._id}
+          tableClassName="col-12 api_list_container"
+          dataClassName="api-table table-rows"
+          countLabelKey="API"
+          title={
+            <h2 className="api_list__title" id='api-list-label'>
+              {translate('dashboard.api.list.title')}
+            </h2>
+          }
+          toolbar={
+              <div className="d-flex gap-1">
+                {/*<button type="button"*/}
+                {/*        className='btn btn-outline-primary d-flex align-items-center gap-2'*/}
+                {/*        onClick={() => createApi({})}>*/}
+                {/*  <Plus />*/}
+                {/*  <p className="m-0">{translate('dashboard.create.api.button.label')}</p>*/}
+                {/*</button>*/}
+                <div className="nav_item dropdown" style={{ color: '#fff' }}>
+                  <button type="button"
+                          className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+                          data-bs-toggle="dropdown" aria-expanded="false"
+                          aria-label={translate('dashboard.more.creation.option.button.label')}>
+                    <MoreVertical />
+                  </button>
+                  <div className="dropdown-menu">
+                    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+                      <div className="blocks">
+                        <div className="mb-3 block">
+                          <div className="ms-2 block__entries block__border d-flex flex-column">
+                            {/*<Link to={'#'} onClick={() => createApi({ isApiGroup: true })} className="block__entry__link">*/}
+                            {/*  {translate('dashboard.create.apigroup.button.label')}*/}
+                            {/*</Link>*/}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          }
+          columnHeaders={
+            <>
+              {<span>{translate('api.pricings.name.table.title')}</span>}
+              {<span>{translate('api.pricings.description.table.title')}</span>}
+              {<span>{translate('api.pricings.quotas.table.title')}</span>}
+              {<span>{translate('api.pricings.pricing.table.title')}</span>}
+              {<span>{translate('api.pricings.otoroshi.target.table.title')}</span>}
+              {<span>{translate('api.pricings.subscription.process.table.title')}</span>}
+              {<span>{translate('api.pricings.name.table.actions')}</span>}
+            </>
+          }
+        />
+
         {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
           {
             <button
@@ -1764,46 +1849,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
             </button>
           }
         </Can>}
-        <div className="table-container mt-3">
-          {usagePlansQuery.isLoading && <Spinner/>}
-          {usagePlansQuery.data && (
-            (
-              <>
-                <div className="plan-table table-rows">
-                  <div className='select-all-row table-row'>
-                    {<span>{translate('api.pricings.name.table.title')}</span>}
-                    {<span>{translate('api.pricings.description.table.title')}</span>}
-                    {<span>{translate('api.pricings.quotas.table.title')}</span>}
-                    {<span>{translate('api.pricings.pricing.table.title')}</span>}
-                    {<span>{translate('api.pricings.otoroshi.target.table.title')}</span>}
-                    {<span>{translate('api.pricings.subscription.process.table.title')}</span>}
-                    {<span>{translate('api.pricings.name.table.actions')}</span>}
-                  </div>
-                  <ul className='table-rows' role="list">
-                    {table.getRowModel().rows.map((row, idx) => {
-                      return (
-                        <li key={`${row.id}-${idx}`} tabIndex={-1} role="listitem"
-                            aria-labelledby={`api-${row.original._id}`}>
-                          <article className='table-row' aria-labelledby={`api-${row.original._id}`}>
-                            {row.getVisibleCells().map((cell, idx) => {
-                              return (
-                                <div key={`${cell.id}-${idx}`}>
-                                  {flexRender(
-                                    cell.column.columnDef.cell,
-                                    cell.getContext()
-                                  )}
-                                </div>
-                              )
-                            })}
-                          </article>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              </>
-            ))}
-        </div>
       </>
     );
 };

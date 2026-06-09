@@ -1453,6 +1453,37 @@ export const graphql = {
         }
       }
     `,
+
+  plansByApi:`
+    query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
+      plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
+        plans {
+              _id
+              customName
+              customDescription
+              otoroshiTarget {
+                otoroshiSettings
+                authorizedEntities {
+                  services
+                  groups
+                  routes
+                }
+              }
+              currency {
+                code
+              }
+              subscriptionProcess {
+                name
+              }
+              allowMultipleKeys
+              aggregationApiKeysSecurity
+             }
+        total
+        totalFiltered
+      }
+    }
+  `,
+
   myVisibleApis: `
     query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, groupId: $groupId) {

@@ -105,6 +105,12 @@ export type IApiAuthoWithCount = {
   totalFiltered: number;
 };
 
+export type IPlansWithCount = {
+  plans: Array<IUsagePlan>;
+  total: number;
+  totalFiltered: number;
+}
+
 export interface ITesting {
   enabled: boolean;
   auth: 'ApiKey' | 'Basic';

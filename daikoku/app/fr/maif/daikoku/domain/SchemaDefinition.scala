@@ -3771,6 +3771,11 @@ object SchemaDefinition {
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
+    val API_ID: Argument[String] = Argument(
+      "apiId",
+      StringType,
+      description = "The id of the api  request"
+    )
     val NAME: Argument[Option[String]] = Argument(
       "name",
       OptionInputType(StringType),
@@ -4027,6 +4032,28 @@ object SchemaDefinition {
           }
         )
       )
+
+    def getPlansByApi(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        filterTable: JsArray,
+        sortingTable: JsArray,
+        limit: Int,
+        offset: Int,
+        apiId: String
+    ): Future[(Seq[UsagePlan], Long, Long)] = {
+      CommonServices
+        .getPlansByApi(
+          filterTable,
+          sortingTable,
+          limit,
+          offset,
+          apiId
+        )(using ctx.ctx._2, env, e)
+        .map {
+          case Right(value) => value
+          case Left(r)      => throw NotAuthorizedError(r.toString)
+        }
+    }
 
     def getVisibleApis(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
@@ -4484,8 +4511,54 @@ object SchemaDefinition {
         )
       )
 
+    lazy val PlansByApiListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[UsagePlan], Long, Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[UsagePlan], Long, Long)
+      ](
+        "PlansByApi",
+        "PlansByApi has a list of plan retrieve from an api and the count",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[UsagePlan], Long, Long)
+          ](
+            Field(
+              "plans",
+              ListType(UsagePlanType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2),
+            Field("totalFiltered", LongType, resolve = _.value._3)
+          )
+      )
+
+    def getPlansByApiFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          name = "plansByApi", // nom du champ Graphql
+          fieldType = PlansByApiListType,
+          arguments =
+            API_ID :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getPlansByApi(
+              ctx = ctx,
+              filterTable = ctx.arg(FILTER_TABLE),
+              sortingTable = ctx.arg(SORTING_TABLE),
+              limit = ctx.arg(LIMIT),
+              offset = ctx.arg(OFFSET),
+              apiId = ctx.arg(API_ID)
+            )
+          }
+        )
+      )
+
     def allFields()
-    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
       List(
         // Frontend repos — no extra restriction beyond existing resolver guards
@@ -4493,42 +4566,114 @@ object SchemaDefinition {
           getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
           getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
           // Raw POJO repos — admin-api only (RequiresDaikokuAdmin blocks non-admin access)
-          getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo, adminOnly) ++
-          getRepoFields("userSession", UserSessionType, ctx => ctx.ctx._1.userSessionRepo, adminOnly) ++
-          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo, adminOnly) ++
-          getRepoFields("passwordReset", PasswordResetType, ctx => ctx.ctx._1.passwordResetRepo, adminOnly) ++
-          getRepoFields("accountCreation", AccountCreationType, ctx => ctx.ctx._1.accountCreationRepo, adminOnly) ++
-          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo, adminOnly) ++
-          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo, adminOnly) ++
-          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo, adminOnly) ++
-          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo, adminOnly) ++
-          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo, adminOnly) ++
-          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo, adminOnly) ++
-          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo, adminOnly) ++
-          getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo, adminOnly) *
+          getRepoFields(
+            "user",
+            UserType,
+            ctx => ctx.ctx._1.userRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "userSession",
+            UserSessionType,
+            ctx => ctx.ctx._1.userSessionRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "tenant",
+            TenantType,
+            ctx => ctx.ctx._1.tenantRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "passwordReset",
+            PasswordResetType,
+            ctx => ctx.ctx._1.passwordResetRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "accountCreation",
+            AccountCreationType,
+            ctx => ctx.ctx._1.accountCreationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "translation",
+            TranslationType,
+            ctx => ctx.ctx._1.translationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "message",
+            MessageType,
+            ctx => ctx.ctx._1.messageRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "apiSubscription",
+            ApiSubscriptionType,
+            ctx => ctx.ctx._1.apiSubscriptionRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "notification",
+            NotificationType,
+            ctx => ctx.ctx._1.notificationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "consumption",
+            ApiKeyConsumptionType,
+            ctx => ctx.ctx._1.consumptionRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "post",
+            ApiPostType,
+            ctx => ctx.ctx._1.apiPostRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "issue",
+            ApiIssueType,
+            ctx => ctx.ctx._1.apiIssueRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "auditEvent",
+            AuditEventType,
+            ctx => ctx.ctx._1.auditTrailRepo,
+            adminOnly
+          )*
       )
     }
 
     (
-      Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
-          teamQueryFields() ++
-          apiQueryFields() ++
-          apiWithSubscriptionsQueryFields() ++
-          subscriptionDemandsForTeamAdmin() ++
-          teamSubscriptionDemands() ++
-          getAllTagsQueryFields() ++
-          getAllCategoriesQueryFields() ++
-          apiConsumptionQuery() ++
-          apiSubscriptionsQueryFields() ++
-          teamIncomeQuery() ++
-          myNotificationQuery() ++
-          allTeamsQuery() ++
-          getSubscriptionDetailsFields() ++
-          getAuditTrailQueryFields() ++
-          cmsSinglePageFields() ++
-          cmsPageFields()*)
-      )),
+      Schema(
+        ObjectType(
+          "Query",
+          () =>
+            fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
+              allFields() ++
+                teamQueryFields() ++
+                apiQueryFields() ++
+                apiWithSubscriptionsQueryFields() ++
+                subscriptionDemandsForTeamAdmin() ++
+                teamSubscriptionDemands() ++
+                getAllTagsQueryFields() ++
+                getAllCategoriesQueryFields() ++
+                apiConsumptionQuery() ++
+                apiSubscriptionsQueryFields() ++
+                teamIncomeQuery() ++
+                myNotificationQuery() ++
+                allTeamsQuery() ++
+                getSubscriptionDetailsFields() ++
+                getAuditTrailQueryFields() ++
+                cmsSinglePageFields() ++
+                cmsPageFields() ++
+                getPlansByApiFields()*
+            )
+        )
+      ),
       DeferredResolver.fetchers(
         tenantsFetcher,
         teamsFetcher,

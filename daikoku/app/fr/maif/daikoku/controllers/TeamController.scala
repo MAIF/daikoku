@@ -228,7 +228,7 @@ class TeamController(
                   )
                 )
               )
-              _ <- EitherT.liftF(
+              _ <- EitherT.liftF[Future, AppError, Unit](
                 ctx.tenant.mailer
                   .send(title, Seq(team.contact), value, ctx.tenant)
               )

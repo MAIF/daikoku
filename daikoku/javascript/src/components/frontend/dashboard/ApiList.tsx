@@ -82,6 +82,7 @@ export const ApiList = (props: ApiListProps) => {
         meta: { className: 'api-cell' },
         cell: (info) => {
           const api = info.row.original.api
+          const apib = info.row.original
           const authorizations = info.row.original.authorizations
           const isApiGroup = !!info.row.original.api.apis?.length
           const path = isApiGroup ? 'apis' : 'description'

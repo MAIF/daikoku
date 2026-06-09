@@ -330,6 +330,116 @@ object CommonServices {
        |LOWER(content ->> 'name')
        |""".stripMargin
 
+  def getPlansByApi(
+      filters: JsArray = Json.arr(),
+      sort: JsArray = Json.arr(),
+      limit: Int = 1,
+      offset: Int = 1,
+      apiId: String
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ) = {
+    _PublicUserAccess(
+      AuditTrailEvent(
+        s"@{user.name} has accessed to his notifications"
+      )
+    )(ctx) {
+
+      val queryPlansByApiId: String =
+        s"""
+           |WITH
+           |    me as (SELECT content
+           |           FROM users
+           |           WHERE _id = $$1),
+           |    my_teams as (SELECT *
+           |                  FROM teams
+           |                  WHERE _deleted IS FALSE
+           |                    AND content->>'_tenant' = $$2
+           |                    AND content -> 'users' @> format('[{"userId": "%s", "teamPermission": "Administrator"}]', $$1)::jsonb),
+           |    api as (
+           |        SELECT a.content FROM apis a
+           |                                LEFT JOIN me ON TRUE
+           |                       WHERE _id = $$3
+           |            AND (
+           |                             a._deleted IS false AND
+           |                             a.content ->> '_tenant' = $$2 AND
+           |                             (
+           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
+           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
+           |                             (CASE
+           |                                  WHEN me.content is null THEN FALSE
+           |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
+           |                                  ELSE (a.content ->> 'visibility' IN ('Public') OR
+           |                                        (a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) OR
+           |                                        (a.content -> 'authorizedTeams' ?|
+           |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
+           |                                 END)
+           |                             )
+           |    ),
+           |    total_plans AS (SELECT COUNT(1) AS total FROM usage_plans p WHERE
+           |            p._id = ANY (SELECT jsonb_array_elements_text(api.content -> 'possibleUsagePlans') FROM api)) ,
+           |    plans as (SELECT p.content, COUNT(1) over() AS total_filtered
+           |        FROM usage_plans p
+           |        WHERE
+           |            p._id = ANY (SELECT jsonb_array_elements_text(api.content -> 'possibleUsagePlans') FROM api) AND
+           |            (p.content ->> 'customName' ~* COALESCE(NULLIF($$6, ''), '.*'))
+           |              LIMIT $$4 OFFSET $$5
+           |        )
+           |SELECT
+           |    json_build_object(
+           |    'plans', COALESCE((SELECT jsonb_agg(plans.content)),'[]'::jsonb),
+           |    'total', (SELECT total FROM total_plans),
+           |    'totalFiltered', COALESCE(MAX(plans.total_filtered),0)
+           |    ) AS result
+           |    FROM plans
+        """.stripMargin
+
+      (for {
+        result <- EitherT(
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              queryPlansByApiId,
+              "result",
+              Seq(
+                ctx.user.id.value, // $$1
+                ctx.tenant.id.value, // $$2
+                apiId, // $$3
+                if (limit == -1) null
+                else java.lang.Integer.valueOf(limit), // $$4
+                if (offset == -1) null
+                else java.lang.Integer.valueOf(offset), // $$5
+                getFiltervalue[String](filters, "customName")
+                  .orNull[String] // $$6
+              )
+            )
+            .map(opt => {
+              println(opt)
+              Right(opt)
+            })
+            .recover { case _ =>
+              Left(
+                AppError
+                  .InternalServerError("SQL Request for plansByApi failed")
+              )
+            }
+        )
+      } yield {
+        result match {
+          case Some(r) =>
+            val plans = (r \ "plans").as(using json.SeqUsagePlanFormat)
+            val total = (r \ "total").as[Long]
+            val totalFiltered = (r \ "totalFiltered").as[Long]
+            (plans, total, totalFiltered)
+          case None =>
+            (Seq.empty[UsagePlan], 0L, 0L)
+        }
+      }).value
+    }
+  }
+
   def getVisibleApis(
       filter: JsArray = Json.arr(),
       sort: JsArray = Json.arr(),
