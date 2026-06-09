@@ -211,7 +211,8 @@ object AppError {
         s"User $email is not allowed to access this application"
       case AppErrors(errors) =>
         errors.map(_.getErrorMessage()).mkString("\n")
-      case LoginRateLimited(delay) => s"Too many login attempts, retry after ${delay}s"
+      case LoginRateLimited(delay) =>
+        s"Too many login attempts, retry after ${delay}s"
     }
 
   def toJson(error: AppError) = {

@@ -8,7 +8,7 @@ import { I18nContext, ModalContext, TranslateParams, useTeamBackOffice } from '.
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { isError, ITeamSimple } from '../../../types';
-import { getInitials, Spinner } from '../../utils';
+import { Can, getInitials, manage, Spinner, team } from '../../utils';
 import {UserCircle} from "lucide-react";
 
 
@@ -267,7 +267,9 @@ export const TeamEdit = () => {
           <div className="alert alert-success" role="alert">
             {translate('mail.sent')}
           </div>}
-        <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, currentTeam.contact)} />
+        <Can I={manage} a={team} team={currentTeam}>
+          <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, currentTeam.contact)} />
+        </Can>
       </div>
     )
   } else {

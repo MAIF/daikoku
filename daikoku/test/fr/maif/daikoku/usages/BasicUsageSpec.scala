@@ -2,7 +2,11 @@ package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.{
+  Container,
+  ForAllTestContainer,
+  GenericContainer
+}
 import fr.maif.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience

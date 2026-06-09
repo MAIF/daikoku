@@ -14,9 +14,11 @@ import { Table, TableRef } from '../../inputs';
 import {
   Can,
   Spinner,
+  access,
   apikey,
   isUserIsTeamAdmin,
   manage,
+  read,
   teamPermissions,
 } from '../../utils';
 import {ExternalLink, Key, BarChart} from "lucide-react";
@@ -95,7 +97,7 @@ export const TeamApiKeys = () => {
     return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
     return (
-      <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
+      <Can I={access} a={apikey} team={currentTeam} dispatchError={true}>
         <div className="row">
           <div className="col">
             <h1>

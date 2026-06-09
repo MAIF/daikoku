@@ -1,0 +1,97 @@
+{{- if .Values.mailpit.enabled }}
+{{- $name := include "daikoku.mailpit.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "daikoku.mailpit.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.mailpit.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: mailpit
+          image: {{ .Values.mailpit.image | quote }}
+          imagePullPolicy: {{ .Values.mailpit.imagePullPolicy }}
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: http
+              containerPort: 8025
+          env:
+            - name: MP_SMTP_BIND_ADDR
+              value: "0.0.0.0:1025"
+            - name: MP_UI_BIND_ADDR
+              value: "0.0.0.0:8025"
+            {{- if .Values.mailpit.ui.ingress }}
+            - name: MP_WEBROOT
+              value: {{ .Values.mailpit.ui.path | quote }}
+            {{- end }}
+          # tcpSocket (not httpGet /readyz): the health path moves under MP_WEBROOT
+          # when the UI is served on a sub-path, so a fixed path would 404.
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.mailpit.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "daikoku.mailpit.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: smtp
+      port: {{ .Values.mailpit.smtpPort }}
+      targetPort: smtp
+    - name: http
+      port: {{ .Values.mailpit.uiPort }}
+      targetPort: http
+{{- if .Values.mailpit.ui.ingress }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.mailpit.ui.host | default .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.mailpit.ui.host | default .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.mailpit.ui.path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $name }}
+                port:
+                  name: http
+{{- end }}
+{{- end }}

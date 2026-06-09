@@ -1,0 +1,246 @@
+{{- if .Values.garage.enabled }}
+{{- $name := include "daikoku.garage.fullname" . }}
+{{- /* Persisted across upgrades so the StatefulSet config stays stable. Garage
+       requires a 32-byte hex rpc_secret, so we hash a stable seed into 64 hex. */ -}}
+{{- $rpcSeed := include "daikoku.resolveSecret" (dict "ctx" $ "secret" $name "key" "rpcSeed" "provided" "" "length" 32) }}
+{{- $rpc := sha256sum $rpcSeed }}
+{{- $admin := include "daikoku.resolveSecret" (dict "ctx" $ "secret" $name "key" "adminToken" "provided" "" "length" 32) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  rpcSeed: {{ $rpcSeed | quote }}
+  adminToken: {{ $admin | quote }}
+  garage.toml: |
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "lmdb"
+    replication_factor = {{ .Values.garage.replicationFactor }}
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "{{ $name }}-0.{{ $name }}:3901"
+    rpc_secret = "{{ $rpc }}"
+    [s3_api]
+    s3_region = "garage"
+    api_bind_addr = "[::]:3900"
+    root_domain = ".s3.garage"
+    [admin]
+    api_bind_addr = "[::]:3903"
+    admin_token = "{{ $admin }}"
+---
+# Headless service: stable per-pod DNS for Garage RPC (rpc_public_addr above).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "daikoku.garage.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: rpc
+      port: 3901
+    - name: s3
+      port: 3900
+    - name: admin
+      port: 3903
+---
+# Stable service used by Daikoku as the S3 endpoint.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-s3
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "daikoku.garage.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: s3
+      port: 3900
+      targetPort: s3
+    - name: admin
+      port: 3903
+      targetPort: admin
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "daikoku.garage.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.garage.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ printf "%s|%s" $rpc $admin | sha256sum }}
+    spec:
+      containers:
+        - name: garage
+          image: {{ .Values.garage.image | quote }}
+          imagePullPolicy: {{ .Values.garage.imagePullPolicy }}
+          ports:
+            - name: rpc
+              containerPort: 3901
+            - name: s3
+              containerPort: 3900
+            - name: admin
+              containerPort: 3903
+          volumeMounts:
+            - name: config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+            - name: meta
+              mountPath: /var/lib/garage/meta
+            - name: data
+              mountPath: /var/lib/garage/data
+          resources:
+            {{- toYaml .Values.garage.resources | nindent 12 }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ $name }}
+  volumeClaimTemplates:
+    - metadata:
+        name: meta
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.garage.persistence.metaSize }}
+        {{- if .Values.garage.persistence.storageClass }}
+        storageClassName: {{ .Values.garage.persistence.storageClass | quote }}
+        {{- end }}
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.garage.persistence.dataSize }}
+        {{- if .Values.garage.persistence.storageClass }}
+        storageClassName: {{ .Values.garage.persistence.storageClass | quote }}
+        {{- end }}
+---
+# RBAC: the bootstrap Job writes the generated S3 key into a Secret.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}-bootstrap
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}-bootstrap
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}-bootstrap
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: {{ $name }}-bootstrap
+---
+# Bootstrap: initialise the cluster layout, create the bucket + an S3 key, then
+# store the key in "<garage>-keys" (consumed by the Daikoku Deployment).
+# Re-run safe: skips work already done. Uses the Garage admin HTTP API.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-bootstrap
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.garage.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $name }}-bootstrap
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: alpine/k8s:1.29.2
+          env:
+            - name: ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $name }}
+                  key: adminToken
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              API="http://{{ $name }}-s3:3903/v1"
+              BUCKET="{{ .Values.garage.bucket }}"
+              KEYSECRET="{{ $name }}-keys"
+              auth="Authorization: Bearer $ADMIN"
+
+              echo "waiting for garage admin API ..."
+              until curl -sf -H "$auth" "$API/status" >/dev/null; do sleep 3; done
+
+              # If the keys Secret already exists, nothing to do.
+              if kubectl get secret "$KEYSECRET" >/dev/null 2>&1; then
+                echo "keys secret already present, skipping bootstrap"; exit 0
+              fi
+
+              NODE=$(curl -sf -H "$auth" "$API/status" | jq -r '.nodes[0].id')
+              echo "node id: $NODE"
+
+              # Assign a layout role to the node if the cluster has none yet.
+              if [ "$(curl -sf -H "$auth" "$API/layout" | jq -r '.roles | length')" = "0" ]; then
+                curl -sf -H "$auth" -X POST "$API/layout" \
+                  -d "[{\"id\":\"$NODE\",\"zone\":\"dc1\",\"capacity\":1000000000,\"tags\":[]}]"
+                VER=$(curl -sf -H "$auth" "$API/layout" | jq -r '.version')
+                curl -sf -H "$auth" -X POST "$API/layout/apply" -d "{\"version\":$((VER+1))}"
+                echo "layout applied"
+              fi
+
+              # Create the bucket (ignore "already exists").
+              curl -s -H "$auth" -X POST "$API/bucket" -d "{\"globalAlias\":\"$BUCKET\"}" >/dev/null || true
+              BID=$(curl -sf -H "$auth" "$API/bucket?globalAlias=$BUCKET" | jq -r '.id')
+
+              # Create an S3 key and grant it full access to the bucket.
+              KEY=$(curl -sf -H "$auth" -X POST "$API/key" -d "{\"name\":\"daikoku\"}")
+              AKID=$(echo "$KEY" | jq -r '.accessKeyId')
+              SKEY=$(echo "$KEY" | jq -r '.secretAccessKey')
+              curl -sf -H "$auth" -X POST "$API/bucket/allow" \
+                -d "{\"bucketId\":\"$BID\",\"accessKeyId\":\"$AKID\",\"permissions\":{\"read\":true,\"write\":true,\"owner\":true}}"
+
+              kubectl create secret generic "$KEYSECRET" \
+                --from-literal=accessKeyId="$AKID" \
+                --from-literal=secretAccessKey="$SKEY"
+              echo "stored S3 credentials in $KEYSECRET"
+{{- end }}

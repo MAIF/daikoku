@@ -1328,7 +1328,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.stepValidatorRepo
               .forTenant(ctx.tenant)
-              .deleteByIdLogically(validator.id)
+              .deleteById(validator.id)
           )
         } yield Redirect("/apis"))
           .leftMap(_.render())
@@ -1648,7 +1648,7 @@ class ApiController(
 
   def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has update custom name for subscription @{subscription._id}"
         )
@@ -2018,7 +2018,7 @@ class ApiController(
       enabled: Option[Boolean]
   ) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2256,7 +2256,7 @@ class ApiController(
 
   def toggleApiKeyRotation(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2289,7 +2289,7 @@ class ApiController(
 
   def regenerateApiKeySecret(teamId: String, subscriptionId: String) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has regenerate apikey secret @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -3177,7 +3177,7 @@ class ApiController(
         ctx.setCtxValue("page.id", pageId)
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
-          .deleteByIdLogically(pageId)
+          .deleteById(pageId)
           .map { _ =>
             Ok(Json.obj("done" -> true))
           }

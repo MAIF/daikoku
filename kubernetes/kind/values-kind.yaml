@@ -1,0 +1,91 @@
+# Chart overrides for local kind testing — FULL self-contained stack with every
+# optional dependency bundled and the default tenant pre-seeded to use them.
+# No external service is required. Use with:
+#   helm install daikoku ./kubernetes/helm/daikoku -n daikoku --create-namespace \
+#     -f kubernetes/kind/values-kind.yaml
+# Locally-built dev image (sbt Docker/publishLocal + kind load). pullPolicy:Never
+# forces kind to use the loaded image instead of trying to pull this dev tag.
+image:
+  tag: "18.11.0"
+  pullPolicy: Never
+
+# Known admin password for the local bootstrap admin (seeded on first boot).
+# Empty -> auto-generated; here we set a fixed value for the test stack.
+secrets:
+  adminPassword: "daikokuadmin"
+
+ingress:
+  host: daikoku.127.0.0.1.nip.io
+  annotations:
+    # Override the default letsencrypt-prod with the local self-signed issuer.
+    cert-manager.io/cluster-issuer: selfsigned
+  tls:
+    enabled: true
+    secretName: daikoku-tls
+
+daikoku:
+  # initHost, exposedOn and sslEnabled are derived from ingress.host / ingress.tls automatically.
+  extraEnv:
+    # Make the JVM honour the container memory limit.
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:MaxRAMPercentage=75"
+
+  # --- Default tenant seeding (first boot only). ---------------------------
+  # S3 (Garage), mailer (Mailpit) and auth (OpenLDAP) are auto-filled by the
+  # bundles enabled at the bottom of this file, so only identity/extras here.
+  initTenant:
+    name: "Daikoku (kind)"
+    title: "Daikoku — local kind stack"
+    defaultLanguage: "En"
+    isPrivate: false
+    # Otoroshi has no bundled backend (external only). Uncomment + point at a
+    # reachable instance to seed it:
+    # otoroshi:
+    #   url: "https://otoroshi-api.127.0.0.1.nip.io"
+    #   host: "otoroshi-api.127.0.0.1.nip.io"
+    #   clientId: "admin-api-apikey-id"
+    #   clientSecret: "admin-api-apikey-secret"
+
+# Trim resources so it fits comfortably on a laptop kind node.
+resources:
+  requests:
+    cpu: 250m
+    memory: 768Mi
+  limits:
+    cpu: "2"
+    memory: 1536Mi
+
+postgresql:
+  persistence:
+    size: 2Gi
+
+# --- Bundled dependencies (everything enabled) -----------------------------
+
+# In-cluster S3 -> seeds daikoku.initTenant.s3.*
+garage:
+  enabled: true
+  persistence:
+    dataSize: 2Gi
+    metaSize: 512Mi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# In-cluster LDAP -> seeds the LDAP auth module. Log in with the seeded users
+# (user01 / password1, user02 / password2) once their mail attribute matches.
+openldap:
+  enabled: true
+  persistence:
+    size: 512Mi
+
+# Dev SMTP sink -> seeds the smtpClient mailer. Web UI exposed through the
+# ingress at https://daikoku.127.0.0.1.nip.io/mailpit
+mailpit:
+  enabled: true
+  ui:
+    ingress: true
+    path: /mailpit

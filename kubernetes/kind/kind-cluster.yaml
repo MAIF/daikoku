@@ -1,0 +1,21 @@
+# Local kind cluster for testing the Daikoku chart.
+# The control-plane node is labelled ingress-ready and maps host ports 80/443 to
+# the node, so ingress-nginx is reachable at http(s)://<host>.127.0.0.1.nip.io.
+#   kind create cluster --name daikoku --config kubernetes/kind/kind-cluster.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP

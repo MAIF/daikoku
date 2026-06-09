@@ -1,7 +1,15 @@
 package fr.maif.daikoku.utils
 
 import fr.maif.daikoku.login.OAuth2Config
-import play.api.libs.json.{JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{
+  JsBoolean,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsString,
+  JsValue,
+  Json
+}
 
 def getFilteredMetadataFromOauth(
     authConfig: OAuth2Config,
@@ -49,8 +57,8 @@ def getFilteredMetadataFromOauth(
 }
 
 def metadataObjectToMap(
-                                 obj: Map[String, JsValue]
-                               ): Map[String, String] = {
+    obj: Map[String, JsValue]
+): Map[String, String] = {
   obj.map {
     case (k, JsString(v))  => k -> v
     case (k, JsBoolean(v)) => k -> v.toString

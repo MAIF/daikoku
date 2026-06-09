@@ -848,6 +848,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         props.api.visibility === 'Public' ||
         props.api.authorizedTeams.includes(t._id) ||
         t._id === props.ownerTeam._id
+    )
+    .filter(
+      (t) =>
+        plan.visibility === 'Public' ||
+        plan.authorizedTeams.includes(t._id) ||
+        t._id === props.ownerTeam._id
     );
 
   const allPossibleTeams = difference(
@@ -876,7 +882,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       content: <TeamSelector
         teams={authorizedTeams
           .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
           .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
         pendingTeams={props.inProgressDemands.map((s) => s.team)}
         acceptedTeams={props.subscriptions
@@ -1255,7 +1261,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                 teams={authorizedTeams.filter(
                   (team) =>
                     plan.visibility === 'Public' ||
-                    team._id === props.ownerTeam._id
+                    team._id === props.ownerTeam._id ||
+                    plan.authorizedTeams.includes(team._id)
                 )}
               >
                 {(props.api.visibility === 'AdminOnly' ||
