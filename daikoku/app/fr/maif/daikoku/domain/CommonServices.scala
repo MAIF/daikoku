@@ -333,7 +333,7 @@ object CommonServices {
   def getPlansByApi(
       filters: JsArray = Json.arr(),
       sort: JsArray = Json.arr(),
-      limit: Int = 1,
+      limit: Int = 0,
       offset: Int = 1,
       apiId: String
   )(implicit
@@ -416,7 +416,6 @@ object CommonServices {
               )
             )
             .map(opt => {
-              println(opt)
               Right(opt)
             })
             .recover { case _ =>

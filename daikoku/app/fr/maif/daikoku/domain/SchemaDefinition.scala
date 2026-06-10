@@ -1102,6 +1102,12 @@ object SchemaDefinition {
         fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlan](
           Field("_id", StringType, resolve = _.value.id.value),
           Field(
+            "_tenant",
+            OptionType(StringType),
+            resolve = ctx => Some(ctx.value.tenant.value)
+          ),
+          Field("_deleted", BooleanType, resolve = _.value.deleted),
+          Field(
             "costPerMonth",
             OptionType(BigDecimalType),
             resolve = _.value.costPerMonth

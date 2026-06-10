@@ -1468,26 +1468,29 @@ export const graphql = {
     query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
       plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
         plans {
-              _id
-              customName
-              customDescription
-              otoroshiTarget {
-                otoroshiSettings
-                authorizedEntities {
-                  services
-                  groups
-                  routes
-                }
-              }
-              currency {
-                code
-              }
-              subscriptionProcess {
-                name
-              }
-              allowMultipleKeys
-              aggregationApiKeysSecurity
-             }
+          _id
+          _tenant
+          _deleted
+          customName
+          customDescription
+          visibility
+          otoroshiTarget {
+            otoroshiSettings
+            authorizedEntities {
+              services
+              groups
+              routes
+            }
+          }
+          currency {
+            code
+          }
+          subscriptionProcess {
+            name
+          }
+          allowMultipleKeys
+          aggregationApiKeysSecurity
+         }
         total
         totalFiltered
       }

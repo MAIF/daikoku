@@ -4541,6 +4541,8 @@ class ApiController(
           s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { team =>
+        println(ctx.request.body)
+        val trt = ctx.request.body
         val newPlan = ctx.request.body.as(using UsagePlanFormat)
 
         def addProcess(
@@ -4630,7 +4632,6 @@ class ApiController(
         )
       )(teamId, ctx) { team =>
         val updatedPlan = ctx.request.body.as(using UsagePlanFormat)
-
         def getPlanAndCheckIt(
             oldPlan: UsagePlan,
             newPlan: UsagePlan
@@ -4946,7 +4947,11 @@ class ApiController(
             handleVisibilityToggling(oldPlan, updatedPlan, api)
           updatedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
           _ <- EitherT.liftF(
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)  .map { result =>
+              AppLogger.info(s"Saving plan: ${updatedPlan}")
+
+              result
+            }
           )
           _ <- EitherT.liftF(
             otoroshiSynchronisator.run(updatedPlan.id, ctx.tenant)
