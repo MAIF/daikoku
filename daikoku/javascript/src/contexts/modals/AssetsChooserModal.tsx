@@ -7,7 +7,7 @@ import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IAsset, ITeamSimple } from '../../types';
 import { ResponseError, isError } from '../../types/api';
-import { ModalContext } from '../modalContext';
+import { ModalContext } from '../modalContextInstance';
 import { IAssetSelectorModalProps, IBaseModalProps } from './types';
 import { UserCircle, File } from "lucide-react";
 

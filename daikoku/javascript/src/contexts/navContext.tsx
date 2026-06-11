@@ -8,7 +8,7 @@ import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
 import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
-import { ModalContext } from './modalContext';
+import { ModalContext } from './modalContextInstance';
 import { NavContext, navMode, officeMode } from './navUtils';
 
 const fakeMenu = {

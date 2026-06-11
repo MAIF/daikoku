@@ -1,8 +1,9 @@
 import { TBaseObject } from "@maif/react-forms";
-import React, { JSX, useState } from "react";
+import { JSX, ReactNode, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IWithTesting } from "../types";
+import { ModalContext } from "./modalContextInstance";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
@@ -35,38 +36,9 @@ import {
   SubscriptionMetadataModalProps,
   TeamSelectorModalProps,
   TestingApiKeyModalProps,
-  TModalContext
 } from "./modals/types";
 
-
-const init: TModalContext = {
-  alert: () => Promise.resolve(),
-  confirm: () => Promise.resolve(true),
-  prompt: () => Promise.resolve("toto"),
-  openFormModal: () => { },
-  openTestingApikeyModal: () => { },
-  openSubMetadataModal: () => { },
-  openApiDocumentationSelectModal: () => { },
-  openTeamSelectorModal: () => { },
-  openInvitationTeamModal: () => { },
-  openSaveOrCancelModal: () => { },
-  openLoginOrRegisterModal: () => { },
-  openJoinTeamModal: () => { },
-  openContactModal: () => { },
-  openAssetSelectorModal: () => { },
-  openApiSelectModal: () => { },
-  openApiKeySelectModal: () => { },
-  openCustomModal: () => { },
-  close: () => { },
-  openRightPanel: () => { },
-  closeRightPanel: () => { },
-  rightPanelContent: undefined
-
-}
-
-export const ModalContext = React.createContext<TModalContext>(init);
-
-export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
+export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();
 
   const alert = (props: AlertModalProps) => new Promise<void>((success) => {

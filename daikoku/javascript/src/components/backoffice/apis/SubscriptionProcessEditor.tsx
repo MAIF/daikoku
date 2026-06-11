@@ -6,7 +6,7 @@ import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lu
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { ModalContext } from '../../../contexts/modalContext';
+import { ModalContext } from '../../../contexts/modalContextInstance';
 import { IValidationStep } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
