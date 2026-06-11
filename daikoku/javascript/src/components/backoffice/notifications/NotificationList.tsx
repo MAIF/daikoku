@@ -849,10 +849,7 @@ export const NotificationList = () => {
     }
   }
 
-  const getApiFromNotification = (notification: NotificationGQL, apis?: Array<{ _id: string, name: string }>): { _id: string, name: string, currentVersion?: string } | undefined => {
-    if (!apis) {
-      return;
-    }
+  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
     switch (notification.action.__typename) {
       case "ApiAccess":
       case "ApiSubscription":
@@ -906,7 +903,7 @@ export const NotificationList = () => {
       meta: { className: "api-cell" },
       cell: (info) => {
         const notification = info.row.original;
-        const api = getApiFromNotification(notification, visibleApisRequest.data)
+        const api = getApiFromNotification(notification)
 
         if (api)
           return <a href='#' onClick={() => handleSelectChange([{ label: api.name, value: api._id }], 'api')}>
