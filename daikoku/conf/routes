@@ -86,6 +86,7 @@ PUT     /api/me/password                                fr.maif.daikoku.controll
 
 GET     /api/me/notifications/unread-count              fr.maif.daikoku.controllers.NotificationController.myUnreadNotificationsCount()
 
+GET     /api/me/visible-apis                                    fr.maif.daikoku.controllers.ApiController.getMyVisibleApisLight(research: Option[String], limit: Int ?= 10)
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.daikoku.controllers.ApiController.getVisibleApi(humanReadableId, version)
 GET     /api/me/visible-apis/:apiId/:version/plans/:planId       fr.maif.daikoku.controllers.ApiController.getVisiblePlan(apiId, version, planId)
 GET     /api/me/visible-apis/:apiId/:version/plans              fr.maif.daikoku.controllers.ApiController.getVisiblePlans(apiId, version)
