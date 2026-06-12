@@ -614,16 +614,15 @@ object CommonServices {
     }
   }
 
-  /**
-   * Lightweight variant of [[getVisibleApis]] returning only the `_id` and
-   * `name` of every API visible to the current user.
-   *
-   * It reuses the exact same visibility rule (`me` / `my_teams` / `base_apis`
-   * CTEs) but skips every aggregation of the full query (plans, authorizations,
-   * subscription demands, subscription/expire counts, producers, tags,
-   * categories, pending notifications). Meant for id/name-only needs such as
-   * filter dropdowns.
-   */
+  /** Lightweight variant of [[getVisibleApis]] returning only the `_id` and
+    * `name` of every API visible to the current user.
+    *
+    * It reuses the exact same visibility rule (`me` / `my_teams` / `base_apis`
+    * CTEs) but skips every aggregation of the full query (plans,
+    * authorizations, subscription demands, subscription/expire counts,
+    * producers, tags, categories, pending notifications). Meant for
+    * id/name-only needs such as filter dropdowns.
+    */
   def getVisibleApisLight[T](
       research: Option[String] = None,
       limit: Int = 10
@@ -633,7 +632,9 @@ object CommonServices {
       ec: ExecutionContext
   ): Future[Either[AppError, Seq[JsObject]]] = {
     _UberPublicUserAccess(
-      AuditTrailEvent(s"@{user.name} has accessed the light list of visible apis")
+      AuditTrailEvent(
+        s"@{user.name} has accessed the light list of visible apis"
+      )
     )(ctx) {
       /*
        * $1 : userID
