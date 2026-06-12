@@ -6,6 +6,7 @@ import {
   IAsset,
   IAuditTrail,
   IFastApiSubscription,
+  ILogger,
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
@@ -70,6 +71,11 @@ const customFetch = (
 export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
 
+export const getMyVisibleApisLight = (
+  research?: string,
+  limit: number = 10
+): Promise<Array<{ _id: string; name: string }>> =>
+  customFetch(`/api/me/visible-apis?research=${encodeURIComponent(research ?? '')}&limit=${limit}`);
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> =>
@@ -588,6 +594,15 @@ export const deleteSession = (id: any) =>
 export const deleteSessions = () =>
   customFetch('/api/admin/sessions', {
     method: 'DELETE',
+  });
+
+export const getLoggers = (): Promise<ResponseError | Array<ILogger>> =>
+  customFetch('/api/admin/loggers');
+
+export const changeLogLevel = (name: string, level: string) =>
+  customFetch(`/api/admin/loggers/${name}/level?newLevel=${level}`, {
+    method: 'PUT',
+    body: '{}',
   });
 
 export const getAnonymousState = (): Promise<IAnonymousState> =>

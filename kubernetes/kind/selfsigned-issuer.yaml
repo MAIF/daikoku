@@ -1,0 +1,8 @@
+# A self-signed cluster issuer so the chart's cert-manager annotation works locally
+# (Let's Encrypt can't validate a private nip.io host). The cert is untrusted -> use `curl -k`.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}

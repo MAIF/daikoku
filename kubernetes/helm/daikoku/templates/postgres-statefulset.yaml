@@ -1,0 +1,86 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "daikoku.postgresql.fullname" . }}
+  labels:
+    {{- include "daikoku.postgresql.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "daikoku.postgresql.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "daikoku.postgresql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.postgresql.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "daikoku.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.postgresql.podSecurityContext | nindent 8 }}
+      containers:
+        - name: postgresql
+          image: {{ .Values.postgresql.image | quote }}
+          imagePullPolicy: {{ .Values.postgresql.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.postgresql.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.auth.username | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.auth.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "daikoku.postgresql.fullname" . }}
+                  key: postgres-password
+            # initdb in a subdirectory so a non-empty volume root (lost+found) is harmless.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgresql.auth.username | quote }}
+                - -d
+                - {{ .Values.postgresql.auth.database | quote }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgresql.auth.username | quote }}
+                - -d
+                - {{ .Values.postgresql.auth.database | quote }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.postgresql.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "daikoku.postgresql.labels" . | nindent 10 }}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.postgresql.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.persistence.size | quote }}
+{{- end }}

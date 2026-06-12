@@ -64,7 +64,8 @@ class LocalLoginSupport(env: Env, userService: UserService) {
   ): EitherT[Future, AppError, User] = {
     EitherT
       .fromOptionF(
-        env.dataStore.userRepo.findOne(Json.obj("_deleted" -> false, "email" -> username.trim)),
+        env.dataStore.userRepo
+          .findOne(Json.obj("_deleted" -> false, "email" -> username.trim)),
         AppError.Unauthorized: AppError
       )
       .flatMap { user =>
@@ -75,7 +76,10 @@ class LocalLoginSupport(env: Env, userService: UserService) {
         else
           EitherT(
             userService.incrementAttempts(user).map { updatedUser =>
-              Left(AppError.LoginRateLimited(userService.delayForAttempt(updatedUser))): Either[AppError, User]
+              Left(
+                AppError
+                  .LoginRateLimited(userService.delayForAttempt(updatedUser))
+              ): Either[AppError, User]
             }
           )
       }

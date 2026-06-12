@@ -12,7 +12,7 @@ import {
   IUserSimple,
   IWithTesting,
   ResponseDone,
-  ResponseError
+  ResponseError,
 } from '../../types';
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps } from './ApiSelectModal';

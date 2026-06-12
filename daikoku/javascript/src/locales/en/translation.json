@@ -60,6 +60,10 @@
     "Daikoku administration": "Daikoku administration",
     "Users": "Users",
     "User sessions": "User sessions",
+    "Loggers": "Loggers",
+    "Loggers level": "Loggers level",
+    "Level": "Level",
+    "loggers.disclaimer": "Log levels are changed in memory, for this instance only, and are not persisted: they reset to their default on restart. This is meant for debugging purposes only.",
     "Import / Export": "Import / Export",
     "apis published": {
         "s": "API published",

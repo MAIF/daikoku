@@ -4485,7 +4485,7 @@ object SchemaDefinition {
       )
 
     def allFields()
-    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
       List(
         // Frontend repos — no extra restriction beyond existing resolver guards
@@ -4493,42 +4493,113 @@ object SchemaDefinition {
           getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
           getTenantFields("cmsPage", CmsPageType, ctx => ctx.ctx._1.cmsRepo) ++
           // Raw POJO repos — admin-api only (RequiresDaikokuAdmin blocks non-admin access)
-          getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo, adminOnly) ++
-          getRepoFields("userSession", UserSessionType, ctx => ctx.ctx._1.userSessionRepo, adminOnly) ++
-          getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo, adminOnly) ++
-          getRepoFields("passwordReset", PasswordResetType, ctx => ctx.ctx._1.passwordResetRepo, adminOnly) ++
-          getRepoFields("accountCreation", AccountCreationType, ctx => ctx.ctx._1.accountCreationRepo, adminOnly) ++
-          getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo, adminOnly) ++
-          getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo, adminOnly) ++
-          getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo, adminOnly) ++
-          getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo, adminOnly) ++
-          getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo, adminOnly) ++
-          getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo, adminOnly) ++
-          getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo, adminOnly) ++
-          getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo, adminOnly) *
+          getRepoFields(
+            "user",
+            UserType,
+            ctx => ctx.ctx._1.userRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "userSession",
+            UserSessionType,
+            ctx => ctx.ctx._1.userSessionRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "tenant",
+            TenantType,
+            ctx => ctx.ctx._1.tenantRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "passwordReset",
+            PasswordResetType,
+            ctx => ctx.ctx._1.passwordResetRepo,
+            adminOnly
+          ) ++
+          getRepoFields(
+            "accountCreation",
+            AccountCreationType,
+            ctx => ctx.ctx._1.accountCreationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "translation",
+            TranslationType,
+            ctx => ctx.ctx._1.translationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "message",
+            MessageType,
+            ctx => ctx.ctx._1.messageRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "apiSubscription",
+            ApiSubscriptionType,
+            ctx => ctx.ctx._1.apiSubscriptionRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "notification",
+            NotificationType,
+            ctx => ctx.ctx._1.notificationRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "consumption",
+            ApiKeyConsumptionType,
+            ctx => ctx.ctx._1.consumptionRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "post",
+            ApiPostType,
+            ctx => ctx.ctx._1.apiPostRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "issue",
+            ApiIssueType,
+            ctx => ctx.ctx._1.apiIssueRepo,
+            adminOnly
+          ) ++
+          getTenantFields(
+            "auditEvent",
+            AuditEventType,
+            ctx => ctx.ctx._1.auditTrailRepo,
+            adminOnly
+          )*
       )
     }
 
     (
-      Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
-          teamQueryFields() ++
-          apiQueryFields() ++
-          apiWithSubscriptionsQueryFields() ++
-          subscriptionDemandsForTeamAdmin() ++
-          teamSubscriptionDemands() ++
-          getAllTagsQueryFields() ++
-          getAllCategoriesQueryFields() ++
-          apiConsumptionQuery() ++
-          apiSubscriptionsQueryFields() ++
-          teamIncomeQuery() ++
-          myNotificationQuery() ++
-          allTeamsQuery() ++
-          getSubscriptionDetailsFields() ++
-          getAuditTrailQueryFields() ++
-          cmsSinglePageFields() ++
-          cmsPageFields()*)
-      )),
+      Schema(
+        ObjectType(
+          "Query",
+          () =>
+            fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
+              allFields() ++
+                teamQueryFields() ++
+                apiQueryFields() ++
+                apiWithSubscriptionsQueryFields() ++
+                subscriptionDemandsForTeamAdmin() ++
+                teamSubscriptionDemands() ++
+                getAllTagsQueryFields() ++
+                getAllCategoriesQueryFields() ++
+                apiConsumptionQuery() ++
+                apiSubscriptionsQueryFields() ++
+                teamIncomeQuery() ++
+                myNotificationQuery() ++
+                allTeamsQuery() ++
+                getSubscriptionDetailsFields() ++
+                getAuditTrailQueryFields() ++
+                cmsSinglePageFields() ++
+                cmsPageFields()*
+            )
+        )
+      ),
       DeferredResolver.fetchers(
         tenantsFetcher,
         teamsFetcher,

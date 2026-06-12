@@ -589,7 +589,7 @@ class HomeController(
       ) { (tenant, _) =>
         env.dataStore.cmsRepo
           .forTenant(tenant)
-          .deleteByIdLogically(id)
+          .deleteById(id)
           .map {
             case true => Ok(Json.obj("created" -> true))
             case false =>

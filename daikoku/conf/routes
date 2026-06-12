@@ -86,6 +86,7 @@ PUT     /api/me/password                                fr.maif.daikoku.controll
 
 GET     /api/me/notifications/unread-count              fr.maif.daikoku.controllers.NotificationController.myUnreadNotificationsCount()
 
+GET     /api/me/visible-apis                                    fr.maif.daikoku.controllers.ApiController.getMyVisibleApisLight(research: Option[String], limit: Int ?= 10)
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.daikoku.controllers.ApiController.getVisibleApi(humanReadableId, version)
 GET     /api/me/visible-apis/:apiId/:version/plans/:planId       fr.maif.daikoku.controllers.ApiController.getVisiblePlan(apiId, version, planId)
 GET     /api/me/visible-apis/:apiId/:version/plans              fr.maif.daikoku.controllers.ApiController.getVisiblePlans(apiId, version)
@@ -297,6 +298,10 @@ DELETE  /api/admin/sessions/:id                         fr.maif.daikoku.controll
 DELETE  /api/admin/sessions                             fr.maif.daikoku.controllers.SessionController.deleteAllSessions()
 GET     /api/admin/sessions                             fr.maif.daikoku.controllers.SessionController.allSessions()
 POST    /api/session/_renew                             fr.maif.daikoku.controllers.SessionController.sessionRenew()
+
+GET     /api/admin/loggers                               fr.maif.daikoku.controllers.LoggersController.getAllLoggers()
+GET     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.getLogLevel(name)
+PUT     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.changeLogLevel(name, newLevel: Option[String])
 
 GET     /api/entities/tenant                            fr.maif.daikoku.controllers.EntitiesController.newTenant()
 GET     /api/entities/team                              fr.maif.daikoku.controllers.EntitiesController.newTeam()

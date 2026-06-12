@@ -247,7 +247,7 @@ object evolution_155 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-given ExecutionContext = ec
+      given ExecutionContext = ec
 
       logger.info(
         s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused"
@@ -1938,6 +1938,147 @@ object evolution_1892 extends EvolutionScript {
   }
 }
 
+object evolution_18110 extends EvolutionScript {
+  override def version: String = "18.11.0"
+
+  // All tables created with `allFields = true` carry a `_deleted` column.
+  // (messages, audit_events, user_sessions, evolutions don't have it.)
+  private val tablesWithDeletedFlag: Seq[String] = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "users",
+    "api_posts",
+    "api_issues",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations"
+  )
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - physically purge all logically deleted rows (_deleted = true)"
+      )
+
+      tablesWithDeletedFlag
+        .foldLeft(Future.successful(())) { (acc, table) =>
+          acc.flatMap { _ =>
+            dataStore.notificationRepo
+              .forAllTenant()
+              .execute(query = s"DELETE FROM $table WHERE _deleted = true;")
+              .map(purged =>
+                logger.info(
+                  s"[evolution $version] :: purged $purged rows from $table"
+                )
+              )
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
+object evolution_18110_b extends EvolutionScript {
+  override def version: String = "18.11.0_b"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - deduplicate personal teams and enforce one personal team per (tenant, user)"
+      )
+
+      // Concurrent first-login requests used to race in LoginFilter.findUserTeam and
+      // create several personal teams for the same user. Such races always produce
+      // EMPTY teams, so we drop the empty duplicates (keeping the data-bearing one when
+      // there is one, otherwise the oldest _id) before enforcing uniqueness.
+      val dedupEmptyDuplicatePersonalTeams =
+        """WITH personal AS (
+          |  SELECT t._id,
+          |         t.content->>'_tenant'            AS tenant,
+          |         t.content->'users'->0->>'userId' AS owner,
+          |         (EXISTS (SELECT 1 FROM api_subscriptions s
+          |                    WHERE s.content->>'team' = t._id AND s._deleted = false)
+          |          OR EXISTS (SELECT 1 FROM apis a
+          |                       WHERE a.content->>'team' = t._id AND a._deleted = false)) AS has_data
+          |  FROM teams t
+          |  WHERE t._deleted = false AND t.content->>'type' = 'Personal'
+          |),
+          |ranked AS (
+          |  SELECT _id, has_data,
+          |         row_number() OVER (
+          |           PARTITION BY tenant, owner ORDER BY has_data DESC, _id ASC
+          |         ) AS rn
+          |  FROM personal
+          |)
+          |DELETE FROM teams
+          | WHERE _id IN (SELECT _id FROM ranked WHERE rn > 1 AND has_data = false);
+          |""".stripMargin
+
+      // Partial unique index: at most one non-deleted personal team per (tenant, owner).
+      // A personal team always has exactly one member, hence users->0 is the owner.
+      val createUniqueIndex =
+        """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
+          |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+          |WHERE _deleted = false AND content->>'type' = 'Personal';
+          |""".stripMargin
+
+      (for {
+        deleted <- dataStore.teamRepo
+          .forAllTenant()
+          .execute(query = dedupEmptyDuplicatePersonalTeams)
+        _ = logger.info(
+          s"[evolution $version] :: removed $deleted duplicate (empty) personal teams"
+        )
+        _ <- dataStore.teamRepo
+          .forAllTenant()
+          .execute(query = createUniqueIndex)
+        _ = logger.info(
+          s"[evolution $version] :: ensured unique index uniq_team_personal_user"
+        )
+      } yield Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1962,7 +2103,9 @@ object evolutions {
       evolution_1840_b,
       evolution_1840_c,
       evolution_1860,
-      evolution_1892
+      evolution_1892,
+      evolution_18110,
+      evolution_18110_b
     )
   def run(
       dataStore: DataStore,
