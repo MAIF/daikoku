@@ -257,8 +257,8 @@ test("inviter un utilisateur plusieurs fois en case insensitive ne doit pas cré
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Paramètres Daikoku' }).click();
   await page.getByText('Utilisateurs', { exact: true }).click();
-  expect(page.getByText('Andy Bernard').first()).toBeVisible();
-  expect(page.getByText('Andy Bernard').nth(1)).not.toBeAttached();
+  await expect(page.getByText('Andy Bernard')).toBeVisible();
+  await expect(page.getByText('Andy Bernard').nth(1)).not.toBeAttached();
 });
 
 test("[#1092] - un membre simple d'une équipe ne peut pas accéder à la page d'édition (redirigé vers le dashboard + toast)", async ({ page }) => {

@@ -95,7 +95,7 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
         <div className="col">
           <PlanInformations
             api={props.api}
-            version={match?.params.version!}
+            version={(match?.params as { version?: string } | undefined)?.version as string}
             planId={match?.params.planId!}
             currentTeam={props.currentTeam} />
         </div>
