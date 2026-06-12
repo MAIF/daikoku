@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
 import debounce from 'lodash/debounce';
 import { useContext, useState } from "react";
-import Plus from 'react-feather/dist/icons/plus';
+import { Plus } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {Eye, EyeOff} from "lucide-react";
 
 export function ShowApiSecret(props: any) {
   const [show, setShow] = useState(false);
@@ -17,7 +18,7 @@ export function ShowApiSecret(props: any) {
       >
                 <span style={{ marginRight: 5, wordBreak: 'break-all' }}>{props.secret}</span>
                 <button onClick={toggle} type="button" className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-eye-slash" /> Hide
+                    <EyeOff /> Hide
         </button>
       </div>
     );
@@ -34,7 +35,7 @@ export function ShowApiSecret(props: any) {
       ************{' '}
       {props.secret && (
                 <button onClick={toggle} type="button" className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-eye" /> Show
+                    <Eye /> Show
         </button>
       )}
     </div>

@@ -22,6 +22,7 @@ import {
 
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
+import {Pen, Shield, Trash2, User, UserCog} from "lucide-react";
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -239,15 +240,15 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       alert({
         message: <div className="d-flex flex-column">
           <div>
-            <i className="fas fa-shield-alt me-1" />
+            <Shield className="me-1" />
             {translate('permission.caption.administrator')}
           </div>
           <div>
-            <i className="fas fa-pencil-alt me-1" />
+            <Pen className="me-1" />
             {translate('permission.caption.apiEditor')}
           </div>
           <div>
-            <i className="fas fa-user-alt me-1" />
+            <User className="me-1" />
             {translate('permission.caption.user')}
           </div>
           {/* @ts-ignore */}
@@ -258,33 +259,33 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       const isApiEditor = userHavePemission(member, apiEditor);
 
       return (<AvatarWithAction key={member._id} avatar={member.picture} name={member.name} infos={<>
-        {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
-        {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />)}
+        {userHavePemission(member, administrator) && (<Shield style={{ marginRight: '10px' }} />)}
+        {userHavePemission(member, apiEditor) && (<Pen style={{ marginRight: '10px' }} />)}
         <span className="team-member__name">{member.name}</span>
       </>} actions={CanIDoAction(connectedUser, manage, team, currentTeam) ? [
         {
           action: () => removeMember(member),
-          iconClass: 'fas fa-trash delete-icon',
+          icon: <Trash2 className="delete-icon" />,
           tooltip: translate('Remove member'),
         },
         {
           action: [
             {
               action: () => togglePermission(member, administrator),
-              iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'}`,
+              icon: <Shield className={isAdmin ? 'admin-active' : 'admin-inactive'} />,
               tooltip: `${isAdmin
                 ? translate('Remove administrator status')
                 : translate('Add administrator status')}`,
             },
             {
               action: () => togglePermission(member, apiEditor),
-              iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'}`,
+              icon: <Pen className={isApiEditor ? 'admin-active' : 'admin-inactive'} />,
               tooltip: `${isApiEditor
                 ? translate('Remove api editor status')
                 : translate('Add api editor status')}`,
             },
           ],
-          iconClass: 'fas fa-user-cog',
+          icon: <UserCog />,
           tooltip: translate('Manage permissions'),
         },
       ] : []} />);
@@ -310,7 +311,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
                         .then(() => updateMembers(currentTeam));
                   });
               },
-              iconClass: 'fas fa-trash delete-icon',
+              icon: <Trash2 className="delete-icon" />,
               tooltip: translate('Remove invitation'),
             },
           ] : []} />);

@@ -16,6 +16,7 @@
 @use 'components/form';
 @use 'components/modal';
 @use 'components/note';
+@use 'components/table';
 @use 'components/notification';
 @use 'components/pagination';
 @use 'components/popover';
@@ -42,6 +43,5 @@
 @use 'components/tabs';
 @use 'components/apiSubscription.scss';
 @use 'components/pricingCard.scss';
-@use 'components/dashboard.scss';
 @use 'components/informations.scss';
 @use 'components/placeholder.scss';

@@ -1508,6 +1508,7 @@
     "api.home.config.api.spec.btn.label": "Manage API specification",
     "api.home.config.api.spec.menu.edit": "Edit",
     "api.home.config.api.spec.menu.delete": "Delete",
+    "api.home.config.api.test.env.badge": "Env",
     "api.home.spec.right.panel.title": "Edit API specification",
     "api.home.config.api.test.btn.label": "Manage test configuration",
     "api.home.config.api.test.menu.edit": "Edit",
@@ -1631,6 +1632,16 @@
     "notifications.page.filters.all.notifications.label": "All",
     "notifications.page.filters.unread.notifications.label": "To treat",
     "notifications.page.filters.clear.label": "Reset filters",
+    "table.filters.clear.label": "Reset filters",
+    "table.filter.summary.label": {
+      "s": "%s selected",
+      "p": "%s selected"
+    },
+    "table.rows.selected.count.label": {
+      "s": "%s row selected",
+      "p": "%s rows selected"
+    },
+    "table.select.all.label": "Select all %s items",
     "notifications.page.table.title": "Notifications",
     "notifications.page.table.select.all.label": "Select all",
     "notifications.page.table.selected.count.label": {
@@ -1734,11 +1745,14 @@
     "dashboard.deprecated.apis.tile.title": "Deprecated APIs",
     "dashboard.deprecated.apis.tile.secondary.label": "expire soon",
     "dashboard.deprecated.apikeys.tile.secondary.label": "expire soon",
+    "dashboard.page.tenant.demands.button.label": "Demands to validate",
     "dashboard.tile.error.button.label": "Reload data",
     "dashboard.apis.table.header.label.api": "API",
     "dashboard.apis.table.header.label.tags": "Tags",
     "dashboard.apis.table.header.label.team": "Team",
     "dashboard.apis.table.header.label.status": "Status",
+    "dashboard.apis.table.header.label.subscriptions": "Subscriptions",
+    "dashboard.apis.table.header.label.subscriptions.cells": "subscription",
     "dashboard.apis.table.header.label.actions": "Actions",
     "dashboard.filters.tag.label": {
         "s": "Tag",
@@ -1769,6 +1783,9 @@
     "dashboard.create.team.button.label": "Create a team",
     "dashboard.api.table.more.button.label": "Show more APIs",
     "dashboard.filters.subscribe.apis.only.label": "Subscribed APIs only",
+    "dashboard.apis.selected.count": " selected apis (on %s displayed)",
+    "dashboard.apis.filterd.count": " found apis (on %s)",
+    "dashboard.filters.selected.apis.apiKeys.subscribe.button": "Obtain Keys",
     "dashboard.api.list.title": "APIs list",
     "oauth2.form.role.claim.label": "Role claim name",
     "oauth2.form.role.claim.help": "Name of the OpenID claim containing the user's roles.",

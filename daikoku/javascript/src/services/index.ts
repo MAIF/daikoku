@@ -1474,6 +1474,7 @@ export const graphql = {
             tags
             categories
             stars
+            state
             parent {
               _id
               currentVersion

@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ISimpleSession } from '../../types';
 import { I18nContext } from '../i18n-context';
-import { ModalContext } from '../modalContext';
+import { ModalContext } from '../modalContextInstance';
 
 export const SessionModal = (props: { session: ISimpleSession }) => {
   const { translate } = useContext(I18nContext);

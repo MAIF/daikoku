@@ -11,6 +11,7 @@ import { FilterPreview, Spinner } from "../../utils";
 import { FastApiCard } from "./FastApiCard";
 import { FastItemView } from "./FastItemView";
 import { GlobalContext } from "../../../contexts/globalContext";
+import {Users} from "lucide-react";
 
 
 
@@ -245,7 +246,7 @@ export const FastApiList = (props: FastApiListProps) => {
         <div className="col-3">
           <div className="section p-3 mb-2">
             <h5>
-              <i className="fas fa-users me-2" />
+              <Users className="me-2" />
               {translate("fastMode.selected.team.title")}
             </h5>
             <Select

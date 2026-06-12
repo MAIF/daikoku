@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import maxBy from 'lodash/maxBy';
 import { useContext, useEffect, useState } from 'react';
-import {startOfMonth, endOfMonth} from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 import { toast } from 'sonner';
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
@@ -17,6 +17,7 @@ import {
   stat
 } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
+import { CircleX, RefreshCw } from "lucide-react";
 
 type IConsumptionByApi = {
   billing: { hits: number, total: number },
@@ -188,7 +189,9 @@ export const TeamBilling = () => {
             <div className="api-plans-consumptions section p-2">
               <div className="api__plans__consumption__header">
                 <h3 className="api__name">{selectedApi.name}</h3>
-                <i className="far fa-times-circle quit" onClick={() => setSelectedApi(undefined)} />
+                <button className="--ghost" onClick={() => setSelectedApi(undefined)}>
+                  <CircleX />
+                </button>
               </div>
               {consumptions
                 .filter((c) => c.api === selectedApi._id)
@@ -223,7 +226,7 @@ export const TeamBilling = () => {
                   <div className="col-12 month__selector d-flex align-items-center">
                     <MonthPicker updateDate={setDate} value={date} />
                     <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
-                      <i className="fas fa-sync-alt" />
+                      <RefreshCw />
                     </button>
                     {getLastDate()}
                   </div>

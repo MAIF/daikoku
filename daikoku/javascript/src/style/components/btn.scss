@@ -1,6 +1,7 @@
 @use "../variables";
 
 @use 'sass:color';
+@use 'sass:map';
 
 button {
   background-color: #fff;
@@ -39,23 +40,23 @@ button {
 
 .btn-danger {
   color: #fff;
-  border-color: variables.$error-color;
-  background-color: variables.$error-color;
+  border-color: variables.$danger-color;
+  background-color: variables.$danger-color;
 
   &-negative {
-    color: variables.$error-color;
-    border-color: variables.$error-color;
+    color: variables.$danger-color;
+    border-color: variables.$danger-color;
     background-color: variables.$btn-bg-color;
 
     &:hover {
       color: #fff;
-      background-color: variables.$error-color;
+      background-color: variables.$danger-color;
     }
   }
 
   &:hover {
     color: #fff;
-    background-color: variables.$error-color;
+    background-color: variables.$danger-color;
   }
 }
 
@@ -321,4 +322,180 @@ button {
   100% {
     transform: translate(0, 0);
   }
+}
+
+
+//--- new UI : design system buttons
+//
+// Pas de couleur : tout en nuance PRIMARY (+ neutral pour la bordure du tertiary et le disabled).
+// 4 variantes (.btn + un modifier), états hover/focus/active/disabled pour chacune :
+//   .btn --primary    -> fond plein, texte blanc          (ancien filled)
+//   .btn --secondary  -> contour primary, fond blanc      (ancien outline)
+//   .btn --tertiary   -> contour gris, fond blanc          (ancien --neutral)
+//   .btn --ghost      -> comme tertiary mais SANS bordure (ni repos ni hover)
+//   + --small pour la taille réduite.
+//
+// Échelle : base 600 · hover 400 · focus = fond clair 050 + bordure 2px 600 · pressed 800 · disabled neutral-600.
+
+$btn-base: variables.$primary-color; // 600
+$btn-light: variables.$primary-color-050; // fond clair (hover des variantes claires + focus)
+$btn-hover: variables.$primary-color-400; // hover du fond plein
+$btn-strong: variables.$primary-color-800; // pressed
+$btn-on: variables.$neutral-color-000; // blanc : texte sur fond plein
+$btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond grisés)
+
+// focus commun : fond clair + bordure 2px, sans layout shift (1px border + 1px box-shadow inset)
+@mixin button-focus {
+  &:focus-visible {
+    background-color: $btn-light;
+    border-color: $btn-base;
+    color: $btn-base;
+    box-shadow: inset 0 0 0 1px $btn-base;
+    outline: none;
+  }
+}
+
+// Base commune à tout bouton DS. Scopé via :is() pour ne PAS toucher les .btn legacy,
+// et neutralise les défauts Bootstrap qui parasitent le DS.
+.btn:is(.--primary, .--secondary, .--tertiary, .--ghost) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  box-sizing: border-box;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -4%;
+  text-decoration: none; // pour les boutons rendus en <a> (ex. react-paginate)
+
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+
+  &.--small {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  // disabled géré par la couleur (neutral-600), pas par l'opacité Bootstrap
+  &:disabled,
+  &.--disabled {
+    opacity: 1;
+    cursor: not-allowed;
+  }
+}
+
+// --primary : fond plein, texte blanc
+.btn.--primary {
+  background-color: $btn-base;
+  border-color: $btn-base;
+  color: $btn-on;
+
+  &:not(:disabled):not(.--disabled):hover {
+    background-color: $btn-hover;
+    border-color: $btn-hover;
+  }
+
+  @include button-focus;
+
+  &:not(:disabled):not(.--disabled):active {
+    background-color: $btn-strong;
+    border-color: $btn-strong;
+    color: $btn-on;
+  }
+
+  &:disabled,
+  &.--disabled {
+    background-color: $btn-disabled;
+    border-color: $btn-disabled;
+    color: $btn-on;
+  }
+}
+
+// --secondary : contour primary, fond blanc
+.btn.--secondary {
+  background-color: $btn-on;
+  border-color: $btn-base;
+  color: $btn-base;
+
+  &:not(:disabled):not(.--disabled):hover {
+    background-color: $btn-light;
+  }
+
+  @include button-focus;
+
+  &:not(:disabled):not(.--disabled):active {
+    background-color: $btn-strong;
+    border-color: $btn-strong;
+    color: $btn-on;
+  }
+
+  &:disabled,
+  &.--disabled {
+    background-color: $btn-on;
+    border-color: $btn-disabled;
+    color: $btn-disabled;
+  }
+}
+
+// --tertiary : contour gris, fond blanc, texte primary (ancien --neutral)
+.btn.--tertiary {
+  background-color: $btn-on;
+  border-color: variables.$neutral-color-100;
+  color: $btn-base;
+
+  &:not(:disabled):not(.--disabled):hover {
+    background-color: variables.$neutral-color-050;
+    border-color: variables.$neutral-color-100;
+  }
+
+  @include button-focus;
+
+  &:not(:disabled):not(.--disabled):active {
+    background-color: $btn-strong;
+    border-color: $btn-strong;
+    color: $btn-on;
+  }
+
+  &:disabled,
+  &.--disabled {
+    background-color: $btn-on;
+    color: $btn-disabled;
+  }
+}
+
+// --ghost : comme tertiary mais SANS bordure (ni repos ni hover). Le focus garde la bordure 2px (a11y).
+.btn.--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: $btn-base;
+
+  &:not(:disabled):not(.--disabled):hover {
+    background-color: $btn-light;
+  }
+
+  @include button-focus;
+
+  &:not(:disabled):not(.--disabled):active {
+    background-color: $btn-strong;
+    border-color: transparent;
+    color: $btn-on;
+  }
+
+  &:disabled,
+  &.--disabled {
+    background-color: transparent;
+    border-color: transparent;
+    color: $btn-disabled;
+  }
+}
+
+.btn.--icon {
+  padding: 8px;
 }

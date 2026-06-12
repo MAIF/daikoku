@@ -1,21 +1,55 @@
 :root {
-  --level1_bg-color: #fff;
-  --level1_text-color: #626262;
+  --primitive-primary-800: #0a1e57;
+  --primitive-primary-600: #29438d;
+  --primitive-primary-400: #3b57a6;
+  --primitive-primary-100: #d6dbe9;
+  --primitive-primary-050: #f4f5f9;
+
+  --primitive-neutral-900: #1e1e1e;
+  --primitive-neutral-800: #373737;
+  --primitive-neutral-700: #505050;
+  --primitive-neutral-600: #696969;
+  --primitive-neutral-500: #828282;
+  --primitive-neutral-400: #9b9b9b;
+  --primitive-neutral-300: #b4b4b4;
+  --primitive-neutral-200: #cdcdcd;
+  --primitive-neutral-100: #e6e6e6;
+  --primitive-neutral-050: #f5f5f5;
+  --primitive-neutral-000: #fff;
+
+  --primitive-success-800: #003f00;
+  --primitive-success-500: #006300;
+  --primitive-success-200: #eefbef;
+
+  --primitive-danger-800: #60090d;
+  --primitive-danger-500: #95090f;
+  --primitive-danger-200: #fceff0;
+
+  --primitive-warning-800: #533e02;
+  --primitive-warning-500: #856404;
+  --primitive-warning-200: #fffcd3;
+
+  --primitive-info-800: #112b6c;
+  --primitive-info-500: #11379b;
+  --primitive-info-200: #ebf0fa;
+
+  --level1_bg-color: #f9f9f9;
+  --level1_text-color: #000;
   --level1_link-color: #626262;
   --level1_link-hover-color: orange;
 
-  --level2_bg-color: #F9F9F9;
-  --level2_text-color: #1E1E1E;
+  --level2_bg-color: #ffffff;
+  --level2_text-color: #1e1e1e;
   --level2_link-color: #605c5c;
-  --level2_link-hover-color: #1E1E1E;
+  --level2_link-hover-color: #1e1e1e;
 
-  --level3_bg-color: #EEEEEE;
+  --level3_bg-color: #fff;
   --level3_text-color: #222;
   --level3_link-color: #4c4c4d;
   --level3_link-hover-color: #000;
   --level3_link-hover-bg-color: grey;
 
-  --sidebar-bg-color: #29438D;
+  --sidebar-bg-color: #29438d;
   --sidebar-text-color: #fff;
   --sidebar-text-hover-color: orange;
 
@@ -50,14 +84,40 @@
   --form-select-hover-color: lightgrey;
   --form-select-hover-text-color: white;
 
-  --error-color: #dc3545;
-  --info-color: #17a2b8;
-  --success-color: #65B741;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --neutral-color: #4e5760;
+  --info-color: var(--primitive-info-500);
+  --info-color-bg: var(--primitive-info-200);
+  --info-color-800: var(--primitive-info-800);
 
-  --primary-color: #29438D;
+  --success-color: var(--primitive-success-500);
+  --success-color-bg: var(--primitive-success-200);
+  --success-color-800: var(--primitive-success-800);
+
+  --warning-color: var(--primitive-warning-500);
+  --warning-color-bg: var(--primitive-warning-200);
+  --warning-color-800: var(--primitive-warning-800);
+
+  --danger-color: var(--primitive-danger-500);
+  --danger-color-bg: var(--primitive-danger-200);
+  --danger-color-800: var(--primitive-danger-800);
+
+  --neutral-color: var(--primitive-neutral-500);
+  --neutral-color-bg: var(--primitive-neutral-100);
+  --neutral-color-900: var(--primitive-neutral-900);
+  --neutral-color-800: var(--primitive-neutral-800);
+  --neutral-color-700: var(--primitive-neutral-700);
+  --neutral-color-600: var(--primitive-neutral-600);
+  --neutral-color-400: var(--primitive-neutral-400);
+  --neutral-color-300: var(--primitive-neutral-300);
+  --neutral-color-200: var(--primitive-neutral-200);
+  --neutral-color-100: var(--primitive-neutral-100);
+  --neutral-color-050: var(--primitive-neutral-050);
+  --neutral-color-000: var(--primitive-neutral-000);
+
+  --primary-color: var(--primitive-primary-600);
+  --primary-color-bg: var(--primitive-primary-100);
+  --primary-color-050: var(--primitive-primary-050);
+  --primary-color-400: var(--primitive-primary-400);
+  --primary-color-800: var(--primitive-primary-800);
 }
 
 :root[data-theme="DARK"] {
@@ -114,7 +174,7 @@
 
   --error-color: #dc3545;
   --info-color: #17a2b8;
-  --success-color: #65B741;
+  --success-color: #65b741;
   --warning-color: #ffc107;
   --danger-color: #dc3545;
   --neutral-color: #4e5760;

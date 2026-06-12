@@ -16,6 +16,7 @@ import { ITeamFullGql, ITeamSimple, ITenant } from '../../../../types';
 import { IApiAuthoWithCount, IApiKey, IApiWithTeam, IUsagePlan } from '../../../../types/api';
 import { Table, TableRef } from '../../../inputs';
 import { BeautifulTitle, Option, Spinner } from '../../../utils';
+import {BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Users} from "lucide-react";
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -71,7 +72,7 @@ export const SelectOtoStep = (props: any) => {
         <div className="d-flex flex-column">
           <BeautifulTitle place="bottom" title={translate('Load a work in progress')}>
             <button className="btn btn-access" onClick={props.loadPreviousState}>
-              <i className="fa fa-download" />
+              <Download />
             </button>
           </BeautifulTitle>
         </div>
@@ -95,7 +96,7 @@ export const RecapServiceStep = (props: any) => {
             return (
               <li className="mt-3" key={idx}>
                 <h5>
-                  <i className="fas fa-user-friends"></i> {t.name}
+                  <Users /> {t.name}
                 </h5>
                 <ul>
                   {props.createdApis
@@ -110,7 +111,7 @@ export const RecapServiceStep = (props: any) => {
       </ul>
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-info me-1" onClick={() => props.goBackToServices()}>
-          <i className="fas fa-chevron-left me-1"></i>
+          <ChevronLeft className="me-1" />
           <Translation i18nkey="Back">Back</Translation>
         </button>
         <button className="btn btn-outline-danger me-1" onClick={props.cancel}>
@@ -150,7 +151,7 @@ export const RecapSubsStep = (props: any) => {
             return (
               <li className="mt-3" key={idx}>
                 <h5>
-                  <i className="fas fa-atlas"></i> {a.name}
+                  <BookOpen /> {a.name}
                 </h5>
                 <ul>
                   {props.createdSubs
@@ -170,7 +171,7 @@ export const RecapSubsStep = (props: any) => {
       </ul>
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-info me-1" onClick={() => props.goBackToServices()}>
-          <i className="fas fa-chevron-left me-1"></i>
+          <ChevronLeft className="me-1" />
           <Translation i18nkey="Back">Back</Translation>
         </button>
         <button className="btn btn-outline-danger me-1" onClick={reset}>
@@ -397,10 +398,10 @@ export const ServicesStep = (props: StepWizardChildProps<ServiceStepProps>) => {
       <div />
       <div>
         <button className="btn btn-outline-primary" disabled={props.currentStep === 1} onClick={() => props.goToStep(1)}>
-          <i className="fas fa-angle-double-left" />
+          <ChevronsLeft />
         </button>
         <button className="btn btn-outline-primary me-2" disabled={props.currentStep === 1} onClick={props.previousStep}>
-          <i className="fas fa-angle-left" />
+          <ChevronLeft />
         </button>
         {props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success" onClick={reset}>
           <Translation i18nkey="Reset">Reset</Translation>
@@ -412,10 +413,10 @@ export const ServicesStep = (props: StepWizardChildProps<ServiceStepProps>) => {
           <Translation i18nkey="Import">Import this service</Translation>
         </button>)}
         <button className="btn btn-outline-primary ms-2" onClick={nextStep}>
-          <i className="fas fa-angle-right" />
+          <ChevronRight />
         </button>
         <button className="btn btn-outline-primary" disabled={props.currentStep === props.totalSteps} onClick={() => props.goToStep(props.totalSteps)}>
-          <i className="fas fa-angle-double-right" />
+          <ChevronsRight />
         </button>
       </div>
 

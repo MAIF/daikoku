@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
-import { useContext, useState } from 'react';
+import {ReactNode, useContext, useState} from 'react';
 
 import { BeautifulTitle } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IAsset, ITeamSimple } from '../../types';
 import { ResponseError, isError } from '../../types/api';
-import { ModalContext } from '../modalContext';
+import { ModalContext } from '../modalContextInstance';
 import { IAssetSelectorModalProps, IBaseModalProps } from './types';
+import { UserCircle, File } from "lucide-react";
 
 export const MimeTypeFilter = {
   image: (value: string) => value.startsWith('image'),
@@ -99,7 +100,7 @@ type AssetChooserProps = {
   label: string,
   classNames?: string,
   onSelect: (asset: IAsset) => void,
-  icon?: string
+  icon?: ReactNode
   noClose?: boolean
 }
 
@@ -178,26 +179,14 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
           })
         }
       >
-        <i
-          className={
-            props.icon
-              ? props.icon
-              : classNames('fas me-1', {
-                'fa-user-circle': !!props.onlyPreview,
-                'fa-file': !props.onlyPreview,
-              })
-          }
-        />{' '}
+        {props.icon ? props.icon : (props.onlyPreview ? <UserCircle className="me-1" /> : <File className="me-1" />)}
         {props.label}
       </button>
     );
   } else {
     return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
       <button type="button" className="btn btn-outline-info ms-1 cursor-help" disabled>
-        <i className={classNames('fas', {
-          'fa-user-circle me-1': !!props.onlyPreview,
-          'fa-file me-1': !props.onlyPreview,
-        })} />
+        {props.onlyPreview ? <UserCircle className="me-1" /> : <File className="me-1" />}
         {props.label}
       </button>
     </BeautifulTitle>);
