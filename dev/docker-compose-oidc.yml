@@ -5,7 +5,7 @@ services:
     networks:
       - basicsetup
     volumes:
-      - ./config/mocks/initializer.json:/config/initializer.json
+      - ../daikoku/javascript/tests/config/mocks/initializer.json:/config/initializer.json
     expose:
       - 1081
     ports:
@@ -171,7 +171,7 @@ services:
   #    - POSTGRES_PASSWORD=postgres
   #    - POSTGRES_USER=postgres
   #  volumes:
-  #    - ./config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+  #    - ../daikoku/javascript/tests/config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
   #  ports:
   #    - 5442:5432
 
@@ -209,7 +209,7 @@ services:
   #  ports:
   #    - 13200:8080
   #  volumes:
-  #    - ./config/daikoku:/usr/app/daikoku/imports
+  #    - ../daikoku/javascript/tests/config/daikoku:/usr/app/daikoku/imports
   #  depends_on:
   #    - postgres
   #    - smtp
@@ -228,7 +228,7 @@ services:
       - OTOROSHI_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
       - OTOROSHI_DOMAIN=oto.tools
     volumes:
-      - "./config/otoroshi:/usr/app/otoroshi/imports"
+      - "../daikoku/javascript/tests/config/otoroshi:/usr/app/otoroshi/imports"
     ports:
       - 8080:8080
     depends_on:

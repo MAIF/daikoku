@@ -312,7 +312,7 @@ class UsersController(
         )
       )(ctx) {
         ctx.session.impersonatorSessionId match {
-          case None => FastFuture.successful(Redirect("/logout"))
+          case None            => FastFuture.successful(Redirect("/logout"))
           case Some(sessionId) =>
             env.dataStore.userSessionRepo
               .findOne(Json.obj("sessionId" -> sessionId.value))
@@ -502,7 +502,7 @@ class UsersController(
         env.dataStore.userRepo
           .save(ctx.user.copy(twoFactorAuthentication = None))
           .map {
-            case true => Ok(Json.obj("done" -> true))
+            case true  => Ok(Json.obj("done" -> true))
             case false =>
               BadRequest(
                 Json.obj("error" -> "Something happens when updating user")
@@ -617,7 +617,7 @@ class UsersController(
                 )
               )
               .map {
-                case true => Ok(updatedUser.asJson)
+                case true  => Ok(updatedUser.asJson)
                 case false =>
                   BadRequest(
                     Json.obj("error" -> "updated password can't be saved")
