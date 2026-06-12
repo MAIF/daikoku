@@ -983,3 +983,19 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v18.11.0] - 2026-06-12
+
+## :star: New Features
+
+- stop using soft deletion [#1104](https://github.com/MAIF/daikoku/issues/1104)
+- Support deploying Daikoku with Helm [#1100](https://github.com/MAIF/daikoku/issues/1100)
+
+## :beetle: Bug Fixes
+
+- 2 or more personal team can be created after first connection if user is already known in database [#1114](https://github.com/MAIF/daikoku/issues/1114)
+- Notification list — API name takes ~9s to display (blocked by slow `AllVisibleApis` query) [#1113](https://github.com/MAIF/daikoku/issues/1113)
+- Privilege Escalation via Impersonation Session Leak [#1102](https://github.com/MAIF/daikoku/issues/1102)
+- Undo a user deletion, or actually delete it [#1101](https://github.com/MAIF/daikoku/issues/1101)
+- team information is visible event for unconnected users [#1092](https://github.com/MAIF/daikoku/issues/1092)
+- User invitation does not work on private tenant [#1073](https://github.com/MAIF/daikoku/issues/1073)
+
