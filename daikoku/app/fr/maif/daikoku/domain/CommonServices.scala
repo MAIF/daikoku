@@ -614,6 +614,93 @@ object CommonServices {
     }
   }
 
+  /**
+   * Lightweight variant of [[getVisibleApis]] returning only the `_id` and
+   * `name` of every API visible to the current user.
+   *
+   * It reuses the exact same visibility rule (`me` / `my_teams` / `base_apis`
+   * CTEs) but skips every aggregation of the full query (plans, authorizations,
+   * subscription demands, subscription/expire counts, producers, tags,
+   * categories, pending notifications). Meant for id/name-only needs such as
+   * filter dropdowns.
+   */
+  def getVisibleApisLight[T](
+      research: Option[String] = None,
+      limit: Int = 10
+  )(implicit
+      ctx: DaikokuActionContext[T],
+      env: Env,
+      ec: ExecutionContext
+  ): Future[Either[AppError, Seq[JsObject]]] = {
+    _UberPublicUserAccess(
+      AuditTrailEvent(s"@{user.name} has accessed the light list of visible apis")
+    )(ctx) {
+      /*
+       * $1 : userID
+       * $2 : tenant
+       * $3 : research
+       * $4 : limit
+       * */
+      val query =
+        s"""
+          |WITH me as (select content
+          |            from users
+          |            where _id = $$1),
+          |     my_teams as (SELECT teams.*
+          |                  FROM teams
+          |                           LEFT JOIN me on true
+          |                  WHERE teams._deleted IS FALSE
+          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                    OR teams.content -> 'users' @>
+          |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
+          |                         FROM me))),
+          |     base_apis as (SELECT DISTINCT ON (a.content ->> '_humanReadableId') a._id, a.content
+          |                   FROM apis a
+          |                            LEFT JOIN me on true
+          |                   WHERE (
+          |                             a._deleted IS false AND
+          |                             a.content ->> '_tenant' = $$2 AND
+          |                             (a.content ->> 'state' = 'published' OR
+          |                             a.content ->> 'state' = 'deprecated' OR
+          |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
+          |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
+          |                             (case
+          |                                  WHEN me.content is null THEN a.content ->> 'visibility' = 'Public'
+          |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
+          |                                  ELSE (a.content ->> 'visibility' IN ('Public', 'PublicWithAuthorizations') OR
+          |                                        (a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) OR
+          |                                        (a.content -> 'authorizedTeams' ?|
+          |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
+          |                                 END) AND
+          |                             (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*'))
+          |                             )
+          |                             ORDER BY
+          |                                a.content ->> '_humanReadableId',
+          |                                 (a.content ->> 'isDefault')::boolean DESC,  -- prefer default version
+          |                                  a.content ->> 'currentVersion' DESC
+          |                             )
+          |SELECT jsonb_build_object('_id', _id, 'name', content ->> 'name') as result
+          |FROM base_apis
+          |ORDER BY lower(content ->> 'name')
+          |LIMIT CASE WHEN $$4 = -1 THEN NULL ELSE $$4 END;
+          |""".stripMargin
+
+      env.dataStore
+        .asInstanceOf[PostgresDataStore]
+        .queryRaw(
+          query,
+          "result",
+          Seq(
+            ctx.user.id.value,
+            ctx.tenant.id.value,
+            research.orNull,
+            java.lang.Integer.valueOf(limit)
+          )
+        )
+        .map(_.collect { case o: JsObject => o })
+    }
+  }
+
   def getAllTags(
       research: String,
       selectedTeam: Option[String] = None,
