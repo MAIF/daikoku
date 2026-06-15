@@ -29,7 +29,6 @@ run = [{task = "install:front"}, {task = "install:back"}]
 
 [tasks."dev:containers"]
 dir = "dev"
-run = "docker-compose -f docker-compose-full.yml rm -f && docker-compose --ansi=always -f docker-compose-full.yml up"
 
 [tasks."dev:clean"]
 dir = "dev"
@@ -37,16 +36,9 @@ run = "docker-compose -f docker-compose-full.yml down && docker-compose -f docke
 
 [tasks."dev:front"]
 dir = "daikoku/javascript"
-run = "FORCE_COLOR=1 npm run dev"
 
 [tasks."dev:back"]
 dir = "daikoku"
-run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
-raw=true
-
-[tasks."dev:back:empty"]
-dir = "daikoku"
-run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf\""
 raw=true
 
 [tasks.dev]
@@ -91,30 +83,21 @@ run = "docker-compose -f docker-compose-oidc-pg.yml down && docker-compose -f do
 
 [tasks."test:front:ldap:run"]
 dir="daikoku/javascript"
-run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --ui --project chromium"
 
 [tasks."test:front:oidc:run"]
 dir="daikoku/javascript"
-run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.oidc.config.js --project chromium"
 
 [tasks."test:front:ldap"]
 dir="dev"
-run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
 
 [tasks."test:front:oidc"]
 dir="dev"
-run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
-
-[tasks."test:front:report"]
-dir="daikoku/javascript"
-run = "npx playwright show-report tests/playwright-report"
 
 [tasks."test:back:clean"]
 dir = "daikoku/javascript/tests"
 run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
 
 [tasks."test:back"]
-run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
 
 
 [tasks.tests]
