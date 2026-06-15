@@ -176,7 +176,7 @@ export type DynamicTableColumnCtx = {
 };
 
 export type DynamicTableProps<T> = {
-  queryKey: unknown[];
+  queryKey: string[];
   columns: ColumnDef<T, any>[] | ((ctx: DynamicTableColumnCtx) => ColumnDef<T, any>[]);
   fetchData: FetchData<T>;
   filters?: FilterDef[];

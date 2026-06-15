@@ -173,6 +173,7 @@ GET     /api/teams/:teamId/apis/:apiId/:version/pages/_versions fr.maif.daikoku.
 GET     /api/teams/:teamId/apis/:apiId/:version/pages/_plans    fr.maif.daikoku.controllers.ApiController.getAllPlansDocumentation(teamId, apiId, version)
 PUT     /api/teams/:teamId/apis/:apiId/:version/pages           fr.maif.daikoku.controllers.ApiController.cloneDocumentation(teamId, apiId, version)
 GET     /api/categories                                         fr.maif.daikoku.controllers.ApiController.categories()
+GET     /api/teams/:teamId/apis/:apiId/:version/available_envs  fr.maif.daikoku.controllers.ApiController.getAvailableEnvs(teamId, apiId, version)
 POST    /api/teams/:teamId/apis/:apiId/:version/plan            fr.maif.daikoku.controllers.ApiController.createPlan(teamId, apiId, version)
 PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId/pages    fr.maif.daikoku.controllers.ApiController.clonePlanDocumentation(teamId, apiId, version, planId)
 PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId    fr.maif.daikoku.controllers.ApiController.updatePlan(teamId, apiId, version, planId)

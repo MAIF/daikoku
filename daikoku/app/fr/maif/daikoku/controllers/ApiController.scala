@@ -4534,6 +4534,22 @@ class ApiController(
       }
     }
 
+  def getAvailableEnvs(teamId: String, apiId: String, version: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has fetch available envs from @{plan.id} for api @{api.name} to @{newTeam.name}"
+        )
+      )(teamId, ctx) { _ =>
+        EitherT(apiService.getAllAvailableEnvs(apiId, version)(using ctx))
+          .map(r => {
+            Ok(r: JsValue)
+          })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
   def createPlan(teamId: String, apiId: String, version: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
@@ -4541,8 +4557,6 @@ class ApiController(
           s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { team =>
-        println(ctx.request.body)
-        val trt = ctx.request.body
         val newPlan = ctx.request.body.as(using UsagePlanFormat)
 
         def addProcess(
@@ -5033,8 +5047,8 @@ class ApiController(
       )(teamId, ctx) { team =>
         val paymentSettingsId =
           (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId")
-            .as(using ThirdPartyPaymentSettingsIdFormat)
-        val base = ctx.request.body.as(using BasePaymentInformationFormat)
+            .asOpt(using ThirdPartyPaymentSettingsIdFormat)
+        val base = ctx.request.body.asOpt(using BasePaymentInformationFormat)
 
         def getRatedPlan(
             plan: UsagePlan,
@@ -5080,12 +5094,15 @@ class ApiController(
               )
             case None => EitherT.pure[Future, AppError](())
           }
-          ratedPlan <- getRatedPlan(plan, base)
+          ratedPlan <- base match {
+            case Some(b) => getRatedPlan(plan, b)
+            case None    => EitherT.pure[Future, AppError](plan)
+          }
           paymentSettings <- paymentClient.createProduct(
             ctx.tenant,
             api,
             ratedPlan,
-            paymentSettingsId
+            paymentSettingsId.getOrElse(ThirdPartyPaymentSettingsId(""))
           )
 
           ratedPlanwithSettings = ratedPlan.isPaymentDefined match {
@@ -5098,7 +5115,7 @@ class ApiController(
                       paymentSettings.thirdPartyPaymentSettingsId
                   )
                 )
-            case false => ratedPlan
+            case false => ratedPlan.copy(paymentSettings = None)
           }
 
           _ <- EitherT.liftF(

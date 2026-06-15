@@ -1307,6 +1307,14 @@ export const removeCmsPage = (id: any) =>
     method: 'DELETE',
   });
 
+export const getAllAvailableEnvs = (teamId: string, apiId: string, version: string) => {
+  return customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/available_envs`, {
+    method: 'GET',
+  }).then((r) => (r.ok ?
+    r.json()
+     :  r));
+}
+
 export const graphql = {
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
@@ -1474,6 +1482,34 @@ export const graphql = {
           customName
           customDescription
           visibility
+          costPerMonth
+          maxPerSecond
+          maxPerDay
+          maxPerMonth
+          trialPeriod {
+            ... on BillingDuration {
+            value
+            unit {
+              name
+              }
+            }
+          }
+          billingDuration {
+            ... on BillingDuration {
+            value
+            }
+          }
+          paymentSettings {
+            thirdPartyPaymentSettingsId
+            ... on Stripe {
+              thirdPartyPaymentSettingsId
+              productId
+              priceIds {
+                basePriceId
+                additionalPriceId
+                }
+            }
+          }
           otoroshiTarget {
             otoroshiSettings
             authorizedEntities {
@@ -1486,10 +1522,44 @@ export const graphql = {
             code
           }
           subscriptionProcess {
-            name
-          }
+              name
+              ... on Form {
+                id
+                title
+                schema
+                formatter
+                type
+              }
+              ... on Email {
+                id
+                title
+                emails
+                type
+              }
+              ... on TeamAdmin {
+                id
+                title
+                team
+                type
+              }
+              ... on Payment {
+                id
+                title
+                thirdPartyPaymentSettingsId
+                type
+              }
+              ... on HttpRequest {
+                id
+                title
+                url
+                headers
+                type
+              }
+            }
+          integrationProcess
           allowMultipleKeys
           aggregationApiKeysSecurity
+          autoRotation
          }
         total
         totalFiltered

@@ -5,8 +5,10 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.AppError.*
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.actions.ApiActionContext
+import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
+import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.PaymentClient
+import fr.maif.daikoku.controllers.authorizations.async._PublicUserAccess
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.daikoku.domain.*
@@ -21,6 +23,7 @@ import fr.maif.daikoku.jobs.{
   OtoroshiSynchronizerJob,
   SyncInformation
 }
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.{
   IdGenerator,
   JsonOperationsHelper,
@@ -33,7 +36,7 @@ import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc.Result
+import play.api.mvc.{AnyContent, Result}
 import play.api.mvc.Results.Ok
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -520,7 +523,7 @@ class ApiService(
               .findOneNotDeleted(
                 Json.obj(
                   "_id" -> subscription.api.value
-//                  "state" -> ApiState.publishedJsonFilter
+                  //                  "state" -> ApiState.publishedJsonFilter
                 )
               ),
             AppError.EntityNotFound(
@@ -565,8 +568,8 @@ class ApiService(
             .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
             .getOrElse(Set.empty[String])
 
-//          val tagsFromDk =
-//            getListFromMeta("daikoku__tags", infos.apk.metadata)
+          //          val tagsFromDk =
+          //            getListFromMeta("daikoku__tags", infos.apk.metadata)
           val newTagsFromDk =
             planTags.map(OtoroshiTarget.processValue(_, ctx))
 
@@ -841,7 +844,7 @@ class ApiService(
           .findOneNotDeleted(
             Json.obj(
               "_id" -> subscription.api.value
-//              "state" -> ApiState.publishedJsonFilter
+              //              "state" -> ApiState.publishedJsonFilter
             )
           ),
         AppError.ApiNotFound
@@ -957,23 +960,23 @@ class ApiService(
                   )
               )
             else EitherT.pure[Future, AppError](0)
-//          parentSubscription <- subscription.parent match {
-//            case Some(parentId) =>
-//              EitherT.fromOptionF(
-//                env.dataStore.apiSubscriptionRepo
-//                  .forTenant(tenant)
-//                  .findById(parentId),
-//                AppError.EntityNotFound(
-//                  s"Parent subscription (ID: ${parentId.value})"
-//                )
-//              )
-//            case None => EitherT.pure[Future, AppError](updatedSubscription)
-//          }
+          //          parentSubscription <- subscription.parent match {
+          //            case Some(parentId) =>
+          //              EitherT.fromOptionF(
+          //                env.dataStore.apiSubscriptionRepo
+          //                  .forTenant(tenant)
+          //                  .findById(parentId),
+          //                AppError.EntityNotFound(
+          //                  s"Parent subscription (ID: ${parentId.value})"
+          //                )
+          //              )
+          //            case None => EitherT.pure[Future, AppError](updatedSubscription)
+          //          }
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-//          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
-//          _ <- EitherT(otoroshiClient.updateApiKey(apk))
+          //          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
+          //          _ <- EitherT(otoroshiClient.updateApiKey(apk))
           _ <-
             paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
         } yield updatedSubscription.asSafeJson.as[JsObject]
@@ -2695,7 +2698,7 @@ class ApiService(
       plan: UsagePlan,
       api: Api,
       otoroshiSettings: OtoroshiSettings
-  ) =
+  ) = {
     for {
       result <- EitherT.liftF[Future, AppError, Long](
         env.dataStore.apiSubscriptionRepo
@@ -2748,4 +2751,64 @@ class ApiService(
           )
       )
     } yield result
+  }
+
+  private def getFiltervalue[T](filters: JsArray, key: String)(implicit
+      fjs: Reads[T]
+  ): Option[T] = {
+    filters.value
+      .find(entry => {
+        entry
+          .as[JsObject]
+          .value
+          .exists(p => p._1 == "id" && p._2.as[String] == key)
+      })
+      .flatMap(v =>
+        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
+      )
+  }
+
+  def getAllAvailableEnvs(
+      apiId: String,
+      version: String
+  )(implicit
+      ctx: DaikokuActionContext[AnyContent]
+  ): Future[Either[AppError, JsArray]] = {
+    val query: String =
+      s"""
+         |SELECT json_agg(p.content ->> 'customName') as result
+         |FROM usage_plans p
+         |    LEFT JOIN apis a ON (a.content -> 'possibleUsagePlans') ? p._id
+         |WHERE a._id = $$1
+         """.stripMargin
+
+    EitherT
+      .fromOptionF(
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            query,
+            "result",
+            Seq(
+              apiId // $$1
+            )
+          ),
+        AppError.InternalServerError(
+          "SQL Request for allAvailableEnvs failed"
+        )
+      )
+      .map(maybeResult => {
+        JsArray(
+          ctx.tenant.environments
+            .diff(
+              maybeResult.value
+                .flatMap(v => v.asOpt[String])
+                .toSet
+            )
+            .map(JsString(_))
+            .toSeq
+        )
+      })
+      .value
+  }
 }
