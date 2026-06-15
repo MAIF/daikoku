@@ -1,0 +1,24 @@
+version: "0.5"
+
+log_level: debug
+
+processes:
+  Containers:
+    command: "mise run test:back:containers"
+    readiness_probe:
+      exec:
+        command: "docker inspect daikoku-backend-test-postgres 2>/dev/null | grep -q '\"Running\": true'"
+      initial_delay_seconds: 3
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    shutdown:
+      command: "mise run test:back:clean"
+  Tests:
+    command: "sbt test --color=true"
+    depends_on:
+      Containers:
+        condition: process_healthy
+    working_dir: "daikoku"
+    exit_on_end: true
