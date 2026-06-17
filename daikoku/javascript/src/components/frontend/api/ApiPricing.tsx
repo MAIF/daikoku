@@ -28,7 +28,7 @@ import {
   ITeamSelector,
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity,
-  IPlansWithCount, IApi
+  IPlansWithCount, IApi, IValidationStep
 } from '../../../types';
 import {SubscriptionProcessEditor} from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -837,6 +837,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
     openApiSelectModal,
     confirm
   } = useContext(ModalContext);
+
+  const [rowSelection, setRowSelection] = useState({});
+  const [selectedPlans, setSelectedPlans] = useState<IUsagePlan[]>([]);
+  const isPlanSelectable = (plan: IUsagePlan) => {
+    if (selectedPlans.length === 0) return true;
+    return selectedPlans.some(row => plan.subscriptionProcess === row.subscriptionProcess);
+  };
+
   const {translate, Translation} = useContext(I18nContext);
   const queryClient = useQueryClient();
   const {connectedUser, tenant, customGraphQLClient} = useContext(GlobalContext);
@@ -1548,10 +1556,29 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
+
   const columnHelper = createColumnHelper<IUsagePlan>();
   const columns: ((ColumnDef<IUsagePlan, any>))[] = useMemo(():((ColumnDef<IUsagePlan, any>))[] => {
 
     return [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        ),
+      }),
       columnHelper.display({
         id: 'plan',
         meta: {className: "plan-cell", title: translate('api.pricings.name.table.title'), size: 5 },
@@ -1624,7 +1651,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'process',
-        meta: {className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 20},
+        meta: {className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 15},
         cell: (info) => {
           const plan = info.cell.row.original
           return (
@@ -1640,10 +1667,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       }),
       columnHelper.display({
-        id: 'action',
-        meta: {className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 15},
+        id: 'apiKeySubscription',
+        meta: {className: "apiKeySubscription-cell", size: 20},
         cell: (info) => {
-         const plan = info.cell.row.original
+          const plan = info.cell.row.original
           const {
             otoroshiTargetIsDefined,
             otoroshiEntitiesIsDefined,
@@ -1654,73 +1681,83 @@ export const ApiPricing = (props: ApiPricingProps) => {
           } = otoroshiTargetColumn(plan)
 
           return (
+            <div className="p-2">
+              {
+                !connectedUser.isGuest &&
+                (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
+                props.api.visibility !== 'AdminOnly' &&
+                (
+                  <button
+                    type="button"
+                    className="table-plan_action-button inactive"
+                  >
+                    <Translation i18nkey="Get API key"/>
+                  </button>
+                )
+              }
+              {
+                ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
+                  props.api.visibility === 'AdminOnly') &&
+                (!isAccepted || props.api.visibility === 'AdminOnly') &&
+                isPublish(props.api) &&
+                (
+                  <Can
+                    I={access}
+                    a={apikey}
+                    teams={authorizedTeams.filter(
+                      (team) =>
+                        plan.visibility === 'Public' ||
+                        team._id === props.ownerTeam._id
+                    )}
+                  >
+                    {
+                      (props.api.visibility === 'AdminOnly' ||
+                        (plan.otoroshiTarget && !isAccepted)) && (
+                        <button
+                          type="button"
+                          className="table-plan_action-button"
+                          onClick={openTeamSelectorModal}
+                        >
+                          <Translation
+                            i18nkey={
+                              isAutomaticProcess ? 'Get API key' : 'Request API key'
+                            }
+                          />
+                        </button>
+                      )
+                    }
+                  </Can>
+                )
+              }
+              {
+                connectedUser.isGuest && (
+                  <button
+                    type="button"
+                    className="table-plan_action-button"
+                    onClick={() => openLoginOrRegisterModal({tenant})}
+                  >
+                    <Translation i18nkey="Get API key"/>
+                  </button>
+                )
+              }
+            </div>
+          )
+        }
+      }),
+      columnHelper.display({
+        id: 'action',
+        meta: {className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 4},
+        cell: (info) => {
+         const plan = info.cell.row.original
+
+          return (
             <div className="d-flex flex-row align-items-center">
-              <div className="p-2">
-                {
-                  !connectedUser.isGuest &&
-                  (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                  props.api.visibility !== 'AdminOnly' &&
-                  (
-                    <button
-                      type="button"
-                      className="table-plan_action-button inactive"
-                    >
-                      <Translation i18nkey="Get API key"/>
-                    </button>
-                  )
-                }
-                {
-                  ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
-                    props.api.visibility === 'AdminOnly') &&
-                  (!isAccepted || props.api.visibility === 'AdminOnly') &&
-                  isPublish(props.api) &&
-                  (
-                    <Can
-                      I={access}
-                      a={apikey}
-                      teams={authorizedTeams.filter(
-                        (team) =>
-                          plan.visibility === 'Public' ||
-                          team._id === props.ownerTeam._id
-                      )}
-                    >
-                      {
-                        (props.api.visibility === 'AdminOnly' ||
-                          (plan.otoroshiTarget && !isAccepted)) && (
-                          <button
-                            type="button"
-                            className="table-plan_action-button"
-                            onClick={openTeamSelectorModal}
-                          >
-                            <Translation
-                              i18nkey={
-                                isAutomaticProcess ? 'Get API key' : 'Request API key'
-                              }
-                            />
-                          </button>
-                        )
-                      }
-                    </Can>
-                  )
-                }
-                {
-                  connectedUser.isGuest && (
-                    <button
-                      type="button"
-                      className="table-plan_action-button"
-                      onClick={() => openLoginOrRegisterModal({tenant})}
-                    >
-                      <Translation i18nkey="Get API key"/>
-                    </button>
-                  )
-                }
-              </div>
               <div className="p-2">
                 <Can I={manage} a={API} team={props.ownerTeam}>
                   <div>
                     <Settings
                       className="cursor-pointer dropdown-menu-button"
-                      style={{fontSize: '20px', fill: 'tomato'}}
+                      style={{fontSize: '20px'}}
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                       id={`${plan._id}-dropdownMenuButton`}
@@ -1791,14 +1828,32 @@ export const ApiPricing = (props: ApiPricingProps) => {
           tableClassName="col-12 api_list_container"
           dataClassName="api-table table-rows"
           countLabelKey="Plan"
+          enableRowSelection={(row) => isPlanSelectable(row.original)}
+          onSelectionChange={setSelectedPlans}
+          rowSelection={rowSelection}
+          setRowSelection={setRowSelection}
+          bulkActions={[
+            {
+              label: translate('mail.apikey.demand.title'),
+              onClick: async (plans, selectAll, ctx) => {
+                // `plans` = tableau de IUsagePlan complets sélectionnés
+                console.log(plans)
+
+                await Promise.all(plans.map(plan =>
+                  plan
+                ));
+                ctx.refetch();
+              },
+            }
+          ]}
           toolbar={
             <>
-            {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
+              {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
                 {
                 <button
                   type = 'button'
                   onClick={() => createNewPlan()}
-                  className="btn btn-out line-primary d-flex align-items-center gap-2">
+                  className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
                   <p className="m-0">{translate('api.pricings.creation.button.label')}</p>
                 </button>

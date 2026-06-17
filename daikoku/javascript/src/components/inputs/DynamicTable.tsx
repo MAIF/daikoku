@@ -13,7 +13,7 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  useReactTable,
+  useReactTable, RowSelectionState, OnChangeFn,
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -194,6 +194,9 @@ export type DynamicTableProps<T> = {
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
+  rowSelection: RowSelectionState;
+  setRowSelection: OnChangeFn<RowSelectionState>;
+  onSelectionChange?: (selected: T[]) => void;
 };
 
 export function DynamicTable<T>({
@@ -213,6 +216,8 @@ export function DynamicTable<T>({
   dataClassName,
   countLabelKey,
   tableClassName,
+  rowSelection,
+  onSelectionChange,
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -240,6 +245,10 @@ export function DynamicTable<T>({
     });
     return vals;
   });
+
+  useEffect(() => {
+    onSelectionChange?.(table.getSelectedRowModel().rows.map(row => row.original));
+  }, [rowSelection]);
 
   const isFirstRender = useRef(true);
   useEffect(() => {

@@ -36,7 +36,7 @@ Run a local PostgreSQL and an instance of otoroshi dedicated to Daikoku:
 
 
 ```bash
-docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-very-local.yml up
+docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-full.yml up
 ```
 
 :::note Default connection info
@@ -79,7 +79,7 @@ Inside the `sbt` console:
 If you want to start Daikoku with pre-defined tenant, teams, ... Use below command.
 
 ```sbt
-~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=javascript/tests/config/daikoku/daikoku_state_very_local.ndjson
+~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson
 ```
 
 ### Without demo data

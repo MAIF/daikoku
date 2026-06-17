@@ -126,15 +126,19 @@ jobs:
       matrix:
         suite:
           - name: ldap
-            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.config.js
             health-url: http://localhost:13200/health
           - name: oidc
-            compose-file: ./daikoku/javascript/tests/docker-compose-openid.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-oidc.yml
             playwright-config: playwright.oidc.config.js
             health-url: http://localhost:13200/health
+          - name: local
+            compose-file: ./daikoku/javascript/tests/docker-compose-local.yml
+            playwright-config: playwright.local.config.js
+            health-url: http://localhost:13200/health
           - name: perf
-            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.perf.config.js
             health-url: http://localhost:13200/health
     name: "test-${{ matrix.suite.name }}"

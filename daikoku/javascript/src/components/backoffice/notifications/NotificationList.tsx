@@ -1,37 +1,31 @@
 import { constraints, format, type } from '@maif/react-forms';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
-import { useContext } from 'react';
+import debounce from 'lodash/debounce';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
+import AsyncSelect from 'react-select/async';
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import {
-  IAccountCreationGQL,
-  IApiGQL,
-  IApiPost,
-  isError,
-  Issue,
-  ISubscription,
-  ISubscriptionDemandGQL,
-  ITeamFullGql,
-  ITeamSimple,
-  ITenant,
-  IUsagePlan,
-  IUser,
-  IValidationStep,
-} from '../../../types';
-import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
-import { getLanguageFns } from '../../utils';
+import { IAccountCreationGQL, IApiGQL, IApiPost, isError, Issue, ISubscription, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, IUsagePlan, IUser, IValidationStep } from '../../../types';
+import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
+declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
+}
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+type NotificationColumnMeta = {
+  className?: string;
+};
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
@@ -45,29 +39,113 @@ type NotificationsGQL = {
 }
 
 type NotificationActionGQL =
-  | { __typename: 'ApiAccess'; api: IApiGQL; team: ITeamFullGql }
-  | { __typename: 'TeamInvitation'; team: ITeamFullGql; user: IUser }
+  | {
+    __typename: 'ApiAccess';
+    api: IApiGQL;
+    team: ITeamFullGql;
+  }
+  | {
+    __typename: 'TeamInvitation';
+    team: ITeamFullGql;
+    user: IUser;
+  }
   | {
     __typename: 'ApiSubscription';
-    api: IApiGQL; team: ITeamFullGql; plan: IUsagePlan;
-    parentSubscriptionId: IApiSubscriptionGql; motivation: string; demand: ISubscriptionDemandGQL;
+    api: IApiGQL;
+    team: ITeamFullGql;
+    plan: IUsagePlan;
+    parentSubscriptionId: IApiSubscriptionGql;
+    motivation: string;
+    demand: ISubscriptionDemandGQL;
   }
-  | { __typename: 'NewCommentOnIssueV2'; api: IApiGQL; issue: Issue }
-  | { __typename: 'NewPostPublishedV2'; api: IApiGQL; post: IApiPost }
-  | { __typename: 'ApiKeyRefreshV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan; message?: string }
-  | { __typename: 'ApiKeyDeletionInformationV2'; clientId: string; api: IApiGQL }
-  | { __typename: 'TransferApiOwnership'; api: IApiGQL; team: ITeamFullGql }
-  | { __typename: 'ApiSubscriptionAccept'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan }
-  | { __typename: 'ApiSubscriptionReject'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan; message: string }
-  | { __typename: 'OtoroshiSyncSubscriptionError'; message: string }
-  | { __typename: 'OtoroshiSyncApiError'; message: string; api: IApiGQL }
-  | { __typename: 'ApiKeyRotationInProgressV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan }
-  | { __typename: 'ApiKeyRotationEnded'; clientId: string; apiName: string; planName: string }
-  | { __typename: 'ApiKeyRotationEndedV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan }
-  | { __typename: 'NewIssueOpenV2'; api: IApiGQL; issue: Issue }
-  | { __typename: 'CheckoutForSubscription'; plan: IUsagePlan; step: IValidationStep & { type: 'payment' }; demand: ISubscriptionDemandGQL; api: IApiGQL }
-  | { __typename: 'ApiSubscriptionTransferSuccess'; subscription: ISubscription }
-  | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string };
+  | {
+    __typename: 'NewCommentOnIssueV2';
+    api: IApiGQL;
+    issue: Issue
+  }
+  | {
+    __typename: 'NewPostPublishedV2';
+    api: IApiGQL;
+    post: IApiPost
+  }
+  | {
+    __typename: 'ApiKeyRefreshV2';
+    api: IApiGQL;
+    subscription: IApiSubscriptionGql;
+    plan: IUsagePlan
+    message?: string
+  }
+  | {
+    __typename: 'ApiKeyDeletionInformationV2';
+    clientId: string;
+    api: IApiGQL;
+  }
+  | {
+    __typename: 'TransferApiOwnership';
+    api: IApiGQL
+    team: ITeamFullGql;
+  }
+  | {
+    __typename: 'ApiSubscriptionAccept';
+    team: ITeamFullGql;
+    api: IApiGQL;
+    plan: IUsagePlan;
+  }
+  | {
+    __typename: 'ApiSubscriptionReject';
+    team: ITeamFullGql;
+    api: IApiGQL;
+    plan: IUsagePlan;
+    message: string;
+  }
+  | {
+    __typename: 'OtoroshiSyncSubscriptionError';
+    message: string;
+  }
+  | {
+    __typename: 'OtoroshiSyncApiError';
+    message: string;
+    api: IApiGQL;
+  }
+  | {
+    __typename: 'ApiKeyRotationInProgressV2';
+    api: IApiGQL;
+    subscription: IApiSubscriptionGql
+    plan: IUsagePlan;
+  }
+  | {
+    __typename: 'ApiKeyRotationEnded';
+    clientId: string;
+    apiName: string;
+    planName: string;
+  }
+  | {
+    __typename: 'ApiKeyRotationEndedV2';
+    api: IApiGQL;
+    subscription: IApiSubscriptionGql
+    plan: IUsagePlan;
+  }
+  | {
+    __typename: 'NewIssueOpenV2';
+    api: IApiGQL;
+    issue: Issue;
+  }
+  | {
+    __typename: 'CheckoutForSubscription';
+    plan: IUsagePlan;
+    step: IValidationStep & { type: 'payment' };
+    demand: ISubscriptionDemandGQL;
+    api: IApiGQL;
+  }
+  | {
+    __typename: 'ApiSubscriptionTransferSuccess';
+    subscription: ISubscription;
+  }
+  | {
+    __typename: 'AccountCreationAttempt';
+    demand?: IAccountCreationGQL;
+    motivation: string;
+  };
 
 type NotificationGQL = {
   _id: string
@@ -75,29 +153,64 @@ type NotificationGQL = {
   _deleted: boolean
   _tenant: ITeamFullGql
   date: number
-  notificationType: { value: 'AcceptOnly' | 'AcceptOrReject' }
-  sender: { id: string; name: string }
-  status: { date?: number; status: 'Pending' | 'Accepted' | 'Rejected' }
-  team?: { _id: string; name: string }
-  tenant: { id: string }
+  notificationType: {
+    value: 'AcceptOnly' | 'AcceptOrReject'
+  }
+  sender: {
+    id: string
+    name: string
+  }
+  status: {
+    date?: number
+    status: 'Pending' | 'Accepted' | 'Rejected'
+  }
+  team?: {
+    _id: string
+    name: string
+  }
+  tenant: {
+    id: string
+  }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+type Option = {
+  label: string;
+  value: string;
+};
+type ExtraProps = {
+  labelKey: string;
+  labelKeyAll: string;
+  getCount: (data: string) => number
+};
+const GenericValueContainer = (
+  props: ValueContainerProps<Option, true> & { selectProps: ExtraProps }
+) => {
+  const { translate } = useContext(I18nContext);
 
-const VISIBLE_APIS = `
-  query AllVisibleApis ($limit: Int, $offset: Int) {
-    visibleApis (limit: $limit, offset: $offset) {
-      apis { api { name _id } }
-    }
-  }`
+  const { getValue, hasValue, selectProps } = props;
+  const selectedValues = getValue();
+  const nbValues = selectedValues.length;
+
+  const label = translate({ key: selectProps.labelKey, plural: nbValues > 1 })
+  return (
+    <components.ValueContainer {...props}>
+      {!hasValue || nbValues === 0 ? (
+        translate(selectProps.labelKeyAll)
+      ) : (
+        <>
+          {label}
+          <span className="ms-2 badge badge-custom">{nbValues}</span>
+        </>
+      )}
+    </components.ValueContainer>
+  );
+};
 
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
 
 const getApiFromNotification = (
   notification: NotificationGQL,
-  apis?: Array<{ _id: string; name: string }>
 ): { _id: string; name: string; currentVersion?: string } | undefined => {
-  if (!apis) return;
   switch (notification.action.__typename) {
     case 'ApiAccess':
     case 'ApiSubscription':
@@ -125,71 +238,155 @@ const getApiFromNotification = (
 
 export const NotificationList = () => {
   const { translate, language } = useContext(I18nContext);
-  const { customGraphQLClient, tenant, reloadUnreadNotificationsCount } = useContext(GlobalContext);
-  const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext);
-  const queryClient = useQueryClient();
+  const { customGraphQLClient, tenant, reloadUnreadNotificationsCount } = useContext(GlobalContext)
+  const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext)
 
-  const visibleApisRequest = useQuery({
-    queryKey: ['apis'],
-    queryFn: () =>
-      customGraphQLClient.request<{ visibleApis: { apis: [{ api: { _id: string; name: string } }] } }>(
-        VISIBLE_APIS, { limit: -1, offset: 0 }
-      ),
-    select: d => d.visibleApis.apis.map(a => a.api),
-  });
+  const pageSize = 25;
+  const [selectAll, setSelectAll] = useState(false);
+  const [limit, _] = useState(pageSize);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize,
+  })
+
+  const defaultColumnFilters = [{ "id": "unreadOnly", "value": true }];
+  const [searchParams] = useSearchParams();
+  const initialFilters = useMemo(() => {
+    const f = searchParams.get('filter');
+    return f ? JSON.parse(decodeURIComponent(f)) : defaultColumnFilters;
+  }, [searchParams]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
+
+  const queryClient = useQueryClient();
+  const notificationListQuery = useInfiniteQuery({
+    queryKey: ['notifications', limit, columnFilters],
+    queryFn: ({ pageParam = 0 }) => customGraphQLClient.request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
+      limit,
+      offset: pageParam,
+      filterTable: JSON.stringify([...(columnFilters ?? [])])
+    }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => {
+      const totalFilteredCount = lastPage.myNotifications.totalFiltered;
+      const nextOffset = pages.length * pageSize;
+
+      return nextOffset < totalFilteredCount ? nextOffset : undefined;
+    }
+  })
+
+  useEffect(() => {
+    const q = JSON.stringify(columnFilters);
+    window.history.replaceState(null, '', `?filter=${q}`);
+  }, [columnFilters]);
+
+  // Server-side autocomplete for the API filter: we only ever load a handful of
+  // APIs at a time, so we keep a local id->name cache to resolve the label of
+  // already-selected APIs (chips + select value) without refetching the whole list.
+  const [apiLabelCache, setApiLabelCache] = useState<Record<string, string>>({});
+
+  const cacheApiLabels = (apis: Array<{ value: string; label: string }>) =>
+    setApiLabelCache(prev => ({
+      ...prev,
+      ...Object.fromEntries(apis.map(a => [a.value, a.label])),
+    }));
+
+  const loadApiOptions = useMemo(
+    () =>
+      debounce((input: string, callback: (options: Array<Option>) => void) => {
+        Services.getMyVisibleApisLight(input, -1).then(apis => {
+          const options = apis.map(a => ({ label: a.name, value: a._id }));
+          cacheApiLabels(options);
+          callback(options);
+        });
+      }, 300),
+    []
+  );
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
     queryFn: () => Services.myTeams(),
-    select: data => (isError(data) ? [] : data),
-  });
+    select: data => isError(data) ? [] : data
+  })
 
   const notificationTypes = [
-    { type: 'ApiAccess' }, { type: 'ApiSubscription' }, { type: 'ApiSubscriptionReject' },
-    { type: 'ApiSubscriptionAccept' }, { type: 'OtoroshiSyncSubscriptionError' },
-    { type: 'OtoroshiSyncApiError' }, { type: 'ApiKeyDeletionInformationV2' },
-    { type: 'ApiKeyRotationInProgressV2' }, { type: 'ApiKeyRotationEndedV2' },
-    { type: 'TeamInvitation' }, { type: 'ApiKeyRefreshV2' }, { type: 'NewPostPublishedV2' },
-    { type: 'NewIssueOpenV2' }, { type: 'NewCommentOnIssueV2' }, { type: 'TransferApiOwnership' },
-    { type: 'ApiSubscriptionTransferSuccess' }, { type: 'CheckoutForSubscription' },
-    { type: 'AccountCreation' },
+    { type: "ApiAccess" },
+    { type: "ApiSubscription" },
+    { type: "ApiSubscriptionReject" },
+    { type: "ApiSubscriptionAccept" },
+    { type: "OtoroshiSyncSubscriptionError" },
+    { type: "OtoroshiSyncApiError" },
+    { type: "ApiKeyDeletionInformationV2" },
+    { type: "ApiKeyRotationInProgressV2" },
+    { type: "ApiKeyRotationEndedV2" },
+    { type: "TeamInvitation" },
+    { type: "ApiKeyRefreshV2" },
+    { type: "NewPostPublishedV2" },
+    { type: "NewIssueOpenV2" },
+    { type: "NewCommentOnIssueV2" },
+    { type: "TransferApiOwnership" },
+    { type: "ApiSubscriptionTransferSuccess" },
+    { type: "CheckoutForSubscription" },
+    { type: "AccountCreation" },
   ];
 
-  // ─── Actions ─────────────────────────────────────────────────────────────
+  const notificationActionTypes = [
+    { value: "AcceptOnly" },
+    { value: "AcceptOrReject" },
+  ]
 
   const accept = (notification: string, sub?: CustomSubscriptionData) => {
     Services.acceptNotificationOfTeam(notification, sub)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
-      .then(reloadUnreadNotificationsCount);
-  };
+      .then(reloadUnreadNotificationsCount)
+  }
   const reject = (notification: string, message?: string) => {
     Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
-      .then(reloadUnreadNotificationsCount);
-  };
+      .then(reloadUnreadNotificationsCount)
+  }
+  const handleBulkRead = (e) => {
+    const notificationsIds = table.getSelectedRowModel().rows.map(r => r.original._id)
+    Services.acceptNotificationOfTeamByBulk(notificationsIds, selectAll)
+      .then(() => table.getToggleAllPageRowsSelectedHandler()(e))
+      .then(() => setSelectAll(false))
+      .then(() => setColumnFilters(defaultColumnFilters))
+      .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+      .then(reloadUnreadNotificationsCount)
+  }
 
-  // ─── Formatters ──────────────────────────────────────────────────────────
+  const notificationAriaLabelFormatter = (notif: NotificationGQL): string => {
+    const date = formatDistanceToNow(notif.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
 
-  const statusFormatter = (status: { date?: number; status: 'Pending' | 'Accepted' | 'Rejected' }) => {
+    return translate({
+      key: 'notifications.page.notification.ariaLabel',
+      replacements: [
+        translate(`notifications.page.filters.type.${notif.action.__typename}.label`),
+        notif.sender.name,
+        date
+      ]
+    })
+  }
+
+  const statusFormatter = (status: { date?: number, status: 'Pending' | 'Accepted' | 'Rejected' }) => {
     switch (status.status) {
+      case 'Pending':
+        return;
       case 'Accepted':
         return (
           <div className='d-flex justify-content-end align-items-center gap-2 color-success'>
-            <Check />
+            <i className='fas fa-check' />
             {translate("notification.page.status.accepted.label")}
           </div>
         );
       case 'Rejected':
         return (
           <div className='d-flex  justify-content-end align-items-center gap-2 color-danger'>
-            <Ban />
+            <i className='fas fa-ban' />
             {translate("notification.page.status.rejected.label")}
           </div>
         );
-      default:
-        return null;
     }
-  };
+  }
 
   const actionFormatter = (notification: NotificationGQL) => {
     switch (notification.action.__typename) {
@@ -197,13 +394,15 @@ export const NotificationList = () => {
         return (
           <div className='action-container'>
             <div className="d-flex justify-content-end">
-              <a href={`/${notification.action.api.team._humanReadableId}/${notification.action.api._humanReadableId}/${notification.action.api.currentVersion}/news`}
+              <a
+                href={`/${notification.action.api.team._humanReadableId}/${notification.action.api._humanReadableId}/${notification.action.api.currentVersion}/news`}
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                className="nav_item cursor-pointer bg-info" target='_blank'
+                className="nav_item cursor-pointer bg-info"
+                target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
-                <ArrowRight />
+                <i className="fas fa-arrow-right" />
               </a>
             </div>
             {notification.status.status === 'Pending' && <button
@@ -213,23 +412,25 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <X />
+              <i className="fas fa-times" />
             </button>}
           </div>
         );
       case 'NewIssueOpenV2':
-      case 'NewCommentOnIssueV2': {
-        const api = notification.action.api;
+      case 'NewCommentOnIssueV2':
+        const api = notification.action.api
         return (
           <div className='action-container'>
             <div className="d-flex justify-content-end">
-              <a href={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/${notification.action.issue._id}`}
+              <a
+                href={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/${notification.action.issue._id}`}
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                className="nav_item cursor-pointer bg-info" target='_blank'
+                className="nav_item cursor-pointer bg-info"
+                target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
-                <ArrowRight />
+                <i className="fas fa-arrow-right" />
               </a>
             </div>
             {notification.status.status === 'Pending' && <button
@@ -239,22 +440,23 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <X />
+              <i className="fas fa-times" />
             </button>}
           </div>
         );
-      }
-      case 'ApiSubscription': {
-        const _demand = notification.action.demand;
-        const _api = notification.action.api;
-        const _plan = notification.action.plan;
-        const _team = notification.action.team;
+      case 'ApiSubscription':
+        const _demand = notification.action.demand
+        const _api = notification.action.api
+        const _plan = notification.action.plan
+        const _team = notification.action.team
         if (notification.status.status === 'Pending') {
           return (
             <div className='action-container'>
               <div className="d-flex justify-content-end gap-2">
-                <button className="nav_item cursor-pointer bg-success"
-                  title={translate('Accept')} aria-label={translate('Accept')}
+                <button
+                  className="nav_item cursor-pointer bg-success"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
                   onClick={() =>
                     Services.getSubscriptionDemand(notification.team!._id, _demand._id)
                       .then(demand => {
@@ -271,57 +473,71 @@ export const NotificationList = () => {
                       })
                   }
                 >
-                  <Check />
+                  <i className="fas fa-check" />
                 </button>
-                <button className="nav_item cursor-pointer bg-danger"
-                  title={translate('Reject')} aria-label={translate('Reject')}
+                <button
+                  className="nav_item cursor-pointer bg-danger"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
                   onClick={() => {
                     openFormModal<{ message: string }>({
                       title: translate('Message'),
                       schema: {
                         message: {
-                          type: type.string, format: format.text, label: null,
-                          constraints: [constraints.required()],
-                        },
+                          type: type.string,
+                          format: format.text,
+                          label: null,
+                          constraints: [
+                            constraints.required()
+                          ]
+                        }
                       },
                       onSubmit: ({ message }) => reject(notification._id, message),
                       actionLabel: translate('Send')
                     })
                   }}
                 >
-                  <Ban />
+                  <i className="fas fa-ban" />
                 </button>
               </div>
-              <button type="button" className="nav_item cursor-pointer no-bg" disabled={true}
+              <button
+                type="button"
+                className="nav_item cursor-pointer no-bg"
+                disabled={true}
                 title={translate('notifications.page.table.read.action.label')}
                 aria-label={translate('notifications.page.table.read.action.label')}
                 onClick={() => { }}
               >
-                <X />
+                <i className="fas fa-times" />
               </button>
             </div>
           );
         } else {
-          return <div className="action-container">{statusFormatter(notification.status)}</div>;
+          return (
+            <div className="action-container">
+              {statusFormatter(notification.status)}
+            </div>
+          )
         }
-      }
-      case 'CheckoutForSubscription': {
-        const _checkoutDemand = notification.action.demand;
+      case 'CheckoutForSubscription':
+        const _checkoutDemand = notification.action.demand
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton type="success" className="nav_item cursor-pointer ms-1"
-                onPress={() =>
-                  Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
-                    .then(r => window.location.href = r.checkoutUrl)
-                }
-                onSuccess={() => { }} feedbackTimeout={100} disabled={false}>
+              <FeedbackButton
+                type="success"
+                className="nav_item cursor-pointer ms-1"
+                onPress={() => Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
+                  .then(r => window.location.href = r.checkoutUrl)}
+                onSuccess={() => console.debug("success")}
+                feedbackTimeout={100}
+                disabled={false}
+              >
                 {translate('Checkout')}
               </FeedbackButton>
             </div>
           </div>
-        );
-      }
+        )
       case 'ApiKeyRefreshV2':
       case 'ApiKeyRotationInProgressV2':
       case 'ApiKeyRotationEndedV2':
@@ -336,7 +552,7 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <X />
+              <i className="fas fa-times" />
             </button>}
           </div>
         );
@@ -350,7 +566,7 @@ export const NotificationList = () => {
                 aria-label={translate('Accept')}
                 onClick={() => accept(notification._id)}
               >
-                <Check />
+                <i className="fas fa-check" />
               </button>}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
                 <button
@@ -359,10 +575,12 @@ export const NotificationList = () => {
                   aria-label={translate('Reject')}
                   onClick={() => reject(notification._id)}
                 >
-                  <Ban />
+                  <i className="fas fa-ban" />
                 </button>
               )}
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
+              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && (
+                statusFormatter(notification.status)
+              )}
             </div>
             {notification.status.status === 'Pending' && <button
               type="button"
@@ -372,281 +590,352 @@ export const NotificationList = () => {
               aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
-              <X />
+              <i className="fas fa-times" />
             </button>}
           </div>
         );
     }
   };
 
-  const notificationFormatter = (
-    notification: NotificationGQL,
-    translate: (params: string | TranslateParams) => string,
-    tenant: ITenant
-  ) => {
+  const notificationFormatter = (notification: NotificationGQL, translate: (params: string | TranslateParams) => string, tenant: ITenant) => {
     switch (notification.action.__typename) {
       case 'CheckoutForSubscription':
-        return translate('notif.CheckoutForSubscription');
+        return translate("notif.CheckoutForSubscription");
       case 'ApiAccess':
-        return translate({ key: 'notif.api.access', replacements: [notification.action.api.name] });
+        return translate({ key: 'notif.api.access', replacements: [notification.action.api.name] })
       case 'TransferApiOwnership':
-        return translate({ key: 'notif.api.transfer', replacements: [notification.action.api.name] });
-      case 'ApiSubscription': {
-        const desc = translate({ key: `notif.api.subscription.${tenant.display}`, replacements: [notification.action.plan.customName] });
-        const _api = notification.action.api;
-        const _plan = notification.action.plan;
-        const _team = notification.action.team;
-        const _demand = notification.action.demand;
-        const _motivation = notification.action.motivation;
+        return translate({ key: 'notif.api.transfer', replacements: [notification.action.api.name] })
+      case 'ApiSubscription':
+        const apiSubscriptionDescription = translate({
+          key: `notif.api.subscription.${tenant.display}`,
+          replacements: [notification.action.plan.customName]
+        })
+        const _api = notification.action.api
+        const _plan = notification.action.plan
+        const _team = notification.action.team
+        const _demand = notification.action.demand
+        const _motivation = notification.action.motivation
         return (
           <>
-            {desc}
-            <a href='#' title={translate('notifications.page.subscription.demand.detail.button.label')}
+            {apiSubscriptionDescription}
+            <a
+              href='#'
+              title={translate('notifications.page.subscription.demand.detail.button.label')}
               aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
               className='underline'
               onClick={() => openCustomModal({
                 title: translate('notifications.page.subscription.demand.detail.modal.title'),
-                content: (
-                  <div>
-                    {[['API', _api.name], ['Plan/Env', _plan.customName], ['Message', _motivation], ['Equipe', _team.name], ['demandeur', notification.sender.name], ['Date', notification.date]].map(([label, val]) => (
-                      <div key={label as string} className="notification-subscription-demand-summary">
-                        <span className='label'>{label}</span>
-                        <span>{val}</span>
-                      </div>
-                    ))}
-                    <div className="accordion" id="accordionExample">
-                      <div className="accordion-item">
-                        <h2 className="accordion-header">
-                          <button className="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#collapseOne"
-                            aria-expanded="false" aria-controls="collapseOne">
-                            [{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]
-                          </button>
-                        </h2>
-                        <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
-                          <div className="accordion-body">
-                            <pre>{JSON.stringify(_demand.motivation, null, 4)}</pre>
-                          </div>
+                content: <div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>API</span>
+                    <span>{_api.name}</span>
+                  </div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>Plan/Env</span>
+                    <span>{_plan.customName}</span>
+                  </div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>Message</span>
+                    <span>{_motivation}</span>
+                  </div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>Equipe</span>
+                    <span>{_team.name}</span>
+                  </div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>demandeur</span>
+                    <span>{notification.sender.name}</span>
+                  </div>
+                  <div className="notification-subscription-demand-summary">
+                    <span className='label'>Date</span>
+                    <span>{notification.date}</span>
+                  </div>
+                  <div className="accordion" id="accordionExample">
+                    <div className="accordion-item">
+                      <h2 className="accordion-header">
+                        <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                          [{translate("notifications.page.subscription.demand.detail.modal.raw.button.label")}]
+                        </button>
+                      </h2>
+                      <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                        <div className="accordion-body">
+                          <pre>{JSON.stringify(_demand.motivation, null, 4)}</pre>
                         </div>
                       </div>
                     </div>
                   </div>
-                ),
-                actions: (close) => notification.status.status === 'Pending' ? (
-                  <>
-                    <button className='btn btn-outline-danger' onClick={close}>{translate('Reject')}</button>
-                    <button className='btn btn-outline-success'
-                      onClick={() => Services.getSubscriptionDemand(notification.team!._id, _demand._id)
-                        .then(demand => {
-                          if (!isError(demand)) {
-                            openSubMetadataModal({
-                              save: (sub) => accept(notification._id, sub),
-                              api: _api._id, plan: _plan._id, team: _team,
-                              subscriptionDemand: demand, creationMode: true,
-                            });
-                          }
-                        })}>
-                      {translate('Accept')}
-                    </button>
-                  </>
-                ) : (
-                  <button className="btn btn-outline-info">{translate('Close')}</button>
-                ),
-                noClose: true,
+                </div>,
+                actions: (close) => notification.status.status === 'Pending' ? <>
+                  <button className='btn btn-outline-danger' onClick={close}>{translate('Reject')}</button>
+                  <button className='btn btn-outline-success' onClick={() => Services.getSubscriptionDemand(notification.team!._id, _demand._id)
+                    .then(demand => {
+                      if (!isError(demand)) {
+                        openSubMetadataModal({
+                          save: (sub) => accept(notification._id, sub),
+                          api: _api._id,
+                          plan: _plan._id,
+                          team: _team,
+                          subscriptionDemand: demand,
+                          creationMode: true,
+                        })
+                      }
+                    })}>{translate('Accept')}</button>
+                </> : <button className="btn btn-outline-info">{translate('Close')}</button>,
+                noClose: true
               })}>
-              <span className='ms-2'>[{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]</span>
+              <span className='ms-2'>[{translate("notifications.page.subscription.demand.detail.modal.raw.button.label")}]</span>
             </a>
           </>
-        );
-      }
-      case 'ApiSubscriptionReject': {
-        const desc = translate({ key: 'notif.api.demand.reject', replacements: [notification.action.plan.customName] });
-        const _message = notification.action.message;
+        )
+      case 'ApiSubscriptionReject':
+        const apiSubscriptionRejectDescription = translate({
+          key: 'notif.api.demand.reject',
+          replacements: [notification.action.plan.customName]
+        })
+        const _message = notification.action.message
         return (
           <>
-            {desc}
-            <a href='#' className='underline'
+            {apiSubscriptionRejectDescription}
+            <a
+              href='#'
+              className='underline'
               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               onClick={() => alert({
                 title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
-                message: <div><i>{_message}</i></div>,
+                message: <div>
+                  <i>{_message}</i>
+                </div>
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
-        );
-      }
+        )
       case 'ApiSubscriptionAccept':
-        return translate({ key: 'notif.api.demand.accept', replacements: [notification.action.plan.customName] });
+        return translate({
+          key: 'notif.api.demand.accept',
+          replacements: [notification.action.plan.customName]
+        })
       case 'ApiKeyDeletionInformationV2': {
-        const desc = translate({ key: 'notif.apikey.deletion' });
-        const clientId = notification.action.clientId;
+        const apiKeyDeletionInformationDescription = translate({ key: 'notif.apikey.deletion' })
+        const clientId = notification.action.clientId
         return (
           <>
-            {desc}
-            <a href='#' className='underline'
+            {apiKeyDeletionInformationDescription}
+            <a
+              href='#'
+              className='underline'
               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               onClick={() => alert({
                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                message: <div>{translate('subscription.display.credentials.clientId')} : <i>{clientId}</i></div>,
+                message: <div>
+                  {translate("subscription.display.credentials.clientId")} : <i>{clientId}</i>
+                </div>
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
-        );
+        )
       }
+
       case 'OtoroshiSyncSubscriptionError':
       case 'OtoroshiSyncApiError':
-        return notification.action.message;
+        return notification.action.message
       case 'ApiKeyRotationInProgressV2': {
-        const __api = notification.action.api;
-        const __plan = notification.action.plan;
-        const __team = notification.action.api.team;
-        const __subscription = notification.action.subscription;
+        const apiKeyRotationInProgressDescription = translate('notif.apikey.rotation.inprogress')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription
         return (
           <>
-            {translate('notif.apikey.rotation.inprogress')}
-            <a href='#' className='underline'
+            {apiKeyRotationInProgressDescription}
+            <a
+              href='#'
+              className='underline'
               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               onClick={() => alert({
                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
                 message: <SimpleApiKeyCard //@ts-ignore
-                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                  subscription={__subscription} />,
+                  api={__api}
+                  plan={__plan}
+                  apiTeam={__team as ITeamSimple} //@ts-ignore
+                  subscription={__subscription}
+                />
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
-        );
+        )
       }
       case 'ApiKeyRotationEndedV2': {
-        const __api = notification.action.api;
-        const __plan = notification.action.plan;
-        const __team = notification.action.api.team;
-        const __subscription = notification.action.subscription;
-        return (
-          <>
-            {translate('notif.apikey.rotation.ended')}
-            <a href='#' className='underline'
-              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              onClick={() => alert({
-                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                message: <SimpleApiKeyCard //@ts-ignore
-                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                  subscription={__subscription} />,
-              })}>
-              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
-            </a>
-          </>
-        );
+        const apiKeyRotationEndedV2Description = translate('notif.apikey.rotation.ended')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription
+        return <>
+          {apiKeyRotationEndedV2Description}
+          <a
+            href='#'
+            className='underline'
+            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            onClick={() => alert({
+              title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+              message: <SimpleApiKeyCard //@ts-ignore
+                api={__api}
+                plan={__plan}
+                apiTeam={__team as ITeamSimple} //@ts-ignore
+                subscription={__subscription}
+              />
+            })}>
+            <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+          </a>
+        </>
       }
       case 'ApiKeyRefreshV2': {
-        const __api = notification.action.api;
-        const __plan = notification.action.plan;
-        const __team = notification.action.api.team;
-        const __subscription = notification.action.subscription;
-        return (
-          <>
-            {translate('notif.apikey.refresh')}
-            <a href='#' className='underline'
-              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              onClick={() => alert({
-                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                message: <SimpleApiKeyCard //@ts-ignore
-                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                  subscription={__subscription} />,
-              })}>
-              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
-            </a>
-          </>
-        );
+        const apiKeyRefreshV2Description = translate('notif.apikey.refresh')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription
+        return <>
+          {apiKeyRefreshV2Description}
+          <a
+            href='#'
+            className='underline'
+            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            onClick={() => alert({
+              title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+              message: <SimpleApiKeyCard //@ts-ignore
+                api={__api}
+                plan={__plan}
+                apiTeam={__team as ITeamSimple} //@ts-ignore
+                subscription={__subscription}
+              />
+            })}>
+            <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+          </a>
+        </>
       }
       case 'TeamInvitation':
-        return translate({ key: 'notif.team.invitation', replacements: [notification.action.team.name] });
+        return translate({
+          key: 'notif.team.invitation',
+          replacements: [notification.action.team.name]
+        })
       case 'NewPostPublishedV2':
-        return translate({ key: 'notif.new.published.post', replacements: [notification.action.api.name] });
+        return translate({
+          key: 'notif.new.published.post',
+          replacements: [
+            notification.action.api.name]
+        })
       case 'NewIssueOpenV2':
-        return translate({ key: 'notif.issues', replacements: [notification.action.api.name] });
+        return translate({
+          key: 'notif.issues',
+          replacements: [notification.action.api.name]
+        })
       case 'NewCommentOnIssueV2':
-        return translate('notif.issues.comment');
+        return translate('notif.issues.comment')
       case 'ApiSubscriptionTransferSuccess':
-        return translate('notif.subscription.transfer.success');
-      case 'AccountCreationAttempt': {
+        return translate('notif.subscription.transfer.success')
+      case 'AccountCreationAttempt':
         const description = translate('notif.account.creation.attempt');
-        const value = notification.action.demand?.value;
-        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form');
+        const value = notification.action.demand?.value
+        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form')
+
         const regexp = /\[\[(.+?)\]\]/g;
         const matches = formStep?.formatter.match(regexp);
+
         const formattedValue = matches?.reduce((acc, match) => {
           const key = match.replace('[[', '').replace(']]', '');
           return acc.replace(match, value?.[key] || match);
-        }, formStep?.formatter ?? '');
+        }, formStep?.formatter ?? "");
+
         return (
           <>
             {description}
-            {value && (
-              <a href='#' className='underline'
-                aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
-                title={translate('notifications.page.account.creation.attempt.detail.button.label')}
-                onClick={() => alert({
-                  title: translate('notifications.page.account.creation.attempt.detail.modal.title'),
-                  message: (
-                    <div>
-                      {!!formattedValue && <em>{formattedValue}</em>}
-                      <pre>{JSON.stringify(value, null, 2)}</pre>
-                    </div>
-                  ),
-                })}>
-                <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
-              </a>
-            )}
+            {value && <a
+              href='#'
+              className='underline'
+              aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
+              title={translate('notifications.page.account.creation.attempt.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.account.creation.attempt.detail.modal.title'),
+                message: <div>
+                  {!!formattedValue && <em>{formattedValue}</em>}
+                  <pre>
+                    {JSON.stringify(value, null, 2)}
+                  </pre>
+                </div>
+              })}>
+              <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
+            </a>}
           </>
-        );
-      }
+        )
       default:
         return '';
     }
-  };
+  }
 
-  // ─── Table columns ────────────────────────────────────────────────────────
+  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
+    switch (notification.action.__typename) {
+      case "ApiAccess":
+      case "ApiSubscription":
+      case "ApiSubscriptionReject":
+      case "ApiSubscriptionAccept":
+      case "OtoroshiSyncApiError":
+      case "ApiKeyDeletionInformationV2":
+      case "ApiKeyRotationInProgressV2":
+      case "ApiKeyRotationEndedV2":
+      case "ApiKeyRefreshV2":
+      case "NewPostPublishedV2":
+      case "NewIssueOpenV2":
+      case "NewCommentOnIssueV2":
+      case "TransferApiOwnership":
+      case "CheckoutForSubscription":
+        const _api = notification.action.api
+        return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
+      case "TeamInvitation":
+      case "OtoroshiSyncSubscriptionError":
+      case "ApiSubscriptionTransferSuccess":
+        return;
+    }
+  }
 
   const columnHelper = createColumnHelper<NotificationGQL>();
-
-  const buildColumns = ({ setColumnFilters, selectAll }: DynamicTableColumnCtx) => [
+  const columns = [
     columnHelper.display({
       id: 'select',
-      meta: { className: 'select-cell', size: 5 },
+      meta: { className: "select-cell" },
       cell: ({ row }) => {
         const notification = row.original;
         if (row.getCanSelect())
           return (
             <>
-              <input
+              <input //FIXME: aria-label
                 type="checkbox"
                 className={classNames('form-check-input select-input')}
-                checked={row.getIsSelected() || (row.getCanSelect() && selectAll)}
+                checked={row.getIsSelected() || row.getCanSelect() && selectAll}
                 disabled={!row.getCanSelect()}
                 onChange={row.getToggleSelectedHandler()}
               />
               <span className={classNames('indicator flex-grow-1 d-flex justify-content-end', { unread: notification.status.status === 'Pending' })} />
             </>
           );
-        return (
-          <span className={classNames('indicator flex-grow-1 d-flex justify-content-end', { unread: notification.status.status === 'Pending' })} />
-        );
-      },
+        else
+          return <span className={classNames('indicator flex-grow-1 d-flex justify-content-end', { unread: notification.status.status === 'Pending' })}></span>
+      }
     }),
     columnHelper.display({
       id: 'api',
-      meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 15 },
+      meta: { className: "api-cell" },
       cell: (info) => {
         const notification = info.row.original;
-        const api = getApiFromNotification(notification, visibleApisRequest.data);
+        const api = getApiFromNotification(notification);
         if (!api) return null;
         return (
           <a href='#' onClick={() =>
@@ -658,25 +947,18 @@ export const NotificationList = () => {
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         );
-      },
+      }
     }),
     columnHelper.accessor('action.__typename', {
       id: 'type',
-      meta: { className: 'type-cell', title: translate('notifications.page.table.header.label.type'), size: 15 },
+      meta: { className: "type-cell" },
       enableColumnFilter: true,
       cell: (info) => {
-        const typeName = info.getValue();
-        const label = translate(`notifications.page.filters.type.${typeName}.label`);
+        const type = info.getValue();
+        const label = translate(`notifications.page.filters.type.${type}.label`)
         return (
-          <span
-            className="badge --primary"
-            onClick={() =>
-              setColumnFilters(prev => [
-                ...prev.filter(f => f.id !== 'type'),
-                { id: 'type', value: [typeName] },
-              ])
-            }
-          >
+          <span onClick={() => handleSelectChange([{ label, value: type }], 'type')}
+            className={`badge badge-custom-custom`}>
             {label}
           </span>
         );
@@ -684,184 +966,392 @@ export const NotificationList = () => {
     }),
     columnHelper.display({
       id: 'description',
-      meta: { className: 'description-cell', title: translate('notifications.page.table.header.label.description'), size: 30 },
-      cell: (info) => (
-        <div className='notification d-flex align-items-center gap-3'>
+      meta: { className: "description-cell" },
+      cell: (info) => {
+        return <div className='notification d-flex align-items-center gap-3'>
           <div className='notification__description'>
             {notificationFormatter(info.row.original, translate, tenant)}
           </div>
-        </div>
-      ),
+        </div>;
+      },
     }),
     columnHelper.display({
       id: 'team',
-      meta: { className: 'team-cell', title: translate('notifications.page.table.header.label.team'), size: 15 },
+      meta: { className: "team-cell" },
       cell: (info) => {
-        const team = info.row.original.team;
-        if (!team) return null;
-        return (
-          <a href='#' onClick={() =>
-            setColumnFilters(prev => [
-              ...prev.filter(f => f.id !== 'team'),
-              { id: 'team', value: [team._id] },
-            ])
-          }>
-            {team.name}
-          </a>
-        );
-      },
+        const notification = info.row.original;
+        const team = notification.team;
+
+        if (team)
+          return <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a>
+        else
+          return null;
+      }
     }),
     columnHelper.accessor('sender.name', {
       id: 'sender',
-      meta: { className: 'sender-cell', title: translate('notifications.page.table.header.label.sender'), size: 12 },
+      meta: { className: "sender-cell" },
       enableColumnFilter: true,
       cell: (info) => {
         const sender = info.getValue();
-        const isSystem = sender.startsWith('Otoroshi');
-        return (
-          <div className='sender d-flex gap-2 align-items-center'>
-            {!isSystem && <Smile size={16} />}
-            {sender}
-          </div>
-        );
+        const isSystem = sender.startsWith('Otoroshi')
+        return <div className='sender'>
+          {!isSystem && <i className="far fa-face-smile me-1"></i>}
+          {sender}
+        </div>;
       },
     }),
     columnHelper.display({
       id: 'date',
       enableColumnFilter: false,
-      meta: { className: 'date-cell', title: translate('notifications.page.table.header.label.date'), size: 7 },
+      meta: { className: "date-cell" },
       cell: (info) => {
-        const date = formatDistanceToNow(info.row.original.date, {
-          includeSeconds: false, addSuffix: true, locale: getLanguageFns(language),
-        });
-        return <div className="notification__date">{date}</div>;
+        const notification = info.row.original;
+        const date = formatDistanceToNow(notification.date, { includeSeconds: false, addSuffix: true, locale: getLanguageFns(language) })
+        return (
+          <div className="notification__date">{date}</div>
+        )
       },
     }),
     columnHelper.display({
       id: 'action',
       enableColumnFilter: false,
-      meta: { className: 'action-cell', title: translate('notifications.page.table.header.label.actions'), size: 15 },
-      cell: (info) => (
-        <div className='notification__actions'>{actionFormatter(info.row.original)}</div>
-      ),
-    }),
-  ];
-
-  // ─── fetchData ────────────────────────────────────────────────────────────
-
-  const fetchData: FetchData<NotificationGQL> = ({ limit, offset, filters }) =>
-    customGraphQLClient
-      .request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
-        limit,
-        offset,
-        filterTable: JSON.stringify([...(filters ?? [])]),
-      })
-      .then(({ myNotifications }): FetchResult<NotificationGQL> => ({
-        items: myNotifications.notifications,
-        total: myNotifications.total,
-        totalFiltered: myNotifications.totalFiltered,
-        totalSelectable: myNotifications.totalSelectable,
-        filterCounts: {
-          team: myNotifications.totalByTeams.map(t => ({ key: t.team, total: t.total })),
-          api: myNotifications.totalByApis.map(a => ({ key: a.api, total: a.total })),
-          type: myNotifications.totalByNotificationTypes.map(t => ({ key: t.type, total: t.total })),
-        },
-      }));
-
-  // ─── Filters ─────────────────────────────────────────────────────────────
-
-  const filters: FilterDef[] = [
-    {
-      id: 'team',
-      type: 'multiselect',
-      labelKey: 'notifications.page.filters.team.label',
-      labelKeyAll: 'notifications.page.filters.all.team.label',
-      options: (myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id })),
-      isLoading: myTeamsRequest.isLoading || myTeamsRequest.isPending,
-      countKey: 'team',
-    },
-    {
-      id: 'api',
-      type: 'multiselect',
-      labelKey: 'notifications.page.filters.api.label',
-      labelKeyAll: 'notifications.page.filters.all.api.label',
-      options: (visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id })),
-      isLoading: visibleApisRequest.isLoading || visibleApisRequest.isPending,
-      countKey: 'api',
-    },
-    {
-      id: 'type',
-      type: 'multiselect',
-      labelKey: 'notifications.page.filters.type.label',
-      labelKeyAll: 'notifications.page.filters.all.type.label',
-      options: notificationTypes.map(v => ({
-        label: translate(`notifications.page.filters.type.${v.type}.label`),
-        value: v.type,
-      })),
-      countKey: 'type',
-    },
-    {
-      id: 'unreadOnly',
-      type: 'boolean',
-      onLabel: translate('notifications.page.filters.unread.notifications.label'),
-      offLabel: translate('notifications.page.filters.all.notifications.label'),
-    },
-  ];
-
-  // ─── Bulk actions ─────────────────────────────────────────────────────────
-
-  const bulkActions: BulkAction<NotificationGQL>[] = [
-    {
-      label: translate('notifications.page.table.read.bulk.action.label'),
-      onClick: async (rows, selectAll, ctx) => {
-        const ids = rows.map(r => r._id);
-        await Services.acceptNotificationOfTeamByBulk(ids, selectAll);
-        ctx.resetFilters();
-        ctx.refetch();
-        reloadUnreadNotificationsCount();
+      meta: { className: "action-cell" },
+      cell: (info) => {
+        const notification = info.row.original;
+        return (
+          <div className='notification__actions'>{actionFormatter(notification)}</div>
+        )
       },
+    })
+  ]
+
+  const defaultData = useMemo(() => [], [])
+  const table = useReactTable({
+    data: notificationListQuery.data?.pages.flatMap(
+      (page) => page.myNotifications.notifications
+    ) ?? defaultData,
+    columns: columns,
+    getRowId: row => row._id,
+    rowCount: notificationListQuery.data?.pages[0].myNotifications.totalFiltered,
+    state: {
+      pagination,
+      //columnFilters,
+      // sorting
     },
-  ];
+    onPaginationChange: setPagination,
+    // onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    onColumnFiltersChange: setColumnFilters,
+    // getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSubRowSelection: true,
+    enableRowSelection: row => {
+      const notification = row.original;
+      return notification.status.status === 'Pending' && notification.notificationType.value === 'AcceptOnly';
+    },
+  })
 
-  // ─── Aria label per row ───────────────────────────────────────────────────
-
-  const getRowAriaLabel = (notif: NotificationGQL): string => {
-    const date = formatDistanceToNow(notif.date, {
-      includeSeconds: true, addSuffix: true, locale: getLanguageFns(language),
-    });
-    return translate({
-      key: 'notifications.page.notification.ariaLabel',
-      replacements: [
-        translate(`notifications.page.filters.type.${notif.action.__typename}.label`),
-        notif.sender.name,
-        date,
-      ],
-    });
+  const menuStyle = {
+    MenuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menu: (base) => ({
+      ...base,
+      width: 'max-content',
+      minWidth: '100%',
+      zIndex: 100,
+    }),
+    menuList: (base) => ({
+      ...base,
+      whiteSpace: 'nowrap',
+    }),
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  const getSelectValue = <T extends object>(id: string, data: Array<T>, labelKey: string, idKey: string): any => {
+    const filter = columnFilters.find(f => f.id === id);
+
+    const selectedValues = filter?.value as Array<string> ?? [];
+    return data
+      .filter(t => selectedValues.includes(t[idKey]))
+      .map(t => ({ label: t[labelKey], value: t[idKey] }));
+  }
+
+  const handleSelectChange = (data: MultiValue<Option>, id: string) => {
+    const filters = columnFilters.filter(f => f.id !== id)
+
+    setColumnFilters([...filters, { id, value: data.map(d => d.value) }])
+  }
+
+  const unreadOnly = !!columnFilters.find(f => f.id === 'unreadOnly')?.value as boolean
+
+  const totalByTeams = notificationListQuery.data?.pages[0].myNotifications.totalByTeams
+  const totalByApis = notificationListQuery.data?.pages[0].myNotifications.totalByApis
+  const totalByNotificationTypes = notificationListQuery.data?.pages[0].myNotifications.totalByNotificationTypes
+  const totalSelectable = notificationListQuery.data?.pages[0].myNotifications.totalSelectable ?? 0
+  const getTotalForTeam = (team: string) => {
+    const total = totalByTeams?.find(total => total.team === team)?.total;
+    if (!total) {
+      return undefined;
+    }
+    return total
+  }
+  const getTotalForApi = (api: string) => {
+    const total = totalByApis?.find(total => total.api === api)?.total;
+    if (!total) {
+      return undefined;
+    }
+    return total
+  }
+  const getTotalForNotifType = (type: string) => {
+    const total = totalByNotificationTypes?.find(total => total.type === type)?.total;
+    if (!total) {
+      return undefined;
+    }
+    return total
+  }
+
+
+
+  const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraProps }) => {
+    const { data, innerRef, innerProps } = props;
+    const total = props.selectProps.getCount(data.value)
+
+    return (
+      <div ref={innerRef} {...innerProps} className="d-flex justify-content-between align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
+        <span>{data.label}</span>
+
+        {!!total && <span className="badge badge-custom-warning">
+          {total}
+        </span>}
+      </div>
+    );
+  };
+
+  const clearFilter = (id: string, value: string) => {
+    const columnFilterValues = columnFilters.find(c => c.id === id)?.value as Array<string> ?? []
+    setColumnFilters([...columnFilters.filter(c => c.id !== id), { id, value: columnFilterValues.filter(v => v !== value) }])
+  }
+
+  const displayFilters = () => {
+    if (!columnFilters.length) {
+      return null
+    } else {
+      const filterOrder = ['team', 'api', 'type', 'actionType']
+      return (
+        <div className='my-2 d-flex flex-wrap flex-row gap-2'>
+          {columnFilters
+            .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
+            .flatMap(f => {
+              switch (true) {
+                case f.id === 'team':
+                  return ((f.value as Array<string>).map(value => {
+                    const teamName = myTeamsRequest.data?.find(t => t._id === value)?.name;
+                    return (
+                      <button key={teamName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        {teamName}
+                        <i className='fas fa-xmark' />
+                      </button>
+                    )
+                  }))
+                case f.id === 'api':
+                  return ((f.value as Array<string>).map(value => {
+                    const apiName = apiLabelCache[value] ?? value;
+                    return (
+                      <button key={apiName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        {apiName}
+                        <i className='fas fa-xmark' />
+                      </button>
+                    )
+                  }))
+                case f.id === 'type':
+                  return ((f.value as Array<string>).map(value => {
+                    const label = translate(`notifications.page.filters.type.${value}.label`)
+                    return (
+                      <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        {label}
+                        <i className='fas fa-xmark' />
+                      </button>
+                    )
+                  }))
+                case f.id === 'actionType':
+                  return ((f.value as Array<string>).map(value => {
+                    const type = notificationActionTypes.find(t => t.value === value)
+                    const label = translate(`notifications.page.filters.action.${type?.value}.label`)
+                    return (
+                      <button key={label} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        {label}
+                        <i className='fas fa-xmark' />
+                      </button>
+                    )
+                  }))
+              }
+            })}
+        </div>
+      )
+    }
+  }
+
 
   return (
-    <>
-      <h1 className="jumbotron-heading" id='notif-label'>
-        {translate('notifications.page.table.title')}
-      </h1>
-      <DynamicTable<NotificationGQL>
-        queryKey={['notifications']}
-        columns={buildColumns}
-        fetchData={fetchData}
-        filters={filters}
-        defaultFilters={defaultColumnFilters}
-        enableRowSelection={row => {
-          const n = row.original;
-          return n.status.status === 'Pending' && n.notificationType.value === 'AcceptOnly';
-        }}
-        bulkActions={bulkActions}
-        pageSize={25}
-        getRowId={row => row._id}
-        getRowAriaLabel={getRowAriaLabel}
-        countLabelKey="notifications.page.total.label"
-      />
-    </>
+    <div className='flex-grow-1'>
+      {/* {notificationListQuery.isLoading && <Spinner />}
+      {notificationListQuery.data && ( */}
+      <>
+        <div className='table-header'>
+          <div className='d-flex align-items-center gap-3' aria-live="polite">
+            <h1 className="jumbotron-heading" id='notif-label'>
+              {translate("notifications.page.table.title")}
+            </h1>
+          </div>
+          <div className='d-flex flex-row justify-content-between align-items-center'>
+            <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
+              <Select
+                isMulti //@ts-ignore
+                components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
+                isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
+                closeMenuOnSelect={true}
+                labelKey={"notifications.page.filters.team.label"}
+                labelKeyAll={"notifications.page.filters.all.team.label"}
+                getCount={getTotalForTeam}
+                classNamePrefix="daikoku-select"
+                styles={menuStyle}
+                onChange={data => handleSelectChange(data, 'team')}
+                value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
+              <AsyncSelect
+                isMulti
+                cacheOptions
+                defaultOptions //@ts-ignore
+                components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                loadOptions={loadApiOptions}
+                closeMenuOnSelect={true}
+                labelKey={"notifications.page.filters.api.label"}
+                labelKeyAll={"notifications.page.filters.all.api.label"}
+                getCount={getTotalForApi}
+                classNamePrefix="daikoku-select"
+                styles={menuStyle}
+                onChange={data => { cacheApiLabels([...data]); handleSelectChange(data, 'api'); }}
+                value={((columnFilters.find(f => f.id === 'api')?.value as Array<string>) ?? [])
+                  .map(id => ({ label: apiLabelCache[id] ?? id, value: id }))} />
+              <Select
+                isMulti //@ts-ignore
+                components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                options={notificationTypes.map(v => ({ label: translate(`notifications.page.filters.type.${v.type}.label`), value: v.type }))}
+                closeMenuOnSelect={true}
+                labelKey={"notifications.page.filters.type.label"}
+                labelKeyAll={"notifications.page.filters.all.type.label"}
+                getCount={getTotalForNotifType}
+                classNamePrefix="daikoku-select"
+                styles={menuStyle}
+                onChange={data => handleSelectChange(data, 'type')}
+                value={getSelectValue('type', notificationTypes, 'label', 'type')} />
+              <div className='btn-group' role='group' aria-label={translate('notifications.page.unread.button.group.aria.label')}>
+                <button
+                  className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
+                  aria-pressed={unreadOnly}
+                  onClick={() => {
+                    const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                    setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
+                  }}>{translate('notifications.page.filters.unread.notifications.label')}
+                </button>
+                <button
+                  className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
+                  aria-pressed={!unreadOnly}
+                  onClick={() => {
+                    const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                    setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
+                  }}>{translate('notifications.page.filters.all.notifications.label')}
+                </button>
+              </div>
+              <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
+                <i className='fas fa-rotate me-2' />
+                {translate('notifications.page.filters.clear.label')}
+              </button>
+            </div>
+            {notificationListQuery.data && <span className='' aria-labelledby="notif-label notif-count" id='notif-count'>
+              {translate({
+                key: "notifications.page.total.label",
+                replacements: [notificationListQuery.data?.pages[0].myNotifications.totalFiltered.toString()],
+                plural: notificationListQuery.data?.pages[0].myNotifications.totalFiltered > 1
+              })}
+            </span>}
+          </div>
+
+          {displayFilters()}
+        </div>
+        {notificationListQuery.isLoading && <Spinner />}
+        {notificationListQuery.data && (
+          <>
+            <div className="notification-table table-rows">
+              <div className='select-all-row table-row'>
+                <label className='notification-table-header'>
+                  <input
+                    type="checkbox"
+                    aria-label={translate('notifications.page.table.select.all.label')}
+                    className='form-check-input'
+                    checked={table.getIsAllPageRowsSelected()}
+                    onChange={(e) => {
+                      if (selectAll)
+                        setSelectAll(!selectAll)
+                      table.getToggleAllPageRowsSelectedHandler()(e)
+                    }}
+                  />
+
+                </label>
+                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null}
+                {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
+                  <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>{translate('notifications.page.table.read.bulk.action.label')}</button>
+                )}
+                {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
+                  <button className='btn btn-sm btn-outline-secondary ms-3' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
+                )}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.api')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.type')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.description')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.team')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.sender')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.date')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.actions')}</span>}
+              </div>
+              <ul className='table-rows'>
+                {table.getRowModel().rows.map(row => {
+                  return (
+                    <li key={row.id} tabIndex={-1}>
+                      <article className='table-row' aria-label={notificationAriaLabelFormatter(row.original)}>
+                        {row.getVisibleCells().map(cell => {
+                          return (
+                            <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </div>
+                          )
+                        })}
+                      </article>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            <div className="mt-3 mb-5 d-flex justify-content-center">
+              {notificationListQuery.hasNextPage && (
+                <FeedbackButton
+                  type="primary"
+                  className="btn btn-outline-primary a-fake"
+                  onPress={() => notificationListQuery.fetchNextPage()}
+                  onSuccess={() => console.debug("success")}
+                  feedbackTimeout={100}
+                  disabled={notificationListQuery.isFetchingNextPage}
+                >
+                  {translate('notifications.page.table.more.button.label')}
+                </FeedbackButton>
+              )}
+            </div>
+          </>
+        )}
+      </>
+      {/* )} */}
+    </div>
   );
 };

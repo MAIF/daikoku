@@ -71,6 +71,11 @@ const customFetch = (
 export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
 
+export const getMyVisibleApisLight = (
+  research?: string,
+  limit: number = 10
+): Promise<Array<{ _id: string; name: string }>> =>
+  customFetch(`/api/me/visible-apis?research=${encodeURIComponent(research ?? '')}&limit=${limit}`);
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> =>
