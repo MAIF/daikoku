@@ -41,7 +41,7 @@ run = "FORCE_COLOR=1 npm run dev"
 
 [tasks."dev:back"]
 dir = "daikoku"
-run = "sbt \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
+run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
 raw=true
 
 [tasks.dev]
