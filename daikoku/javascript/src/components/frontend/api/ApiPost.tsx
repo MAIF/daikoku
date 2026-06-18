@@ -168,7 +168,7 @@ export function ApiPost(props: ApiPostProps) {
         {!postQuery.data.posts.length && (
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('api.post.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
+            <button className="btn btn-outline-info" onClick={() => createorUpdatePostForm(undefined, true)}>{translate('api.post.create.post.btn.label')}</button>
           </div>
         )}
         {!!postQuery.data.posts.length && postQuery.data.posts.map((post, i) => {

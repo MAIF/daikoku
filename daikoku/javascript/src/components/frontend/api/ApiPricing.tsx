@@ -839,10 +839,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
   } = useContext(ModalContext);
 
   const [rowSelection, setRowSelection] = useState({});
-  const [selectedPlans, setSelectedPlans] = useState<IUsagePlan[]>([]);
-  const isPlanSelectable = (plan: IUsagePlan) => {
+
+  const processSignature = (process: any[]) =>
+    process.map(step => step.type).sort().join(',');
+
+  const isPlanSelectable = (plan: IUsagePlan, selectedPlans: IUsagePlan[]) => {
     if (selectedPlans.length === 0) return true;
-    return selectedPlans.some(row => plan.subscriptionProcess === row.subscriptionProcess);
+    return selectedPlans.some(
+      row =>
+        processSignature(plan.subscriptionProcess) === processSignature(row.subscriptionProcess) ||
+        plan.customName === row.customName
+    );
   };
 
   const {translate, Translation} = useContext(I18nContext);
@@ -1821,30 +1828,29 @@ export const ApiPricing = (props: ApiPricingProps) => {
   return (
       <>
         <DynamicTable<IUsagePlan>
-          queryKey={["plans" ]}
+          queryKey={["plans"]}
           columns={columns}
           fetchData={usagePlansFetchData}
           getRowId={plan => plan._id}
           tableClassName="col-12 api_list_container"
           dataClassName="api-table table-rows"
           countLabelKey="Plan"
-          enableRowSelection={(row) => isPlanSelectable(row.original)}
-          onSelectionChange={setSelectedPlans}
+          isRowSelectable={isPlanSelectable}
+          enableRowSelection={true}
           rowSelection={rowSelection}
           setRowSelection={setRowSelection}
           bulkActions={[
             {
+
+              
+
+
               label: translate('mail.apikey.demand.title'),
               onClick: async (plans, selectAll, ctx) => {
-                // `plans` = tableau de IUsagePlan complets sélectionnés
-                console.log(plans)
-
-                await Promise.all(plans.map(plan =>
-                  plan
-                ));
+                console.log(plans);
                 ctx.refetch();
               },
-            }
+            },
           ]}
           toolbar={
             <>

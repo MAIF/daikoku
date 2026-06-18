@@ -194,9 +194,10 @@ export type DynamicTableProps<T> = {
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
-  rowSelection: RowSelectionState;
-  setRowSelection: OnChangeFn<RowSelectionState>;
+  rowSelection?: RowSelectionState;
+  setRowSelection?: OnChangeFn<RowSelectionState>;
   onSelectionChange?: (selected: T[]) => void;
+  isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
 };
 
 export function DynamicTable<T>({
@@ -216,8 +217,10 @@ export function DynamicTable<T>({
   dataClassName,
   countLabelKey,
   tableClassName,
-  rowSelection,
+  rowSelection = {},
   onSelectionChange,
+  setRowSelection = () => {},
+  isRowSelectable
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -296,7 +299,7 @@ export function DynamicTable<T>({
     columns: resolvedColumns,
     getRowId,
     rowCount: totalFiltered,
-    state: { pagination, columnFilters, sorting },
+    state: { pagination, columnFilters, sorting, rowSelection },
     onPaginationChange: setPagination,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -304,10 +307,18 @@ export function DynamicTable<T>({
     getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     manualSorting: true,
-    enableRowSelection: enableRowSelection === undefined ? false : enableRowSelection,
+    enableRowSelection: isRowSelectable
+      ? (row) => isRowSelectable(row.original, selectedRows)
+      : (enableRowSelection === undefined ? false : enableRowSelection),
     enableSubRowSelection: true,
     enableMultiRowSelection: true,
+    onRowSelectionChange: setRowSelection,
   });
+
+  const selectedRows = useMemo(
+    () => items.filter(item => rowSelection[getRowId ? getRowId(item) : '']),
+    [items, rowSelection, getRowId]
+  );
 
   // Filter helpers
   const handleSelectChange = (data: MultiValue<FilterOption>, id: string) => {
