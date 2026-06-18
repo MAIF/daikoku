@@ -41,6 +41,7 @@ run = "npm run dev"
 
 [tasks."dev:back"]
 dir = "daikoku"
+run = "sbt \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
 raw=true
 
 [tasks.dev]
