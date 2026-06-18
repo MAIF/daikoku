@@ -29,6 +29,7 @@ run = [{task = "install:front"}, {task = "install:back"}]
 
 [tasks."dev:containers"]
 dir = "dev"
+run = "docker-compose -f docker-compose-full.yml rm -f && docker-compose -f docker-compose-full.yml up"
 
 [tasks."dev:clean"]
 dir = "dev"
@@ -36,6 +37,7 @@ run = "docker-compose -f docker-compose-full.yml down && docker-compose -f docke
 
 [tasks."dev:front"]
 dir = "daikoku/javascript"
+run = "npm run dev"
 
 [tasks."dev:back"]
 dir = "daikoku"
