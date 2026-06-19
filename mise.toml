@@ -99,11 +99,11 @@ run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/p
 
 [tasks."test:front:ldap"]
 dir="dev"
-run="process-compose -f process-compose-test-front-ldap.yaml"
+run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
 
 [tasks."test:front:oidc"]
 dir="dev"
-run="process-compose -f process-compose-test-front-oidc.yaml"
+run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
 
 [tasks."test:front:report"]
 dir="daikoku/javascript"
@@ -114,7 +114,7 @@ dir = "daikoku/javascript/tests"
 run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
 
 [tasks."test:back"]
-run = "process-compose -f ./dev/process-compose-test.yaml"
+run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
 
 
 [tasks.tests]
