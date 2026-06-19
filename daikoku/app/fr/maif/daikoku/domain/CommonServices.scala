@@ -365,9 +365,6 @@ object CommonServices {
            |            AND (
            |                             a._deleted IS false AND
            |                             a.content ->> '_tenant' = $$2 AND
-           |                             (
-           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
-           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
            |                             (CASE
            |                                  WHEN me.content is null THEN FALSE
            |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
