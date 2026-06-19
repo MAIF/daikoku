@@ -105,6 +105,10 @@ run="process-compose -f process-compose-test-front-ldap.yaml"
 dir="dev"
 run="process-compose -f process-compose-test-front-oidc.yaml"
 
+[tasks."test:front:report"]
+dir="daikoku/javascript"
+run = "npx playwright show-report tests/playwright-report"
+
 [tasks."test:back:clean"]
 dir = "daikoku/javascript/tests"
 run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
