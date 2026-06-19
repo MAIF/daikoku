@@ -2776,7 +2776,7 @@ class ApiService(
   ): Future[Either[AppError, JsArray]] = {
     val query: String =
       s"""
-         |SELECT json_agg(p.content ->> 'customName') as result
+         |SELECT coalesce(json_agg(p.content ->> 'customName'), '[]'::json) as result
          |FROM usage_plans p
          |    LEFT JOIN apis a ON (a.content -> 'possibleUsagePlans') ? p._id
          |WHERE a._id = $$1
