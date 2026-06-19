@@ -91,19 +91,19 @@ run = "docker-compose -f docker-compose-oidc-pg.yml down && docker-compose -f do
 
 [tasks."test:front:ldap:run"]
 dir="daikoku/javascript"
-run="npx playwright test --config ./tests/playwright.config.js --project chromium"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --ui --project chromium"
 
 [tasks."test:front:oidc:run"]
 dir="daikoku/javascript"
-run="npx playwright test  --config ./tests/playwright.oidc.config.js --project chromium"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.oidc.config.js --ui --project chromium"
 
 [tasks."test:front:ldap"]
 dir="dev"
-run="process-compose -f process-compose-test-front-ldap.yaml"
+run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
 
 [tasks."test:front:oidc"]
 dir="dev"
-run="process-compose -f process-compose-test-front-oidc.yaml"
+run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
 
 [tasks."test:front:report"]
 dir="daikoku/javascript"
@@ -114,7 +114,7 @@ dir = "daikoku/javascript/tests"
 run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
 
 [tasks."test:back"]
-run = "process-compose -f ./dev/process-compose-test.yaml"
+run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
 
 
 [tasks.tests]
