@@ -91,7 +91,7 @@ run = "docker-compose -f docker-compose-oidc-pg.yml down && docker-compose -f do
 
 [tasks."test:front:ldap:run"]
 dir="daikoku/javascript"
-run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --project chromium"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --ui --project chromium"
 
 [tasks."test:front:oidc:run"]
 dir="daikoku/javascript"
