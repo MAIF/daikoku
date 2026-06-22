@@ -169,7 +169,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
   await page.getByRole('button', { name: 'Confirmation' }).click();
-  await expect(page.getByRole('listitem', { name: 'API papier' })).toBeHidden();
+  await expect(page.getByText("Supprimé avec succès")).toBeVisible()
 
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
