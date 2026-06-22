@@ -2,7 +2,7 @@ import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL, IUser, DWIGHT } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, updateUserRightForTeam, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
 
 
 test.beforeEach(async () => {
@@ -973,41 +973,28 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
     }
   }
 
-  async function updateDwightRightsOnVendeurTeam(right: "Editor" | "Admin") {
-    const dwightUserLocator = page.locator(".container", { hasText: DWIGHT.name })
-    await page.goto(`${HOME}vendeurs/settings/members`)
-    await dwightUserLocator.locator(".overlay").hover()
-    await dwightUserLocator.locator(".fa-user-cog").click();
-    if(right === "Editor") {
-      await dwightUserLocator.locator(".fa-pencil-alt").click();
-      await expect(page.getByText("Dwight Schrute est maintenant ApiEditor")).toBeVisible()
-    } else {
-      await dwightUserLocator.locator(".fa-shield-alt").click();
-      await expect(page.getByText("Dwight Schrute est maintenant Administrator")).toBeVisible()
-    }
-  }
-
 
   await page.goto(ACCUEIL);
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(false);
-
   await logout(page)
-  await page.goto(ACCUEIL);
-  await loginAs(MICHAEL, page);
-  await checkBurgerButtonVisibility(true);
-  await updateDwightRightsOnVendeurTeam("Editor")
 
-  await logout(page)
+  await updateUserRightForTeam({
+      teamId: vendeurs,
+      userId: DWIGHT.id!,
+      right: "ApiEditor"
+    });
+
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(false);
-
   await logout(page)
-  await page.goto(ACCUEIL);
-  await loginAs(MICHAEL, page);
-  await updateDwightRightsOnVendeurTeam("Admin")
 
-  await logout(page)
+  await updateUserRightForTeam({
+      teamId: vendeurs,
+      userId: DWIGHT.id!,
+      right: "Administrator"
+    });
+
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(true);
 })

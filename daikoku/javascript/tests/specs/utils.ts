@@ -103,10 +103,10 @@ export const updateUserRightForTeam = async (params: {userId: string, teamId: st
       }
     }).then(r => r.json());
 
-    const updatedTeam = {...apiDivisionData, users: [...apiDivisionData.users, {
-      userId: userId,
-      teamPermission: right
-    }]};
+  const updatedTeam = {...apiDivisionData, users: [...apiDivisionData.users.filter(u => u.userId !== userId), {
+    userId: userId,
+    teamPermission: right
+  }]};
 
   await fetch(`http://localhost:${exposedPort}/admin-api/teams/${teamId}`, {
       method: 'PUT',
@@ -116,4 +116,5 @@ export const updateUserRightForTeam = async (params: {userId: string, teamId: st
       },
       body: JSON.stringify(updatedTeam)
     });
+
 }
