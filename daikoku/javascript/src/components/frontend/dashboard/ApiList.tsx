@@ -78,7 +78,6 @@ export const ApiList = (props: ApiListProps) => {
         meta: { className: 'api-cell', title: translate('dashboard.apis.table.header.label.api'), size: 15 },
         cell: (info) => {
           const api = info.row.original.api
-          const apib = info.row.original
           const authorizations = info.row.original.authorizations
           const isApiGroup = !!info.row.original.api.apis?.length
           const path = isApiGroup ? 'apis' : 'description'
@@ -105,11 +104,11 @@ export const ApiList = (props: ApiListProps) => {
           <div className="d-flex gap-1">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
-                className="tag --primary"
-                style={{ fontWeight: 'normal' }}
-                onClick={() => {
-                  // handled via filter toolbar; clicking badge is a shortcut
-                }}>
+                    className="tag --primary"
+                    style={{ fontWeight: 'normal' }}
+                    onClick={() => {
+                      // handled via filter toolbar; clicking badge is a shortcut
+                    }}>
                 {tag}
               </span>
             ))}
@@ -134,19 +133,19 @@ export const ApiList = (props: ApiListProps) => {
             <div className="d-flex gap-1 status">
               {(apiState === 'created') && (
                 <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+                      onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.created')}</span>
                 </span>
               )}
               {(apiState === 'published') && (
                 <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+                      onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.published')}</span>
                 </span>
               )}
               {apiState === 'deprecated' && (
                 <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+                      onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
                   <span>{translate('api.deprecated')}</span>
                 </span>
               )}

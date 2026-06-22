@@ -838,7 +838,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   }
 
   def createDatabase(): Future[Any] = {
-    logger.debug("Checking status of database ...")
+    logger.debug ("Checking status of database ...")
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
 
