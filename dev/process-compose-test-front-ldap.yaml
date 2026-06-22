@@ -28,7 +28,7 @@ processes:
       period_seconds: 5
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 20
+      failure_threshold: 100
     depends_on:
       Containers:
         condition: process_healthy

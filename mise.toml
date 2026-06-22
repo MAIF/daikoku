@@ -9,15 +9,15 @@ dir = "manual"
 run = "npm install"
 
 [tasks."install:playwright"]
-dir = "izanami-frontend"
+dir = "daikoku/javascript"
 run = "npx playwright install chromium"
 
 [tasks."install:frontdeps"]
-dir = "izanami-frontend"
+dir = "daikoku/javascript"
 run = "npm install"
 
 [tasks."install:front"]
-dir = "izanami-frontend"
+dir = "daikoku/javascript"
 run = [{task = "install:frontdeps"}, {task = "install:playwright"},  {task = "install:doc"}]
 
 
