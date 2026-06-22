@@ -1,6 +1,5 @@
 version: "3"
 services:
-
   oidc-server-mock:
     image: ghcr.io/xdev-software/oidc-server-mock:1.0.4
     networks:
@@ -111,6 +110,28 @@ services:
                 "Value": "pam.beesly@dundermifflin.com",
                 "ValueType": "string"
               }
+            ]
+          },
+          {
+            "SubjectId":"4",
+            "Username":"andy.BERNARD@dundermifflin.com",
+            "Password":"password",
+            "Claims": [
+              {
+                "Type": "name",
+                "Value": "Andy Bernard",
+                "ValueType": "string"
+              },
+              {
+                "Type": "email",
+                "Value": "andy.BERNARD@dundermifflin.com",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "user",
+                "ValueType": "string"
+              },
             ]
           }
         ]

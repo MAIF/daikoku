@@ -379,7 +379,8 @@ object LdapSupport {
                             .getOrElse(email.gravatar),
                           isDaikokuAdmin = true,
                           lastTenant = Some(tenant.id),
-                          personalToken = Some(IdGenerator.token(32))
+                          personalToken = Some(IdGenerator.token(32)),
+                          invitation = None
                         )
                         for {
                           _ <- _env.dataStore.userRepo.save(newUser)
@@ -439,7 +440,8 @@ object LdapSupport {
                             )
                             .getOrElse(email.gravatar),
                           lastTenant = Some(tenant.id),
-                          failedLoginAttempts = 0
+                          failedLoginAttempts = 0,
+                          invitation = None
                         )
                         for {
                           _ <- _env.dataStore.userRepo.save(newUser)

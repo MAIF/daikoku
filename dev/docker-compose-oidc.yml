@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   faker:
     image: mockserver/mockserver:latest
@@ -16,7 +16,7 @@ services:
   oidc-server-mock:
     image: ghcr.io/xdev-software/oidc-server-mock:1.0.4
     ports:
-      - '9001:8080'
+      - "9001:8080"
     healthcheck:
       test: curl --fail http://localhost:8080 || exit 1
       interval: 2s
@@ -135,7 +135,34 @@ services:
                 "Type": "email",
                 "Value": "pam.beesly@dundermifflin.com",
                 "ValueType": "string"
-              }
+              },
+              {
+                "Type": "role",
+                "Value": "user",
+                "ValueType": "string"
+              },
+            ]
+          },
+          {
+            "SubjectId":"4",
+            "Username":"andy.BERNARD@dundermifflin.com",
+            "Password":"password",
+            "Claims": [
+              {
+                "Type": "name",
+                "Value": "Andy Bernard",
+                "ValueType": "string"
+              },
+              {
+                "Type": "email",
+                "Value": "andy.BERNARD@dundermifflin.com",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "user",
+                "ValueType": "string"
+              },
             ]
           }
         ]
@@ -190,7 +217,7 @@ services:
     expose:
       - 6379
     ports:
-    - 6379:6379
+      - 6379:6379
 
   # daikoku:
   #  image: maif/daikoku:latest
