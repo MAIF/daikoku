@@ -1,0 +1,121 @@
+[tools]
+java = "temurin-21"
+sbt = "1.12"
+node = "24"
+"github:F1bonacc1/process-compose" = "1"
+
+[tasks."install:doc"]
+dir = "manual"
+run = "npm install"
+
+[tasks."install:playwright"]
+dir = "daikoku/javascript"
+run = "npx playwright install chromium"
+
+[tasks."install:frontdeps"]
+dir = "daikoku/javascript"
+run = "npm install"
+
+[tasks."install:front"]
+dir = "daikoku/javascript"
+run = [{task = "install:frontdeps"}, {task = "install:playwright"},  {task = "install:doc"}]
+
+
+[tasks."install:back"]
+run = "docker-compose -f dev/docker-compose-full.yml pull && cd daikoku && sbt compile"
+
+[tasks.install]
+run = [{task = "install:front"}, {task = "install:back"}]
+
+[tasks."dev:containers"]
+dir = "dev"
+run = "docker-compose -f docker-compose-full.yml rm -f && docker-compose --ansi=always -f docker-compose-full.yml up"
+
+[tasks."dev:clean"]
+dir = "dev"
+run = "docker-compose -f docker-compose-full.yml down && docker-compose -f docker-compose-full.yml rm -f"
+
+[tasks."dev:front"]
+dir = "daikoku/javascript"
+run = "FORCE_COLOR=1 npm run dev"
+
+[tasks."dev:back"]
+dir = "daikoku"
+run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
+raw=true
+
+[tasks."dev:back:empty"]
+dir = "daikoku"
+run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf\""
+raw=true
+
+[tasks.dev]
+run = "process-compose -f ./dev/process-compose.yaml -p 9999"
+
+[tasks."dev:empty"]
+run = "process-compose -f ./dev/process-compose-dev-empty.yaml -p 9999"
+
+[tasks.doc]
+dir = "manual"
+run = "npm start"
+
+[tasks."test:back:containers"]
+dir = "daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-test-backend.yml  rm -f && docker-compose -f docker-compose-test-backend.yml up"
+
+#dir = "javascript/tests/config/daikoku/daikoku_state_local_test.ndjson"
+
+[tasks."test:front:ldap:containers"]
+dir="daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-local-pg.yml rm -f && docker-compose --ansi=always -f docker-compose-local-pg.yml up"
+
+[tasks."test:front:oidc:containers"]
+dir="dev"
+run = "docker-compose -f docker-compose-oidc-pg.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc-pg.yml up"
+
+[tasks."test:front:ldap:backend"]
+dir="daikoku"
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt run --color=true"
+
+[tasks."test:front:oidc:backend"]
+dir="daikoku"
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt run --color=true"
+
+[tasks."test:front:ldap:clean"]
+dir="daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-local-pg.yml down && docker-compose -f docker-compose-local-pg.yml rm -f"
+
+[tasks."test:front:oidc:clean"]
+dir="dev"
+run = "docker-compose -f docker-compose-oidc-pg.yml down && docker-compose -f docker-compose-oidc-pg.yml rm -f"
+
+[tasks."test:front:ldap:run"]
+dir="daikoku/javascript"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --ui --project chromium"
+
+[tasks."test:front:oidc:run"]
+dir="daikoku/javascript"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.oidc.config.js --ui --project chromium"
+
+[tasks."test:front:ldap"]
+dir="dev"
+run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
+
+[tasks."test:front:oidc"]
+dir="dev"
+run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
+
+[tasks."test:front:report"]
+dir="daikoku/javascript"
+run = "npx playwright show-report tests/playwright-report"
+
+[tasks."test:back:clean"]
+dir = "daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
+
+[tasks."test:back"]
+run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
+
+
+[tasks.tests]
+run = [{task = "test:front"}, {task = "test:back"}]
