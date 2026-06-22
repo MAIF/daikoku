@@ -1,5 +1,5 @@
 import test, { expect } from '@playwright/test';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam } from './utils';
 

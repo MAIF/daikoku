@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 import { JIM, MICHAEL } from './users';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 
 
 test.beforeEach(async () => {

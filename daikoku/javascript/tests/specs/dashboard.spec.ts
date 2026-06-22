@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import { addDays } from 'date-fns';
 import { IApi } from '../../src/types';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { generateApi, saveApi } from './apis';
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';

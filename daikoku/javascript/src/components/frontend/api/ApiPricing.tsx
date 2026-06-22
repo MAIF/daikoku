@@ -1757,6 +1757,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         cell: (info) => {
          const plan = info.cell.row.original
 
+          console.log(manage," ",props)
           return (
             <div className="d-flex flex-row align-items-center">
               <div className="p-2">
@@ -1841,13 +1842,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
           setRowSelection={setRowSelection}
           bulkActions={[
             {
-
-              
-
-
               label: translate('mail.apikey.demand.title'),
               onClick: async (plans, selectAll, ctx) => {
-                console.log(plans);
                 ctx.refetch();
               },
             },

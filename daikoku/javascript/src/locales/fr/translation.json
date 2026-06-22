@@ -1670,8 +1670,8 @@
   "notifications.page.notification.ariaLabel": "%s par %s, %s",
   "notifications.page.unread.button.group.aria.label": "Filtrer les notifications lues ou non lues",
   "notifications.page.total.label": {
-    "s": "%s notification",
-    "p": "%s notifications"
+    "s": "notification",
+    "p": "notifications"
   },
   "notification.page.status.accepted.label": "Approuvée",
   "notification.page.status.pending.label": "En cours",

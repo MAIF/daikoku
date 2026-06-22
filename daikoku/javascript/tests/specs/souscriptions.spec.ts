@@ -1,5 +1,5 @@
 import test, { expect } from '@playwright/test';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL, IUser, DWIGHT } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
@@ -201,7 +201,8 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.locator('.usage-plan__card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
+
+  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -317,7 +318,8 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.locator('.usage-plan__card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
+
+  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -937,20 +939,30 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByRole('link', { name: 'API test publique' }).click();
   await page.getByText('Environnements').click();
   // api publique + plan public => bouton visible
-  await expect(page.locator('[data-usage-plan="dev"]').getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({
+    has: page.locator('.plan-cell div', { hasText: /^dev$/ })
+    }).getByRole('button', { name: getKey })).toBeVisible();
   // cas 1 : api publique + plan privé + équipe autorisée => bouton visible
-  await expect(page.locator('[data-usage-plan="preprod"]').getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({
+    has: page.locator('.plan-cell div', { hasText: /^preprod$/ })
+    }).getByRole('button', { name: getKey })).toBeVisible();
   // cas 2 : api publique + plan privé + équipe non autorisée => la carte du plan n'est pas affichée
-  await expect(page.locator('[data-usage-plan="prod"]')).toBeHidden();
+  await expect(page.locator('article.table-row').filter({
+    has: page.locator('.plan-cell div', { hasText: /^prod$/ })
+    }).getByRole('button', { name: getKey })).toBeHidden();
 
   // === API privée autorisée ===
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: 'API test privée autorisée' }).click();
   await page.getByText('Environnements').click();
   // cas 3 : api privée + plan public + équipe autorisée => bouton visible
-  await expect(page.locator('[data-usage-plan="dev"]').getByRole('button', { name: getKey })).toBeVisible();
+   await expect(page.locator('article.table-row').filter({
+      has: page.locator('.plan-cell div', { hasText: /^dev$/ })
+    }).getByRole('button', { name: getKey })).toBeVisible();
   // cas 5 : api privée + plan privé + équipe autorisée => bouton visible
-  await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
+    await expect(page.locator('article.table-row').filter({
+      has: page.locator('.plan-cell div', { hasText: /^prod$/ })
+    }).getByRole('button', { name: getKey })).toBeVisible();
 
   // === équipe propriétaire : accède à TOUS les plans, même ultra privés ===
   // "API test proprio" est possédée par Vendeurs. Son plan "prod" est privé et n'autorise
@@ -959,8 +971,12 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: 'API test proprio' }).click();
   await page.getByText('Environnements').click();
-  await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({
+    has: page.locator('.plan-cell div', { hasText: /^prod$/ })
+  }).getByRole('button', { name: getKey })).toBeVisible();
 })
+
+
 test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async({page, context}) => {
 
   async function checkBurgerButtonVisibility(visible: Boolean) {
@@ -981,7 +997,7 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
     const dwightUserLocator = page.locator(".container", { hasText: DWIGHT.name })
     await page.goto(`${HOME}vendeurs/settings/members`)
     await dwightUserLocator.locator(".overlay").hover()
-    await dwightUserLocator.locator(".fa-user-cog").click();
+    await dwightUserLocator.locator('.lucide.lucide-user-cog').first().click();
     if(right === "Editor") {
       await dwightUserLocator.locator(".fa-pencil-alt").click();
       await expect(page.getByText("Dwight Schrute est maintenant ApiEditor")).toBeVisible()

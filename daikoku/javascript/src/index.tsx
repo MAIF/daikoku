@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 import { DaikokuApp } from './apps';
 import { GlobalContext, GlobalContextProvider } from './contexts/globalContext';
@@ -35,8 +35,27 @@ const queryClient = new QueryClient({
 const ToasterComponent = () => {
   const { theme } = useContext(GlobalContext)
 
+  useEffect(() => {
+    const handleClick = (event) => {
+      const toastEl = event.target.closest('[data-sonner-toast]')
+      if (!toastEl) return
+      // on laisse les boutons (close/action/cancel) gérer leur propre clic
+      if (event.target.closest('button')) return
+
+      toast.dismiss() // ferme tous les toasts visibles
+    }
+
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
+
   return (
-    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} containerAriaLabel='notifications' />
+    <Toaster 
+      richColors 
+      position="top-right" 
+      theme={theme.toLocaleLowerCase() as 'light' | 'dark'} 
+      containerAriaLabel='notifications' 
+    />
   )
 }
 

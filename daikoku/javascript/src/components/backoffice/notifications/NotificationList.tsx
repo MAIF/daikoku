@@ -4,7 +4,7 @@ import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
-import { useContext } from 'react';
+import {useContext, useState} from 'react';
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -128,6 +128,7 @@ export const NotificationList = () => {
   const { customGraphQLClient, tenant, reloadUnreadNotificationsCount } = useContext(GlobalContext);
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
+  const [rowSelection, setRowSelection] = useState({});
 
   const visibleApisRequest = useQuery({
     queryKey: ['apis'],
@@ -852,10 +853,9 @@ export const NotificationList = () => {
         fetchData={fetchData}
         filters={filters}
         defaultFilters={defaultColumnFilters}
-        enableRowSelection={row => {
-          const n = row.original;
-          return n.status.status === 'Pending' && n.notificationType.value === 'AcceptOnly';
-        }}
+        enableRowSelection={true}
+        rowSelection={rowSelection}
+        setRowSelection={setRowSelection}
         bulkActions={bulkActions}
         pageSize={25}
         getRowId={row => row._id}

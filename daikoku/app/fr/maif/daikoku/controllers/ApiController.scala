@@ -4542,7 +4542,8 @@ class ApiController(
       }
     }
 
-  def getAvailableEnvs(teamId: String, apiId: String, version: String) =
+  def getAvailableEnvs(teamId: String, apiId: String, version: String) = {
+    println(teamId)
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4557,6 +4558,7 @@ class ApiController(
           .merge
       }
     }
+  }
 
   def createPlan(teamId: String, apiId: String, version: String) =
     DaikokuAction.async(parse.json) { ctx =>
