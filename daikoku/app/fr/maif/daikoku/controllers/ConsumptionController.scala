@@ -314,7 +314,7 @@ class ConsumptionController(
       to: Option[Long]
   ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(
+      TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed to api consumption for api @{apiId}"
         )
