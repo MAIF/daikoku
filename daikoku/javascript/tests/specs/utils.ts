@@ -91,3 +91,29 @@ export const findAndGoToTeam = async (team: string, page: Page) => {
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill(team);
   await page.locator('#portal-root').getByRole('link', { name: team }).click();
 }
+
+
+export const updateUserRightForTeam = async (params: {userId: string, teamId: string, right: "Administrator" | "ApiEditor"| "User"}) => {
+  const {userId, teamId, right} = params
+  const apiDivisionData = await fetch(`http://localhost:${exposedPort}/admin-api/teams/${teamId}`, {
+      method: 'GET',
+      headers: {
+        "content-type": "application/json",
+        "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+      }
+    }).then(r => r.json());
+
+    const updatedTeam = {...apiDivisionData, users: [...apiDivisionData.users, {
+      userId: userId,
+      teamPermission: right
+    }]};
+
+  await fetch(`http://localhost:${exposedPort}/admin-api/teams/${teamId}`, {
+      method: 'PUT',
+      headers: {
+        "content-type": "application/json",
+        "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+      },
+      body: JSON.stringify(updatedTeam)
+    });
+}

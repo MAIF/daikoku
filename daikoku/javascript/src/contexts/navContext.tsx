@@ -3,7 +3,7 @@ import merge from 'lodash/merge';
 import { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { teamPermissions } from '../components/utils';
+import { api, CanIDoAction, manage, teamPermissions, team as TeamRightScope } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
 import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
@@ -230,6 +230,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
 export const useTeamBackOffice = () => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
+  const { connectedUser, isTenantAdmin, tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
 
@@ -246,72 +247,76 @@ export const useTeamBackOffice = () => {
     enabled: !!teamId
   })
 
-  const schema = (currentTab: string, team: ITeamSimple): INavMenu => ({
-    title: team.name,
-    blocks: {
-      links: {
-        order: 1,
+  const schema = (currentTab: string, team: ITeamSimple): INavMenu => {
+    const isTeamAdmin = CanIDoAction(connectedUser, manage, TeamRightScope, team, isTenantAdmin, tenant, tenant);
+    const isApiEditor = CanIDoAction(connectedUser, manage, api, team, isTenantAdmin, tenant, tenant);
+    return {
+      title: team.name,
+      blocks: {
         links: {
-          settings: {
-            label: translate('Settings'),
-            action: () => navigateTo('dashboard'),
-            className: {
-              active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
-            },
-            childs: {
-              informations: {
-                label: translate('Informations'),
-                action: () => navigateTo('edition'),
-                className: { active: currentTab === 'edition' },
+          order: 1,
+          links: {
+            settings: {
+              label: translate('Settings'),
+              action: () => navigateTo('dashboard'),
+              className: {
+                active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
               },
-              assets: {
-                label: translate({ key: 'Asset', plural: true }),
-                action: () => navigateTo('assets'),
-                className: { active: currentTab === 'assets' },
-              },
-              members: {
-                label: translate({ key: 'Member', plural: true }),
-                action: () => navigateTo('members'),
-                visible: team.type !== 'Personal',
-                className: { active: currentTab === 'members' },
-              },
-            },
-          },
-          apis: {
-            label: translate('Apis'),
-            action: () => navigateTo('apis'),
-            className: {
-              active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
-            },
-          },
-          apikeys: {
-            label: translate({ key: 'API key', plural: true }),
-            action: () => navigateTo('apikeys'),
-            className: { active: ['apikeys', 'consumption'].includes(currentTab) },
-            childs: {
-              stats: {
-                label: translate('Global stats'),
-                action: () => navigateTo('consumption'),
-                className: { active: currentTab === 'consumption' },
+              childs: {
+                ...(isTeamAdmin ? {informations: {
+                  label: translate('Informations'),
+                  action: () => navigateTo('edition'),
+                  className: { active: currentTab === 'edition' },
+                }} : {}),
+                ...(isTeamAdmin ? {assets: {
+                  label: translate({ key: 'Asset', plural: true }),
+                  action: () => navigateTo('assets'),
+                  className: { active: currentTab === 'assets' },
+                }} : {}),
+                members: {
+                  label: translate({ key: 'Member', plural: true }),
+                  action: () => navigateTo('members'),
+                  visible: team.type !== 'Personal',
+                  className: { active: currentTab === 'members' },
+                },
               },
             },
-          },
-          billing: {
-            label: translate('Billing'),
-            action: () => navigateTo('billing'),
-            className: { active: ['billing', 'income'].includes(currentTab) },
-            childs: {
-              income: {
-                label: translate('Income'),
-                action: () => navigateTo('income'),
-                className: { active: currentTab === 'income' },
+            apis: {
+              label: translate('Apis'),
+              action: () => navigateTo('apis'),
+              className: {
+                active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
               },
             },
+            ...(isApiEditor ? {apikeys: {
+              label: translate({ key: 'API key', plural: true }),
+              action: () => navigateTo('apikeys'),
+              className: { active: ['apikeys', 'consumption'].includes(currentTab) },
+              childs: {
+                stats: {
+                  label: translate('Global stats'),
+                  action: () => navigateTo('consumption'),
+                  className: { active: currentTab === 'consumption' },
+                },
+              },
+            }} : {}),
+            ...(isTeamAdmin ? {billing: {
+              label: translate('Billing'),
+              action: () => navigateTo('billing'),
+              className: { active: ['billing', 'income'].includes(currentTab) },
+              childs: {
+                income: {
+                  label: translate('Income'),
+                  action: () => navigateTo('income'),
+                  className: { active: currentTab === 'income' },
+                },
+              },
+            }} : {})
           },
         },
-      },
+      }
     }
-  });
+  };
 
   const navigateTo = (navTab: string) => {
     navigate(`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/${navTab}`);
