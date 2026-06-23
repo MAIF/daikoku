@@ -4141,69 +4141,6 @@ object json {
         )
     }
 
-  val MessageFormat: Format[Message] =
-    new Format[Message] {
-      override def reads(json: JsValue): JsResult[Message] =
-        Try {
-          JsSuccess(
-            Message(
-              id = (json \ "_id").as(using DatastoreIdFormat),
-              tenant = (json \ "_tenant").as(using TenantIdFormat),
-              messageType = (json \ "messageType").as(using MessageTypeFormat),
-              chat = (json \ "chat").as(using UserIdFormat),
-              date = (json \ "date").as(using DateTimeFormat),
-              sender = (json \ "sender").as(using UserIdFormat),
-              participants = (json \ "participants").as(using SetUserIdFormat),
-              readBy = (json \ "readBy").as(using SetUserIdFormat),
-              message = (json \ "message").as[String],
-              send = (json \ "send").asOpt[Boolean].getOrElse(false),
-              closed = (json \ "closed").asOpt(using DateTimeFormat)
-            )
-          )
-        } recover { case e =>
-          JsError(e.getMessage)
-        } get
-
-      override def writes(o: Message): JsValue =
-        Json.obj(
-          "_id" -> o.id.value,
-          "_tenant" -> o.tenant.value,
-          "messageType" -> MessageTypeFormat.writes(o.messageType),
-          "chat" -> o.chat.value,
-          "date" -> DateTimeFormat.writes(o.date),
-          "sender" -> UserIdFormat.writes(o.sender),
-          "participants" -> SetUserIdFormat.writes(o.participants),
-          "readBy" -> SetUserIdFormat.writes(o.readBy),
-          "message" -> o.message,
-          "send" -> o.send,
-          "closed" -> o.closed
-            .map(DateTimeFormat.writes)
-            .getOrElse(JsNull)
-            .as[JsValue]
-        )
-    }
-
-  val MessageTypeFormat: Format[MessageType] =
-    new Format[MessageType] {
-      override def reads(json: JsValue): JsResult[MessageType] =
-        (json \ "type").as[String] match {
-          case "tenant" =>
-            TenantIdFormat
-              .reads((json \ "value").as[JsValue])
-              .map(value => MessageType.Tenant(value))
-          case str => JsError(s"Bad message type value: $str")
-        }
-
-      override def writes(o: MessageType): JsValue =
-        o match {
-          case t: MessageType.Tenant =>
-            Json.obj(
-              "type" -> "tenant",
-              "value" -> TenantIdFormat.writes(t.value)
-            )
-        }
-    }
-
   val TwoFactorAuthenticationFormat = new Format[TwoFactorAuthentication] {
     override def reads(json: JsValue): JsResult[TwoFactorAuthentication] =
       Try {
@@ -4519,8 +4456,6 @@ object json {
       Reads.seq(using CustomMetadataFormat),
       Writes.seq(using CustomMetadataFormat)
     )
-  val SeqMessagesFormat =
-    Format(Reads.seq(using MessageFormat), Writes.seq(using MessageFormat))
 
   val DefaultFormat = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =

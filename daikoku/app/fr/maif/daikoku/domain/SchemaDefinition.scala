@@ -3365,67 +3365,6 @@ object SchemaDefinition {
       ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date))
     )*/
 
-    val MessageIntefaceType: InterfaceType[
-      (DataStore, DaikokuActionContext[JsValue]),
-      MessageType
-    ] = InterfaceType(
-      "MessageInterface",
-      "An in-app message interface.",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), MessageType](
-          Field("name", StringType, resolve = _.value.value.value)
-        )
-    )
-
-    val MessageType =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), Message](
-        "Message",
-        "An in-app message.",
-        () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), Message](
-            Field("_id", StringType, resolve = _.value.id.value),
-            Field(
-              "tenant",
-              OptionType(TenantType),
-              resolve = ctx => tenantsFetcher.defer(ctx.ctx._2.tenant.id)
-            ),
-            Field(
-              "messageType",
-              MessageIntefaceType,
-              resolve = _.value.messageType
-            ),
-            Field(
-              "participants",
-              ListType(UserType),
-              resolve =
-                ctx => usersFetcher.deferSeq(ctx.value.participants.toSeq)
-            ),
-            Field(
-              "readBy",
-              ListType(UserType),
-              resolve = ctx => usersFetcher.deferSeq(ctx.value.readBy.toSeq)
-            ),
-            Field(
-              "chat",
-              OptionType(UserType),
-              resolve = ctx => usersFetcher.defer(ctx.value.chat)
-            ),
-            Field("date", DateTimeUnitype, resolve = _.value.date),
-            Field(
-              "sender",
-              OptionType(UserType),
-              resolve = ctx => usersFetcher.defer(ctx.value.sender)
-            ),
-            Field("message", StringType, resolve = _.value.message),
-            Field(
-              "closed",
-              OptionType(DateTimeUnitype),
-              resolve = _.value.closed
-            ),
-            Field("send", BooleanType, resolve = _.value.send)
-          )
-      )
-
     case class UserAuditEvent(
         id: UserId,
         name: String,

@@ -3709,25 +3709,11 @@ class AdminApiControllerSpec
       }
 
       "GET :: Not Found" in {
-        val message = Message(
-          id = DatastoreId(IdGenerator.token(10)),
-          tenant = tenant.id,
-          messageType = MessageType.Tenant(tenant.id),
-          participants = Set(user.id, userAdmin.id),
-          readBy = Set.empty,
-          chat = user.id,
-          date = DateTime.now(),
-          sender = user.id,
-          message = "hello",
-          closed = None,
-          send = true
-        )
         setupEnvBlocking(
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
-          messages = Seq(message)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(

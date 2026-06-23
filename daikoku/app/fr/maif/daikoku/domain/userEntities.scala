@@ -203,26 +203,3 @@ case class AccountCreation(
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
-
-sealed trait MessageType {
-  def value: ValueType
-}
-object MessageType {
-  case class Tenant(value: TenantId) extends MessageType
-}
-
-case class Message(
-    id: DatastoreId,
-    tenant: TenantId,
-    messageType: MessageType,
-    participants: Set[UserId],
-    readBy: Set[UserId],
-    chat: UserId,
-    date: DateTime,
-    sender: UserId,
-    message: String,
-    closed: Option[DateTime] = None,
-    send: Boolean = false
-) extends CanJson[Message] {
-  override def asJson: JsValue = json.MessageFormat.writes(this)
-}

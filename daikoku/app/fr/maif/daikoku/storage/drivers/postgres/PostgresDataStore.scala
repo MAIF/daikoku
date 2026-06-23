@@ -1174,21 +1174,6 @@ class PostgresTenantTranslationRepo(
   override def extractId(value: Translation): String = value.id.value
 }
 
-class PostgresTenantMessageRepo(
-    env: Env,
-    reactivePg: ReactivePg,
-    tenant: TenantId
-) extends PostgresTenantAwareRepo[Message, DatastoreId](
-      env,
-      reactivePg,
-      tenant
-    ) {
-  override def tableName: String = "messages"
-
-  override def format: Format[Message] = json.MessageFormat
-
-  override def extractId(value: Message): String = value.id.value
-}
 class PostgresTenantOperationRepo(
     env: Env,
     reactivePg: ReactivePg,
@@ -1494,15 +1479,6 @@ class PostgresTranslationRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Translation] = json.TranslationFormat
 
   override def extractId(value: Translation): String = value.id.value
-}
-
-class PostgresMessageRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[Message, DatastoreId](env, reactivePg) {
-  override def tableName: String = "messages"
-
-  override def format: Format[Message] = json.MessageFormat
-
-  override def extractId(value: Message): String = value.id.value
 }
 
 class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
