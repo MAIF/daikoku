@@ -75,11 +75,11 @@ run = "docker-compose -f docker-compose-oidc-pg.yml rm -f && docker-compose --an
 
 [tasks."test:front:ldap:backend"]
 dir="daikoku"
-run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt run --color=true"
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
 
 [tasks."test:front:oidc:backend"]
 dir="daikoku"
-run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt run --color=true"
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
 
 [tasks."test:front:ldap:clean"]
 dir="daikoku/javascript/tests"
