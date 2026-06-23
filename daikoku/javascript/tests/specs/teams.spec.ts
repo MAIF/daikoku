@@ -266,7 +266,7 @@ test("[#1092] - un membre simple d'une équipe ne peut pas accéder à la page d
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
 
-  await page.goto(`http://localhost:${exposedPort}/api-division/settings/edition`);
+  await page.goto(`/api-division/settings/edition`);
 
   await expect(page.getByText('Unauthorized').first()).toBeVisible();
   await expect(page).toHaveURL(/\/apis/);
@@ -276,7 +276,7 @@ test("[#1092] - un administrateur d'équipe peut accéder à la page d'édition"
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
 
-  await page.goto(`http://localhost:${exposedPort}/vendeurs/settings/edition`);
+  await page.goto(`/vendeurs/settings/edition`);
 
   await expect(page).toHaveURL(/\/vendeurs\/settings\/edition/);
   await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeVisible();
@@ -292,7 +292,7 @@ test("[#1079] - un membre non admin et non api editor d'une équipe ne doit pas 
   await page.goto(ACCUEIL);
   await loginAs(DWIGHT, page);
 
-  await page.goto(`http://localhost:${exposedPort}/api-division/settings/dashboard`);
+  await page.goto(`/api-division/settings/dashboard`);
 
   const sideBarLocator = page.getByText('API DivisionParamètres')
   await expect(sideBarLocator.getByText('Membres')).toBeVisible()
@@ -306,7 +306,7 @@ test("[#1079] - l'admin d'une équipe voit toutes les entrées de menu associée
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
 
-  await page.goto(`http://localhost:${exposedPort}/api-division/settings/dashboard`);
+  await page.goto(`/api-division/settings/dashboard`);
 
   const sideBarLocator = page.getByText('API DivisionParamètres')
   await expect(sideBarLocator.getByText('Informations')).toBeVisible();

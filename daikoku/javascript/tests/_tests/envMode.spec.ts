@@ -18,7 +18,7 @@ test.beforeEach(async () => {
     .then(() => fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }))
-}) 
+})
 
 /**
  * activate aggregation security for env mode on tenant
@@ -61,7 +61,7 @@ test('aggregation security works', async ({ page, request }) => {
   })))
 
   //login
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -91,7 +91,7 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByLabel('Close the panel').click();
   // await expect(page.getByText('API key to plan Free without')).toBeVisible();
 
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.getByText('Consumers', { exact: true }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('cell', { name: 'Child API' })).toBeVisible();
@@ -102,7 +102,7 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('cell', { name: 'Child API' }).click();
   await page.getByRole('row', { name: 'Child API 1.0.0 View API View' }).getByLabel('View APIkeys').click();
-  
+
   const apiKeys = await page.locator('.api-subscription__infos__name');
   expect(apiKeys).toHaveCount(2);
   expect(apiKeys.nth(0)).toHaveText('dev');

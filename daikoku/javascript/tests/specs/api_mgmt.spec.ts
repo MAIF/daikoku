@@ -107,7 +107,7 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
-  await page.goto(`http://localhost:${exposedPort}/apis`)
+  await page.goto(`/apis`)
   // await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.lead'))
   //   .toHaveText('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version')
   await page.getByRole('link', { name: 'API papier' }).click();

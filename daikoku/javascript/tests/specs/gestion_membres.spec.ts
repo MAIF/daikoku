@@ -729,7 +729,7 @@ test('[Local] - Valider la creation d\'un compte avec un process de souscription
   })
 
   //create new account
-  await page.goto(`http://localhost:${exposedPort}/signup`);
+  await page.goto(`/signup`);
 
   await expect(page.getByRole('heading', { name: 'Inscription à Dunder Mifflin' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Nom' }).fill(ROBERT.name);
