@@ -160,6 +160,19 @@ Test / parallelExecution := false
 Test / javaOptions ++= Seq(
   "--enable-native-access=ALL-UNNAMED"
 )
+// Trust the self-signed certificate used by the mailpit testcontainer in
+// SimpleSMTPSenderSpec (validated STARTTLS / implicit TLS). Safe to set
+// JVM-wide here: no test performs outbound TLS to a public CA, and CI/local
+// Docker is reached over a unix socket (no Docker TLS).
+Test / javaOptions ++= {
+  val truststore =
+    (baseDirectory.value / "test" / "resources" / "smtp" / "truststore.p12").getAbsolutePath
+  Seq(
+    s"-Djavax.net.ssl.trustStore=$truststore",
+    "-Djavax.net.ssl.trustStorePassword=changeit",
+    "-Djavax.net.ssl.trustStoreType=PKCS12"
+  )
+}
 
 
 scalacOptions ++= Seq(
