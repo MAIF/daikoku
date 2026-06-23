@@ -83,6 +83,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText("API succesfully updated")).toBeVisible();
   await page.getByLabel('Liste des APIs').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
