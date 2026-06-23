@@ -992,166 +992,166 @@ class ApiService(
     } yield ()
   }
 
-  def deleteApiSubscriptionsAsFlow(
-      tenant: Tenant,
-      apiOrGroupId: ApiId,
-      user: User
-  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
-    Flow[(UsagePlan, Seq[ApiSubscription])]
-      .map { case (plan, subscriptions) =>
-        subscriptions.map(subscription => (plan, subscription))
-      }
-      .flatMapConcat(seq => Source(seq.toList))
-      .mapAsync(1) { case (plan, subscription) =>
-        env.dataStore.keyringRepo
-          .forTenant(tenant)
-          .findById(subscription.keyring)
-          .map { maybeKeyring =>
-            val clientId = maybeKeyring.map(_.apiKey.clientId).getOrElse("")
-            val notification = Notification(
-              id = NotificationId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              team = Some(subscription.team),
-              sender = user.asNotificationSender,
-              notificationType = NotificationType.AcceptOnly,
-              action = NotificationAction.ApiKeyDeletionInformationV2(
-                apiOrGroupId,
-                clientId,
-                subscription.id
-              )
-            )
-            (plan, subscription, notification)
-          }
-      }
-      .mapAsync(1) { case (plan, subscription, notification) =>
-        AppLogger.info(
-          s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}"
-        )
+//  def deleteApiSubscriptionsAsFlow(
+//      tenant: Tenant,
+//      apiOrGroupId: ApiId,
+//      user: User
+//  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
+//    Flow[(UsagePlan, Seq[ApiSubscription])]
+//      .map { case (plan, subscriptions) =>
+//        subscriptions.map(subscription => (plan, subscription))
+//      }
+//      .flatMapConcat(seq => Source(seq.toList))
+//      .mapAsync(1) { case (plan, subscription) =>
+//        env.dataStore.keyringRepo
+//          .forTenant(tenant)
+//          .findById(subscription.keyring)
+//          .map { maybeKeyring =>
+//            val clientId = maybeKeyring.map(_.apiKey.clientId).getOrElse("")
+//            val notification = Notification(
+//              id = NotificationId(IdGenerator.token(32)),
+//              tenant = tenant.id,
+//              team = Some(subscription.team),
+//              sender = user.asNotificationSender,
+//              notificationType = NotificationType.AcceptOnly,
+//              action = NotificationAction.ApiKeyDeletionInformationV2(
+//                apiOrGroupId,
+//                clientId,
+//                subscription.id
+//              )
+//            )
+//            (plan, subscription, notification)
+//          }
+//      }
+//      .mapAsync(1) { case (plan, subscription, notification) =>
+//        AppLogger.info(
+//          s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}"
+//        )
+//
+//        (for {
+//          otoroshiSettings <- OptionT.fromOption[Future](
+//            plan.otoroshiTarget
+//              .map(_.otoroshiSettings)
+//              .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
+//          )
+//          _ <- OptionT.liftF(
+//            apiKeyStatsJob
+//              .syncForSubscription(subscription, tenant, completed = true)
+//          )
+//          _ <- OptionT.liftF(
+//            deleteSubscriptionAndSyncKeyring(subscription, plan, tenant)(using
+//              otoroshiSettings
+//            )
+//          )
+//          _ <- subscription.thirdPartySubscriptionInformations match {
+//            case Some(thirdPartySubscriptionInformations) =>
+//              OptionT.liftF(
+//                env.dataStore.operationRepo
+//                  .forTenant(tenant)
+//                  .save(
+//                    Operation(
+//                      DatastoreId(IdGenerator.token(24)),
+//                      tenant = tenant.id,
+//                      itemId = subscription.id.value,
+//                      itemType = ItemType.ThirdPartySubscription,
+//                      action = OperationAction.Delete,
+//                      payload = Json
+//                        .obj(
+//                          "paymentSettings" -> plan.paymentSettings
+//                            .map(_.asJson)
+//                            .getOrElse(JsNull)
+//                            .as[JsValue],
+//                          "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
+//                        )
+//                        .some
+//                    )
+//                  )
+//              )
+//            case None => OptionT.pure[Future](())
+//          }
+//          _ <- OptionT.liftF(
+//            env.dataStore.notificationRepo
+//              .forTenant(tenant)
+//              .save(notification)
+//          )
+//        } yield ()).value
+//          .map(_ => plan)
+//      }
 
-        (for {
-          otoroshiSettings <- OptionT.fromOption[Future](
-            plan.otoroshiTarget
-              .map(_.otoroshiSettings)
-              .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-          )
-          _ <- OptionT.liftF(
-            apiKeyStatsJob
-              .syncForSubscription(subscription, tenant, completed = true)
-          )
-          _ <- OptionT.liftF(
-            deleteSubscriptionAndSyncKeyring(subscription, plan, tenant)(using
-              otoroshiSettings
-            )
-          )
-          _ <- subscription.thirdPartySubscriptionInformations match {
-            case Some(thirdPartySubscriptionInformations) =>
-              OptionT.liftF(
-                env.dataStore.operationRepo
-                  .forTenant(tenant)
-                  .save(
-                    Operation(
-                      DatastoreId(IdGenerator.token(24)),
-                      tenant = tenant.id,
-                      itemId = subscription.id.value,
-                      itemType = ItemType.ThirdPartySubscription,
-                      action = OperationAction.Delete,
-                      payload = Json
-                        .obj(
-                          "paymentSettings" -> plan.paymentSettings
-                            .map(_.asJson)
-                            .getOrElse(JsNull)
-                            .as[JsValue],
-                          "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
-                        )
-                        .some
-                    )
-                  )
-              )
-            case None => OptionT.pure[Future](())
-          }
-          _ <- OptionT.liftF(
-            env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .save(notification)
-          )
-        } yield ()).value
-          .map(_ => plan)
-      }
+//  def deleteUsagePlan(
+//      plan: UsagePlan,
+//      api: Api,
+//      tenant: Tenant,
+//      user: User
+//  ): EitherT[Future, AppError, Api] = {
+//    val updatedApi = api.copy(possibleUsagePlans =
+//      api.possibleUsagePlans.filter(pp => pp != plan.id)
+//    )
+//    for {
+//      _ <-
+//        EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
+//      _ <-
+//        EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
+//      _ <- EitherT.liftF(
+//        env.dataStore.usagePlanRepo
+//          .forTenant(tenant)
+//          .deleteByIdLogically(plan.id)
+//      )
+//      _ <-
+//        if (plan.paymentSettings.isDefined)
+//          EitherT.liftF[Future, AppError, Boolean](
+//            env.dataStore.operationRepo
+//              .forTenant(tenant)
+//              .save(
+//                Operation(
+//                  DatastoreId(IdGenerator.token(24)),
+//                  tenant = tenant.id,
+//                  itemId = plan.id.value,
+//                  itemType = ItemType.ThirdPartyProduct,
+//                  action = OperationAction.Delete,
+//                  payload = Json
+//                    .obj(
+//                      "paymentSettings" -> plan.paymentSettings
+//                        .map(_.asJson)
+//                        .getOrElse(JsNull)
+//                        .as[JsValue]
+//                    )
+//                    .some
+//                )
+//              )
+//          )
+//        else EitherT.pure[Future, AppError](true)
+//    } yield updatedApi
+//  }
 
-  def deleteUsagePlan(
-      plan: UsagePlan,
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): EitherT[Future, AppError, Api] = {
-    val updatedApi = api.copy(possibleUsagePlans =
-      api.possibleUsagePlans.filter(pp => pp != plan.id)
-    )
-    for {
-      _ <-
-        EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
-      _ <-
-        EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
-      _ <- EitherT.liftF(
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .deleteByIdLogically(plan.id)
-      )
-      _ <-
-        if (plan.paymentSettings.isDefined)
-          EitherT.liftF[Future, AppError, Boolean](
-            env.dataStore.operationRepo
-              .forTenant(tenant)
-              .save(
-                Operation(
-                  DatastoreId(IdGenerator.token(24)),
-                  tenant = tenant.id,
-                  itemId = plan.id.value,
-                  itemType = ItemType.ThirdPartyProduct,
-                  action = OperationAction.Delete,
-                  payload = Json
-                    .obj(
-                      "paymentSettings" -> plan.paymentSettings
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue]
-                    )
-                    .some
-                )
-              )
-          )
-        else EitherT.pure[Future, AppError](true)
-    } yield updatedApi
-  }
-
-  def deleteApiPlansSubscriptions(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): Future[Done] = {
-    implicit val mat: Materializer = env.defaultMaterializer
-
-    Source(plans.toList)
-      .mapAsync(1)(plan =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> Json
-                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-            )
-          )
-          .map(seq => (plan, seq))
-      )
-      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
-      .runWith(Sink.ignore)
-      .recover { case e =>
-        AppLogger.error(s"Error while deleting api subscriptions", e)
-        Done
-      }
-  }
+//  def deleteApiPlansSubscriptions(
+//      plans: Seq[UsagePlan],
+//      api: Api,
+//      tenant: Tenant,
+//      user: User
+//  ): Future[Done] = {
+//    implicit val mat: Materializer = env.defaultMaterializer
+//
+//    Source(plans.toList)
+//      .mapAsync(1)(plan =>
+//        env.dataStore.apiSubscriptionRepo
+//          .forTenant(tenant)
+//          .findNotDeleted(
+//            Json.obj(
+//              "api" -> api.id.asJson,
+//              "plan" -> Json
+//                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
+//            )
+//          )
+//          .map(seq => (plan, seq))
+//      )
+//      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
+//      .runWith(Sink.ignore)
+//      .recover { case e =>
+//        AppLogger.error(s"Error while deleting api subscriptions", e)
+//        Done
+//      }
+//  }
 
   def notifyApiSubscription(
       demand: SubscriptionDemand,

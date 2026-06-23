@@ -13,7 +13,7 @@ import fr.maif.daikoku.services.{
   AssetsService,
   DeletionService,
   KeyringService,
-  TranslationsService
+  TranslationsService,
   UserService
 }
 import fr.maif.daikoku.utils.*

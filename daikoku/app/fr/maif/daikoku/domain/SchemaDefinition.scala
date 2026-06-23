@@ -1597,7 +1597,7 @@ object SchemaDefinition {
     def requireApiKeyAccess(
         ctx: Context[
           (DataStore, DaikokuActionContext[JsValue]),
-          ApiSubscription
+          Keyring
         ]
     ): Future[Unit] = {
       val actionCtx = ctx.ctx._2
