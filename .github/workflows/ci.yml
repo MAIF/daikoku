@@ -129,18 +129,22 @@ jobs:
             compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
           - name: oidc
             compose-file: ./daikoku/javascript/tests/docker-compose-oidc.yml
             playwright-config: playwright.oidc.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
           - name: local
             compose-file: ./daikoku/javascript/tests/docker-compose-local.yml
             playwright-config: playwright.local.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
           - name: perf
             compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.perf.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
     name: "test-${{ matrix.suite.name }}"
     steps:
       - uses: actions/checkout@v4
@@ -174,12 +178,21 @@ jobs:
 
       - name: Wait for API to be ready
         run: |
-          echo "Waiting for services to be up..."
+          echo "Waiting for Daikoku to be up..."
           until curl --silent --fail ${{ matrix.suite.health-url }}; do
             printf '.'
             sleep 2
           done
           echo "daikoku is ready!"
+
+      - name: Wait for otoroshi to be ready
+        run: |
+          echo "Waiting for Otoroshi to be up..."
+          until curl --silent --fail ${{ matrix.suite.otoroshi-health-url }}; do
+            printf '.'
+            sleep 2
+          done
+          echo "otoroshi is ready!"
 
       - name: Install Playwright
         timeout-minutes: 10
