@@ -4530,12 +4530,6 @@ object SchemaDefinition {
             adminOnly
           ) ++
           getTenantFields(
-            "message",
-            MessageType,
-            ctx => ctx.ctx._1.messageRepo,
-            adminOnly
-          ) ++
-          getTenantFields(
             "apiSubscription",
             ApiSubscriptionType,
             ctx => ctx.ctx._1.apiSubscriptionRepo,

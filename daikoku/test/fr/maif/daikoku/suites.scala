@@ -174,10 +174,6 @@ object testUtils {
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.cmsRepo.forAllTenant().deleteAll()
         _ <-
-          daikokuComponents.env.dataStore.messageRepo
-            .forAllTenant()
-            .deleteAll()
-        _ <-
           daikokuComponents.env.dataStore.stepValidatorRepo
             .forAllTenant()
             .deleteAll()
@@ -353,14 +349,6 @@ object testUtils {
         _ <- Source(creations.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.accountCreationRepo
-              .save(i)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(messages.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.messageRepo
-              .forAllTenant()
               .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)

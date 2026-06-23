@@ -856,63 +856,6 @@ class CredentialsAdminApiController(
     }
 }
 
-class MessagesAdminApiController(
-    daa: DaikokuApiAction,
-    env: Env,
-    cc: ControllerComponents
-) extends AdminApiController[Message, DatastoreId](daa, env, cc) {
-  override def entityClass = classOf[Message]
-  override def entityName: String = "message"
-  override def pathRoot: String = s"/admin-api/messages"
-  override def entityStore(
-      tenant: Tenant,
-      ds: DataStore
-  ): Repo[Message, DatastoreId] =
-    ds.messageRepo.forTenant(tenant)
-  override def toJson(entity: Message): JsValue = entity.asJson
-  override def fromJson(entity: JsValue): Either[String, Message] =
-    entity.asOpt[JsObject] match {
-      case Some(v) => Right(entity.as(using json.MessageFormat))
-      case None    => Left("Not an object")
-    }
-
-  override def validate(
-      entity: Message,
-      updateOrCreate: UpdateOrCreate
-  ): EitherT[Future, AppError, Message] =
-    for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
-        AppError.ParsingPayloadError("Tenant not found")
-      )
-      _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.sender),
-        AppError.ParsingPayloadError(
-          s"Sender (${entity.sender.value}) not found"
-        )
-      )
-      _ <-
-        entity.participants
-          .map(u =>
-            EitherT.fromOptionF[Future, AppError, User](
-              env.dataStore.userRepo.findById(u),
-              AppError.ParsingPayloadError(
-                s"Participant (${u.value}) not found"
-              )
-            )
-          )
-          .toList
-          .sequence
-      _ <- EitherT.cond[Future][AppError, Unit](
-        entity.participants.contains(entity.sender),
-        (),
-        AppError.ParsingPayloadError("Sender must included in participants")
-      )
-    } yield entity
-
-  override def getId(entity: Message): DatastoreId = entity.id
-}
-
 class IssuesAdminApiController(
     daa: DaikokuApiAction,
     env: Env,

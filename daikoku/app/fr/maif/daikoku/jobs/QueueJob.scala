@@ -227,29 +227,6 @@ class QueueJob(
       )
   }
 
-  private def deleteUserMessages(user: User, tenant: TenantId)(implicit
-      dbConn: DbConn
-  ): Future[Boolean] = {
-    env.dataStore.teamRepo
-      .forTenant(tenant)
-      .findOne(Json.obj("type" -> "Admin"))
-      .flatMap {
-        case Some(adminTeam)
-            if !adminTeam.users.exists(u => u.userId == user.id) =>
-          env.dataStore.messageRepo
-            .forTenant(tenant)
-            .delete(
-              Json.obj(
-                "$or" -> Json.arr(
-                  Json.obj("sender" -> user.id.asJson),
-                  Json.obj("participants" -> user.id.asJson)
-                )
-              )
-            )
-        case _ => FastFuture.successful(false)
-      }
-  }
-
   private def deleteApi(o: Operation): Future[Unit] = {
     logger.debug("*** Delete APi AS OPERATION***")
     logger.debug(Json.prettyPrint(o.asJson))
@@ -472,7 +449,6 @@ class QueueJob(
               .save(o.copy(status = OperationStatus.InProgress))
           )
           _ <- OptionT.liftF(deleteUserNotifications(user, o.tenant))
-          _ <- OptionT.liftF(deleteUserMessages(user, o.tenant))
           _ <- OptionT.liftF(env.dataStore.userRepo.deleteById(user.id))
           _ <- OptionT.liftF(
             env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)

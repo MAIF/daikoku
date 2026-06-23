@@ -38,7 +38,6 @@ class AnonymousReportingJob(env: Env) {
       consumptions: Int,
       email_verifications: Int,
       evolutions: Int,
-      messages: Int,
       notifications: Int,
       operations: Int,
       password_reset: Int,
@@ -100,7 +99,6 @@ class AnonymousReportingJob(env: Env) {
       email_verifications <-
         dataStore.emailVerificationRepo.forAllTenant().findAllNotDeleted()
       evolutions <- dataStore.evolutionRepo.findAllNotDeleted()
-      messages <- dataStore.messageRepo.forAllTenant().findAllNotDeleted()
       notifications <-
         dataStore.notificationRepo.forAllTenant().findAllNotDeleted()
       operations <- dataStore.operationRepo.forAllTenant().findAllNotDeleted()
@@ -145,7 +143,6 @@ class AnonymousReportingJob(env: Env) {
       consumptions = consumptions.length,
       email_verifications = email_verifications.length,
       evolutions = evolutions.length,
-      messages = messages.length,
       notifications = notifications.length,
       operations = operations.length,
       password_reset = password_reset.length,
@@ -203,7 +200,6 @@ class AnonymousReportingJob(env: Env) {
                 "consumptions" -> data.consumptions,
                 "email_verifications" -> data.email_verifications,
                 "evolutions" -> data.evolutions,
-                "messages" -> data.messages,
                 "notifications" -> data.notifications,
                 "operations" -> data.operations,
                 "password_reset" -> data.password_reset,

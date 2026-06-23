@@ -184,14 +184,6 @@ DELETE  /api/teams/:teamId/pages/:pageId                        fr.maif.daikoku.
 PUT     /api/teams/:teamId/pages/:pageId                        fr.maif.daikoku.controllers.ApiController.saveDocPage(teamId, pageId)
 POST    /api/teams/:teamId/pages                                fr.maif.daikoku.controllers.ApiController.createDocPage(teamId)
 
-GET     /api/me/messages/admin                          fr.maif.daikoku.controllers.MessageController.myAdminMessages(date: Option[Long] ?= None)
-GET     /api/me/messages                                fr.maif.daikoku.controllers.MessageController.myMessages(chat: Option[String] ?= None, date: Option[Long] ?= None)
-POST    /api/messages/_send                             fr.maif.daikoku.controllers.MessageController.sendMessage()
-GET     /api/messages/_sse                              fr.maif.daikoku.controllers.MessageController.sse()
-PUT     /api/messages/:chatId/_read                     fr.maif.daikoku.controllers.MessageController.setMessageRead(chatId)
-DELETE  /api/messages/:chatId                           fr.maif.daikoku.controllers.MessageController.closeChat(chatId)
-GET     /api/messages/:chatId/last-date                 fr.maif.daikoku.controllers.MessageController.getLastChatDate(chatId, date: Option[Long] ?= None)
-
 DELETE  /api/teams/:teamId/assets/:assetId              fr.maif.daikoku.controllers.TeamAssetsController.deleteAsset(teamId, assetId)
 GET     /api/teams/:teamId/assets/:assetId              fr.maif.daikoku.controllers.TeamAssetsController.getAsset(teamId, assetId)
 GET     /team-assets/:teamId/:assetId                   fr.maif.daikoku.controllers.TeamAssetsController.getAsset(teamId, assetId)
@@ -429,13 +421,6 @@ PUT     /admin-api/audit-events/:id                     fr.maif.daikoku.controll
 GET     /admin-api/audit-events/:id                     fr.maif.daikoku.controllers.AuditEventAdminApiController.findById(id)
 POST    /admin-api/audit-events                         fr.maif.daikoku.controllers.AuditEventAdminApiController.createEntity()
 GET     /admin-api/audit-events                         fr.maif.daikoku.controllers.AuditEventAdminApiController.findAll()
-
-DELETE  /admin-api/messages/:id                          fr.maif.daikoku.controllers.MessagesAdminApiController.deleteEntity(id)
-PATCH   /admin-api/messages/:id                          fr.maif.daikoku.controllers.MessagesAdminApiController.patchEntity(id)
-PUT     /admin-api/messages/:id                          fr.maif.daikoku.controllers.MessagesAdminApiController.updateEntity(id)
-GET     /admin-api/messages/:id                          fr.maif.daikoku.controllers.MessagesAdminApiController.findById(id)
-POST    /admin-api/messages                              fr.maif.daikoku.controllers.MessagesAdminApiController.createEntity()
-GET     /admin-api/messages                              fr.maif.daikoku.controllers.MessagesAdminApiController.findAll()
 
 DELETE  /admin-api/posts/:id                            fr.maif.daikoku.controllers.PostsAdminApiController.deleteEntity(id)
 PATCH   /admin-api/posts/:id                            fr.maif.daikoku.controllers.PostsAdminApiController.patchEntity(id)

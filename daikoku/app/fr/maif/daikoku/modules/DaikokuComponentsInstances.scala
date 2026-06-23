@@ -125,8 +125,6 @@ class DaikokuComponentsInstances(context: Context)
   lazy val translationController = wire[TranslationController]
   lazy val adminApiSwaggerController = wire[AdminApiSwaggerController]
   lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]
-  lazy val messageController = wire[MessageController]
-  lazy val messagesAdminApiController = wire[MessagesAdminApiController]
   lazy val postsAdminApiController = wire[PostsAdminApiController]
   lazy val issuesAdminApiController = wire[IssuesAdminApiController]
   lazy val cmsPagesAdminApiController = wire[CmsPagesAdminApiController]

@@ -233,19 +233,6 @@ case class PostgresTenantCapableTranslationRepo(
   override def repo(): PostgresRepo[Translation, DatastoreId] = _repo()
 }
 
-case class PostgresTenantCapableMessageRepo(
-    _repo: () => PostgresRepo[Message, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[Message, DatastoreId]
-) extends PostgresTenantCapableRepo[Message, DatastoreId]
-    with MessageRepo {
-  override def tenantRepo(
-      tenant: TenantId
-  ): PostgresTenantAwareRepo[Message, DatastoreId] =
-    _tenantRepo(tenant)
-
-  override def repo(): PostgresRepo[Message, DatastoreId] = _repo()
-}
-
 case class PostgresTenantCapableCmsPageRepo(
     _repo: () => PostgresRepo[CmsPage, CmsPageId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[CmsPage, CmsPageId]
@@ -573,11 +560,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       () => new PostgresTranslationRepo(env, reactivePg),
       t => new PostgresTenantTranslationRepo(env, reactivePg, t)
     )
-  private val _messageRepo: MessageRepo =
-    PostgresTenantCapableMessageRepo(
-      () => new PostgresMessageRepo(env, reactivePg),
-      t => new PostgresTenantMessageRepo(env, reactivePg, t)
-    )
   private val _cmsPageRepo: CmsPageRepo =
     PostgresTenantCapableCmsPageRepo(
       () => new PostgresCmsPageRepo(env, reactivePg),
@@ -663,8 +645,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   override def accountCreationRepo: AccountCreationRepo = _accountCreationRepo
 
   override def translationRepo: TranslationRepo = _translationRepo
-
-  override def messageRepo: MessageRepo = _messageRepo
 
   override def cmsRepo: CmsPageRepo = _cmsPageRepo
 
@@ -959,7 +939,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       notificationRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
-      messageRepo.forAllTenant(),
       operationRepo.forAllTenant(),
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),

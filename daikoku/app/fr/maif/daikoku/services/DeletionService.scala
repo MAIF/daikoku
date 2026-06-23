@@ -469,7 +469,6 @@ class DeletionService(
         else deleteUser(user, tenant)
       _ <- deleteUserFromAllTeams(tenant.some, user)
       _ <- deleteUserNotifications(tenant.some, user)
-      _ <- deleteChat(tenant.some, user)
       _ <- EitherT.right[AppError](
         env.dataStore.userSessionRepo.delete(
           Json.obj(
@@ -511,7 +510,6 @@ class DeletionService(
       _ <- deleteUser(user, tenant)
       _ <- deleteUserFromAllTeams(None, user)
       _ <- deleteUserNotifications(None, user)
-      _ <- deleteChat(None, user)
       _ <- EitherT.right[AppError](
         env.dataStore.userSessionRepo.delete(
           Json.obj(
@@ -604,33 +602,6 @@ class DeletionService(
     )
   }
 
-  private def deleteChat(tenant: Option[Tenant], user: User)(implicit
-      env: Env,
-      ec: ExecutionContext
-  ): EitherT[Future, AppError, Long] = {
-    val (tenantFilter, params) = tenant match {
-      case Some(t) =>
-        (
-          "AND content->>'_tenant' = $2",
-          Seq(user.id.value, t.id.value)
-        )
-      case None =>
-        ("", Seq(user.id.value))
-    }
-
-    EitherT.right[AppError](
-      env.dataStore.messageRepo
-        .forAllTenant()
-        .execute(
-          s"""
-           |DELETE FROM messages
-           |WHERE content->>'chat' = $$1
-           |  $tenantFilter;
-           |""".stripMargin,
-          params
-        )
-    )
-  }
 
   /** Flag a team as deleted and delete his subscriptions, apis and those apis
     * subscriptions add team, subs and apis to deletion queue to process
