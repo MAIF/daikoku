@@ -18,7 +18,7 @@ test.beforeAll(async () => {
 })
 
 test('manage team as admin', async ({ page }) => {
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');

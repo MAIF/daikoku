@@ -13,7 +13,7 @@ test.beforeEach(async () => {
 });
 
 const passInModeMaintenance = async ({ page }) => {
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`)
+  await page.goto(`/auth/Local/login`)
   await page.locator('input[name="username"]').fill('admin@foo.bar');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
