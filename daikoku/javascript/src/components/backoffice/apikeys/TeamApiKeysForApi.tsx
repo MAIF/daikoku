@@ -978,7 +978,7 @@ export const ApiKeyCard = ({
               </span>
               <div className="dropdown-divider" />
               {!subscription.parent && !disableRotation && <span
-                className="dropdown-item cursor-pointer"
+                className={`dropdown-item cursor-pointer${subscription.enabled ? "" : " disabled"}`}
                 onClick={() => openFormModal({
                   title: translate("ApiKey rotation"),
                   actionLabel: translate('Save'),
