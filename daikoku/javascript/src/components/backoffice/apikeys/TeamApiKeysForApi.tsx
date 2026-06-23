@@ -628,7 +628,7 @@ export const ApiKeyCard = ({
         apiSubscription {
           _id
           api { name }
-          plan { 
+          plan {
             customName
             autoRotation
           }
@@ -660,10 +660,10 @@ export const ApiKeyCard = ({
             _id
             _humanReadableId
             name
-            tenant { 
-              id 
+            tenant {
+              id
             }
-            team { 
+            team {
               _id
               _humanReadableId
             }
@@ -672,7 +672,7 @@ export const ApiKeyCard = ({
           apiSubscription {
             _id
             customName
-            api { 
+            api {
               _id
               name
             }
@@ -683,9 +683,9 @@ export const ApiKeyCard = ({
               _id
               _humanReadableId
             }
-            plan { 
-              _id  
-              customName 
+            plan {
+              _id
+              customName
             }
           }
           usagePlan {
@@ -978,7 +978,9 @@ export const ApiKeyCard = ({
               </span>
               <div className="dropdown-divider" />
               {!subscription.parent && !disableRotation && <span
-                className={`dropdown-item cursor-pointer${subscription.enabled ? "" : " disabled"}`}
+                className={classNames("dropdown-item cursor-pointer", {
+                  disabled: !subscription.enabled
+                })}
                 onClick={() => openFormModal({
                   title: translate("ApiKey rotation"),
                   actionLabel: translate('Save'),
