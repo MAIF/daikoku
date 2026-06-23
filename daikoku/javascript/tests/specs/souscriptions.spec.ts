@@ -999,3 +999,16 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
   await checkBurgerButtonVisibility(true);
 })
 
+test("[#1086] - la rotation d'une clé désactivée ne doit pas pouvoir être paramétrée", async ({page}) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/apikeys`);
+
+  await page.locator('#dropdownMenuButton').click();
+  await page.getByText('Désactiver la souscription').click();
+  await expect(page.getByText('Désactivé', { exact: true })).toBeVisible();
+  await page.locator('#dropdownMenuButton').click();
+  await expect(page.locator(".disabled", {
+    hasText: "Paramétrer la rotation"
+  })).toBeVisible()
+})
