@@ -4,14 +4,22 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.authorizations.async.{TeamAdminOnly, TeamApiEditorOnly, TeamApiKeyAction}
+import fr.maif.daikoku.controllers.authorizations.async.{
+  TeamAdminOnly,
+  TeamApiKeyAction
+}
 import fr.maif.daikoku.domain.OtoroshiSettings
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.OtoroshiClient
 import fr.maif.daikoku.jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
-import play.api.libs.json.*
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.libs.json._
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -314,7 +322,7 @@ class ConsumptionController(
       to: Option[Long]
   ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamApiEditorOnly(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed to api consumption for api @{apiId}"
         )
@@ -365,7 +373,7 @@ class ConsumptionController(
       to: Option[Long]
   ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamApiEditorOnly(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed to team consumption for @{team.name}"
         )

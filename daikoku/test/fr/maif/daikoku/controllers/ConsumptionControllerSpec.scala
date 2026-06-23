@@ -597,113 +597,6 @@ class ConsumptionControllerSpec()
     }
   }
 
-  "an api editor" can {
-    "get team consumption" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userApiEditor),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payperUserSub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(userApiEditor, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
-      )(using tenant, session)
-      resp.status mustBe 200
-      val eventualConsumptions =
-        fr.maif.daikoku.domain.json.SeqConsumptionFormat
-          .reads(resp.json)
-      eventualConsumptions.isSuccess mustBe true
-
-      eventualConsumptions.get.length mustBe 1
-      eventualConsumptions.get.head.hits mustBe 1000L
-    }
-
-    "get api consumption" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userApiEditor),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payperUserSub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(userApiEditor, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
-      )(using tenant, session)
-      resp.status mustBe 200
-      val eventualConsumptions =
-        fr.maif.daikoku.domain.json.SeqConsumptionFormat
-          .reads(resp.json.as[JsArray])
-      eventualConsumptions.isSuccess mustBe true
-
-      eventualConsumptions.get.length mustBe 1
-      eventualConsumptions.get.head.hits mustBe 1000L
-    }
-  }
-
-  "a user" can {
-    "not get api consumption" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(user),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payperUserSub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(user, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
-      )(using tenant, session)
-      resp.status mustBe 403
-    }
-
-    "not get team consumption" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(user),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payperUserSub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(user, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
-      )(using tenant, session)
-      resp.status mustBe 403
-    }
-  }
-
-
   "a user or apiEditor" can {
     val randomUser = Random.shuffle(Seq(user, userApiEditor)).head
 
@@ -729,7 +622,72 @@ class ConsumptionControllerSpec()
       resp.status mustBe 403
     }
 
-    "not get team billings" in {
+    "get api consumption" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/consumption?from=$from&to=$to"
+      )(using tenant, session)
+      resp.status mustBe 403
+    }
+
+    "get team consumption" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+      )(using tenant, session)
+      resp.status mustBe 403
+    }
+
+    "get team income" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
+      )(using tenant, session)
+      resp.status mustBe 403
+    }
+
+    "get team billings" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(randomUser),

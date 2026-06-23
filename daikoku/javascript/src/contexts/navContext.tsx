@@ -249,7 +249,6 @@ export const useTeamBackOffice = () => {
 
   const schema = (currentTab: string, team: ITeamSimple): INavMenu => {
     const isTeamAdmin = CanIDoAction(connectedUser, manage, TeamRightScope, team, isTenantAdmin, tenant, tenant);
-    const isApiEditor = CanIDoAction(connectedUser, manage, api, team, isTenantAdmin, tenant, tenant);
     return {
       title: team.name,
       blocks: {
@@ -288,7 +287,7 @@ export const useTeamBackOffice = () => {
                 active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
               },
             },
-            ...(isApiEditor ? {apikeys: {
+            ...(isTeamAdmin ? {apikeys: {
               label: translate({ key: 'API key', plural: true }),
               action: () => navigateTo('apikeys'),
               className: { active: ['apikeys', 'consumption'].includes(currentTab) },

@@ -302,28 +302,6 @@ test("[#1079] - un membre non admin et non api editor d'une équipe ne doit pas 
   await expect(sideBarLocator.getByText('Statistiques')).not.toBeVisible();
 })
 
-test("[#1079] - un membre api editor d'une équipe peut accéder aux statistiques", async ({page}) => {
-  await updateUserRightForTeam({
-    teamId: apiDivision,
-    userId: DWIGHT.id!,
-    right: "ApiEditor"
-  });
-
-  await page.goto(ACCUEIL);
-  await loginAs(DWIGHT, page);
-
-  await page.goto(`http://localhost:${exposedPort}/api-division/settings/dashboard`);
-
-
-  const sideBarLocator = page.getByText('API DivisionParamètres')
-  await expect(sideBarLocator.getByText('Statistiques')).toBeVisible();
-  await expect(sideBarLocator.getByText('Informations')).not.toBeVisible();
-  await expect(sideBarLocator.getByText('Assets')).not.toBeVisible();
-  await expect(sideBarLocator.getByText('Revenus')).not.toBeVisible();
-  await sideBarLocator.getByText('Statistiques').click();
-  await expect(page.getByRole('heading', { name: 'Hits par API/plan' })).toBeVisible();
-})
-
 test("[#1079] - l'admin d'une équipe voit toutes les entrées de menu associée à son équipe", async ({page}) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
