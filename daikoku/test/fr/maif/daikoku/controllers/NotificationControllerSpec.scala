@@ -11,7 +11,6 @@ import fr.maif.daikoku.domain.json._
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
-import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfterEach
@@ -1232,7 +1231,6 @@ class NotificationControllerSpec()
           )
         )
       )(using tenant, session)
-      logger.json(adminCheckNotification.json, true)
       val adminNotifications =
         (adminCheckNotification.json \ "data" \ "myNotifications" \ "notifications")
           .as[JsArray]

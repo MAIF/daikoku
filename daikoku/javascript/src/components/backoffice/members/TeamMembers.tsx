@@ -99,8 +99,8 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
           if (ok) {
             const teamId = currentTeam._id;
             Services.removeMemberFromTeam(teamId, member._id)
-              .then(({ done, team }) => {
-                done
+              .then(({ done }) => {
+                return done
                   ? toast.success(translate({ key: 'remove.member.success', replacements: [member.name] }))
                   : toast.error(translate('Failure'));
               })
@@ -115,7 +115,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
     return Services.addMembersToTeam(teamId, [member._id])
       .then(({ done }) => {
         setState({ ...state, selectedMember: undefined });
-        done
+        return done
           ? toast.success(translate({ key: 'member.now.invited', replacements: [member.name] }))
           : toast.error(translate('Failure'));
       })
@@ -147,7 +147,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
         const newPermission = userHavePemission(member, permission) ? user : permission;
         Services.updateTeamMemberPermission(teamId, [member._id], newPermission)
           .then(({ done }) => {
-            done
+            return done
               ? toast.success(translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] }))
               : toast.error(translate('Failure'));
           })
@@ -255,8 +255,8 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       });
     }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
       const isAdmin = userHavePemission(member, administrator);
-      const isApiEditor = userHavePemission(member, apiEditor); 
-      
+      const isApiEditor = userHavePemission(member, apiEditor);
+
       return (<AvatarWithAction key={member._id} avatar={member.picture} name={member.name} infos={<>
         {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
         {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />)}

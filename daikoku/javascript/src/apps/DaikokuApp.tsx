@@ -23,6 +23,7 @@ import {
   ImportExport,
   MailingInternalization,
   SessionList,
+  LoggersList,
   TeamList,
   TeamMembersForAdmin,
   TenantAdminList,
@@ -337,6 +338,14 @@ export const DaikokuApp = () => {
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('User sessions')}`}>
                       <SessionList />
+                    </RouteWithTitle>
+                  }
+                />
+                <Route
+                  path="/settings/loggers"
+                  element={
+                    <RouteWithTitle title={`${tenant.title} - ${translate('Loggers level')}`}>
+                      <LoggersList />
                     </RouteWithTitle>
                   }
                 />

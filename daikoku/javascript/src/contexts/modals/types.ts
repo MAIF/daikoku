@@ -1,20 +1,14 @@
-import { Flow, Schema, TBaseObject, Option } from '@maif/react-forms';
+import { Flow, Option, Schema, TBaseObject } from '@maif/react-forms';
+import { JSX, ReactNode } from 'react';
 import {
-  IApi,
-  IApiKey,
   IAsset,
   IImportingDocumentation,
-  INotification,
   IOtoroshiApiKey,
-  ISafeSubscription,
-  ISubscription,
   ISubscriptionCustomization,
   ISubscriptionDemand,
   ITeamSimple,
   ITenant,
-  ITesting,
   ITestingConfig,
-  IUsagePlan,
   IUserSimple,
   IWithTesting,
   ResponseDone,
@@ -24,7 +18,6 @@ import { IKeyringSelectModalProps } from './KeyringSelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
-import { JSX, ReactNode } from 'react';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -41,7 +34,7 @@ export type TModalContext = {
   prompt: (p: PromptModalProps) => Promise<string | undefined>;
   openFormModal: <T extends TBaseObject>(p: IFormModalProps<T>) => void;
   openTestingApikeyModal: <T extends IWithTesting>(p: TestingApiKeyModalProps<T>) => void;
-  openSubMetadataModal: <T extends IWithTesting>(p: SubscriptionMetadataModalProps<T>) => void;
+  openSubMetadataModal: (p: SubscriptionMetadataModalProps) => void;
   openApiDocumentationSelectModal: (p: IApiDocumentationSelectModalProps) => void;
   openTeamSelectorModal: (p: TeamSelectorModalProps) => void;
   openInvitationTeamModal: (p: ITeamInvitationModalProps) => void;
@@ -176,7 +169,7 @@ type NotificationGQL = {
     };
   };
 };
-export type SubscriptionMetadataModalProps<T> = {
+export type SubscriptionMetadataModalProps = {
   creationMode?: boolean;
   api?: string;
   plan?: string;

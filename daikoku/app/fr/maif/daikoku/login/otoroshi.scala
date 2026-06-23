@@ -281,7 +281,7 @@ object OtoroshiIdentityFilter {
                                     )
                                   )
                                 )
-                                val updatedUser = u
+                                val updatedUser = u.copy(invitation = None)
                                 for {
                                   tenantTeam <-
                                     env.dataStore.teamRepo
@@ -461,7 +461,12 @@ object OtoroshiIdentityFilter {
                         val maybeSession = for {
                           session <-
                             env.dataStore.userSessionRepo
-                              .findOne(Json.obj("userEmail" -> user.email))
+                              .findOne(
+                                Json.obj(
+                                  "userEmail" -> user.email,
+                                  "impersonatorId" -> JsNull
+                                )
+                              )
                           impersonatedSession <-
                             env.dataStore.userSessionRepo
                               .findOne(

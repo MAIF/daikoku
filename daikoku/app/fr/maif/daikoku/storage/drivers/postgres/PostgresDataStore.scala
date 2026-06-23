@@ -805,6 +805,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     }
   }
 
+  override def withTransaction[A](f: DbConn ?=> Future[A])(implicit
+      ec: ExecutionContext
+  ): Future[A] =
+    reactivePg.withTransaction(f)
+
   override def start(): Future[Unit] = {
     Future.successful(())
   }
@@ -855,7 +860,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   }
 
   def createDatabase(): Future[Any] = {
-    logger.info("Checking status of database ...")
+    logger.debug("Checking status of database ...")
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
 
@@ -1771,6 +1776,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
 
   override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
     logger.debug(s"$tableName.query($query)")
@@ -1780,6 +1786,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   }
 
   override def queryOne(query: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] = {
     logger.debug(s"$tableName.queryOne($query)")
@@ -1793,7 +1800,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       params: Seq[AnyRef] = Seq.empty,
       offset: Int,
       limit: Int
-  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.queryPaginated($query)")
     logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
@@ -1815,6 +1822,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   }
 
   override def execute(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] = {
     logger.debug(s"$tableName.execute($sql)")
@@ -1827,7 +1835,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1
-  )(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]] = {
     logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
@@ -1876,7 +1884,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1
-  )(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
     logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
@@ -1921,12 +1929,15 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     }
   }
 
-  override def count()(implicit ec: ExecutionContext): Future[Long] =
+  override def count()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
     count(JsObject.empty)
 
   override def deleteByIdLogically(
       id: String
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     reactivePg
       .query(
@@ -1940,14 +1951,14 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(
       id: Id
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(query)
     reactivePg
@@ -1961,6 +1972,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   }
 
   override def deleteAllLogically()(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
@@ -1979,7 +1991,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       pageSize: Int,
       sort: Option[JsObject] = None,
       order: Option[SortingOrder] = None
-  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query, page, pageSize, sort, order)
 }
 
@@ -1992,6 +2004,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
 
   override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
     logger.debug(s"$tableName.query($query)")
@@ -2001,6 +2014,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   }
 
   override def queryOne(query: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] = {
     logger.debug(s"$tableName.query($query)")
@@ -2010,6 +2024,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   }
 
   override def execute(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
       ex: ExecutionContext
   ): Future[Long] = {
     logger.debug(s"$tableName.execute($sql)")
@@ -2023,7 +2038,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       params: Seq[AnyRef] = Seq.empty,
       offset: Int,
       limit: Int
-  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.query($query)")
     logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
@@ -2050,7 +2065,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(
       id: String
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
 
     reactivePg
@@ -2065,13 +2080,13 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(
       id: Id
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(
       query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)
@@ -2087,6 +2102,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   }
 
   override def deleteAllLogically()(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
@@ -2105,7 +2121,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1
-  )(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]] = {
     logger.debug(
       s"$tableName.findRaw(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
     )
@@ -2127,7 +2143,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
           params.zipWithIndex.reverse.foreach { case (param, i) =>
-            out = out.replace("$" + (i + 1), s"'$param'")
+            val escaped = param.toString.replace("'", "''")
+            out = out.replace("$" + (i + 1), s"'$escaped'")
           }
 
           reactivePg.querySeq(out) {
@@ -2170,7 +2187,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1
-  )(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
     logger.debug(
       s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
     )
@@ -2192,7 +2209,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
           params.zipWithIndex.reverse.foreach { case (param, i) =>
-            out = out.replace("$" + (i + 1), s"'$param'")
+            val escaped = param.toString.replace("'", "''")
+            out = out.replace("$" + (i + 1), s"'$escaped'")
           }
 
           reactivePg.querySeq(out) {
@@ -2229,29 +2247,34 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   override def findOne(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     super.findOne(query ++ Json.obj("_tenant" -> tenant.value))
 
   override def delete(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     super.delete(query ++ Json.obj("_tenant" -> tenant.value))
 
   override def insertMany(
       values: Seq[Of]
-  )(implicit ec: ExecutionContext): Future[Long] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     super.insertMany(values, Json.obj("_tenant" -> tenant.value))
 
   override def exists(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     super.exists(query ++ Json.obj("_tenant" -> tenant.value))
 
-  override def count()(implicit ec: ExecutionContext): Future[Long] =
+  override def count()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
     count(Json.obj("_tenant" -> tenant.value))
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Seq[JsObject]] =
     super.findWithProjection(
       query ++ Json.obj("_tenant" -> tenant.value),
@@ -2259,7 +2282,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     )
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Option[JsObject]] =
     super.findOneWithProjection(
       query ++ Json.obj("_tenant" -> tenant.value),
@@ -2272,7 +2297,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       pageSize: Int,
       sort: Option[JsObject] = None,
       order: Option[SortingOrder] = None
-  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(
       query ++ Json.obj("_tenant" -> tenant.value),
       page,
@@ -2298,7 +2323,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def count(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Long] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
 
     if (query.values.isEmpty)
@@ -2320,7 +2345,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def exists(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
 
     reactivePg
@@ -2370,7 +2395,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def findOneRaw(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] = {
     val (sql, params) = convertQuery(query)
     logger.debug(s"$tableName.findOneRaw(${Json.prettyPrint(query)})")
     logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
@@ -2387,7 +2412,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def findOne(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
     logger.debug(s"$tableName.findeOne(${Json.prettyPrint(query)})")
     logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
@@ -2407,7 +2432,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def delete(
       query: JsObject
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
 
     if (query.values.isEmpty)
@@ -2422,6 +2447,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def save(query: JsObject, value: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] = {
     logger.debug(
@@ -2448,10 +2474,17 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
         )
     ).map(_ => true)
-      .recover(_ => false)
+      .recover { e =>
+        logger.error(
+          s"$tableName.save(${Json.prettyPrint(query)}) failed",
+          e
+        )
+        false
+      }
   }
 
   def insertMany(values: Seq[Of], addToPayload: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
@@ -2468,10 +2501,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
   override def insertMany(
       values: Seq[Of]
-  )(implicit ec: ExecutionContext): Future[Long] =
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     insertMany(values, Json.obj())
 
   override def updateMany(query: JsObject, value: JsObject)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] = {
     logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
@@ -2486,7 +2520,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit ec: ExecutionContext
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Long] = {
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
@@ -2500,7 +2536,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
     var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
     params2.zipWithIndex.reverse.foreach { case (param, i) =>
-      out = out.replace("$" + (i + 1), s"'$param'")
+      val escaped = param.toString.replace("'", "''")
+      out = out.replace("$" + (i + 1), s"'$escaped'")
     }
 
     reactivePg
@@ -2509,6 +2546,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def findMaxByQuery(query: JsObject, field: String)(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Long]] = {
     logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
@@ -2523,7 +2561,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Seq[JsObject]] = {
     logger.debug(
       s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
@@ -2560,7 +2600,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   }
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Option[JsObject]] = {
     logger.debug(
       s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
@@ -2608,9 +2650,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       pageSize: Int,
       sort: Option[JsObject] = None,
       order: Option[SortingOrder] = None
-  )(implicit
-      ec: ExecutionContext
-  ): Future[(Seq[Of], Long)] = {
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(
       s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)"
     )

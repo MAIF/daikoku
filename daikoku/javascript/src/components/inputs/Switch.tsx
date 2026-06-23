@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
+import React, { useState } from 'react';
 
 type Props = {
   className?: string;
@@ -27,7 +27,7 @@ type Props = {
 
 //   const notifySwitch = () => {
 //       setLoading(true);
-    
+
 //   };
 
 //   const { label } = props;

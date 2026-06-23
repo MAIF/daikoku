@@ -1,11 +1,10 @@
 import { Form, Schema, constraints, format, type } from "@maif/react-forms";
+import { UseMutationResult } from "@tanstack/react-query";
 import { useContext, useState } from "react";
 
+import { ModalContext } from "../../../../contexts";
 import { I18nContext } from "../../../../contexts/i18n-context";
 import { ITenantFull } from "../../../../types";
-import { UseMutationResult } from "@tanstack/react-query";
-import { tenant } from "../../../utils";
-import { ModalContext } from "../../../../contexts";
 
 type UpdateFormProps = {
   tenant: ITenantFull

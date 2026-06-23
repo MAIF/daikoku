@@ -1,15 +1,14 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
-import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../contexts';
-import { isConstraint, isError, IUserSimple, IValidationStep } from '../../../types';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { Option } from '../../utils'
+import { isConstraint, IUserSimple } from '../../../types';
+import { Option } from '../../utils';
 
 export const Signup = () => {
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext)
 
   const formStepAccountCreation = tenant.accountCreationProcess.find(s => s.type === 'form')
@@ -110,10 +109,10 @@ export const Signup = () => {
     .map(s => s.schema)
     .map(s => Object.fromEntries(Object.entries(s)
       .map(([k, v]) => {
-        return ([k, { 
-          ...v, 
+        return ([k, {
+          ...v,
           label: v.label ? translate(v.label as string) : undefined,
-          constraints: v.constraints?.map(c => isConstraint(c) ? c : ({...c, message: c.message ? translate(c.message) : undefined}))
+          constraints: v.constraints?.map(c => isConstraint(c) ? c : ({ ...c, message: c.message ? translate(c.message) : undefined }))
         }])
       })
     ))

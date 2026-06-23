@@ -1,16 +1,15 @@
-import { GraphQLClient } from 'graphql-request';
+import { endOfMonth, startOfMonth } from 'date-fns';
 import maxBy from 'lodash/maxBy';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { startOfMonth, endOfMonth } from 'date-fns';
 
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 
 type TeamIncomeGql = {

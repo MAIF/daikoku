@@ -27,7 +27,10 @@ import sangria.validation.{
   UnknownArgViolation
 }
 import fr.maif.daikoku.storage.DataStore
-import fr.maif.daikoku.storage.graphql.DaikokuAuthMiddleware
+import fr.maif.daikoku.storage.graphql.{
+  AuthorizationException,
+  DaikokuAuthMiddleware
+}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -118,6 +121,12 @@ class GraphQLController(
   lazy val exceptionHandler = ExceptionHandler {
     case (_, error @ NotAuthorizedError(_)) =>
       HandledException(error.getMessage)
+    case (m, error: AuthorizationException) =>
+      HandledException(
+        error.getMessage,
+        additionalFields =
+          Map("code" -> m.scalarNode("UNAUTHORIZED", "String", Set.empty))
+      )
     case (_, error @ TooComplexQueryError) => HandledException(error.getMessage)
     case (_, error @ MaxQueryDepthReachedError(_)) =>
       HandledException(error.getMessage)

@@ -35,7 +35,9 @@ case class User(
     isGuest: Boolean = false,
     starredApis: Set[ApiId] = Set.empty[ApiId],
     twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
-    invitation: Option[UserInvitation] = None
+    invitation: Option[UserInvitation] = None,
+    failedLoginAttempts: Int = 0,
+    lastFailedLogin: Option[DateTime] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized

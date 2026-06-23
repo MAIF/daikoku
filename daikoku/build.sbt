@@ -156,7 +156,11 @@ dependencyOverrides ++= Seq(
 )
 
 Test / fork := true
-Test / javaOptions += "-Dconfig.resource=application.test.conf"
+Test / parallelExecution := false
+Test / javaOptions ++= Seq(
+  "--enable-native-access=ALL-UNNAMED"
+)
+
 
 scalacOptions ++= Seq(
   "-feature",

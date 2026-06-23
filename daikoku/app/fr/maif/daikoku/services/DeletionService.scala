@@ -7,19 +7,16 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.ApiService
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
-import org.joda.time.DateTime
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class DeletionService(
     env: Env,
-    apiService: ApiService,
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
     otoroshiSynchronizerJob: OtoroshiSynchronizerJob
@@ -55,14 +52,14 @@ class DeletionService(
     )
 
     AppLogger.debug(s"add **user**[${user.name}] to deletion queue")
-    for {
-      _ <- EitherT.right[AppError](
-        env.dataStore.userRepo.deleteByIdLogically(user.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.operationRepo.forTenant(tenant).save(operation)
-      )
-    } yield ()
+    EitherT.right[AppError](
+      env.dataStore.withTransaction {
+        for {
+          _ <- env.dataStore.userRepo.deleteByIdLogically(user.id)
+          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+        } yield ()
+      }
+    )
   }
 
   /** Delete logically a team Add an operation in deletion queue to process
@@ -83,14 +80,16 @@ class DeletionService(
     AppLogger.debug(
       s"[deletion service] :: add **team**[${team.name}] to deletion queue"
     )
-    for {
-      _ <- EitherT.right[AppError](
-        env.dataStore.teamRepo.forTenant(tenant).deleteByIdLogically(team.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.operationRepo.forTenant(tenant).save(operation)
-      )
-    } yield ()
+    EitherT.right[AppError](
+      env.dataStore.withTransaction {
+        for {
+          _ <- env.dataStore.teamRepo
+            .forTenant(tenant)
+            .deleteByIdLogically(team.id)
+          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+        } yield ()
+      }
+    )
   }
 
   private case class SubscriptionContext(
@@ -224,6 +223,9 @@ class DeletionService(
       // the keyrings impacted by this deletion
       affectedKeyringIds = subscriptions.map(_.keyring).distinct
       // Phase 1 — disable subs in DB so the synchronizer sees them as disabled
+      // TODO(transactions): le updateManyByQuery (DB) et les appels otoroshiSynchronizerJob (HTTP) ci-dessous
+      // ne sont pas atomiques. Si le sync Otoroshi échoue après le disable en DB, les subs restent disabled
+      // en base mais actives côté Otoroshi. Non transactionnable sans saga ou compensation explicite.
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -293,11 +295,11 @@ class DeletionService(
             )((_, either) => either)
           )
       )
-      // Phase 4 — mark as deleted in DB
+      // Phase 4 — physically delete in DB (otoroshi/stripe cleanup already done above)
       result <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .deleteLogically(
+          .delete(
             Json.obj(
               "_id" -> Json
                 .obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))
@@ -345,12 +347,18 @@ class DeletionService(
       }
       .mapAsync(5) { case (api, plan) =>
         for {
-          _ <- apiService.deleteApiPlansSubscriptions(
-            Seq(plan),
-            api,
-            tenant,
-            systemUser
-          )
+          subscriptions <- env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findNotDeleted(
+              Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
+            )
+          _ <- deleteSubscriptions(subscriptions, api, tenant).value.map {
+            case Left(e) =>
+              AppLogger.error(
+                s"[deletion service] :: error while deleting subscriptions of plan ${plan.id.value}: ${e.getErrorMessage()}"
+              )
+            case Right(_) => ()
+          }
           _ <- plan.paymentSettings match {
             case Some(paymentSettings) =>
               env.dataStore.operationRepo
@@ -431,7 +439,7 @@ class DeletionService(
         else deleteUser(user, tenant)
       _ <- deleteUserFromAllTeams(tenant.some, user)
       _ <- deleteUserNotifications(tenant.some, user)
-      _ <- closeChat(tenant.some, user)
+      _ <- deleteChat(tenant.some, user)
       _ <- EitherT.right[AppError](
         env.dataStore.userSessionRepo.delete(
           Json.obj(
@@ -473,7 +481,7 @@ class DeletionService(
       _ <- deleteUser(user, tenant)
       _ <- deleteUserFromAllTeams(None, user)
       _ <- deleteUserNotifications(None, user)
-      _ <- closeChat(None, user)
+      _ <- deleteChat(None, user)
       _ <- EitherT.right[AppError](
         env.dataStore.userSessionRepo.delete(
           Json.obj(
@@ -566,25 +574,18 @@ class DeletionService(
     )
   }
 
-  private def closeChat(tenant: Option[Tenant], user: User)(implicit
+  private def deleteChat(tenant: Option[Tenant], user: User)(implicit
       env: Env,
       ec: ExecutionContext
   ): EitherT[Future, AppError, Long] = {
     val (tenantFilter, params) = tenant match {
       case Some(t) =>
         (
-          "AND content->>'_tenant' = $3",
-          Seq(
-            user.id.value,
-            java.lang.Long.valueOf(DateTime.now().getMillis),
-            t.id.value
-          )
+          "AND content->>'_tenant' = $2",
+          Seq(user.id.value, t.id.value)
         )
       case None =>
-        (
-          "",
-          Seq(user.id.value, java.lang.Long.valueOf(DateTime.now().getMillis))
-        )
+        ("", Seq(user.id.value))
     }
 
     EitherT.right[AppError](
@@ -592,10 +593,8 @@ class DeletionService(
         .forAllTenant()
         .execute(
           s"""
-           |UPDATE messages
-           |SET content = jsonb_set(content, '{closed}', $$2)
+           |DELETE FROM messages
            |WHERE content->>'chat' = $$1
-           |  AND content ->> 'closed' IS NULL
            |  $tenantFilter;
            |""".stripMargin,
           params
@@ -803,19 +802,19 @@ class DeletionService(
         AppError.EntityNotFound("Subscription demand")
       )
       _ <- EitherT.right[AppError](
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .deleteById(demand.id)
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .delete(Json.obj("action.demand" -> demand.id.asJson))
+        env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.subscriptionDemandRepo
+              .forTenant(tenant)
+              .deleteById(demand.id)
+            _ <- env.dataStore.stepValidatorRepo
+              .forTenant(tenant)
+              .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
+            _ <- env.dataStore.notificationRepo
+              .forTenant(tenant)
+              .delete(Json.obj("action.demand" -> demand.id.asJson))
+          } yield ()
+        }
       )
     } yield ()
   }

@@ -1,14 +1,14 @@
+import { useQuery } from "@tanstack/react-query";
 import classNames from 'classnames';
+import { addDays, startOfDay } from 'date-fns';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from "@tanstack/react-query";
-import { startOfDay, addDays, format } from 'date-fns'
 
 import { I18nContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, IGlobalInformations, isError, ITeamSimple, IUsagePlan } from '../../../types';
 import { Can, formatDate, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 
 export type IgqlConsumption = {
@@ -123,7 +123,7 @@ export const TeamApiConsumption = ({
             data={sumGlobalInformations(data.filter((d: IgqlConsumption) => d.plan._id === plan._id))}
             period={state.period}
             handleClick={() =>
-              !!apiGroup
+              apiGroup
                 ? navigate(
                   `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`
                 )

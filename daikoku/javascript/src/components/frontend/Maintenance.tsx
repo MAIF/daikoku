@@ -1,17 +1,12 @@
-import {PropsWithChildren, type SubmitEvent, useContext, useEffect, useRef, useState} from 'react';
+import { type SubmitEvent, useContext, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { I18nContext } from "../../contexts";
 import * as Services from '../../services/index';
-import {useParams, useSearchParams} from 'react-router-dom';
-import {I18nContext} from "../../contexts";
-import {AuthProvider, ITenant} from "../../types";
+import { AuthProvider } from "../../types";
 
-const Translation = (props: PropsWithChildren<{}>) => {
-  return (
-    <div>{props.children}</div>
-  )
-}
 
-export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
-  const { Translation, translate } = useContext(I18nContext);
+export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
+  const { Translation } = useContext(I18nContext);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const [searchParams] = useSearchParams();
@@ -72,15 +67,15 @@ export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
               type="button"
               className="btn btn-outline-primary shake gap-1 mb-2 "
               onClick={() => {
-                location.href=`/auth/${provider}/login`
+                location.href = `/auth/${provider}/login`
               }
-            }>
+              }>
               Connexion openId
             </button>
             <button
               type="button"
               className="btn btn-outline-primary shake gap-1 mb-2"
-              onClick={() => {setToggleLogin(!toggleLogin)}}>
+              onClick={() => { setToggleLogin(!toggleLogin) }}>
               Connexion Locale
             </button>
           </div>
@@ -130,7 +125,7 @@ export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
               </button>
             </div>
           </form>
-          )}
+        )}
       </div>
     </div>
   );

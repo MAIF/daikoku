@@ -82,11 +82,14 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
                   "tenant.id",
                   "tenant.humanReadableId",
                   "tenant.name",
-                  "createdAt" ,
-                  "createdAtMillis" ,
+                  "createdAt",
+                  "createdAtMillis",
+                  "subscription.metadata.<value>",
+                  "subscription.clientId"
                 ], null, 4)}
               </pre>
-            </div> })}>
+            </div>
+          })}>
           <i className='fas fa-circle-question' />
         </button>
       </div>,

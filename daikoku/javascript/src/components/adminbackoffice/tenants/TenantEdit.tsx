@@ -215,17 +215,16 @@ export const TenantEditComponent = ({
   }
 };
 
-export const TenantEdit = ({}) => {
+export const TenantEdit = () => {
   const { tenant } = useTenantBackOffice();
 
   return <TenantEditComponent tenantId={tenant._id} />;
 };
 
-export const TenantEditForAdmin = ({}) => {
+export const TenantEditForAdmin = () => {
   const { tenantId } = useParams();
-  const { state } = useLocation();
 
-  useDaikokuBackOffice({ creation: state?.newTenant });
+  useDaikokuBackOffice();
 
   return <TenantEditComponent tenantId={tenantId!} fromDaikokuAdmin={true} />;
 };

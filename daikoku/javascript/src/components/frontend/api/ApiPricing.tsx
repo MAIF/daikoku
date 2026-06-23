@@ -6,7 +6,7 @@ import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
-import { useMatch, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
@@ -340,7 +340,7 @@ const CustomMetadataInput = (props: {
       ...(props.value || []).filter((x) => x.key !== key),
       { ...oldValue, key, possibleValues },
     ];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const changeKey = (
@@ -356,13 +356,13 @@ const CustomMetadataInput = (props: {
       ...(props.value || []).filter((x) => x.key !== oldName),
       { ...oldValue, key: e.target.value },
     ];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const addFirst = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
-      props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
+      props.onChange?.([{ key: '', possibleValues: [] }]);
       alert({
         message: props.translate('custom.metadata.process.change.to.manual'),
         title: props.translate('Information'),
@@ -374,14 +374,13 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = { key: '', possibleValues: [] };
     const newValues = [...(props.value || []), newItem];
-    props.onChange && props.onChange(newValues);
+    props.onChange?.(newValues);
   };
 
   const remove = (e: React.MouseEvent<HTMLElement>, key: string) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    props.onChange &&
-      props.onChange((props.value || []).filter((x: any) => x.key !== key));
+    props.onChange?.((props.value || []).filter((x: any) => x.key !== key));
   };
 
   return (
@@ -886,6 +885,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         props.api.visibility === 'Public' ||
         props.api.authorizedTeams.includes(t._id) ||
         t._id === props.ownerTeam._id
+    )
+    .filter(
+      (t) =>
+        plan.visibility === 'Public' ||
+        plan.authorizedTeams.includes(t._id) ||
+        t._id === props.ownerTeam._id
     );
 
   const allPossibleTeams = difference(
@@ -914,7 +919,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       content: <TeamSelector
         teams={authorizedTeams
           .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
           .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
         pendingTeams={props.inProgressDemands.map((s) => s.team)}
         acceptedTeams={props.subscriptions
@@ -1294,7 +1299,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                 teams={authorizedTeams.filter(
                   (team) =>
                     plan.visibility === 'Public' ||
-                    team._id === props.ownerTeam._id
+                    team._id === props.ownerTeam._id ||
+                    plan.authorizedTeams.includes(team._id)
                 )}
               >
                 {(props.api.visibility === 'AdminOnly' ||
@@ -1518,8 +1524,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     queryFn: () =>
       Services.getVisiblePlans(props.api._id, props.api.currentVersion),
   });
-
-  const match = useMatch('/:team/:api/:version/pricing/:env/:tab');
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['plans'] });

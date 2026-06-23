@@ -1,6 +1,6 @@
 import { Form, FormRef, Schema, constraints, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
-import { MutableRefObject, useContext } from 'react';
+import { RefObject, useContext } from 'react';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
@@ -11,7 +11,7 @@ interface TeamApiTestingProps<T extends IWithTesting> {
   currentTeam: ITeamSimple;
   value: T
   save: (s: T) => void
-  reference?: MutableRefObject<FormRef | undefined>
+  reference?: RefObject<FormRef | undefined>
   // metadata: object,
   plan?: IUsagePlan,
   api?: IApi
@@ -90,7 +90,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       });
   };
 
-  const otoKeyExists: Boolean = Option(props.value.testing)
+  const otoKeyExists: boolean = Option(props.value.testing)
     .map((t: ITesting) => t.config)
     .exists((c: ITestingConfig) => c.otoroshiSettings);
 

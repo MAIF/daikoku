@@ -11,6 +11,7 @@ import { IApi, isError, ISwagger, ITeamSimple, ITesting, IUsagePlan, IWithTestin
 import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
 import { api as API, Can, manage, Spinner } from '../../utils';
 
+//@ts-ignore
 import 'swagger-ui-dist/swagger-ui.css';
 
 
@@ -34,10 +35,9 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
-  const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!!props.testing?.enabled) {
+    if (props.testing?.enabled) {
       fetch(`${props.swaggerUrl}.json`)
         .then((res) => {
           if (res.status > 300) {

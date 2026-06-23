@@ -6,6 +6,7 @@ import {
   IAsset,
   IAuditTrail,
   IFastApiSubscription,
+  ILogger,
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
@@ -53,7 +54,7 @@ const HEADERS = {
 };
 
 type PromiseWithError<T> = Promise<ResponseError | T>;
-const customFetch = <T>(
+const customFetch = (
   url: string,
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
 ) =>
@@ -70,6 +71,11 @@ const customFetch = <T>(
 export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
 
+export const getMyVisibleApisLight = (
+  research?: string,
+  limit: number = 10
+): Promise<Array<{ _id: string; name: string }>> =>
+  customFetch(`/api/me/visible-apis?research=${encodeURIComponent(research ?? '')}&limit=${limit}`);
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id: string, version: string): PromiseWithError<IApi> =>
@@ -589,6 +595,15 @@ export const deleteSessions = () =>
     method: 'DELETE',
   });
 
+export const getLoggers = (): Promise<ResponseError | Array<ILogger>> =>
+  customFetch('/api/admin/loggers');
+
+export const changeLogLevel = (name: string, level: string) =>
+  customFetch(`/api/admin/loggers/${name}/level?newLevel=${level}`, {
+    method: 'PUT',
+    body: '{}',
+  });
+
 export const getAnonymousState = (): Promise<IAnonymousState> =>
   customFetch('/api/state/anonymous');
 export const updateAnonymousState = (id: string, value: boolean, currentDate?: number) =>
@@ -992,12 +1007,6 @@ export const closeMessageChat = (chatId: string) =>
 
 export const lastDateChat = (chatId: string, date: number) =>
   customFetch(`/api/messages/${chatId}/last-date?date=${date}`);
-
-export const migrateMongoToPostgres = () =>
-  customFetch('/api/state/migrate', {
-    method: 'POST',
-    credentials: 'include',
-  });
 
 export const enableMaintenanceMode = () =>
   customFetch('/api/state/lock', {
@@ -2305,12 +2314,6 @@ export const graphql = {
   }
 `,
 };
-
-export const downloadCmsFiles = () =>
-  fetch('/api/cms/download', {
-    method: 'POST',
-    credentials: 'include',
-  });
 
 export const getDiffOfCmsPage = (id: any, diffId: any, showDiffs: any) =>
   customFetch(`/api/cms/pages/${id}/diffs/${diffId}?showDiffs=${showDiffs}`);

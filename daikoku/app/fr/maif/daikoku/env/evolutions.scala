@@ -67,10 +67,11 @@ object evolution_102 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
       logger.info("Begin evolution 1.0.2")
       dataStore.apiRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .filter(value =>
           (value \ "possibleUsagePlans")
             .as[JsArray]
@@ -107,9 +108,7 @@ object evolution_102 extends EvolutionScript {
 
           dataStore.apiRepo
             .forAllTenant()
-            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)(
-              using ec
-            )
+            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
         }
         .runWith(Sink.ignore)(using mat)
     }
@@ -132,19 +131,20 @@ object evolution_150 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
       logger.info(
         s"Begin evolution $version - Set isDefault at true on all api"
       )
 
       dataStore.apiRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           ApiFormat.reads(value) match {
             case JsSuccess(api, _) =>
               dataStore.apiRepo
                 .forAllTenant()
-                .save(api.copy(isDefault = true))(using ec)
+                .save(api.copy(isDefault = true))
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -172,12 +172,13 @@ object evolution_151 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
       logger.info(
         s"Begin evolution $version - Convert unlogged home to CMS format"
       )
 
       dataStore.tenantRepo
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           TenantFormat.reads(value) match {
             case JsSuccess(tenant, _) =>
@@ -185,7 +186,7 @@ object evolution_151 extends EvolutionScript {
                 case Some(value) =>
                   dataStore.cmsRepo
                     .forTenant(tenant)
-                    .findOneNotDeleted(Json.obj("path" -> "/"))(using ec)
+                    .findOneNotDeleted(Json.obj("path" -> "/"))
                     .map {
                       case Some(_) => FastFuture.successful(())
                       case None =>
@@ -210,13 +211,13 @@ object evolution_151 extends EvolutionScript {
                               path = Some("/"),
                               lastPublishedDate = Some(DateTime.now())
                             )
-                          )(using ec)
+                          )
                         dataStore.tenantRepo.save(
                           tenant.copy(style =
                             tenant.style.map(_.copy(homeCmsPage = Some(homeId)))
                           )
-                        )(using ec)
-                    }(using ec)
+                        )
+                    }
                 case None => FastFuture.successful(())
               }
             case JsError(errors) =>
@@ -246,18 +247,19 @@ object evolution_155 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
 
       logger.info(
         s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused"
       )
 
       val userSource = dataStore.userRepo
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           UserFormat.reads(value) match {
             case JsSuccess(v, _) =>
               dataStore.userRepo
-                .save(v)(using ec)
+                .save(v)
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -265,12 +267,12 @@ object evolution_155 extends EvolutionScript {
           }
         }
       val tenantSource = dataStore.tenantRepo
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           TenantFormat.reads(value) match {
             case JsSuccess(v, _) =>
               dataStore.tenantRepo
-                .save(v)(using ec)
+                .save(v)
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -279,13 +281,13 @@ object evolution_155 extends EvolutionScript {
         }
       val teamSource = dataStore.teamRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           TeamFormat.reads(value) match {
             case JsSuccess(v, _) =>
               dataStore.teamRepo
                 .forAllTenant()
-                .save(v)(using ec)
+                .save(v)
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -294,13 +296,13 @@ object evolution_155 extends EvolutionScript {
         }
       val apiSource = dataStore.apiRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           ApiFormat.reads(value) match {
             case JsSuccess(v, _) =>
               dataStore.apiRepo
                 .forAllTenant()
-                .save(v)(using ec)
+                .save(v)
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -514,13 +516,13 @@ object evolution_157_b extends EvolutionScript {
 
       val recalcDocHumanReadableIdSource = dataStore.apiDocumentationPageRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           ApiDocumentationPageFormat.reads(value) match {
             case JsSuccess(v, _) =>
               dataStore.apiDocumentationPageRepo
                 .forAllTenant()
-                .save(v)(using ec)
+                .save(v)
             case JsError(errors) =>
               FastFuture.successful(
                 logger.error(s"Evolution $version : $errors")
@@ -752,9 +754,7 @@ object evolution_1612_c extends EvolutionScript {
               jsValue.as[JsObject] ++ Json.obj("possibleUsagePlans" -> plans)
             dataStore.apiRepo
               .forAllTenant()
-              .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)(
-                using ec
-              )
+              .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
           })
           .runWith(Sink.ignore)(using mat)
       }
@@ -786,7 +786,7 @@ object evolution_1613 extends EvolutionScript {
 
       val source = dataStore.apiRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(1) { value =>
           val state =
             if ((value \ "published").asOpt[Boolean].getOrElse(false)) {
@@ -1309,7 +1309,7 @@ object evolution_1820 extends EvolutionScript {
             logger.debug(s"[evolution $version] :: completed successfully")
           case Failure(e) =>
             logger.error(s"[evolution $version] :: failed with error", e)
-        }(using ec)
+        }
     }
 }
 
@@ -1402,7 +1402,7 @@ object evolution_1830 extends EvolutionScript {
             logger.debug(s"[evolution $version] :: completed successfully")
           case Failure(e) =>
             logger.error(s"[evolution $version] :: failed with error", e)
-        }(using ec)
+        }
     }
 }
 
@@ -1423,13 +1423,14 @@ object evolution_1840_a extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
       logger.info(
         s"Begin evolution $version - Extract form step from admin step"
       )
 
       dataStore.usagePlanRepo
         .forAllTenant()
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         //        .filter(plan => (plan \ "subscriptionProcess").asOpt[JsArray].exists(_.value.nonEmpty))
         //        .filter(plan => (plan \ "subscriptionProcess").as[JsArray].value.exists(step => (step \ "type").as[String] == "teamAdmin"))
         .mapAsync(10) { plan =>
@@ -1478,7 +1479,7 @@ object evolution_1840_a extends EvolutionScript {
               logger.info(Json.stringify(_plan.asJson))
               dataStore.usagePlanRepo
                 .forAllTenant()
-                .save(_plan)(using ec)
+                .save(_plan)
           }
 
         }
@@ -1510,7 +1511,7 @@ object evolution_1840_b extends EvolutionScript {
       implicit val _ec = ec
 
       dataStore.tenantRepo
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(1) { tenant =>
           dataStore.teamRepo
             .forTenant((tenant \ "_id").as(using TenantIdFormat))
@@ -1658,19 +1659,20 @@ object evolution_1860 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
+      given ExecutionContext = ec
       logger.info(
         s"Begin evolution $version - Convert footer to CMS format"
       )
 
       dataStore.tenantRepo
-        .streamAllRaw()(using ec)
+        .streamAllRaw()
         .mapAsync(10) { value =>
           (value \ "style" \ "footer").asOpt[String] match {
             case Some(footer) =>
               val tenant = (value \ "_id").as(using json.TenantIdFormat)
               dataStore.cmsRepo
                 .forTenant(tenant)
-                .findOneNotDeleted(Json.obj("name" -> "footer.html"))(using ec)
+                .findOneNotDeleted(Json.obj("name" -> "footer.html"))
                 .map {
                   case Some(_) => FastFuture.successful(())
                   case None =>
@@ -1691,8 +1693,8 @@ object evolution_1860 extends EvolutionScript {
                           path = Some("/footer"),
                           lastPublishedDate = Some(DateTime.now())
                         )
-                      )(using ec)
-                }(using ec)
+                      )
+                }
             case None => FastFuture.successful(())
           }
         }
@@ -2038,6 +2040,147 @@ object evolution_1900 extends EvolutionScript {
   }
 }
 
+object evolution_18110 extends EvolutionScript {
+  override def version: String = "18.11.0"
+
+  // All tables created with `allFields = true` carry a `_deleted` column.
+  // (messages, audit_events, user_sessions, evolutions don't have it.)
+  private val tablesWithDeletedFlag: Seq[String] = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "users",
+    "api_posts",
+    "api_issues",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations"
+  )
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - physically purge all logically deleted rows (_deleted = true)"
+      )
+
+      tablesWithDeletedFlag
+        .foldLeft(Future.successful(())) { (acc, table) =>
+          acc.flatMap { _ =>
+            dataStore.notificationRepo
+              .forAllTenant()
+              .execute(query = s"DELETE FROM $table WHERE _deleted = true;")
+              .map(purged =>
+                logger.info(
+                  s"[evolution $version] :: purged $purged rows from $table"
+                )
+              )
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
+object evolution_18110_b extends EvolutionScript {
+  override def version: String = "18.11.0_b"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - deduplicate personal teams and enforce one personal team per (tenant, user)"
+      )
+
+      // Concurrent first-login requests used to race in LoginFilter.findUserTeam and
+      // create several personal teams for the same user. Such races always produce
+      // EMPTY teams, so we drop the empty duplicates (keeping the data-bearing one when
+      // there is one, otherwise the oldest _id) before enforcing uniqueness.
+      val dedupEmptyDuplicatePersonalTeams =
+        """WITH personal AS (
+          |  SELECT t._id,
+          |         t.content->>'_tenant'            AS tenant,
+          |         t.content->'users'->0->>'userId' AS owner,
+          |         (EXISTS (SELECT 1 FROM api_subscriptions s
+          |                    WHERE s.content->>'team' = t._id AND s._deleted = false)
+          |          OR EXISTS (SELECT 1 FROM apis a
+          |                       WHERE a.content->>'team' = t._id AND a._deleted = false)) AS has_data
+          |  FROM teams t
+          |  WHERE t._deleted = false AND t.content->>'type' = 'Personal'
+          |),
+          |ranked AS (
+          |  SELECT _id, has_data,
+          |         row_number() OVER (
+          |           PARTITION BY tenant, owner ORDER BY has_data DESC, _id ASC
+          |         ) AS rn
+          |  FROM personal
+          |)
+          |DELETE FROM teams
+          | WHERE _id IN (SELECT _id FROM ranked WHERE rn > 1 AND has_data = false);
+          |""".stripMargin
+
+      // Partial unique index: at most one non-deleted personal team per (tenant, owner).
+      // A personal team always has exactly one member, hence users->0 is the owner.
+      val createUniqueIndex =
+        """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
+          |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+          |WHERE _deleted = false AND content->>'type' = 'Personal';
+          |""".stripMargin
+
+      (for {
+        deleted <- dataStore.teamRepo
+          .forAllTenant()
+          .execute(query = dedupEmptyDuplicatePersonalTeams)
+        _ = logger.info(
+          s"[evolution $version] :: removed $deleted duplicate (empty) personal teams"
+        )
+        _ <- dataStore.teamRepo
+          .forAllTenant()
+          .execute(query = createUniqueIndex)
+        _ = logger.info(
+          s"[evolution $version] :: ensured unique index uniq_team_personal_user"
+        )
+      } yield Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2063,6 +2206,8 @@ object evolutions {
       evolution_1840_c,
       evolution_1860,
       evolution_1892,
+      evolution_18110,
+      evolution_18110_b
       evolution_1900
     )
   def run(
@@ -2102,7 +2247,7 @@ object evolutions {
                         version = evolution.version,
                         applied = true
                       )
-                    )(using ec)
+                    )
                     .map(f => {
                       AppLogger.info(s"Evolution ${evolution.version} done")
                       f

@@ -130,7 +130,7 @@ export interface ICmsPageGQL {
   authenticated: boolean;
   metadata: object;
   contentType: string;
-  tags: String[];
+  tags: string[];
   lastPublishedDate: number;
 }
 

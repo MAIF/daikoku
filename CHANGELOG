@@ -948,3 +948,54 @@ We'd like to thank all the contributors who worked on this release!
 
 - myNotifications query returns notifications from other tenants [#1063](https://github.com/MAIF/daikoku/issues/1063)
 
+## [v18.10.0] - 2026-06-02
+
+## :beetle: Bug Fixes
+
+- When viewing an issue that has a comment posted by a deleted user or a user without avatar, the app crashes with: [#1065](https://github.com/MAIF/daikoku/issues/1065)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
+## [v18.10.0] - 2026-06-02
+
+## :star: New Features
+
+- Add subscription.metadata as accessible pattern for apikey name [#1064](https://github.com/MAIF/daikoku/issues/1064)
+
+## :beetle: Bug Fixes
+
+- API pricing dosen't work correctly if plan is private [#1097](https://github.com/MAIF/daikoku/issues/1097)
+- API subscriptions page shows inconsistent results depending on the user [#1096](https://github.com/MAIF/daikoku/issues/1096)
+- Delete API key button is visible for simple team user but does not work [#1080](https://github.com/MAIF/daikoku/issues/1080)
+- "oops" in "pending request" block [#1078](https://github.com/MAIF/daikoku/issues/1078)
+- Migration button mongo -> pg should be hidden when already in PG [#1072](https://github.com/MAIF/daikoku/issues/1072)
+- cms.export_all button does not work [#1071](https://github.com/MAIF/daikoku/issues/1071)
+- Search from UI crash with ' character [#1069](https://github.com/MAIF/daikoku/issues/1069)
+- When viewing an issue that has a comment posted by a deleted user or a user without avatar, the app crashes with: [#1065](https://github.com/MAIF/daikoku/issues/1065)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
+## [v18.11.0] - 2026-06-12
+
+## :star: New Features
+
+- stop using soft deletion [#1104](https://github.com/MAIF/daikoku/issues/1104)
+- Support deploying Daikoku with Helm [#1100](https://github.com/MAIF/daikoku/issues/1100)
+
+## :beetle: Bug Fixes
+
+- 2 or more personal team can be created after first connection if user is already known in database [#1114](https://github.com/MAIF/daikoku/issues/1114)
+- Notification list — API name takes ~9s to display (blocked by slow `AllVisibleApis` query) [#1113](https://github.com/MAIF/daikoku/issues/1113)
+- Privilege Escalation via Impersonation Session Leak [#1102](https://github.com/MAIF/daikoku/issues/1102)
+- Undo a user deletion, or actually delete it [#1101](https://github.com/MAIF/daikoku/issues/1101)
+- team information is visible event for unconnected users [#1092](https://github.com/MAIF/daikoku/issues/1092)
+- User invitation does not work on private tenant [#1073](https://github.com/MAIF/daikoku/issues/1073)
+

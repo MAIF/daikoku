@@ -1,0 +1,115 @@
+{{- if .Values.openldap.enabled }}
+{{- $name := include "daikoku.openldap.fullname" . }}
+{{- $base := include "daikoku.openldap.baseDN" . }}
+{{- $users := splitList "," .Values.openldap.users }}
+{{- $pws := splitList "," .Values.openldap.passwords }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  # Daikoku's LDAP bind password reads this same key (see the Deployment env).
+  adminPassword: {{ include "daikoku.resolveSecret" (dict "ctx" $ "secret" $name "key" "adminPassword" "provided" .Values.openldap.adminPassword "length" 24) | quote }}
+---
+# Seed users imported by osixia on first boot (ou=users + one inetOrgPerson each,
+# with mail=<user>@<domain> so they match Daikoku's default "(mail=${username})").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-ldif
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+data:
+  01-users.ldif: |
+    dn: ou=users,{{ $base }}
+    objectClass: organizationalUnit
+    ou: users
+    {{- range $i, $u := $users }}
+
+    dn: uid={{ $u }},ou=users,{{ $base }}
+    objectClass: inetOrgPerson
+    cn: {{ $u }}
+    sn: {{ $u }}
+    uid: {{ $u }}
+    mail: {{ $u }}@{{ $.Values.openldap.domain }}
+    userPassword: {{ index $pws $i }}
+    {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "daikoku.openldap.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "daikoku.openldap.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/ldif: {{ printf "%s|%s" .Values.openldap.users .Values.openldap.passwords | sha256sum }}
+    spec:
+      containers:
+        - name: openldap
+          image: {{ .Values.openldap.image | quote }}
+          imagePullPolicy: {{ .Values.openldap.imagePullPolicy }}
+          args: ["--copy-service"]
+          ports:
+            - name: ldap
+              containerPort: 389
+          env:
+            - name: LDAP_ORGANISATION
+              value: {{ .Values.openldap.organisation | quote }}
+            - name: LDAP_DOMAIN
+              value: {{ .Values.openldap.domain | quote }}
+            - name: LDAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $name }}
+                  key: adminPassword
+            - name: LDAP_TLS
+              value: "false"
+            - name: LDAP_REMOVE_CONFIG_AFTER_SETUP
+              value: "true"
+          volumeMounts:
+            - name: ldif
+              mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
+            - name: data
+              mountPath: /var/lib/ldap
+            - name: config
+              mountPath: /etc/ldap/slapd.d
+          resources:
+            {{- toYaml .Values.openldap.resources | nindent 12 }}
+      volumes:
+        - name: ldif
+          configMap:
+            name: {{ $name }}-ldif
+        - name: data
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "daikoku.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "daikoku.openldap.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: ldap
+      port: 389
+      targetPort: ldap
+{{- end }}

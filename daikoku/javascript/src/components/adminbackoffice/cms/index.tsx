@@ -5,7 +5,6 @@ import { Can, manage, tenant } from '../../utils';
 import { Create } from './Create';
 import { Pages } from './Pages';
 import * as Services from '../../../services';
-import { Spinner } from '../..';
 import { useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ICmsPageGQL } from '../../../types';
@@ -52,28 +51,10 @@ export const CMSOffice = () => {
       .then((r) => setPages(r.pages));
   };
 
-  const Index = ({ }) => {
+  const Index = () => {
     return (<div className="p-3">
       <div className="d-flex flex-row align-items-center justify-content-between mb-2">
         <h1 className="mb-0">Pages</h1>
-        <div>
-          <button className="btn btn-sm btn-outline-info" onClick={() => {
-            if (!downloading) {
-              setDownloading(true);
-              Services.downloadCmsFiles()
-                .then((transfer) => transfer.blob())
-                .then((bytes) => {
-                  const elm = document.createElement('a');
-                  elm.href = URL.createObjectURL(bytes);
-                  elm.setAttribute('download', 'cms.zip');
-                  elm.click();
-                  setDownloading(false);
-                });
-            }
-          }}>
-            {downloading ? (<Spinner heigth={18} width={18} />) : (translate('cms.export_all'))}
-          </button>
-        </div>
       </div>
 
       <Pages pages={cmsPages} reload={reload} />
@@ -83,7 +64,7 @@ export const CMSOffice = () => {
   return (
     <Can I={manage} a={tenant} dispatchError>
       <Routes>
-        <Route path={`/:id`} element={<Create pages={cmsPages} />} />
+        <Route path={`/:id`} element={<Create />} />
         <Route path="*" element={<Index />} />
       </Routes>
     </Can>

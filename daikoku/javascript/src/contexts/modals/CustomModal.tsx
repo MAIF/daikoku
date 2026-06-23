@@ -1,6 +1,5 @@
 
-import { JSX, PropsWithChildren, ReactNode } from 'react';
-import { IModalProps } from './ApiSelectModal';
+import { JSX, ReactNode } from 'react';
 import { IBaseModalProps } from './types';
 
 /**

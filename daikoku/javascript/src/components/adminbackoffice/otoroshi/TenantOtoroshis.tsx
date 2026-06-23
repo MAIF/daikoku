@@ -1,12 +1,12 @@
+import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
-import { createColumnHelper } from '@tanstack/react-table';
 import { toast } from 'sonner';
+
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../contexts/i18n-context';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { I18nContext } from '../../../contexts/i18n-context';
 import * as Services from '../../../services';
 import { IOtoroshiSettings, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -108,9 +108,7 @@ export const TenantOtoroshis = () => {
           type="button"
           className="btn btn-sm btn-outline-success my-1 ms-1"
           title={translate('otoroshi.list.add.label')}
-          onClick={(e) => {
-            createNewSettings();
-          }}
+          onClick={() => createNewSettings()}
         >
           {translate('otoroshi.list.add.label')}
         </button>

@@ -1,9 +1,8 @@
 import { constraints, Schema } from '@maif/react-forms';
+import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
-import { IApiSubscriptionGql } from '../components';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 

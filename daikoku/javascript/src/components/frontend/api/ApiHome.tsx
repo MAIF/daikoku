@@ -219,7 +219,7 @@ export const ApiHome = ({
         <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
         <div className="album p-4" style={{ position: 'relative' }}>
           {params.tab === 'description' && <ApiDescription api={api} ownerTeam={ownerTeam} />}
-          {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
             subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && tenant.display == Display.default && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}

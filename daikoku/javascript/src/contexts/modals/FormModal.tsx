@@ -1,5 +1,5 @@
-import React, { useContext, useRef } from 'react';
-import { Flow, Form, FormRef, Schema, Option, TBaseObject } from '@maif/react-forms';
+import { Form, FormRef, TBaseObject } from '@maif/react-forms';
+import { useContext, useRef } from 'react';
 
 import { I18nContext } from '../../contexts';
 import { IBaseModalProps, IFormModalProps } from './types';
@@ -28,7 +28,7 @@ export const FormModal = <T extends TBaseObject>({
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
       <div className="modal-body">
-        {description && description}
+        {!!description && description}
         <Form
           ref={ref}
           schema={schema}
@@ -41,9 +41,9 @@ export const FormModal = <T extends TBaseObject>({
             }
           }}
           options={{
-            ...(options || {}),
+            ...options,
             actions: {
-              ...options?.actions || {},
+              ...options?.actions,
               submit: { display: false },
             }
           }}

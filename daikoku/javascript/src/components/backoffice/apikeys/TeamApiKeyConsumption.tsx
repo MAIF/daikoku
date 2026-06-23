@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { BeautifulTitle, formatDate, OtoroshiStatsVizualization } from '../..';
+import { OtoroshiStatsVizualization, formatDate } from '../..';
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { ITeamSimple, ResponseError, isError } from "../../../types";
@@ -55,11 +55,11 @@ const Quotas = (props: QuotasProps) => {
             key: "daily.quotas.consumed.title",
             replacements: [(queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay).toString(), queryQuotas.data.authorizedCallsPerDay.toString()]
           })}> */}
-          <Progress
-            strokeColor={colorDaily}
-            percent={Math.round(percentDaily)}
-            status="active"
-          />
+        <Progress
+          strokeColor={colorDaily}
+          percent={Math.round(percentDaily)}
+          status="active"
+        />
         {/* </BeautifulTitle> */}
         <h5>
           {translate("Monthly quotas consumed")}
@@ -69,11 +69,11 @@ const Quotas = (props: QuotasProps) => {
             key: "monthly.quotas.consumed.title",
             replacements: [(queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth).toString(), queryQuotas.data.authorizedCallsPerMonth.toString()]
           })}> */}
-          <Progress
-            strokeColor={colorMonthly}
-            percent={Math.round(percentMontly)}
-            status="active"
-          />
+        <Progress
+          strokeColor={colorMonthly}
+          percent={Math.round(percentMontly)}
+          status="active"
+        />
         {/* </BeautifulTitle> */}
       </div>
     )
@@ -115,15 +115,15 @@ export const TeamApiKeyConsumption = () => {
     },
   ];;
 
-  if (subInf.data?.plan.maxPerDay ) {
-      mappers = [
-        ...mappers,
-        {
-          type: 'Custom',
-          label: translate('Quotas consumptions'),
-          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.customName} />,
-        },
-      ];
+  if (subInf.data?.plan.maxPerDay) {
+    mappers = [
+      ...mappers,
+      {
+        type: 'Custom',
+        label: translate('Quotas consumptions'),
+        formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.customName} />,
+      },
+    ];
   }
 
   useEffect(() => {

@@ -1,12 +1,13 @@
-import React, { useContext, useState } from 'react';
+import classNames from 'classnames';
+import { useContext, useState } from 'react';
 import { I18nContext } from '../../contexts';
 import {
   IFastPlan,
   ISubscription,
-  IUsagePlan,
+  ISubscriptionWithApiInfo,
+  IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
-import classNames from 'classnames';
 
 /** A keyring (trousseau) the user may pick to add the new subscription into.
  * `subscription` is the representative subscription carrying that keyring ;

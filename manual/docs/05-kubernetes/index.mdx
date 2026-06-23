@@ -1,0 +1,94 @@
+# Kubernetes
+
+Daikoku ships a **Helm chart** that deploys, in a single release, everything needed to run it on Kubernetes:
+
+- the **Daikoku** application (Deployment + Service),
+- an **embedded PostgreSQL** (StatefulSet + persistent volume) — or a pointer to your own managed database,
+- an **Ingress** with TLS terminated by [cert-manager](https://cert-manager.io/).
+
+The chart lives in the repository under [`kubernetes/helm/daikoku`](https://github.com/MAIF/daikoku/tree/master/kubernetes/helm/daikoku).
+
+## Prerequisites
+
+- A Kubernetes cluster and [Helm 3](https://helm.sh/).
+- An **Ingress controller** (for example [ingress-nginx](https://kubernetes.github.io/ingress-nginx/)).
+- **cert-manager** with a `ClusterIssuer` (for example `letsencrypt-prod`) for automatic TLS. Otherwise provide your own TLS Secret and drop the cert-manager annotation.
+- A `StorageClass` for the PostgreSQL volume (the cluster default is used when left unset).
+
+## Install
+
+Clone the repository, then install the chart with your public hostname:
+
+```sh
+git clone https://github.com/MAIF/daikoku.git
+cd daikoku
+
+helm install daikoku ./kubernetes/helm/daikoku \
+  --namespace daikoku --create-namespace \
+  --set ingress.host=daikoku.example.com
+```
+
+That single hostname is enough: the initial tenant host, the advertised URLs and the TLS certificate are all derived from it.
+
+Retrieve the auto-generated admin password, then sign in at `https://daikoku.example.com`:
+
+```sh
+kubectl -n daikoku get secret daikoku \
+  -o jsonpath='{.data.DAIKOKU_INIT_ADMIN_PASSWORD}' | base64 -d ; echo
+```
+
+The default admin login is `admin@example.com` (override with `--set daikoku.admin.email=...`).
+
+## Configuration
+
+Override values with `--set key=value` or your own values file (`-f my-values.yaml`). The most useful keys:
+
+| Value | Default | Description |
+| --- | --- | --- |
+| `image.tag` | chart `appVersion` | Daikoku image tag |
+| `ingress.host` | `daikoku.example.com` | Public hostname (also the initial tenant) |
+| `ingress.className` | `nginx` | Ingress class |
+| `ingress.annotations` | cert-manager cluster-issuer | TLS / ingress annotations |
+| `daikoku.admin.email` | `admin@example.com` | Initial admin login |
+| `daikoku.tenantProvider` | `Hostname` | Tenant resolution: `Hostname`, `local`, `header` |
+| `postgresql.enabled` | `true` | Deploy the embedded PostgreSQL |
+| `postgresql.persistence.size` | `10Gi` | Database volume size |
+| `resources` | 500m / 1Gi requests | Daikoku requests and limits |
+| `secrets.*` | auto-generated | Crypto keys and admin password |
+
+### Secrets
+
+Leave `secrets.*` empty (the default) and the chart generates strong random values on first install, then **reuses them on every `helm upgrade`** by reading them back from the live Secret. This matters: rotating `DAIKOKU_CYPHER_SECRET` would make already-encrypted data unreadable, and rotating `PLAY_CRYPTO_SECRET` would invalidate every session. To bring your own, set the values explicitly or reference an existing Secret with `secrets.existingSecret`.
+
+### Use an external (managed) database
+
+Disable the embedded PostgreSQL and point Daikoku at your database:
+
+```sh
+helm install daikoku ./kubernetes/helm/daikoku \
+  --namespace daikoku --create-namespace \
+  --set ingress.host=daikoku.example.com \
+  --set postgresql.enabled=false \
+  --set externalDatabase.host=my-postgres.example.com \
+  --set externalDatabase.existingSecret=my-postgres-secret
+```
+
+The referenced Secret must hold the password under the key `postgres-password`. Daikoku creates its schema and tables on first boot, so the database must already exist and the user must be allowed to `CREATE` in the schema.
+
+## Things to know
+
+:::warning Single instance by default
+`replicaCount` defaults to `1`. Daikoku derives its Snowflake ID worker from `INSTANCE_NUMBER`; two pods sharing the same value can mint colliding IDs. Scaling out requires a unique `INSTANCE_NUMBER` per pod (a StatefulSet ordinal) and a single Otoroshi sync master.
+:::
+
+:::info Hostname tenant resolution
+With the default `tenantProvider: Hostname`, Daikoku resolves the tenant from the request `Host` header, so the initial tenant host must match the hostname users hit. The chart keeps `daikoku.initHost` aligned with `ingress.host` automatically, and injects a `Host` header into the HTTP probes — kubelet otherwise probes with the pod IP, which matches no tenant.
+:::
+
+:::tip TLS at the ingress
+TLS is terminated at the Ingress; Daikoku stays HTTP internally. The chart sets `DAIKOKU_EXPOSED_ON` and `DAIKOKU_SSL_ENABLED` from `ingress.tls`, so the URLs Daikoku generates use `https://` and the correct external port. Do not set the `HTTPS_PORT` / keystore variables.
+:::
+
+## Try it locally
+
+The repository ships a ready-to-use [kind](https://kind.sigs.k8s.io/) setup under [`kubernetes/kind`](https://github.com/MAIF/daikoku/tree/master/kubernetes/kind) — a cluster config, a self-signed `ClusterIssuer` and a `values-kind.yaml` — to bring the whole stack up on your machine in a few commands.

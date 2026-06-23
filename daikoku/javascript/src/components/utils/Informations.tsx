@@ -1,9 +1,8 @@
-import classNames from "classnames";
 import { useContext, useEffect } from 'react';
 import CheckCircle from 'react-feather/dist/icons/check-circle';
 import XOctagon from 'react-feather/dist/icons/x-octagon';
-
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { I18nContext, ModalContext } from '../../contexts';
 import { GlobalContext } from "../../contexts/globalContext";
 
@@ -40,7 +39,7 @@ export const Informations = () => {
       </section>
       {(!!messageId || error) && <div className="mx-auto information-cartridge">
         <div className="d-flex flex-column align-items-center justify-content-center gap-3">
-          {!!messageId && !error && <CheckCircle size='4.5rem' className="color-success"/>}
+          {!!messageId && !error && <CheckCircle size='4.5rem' className="color-success" />}
           {!!error && <XOctagon size='4.5rem' className="color-danger" />}
           {
             !!messageId && (
@@ -58,9 +57,9 @@ export const Informations = () => {
             )}
         </div>
         <div className="inforamtion-footer d-flex justify-content-end mt-5">
-            <div className="btn btn-sm btn-outline-secondary"onClick={() => navigate("/apis")}>
-              {translate('informations.page.go.back.button.label')}
-            </div>
+          <div className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/apis")}>
+            {translate('informations.page.go.back.button.label')}
+          </div>
         </div>
       </div>
       }

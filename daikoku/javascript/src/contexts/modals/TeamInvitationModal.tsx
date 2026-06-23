@@ -2,16 +2,15 @@ import { constraints, Form, FormRef, type } from '@maif/react-forms';
 import { useContext, useRef } from 'react';
 
 import { I18nContext } from '../../contexts';
-import { IState, ITenant } from '../../types';
-import { IBaseModalProps, ITeamInvitationModalProps } from './types';
 import { GlobalContext } from '../globalContext';
+import { IBaseModalProps, ITeamInvitationModalProps } from './types';
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
   const ref = useRef<FormRef>(undefined);
-  
+
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext)
-  
+
   const invitUser = (email: string) => {
     props.invitUser(email)
       .then(props.close)
@@ -30,7 +29,7 @@ export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModa
         </h5>
       </div>
       <div className="modal-body">
-        <Form<{email: string}>
+        <Form<{ email: string }>
           ref={ref}
           schema={{
             email: {

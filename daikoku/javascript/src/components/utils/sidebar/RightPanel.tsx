@@ -1,9 +1,8 @@
 import classNames from 'classnames';
 import { useContext, useEffect } from 'react';
 import X from 'react-feather/dist/icons/x';
-
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useLocation } from 'react-router-dom';
+
 import { ModalContext } from '../../../contexts';
 
 

@@ -49,7 +49,7 @@ const MotivationForm = (props: MotivationFormProps) => {
       try {
         maybeFormattedSchema =
           typeof schema === 'object' ? schema : JSON.parse(schema);
-      } catch (_) { }
+      } catch { }
 
       setRealSchema(maybeFormattedSchema || {});
     }

@@ -32,7 +32,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
       setSelectedTeam(props.subscribingTeams[0])
     )
   }, [props.subscribingTeams])
-  
+
 
   return (
     <div>
@@ -40,7 +40,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
         className='col-3'
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
-        onChange={t => setSelectedTeam(t?.value!)}
+        onChange={t => setSelectedTeam(t!.value)}
         value={{ label: selectedTeam?.name, value: selectedTeam }}
         styles={{
           valueContainer: (baseStyles) => ({

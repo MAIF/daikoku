@@ -57,13 +57,11 @@ export function Histogram(props: any) {
       props.series.forEach((serie: any) => {
         const item = serie.data[i];
         if (item) {
-          finalItem = {
+          finalItem = ({
             ...finalItem,
-            ...{
-              name: formatDate(item[0], translate('date.locale'), translate('date.format')),
-              [serie.name]: item[1],
-            },
-          };
+            name: formatDate(item[0], translate('date.locale'), translate('date.format')),
+            [serie.name]: item[1]
+          });
         }
       });
       values.push(finalItem);

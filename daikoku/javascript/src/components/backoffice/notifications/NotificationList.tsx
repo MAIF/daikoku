@@ -1,12 +1,14 @@
+import { constraints, format, type } from '@maif/react-forms';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
+import debounce from 'lodash/debounce';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
-
-import { constraints, format, type } from '@maif/react-forms';
 import { Link, useSearchParams } from 'react-router-dom';
+import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
+import AsyncSelect from 'react-select/async';
+
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -17,6 +19,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
 declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
 }
 
@@ -222,17 +225,35 @@ const GenericValueContainer = (
   );
 };
 
-const VISIBLE_APIS = `
-    query AllVisibleApis ($limit: Int, $offset: Int) {
-      visibleApis (limit: $limit, offset: $offset) {
-        apis {
-          api {
-            name
-            _id
-          }
-        }
-      }
-    }`
+const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
+
+const getApiFromNotification = (
+  notification: NotificationGQL,
+): { _id: string; name: string; currentVersion?: string } | undefined => {
+  switch (notification.action.__typename) {
+    case 'ApiAccess':
+    case 'ApiSubscription':
+    case 'ApiSubscriptionReject':
+    case 'ApiSubscriptionAccept':
+    case 'OtoroshiSyncApiError':
+    case 'ApiKeyDeletionInformationV2':
+    case 'ApiKeyRotationInProgressV2':
+    case 'ApiKeyRotationEndedV2':
+    case 'ApiKeyRefreshV2':
+    case 'NewPostPublishedV2':
+    case 'NewIssueOpenV2':
+    case 'NewCommentOnIssueV2':
+    case 'TransferApiOwnership':
+    case 'CheckoutForSubscription': {
+      const _api = notification.action.api;
+      return { _id: _api._id, name: _api.name, currentVersion: _api.currentVersion };
+    }
+    default:
+      return;
+  }
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export const NotificationList = () => {
   const { translate, language } = useContext(I18nContext);
@@ -277,16 +298,28 @@ export const NotificationList = () => {
     window.history.replaceState(null, '', `?filter=${q}`);
   }, [columnFilters]);
 
-  const visibleApisRequest = useQuery({
-    queryKey: ['apis'],
-    queryFn: () => customGraphQLClient.request<{ visibleApis: { apis: [{ api: { _id: string, name: string } }] } }>(
-      VISIBLE_APIS,
-      {
-        limit: -1,
-        offset: 0,
-      }),
-    select: d => d.visibleApis.apis.map(a => a.api)
-  })
+  // Server-side autocomplete for the API filter: we only ever load a handful of
+  // APIs at a time, so we keep a local id->name cache to resolve the label of
+  // already-selected APIs (chips + select value) without refetching the whole list.
+  const [apiLabelCache, setApiLabelCache] = useState<Record<string, string>>({});
+
+  const cacheApiLabels = (apis: Array<{ value: string; label: string }>) =>
+    setApiLabelCache(prev => ({
+      ...prev,
+      ...Object.fromEntries(apis.map(a => [a.value, a.label])),
+    }));
+
+  const loadApiOptions = useMemo(
+    () =>
+      debounce((input: string, callback: (options: Array<Option>) => void) => {
+        Services.getMyVisibleApisLight(input, -1).then(apis => {
+          const options = apis.map(a => ({ label: a.name, value: a._id }));
+          cacheApiLabels(options);
+          callback(options);
+        });
+      }, 300),
+    []
+  );
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -906,10 +939,7 @@ export const NotificationList = () => {
     }
   }
 
-  const getApiFromNotification = (notification: NotificationGQL, apis?: Array<{ _id: string, name: string }>): { _id: string, name: string, currentVersion?: string } | undefined => {
-    if (!apis) {
-      return;
-    }
+  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
     switch (notification.action.__typename) {
       case "ApiAccess":
       case "ApiSubscription":
@@ -963,14 +993,18 @@ export const NotificationList = () => {
       meta: { className: "api-cell" },
       cell: (info) => {
         const notification = info.row.original;
-        const api = getApiFromNotification(notification, visibleApisRequest.data)
-
-        if (api)
-          return <a href='#' onClick={() => handleSelectChange([{ label: api.name, value: api._id }], 'api')}>
+        const api = getApiFromNotification(notification);
+        if (!api) return null;
+        return (
+          <a href='#' onClick={() =>
+            setColumnFilters(prev => [
+              ...prev.filter(f => f.id !== 'api'),
+              { id: 'api', value: [api._id] },
+            ])
+          }>
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
-        else
-          return null;
+        );
       }
     }),
     columnHelper.accessor('action.__typename', {
@@ -1179,7 +1213,7 @@ export const NotificationList = () => {
                   }))
                 case f.id === 'api':
                   return ((f.value as Array<string>).map(value => {
-                    const apiName = visibleApisRequest.data?.find(t => t._id === value)?.name;
+                    const apiName = apiLabelCache[value] ?? value;
                     return (
                       <button key={apiName} className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {apiName}
@@ -1242,19 +1276,21 @@ export const NotificationList = () => {
                 styles={menuStyle}
                 onChange={data => handleSelectChange(data, 'team')}
                 value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
-              <Select
-                isMulti //@ts-ignore
+              <AsyncSelect
+                isMulti
+                cacheOptions
+                defaultOptions //@ts-ignore
                 components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-                options={(visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id }))}
-                isLoading={visibleApisRequest.isLoading || visibleApisRequest.isPending}
+                loadOptions={loadApiOptions}
                 closeMenuOnSelect={true}
                 labelKey={"notifications.page.filters.api.label"}
                 labelKeyAll={"notifications.page.filters.all.api.label"}
                 getCount={getTotalForApi}
                 classNamePrefix="daikoku-select"
                 styles={menuStyle}
-                onChange={data => handleSelectChange(data, 'api')}
-                value={getSelectValue('api', visibleApisRequest.data ?? [], 'name', '_id')} />
+                onChange={data => { cacheApiLabels([...data]); handleSelectChange(data, 'api'); }}
+                value={((columnFilters.find(f => f.id === 'api')?.value as Array<string>) ?? [])
+                  .map(id => ({ label: apiLabelCache[id] ?? id, value: id }))} />
               <Select
                 isMulti //@ts-ignore
                 components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}

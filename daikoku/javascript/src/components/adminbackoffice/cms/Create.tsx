@@ -9,7 +9,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import { ICmsPageGQL } from '../../../types/gql';
 
 
-export const Create = (props: any) => {
+export const Create = () => {
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
@@ -18,7 +18,7 @@ export const Create = (props: any) => {
 
   const [loading, setLoading] = useState(true);
 
-  const [value, setValue] = useState<any>({});
+  const [value, setValue] = useState({});
 
   useEffect(() => {
     const id = params.id;

@@ -6,6 +6,7 @@ import fr.maif.daikoku.actions.*
 import fr.maif.daikoku.controllers.*
 import fr.maif.daikoku.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.daikoku.jobs.*
+import fr.maif.daikoku.login.LocalLoginSupport
 import fr.maif.daikoku.services.{
   AccountCreationService,
   ApiService,
@@ -13,6 +14,7 @@ import fr.maif.daikoku.services.{
   DeletionService,
   KeyringService,
   TranslationsService
+  UserService
 }
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
@@ -63,6 +65,8 @@ class DaikokuComponentsInstances(context: Context)
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
   lazy val translationsService = wire[TranslationsService]
+  lazy val UserService = wire[UserService]
+  lazy val localLoginSupport = wire[LocalLoginSupport]
   lazy val deletionService = wire[DeletionService]
 
   lazy val translator = wire[Translator]
@@ -96,6 +100,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val auditTrailController = wire[AuditTrailController]
   lazy val entitiesController = wire[EntitiesController]
   lazy val sessionController = wire[SessionController]
+  lazy val loggersController = wire[LoggersController]
   lazy val jobsController = wire[JobsController]
   lazy val consumptionController = wire[ConsumptionController]
   lazy val teamAssetsController = wire[TeamAssetsController]

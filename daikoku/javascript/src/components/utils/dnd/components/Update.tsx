@@ -1,5 +1,3 @@
-import React from "react";
-import { Edit2 } from "react-feather";
 
 import { Action, Props as ActionProps } from "./Action";
 

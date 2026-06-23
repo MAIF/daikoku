@@ -1,12 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { CONTENT_TYPES } from './cmsUtils';
 import { ICmsPageGQL } from '../../../types';
+import { Table, TableRef } from '../../inputs';
 
 type PagesProps = {
   pages: Array<ICmsPageGQL>
@@ -32,29 +30,6 @@ export const Pages = ({
 
   const columnHelper = createColumnHelper<ICmsPageGQL>();
   const columns = [
-    columnHelper.display({
-      header: ' ',
-      meta: {
-        style: {
-          textAlign: 'center',
-          width: '60px',
-        }
-      },
-      enableColumnFilter: false,
-      enableSorting: false,
-      cell: (info) => {
-        const { contentType } = info.row.original;
-        const item = CONTENT_TYPES.find((f) => f.value === contentType);
-        return (
-          <img
-            style={{ width: '24px' }}
-            src={`/assets/file-icons/${item?.value
-              .replace('text/', '')
-              .replace('application/', '')}.svg`}
-          />
-        );
-      },
-    }),
     columnHelper.accessor('name', {
       header: translate('cms.pages.name'),
       meta: { style: { textAlign: 'left' } },

@@ -2,10 +2,10 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { toast } from 'sonner';
 import {
   I18nContext,
-  ModalContext,
-  useTeamBackOffice,
+  useTeamBackOffice
 } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
@@ -14,12 +14,13 @@ import { Table, TableRef } from '../../inputs';
 import {
   Can,
   Spinner,
+  access,
   apikey,
   isUserIsTeamAdmin,
   manage,
+  read,
   teamPermissions,
 } from '../../utils';
-import { toast } from 'sonner';
 
 export const TeamApiKeys = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -30,15 +31,14 @@ export const TeamApiKeys = () => {
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
     setShowApiKey(
       connectedUser.isDaikokuAdmin ||
-        (currentTeam &&
-          !isError(currentTeam) &&
-          currentTeam.apiKeyVisibility !== teamPermissions.administrator) ||
-        isUserIsTeamAdmin(connectedUser, currentTeam)
+      (currentTeam &&
+        !isError(currentTeam) &&
+        currentTeam.apiKeyVisibility !== teamPermissions.administrator) ||
+      isUserIsTeamAdmin(connectedUser, currentTeam)
     );
   }, [connectedUser.isDaikokuAdmin, currentTeam]);
 
@@ -73,7 +73,7 @@ export const TeamApiKeys = () => {
                   className="btn btn-sm btn-outline-info me-1"
                   title={translate("apikeys.view.api")}
                   aria-label={translate("apikeys.view.api")}
-                  >
+                >
                   <i className="fa-solid fa-arrow-up-right-from-square" />
                 </Link>
                 <Link
@@ -96,7 +96,7 @@ export const TeamApiKeys = () => {
     return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
     return (
-      <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
+      <Can I={access} a={apikey} team={currentTeam} dispatchError={true}>
         <div className="row">
           <div className="col">
             <h1>

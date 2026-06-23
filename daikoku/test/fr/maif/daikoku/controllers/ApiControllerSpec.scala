@@ -469,7 +469,7 @@ class ApiControllerSpec()
         tenants = Seq(
           tenant.copy(
             clientNamePattern = Some(
-              "apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}"
+              "apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}::id=${subscription.clientId}"
             ),
             otoroshiSettings = Set(
               OtoroshiSettings(
@@ -550,7 +550,7 @@ class ApiControllerSpec()
     "not initialize tenant subscriptions" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin, userAdmin),
+        users = Seq(tenantAdmin, userAdmin, userApiEditor, user),
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(defaultApi.api)
       )
@@ -648,7 +648,7 @@ class ApiControllerSpec()
     "see his teams (graphQl)" in {
       setupEnvBlocking(
         tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
-        users = Seq(userAdmin, user),
+        users = Seq(userAdmin, user, userApiEditor),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1387,25 +1387,22 @@ class ApiControllerSpec()
         )
       }
 
-      // await until operation is run by queuejob
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-        operationsPending().nonEmpty
+        // test if user subscriptions are physically deleted
+        val _maybeSubscription = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(personalSubscription.id),
+          5.second
+        )
+        _maybeSubscription.isEmpty
       }
+
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         operationsPending().isEmpty
       }
 
       // todo: verif if subscriptions, docs, plans, demands & stepValidatores are cleans
-
-      // test if user subscriptions deleted
-      val _maybeSubscription = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(personalSubscription.id),
-        5.second
-      )
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
 
       // test if plans are deleted
       val _maybePlans = Await.result(
@@ -3867,7 +3864,7 @@ class ApiControllerSpec()
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(userApiEditor, user),
+        users = Seq(userApiEditor, user, userAdmin),
         teams = Seq(teamOwner)
       )
       val session = loginWithBlocking(userApiEditor, tenant)
@@ -4824,7 +4821,7 @@ class ApiControllerSpec()
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(user),
+        users = Seq(user, userApiEditor, userAdmin),
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(user, tenant)
@@ -6855,15 +6852,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 
@@ -6941,15 +6938,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 
@@ -7224,15 +7221,15 @@ class ApiControllerSpec()
         ),
         (
           Some(TeamApiKeyVisibility.ApiEditor),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           Some(TeamApiKeyVisibility.User),
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         ),
         (
           None,
-          Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))
+          Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))
         )
       )
 
