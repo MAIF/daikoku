@@ -28,7 +28,7 @@ import {
   ITeamSelector,
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity,
-  IPlansWithCount, IApi, IValidationStep
+  IPlansWithCount, IApi, IValidationStep, ITenant
 } from '../../../types';
 import {SubscriptionProcessEditor} from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -837,6 +837,68 @@ export const ApiPricing = (props: ApiPricingProps) => {
     openApiSelectModal,
     confirm
   } = useContext(ModalContext);
+
+
+
+  type IUsagePlanGQL = {
+    _id: string;
+    _tenant: ITenant;
+    _deleted: string;
+    authorizedTeams: Array<{
+        _id: string;
+        name: string;
+      }>
+    customName: string;
+    customDescription: string;
+    visibility: string;
+    costPerMonth: number;
+    maxPerSecond: number;
+    maxPerDay: number;
+    maxPerMonth: number;
+    trialPeriod: {
+      BillingDuration: {
+          value: number;
+          unit: {
+            name: string;
+          }
+        }
+      }
+      billingDuration: {
+        BillingDuration: {
+            value: string;
+          }
+    }
+    paymentSettings: {
+      thirdPartyPaymentSettingsId: string;
+    Stripe: {
+        thirdPartyPaymentSettingsId: string;
+        productId: string;
+        priceIds: {
+          basePriceId: string;
+          additionalPriceId: string;
+        }
+      }
+    }
+    otoroshiTarget: {
+      otoroshiSettings: string;
+      authorizedEntities: {
+        services: string;
+        groups: string;
+        routes: string;
+      }
+    }
+    currency: {
+      code: string;
+    }
+    subscriptionProcess: Array<IValidationStep>
+    integrationProcess: string;
+    allowMultipleKeys: string;
+    aggregationApiKeysSecurity: string;
+    autoRotation: string;
+
+  };
+
+
 
   const [rowSelection, setRowSelection] = useState({});
 
@@ -1714,7 +1776,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     teams={authorizedTeams.filter(
                       (team) =>
                         plan.visibility === 'Public' ||
-                        team._id === props.ownerTeam._id
+                        team._id === props.ownerTeam._id ||
+                        plan.authorizedTeams.some( (t) => t._id === team._id)
                     )}
                   >
                     {
@@ -1757,7 +1820,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
         cell: (info) => {
          const plan = info.cell.row.original
 
-          console.log(manage," ",props)
           return (
             <div className="d-flex flex-row align-items-center">
               <div className="p-2">

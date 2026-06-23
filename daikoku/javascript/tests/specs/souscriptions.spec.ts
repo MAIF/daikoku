@@ -201,7 +201,6 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-
   await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
@@ -318,7 +317,6 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-
   await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
@@ -939,30 +937,20 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByRole('link', { name: 'API test publique' }).click();
   await page.getByText('Environnements').click();
   // api publique + plan public => bouton visible
-  await expect(page.locator('article.table-row').filter({
-    has: page.locator('.plan-cell div', { hasText: /^dev$/ })
-    }).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^dev$/ })}).getByRole('button', { name: getKey })).toBeVisible()  
   // cas 1 : api publique + plan privé + équipe autorisée => bouton visible
-  await expect(page.locator('article.table-row').filter({
-    has: page.locator('.plan-cell div', { hasText: /^preprod$/ })
-    }).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^preprod$/ })}).getByRole('button', { name: getKey })).toBeVisible();  
   // cas 2 : api publique + plan privé + équipe non autorisée => la carte du plan n'est pas affichée
-  await expect(page.locator('article.table-row').filter({
-    has: page.locator('.plan-cell div', { hasText: /^prod$/ })
-    }).getByRole('button', { name: getKey })).toBeHidden();
+  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeHidden();
 
   // === API privée autorisée ===
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: 'API test privée autorisée' }).click();
   await page.getByText('Environnements').click();
   // cas 3 : api privée + plan public + équipe autorisée => bouton visible
-   await expect(page.locator('article.table-row').filter({
-      has: page.locator('.plan-cell div', { hasText: /^dev$/ })
-    }).getByRole('button', { name: getKey })).toBeVisible();
+   await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^dev$/ })}).getByRole('button', { name: getKey })).toBeVisible();
   // cas 5 : api privée + plan privé + équipe autorisée => bouton visible
-    await expect(page.locator('article.table-row').filter({
-      has: page.locator('.plan-cell div', { hasText: /^prod$/ })
-    }).getByRole('button', { name: getKey })).toBeVisible();
+    await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeVisible();
 
   // === équipe propriétaire : accède à TOUS les plans, même ultra privés ===
   // "API test proprio" est possédée par Vendeurs. Son plan "prod" est privé et n'autorise
@@ -971,9 +959,7 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: 'API test proprio' }).click();
   await page.getByText('Environnements').click();
-  await expect(page.locator('article.table-row').filter({
-    has: page.locator('.plan-cell div', { hasText: /^prod$/ })
-  }).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeVisible();
 })
 
 
@@ -1031,4 +1017,3 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(true);
 })
-

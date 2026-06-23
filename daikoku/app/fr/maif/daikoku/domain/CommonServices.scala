@@ -357,7 +357,7 @@ object CommonServices {
            |                  FROM teams
            |                  WHERE _deleted IS FALSE
            |                    AND content->>'_tenant' = $$2
-           |                    AND content -> 'users' @> format('[{"userId": "%s", "teamPermission": "Administrator"}]', $$1)::jsonb),
+           |                    AND content -> 'users' @> format('[{"userId": "%s"}]', $$1)::jsonb),
            |    api as (
            |        SELECT a.content FROM apis a
            |                                LEFT JOIN me ON TRUE
@@ -367,10 +367,9 @@ object CommonServices {
            |                             a.content ->> '_tenant' = $$2 AND
            |                             (CASE
            |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
-           |                                  ELSE (a.content ->> 'visibility' IN ('Public') OR
-           |                                        (a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) OR
-           |                                        (a.content -> 'authorizedTeams' ?|
-           |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
+           |                                  WHEN a.content ->> 'visibility' = 'Public' THEN TRUE
+           |                                  WHEN a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t) THEN TRUE
+           |                                  ELSE (a.content -> 'authorizedTeams' ?| (SELECT array_agg(t.content ->> '_id') FROM my_teams t))
            |                                 END)
            |                             )
            |    ),
@@ -378,9 +377,17 @@ object CommonServices {
            |            p._id = ANY (SELECT jsonb_array_elements_text(api.content -> 'possibleUsagePlans') FROM api)) ,
            |    plans as (SELECT p.content, COUNT(1) over() AS total_filtered
            |        FROM usage_plans p
+           |          LEFT JOIN me ON TRUE
+           |          LEFT JOIN api ON TRUE
            |        WHERE
            |            p._id = ANY (SELECT jsonb_array_elements_text(api.content -> 'possibleUsagePlans') FROM api) AND
-           |            (p.content ->> 'customName' ~* COALESCE(NULLIF($$6, ''), '.*'))
+           |            (p.content ->> 'customName' ~* COALESCE(NULLIF($$6, ''), '.*')) AND
+           |            (CASE
+           |                 WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
+           |                 WHEN p.content ->> 'visibility' = 'Public' THEN TRUE
+           |                 WHEN api.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t) THEN TRUE
+           |                 ELSE (p.content -> 'authorizedTeams' ?| (SELECT array_agg(t.content ->> '_id') FROM my_teams t))
+           |                END)
            |              LIMIT $$4 OFFSET $$5
            |        )
            |SELECT

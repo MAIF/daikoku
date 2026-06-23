@@ -1484,6 +1484,10 @@ export const graphql = {
           _id
           _tenant
           _deleted
+          authorizedTeams {
+            _id
+            name
+          }
           customName
           customDescription
           visibility
