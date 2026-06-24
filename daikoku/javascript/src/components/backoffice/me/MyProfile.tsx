@@ -9,7 +9,8 @@ import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { getInitials, Spinner, userHasAvatar } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
-import {Copy, Loader, Save, Trash2, UserCircle} from "lucide-react";
+import { Copy, Loader, Save, Trash2, UserCircle } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type TwoFactorAuthenticationProps = {
   user: IUser
@@ -307,15 +308,15 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} tenant={tenant} />
       </div>
       <div>
-        <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
-            <UserCircle className="me-1" />
+        <div className="d-flex mt-1 justify-content-end gap-1">
+          <button type="button" className="btn --tertiary" onClick={setGravatarLink}>
+            <UserCircle />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
             <button
               type="button"
-              className="btn btn-outline-info"
+              className="btn --tertiary"
               onClick={setPictureFromProvider}
               disabled={rawValues.pictureFromProvider}
             >
@@ -479,7 +480,7 @@ export const MyProfile = () => {
   }, []);
 
   const save = (data: any) => {
-    Services.updateUserById(data)
+    return Services.updateUserById(data)
       .then((user) => {
         setUser(user);
         reloadContext();
@@ -549,27 +550,21 @@ export const MyProfile = () => {
           onSubmit={save}
           footer={({ valid }) => {
             return (
-              <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
+              <div className="d-flex justify-content-end gap-1 mt-3">
                 <button
                   type="button"
-                  className="btn btn-outline-danger"
+                  className="btn --secondary"
                   style={{ marginLeft: 5 }}
                   onClick={removeUser}
                 >
-                  <Trash2 className="me-1" />
                   <Translation i18nkey="Delete my profile">Delete my profile</Translation>
                 </button>
-                <button
-                  style={{ marginLeft: 5 }}
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={valid}
+                <FeedbackButton
+                  className="btn --primary"
+                  onPress={valid as () => Promise<void>}
                 >
-                  <span>
-                    <Save className="me-1" />
-                    <Translation i18nkey="Save">Save</Translation>
-                  </span>
-                </button>
+                  <Translation i18nkey="Save">Save</Translation>
+                </FeedbackButton>
               </div>
             );
           }}

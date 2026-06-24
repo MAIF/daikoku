@@ -226,12 +226,12 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const sub = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="btn-group gap-1">
             <BeautifulTitle title={translate("Update metadata")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
@@ -242,7 +242,7 @@ export const TeamApiSubscriptions = ({
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
               >
@@ -253,7 +253,7 @@ export const TeamApiSubscriptions = ({
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >

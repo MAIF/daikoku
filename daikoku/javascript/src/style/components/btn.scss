@@ -377,17 +377,23 @@ $btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond gri
   cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
 
+  &.--icon-only {
+    padding: 8px;
+  }
+
   &.--small {
     padding: 4px 12px;
     font-size: 12px;
     line-height: 16px;
+
+    &.--icon-only {
+      padding: 4px;
+      width: 28px;
+      height: 28px;
+    }
   }
 
-  &.--icon-only {
-    padding: 4px;
-    width: 28px;
-    height: 28px;
-  }
+
 
   // disabled géré par la couleur (neutral-600), pas par l'opacité Bootstrap
   &:disabled,

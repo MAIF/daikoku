@@ -84,7 +84,6 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
       {loading && (
         <>
           <Loader className='--rotate' style={{ opacity: loading ? 1 : 0 }} />
-          {props.children}
         </>
       )}
       {successed && (
