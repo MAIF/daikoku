@@ -242,26 +242,27 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   _id: string;
   _tenant: string;
   _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string;
+  allowMultipleKeys?: boolean;
+  authorizedTeams: { _id: string; name: string }[] | string[];
+  autoRotation?: boolean;
+  billingDuration?: IBillingDuration;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
   customDescription?: string;
   customName: string;
-  subscriptionProcess: Array<IValidationStep>;
-  otoroshiTarget?: IOtoroshiTarget;
-  allowMultipleKeys?: boolean;
-  aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
-  autoRotation?: boolean;
-  rotation: boolean;
-  currency?: ICurrency;
-  billingDuration?: IBillingDuration;
-  visibility: UsagePlanVisibility;
-  authorizedTeams: Array<string>;
-  costPerRequest?: number;
-  costPerMonth?: number;
+  maxPerDay?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
-  maxPerDay?: number;
+  otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>;
   trialPeriod?: IBillingDuration;
+  visibility: UsagePlanVisibility;
 }
 
 export interface IAuthorizedEntities {
@@ -646,7 +647,7 @@ export interface OtoroshiEntity {
   enabled: boolean
 }
 
-export type IUsagePlanGQL = {
+export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _tenant: string;
   _deleted: boolean;
@@ -661,7 +662,7 @@ export type IUsagePlanGQL = {
   currency?: ICurrency;
   customDescription?: string;
   customName: string;
-  integrationProcess: string;
+  integrationProcess: "Automatic" | "ApiKey";
   maxPerDay?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
@@ -670,5 +671,5 @@ export type IUsagePlanGQL = {
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>
   trialPeriod?: IBillingDuration;
-  visibility: string;
+  visibility: UsagePlanVisibility;
 };
