@@ -395,7 +395,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             },
             formatter: '[[motivation]]',
           };
-          toast.info('on a ajouté un step form, obloigatoire pour le bon fonctionnement du step admin')
+          toast.info('on a ajouté un step form, obligatoire pour le bon fonctionnement du step admin')
           setDraft([formStep, step, ...draft])
         }
         return close();

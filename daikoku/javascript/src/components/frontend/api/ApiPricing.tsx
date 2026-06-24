@@ -1013,7 +1013,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           type: type.bool,
           label: () => {
             if (plan.aggregationApiKeysSecurity) {
-              return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
+              return `${translate('Apikey with clientId only')} (${translate('disabled.due.to.aggregation.security')})`;
             } else {
               return translate('Apikey with clientId only');
             }

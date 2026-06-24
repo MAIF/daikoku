@@ -3,8 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
+import debounce from 'lodash/debounce';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
+import AsyncSelect from 'react-select/async';
 import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
-import { useContext } from 'react';
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -84,20 +88,11 @@ type NotificationGQL = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const VISIBLE_APIS = `
-  query AllVisibleApis ($limit: Int, $offset: Int) {
-    visibleApis (limit: $limit, offset: $offset) {
-      apis { api { name _id } }
-    }
-  }`
-
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
 
 const getApiFromNotification = (
   notification: NotificationGQL,
-  apis?: Array<{ _id: string; name: string }>
 ): { _id: string; name: string; currentVersion?: string } | undefined => {
-  if (!apis) return;
   switch (notification.action.__typename) {
     case 'ApiAccess':
     case 'ApiSubscription':
@@ -129,14 +124,28 @@ export const NotificationList = () => {
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
-  const visibleApisRequest = useQuery({
-    queryKey: ['apis'],
-    queryFn: () =>
-      customGraphQLClient.request<{ visibleApis: { apis: [{ api: { _id: string; name: string } }] } }>(
-        VISIBLE_APIS, { limit: -1, offset: 0 }
-      ),
-    select: d => d.visibleApis.apis.map(a => a.api),
-  });
+  // Server-side autocomplete for the API filter: we only ever load a handful of
+  // APIs at a time, so we keep a local id->name cache to resolve the label of
+  // already-selected APIs (chips + select value) without refetching the whole list.
+  const [apiLabelCache, setApiLabelCache] = useState<Record<string, string>>({});
+
+  const cacheApiLabels = (apis: Array<{ value: string; label: string }>) =>
+    setApiLabelCache(prev => ({
+      ...prev,
+      ...Object.fromEntries(apis.map(a => [a.value, a.label])),
+    }));
+
+  const loadApiOptions = useMemo(
+    () =>
+      debounce((input: string, callback: (options: Array<Option>) => void) => {
+        Services.getMyVisibleApisLight(input, -1).then(apis => {
+          const options = apis.map(a => ({ label: a.name, value: a._id }));
+          cacheApiLabels(options);
+          callback(options);
+        });
+      }, 300),
+    []
+  );
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -613,7 +622,30 @@ export const NotificationList = () => {
     }
   };
 
-  // ─── Table columns ────────────────────────────────────────────────────────
+  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
+    switch (notification.action.__typename) {
+      case "ApiAccess":
+      case "ApiSubscription":
+      case "ApiSubscriptionReject":
+      case "ApiSubscriptionAccept":
+      case "OtoroshiSyncApiError":
+      case "ApiKeyDeletionInformationV2":
+      case "ApiKeyRotationInProgressV2":
+      case "ApiKeyRotationEndedV2":
+      case "ApiKeyRefreshV2":
+      case "NewPostPublishedV2":
+      case "NewIssueOpenV2":
+      case "NewCommentOnIssueV2":
+      case "TransferApiOwnership":
+      case "CheckoutForSubscription":
+        const _api = notification.action.api
+        return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
+      case "TeamInvitation":
+      case "OtoroshiSyncSubscriptionError":
+      case "ApiSubscriptionTransferSuccess":
+        return;
+    }
+  }
 
   const columnHelper = createColumnHelper<NotificationGQL>();
 
@@ -646,7 +678,7 @@ export const NotificationList = () => {
       meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 15 },
       cell: (info) => {
         const notification = info.row.original;
-        const api = getApiFromNotification(notification, visibleApisRequest.data);
+        const api = getApiFromNotification(notification);
         if (!api) return null;
         return (
           <a href='#' onClick={() =>
@@ -658,7 +690,7 @@ export const NotificationList = () => {
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         );
-      },
+      }
     }),
     columnHelper.accessor('action.__typename', {
       id: 'type',

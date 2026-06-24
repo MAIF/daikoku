@@ -6568,7 +6568,7 @@ class AdminApiControllerSpec
             .findById(personalSubscription.id),
           5.seconds
         )
-        //subscription is now fully deleted
+        // subscription is now fully deleted
         _maybeSubscription mustBe empty
 
         val notifInvitation = Await.result(
@@ -6741,7 +6741,7 @@ class AdminApiControllerSpec
             .findById(personalSubscription.id),
           5.seconds
         )
-        //subscription is now fully deleted
+        // subscription is now fully deleted
         _maybeSubscription mustBe empty
         _maybeSubscription.forall(_.deleted) mustBe true
 

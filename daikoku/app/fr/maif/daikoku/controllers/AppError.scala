@@ -88,14 +88,14 @@ object AppError {
       case UserNotFound(_)   => NotFound(toJson(error))
       case EntityNotFound(_) => NotFound(toJson(error))
       case SubscriptionDemandNotFound => NotFound(toJson(error))
-      case SubscriptionDemandClosed =>
+      case SubscriptionDemandClosed   =>
         play.api.mvc.Results.Forbidden(toJson(error))
       case NotificationNotFound     => NotFound(toJson(error))
       case OtoroshiSettingsNotFound => NotFound(toJson(error))
       case TeamUnauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
       case TeamNotVerified  => play.api.mvc.Results.Unauthorized(toJson(error))
       case TeamForbidden    => play.api.mvc.Results.Forbidden(toJson(error))
-      case ApiUnauthorized =>
+      case ApiUnauthorized  =>
         play.api.mvc.Results
           .Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
       case PlanUnauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
@@ -127,13 +127,13 @@ object AppError {
       case ParsingPayloadError(message)      => BadRequest(toJson(error))
       case NameAlreadyExists                 => Conflict(toJson(error))
       case ThirdPartyPaymentSettingsNotFound => NotFound(toJson(error))
-      case SecurityError(security) =>
+      case SecurityError(security)           =>
         play.api.mvc.Results.Forbidden(toJson(error))
-      case TeamAlreadyVerified => Conflict(toJson(error))
-      case UnexpectedError     => BadRequest(toJson(error))
+      case TeamAlreadyVerified          => Conflict(toJson(error))
+      case UnexpectedError              => BadRequest(toJson(error))
       case InternalServerError(message) =>
         play.api.mvc.Results.InternalServerError(toJson(error))
-      case BadRequestError(message) => BadRequest(toJson(error))
+      case BadRequestError(message)     => BadRequest(toJson(error))
       case AuthenticationError(message) =>
         play.api.mvc.Results.Unauthorized(toJson(error))
       case UserNotAllowed(_) =>
@@ -158,7 +158,7 @@ object AppError {
       case ApiGroupNotFound         => "API group not found"
       case TeamNotFound             => "Team not found"
       case TenantNotFound           => "Tenant not found"
-      case UserNotFound(user) =>
+      case UserNotFound(user)       =>
         s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
       case EntityNotFound(name)       => s"$name not found"
       case NotificationNotFound       => "Notification not found"
@@ -173,16 +173,16 @@ object AppError {
       case ApiNotLinked => "Api is not linked to an Otoroshi descriptor"
       case UserNotTeamAdmin(userId, teamId) =>
         s"User $userId is not an admin for team $teamId"
-      case SubscriptionConflict => "conflict with subscription request"
+      case SubscriptionConflict   => "conflict with subscription request"
       case ApiKeyRotationConflict =>
         "conflict, Api have already setup apikey rotation"
       case EntityConflict(entityName) =>
         s"Conflict with $entityName"
-      case ForbiddenAction => "This action is forbidden"
-      case TeamForbidden   => "You're not part of this team"
+      case ForbiddenAction                 => "This action is forbidden"
+      case TeamForbidden                   => "You're not part of this team"
       case ApiKeyCustomMetadataNotPrivided =>
         "You need to provide custom metadata"
-      case SubscriptionNotFound => "Subscription not found"
+      case SubscriptionNotFound      => "Subscription not found"
       case SubscriptionParentExisted =>
         "The subscription already has a subscription parent - it cannot be extended any further"
       case SubscriptionAggregationDisabled =>
@@ -207,7 +207,7 @@ object AppError {
       case UnexpectedError     => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
       case InternalServerError(msg) => msg
       case AuthenticationError(msg) => msg
-      case UserNotAllowed(email) =>
+      case UserNotAllowed(email)    =>
         s"User $email is not allowed to access this application"
       case AppErrors(errors) =>
         errors.map(_.getErrorMessage()).mkString("\n")
@@ -217,8 +217,8 @@ object AppError {
 
   def toJson(error: AppError) = {
     error match {
-      case OtoroshiError(e)       => e
-      case ApiKeyRotationError(e) => e
+      case OtoroshiError(e)         => e
+      case ApiKeyRotationError(e)   => e
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case InternalServerError(msg) => Json.obj("error" -> msg)

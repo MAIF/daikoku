@@ -28,7 +28,12 @@ import fr.maif.daikoku.domain.{
 }
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider.Local
-import fr.maif.daikoku.login.{AuthProvider, LdapConfig, LoginFilter, OAuth2Config}
+import fr.maif.daikoku.login.{
+  AuthProvider,
+  LdapConfig,
+  LoginFilter,
+  OAuth2Config
+}
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.storage.DataStore
 import fr.maif.daikoku.utils.*
@@ -199,9 +204,8 @@ object InitConfig {
               groupFilter = str("daikoku.init.authProvider.ldap.group-filter"),
               adminGroupFilter =
                 str("daikoku.init.authProvider.ldap.admin-group-filter"),
-              searchFilter =
-                str("daikoku.init.authProvider.ldap.search-filter")
-                  .getOrElse("(mail=${username})"),
+              searchFilter = str("daikoku.init.authProvider.ldap.search-filter")
+                .getOrElse("(mail=${username})"),
               adminUsername =
                 str("daikoku.init.authProvider.ldap.admin-username"),
               adminPassword =
@@ -246,7 +250,8 @@ object InitConfig {
 
     val mailer: Option[MailerSettings] =
       str("daikoku.init.mailer.type").flatMap { mtype =>
-        val fromTitle = str("daikoku.init.mailer.fromTitle").getOrElse("Daikoku")
+        val fromTitle =
+          str("daikoku.init.mailer.fromTitle").getOrElse("Daikoku")
         val fromEmail =
           str("daikoku.init.mailer.fromEmail").getOrElse("daikoku@foo.bar")
         mtype.toLowerCase match {
@@ -283,13 +288,16 @@ object InitConfig {
                 fromEmail = fromEmail,
                 template = None,
                 username = str("daikoku.init.mailer.username"),
-                password = str("daikoku.init.mailer.password")
+                password = str("daikoku.init.mailer.password"),
+                starttls = bool("daikoku.init.mailer.starttls"),
+                ssl = bool("daikoku.init.mailer.ssl")
               )
             )
           case "sendgrid" =>
             Some(
               SendgridSettings(
-                apikey = str("daikoku.init.mailer.sendgridApiKey").getOrElse(""),
+                apikey =
+                  str("daikoku.init.mailer.sendgridApiKey").getOrElse(""),
                 fromTitle = fromTitle,
                 fromEmail = fromEmail,
                 template = None
@@ -341,10 +349,8 @@ object InitConfig {
         defaultMessage = str("daikoku.init.tenant.defaultMessage"),
         isPrivate = bool("daikoku.init.tenant.isPrivate"),
         creationSecurity = bool("daikoku.init.tenant.creationSecurity"),
-        teamCreationSecurity =
-          bool("daikoku.init.tenant.teamCreationSecurity"),
-        subscriptionSecurity =
-          bool("daikoku.init.tenant.subscriptionSecurity"),
+        teamCreationSecurity = bool("daikoku.init.tenant.teamCreationSecurity"),
+        subscriptionSecurity = bool("daikoku.init.tenant.subscriptionSecurity"),
         aggregationApiKeysSecurity =
           bool("daikoku.init.tenant.aggregationApiKeysSecurity")
       ),

@@ -281,7 +281,7 @@ object OtoroshiIdentityFilter {
                                     )
                                   )
                                 )
-                                val updatedUser = u
+                                val updatedUser = u.copy(invitation = None)
                                 for {
                                   tenantTeam <-
                                     env.dataStore.teamRepo

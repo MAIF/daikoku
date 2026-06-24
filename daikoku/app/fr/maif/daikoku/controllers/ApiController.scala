@@ -544,7 +544,15 @@ class ApiController(
       }
     }
 
-  def getVisiblePlan(apiId: String, version: String, planId: String) =
+  def getMyVisibleApisLight(research: Option[String], limit: Int): Action[AnyContent] =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      CommonServices.getVisibleApisLight(research, limit)(using ctx, env, ec).map {
+        case Right(apis) => Ok(JsArray(apis))
+        case Left(error) => error.render()
+      }
+    }
+
+  def getVisiblePlan(apiId: String, version: String, planId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(

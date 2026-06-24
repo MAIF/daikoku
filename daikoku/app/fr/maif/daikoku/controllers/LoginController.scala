@@ -193,7 +193,7 @@ class LoginController(
         case Some(p) =>
           p match {
             case Otoroshi => FastFuture.successful(Redirect("/"))
-            case OAuth2 =>
+            case OAuth2   =>
               implicit val req: Request[AnyContent] = ctx.request
               val authConfig = OAuth2Config
                 .fromJson(ctx.tenant.authProviderSettings)
@@ -227,7 +227,7 @@ class LoginController(
                 ).addingToSession(
                   sessionParams ++ Map(
                     "redirect" -> redirect.getOrElse("/")
-                  )*
+                  ) *
                 )
               )
             case _ if env.config.isDev =>
@@ -311,7 +311,7 @@ class LoginController(
                 )
               )
               .map {
-                case true => Right(Redirect(s"/2fa?token=$token"))
+                case true  => Right(Redirect(s"/2fa?token=$token"))
                 case false =>
                   Left(AppError.InternalServerError("Failed to save user"))
               }
@@ -353,7 +353,7 @@ class LoginController(
                   )
                 )
                 .map {
-                  case true => Right(Redirect(s"/2fa?token=$token"))
+                  case true  => Right(Redirect(s"/2fa?token=$token"))
                   case false =>
                     Left(AppError.InternalServerError("Failed to save user"))
                 }
@@ -406,7 +406,7 @@ class LoginController(
                   )
                 )
                 .map {
-                  case true => Right(Redirect(s"/2fa?token=$token"))
+                  case true  => Right(Redirect(s"/2fa?token=$token"))
                   case false =>
                     Left(AppError.InternalServerError("Failed to save user"))
                 }
@@ -510,7 +510,7 @@ class LoginController(
             idToken.map(t => "id_token" -> t)
 
           Redirect(redirectUri)
-            .withSession(baseSession.toSeq*)
+            .withSession(baseSession.toSeq *)
             .removingFromSession("redirect")(using request)
         }
       }
@@ -745,7 +745,7 @@ class LoginController(
                   redirectURI
                 case Right(config: OAuth2Config) =>
                   config.logoutUrl match {
-                    case None => redirectURI
+                    case None      => redirectURI
                     case Some(url) =>
                       url
                         .replace(
@@ -815,7 +815,7 @@ class LoginController(
         case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
           Left(AppError.BadRequestError("Your password can't be empty"))
         case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
-        case _ =>
+        case _                                                    =>
           Left(
             AppError.BadRequestError(
               "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
@@ -1040,27 +1040,19 @@ class LoginController(
                         authorizedOtoroshiEntities = None,
                         contact = accountCreation.email
                       )
-                      def getUser() =
-                        User(
-                          id = userId,
-                          tenants = Set(ctx.tenant.id),
-                          origins = Set(ctx.tenant.authProvider),
-                          name = accountCreation.name,
-                          email = accountCreation.email,
-                          picture = accountCreation.avatar,
-                          lastTenant = Some(ctx.tenant.id),
-                          password = Some(accountCreation.password),
-                          personalToken = Some(IdGenerator.token(32)),
-                          defaultLanguage = None
-                        )
 
-                      val user = optUser
-                        .map { u =>
-                          getUser().copy(invitation =
-                            u.invitation.map(_.copy(registered = true))
-                          )
-                        }
-                        .getOrElse(getUser())
+                      val user = User(
+                        id = userId,
+                        tenants = Set(ctx.tenant.id),
+                        origins = Set(ctx.tenant.authProvider),
+                        name = accountCreation.name,
+                        email = accountCreation.email,
+                        picture = accountCreation.avatar,
+                        lastTenant = Some(ctx.tenant.id),
+                        password = Some(accountCreation.password),
+                        personalToken = Some(IdGenerator.token(32)),
+                        defaultLanguage = None
+                      )
 
                       val userCreation = for {
                         _ <-

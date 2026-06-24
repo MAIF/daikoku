@@ -83,6 +83,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText("API succesfully updated")).toBeVisible();
   await page.getByLabel('Liste des APIs').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
@@ -106,7 +107,7 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
-  await page.getByLabel('Accueil Daikoku').click();
+  await page.goto(`/apis`)
   // await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.lead'))
   //   .toHaveText('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version')
   await page.getByRole('link', { name: 'API papier' }).click();
@@ -169,7 +170,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
   await page.getByRole('button', { name: 'Confirmation' }).click();
-  await expect(page.getByRole('listitem', { name: 'API papier' })).toBeHidden();
+  await expect(page.getByText("Supprimé avec succès")).toBeVisible()
 
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');

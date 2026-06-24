@@ -245,7 +245,7 @@ class UserControllerSpec()
         5.second
       )
 
-      //subscription is now fully deleted
+      // subscription is now fully deleted
       _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
@@ -585,7 +585,7 @@ class UserControllerSpec()
         5.second
       )
 
-      //subscription is fully deleted
+      // subscription is fully deleted
       _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned

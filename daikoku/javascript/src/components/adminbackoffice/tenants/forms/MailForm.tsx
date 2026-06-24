@@ -65,6 +65,16 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           format: format.password,
           label: translate('smtp_client.password'),
         },
+        starttls: {
+          type: type.bool,
+          label: translate('smtp_client.starttls'),
+          help: translate('smtp_client.starttls.help'),
+        },
+        ssl: {
+          type: type.bool,
+          label: translate('smtp_client.ssl'),
+          help: translate('smtp_client.ssl.help'),
+        },
         ...basicMailSchema,
       };
     if (mailerType === 'mailgun') {
