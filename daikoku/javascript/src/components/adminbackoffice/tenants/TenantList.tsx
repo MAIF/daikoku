@@ -6,7 +6,7 @@ import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contex
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types';
 import { AvatarWithAction, Can, daikoku, manage, PaginatedComponent } from '../../utils';
-import { ChevronsRight, Pen, Trash2, UserCheck, Link, Plus } from "lucide-react";
+import { Pen, Trash2, UserCheck, Link, Plus } from "lucide-react";
 
 export const TenantList = () => {
   useDaikokuBackOffice();

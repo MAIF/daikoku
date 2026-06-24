@@ -1580,13 +1580,11 @@
     "api.consumption.plan.btn.aria.label": "View the consumption of the %s plan",
     "api.consumption.plan.btn.label": "View the consumption",
     "api.subscriptions.team.select.placeholder": "Select a team to view associated API keys",
-    "migration.custom.style.alert.title": "New way to manage custom code in Daikoku",
-    "migration.custom.style.alert.info.1": "Since version 18.2.2, the management of CSS, color themes, and JavaScript has been delegated to the Daikoku CLI.",
-    "migration.custom.style.alert.info.2": "A migration job has been run automatically to create CMS pages for your existing CSS, JS, and theme files.",
-    "migration.custom.style.alert.info.3": "👉 You can still inject CSS or JavaScript via an external URL.",
-    "migration.custom.style.alert.info.4": " However, inline code editing is now handled through the CLI.",
-    "migration.custom.style.alert.info.5": "📘 To learn more about the Daikoku CLI, check out the %s",
-    "migration.custom.style.alert.hide": "Hide message",
+    "migration.color-theme.alert.title": "Color theme update",
+    "migration.color-theme.alert.info.1": "The color theme system has changed in this version, and your tenant's theme is not up to date yet.",
+    "migration.color-theme.alert.info.2": "You can reset it to the new default theme, or update your custom theme manually using the Daikoku CLI.",
+    "migration.color-theme.alert.info.3": "📘 To learn more, check out the %s.",
+    "migration.color-theme.alert.reset.button": "Reset to the new default theme",
     "notifications.page.filters.team.label": {
         "s": "Team",
         "p": "Teams"

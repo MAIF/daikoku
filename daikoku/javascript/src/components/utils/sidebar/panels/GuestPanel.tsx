@@ -38,7 +38,7 @@ export const GuestPanel = () => {
   };
 
   const submit = (data: { username: string, password: string }) => {
-    
+
     setLoading(true)
     setLoginError(false);
 
@@ -62,7 +62,6 @@ export const GuestPanel = () => {
 
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-      <div className="mb-3" style={{ height: '40px' }}></div>
       <div className="blocks">
         <div className="mb-3 block">
           {tenant.loginProvider === 'Local' && (
