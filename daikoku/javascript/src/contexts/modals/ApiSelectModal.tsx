@@ -5,7 +5,7 @@ import Select from 'react-select';
 import { Spinner } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { IApi, IUsagePlan, isError } from '../../types';
+import {IApi, IUsagePlan, isError, IUsagePlanGQL} from '../../types';
 import { IBaseModalProps } from './types';
 
 
@@ -17,7 +17,7 @@ export interface IModalProps {
 export interface IApiSelectModalProps {
   teamId: string,
   api: IApi,
-  onClose: (plan: IUsagePlan) => void
+  onClose: (plan: IUsagePlan | IUsagePlanGQL) => void
 }
 
 type plans = {

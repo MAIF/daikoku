@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
-import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, Eye, Key, Link as LucideLink, Menu, UserRoundKey } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, Eye, KeyRound, Link as LucideLink, Menu, UserRoundKey } from "lucide-react";
 import { useContext, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -786,7 +786,7 @@ export const ApiKeyCard = ({
         {isPending && <Placeholder />}
         <div className="api-subscription__container flex-column flex-xl-row gap-3">
           <div className='api-subscription__icon flex-row flex-xl-column'>
-            {subscription.children.length === 0 && <Key />}
+            {subscription.children.length === 0 && <KeyRound />}
             {subscription.children.length > 0 && <UserRoundKey />}
             <div className='api-subscription__value__type ms-2 ms-xl-0'>
               <span className='api-subscription__value__label'>

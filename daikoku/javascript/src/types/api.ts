@@ -1,7 +1,7 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
-import { ThirdPartyPaymentType } from './tenant';
+import {ITenant, ThirdPartyPaymentType} from './tenant';
 import { INotification } from './types';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
@@ -106,7 +106,7 @@ export type IApiAuthoWithCount = {
 };
 
 export type IPlansWithCount = {
-  plans: Array<IUsagePlan>;
+  plans: Array<IUsagePlanGQL>;
   total: number;
   totalFiltered: number;
 }
@@ -387,15 +387,15 @@ export interface IBaseSubscription {
   parentUp: boolean;
 }
 
-export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
+export const isPayPerUse = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
-export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan) => {
+export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
-export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan) => {
+export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
@@ -618,7 +618,7 @@ export interface ApiPricingProps {
   inProgressDemands: Array<ISubscriptionDemand>;
   askForApikeys: (x: {
     team: string;
-    plan: IUsagePlan;
+    plan: IUsagePlanGQL;
     apiKey?: ISubscription;
     motivation?: object;
   }) => Promise<void>;
@@ -631,7 +631,7 @@ export interface ITeamSelector {
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
   showApiKeySelectModal: (teamId: string) => void;
-  plan: IUsagePlan;
+  plan: IUsagePlanGQL;
 }
 export interface OtoroshiEntitiesSelectorProps {
   rawValues: IOtoroshiTarget
@@ -645,3 +645,30 @@ export interface OtoroshiEntity {
   type: 'route' | 'group' | 'service'
   enabled: boolean
 }
+
+export type IUsagePlanGQL = {
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string
+  allowMultipleKeys?: boolean;
+  authorizedTeams: { _id: string; name: string }[] | string[]
+  autoRotation?: boolean;
+  billingDuration?: IBillingDuration;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
+  customDescription?: string;
+  customName: string;
+  integrationProcess: string;
+  maxPerDay?: number;
+  maxPerMonth?: number;
+  maxPerSecond?: number;
+  otoroshiTarget?: IOtoroshiTarget;
+  paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>
+  trialPeriod?: IBillingDuration;
+  visibility: string;
+};

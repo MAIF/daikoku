@@ -20,7 +20,7 @@ import {
   ITenant,
   ITenantAdministration,
   ITenantFull,
-  ITranslation,
+  ITranslation, IUsagePlanGQL,
   IUser,
   IUserSimple,
   OAuthSettings,
@@ -570,7 +570,7 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (): Promise<IUsagePlan> => customFetch('/api/entities/plan');
+export const fetchNewPlan = (): Promise<IUsagePlanGQL> => customFetch('/api/entities/plan');
 
 export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
@@ -1481,31 +1481,37 @@ export const graphql = {
     query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
       plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
         plans {
+          _deleted
           _id
           _tenant
-          _deleted
+          aggregationApiKeysSecurity
+          allowMultipleKeys
           authorizedTeams {
             _id
             name
           }
-          customName
-          customDescription
-          visibility
-          costPerMonth
-          maxPerSecond
-          maxPerDay
-          maxPerMonth
-          trialPeriod {
-            ... on BillingDuration {
-            value
-            unit {
-              name
-              }
-            }
-          }
+          autoRotation
           billingDuration {
             ... on BillingDuration {
-            value
+              value
+            }
+          }
+          costPerMonth
+          currency {
+            code
+          }
+          customDescription
+          customName
+          integrationProcess
+          maxPerDay
+          maxPerMonth
+          maxPerSecond
+          otoroshiTarget {
+            otoroshiSettings
+            authorizedEntities {
+              services
+              groups
+              routes
             }
           }
           paymentSettings {
@@ -1516,60 +1522,54 @@ export const graphql = {
               priceIds {
                 basePriceId
                 additionalPriceId
-                }
+              }
             }
-          }
-          otoroshiTarget {
-            otoroshiSettings
-            authorizedEntities {
-              services
-              groups
-              routes
-            }
-          }
-          currency {
-            code
           }
           subscriptionProcess {
-              name
-              ... on Form {
-                id
-                title
-                schema
-                formatter
-                type
-              }
-              ... on Email {
-                id
-                title
-                emails
-                type
-              }
-              ... on TeamAdmin {
-                id
-                title
-                team
-                type
-              }
-              ... on Payment {
-                id
-                title
-                thirdPartyPaymentSettingsId
-                type
-              }
-              ... on HttpRequest {
-                id
-                title
-                url
-                headers
-                type
+            name
+            ... on Form {
+              id
+              title
+              schema
+              formatter
+              type
+            }
+            ... on Email {
+              id
+              title
+              emails
+              type
+            }
+            ... on TeamAdmin {
+              id
+              title
+              team
+              type
+            }
+            ... on Payment {
+              id
+              title
+              thirdPartyPaymentSettingsId
+              type
+            }
+            ... on HttpRequest {
+              id
+              title
+              url
+              headers
+              type
+            }
+          }
+          trialPeriod {
+            ... on BillingDuration {
+              value
+              unit {
+                name
               }
             }
-          integrationProcess
-          allowMultipleKeys
-          aggregationApiKeysSecurity
-          autoRotation
-         }
+          }
+          visibility
+        }
         total
         totalFiltered
       }
@@ -2427,7 +2427,7 @@ export const setupPayment = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlan
+  plan: IUsagePlanGQL
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}/_payment`, {
     method: 'PUT',
@@ -2438,7 +2438,7 @@ export const createPlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlan
+  plan: IUsagePlanGQL
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan`, {
     method: 'POST',
@@ -2449,7 +2449,7 @@ export const updatePlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlan
+  plan: IUsagePlanGQL
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'PUT',
@@ -2460,7 +2460,7 @@ export const deletePlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlan
+  plan: IUsagePlanGQL
 ): PromiseWithError<IApi> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'DELETE',

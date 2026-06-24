@@ -5,8 +5,8 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState, useMemo } from 'react';
-import { Plus, Settings, Trash2 } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Settings, Trash2, KeyRound } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import {toast} from 'sonner';
@@ -23,12 +23,11 @@ import {
   ISubscription,
   ITeamSimple,
   IThirdPartyPaymentSettings,
-  IUsagePlan,
   ApiPricingProps,
   ITeamSelector,
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity,
-  IPlansWithCount, IApi, IValidationStep, ITenant
+  IPlansWithCount, IApi, IUsagePlanGQL
 } from '../../../types';
 import {SubscriptionProcessEditor} from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -41,8 +40,7 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing,
-  Spinner
+  renderPricing
 } from '../../utils';
 import {
   ColumnDef,
@@ -459,7 +457,7 @@ const CustomMetadataInput = (props: {
   );
 };
 
-const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan: (plan: IUsagePlan) => void }) => {
+const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePlan: (plan: IUsagePlanGQL) => void }) => {
   const {translate} = useContext(I18nContext);
   useContext(GlobalContext);
 
@@ -541,7 +539,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan:
   )
 }
 
-const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan: (plan: IUsagePlan) => void }) => {
+const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePlan: (plan: IUsagePlanGQL) => void }) => {
   const {translate} = useContext(I18nContext);
   const {tenant} = useContext(GlobalContext);
 
@@ -840,63 +838,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
 
 
-  type IUsagePlanGQL = {
-    _id: string;
-    _tenant: ITenant;
-    _deleted: string;
-    authorizedTeams: Array<{
-        _id: string;
-        name: string;
-      }>
-    customName: string;
-    customDescription: string;
-    visibility: string;
-    costPerMonth: number;
-    maxPerSecond: number;
-    maxPerDay: number;
-    maxPerMonth: number;
-    trialPeriod: {
-      BillingDuration: {
-          value: number;
-          unit: {
-            name: string;
-          }
-        }
-      }
-      billingDuration: {
-        BillingDuration: {
-            value: string;
-          }
-    }
-    paymentSettings: {
-      thirdPartyPaymentSettingsId: string;
-    Stripe: {
-        thirdPartyPaymentSettingsId: string;
-        productId: string;
-        priceIds: {
-          basePriceId: string;
-          additionalPriceId: string;
-        }
-      }
-    }
-    otoroshiTarget: {
-      otoroshiSettings: string;
-      authorizedEntities: {
-        services: string;
-        groups: string;
-        routes: string;
-      }
-    }
-    currency: {
-      code: string;
-    }
-    subscriptionProcess: Array<IValidationStep>
-    integrationProcess: string;
-    allowMultipleKeys: string;
-    aggregationApiKeysSecurity: string;
-    autoRotation: string;
 
-  };
 
 
 
@@ -905,7 +847,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const processSignature = (process: any[]) =>
     process.map(step => step.type).sort().join(',');
 
-  const isPlanSelectable = (plan: IUsagePlan, selectedPlans: IUsagePlan[]) => {
+  const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
     if (selectedPlans.length === 0) return true;
     return selectedPlans.some(
       row =>
@@ -918,7 +860,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const queryClient = useQueryClient();
   const {connectedUser, tenant, customGraphQLClient} = useContext(GlobalContext);
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
-  const usagePlansFetchData: FetchData<IUsagePlan> = ({ limit, offset, filters, sorting }) =>
+  const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({ limit, offset, filters, sorting }) =>
     customGraphQLClient
       .request<{ plansByApi: IPlansWithCount }>(
         Services.graphql.plansByApi, {
@@ -928,7 +870,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         offset,
         apiId: props.api._id
       })
-      .then(({plansByApi} ): FetchResult<IUsagePlan> => {
+      .then(({plansByApi} ): FetchResult<IUsagePlanGQL> => {
         return {
           items: plansByApi.plans,
           total: plansByApi.total,
@@ -967,7 +909,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   }, [props.api]);
 
 
-  const customNameSchemaPart = (api: IApi, planForEdition: IUsagePlan, availableEnvsdata: string[]) => {
+  const customNameSchemaPart = (api: IApi, availableEnvsdata: string[]) => {
     if (tenant.display === 'environment' && api.visibility !== 'AdminOnly') {
       return {
         customName: {
@@ -996,8 +938,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   };
 
-  const basicInformationSchema = useMemo(() => (plan: IUsagePlan, availableEnvs: string[]) => ({
-    ...customNameSchemaPart(props.api, plan, availableEnvs),
+  const basicInformationSchema = useMemo(() => (availableEnvs: string[]) => ({
+    ...customNameSchemaPart(props.api, availableEnvs),
     customDescription: {
       type: type.string,
       format: format.text,
@@ -1107,7 +1049,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   ]
 
-  const savePlan = (plan: IUsagePlan, creation: boolean = false) => {
+  const savePlan = (plan: IUsagePlanGQL, creation: boolean = false) => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
@@ -1128,15 +1070,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
+  const updatePlan = (plan: IUsagePlanGQL, creation: boolean = false) => {
     availableEnvQuery.refetch().then(({ data: availableEnvs = [] }) => {
       openRightPanel({
         title: creation ? translate("api.home.create.plan.form.title") : translate("api.home.update.plan.form.title"),
         content: <Form
           value={plan}
-          schema={basicInformationSchema(plan, availableEnvs)}
+          schema={basicInformationSchema(availableEnvs)}
           flow={basicInformationFlow}
-          onSubmit={(plan: IUsagePlan) => savePlan(plan, creation)}
+          onSubmit={(plan: IUsagePlanGQL) => savePlan(plan, creation)}
           options={{
             actions: {
               cancel: {display: true, label: translate('Cancel'), action: () => closeRightPanel()},
@@ -1190,7 +1132,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const otoroshiTargetColumn = (plan: IUsagePlan) => {
+  const otoroshiTargetColumn = (plan: IUsagePlanGQL) => {
     const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan);
     const graphqlEndpoint = `${window.location.origin}/api/search`;
     const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
@@ -1219,7 +1161,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     const showApiKeySelectModal = (team: string) => {
       const askForApikeys = (
         team: string,
-        plan: IUsagePlan,
+        plan: IUsagePlanGQL,
         apiKey?: ISubscription
       ) => {
         const formStep = plan.subscriptionProcess.find((s) =>
@@ -1241,13 +1183,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       };
 
-      type IUsagePlanGQL = {
-        _id: string;
-        otoroshiTarget: {
-          otoroshiSettings: string;
-        };
-        aggregationApiKeysSecurity: boolean;
-      };
       type IApiGQL = {
         _id: string;
         _humanReadableId: string;
@@ -1338,8 +1273,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     })
   }
 
-  const actions = (plan: IUsagePlan) => {
-    const setupPayment = (plan: IUsagePlan) => {
+  const actions = (plan: IUsagePlanGQL) => {
+    const setupPayment = (plan: IUsagePlanGQL) => {
       return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
         .then((response) => {
           if (isError(response)) {
@@ -1387,7 +1322,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       },
       flow: ['method', 'path'],
     }
-    const otoroshiSchema = (planForEdition: IUsagePlan) => ({
+    const otoroshiSchema = (planForEdition: IUsagePlanGQL) => ({
       otoroshiSettings: {
         type: type.string,
         format: format.select,
@@ -1538,7 +1473,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   })
     return {
       duplicatePlan : () => {
-        const clone: IUsagePlan = {
+        const clone: IUsagePlanGQL = {
           ...cloneDeep(plan),
           _id: nanoid(32),
           customName: `${plan.customName} (copy)`,
@@ -1626,8 +1561,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
   }
 
 
-  const columnHelper = createColumnHelper<IUsagePlan>();
-  const columns: ((ColumnDef<IUsagePlan, any>))[] = useMemo(():((ColumnDef<IUsagePlan, any>))[] => {
+  const columnHelper = createColumnHelper<IUsagePlanGQL>();
+  const columns: ((ColumnDef<IUsagePlanGQL, any>))[] = useMemo(():((ColumnDef<IUsagePlanGQL, any>))[] => {
 
     return [
       columnHelper.display({
@@ -1652,7 +1587,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'plan',
         meta: {className: "plan-cell", title: translate('api.pricings.name.table.title'), size: 5 },
         cell: (info) => {
-         const plan = info.cell.row.original
+         const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <div>
               {plan.customName}
@@ -1664,7 +1599,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'description',
         meta: {className: "description-cell", title: translate('api.pricings.description.table.title'), size: 20 },
         cell: (info) => {
-         const plan = info.cell.row.original
+         const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <div>
               {plan.customDescription}
@@ -1676,7 +1611,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'quotas',
         meta: {className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 5 },
         cell: (info) => {
-          const plan = info.cell.row.original
+          const plan: IUsagePlanGQL = info.cell.row.original
           return (
               <div className='feature__description'>
                 {!plan.maxPerMonth && translate('plan.limits.unlimited')}
@@ -1693,9 +1628,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'tarifs',
         meta: {className: "tarifs-cell", title: translate('api.pricings.pricing.table.title'), size: 5 },
         cell: (info) => {
-         const plan = info.cell.row.original
+         const plan: IUsagePlanGQL = info.cell.row.original
           return (
-
               <span className='feature__description'>
                 {renderPricing(plan, translate)}
               </span>
@@ -1706,7 +1640,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'otoroshi-cible',
         meta: {className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 10 },
         cell: (info) => {
-         const plan = info.cell.row.original
+         const plan: IUsagePlanGQL = info.cell.row.original
 
           return (
             <Can I={manage} a={API} team={props.ownerTeam}>
@@ -1722,7 +1656,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'process',
         meta: {className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 15},
         cell: (info) => {
-          const plan = info.cell.row.original
+          const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <Can I={manage} a={API} team={props.ownerTeam}>
                 <span className='feature__description'>{plan.subscriptionProcess.length ?
@@ -1739,7 +1673,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         id: 'apiKeySubscription',
         meta: {className: "apiKeySubscription-cell", size: 20},
         cell: (info) => {
-          const plan = info.cell.row.original
+          const plan : IUsagePlanGQL = info.cell.row.original
           const {
             otoroshiTargetIsDefined,
             otoroshiEntitiesIsDefined,
@@ -1758,8 +1692,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 (
                   <button
                     type="button"
-                    className="table-plan_action-button inactive"
+                    className="table-plan_action-button d-flex inactive align-items-center gap-2"
                   >
+                    <KeyRound/>
                     <Translation i18nkey="Get API key"/>
                   </button>
                 )
@@ -1785,9 +1720,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         (plan.otoroshiTarget && !isAccepted)) && (
                         <button
                           type="button"
-                          className="table-plan_action-button"
+                          className="table-plan_action-button btn-outline-primary d-flex align-items-center gap-2"
                           onClick={openTeamSelectorModal}
                         >
+                          <KeyRound/>
                           <Translation
                             i18nkey={
                               isAutomaticProcess ? 'Get API key' : 'Request API key'
@@ -1803,9 +1739,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 connectedUser.isGuest && (
                   <button
                     type="button"
-                    className="table-plan_action-button"
+                    className="table-plan_action-button btn-outline-primary d-flex align-items-center gap-2"
                     onClick={() => openLoginOrRegisterModal({tenant})}
                   >
+                    <KeyRound/>
                     <Translation i18nkey="Get API key"/>
                   </button>
                 )
@@ -1885,12 +1822,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
           )
         }
       })
-  ] as ColumnDef<IUsagePlan, any>[]
+  ] as ColumnDef<IUsagePlanGQL, any>[]
   }, [])
 
   return (
       <>
-        <DynamicTable<IUsagePlan>
+        <DynamicTable<IUsagePlanGQL>
           queryKey={["plans"]}
           columns={columns}
           fetchData={usagePlansFetchData}

@@ -5,14 +5,14 @@ import {
   IFastPlan,
   ISubscription,
   ISubscriptionWithApiInfo,
-  IUsagePlan
+  IUsagePlan, IUsagePlanGQL
 } from '../../types';
 import { IBaseModalProps } from './types';
-import { Key, Plus } from "lucide-react";
+import { KeyRound, Plus } from "lucide-react";
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void;
-  plan: IUsagePlan | IFastPlan;
+  plan: IUsagePlan | IFastPlan | IUsagePlanGQL;
   apiKeys: Array<ISubscriptionWithApiInfo>;
   extendApiKey: (key: ISubscription) => void;
 }
@@ -84,7 +84,7 @@ export const ApiKeySelectModal = (
 };
 
 type ApiKeysViewProps = {
-  plan: IUsagePlan | IFastPlan;
+  plan: IFastPlan | IUsagePlanGQL;
   apiKeys: Array<ISubscriptionWithApiInfo>;
   extendApiKey: (key: ISubscriptionWithApiInfo) => void;
 };
@@ -176,7 +176,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon={<Key />}
+          icon={<KeyRound />}
         />
       )}
     </div>
