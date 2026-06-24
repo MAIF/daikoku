@@ -4,11 +4,8 @@ import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash/debounce';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
-import AsyncSelect from 'react-select/async';
-import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
+import { useContext, useMemo } from 'react';
+import { ArrowRight, Ban, Check, Smile } from "lucide-react";
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -124,24 +121,15 @@ export const NotificationList = () => {
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
-  // Server-side autocomplete for the API filter: we only ever load a handful of
-  // APIs at a time, so we keep a local id->name cache to resolve the label of
-  // already-selected APIs (chips + select value) without refetching the whole list.
-  const [apiLabelCache, setApiLabelCache] = useState<Record<string, string>>({});
-
-  const cacheApiLabels = (apis: Array<{ value: string; label: string }>) =>
-    setApiLabelCache(prev => ({
-      ...prev,
-      ...Object.fromEntries(apis.map(a => [a.value, a.label])),
-    }));
-
+  // Server-side autocomplete for the API filter: instead of fetching every
+  // visible API up front (blocking) we load a handful at a time as the user
+  // types. The DynamicTable keeps the id->label cache needed to render the
+  // labels of already-selected APIs.
   const loadApiOptions = useMemo(
     () =>
-      debounce((input: string, callback: (options: Array<Option>) => void) => {
+      debounce((input: string, callback: (options: Array<{ label: string; value: string }>) => void) => {
         Services.getMyVisibleApisLight(input, -1).then(apis => {
-          const options = apis.map(a => ({ label: a.name, value: a._id }));
-          cacheApiLabels(options);
-          callback(options);
+          callback(apis.map(a => ({ label: a.name, value: a._id })));
         });
       }, 300),
     []
@@ -167,12 +155,12 @@ export const NotificationList = () => {
   // ─── Actions ─────────────────────────────────────────────────────────────
 
   const accept = (notification: string, sub?: CustomSubscriptionData) => {
-    Services.acceptNotificationOfTeam(notification, sub)
+    return Services.acceptNotificationOfTeam(notification, sub)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
   const reject = (notification: string, message?: string) => {
-    Services.rejectNotificationOfTeam(notification, message)
+    return Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
@@ -208,22 +196,21 @@ export const NotificationList = () => {
             <div className="d-flex justify-content-end">
               <a href={`/${notification.action.api.team._humanReadableId}/${notification.action.api._humanReadableId}/${notification.action.api.currentVersion}/news`}
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                className="nav_item cursor-pointer bg-info" target='_blank'
+                className="btn --tertiary --small --icon-only" target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
                 <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       case 'NewIssueOpenV2':
@@ -234,22 +221,22 @@ export const NotificationList = () => {
             <div className="d-flex justify-content-end">
               <a href={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/${notification.action.issue._id}`}
                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                className="nav_item cursor-pointer bg-info" target='_blank'
+                className="btn --tertiary --small --icon-only"
+                target='_blank'
                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
                 <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       }
@@ -262,9 +249,9 @@ export const NotificationList = () => {
           return (
             <div className='action-container'>
               <div className="d-flex justify-content-end gap-2">
-                <button className="nav_item cursor-pointer bg-success"
+                <FeedbackButton className="btn --tertiary --small --icon-only"
                   title={translate('Accept')} aria-label={translate('Accept')}
-                  onClick={() =>
+                  onPress={() =>
                     Services.getSubscriptionDemand(notification.team!._id, _demand._id)
                       .then(demand => {
                         if (!isError(demand)) {
@@ -281,8 +268,8 @@ export const NotificationList = () => {
                   }
                 >
                   <Check />
-                </button>
-                <button className="nav_item cursor-pointer bg-danger"
+                </FeedbackButton>
+                <button className="btn --tertiary --small --icon-only"
                   title={translate('Reject')} aria-label={translate('Reject')}
                   onClick={() => {
                     openFormModal<{ message: string }>({
@@ -301,13 +288,6 @@ export const NotificationList = () => {
                   <Ban />
                 </button>
               </div>
-              <button type="button" className="nav_item cursor-pointer no-bg" disabled={true}
-                title={translate('notifications.page.table.read.action.label')}
-                aria-label={translate('notifications.page.table.read.action.label')}
-                onClick={() => { }}
-              >
-                <X />
-              </button>
             </div>
           );
         } else {
@@ -319,13 +299,14 @@ export const NotificationList = () => {
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton type="success" className="nav_item cursor-pointer ms-1"
+              <FeedbackButton type="success"
+                className="btn --tertiary --small --icon-only"
                 onPress={() =>
                   Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
                     .then(r => window.location.href = r.checkoutUrl)
                 }
-                onSuccess={() => { }} feedbackTimeout={100} disabled={false}>
-                {translate('Checkout')}
+                onSuccess={() => { }} feedbackTimeout={100}>
+                <ArrowRight />
               </FeedbackButton>
             </div>
           </div>
@@ -338,51 +319,54 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-end">
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       default:
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && <button
-                className="nav_item cursor-pointer bg-success"
-                title={translate('Accept')}
-                aria-label={translate('Accept')}
-                onClick={() => accept(notification._id)}
-              >
-                <Check />
-              </button>}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <button
-                  className="nav_item cursor-pointer bg-danger"
-                  title={translate('Reject')}
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
+                  onPress={() => accept(notification._id)}
+                >
+                  <Check />
+                </FeedbackButton>
+              )}
+              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  onPress={() => reject(notification._id)}
+                  onSuccess={() => { }} feedbackTimeout={100} disabled={false}
+                  // title={translate('Reject')}
                   aria-label={translate('Reject')}
-                  onClick={() => reject(notification._id)}
+                // onClick={() => reject(notification._id)}
                 >
                   <Ban />
-                </button>
+                </FeedbackButton>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
-              disabled={notification.notificationType.value === 'AcceptOrReject'}
-              title={translate('notifications.page.table.read.action.label')}
-              aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
-            >
-              <X />
-            </button>}
+            {notification.status.status === 'Pending' && notification.notificationType.value !== 'AcceptOrReject' && (
+              <FeedbackButton
+                className="btn --tertiary --small --icon-only"
+                title={translate('notifications.page.table.read.action.label')}
+                aria-label={translate('notifications.page.table.read.action.label')}
+                onPress={() => accept(notification._id)}
+              >
+                <Ban />
+              </FeedbackButton>
+            )}
           </div>
         );
     }
@@ -622,34 +606,9 @@ export const NotificationList = () => {
     }
   };
 
-  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
-    switch (notification.action.__typename) {
-      case "ApiAccess":
-      case "ApiSubscription":
-      case "ApiSubscriptionReject":
-      case "ApiSubscriptionAccept":
-      case "OtoroshiSyncApiError":
-      case "ApiKeyDeletionInformationV2":
-      case "ApiKeyRotationInProgressV2":
-      case "ApiKeyRotationEndedV2":
-      case "ApiKeyRefreshV2":
-      case "NewPostPublishedV2":
-      case "NewIssueOpenV2":
-      case "NewCommentOnIssueV2":
-      case "TransferApiOwnership":
-      case "CheckoutForSubscription":
-        const _api = notification.action.api
-        return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
-      case "TeamInvitation":
-      case "OtoroshiSyncSubscriptionError":
-      case "ApiSubscriptionTransferSuccess":
-        return;
-    }
-  }
-
   const columnHelper = createColumnHelper<NotificationGQL>();
 
-  const buildColumns = ({ setColumnFilters, selectAll }: DynamicTableColumnCtx) => [
+  const buildColumns = ({ setColumnFilters, selectAll, seedFilterLabels }: DynamicTableColumnCtx) => [
     columnHelper.display({
       id: 'select',
       meta: { className: 'select-cell', size: 5 },
@@ -681,12 +640,13 @@ export const NotificationList = () => {
         const api = getApiFromNotification(notification);
         if (!api) return null;
         return (
-          <a href='#' onClick={() =>
+          <a href='#' onClick={() => {
+            seedFilterLabels('api', [{ label: api.name, value: api._id }]);
             setColumnFilters(prev => [
               ...prev.filter(f => f.id !== 'api'),
               { id: 'api', value: [api._id] },
-            ])
-          }>
+            ]);
+          }}>
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         );
@@ -701,7 +661,7 @@ export const NotificationList = () => {
         const label = translate(`notifications.page.filters.type.${typeName}.label`);
         return (
           <span
-            className="badge --primary"
+            className="tag --primary"
             onClick={() =>
               setColumnFilters(prev => [
                 ...prev.filter(f => f.id !== 'type'),
@@ -817,8 +777,7 @@ export const NotificationList = () => {
       type: 'multiselect',
       labelKey: 'notifications.page.filters.api.label',
       labelKeyAll: 'notifications.page.filters.all.api.label',
-      options: (visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id })),
-      isLoading: visibleApisRequest.isLoading || visibleApisRequest.isPending,
+      loadOptions: loadApiOptions,
       countKey: 'api',
     },
     {

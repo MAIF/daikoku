@@ -383,6 +383,12 @@ $btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond gri
     line-height: 16px;
   }
 
+  &.--icon-only {
+    padding: 4px;
+    width: 28px;
+    height: 28px;
+  }
+
   // disabled géré par la couleur (neutral-600), pas par l'opacité Bootstrap
   &:disabled,
   &.--disabled {
@@ -498,4 +504,18 @@ $btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond gri
 
 .btn.--icon {
   padding: 8px;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.--rotate {
+  animation: rotating 2s linear infinite;
 }

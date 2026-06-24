@@ -1,40 +1,26 @@
-import classNames from 'classnames';
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState, useMemo, PropsWithChildren } from 'react';
-import {Check, Loader, X} from "lucide-react";
+import { useEffect, useState, useMemo, PropsWithChildren } from 'react';
+import { Check, Loader, X } from "lucide-react";
+import classNames from 'classnames';
 
 type ButtonType = 'success' | 'warning' | 'info' | 'danger' | 'primary' | 'secondary'
 type Props = {
-  type: ButtonType,
+  title?: string
+  type?: ButtonType,
   onPress: () => Promise<any>,
   beforePress?: () => Promise<boolean>,
   onSuccess?: () => void,
   feedbackTimeout?: number,
   feedbackMessages?: { success?: string, fail?: string },
   className?: string,
-  disabled: boolean,
+  disabled?: boolean,
   style?: { [key: string]: string },
 }
 export function FeedbackButton(props: PropsWithChildren<Props>) {
   const [uploading, setUploading] = useState(false);
   const [result, onResult] = useState('waiting');
-  const [color, setColor] = useState<ButtonType>(props.type);
+  // const [color, setColor] = useState<ButtonType>(props.type);
   const id = useMemo(() => nanoid(), [])
-
-  // useEffect(() => {
-  //   let timeout;
-
-  //   if (result !== 'waiting') {
-  //     setUploading(false);
-  //     timeout = setTimeout(() => {
-  //       onResult('waiting');
-  //     }, props.feedbackTimeout);
-  //   }
-
-  //   return () => {
-  //     if (timeout) clearTimeout(timeout);
-  //   };
-  // }, [result]);
 
   useEffect(() => {
     let timeout;
@@ -54,19 +40,6 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
   const waiting = result === 'waiting';
   const loading = waiting && uploading;
 
-  const getColor = (): ButtonType => {
-    if (successed) return 'success';
-    else if (failed) return 'danger';
-    else if (loading) return 'secondary';
-
-    return props.type;
-  };
-
-  useEffect(() => {
-    setColor(getColor());
-  }, [result, uploading]);
-
-
 
   const setStyle = () => {
     if (failed) {
@@ -80,9 +53,10 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
   return (
     <button
       id={id}
+      title={props.title}
       type="button"
-      disabled={props.disabled || loading}
-      className={classNames(`btn btn-outline-${color}`, props.className)}
+      disabled={props.disabled ?? loading}
+      className={classNames(props.className, { '--icon-only': loading })}
       style={setStyle()}
       onClick={() => {
         if (!uploading && waiting) {
@@ -109,7 +83,7 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
       }}>
       {loading && (
         <>
-          <Loader className="fa-sm" style={{ opacity: loading ? 1 : 0, transition: 'opacity 2s' }} />
+          <Loader className='--rotate' style={{ opacity: loading ? 1 : 0 }} />
           {props.children}
         </>
       )}

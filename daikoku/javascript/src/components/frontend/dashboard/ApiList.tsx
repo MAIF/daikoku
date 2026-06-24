@@ -184,7 +184,7 @@ export const ApiList = (props: ApiListProps) => {
       columnHelper.display({
         id: 'action',
         enableColumnFilter: false,
-        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions'), size: 1 },
+        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions'), size: 5 },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
