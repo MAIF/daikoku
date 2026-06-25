@@ -36,7 +36,7 @@ const ToasterComponent = () => {
   const { theme } = useContext(GlobalContext)
 
   return (
-    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} containerAriaLabel='notifications' />
+    <Toaster closeButton={true} richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} containerAriaLabel='notifications' />
   )
 }
 

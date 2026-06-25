@@ -1,18 +1,5 @@
 version: "3"
 services:
-  faker:
-    image: mockserver/mockserver:latest
-    networks:
-      - basicsetup
-    volumes:
-      - ../daikoku/javascript/tests/config/mocks/initializer.json:/config/initializer.json
-    expose:
-      - 1081
-    ports:
-      - 1081:1080
-    environment:
-      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
-
   postgres:
     image: postgres:latest
     container_name: postgres_daikoku
@@ -40,12 +27,9 @@ services:
       - "../daikoku/javascript/tests/config/otoroshi:/usr/app/otoroshi/imports"
     ports:
       - 8080:8080
-    depends_on:
-      - faker
 
 networks:
   basicsetup:
     driver: bridge
     ipam:
       driver: default
-      # config:

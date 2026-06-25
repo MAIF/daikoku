@@ -249,8 +249,10 @@ export const NotificationList = () => {
           return (
             <div className='action-container'>
               <div className="d-flex justify-content-end gap-2">
-                <FeedbackButton className="btn --tertiary --small --icon-only"
-                  title={translate('Accept')} aria-label={translate('Accept')}
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
                   onPress={() =>
                     Services.getSubscriptionDemand(notification.team!._id, _demand._id)
                       .then(demand => {
@@ -269,8 +271,10 @@ export const NotificationList = () => {
                 >
                   <Check />
                 </FeedbackButton>
-                <button className="btn --tertiary --small --icon-only"
-                  title={translate('Reject')} aria-label={translate('Reject')}
+                <button
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
                   onClick={() => {
                     openFormModal<{ message: string }>({
                       title: translate('Message'),
@@ -350,6 +354,7 @@ export const NotificationList = () => {
                   onSuccess={() => { }} feedbackTimeout={100} disabled={false}
                   // title={translate('Reject')}
                   aria-label={translate('Reject')}
+                  title={translate('Reject')}
                 // onClick={() => reject(notification._id)}
                 >
                   <Ban />
