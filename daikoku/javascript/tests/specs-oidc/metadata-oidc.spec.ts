@@ -21,7 +21,7 @@ test('Récupérer les metadatas claims "name" et "birthdate" uniquement de OIDC'
   await page.getByText('Authentification').click();
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name birthdate');
   await page.getByRole('button', { name: 'Save' }).click();
-
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   // await page.getByRole('button', { name: 'Yes' }).click();
@@ -73,7 +73,7 @@ test('Ne récupérer aucune metadatas claims d\'OIDC', async ({ page }) => {
   await page.getByText('Authentification').click();
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
-
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   // await page.getByRole('button', { name: 'Yes' }).click();
@@ -123,7 +123,7 @@ test('Récupérer toutes les metadatas claims que d\'OIDC', async ({ page }) => 
   await page.getByText('Authentification').click();
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('*');
   await page.getByRole('button', { name: 'Save' }).click();
-
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   // await page.getByRole('button', { name: 'Yes' }).click();
@@ -173,7 +173,7 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
   await page.getByText('Authentification').click();
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name');
   await page.getByRole('button', { name: 'Save' }).click();
-
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   // await page.getByRole('button', { name: 'Yes' }).click();

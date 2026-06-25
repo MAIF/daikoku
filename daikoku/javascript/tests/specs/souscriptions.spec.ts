@@ -54,7 +54,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
   await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByLabel('Accepter').click();
+  await page.getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
   await expect(page.getByText('0 notification')).toBeVisible();;
@@ -961,18 +961,18 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByText('Environnements').click();
   await expect(page.locator('[data-usage-plan="prod"]').getByRole('button', { name: getKey })).toBeVisible();
 })
-test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async({page, context}) => {
+test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async ({ page, context }) => {
 
   async function checkBurgerButtonVisibility(visible: Boolean) {
     const keyUrl = `${HOME}vendeurs/settings/apikeys/api-commande/1.0.0`
     const burgerLocator = page.locator('.api-subscription').first().locator('#dropdownMenuButton')
     await page.goto(keyUrl)
 
-    if(visible) {
+    if (visible) {
       await expect(burgerLocator).toBeVisible()
     } else {
       // Ensure that api key card is displayed before asserting on burger button absence
-      await expect(page.getByRole("button", {name: "Copier le clientId et le clientSecret"})).toBeVisible()
+      await expect(page.getByRole("button", { name: "Copier le clientId et le clientSecret" })).toBeVisible()
       await expect(burgerLocator).not.toBeVisible()
     }
   }
@@ -984,26 +984,26 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
   await logout(page)
 
   await updateUserRightForTeam({
-      teamId: vendeurs,
-      userId: DWIGHT.id!,
-      right: "ApiEditor"
-    });
+    teamId: vendeurs,
+    userId: DWIGHT.id!,
+    right: "ApiEditor"
+  });
 
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(false);
   await logout(page)
 
   await updateUserRightForTeam({
-      teamId: vendeurs,
-      userId: DWIGHT.id!,
-      right: "Administrator"
-    });
+    teamId: vendeurs,
+    userId: DWIGHT.id!,
+    right: "Administrator"
+  });
 
   await loginAs(DWIGHT, page);
   await checkBurgerButtonVisibility(true);
 })
 
-test("[#1086] - la rotation d'une clé désactivée ne doit pas pouvoir être paramétrée", async ({page}) => {
+test("[#1086] - la rotation d'une clé désactivée ne doit pas pouvoir être paramétrée", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/apikeys`);

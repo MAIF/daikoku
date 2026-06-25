@@ -122,12 +122,7 @@ services:
                 "Type": "email",
                 "Value": "pam.beesly@dundermifflin.com",
                 "ValueType": "string"
-              },
-              {
-                "Type": "role",
-                "Value": "user",
-                "ValueType": "string"
-              },
+              }
             ]
           },
           {

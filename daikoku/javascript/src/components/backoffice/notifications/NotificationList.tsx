@@ -303,7 +303,7 @@ export const NotificationList = () => {
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton type="success"
+              <FeedbackButton
                 className="btn --tertiary --small --icon-only"
                 onPress={() =>
                   Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)

@@ -91,8 +91,7 @@ export const LastDemands = (props: LastDemandsProps) => {
                 <div className='item-title'>{`${d.api.name} / ${d.plan.customName}`}</div>
                 <div className='d-flex justify-content-between w-100 my-2'>
                   {checkout && <FeedbackButton
-                    type="primary"
-                    className="ms-1 btn-sm"
+                    className='btn --secondary'
                     onPress={() => handleCheckout(d._id)}
                     onSuccess={() => console.debug("success")}
                     feedbackTimeout={100}
