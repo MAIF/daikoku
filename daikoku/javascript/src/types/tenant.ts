@@ -181,6 +181,28 @@ export interface ITenantFull extends ITenant {
   style: ITenantStyle;
   translation: any;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
+  remoteCatalogs: Array<IRemoteCatalog>;
+}
+
+export interface IRemoteCatalogSource {
+  kind: string;
+  config: any;
+}
+export interface IRemoteCatalogScheduling {
+  enabled: boolean;
+  mode: string;
+  interval?: number;
+  cronExpression?: string;
+  deployArgs?: any;
+}
+export interface IRemoteCatalog {
+  id: string;
+  name: string;
+  enabled: boolean;
+  source: IRemoteCatalogSource;
+  scheduling: IRemoteCatalogScheduling;
+  allowedKinds: Array<string>;
+  testDeployArgs?: any;
 }
 
 export type TranslationItem = string | { s: string; p: string };

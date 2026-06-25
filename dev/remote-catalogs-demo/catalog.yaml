@@ -1,0 +1,33 @@
+kind: team
+_id: team-weather
+_tenant: default
+type: Organization
+name: Weather Team
+contact: weather@acme.io
+description: Demo team deployed by a remote catalog
+verified: false
+users: []
+metadata: {}
+---
+kind: usage-plan
+_id: plan-weather-free
+_tenant: default
+customName: Free
+subscriptionProcess: []
+maxPerSecond: 10
+maxPerDay: 1000
+maxPerMonth: 10000
+visibility: Public
+metadata: {}
+---
+kind: cms-page
+_id: page-remote-demo
+_tenant: default
+name: Remote Demo Page
+path: /remote-demo
+contentType: text/html
+body: "<h1>Deployed by a remote catalog</h1>"
+visible: true
+authenticated: false
+tags: []
+metadata: {}

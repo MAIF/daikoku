@@ -1795,7 +1795,10 @@ object json {
               (json \ "defaultAuthorizedOtoroshiEntities")
                 .asOpt(using SeqTeamAuthorizedEntitiesFormat),
             teamCreationSecurity =
-              (json \ "teamCreationSecurity").asOpt[Boolean]
+              (json \ "teamCreationSecurity").asOpt[Boolean],
+            remoteCatalogs = (json \ "remoteCatalogs")
+              .asOpt(using SeqRemoteCatalogFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover { case e: Throwable =>
@@ -1879,7 +1882,8 @@ object json {
         "teamCreationSecurity" -> o.teamCreationSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
-          .as[JsValue]
+          .as[JsValue],
+        "remoteCatalogs" -> SeqRemoteCatalogFormat.writes(o.remoteCatalogs)
       )
   }
 
@@ -5000,6 +5004,107 @@ object json {
     Format(
       Reads.seq(using TeamAuthorizedEntitiesFormat),
       Writes.seq(using TeamAuthorizedEntitiesFormat)
+    )
+
+  val RemoteCatalogSourceFormat = new Format[RemoteCatalogSource] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogSource] =
+      Try {
+        JsSuccess(
+          RemoteCatalogSource(
+            kind = (json \ "kind").asOpt[String].getOrElse("http"),
+            config = (json \ "config").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogSource): JsValue =
+      Json.obj(
+        "kind" -> o.kind,
+        "config" -> o.config
+      )
+  }
+
+  val RemoteCatalogSchedulingFormat = new Format[RemoteCatalogScheduling] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogScheduling] =
+      Try {
+        JsSuccess(
+          RemoteCatalogScheduling(
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
+            mode = (json \ "mode")
+              .asOpt[String]
+              .flatMap(SchedulingMode.fromValue)
+              .getOrElse(SchedulingMode.Interval),
+            interval = (json \ "interval")
+              .asOpt[Long]
+              .map(v => FiniteDuration(v, TimeUnit.MILLISECONDS)),
+            cronExpression = (json \ "cronExpression").asOpt[String],
+            deployArgs =
+              (json \ "deployArgs").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogScheduling): JsValue =
+      Json.obj(
+        "enabled" -> o.enabled,
+        "mode" -> o.mode.value,
+        "interval" -> o.interval
+          .map(_.toMillis)
+          .map(v => JsNumber(BigDecimal(v)))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "cronExpression" -> o.cronExpression
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "deployArgs" -> o.deployArgs
+      )
+  }
+
+  val RemoteCatalogFormat = new Format[RemoteCatalog] {
+    override def reads(json: JsValue): JsResult[RemoteCatalog] =
+      Try {
+        JsSuccess(
+          RemoteCatalog(
+            id = (json \ "id").as[String],
+            name = (json \ "name").as[String],
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            source = (json \ "source")
+              .asOpt(using RemoteCatalogSourceFormat)
+              .getOrElse(RemoteCatalogSource()),
+            scheduling = (json \ "scheduling")
+              .asOpt(using RemoteCatalogSchedulingFormat)
+              .getOrElse(RemoteCatalogScheduling()),
+            allowedKinds =
+              (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
+            testDeployArgs =
+              (json \ "testDeployArgs").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalog): JsValue =
+      Json.obj(
+        "id" -> o.id,
+        "name" -> o.name,
+        "enabled" -> o.enabled,
+        "source" -> RemoteCatalogSourceFormat.writes(o.source),
+        "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
+        "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
+        "testDeployArgs" -> o.testDeployArgs
+      )
+  }
+
+  val SeqRemoteCatalogFormat =
+    Format(
+      Reads.seq(using RemoteCatalogFormat),
+      Writes.seq(using RemoteCatalogFormat)
     )
 
 }

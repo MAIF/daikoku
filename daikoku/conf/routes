@@ -274,6 +274,11 @@ GET     /api/tenants/:tenantId/admins                   fr.maif.daikoku.controll
 GET     /api/tenants/:tenantId/addable-admins           fr.maif.daikoku.controllers.TenantController.addableAdmins(tenantId)
 POST    /api/tenants/:tenantId/admins                   fr.maif.daikoku.controllers.TenantController.addAdminsToTenant(tenantId)
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.daikoku.controllers.TenantController.removeAdminFromTenant(tenantId, adminId)
+GET     /api/tenants/:tenantId/remote-catalogs                          fr.maif.daikoku.controllers.RemoteCatalogController.list(tenantId)
+POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_deploy       fr.maif.daikoku.controllers.RemoteCatalogController.deploy(tenantId, catalogId)
+POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_test         fr.maif.daikoku.controllers.RemoteCatalogController.test(tenantId, catalogId)
+POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_undeploy     fr.maif.daikoku.controllers.RemoteCatalogController.undeploy(tenantId, catalogId)
+GET     /api/tenants/:tenantId/remote-catalogs/:catalogId/history       fr.maif.daikoku.controllers.RemoteCatalogController.history(tenantId, catalogId)
 PUT     /api/tenants/:tenantId/color-theme/_reset       fr.maif.daikoku.controllers.TenantController.resetColorTheme(tenantId)
 POST    /api/tenants/:tenantId/_dispatch-default-authorized-entities fr.maif.daikoku.controllers.TenantController.dipatchDefaultAuthorizedEntities(tenantId)
 
@@ -359,6 +364,12 @@ GET     /admin-api/openapi.json                      fr.maif.daikoku.controllers
 GET     /admin-api/state/export                         fr.maif.daikoku.controllers.StateAdminApiController.exportState()
 POST    /admin-api/state/import                         fr.maif.daikoku.controllers.StateAdminApiController.importState()
 POST    /admin-api/state/reset                          fr.maif.daikoku.controllers.StateAdminApiController.reset()
+
+GET     /admin-api/remote-catalogs                      fr.maif.daikoku.controllers.RemoteCatalogAdminApiController.list()
+GET     /admin-api/remote-catalogs/:id                  fr.maif.daikoku.controllers.RemoteCatalogAdminApiController.get(id: String)
+POST    /admin-api/remote-catalogs/:id/_deploy          fr.maif.daikoku.controllers.RemoteCatalogAdminApiController.deploy(id: String)
+POST    /admin-api/remote-catalogs/:id/_test            fr.maif.daikoku.controllers.RemoteCatalogAdminApiController.test(id: String)
+POST    /admin-api/remote-catalogs/:id/_undeploy        fr.maif.daikoku.controllers.RemoteCatalogAdminApiController.undeploy(id: String)
 
 DELETE  /admin-api/tenants/:id                          fr.maif.daikoku.controllers.TenantAdminApiController.deleteEntity(id)
 PATCH   /admin-api/tenants/:id                          fr.maif.daikoku.controllers.TenantAdminApiController.patchEntity(id)

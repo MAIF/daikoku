@@ -26,6 +26,7 @@ import { SecurityForm } from './forms/SecurityForm';
 import { ThirdPartyPaymentForm } from './forms/ThirdPartyPaymentForm';
 import { ResponseError, isError } from '../../../types';
 import { DisplayForm } from './forms/DisplayForm';
+import { RemoteCatalogsForm } from './forms/RemoteCatalogsForm';
 
 export const TenantEditComponent = ({
   tenantId,
@@ -205,6 +206,19 @@ export const TenantEditComponent = ({
                 </h1>
               )}
               <DisplayForm tenant={tenant} updateTenant={updateTenant} />
+            </>
+          }
+        />
+        <Route
+          path="/remote-catalogs"
+          element={
+            <>
+              {fromDaikokuAdmin && (
+                <h1>
+                  {tenant.name} - {translate('Remote catalogs')}
+                </h1>
+              )}
+              <RemoteCatalogsForm tenant={tenant} updateTenant={updateTenant} />
             </>
           }
         />

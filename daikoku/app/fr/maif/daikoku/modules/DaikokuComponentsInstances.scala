@@ -15,6 +15,7 @@ import fr.maif.daikoku.services.{
   TranslationsService,
   UserService
 }
+import fr.maif.daikoku.services.catalog.RemoteCatalogEngine
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx
@@ -135,6 +136,11 @@ class DaikokuComponentsInstances(context: Context)
   lazy val usagePlansAdminApiController = wire[UsagePlansAdminApiController]
   lazy val subscriptionDemandsAdminApiController =
     wire[SubscriptionDemandsAdminApiController]
+  lazy val remoteCatalogEngine = wire[RemoteCatalogEngine]
+  lazy val remoteCatalogJob = wire[RemoteCatalogJob]
+  lazy val remoteCatalogAdminApiController =
+    wire[RemoteCatalogAdminApiController]
+  lazy val remoteCatalogController = wire[RemoteCatalogController]
   lazy val graphQLController = wire[GraphQLController]
   lazy val cmsApiController = wire[CmsApiController]
   lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
@@ -249,6 +255,7 @@ class DaikokuComponentsInstances(context: Context)
   auditTrailPurgeJob.start()
   notificationPurgeJob.start()
   anonReportingJob.start()
+  remoteCatalogJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>
@@ -258,6 +265,7 @@ class DaikokuComponentsInstances(context: Context)
     auditTrailPurgeJob.stop()
     notificationPurgeJob.stop()
     anonReportingJob.stop()
+    remoteCatalogJob.stop()
     env.onShutdown()
     pgPool.close()
     FastFuture.successful(())

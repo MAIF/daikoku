@@ -11,6 +11,8 @@ import fr.maif.daikoku.utils._
 import play.api.libs.json._
 import fr.maif.daikoku.services.CmsPage
 
+import scala.concurrent.duration.FiniteDuration
+
 object Tenant {
   val Default: TenantId = TenantId("default")
   val jsCmsPageId = "tenant-js"
@@ -428,7 +430,8 @@ case class Tenant(
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
     defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
-      None
+      None,
+    remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -700,3 +703,26 @@ object SchedulingMode {
   def fromValue(v: String): Option[SchedulingMode] =
     SchedulingMode.values.find(_.value == v)
 }
+
+case class RemoteCatalogScheduling(
+    enabled: Boolean = false,
+    mode: SchedulingMode = SchedulingMode.Interval,
+    interval: Option[FiniteDuration] = None,
+    cronExpression: Option[String] = None,
+    deployArgs: JsObject = Json.obj()
+)
+
+case class RemoteCatalogSource(
+    kind: String = "http",
+    config: JsObject = Json.obj()
+)
+
+case class RemoteCatalog(
+    id: String,
+    name: String,
+    enabled: Boolean = true,
+    source: RemoteCatalogSource = RemoteCatalogSource(),
+    scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
+    allowedKinds: Set[String] = Set.empty,
+    testDeployArgs: JsObject = Json.obj()
+)
