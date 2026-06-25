@@ -793,7 +793,7 @@
           {
             "id": "target_1",
             "hostname": "request.otoroshi.io",
-            "port": 1080,
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1162,7 +1162,7 @@
           {
             "id": "target_1",
             "hostname": "request.otoroshi.io",
-            "port": 1080,
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1302,7 +1302,7 @@
           {
             "id": "target_1",
             "hostname": "request.otoroshi.io",
-            "port": 1080,
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1442,7 +1442,7 @@
           {
             "id": "target_1",
             "hostname": "request.otoroshi.io",
-            "port": 1080,
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1597,7 +1597,7 @@
             {
               "id": "target_1",
               "hostname": "request.otoroshi.io",
-              "port": 1080,
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {
@@ -1751,7 +1751,7 @@
             {
               "id": "target_1",
               "hostname": "request.otoroshi.io",
-              "port": 1080,
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {
