@@ -1537,7 +1537,7 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
 
 class PostgresAssetRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[Asset, AssetId](env, reactivePg) {
-  override def tableName: String = "cmspages"
+  override def tableName: String = "assets"
 
   override def format: Format[Asset] = json.AssetFormat
 

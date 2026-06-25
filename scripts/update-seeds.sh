@@ -13,12 +13,14 @@ SEED_FILES=(
     "dev/config/daikoku_state_light.ndjson"
     "dev/config/daikoku_state_ldap.ndjson"
     "dev/config/daikoku_state_oidc.ndjson"
-    "daikoku/javascript/tests/config/daikoku/daikoku_state.ndjson"
+    "daikoku/javascript/tests/config/daikoku/daikoku_state_ldap.ndjson"
     "daikoku/javascript/tests/config/daikoku/daikoku_state_local.ndjson"
     "daikoku/javascript/tests/config/daikoku/daikoku_state_local_test.ndjson"
-    "daikoku/javascript/tests/config/daikoku/daikoku_state_ldap_local.ndjson"
     "daikoku/javascript/tests/config/daikoku/daikoku_state_oidc.ndjson"
 )
+
+# admin_key_client_id:admin_key_client_secret — présent dans tous les seeds
+ADMIN_API_AUTH="Authorization: Basic $(echo -n 'admin_key_client_id:admin_key_client_secret' | base64 | tr -d '\n')"
 
 COOKIE_JAR="$(mktemp)"
 EXPORT_TMP="$(mktemp)"
@@ -30,7 +32,7 @@ trap cleanup EXIT
 
 wait_for_health() {
     echo "  Waiting for Daikoku..."
-    local retries=30
+    local retries=60
     while [ $retries -gt 0 ]; do
         if curl -sf "$DAIKOKU_URL/health" | grep -q '"ready"'; then
             echo "  Ready."
@@ -66,7 +68,6 @@ echo "URL: $DAIKOKU_URL"
 echo ""
 
 wait_for_health
-login
 
 for rel_path in "${SEED_FILES[@]}"; do
     seed_file="$ROOT_DIR/$rel_path"
@@ -79,16 +80,15 @@ for rel_path in "${SEED_FILES[@]}"; do
     echo ""
     echo "--- $rel_path"
 
-    echo "  Importing seed..."
-    import_status=$(curl -s -o /dev/null -w "%{http_code}" \
-        -b "$COOKIE_JAR" \
-        -X POST "$DAIKOKU_URL/api/state/import" \
-        -H "Content-Type: application/x-ndjson" \
-        --data-binary @"$seed_file")
-    echo "  Import: HTTP $import_status"
+    # reset via admin-api: clear() + initDatastore(path) + evolutions.run()
+    echo "  Resetting with seed (+ evolutions)..."
+    reset_status=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST "$DAIKOKU_URL/admin-api/state/reset?path=$seed_file" \
+        -H "$ADMIN_API_AUTH")
+    echo "  Reset: HTTP $reset_status"
 
-    if [ "$import_status" != "200" ]; then
-        echo "  ERROR: import failed" >&2
+    if [ "$reset_status" != "200" ]; then
+        echo "  ERROR: reset failed" >&2
         exit 1
     fi
 
