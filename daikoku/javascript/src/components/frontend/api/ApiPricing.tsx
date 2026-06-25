@@ -1242,6 +1242,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
     })
   }
 
+
+  const askForApikeys = ({ team, planIds, apiKey, motivation }: {
+    team: string
+    planIds: string[]
+    apiKey?: ISubscription
+    motivation?: object
+  }): Promise<void> => {
+    // un seul appel réseau (mutation GraphQL ou requête REST), à toi de définir côté back
+    
+  }
+
   const actions = (plan: IUsagePlanGQL) => {
     const setupPayment = (plan: IUsagePlanGQL) => {
       return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)

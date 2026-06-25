@@ -92,6 +92,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val loginController = wire[LoginController]
   lazy val teamController = wire[TeamController]
   lazy val notificationController = wire[NotificationController]
+  lazy val planController = wire[PlanController]
   lazy val tenantController = wire[TenantController]
   lazy val otoSettingsController = wire[OtoroshiSettingsController]
   lazy val usersController = wire[UsersController]

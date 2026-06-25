@@ -14,7 +14,12 @@ import fr.maif.daikoku.controllers.authorizations.isTeamApiKeyVisible
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
+import fr.maif.daikoku.utils.{
+  OtoroshiClient,
+  S3Configuration,
+  Time,
+  SubscriptionUtil
+}
 import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.graphql.{
@@ -1184,6 +1189,12 @@ object SchemaDefinition {
               ValidationStepHttRequest,
               ValidationStepForm
             )
+          ),
+          Field(
+            "subscriptionProcessChecksum",
+            StringType,
+            resolve = ctx =>
+              SubscriptionUtil.processChecksum(ctx.value.subscriptionProcess)
           ),
           Field(
             "integrationProcess",

@@ -670,6 +670,7 @@ export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTestin
   paymentSettings?: IPaymentSettings;
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>
+  subscriptionProcessChecksum: string;
   trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
 };
