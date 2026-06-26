@@ -16,6 +16,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 import './style/main.scss';
 
 import 'bootstrap';
+import { Option, ReactFormsProvider } from "@maif/react-forms";
 
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;
@@ -40,13 +41,31 @@ const ToasterComponent = () => {
   )
 }
 
+const reactfromProviderOption: Option = {
+  actions: {
+    submit: { className: 'btn --primary' },
+    cancel: { className: 'btn --secondary' },
+    reset: { className: 'btn --secondary' },
+    add: { className: 'btn --secondary --small' },
+    remove: { className: 'btn --tertiary --small' },
+    addEntry: { className: 'btn --secondary --small --icon-only' },
+    removeEntry: { className: 'btn --secondary --small --icon-only' },
+    markdownTab: { className: 'btn --secondary --small' },
+    fileUpload: { className: 'btn --secondary --small' },
+    collapse: { className: 'btn --secondary --small --icon-only' },
+    selectButton: { className: 'btn --secondary' },
+  }
+}
+
 root.render(
   <BrowserRouter>
     <QueryClientProvider client={queryClient}>
       <GlobalContextProvider>
         <I18nProvider>
-          <ToasterComponent />
-          <DaikokuApp />
+          <ReactFormsProvider options={reactfromProviderOption}>
+            <ToasterComponent />
+            <DaikokuApp />
+          </ReactFormsProvider>
         </I18nProvider>
       </GlobalContextProvider>
     </QueryClientProvider>

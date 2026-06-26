@@ -418,7 +418,7 @@ export function DynamicTable<T>({
                   labelKey={f.labelKey}
                   labelKeyAll={f.labelKeyAll}
                   getCount={getCount}
-                  classNamePrefix="daikoku-select"
+                  classNamePrefix="reactSelect"
                   styles={menuStyle}
                   onChange={data => { seedFilterLabels(f.id, [...data]); handleSelectChange(data, f.id); }}
                   value={selectedIds.map(id => ({ label: cache[id] ?? id, value: id }))}
@@ -440,7 +440,7 @@ export function DynamicTable<T>({
                 labelKey={f.labelKey}
                 labelKeyAll={f.labelKeyAll}
                 getCount={getCount}
-                classNamePrefix="daikoku-select"
+                classNamePrefix="reactSelect"
                 styles={menuStyle}
                 onChange={data => handleSelectChange(data, f.id)}
                 value={getMultiselectValue(f.id, f.options ?? [])}
@@ -634,7 +634,7 @@ export function DynamicTable<T>({
         {renderFilterToolbar()}
         {dataQuery.data && countLabelKey && (
           <div className="mt-2">
-            <span className="text-muted small">
+            <span className="small">
               <span className="fw-bold">{totalFiltered}</span>
               {totalFiltered < total
                 ? ` ${translate({ key: countLabelKey, plural: totalFiltered > 1 })} (sur ${total})`

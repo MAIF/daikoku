@@ -679,6 +679,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
       <div className='d-flex flex-column p-3'>
         <Select
           className='col-3 mb-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}

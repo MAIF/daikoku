@@ -173,6 +173,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
       <div className='d-flex flex-column'>
         <Select
           className='col-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}

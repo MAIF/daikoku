@@ -65,7 +65,7 @@ export const AtomicDesign = () => {
             </div>
 
             <h1 className="mt-3">Buttons</h1>
-            <small className="text-muted">hover / focus / pressed : états interactifs (survol, tab, clic)</small>
+            <small className="">hover / focus / pressed : états interactifs (survol, tab, clic)</small>
             <div className="d-flex gap-2 align-items-center flex-wrap">
               {buttonVariants.map((variant) => (
                 <button key={variant} className={`btn --${variant}`}>

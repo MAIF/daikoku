@@ -205,7 +205,7 @@ export const SearchPanel = () => {
 
   return (
     <div>
-      <button type='button' className='search-button' onClick={() => openModal()}>
+      <button type='button' className='btn --tertiary search-button' onClick={() => openModal()}>
         <div className='d-flex flex-row align-items-center gap-2'>
           <SearchIcon className="fake-placeholder" />
           <div className='fake-placeholder px-3'

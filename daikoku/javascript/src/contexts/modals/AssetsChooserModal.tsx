@@ -9,7 +9,6 @@ import { IAsset, ITeamSimple } from '../../types';
 import { ResponseError, isError } from '../../types/api';
 import { ModalContext } from '../modalContextInstance';
 import { IAssetSelectorModalProps, IBaseModalProps } from './types';
-import { UserCircle, File } from "lucide-react";
 
 export const MimeTypeFilter = {
   image: (value: string) => value.startsWith('image'),
@@ -179,14 +178,12 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
           })
         }
       >
-        {props.icon ? props.icon : (props.onlyPreview ? <UserCircle className="me-1" /> : <File className="me-1" />)}
         {props.label}
       </button>
     );
   } else {
     return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
       <button type="button" className="btn --secondary --icon-only ms-1 cursor-help" disabled>
-        {props.onlyPreview ? <UserCircle className="me-1" /> : <File className="me-1" />}
         {props.label}
       </button>
     </BeautifulTitle>);

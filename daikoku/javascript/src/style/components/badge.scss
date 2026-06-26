@@ -51,6 +51,8 @@ $theme-colors: (
   font-size: 12px;
   letter-spacing: -3%;
   width: fit-content;
+  text-wrap: nowrap;
+  white-space: nowrap;
 
   &.tag-finished {
     border-color: #000;
