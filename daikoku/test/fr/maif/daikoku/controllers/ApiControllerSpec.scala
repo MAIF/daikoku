@@ -6418,6 +6418,81 @@ class ApiControllerSpec()
     }
   }
 
+  "a deletion of a key" must {
+    "not remove team from authorized teams if plan is private" in {
+      val plan = UsagePlan(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        customName = "MyPrivatePlan",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            OtoroshiSettingsId("default"),
+            Some(
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        visibility = Private,
+        authorizedTeams = Seq(teamConsumerId),
+        autoRotation = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey
+      )
+      val payperUseSub = ApiSubscription(
+        id = ApiSubscriptionId("test-removal"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.api.id,
+        by = daikokuAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "test-removal"
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner,
+          teamConsumer
+        ),
+        usagePlans = Seq(plan),
+        apis = Seq(
+          defaultApi.api.copy(
+            possibleUsagePlans = Seq(plan.id)
+          )
+        ),
+        subscriptions = Seq(payperUseSub)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${payperUseSub.id.value}?action=delete",
+        method = "DELETE"
+      )(using tenant, session)
+
+      resp.status mustBe 200
+
+
+      val planAuthorizedTeamCheck = httpJsonCallBlocking(
+        path =
+          s"/api/me/visible-apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans",
+      )(using tenant, session)
+      planAuthorizedTeamCheck.status mustBe 200
+
+      val planJson = planAuthorizedTeamCheck.json.as[JsArray].value.find(json => (json \ "customName").as[String] == "MyPrivatePlan").get
+      (planJson \ "authorizedTeams").as[Seq[String]] must contain theSameElementsAs (Seq(teamConsumerId.value))
+
+    }
+  }
+
   "Anyone" can {
     "ask access for an api" in {
       setupEnvBlocking(
