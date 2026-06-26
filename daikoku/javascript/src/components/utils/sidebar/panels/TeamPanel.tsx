@@ -86,9 +86,9 @@ const Teams = () => {
         </div>
         <div className="modal-footer">
           {!tenant.teamCreationSecurity && (
-            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createTeam()}>
+            <button type="button" className='btn --primary' onClick={() => createTeam()}>
               <Plus />
-              <p className="m-0">{translate('dashboard.create.team.button.label')}</p>
+              {translate('dashboard.create.team.button.label')}
             </button>
           )}
         </div>

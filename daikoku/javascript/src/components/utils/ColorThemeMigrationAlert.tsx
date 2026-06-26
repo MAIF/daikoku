@@ -82,7 +82,7 @@ export const ColorThemeMigrationAlert = () => {
             />
           </div>
           <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-outline-danger" onClick={resetTheme}>
+            <button type="button" className="btn --primary" onClick={resetTheme}>
               {translate('migration.color-theme.alert.reset.button')}
             </button>
           </div>

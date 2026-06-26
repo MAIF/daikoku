@@ -21,7 +21,7 @@ import Select from 'react-select';
 import { I18nContext } from '../../contexts';
 import { isError, isPromise, ResponseError } from '../../types';
 import { Spinner } from '../utils';
-import {RefreshCw} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
@@ -199,7 +199,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
       />
       <button
         type="button"
-        className="ms-3 btn btn-sm btn-outline-primary float-right"
+        className="btn --tertiary --icon-only"
         title={translate('Reload the table content')}
         onClick={update}
       >

@@ -112,7 +112,7 @@ export const Dashboard = (_: NewHomeProps) => {
             {!!unreadNotificationsCount && (
               <button
                 onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription","ApiAccess"]}]')}
-                className="btn btn-outline-secondary">
+                className="btn --secondary">
                 <div className="d-flex gap-2 align-items-center">
                   {translate('dashboard.demands.tile.title')}
                   <span className="number-indicator">{unreadNotificationsCount}</span>

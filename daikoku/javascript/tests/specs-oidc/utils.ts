@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { Page } from "@playwright/test";
 import { IUser } from "./users";
 
 export const adminApikeyId = 'admin_key_client_id';

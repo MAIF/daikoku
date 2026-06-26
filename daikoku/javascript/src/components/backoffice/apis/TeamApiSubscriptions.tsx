@@ -387,7 +387,7 @@ export const TeamApiSubscriptions = ({
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       <div className="d-flex flex-row justify-content-start align-items-center gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-info"
+          className="btn --tertiary"
           onClick={() =>
             openFormModal({
               actionLabel: translate("Filter"),

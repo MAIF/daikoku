@@ -21,7 +21,7 @@ import {
   read,
   teamPermissions,
 } from '../../utils';
-import {ExternalLink, Key, BarChart} from "lucide-react";
+import { ExternalLink, Key, BarChart } from "lucide-react";
 
 export const TeamApiKeys = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -68,10 +68,10 @@ export const TeamApiKeys = () => {
         return (
           showApiKey && (
             <>
-              <div>
+              <div className='d-flex justify-content-end gap-2'>
                 <Link
                   to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
-                  className="btn btn-sm btn-outline-info me-1"
+                  className="btn --secondary --small --icon-only"
                   title={translate("apikeys.view.api")}
                   aria-label={translate("apikeys.view.api")}
                 >
@@ -79,7 +79,7 @@ export const TeamApiKeys = () => {
                 </Link>
                 <Link
                   to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
-                  className="btn btn-sm btn-outline-info me-1"
+                  className="btn --secondary --small --icon-only"
                   title={translate("apikeys.view.apikeys")}
                   aria-label={translate("apikeys.view.apikeys")}
                 >
@@ -107,7 +107,7 @@ export const TeamApiKeys = () => {
             </h1>
             <Link
               to={`/${currentTeam._humanReadableId}/settings/consumption`}
-              className="btn btn-sm btn-outline-primary mb-2"
+              className="btn --tertiary"
             >
               <BarChart className="me-1" />
               <Translation i18nkey="See Stats">See Stats</Translation>

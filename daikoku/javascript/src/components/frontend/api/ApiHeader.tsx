@@ -53,7 +53,7 @@ export const ApiHeader = ({
       .then((versions) =>
         setApiVersions(versions)
       );
-  }, []);
+  }, [ownerTeam, params]);
 
   const transferSchema = {
     team: {

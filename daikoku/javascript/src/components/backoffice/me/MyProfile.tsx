@@ -82,7 +82,7 @@ const TwoFactorAuthentication = ({
       {backupCodes ? (
         <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
           <span className="my-3">{translate('2fa.backup_codes_message')}</span>
-          <div className="d-flex w-100 mb-3">
+          <div className="d-flex w-100 mb-3 gap-2">
             <input
               type="text"
               disabled={true}
@@ -90,7 +90,7 @@ const TwoFactorAuthentication = ({
               className="form-control"
             />
             <button
-              className="btn btn-outline-success ms-1"
+              className="btn --secondary"
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(backupCodes);
@@ -101,7 +101,7 @@ const TwoFactorAuthentication = ({
             </button>
           </div>
           <button
-            className="btn btn-outline-success"
+            className="btn --primary"
             type="button"
             onClick={() => window.location.reload()}
           >
@@ -167,7 +167,7 @@ const TwoFactorAuthentication = ({
               required
             />
             <button
-              className="btn btn-outline-success"
+              className="btn --primary"
               type="button"
               onClick={verify}
             >
@@ -184,7 +184,7 @@ const TwoFactorAuthentication = ({
           {user?.twoFactorAuthentication?.enabled ? (
             <button
               onClick={disable2FA}
-              className="btn btn-outline-danger"
+              className="btn --secondary"
               type="button"
             >
               {translate('2fa.disable_action')}
@@ -192,7 +192,7 @@ const TwoFactorAuthentication = ({
           ) : (
             <button
               onClick={getQRCode}
-              className="btn btn-outline-success"
+              className="btn --primary"
               type="button"
             >
               {translate('2fa.enable_action')}
@@ -206,7 +206,7 @@ const TwoFactorAuthentication = ({
             {translate('2fa.backup_codes')}
           </label>
           <div className="col-sm-10">
-            <div className="d-flex">
+            <div className="d-flex gap-2">
               <input
                 type="text"
                 disabled={true}
@@ -214,7 +214,7 @@ const TwoFactorAuthentication = ({
                 className="form-control"
               />
               <button
-                className="btn btn-outline-success ms-1"
+                className="btn --secondary"
                 type="button"
                 onClick={copyToClipboard}
               >
@@ -371,7 +371,7 @@ const PictureUpload = (props: PictureUploadProps) => {
       />
       <button
         type="button"
-        className="btn btn-outline-primary"
+        className="btn --tertiary"
         disabled={uploading}
         onClick={trigger}
         style={{ width: 100, height: 100, borderRadius: '50%' }}
@@ -584,10 +584,10 @@ export const MyProfile = () => {
                 onSubmit={updatePassword}
                 footer={({ valid }) => {
                   return (
-                    <div className="d-flex justify-content-end">
+                    <div className="d-flex justify-content-end mt-2">
                       <button
                         type="button"
-                        className="btn btn-outline-success my-2"
+                        className="btn --secondary"
                         onClick={valid}
                       >
                         <span>

@@ -432,8 +432,8 @@ export const NotificationList = () => {
                 ),
                 actions: (close) => notification.status.status === 'Pending' ? (
                   <>
-                    <button className='btn btn-outline-danger' onClick={close}>{translate('Reject')}</button>
-                    <button className='btn btn-outline-success'
+                    <button className='btn --secondary' onClick={close}>{translate('Reject')}</button>
+                    <button className='btn --primary'
                       onClick={() => Services.getSubscriptionDemand(notification.team!._id, _demand._id)
                         .then(demand => {
                           if (!isError(demand)) {
@@ -448,7 +448,7 @@ export const NotificationList = () => {
                     </button>
                   </>
                 ) : (
-                  <button className="btn btn-outline-info">{translate('Close')}</button>
+                  <button className="btn --primary">{translate('Close')}</button>
                 ),
                 noClose: true,
               })}>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
-import {ReactNode, useContext, useState} from 'react';
+import { ReactNode, useContext, useState } from 'react';
 
 import { BeautifulTitle } from '../../components/utils';
 import { I18nContext } from '../../contexts';
@@ -82,10 +82,10 @@ export const AssetSelectorModal = (props: IAssetSelectorModalProps & IBaseModalP
       </div>
     </div>
     <div className="modal-footer">
-      <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+      <button type="button" className="btn --secondary" onClick={props.close}>
         <Translation i18nkey="Close">Close</Translation>
       </button>
-      <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
+      <button type="button" className="btn --primary" onClick={() => selectAssetAndCloseModal()}>
         <Translation i18nkey="Select">Select</Translation>
       </button>
     </div>
@@ -160,7 +160,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
 
   if (assetsRequest.isLoading) {
     return (
-      <button type="button" className="btn btn-outline-success ms-1" disabled>
+      <button type="button" className="btn --sedcondary --small" disabled>
         <Translation i18nkey="loading">loading...</Translation>
       </button>
     );
@@ -169,7 +169,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     return (
       <button
         type="button"
-        className={props.classNames ? props.classNames : classNames('btn btn-outline-primary ms-1', { disabled: !assets.length })}
+        className={props.classNames ? props.classNames : classNames('btn --secondary --small', { disabled: !assets.length })}
         onClick={() => assets.length &&
           openAssetSelectorModal({
             assets,
@@ -185,7 +185,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     );
   } else {
     return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
-      <button type="button" className="btn btn-outline-info ms-1 cursor-help" disabled>
+      <button type="button" className="btn --secondary --icon-only ms-1 cursor-help" disabled>
         {props.onlyPreview ? <UserCircle className="me-1" /> : <File className="me-1" />}
         {props.label}
       </button>

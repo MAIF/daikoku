@@ -11,7 +11,7 @@ import { IApi, IAsset, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPage
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
-import {Feather, FileImage} from "lucide-react";
+import { Feather, FileImage } from "lucide-react";
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -378,7 +378,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         <div className="d-flex align-items-center gap-1 mt-4">
           <button onClick={addNewPage} type="button"
             aria-label={translate(' documentation.add.page.btn.aria.label')}
-            className="flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd">
+            className="flex-grow-1 btn --primary fake-documentation-page-dnd">
             {translate('documentation.add.page.btn.label')}
           </button>
           {props.importAuthorized &&
@@ -386,7 +386,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               onClick={props.importPage}
               type="button"
               aria-label={translate(' documentation.import.page.btn.aria.label')}
-              className="flex-grow-1 btn btn-sm btn-outline-info fake-documentation-page-dnd">
+              className="flex-grow-1 btn --secondary fake-documentation-page-dnd">
               {translate('documentation.import.page.btn.label')}
             </button>
           }

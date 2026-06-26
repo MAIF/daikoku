@@ -175,13 +175,13 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
           contact: {
             component: (connectedUser.isGuest ?
               <a
-                className="btn btn-sm btn-outline-primary mb-2"
+                className="btn --secondary --small mb-2"
                 href={`mailto:${team?.contact}`}
               >
                 {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
               </a> :
               <button
-                className="btn btn-sm btn-outline-primary mb-2"
+                className="btn --secondary --small mb-2"
                 onClick={() =>
                   openContactModal({
                     team: api?.team,
@@ -262,16 +262,20 @@ export const useTeamBackOffice = () => {
                 active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
               },
               childs: {
-                ...(isTeamAdmin ? {informations: {
-                  label: translate('Informations'),
-                  action: () => navigateTo('edition'),
-                  className: { active: currentTab === 'edition' },
-                }} : {}),
-                ...(isTeamAdmin ? {assets: {
-                  label: translate({ key: 'Asset', plural: true }),
-                  action: () => navigateTo('assets'),
-                  className: { active: currentTab === 'assets' },
-                }} : {}),
+                ...(isTeamAdmin ? {
+                  informations: {
+                    label: translate('Informations'),
+                    action: () => navigateTo('edition'),
+                    className: { active: currentTab === 'edition' },
+                  }
+                } : {}),
+                ...(isTeamAdmin ? {
+                  assets: {
+                    label: translate({ key: 'Asset', plural: true }),
+                    action: () => navigateTo('assets'),
+                    className: { active: currentTab === 'assets' },
+                  }
+                } : {}),
                 members: {
                   label: translate({ key: 'Member', plural: true }),
                   action: () => navigateTo('members'),
@@ -287,30 +291,34 @@ export const useTeamBackOffice = () => {
                 active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
               },
             },
-            ...(isTeamAdmin ? {apikeys: {
-              label: translate({ key: 'API key', plural: true }),
-              action: () => navigateTo('apikeys'),
-              className: { active: ['apikeys', 'consumption'].includes(currentTab) },
-              childs: {
-                stats: {
-                  label: translate('Global stats'),
-                  action: () => navigateTo('consumption'),
-                  className: { active: currentTab === 'consumption' },
+            ...(isTeamAdmin ? {
+              apikeys: {
+                label: translate({ key: 'API key', plural: true }),
+                action: () => navigateTo('apikeys'),
+                className: { active: ['apikeys', 'consumption'].includes(currentTab) },
+                childs: {
+                  stats: {
+                    label: translate('Global stats'),
+                    action: () => navigateTo('consumption'),
+                    className: { active: currentTab === 'consumption' },
+                  },
                 },
-              },
-            }} : {}),
-            ...(isTeamAdmin ? {billing: {
-              label: translate('Billing'),
-              action: () => navigateTo('billing'),
-              className: { active: ['billing', 'income'].includes(currentTab) },
-              childs: {
-                income: {
-                  label: translate('Income'),
-                  action: () => navigateTo('income'),
-                  className: { active: currentTab === 'income' },
+              }
+            } : {}),
+            ...(isTeamAdmin ? {
+              billing: {
+                label: translate('Billing'),
+                action: () => navigateTo('billing'),
+                className: { active: ['billing', 'income'].includes(currentTab) },
+                childs: {
+                  income: {
+                    label: translate('Income'),
+                    action: () => navigateTo('income'),
+                    className: { active: currentTab === 'income' },
+                  },
                 },
-              },
-            }} : {})
+              }
+            } : {})
           },
         },
       }

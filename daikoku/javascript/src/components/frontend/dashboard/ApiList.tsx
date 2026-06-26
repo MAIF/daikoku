@@ -201,7 +201,7 @@ export const ApiList = (props: ApiListProps) => {
               <div className="nav_item dropdown">
                 <button
                   type="button"
-                  className="btn btn-outline-secondary btn-icon d-flex align-items-center gap-2"
+                  className="btn --secondary --icon-only"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                   aria-label={translate('dashboard.more.creation.option.button.label')}

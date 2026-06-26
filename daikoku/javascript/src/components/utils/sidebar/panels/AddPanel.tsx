@@ -45,7 +45,7 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
 
   return (
     <div className="">
-      <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-info">
+      <button onClick={() => toggleExpertMode()} className="btn --tertiary">
         {expertMode && translate('Standard mode')}
         {!expertMode && translate('Expert mode')}
       </button>

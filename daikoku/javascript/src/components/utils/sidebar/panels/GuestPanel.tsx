@@ -50,10 +50,6 @@ export const GuestPanel = () => {
         if (res.status === 400) {
           setLoginError(true);
           setLoading(false)
-          buttonRef.current?.classList.add('active', 'btn-outline-danger')
-          setTimeout(() => {
-            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-          }, 800);
         } else if (res.redirected) {
           window.location.href = res.url;
         }
@@ -80,7 +76,7 @@ export const GuestPanel = () => {
                       <button
                         type="submit"
                         ref={buttonRef}
-                        className="btn btn-outline-success ms-2 shake"
+                        className="btn --primary ms-2 shake"
                         disabled={loading}
                         onClick={(e) => {
                           e.stopPropagation();

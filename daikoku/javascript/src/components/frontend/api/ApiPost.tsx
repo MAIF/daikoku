@@ -118,7 +118,7 @@ export function ApiPost(props: ApiPostProps) {
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className="mb-2 d-flex justify-content-end">
             <button
-              className="btn btn-sm btn-outline-primary px-3"
+              className="btn --primary"
               aria-label={translate('api.home.config.api.news.btn.label')}
               data-bs-toggle="dropdown"
               aria-expanded="false"
@@ -158,17 +158,17 @@ export function ApiPost(props: ApiPostProps) {
           </div>
         </Can>
         <div className='d-flex flex-row justify-content-between'>
-          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
+          <button className="btn --secondary --icon-only" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
             <ArrowLeft />
           </button>
-          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
+          <button className="btn --secondary --icon-only" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
             <ArrowRight />
           </button>
         </div>
         {!postQuery.data.posts.length && (
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('api.post.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
+            <button className="btn --secondary" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
           </div>
         )}
         {!!postQuery.data.posts.length && postQuery.data.posts.map((post, i) => {

@@ -73,7 +73,7 @@ export const ApiKeySelectModal = (
       <div className="modal-footer">
         <button
           type="button"
-          className="btn btn-outline-danger"
+          className="btn --secondary"
           onClick={props.close}
         >
           {translate('Close')}

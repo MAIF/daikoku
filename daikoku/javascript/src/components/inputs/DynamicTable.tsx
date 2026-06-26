@@ -494,7 +494,7 @@ export function DynamicTable<T>({
             return (
               <div key={f.id} className="btn-group" role="group">
                 <button
-                  className={classNames('btn btn-outline-secondary', { active: boolVal })}
+                  className={classNames('btn', { '--primary': boolVal, '--secondary': !boolVal })}
                   aria-pressed={boolVal}
                   onClick={() =>
                     setColumnFilters([
@@ -506,7 +506,7 @@ export function DynamicTable<T>({
                   {f.onLabel}
                 </button>
                 <button
-                  className={classNames('btn btn-outline-secondary', { active: !boolVal })}
+                  className={classNames('btn', { '--primary': !boolVal, '--secondary': boolVal })}
                   aria-pressed={!boolVal}
                   onClick={() =>
                     setColumnFilters([
@@ -587,7 +587,7 @@ export function DynamicTable<T>({
           bulkActions.map((action, i) => (
             <button
               key={i}
-              className="ms-2 btn btn-sm btn-outline-secondary"
+              className="btn --secondary --small ms-2"
               onClick={() => handleBulkAction(action)}
             >
               {action.label}
@@ -597,7 +597,7 @@ export function DynamicTable<T>({
           table.getIsAllPageRowsSelected() &&
           table.getSelectedRowModel().rows.length < totalSelectable && (
             <button
-              className="btn btn-sm btn-outline-secondary ms-3"
+              className="btn --secondary --small ms-3"
               onClick={() => setSelectAll(true)}
             >
               {translate({

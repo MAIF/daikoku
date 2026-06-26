@@ -50,11 +50,11 @@ export const FormModal = <T extends TBaseObject>({
         />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => close()}>
+        <button type="button" className="btn --secondary" onClick={() => close()}>
           {translate('Cancel')}
         </button>
         {!!moreAction && moreAction}
-        <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
+        <button type="button" className="btn --primary" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>
       </div>

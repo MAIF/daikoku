@@ -56,7 +56,7 @@ export const Informations = () => {
             )}
         </div>
         <div className="inforamtion-footer d-flex justify-content-end mt-5">
-          <div className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/apis")}>
+          <div className="btn --primary --small" onClick={() => navigate("/apis")}>
             {translate('informations.page.go.back.button.label')}
           </div>
         </div>

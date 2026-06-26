@@ -89,9 +89,9 @@ export const LastDemands = (props: LastDemandsProps) => {
             return (
               <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
                 <div className='item-title'>{`${d.api.name} / ${d.plan.customName}`}</div>
-                <div className='d-flex justify-content-between w-100 my-2'>
+                <div className='d-flex justify-content-between w-100 my-2 gap-2'>
                   {checkout && <FeedbackButton
-                    className='btn --secondary'
+                    className='btn --secondary --small'
                     onPress={() => handleCheckout(d._id)}
                     onSuccess={() => console.debug("success")}
                     feedbackTimeout={100}
@@ -99,7 +99,7 @@ export const LastDemands = (props: LastDemandsProps) => {
                   >Checkout</FeedbackButton>
                   }
                   {!checkout && <span className='badge bg-secondary my-2'>{translate({ key: 'widget.demands.state', replacements: [translate(d.state)] })}</span>}
-                  {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d._id)}>{translate('Cancel')}</button>}
+                  {isAdmin && <button className='btn --secondary --small' onClick={() => cancelDemand(d._id)}>{translate('Cancel')}</button>}
                 </div>
               </div>
             )

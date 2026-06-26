@@ -23,6 +23,7 @@ import { CmsViewer } from '../CmsViewer';
 
 //@ts-ignore
 import 'highlight.js/styles/monokai.css';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
@@ -338,7 +339,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   }
 
   const fetchNewPageAndUpdate = () => {
-    Services.fetchNewApiDocPage()
+    return Services.fetchNewApiDocPage()
       .then(page => {
         openRightPanel({
           title: translate("doc.page.create.modal.title"),
@@ -357,9 +358,9 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
     <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --primary"
           aria-label={translate("api.home.config.api.aria.label")}
-          style={{ position: "absolute", right: 0, top: 0 }}
+          style={{ position: "absolute", right: 0, top: -10 }}
           onClick={() => setView(view === 'documentation' ? 'update' : 'documentation')}>
           {view === 'documentation' ? translate('api.home.config.api.documentation.btn.label.edit') : translate('api.home.config.api.documentation.btn.label.view')}
         </button>
@@ -373,11 +374,11 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
               'justify-content-between': !!prev,
               'justify-content-end': !prev,
             })}>
-              {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
+              {prev && (<button className='btn --secondary' onClick={() => setPageId(prev)}>
                 <ChevronLeft className="me-1" />
                 <Translation i18nkey="Previous page">Previous page</Translation>
               </button>)}
-              {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
+              {next && (<button className='btn --secondary' onClick={() => setPageId(next)}>
                 <Translation i18nkey="Next page">Next page</Translation>
                 <ChevronRight className="ms-1" />
               </button>)}
@@ -391,10 +392,11 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('update.api.documentation.not.found.alert')}</div>
-            <button className="btn btn-outline-info"
-              onClick={() => fetchNewPageAndUpdate()}>
+            <FeedbackButton
+              className="btn --secondary"
+              onPress={() => fetchNewPageAndUpdate()}>
               {translate('add.api.documention.btn.label')}
-            </button>
+            </FeedbackButton>
           </div>
         </Can>
       )}

@@ -18,6 +18,7 @@ import {
 } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { CircleX, RefreshCw } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type IConsumptionByApi = {
   billing: { hits: number, total: number },
@@ -72,7 +73,7 @@ export const TeamBilling = () => {
 
 
   const sync = () => {
-    Services.syncTeamBilling((currentTeam as ITeamSimple)._id)
+    return Services.syncTeamBilling((currentTeam as ITeamSimple)._id)
       .then(() => queryClient.invalidateQueries({ queryKey: ['billings'] }))
   };
 
@@ -223,11 +224,12 @@ export const TeamBilling = () => {
             <div className="row">
               <div className="col apis">
                 <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center">
+                  <div className="col-12 month__selector d-flex align-items-center gap-2">
                     <MonthPicker updateDate={setDate} value={date} />
-                    <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
+                    <FeedbackButton
+                      className="btn --secondary --small --icon-only" onPress={sync}>
                       <RefreshCw />
-                    </button>
+                    </FeedbackButton>
                     {getLastDate()}
                   </div>
                 </div>

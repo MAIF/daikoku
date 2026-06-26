@@ -36,10 +36,10 @@ export const Confirm = (props: ConfirmProps) => {
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
+        <button type="button" className="btn --secondary" onClick={props.cancel}>
           {props.cancelLabel || translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={props.ok}>
+        <button type="button" className="btn --primary" onClick={props.ok}>
           {props.okLabel || translate('Ok')}
         </button>
       </div>
