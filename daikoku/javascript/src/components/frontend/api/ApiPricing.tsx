@@ -2008,3 +2008,39 @@ function findCompatibleSubscriptionForMultiPlanRequest(
 
     return possibleKeysByPlanId;
 }
+
+const tableForApiKeyFormat = ( subscriptions: {planId: string, keys: ISubscriptionWithApiInfo[]}[])  => {
+  return (
+    <div>
+      <table className="table">
+        <thead>
+          <tr>
+            <th scope="col">envs</th>
+            <th scope="col">options</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            subscriptions.map(({planId, keys}) => 
+            <tr>
+              <td>{planId}</td>
+              <td><select>
+                {
+                  keys.map((key) => {
+                    if (key.plan === planId) {
+                       return  (
+                       <option>Aggréger avec {key.adminCustomName}</option>
+                      )
+                      } else {
+                        return <option>Créer une clé</option>
+                      }
+                    })}
+                </select></td>
+            </tr>
+          )
+          }
+        </tbody>
+      </table>
+    </div>
+  )
+}
