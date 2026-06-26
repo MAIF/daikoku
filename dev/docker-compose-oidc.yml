@@ -30,7 +30,8 @@ services:
         }
       LOGOUT_OPTIONS_INLINE: |
         {
-          "AutomaticRedirectAfterSignOut": true
+          "AutomaticRedirectAfterSignOut": true,
+          "ShowLogoutPrompt": true
         }
       #API_SCOPES_INLINE: |
       #  - Name: some-app-scope-1

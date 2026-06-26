@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test';
 import { JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginOidcAs } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginOidcAs, logout } from './utils';
 
 test.beforeEach(async () => {
   await fetch(`http://localhost:${exposedPort}/admin-api/state/reset`, {
@@ -22,14 +22,10 @@ test('Récupérer les metadatas claims "name" et "birthdate" uniquement de OIDC'
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name birthdate');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('button', { name: 'Close toast' }).click();
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -74,14 +70,10 @@ test('Ne récupérer aucune metadatas claims d\'OIDC', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('button', { name: 'Close toast' }).click();
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -124,14 +116,10 @@ test('Récupérer toutes les metadatas claims que d\'OIDC', async ({ page }) => 
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('*');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('button', { name: 'Close toast' }).click();
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -174,15 +162,11 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('name');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('button', { name: 'Close toast' }).click();
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
 
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -225,9 +209,7 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
     }
   )
 
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 
@@ -237,14 +219,10 @@ test('Récupérer les metadatas claims d\'OIDC "name", puis "birthdate"', async 
   await page.getByRole('textbox', { name: 'Metadata choisies' }).fill('birthdate');
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(JIM, page)
-  await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  // await page.getByRole('button', { name: 'Yes' }).click();
+  await logout(page);
   await page.goto(ACCUEIL);
   await loginOidcAs(MICHAEL, page)
 

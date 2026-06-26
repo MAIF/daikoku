@@ -7,7 +7,8 @@ export const adminApikeySecret = 'admin_key_client_secret';
 export const otoroshiAdminApikeyId = 'admin-api-apikey-id';
 export const otoroshiAdminApikeySecret = 'admin-api-apikey-secret';
 
-export const exposedPort = process.env.EXPOSED_PORT || 5173;
+// export const exposedPort = process.env.EXPOSED_PORT || 5173;
+export const exposedPort = 13200;
 export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`;
 export const HOME = `http://localhost:${exposedPort}/`;
@@ -29,11 +30,12 @@ export const loginOidcAs = async (user: IUser, page: Page, waitForHome: boolean 
   await page.getByRole('button', { name: 'Login' }).click();
 
   if (waitForHome) {
-  await page.getByRole('heading', { name: 'Dunder Mifflin' }).isVisible()
+    await page.getByRole('heading', { name: 'Dunder Mifflin' }).isVisible()
   }
 };
 
 export const logout = async (page: Page) => {
-  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.getByRole('button', { name: 'Yes' }).click();
 };
