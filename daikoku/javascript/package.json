@@ -10,7 +10,7 @@
     "prettier": "prettier --write --single-quote --trailing-comma es5 --print-width 100 --tab-width 2 --jsx-bracket-same-line \"src/**/*.{ts, tsx}\"",
     "lint": "oxlint src/",
     "lint:fix": "oxlint --fix src/",
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc && vite build && mkdir -p ../public/assets && rm -rf ../public/assets/* && rm -f ../public/index.html &&  cp -r ./dist/assets/* ../public/ && cp ./dist/index.html ../public/",
     "preview": "vite preview",
     "test": "playwright test --config tests/playwright.config.js --workers 1 --trace on"

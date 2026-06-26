@@ -2428,7 +2428,7 @@ export const setupPayment = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlanGQL
+  plan: IUsagePlan
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}/_payment`, {
     method: 'PUT',
@@ -2439,7 +2439,7 @@ export const createPlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlanGQL
+  plan: IUsagePlan
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan`, {
     method: 'POST',
@@ -2450,7 +2450,7 @@ export const updatePlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlanGQL
+  plan: IUsagePlan
 ): PromiseWithError<IUsagePlan> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'PUT',
@@ -2461,7 +2461,7 @@ export const deletePlan = (
   teamId: string,
   apiId: string,
   version: string,
-  plan: IUsagePlanGQL
+  plan: IUsagePlan
 ): PromiseWithError<IApi> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plan/${plan._id}`, {
     method: 'DELETE',

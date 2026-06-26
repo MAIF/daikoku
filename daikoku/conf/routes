@@ -178,7 +178,6 @@ GET     /api/teams/:teamId/apis/:apiId/:version/available_envs  fr.maif.daikoku.
 POST    /api/teams/:teamId/apis/:apiId/:version/plan            fr.maif.daikoku.controllers.PlanController.createPlan(teamId, apiId, version)
 PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId/pages    fr.maif.daikoku.controllers.ApiController.clonePlanDocumentation(teamId, apiId, version, planId)
 PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId    fr.maif.daikoku.controllers.PlanController.updatePlan(teamId, apiId, version, planId)
-PUT     /api/teams/:teamId/apis/:apiId/:version/                fr.maif.daikoku.controllers.PlanController.updatePlans(teamId, apiId, version)
 DELETE  /api/teams/:teamId/apis/:apiId/:version/plan/:planId    fr.maif.daikoku.controllers.PlanController.deletePlan(teamId, apiId, version, planId)
 PUT     /api/teams/:teamId/apis/:id/:version/plan/:planId/_payment   fr.maif.daikoku.controllers.PlanController.setupPayment(teamId, id, version, planId)
 DELETE  /api/teams/:teamId/apis/:id/:version/plan/:planId/_payment   fr.maif.daikoku.controllers.PlanController.stopPayment(teamId, id, version, planId)

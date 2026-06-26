@@ -17,7 +17,7 @@ export interface IModalProps {
 export interface IApiSelectModalProps {
   teamId: string,
   api: IApi,
-  onClose: (plan: IUsagePlan | IUsagePlanGQL) => void
+  onClose: (plan: IUsagePlanGQL) => void
 }
 
 type plans = {

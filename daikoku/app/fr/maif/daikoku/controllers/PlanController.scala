@@ -623,50 +623,6 @@ class PlanController(
       }
     }
 
-  def updatePlans(teamId: String, apiId: String, version: String) = {
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamApiEditorOnly(
-        AuditTrailEvent(
-          s"@{user.name} has updated plan @{plan.id} for api @{api.name} to @{newTeam.name}"
-        )
-      )(teamId, ctx) { team =>
-        ???
-        // updatedPlans = récupérer tous les plans du body
-        // val updatedPlan = ctx.request.body.as(using UsagePlanFormat)
-        // récupérer l'api à laquelle ils appartiennent
-        //  --> appel back
-
-        // récupérer les plans complets listés dans l'api
-        //  --> appel back
-
-        // map () =>
-        //    Pour chacun des plans
-        //    checkCustomName
-        //    récupère les plans actuels en BDD
-        //      --> appel back
-
-        //    Mettre à jour les subscriptionDemands
-        //      --> appel back
-
-        //    validation du plan -> getPlanAndCheckIt()
-        //    gérer la visibilité du plan (privé, public -> appel au back)
-        //    gérer paymentSettings, subscription steps, otoTarget (handleProcess())
-        //    Sauver le plan en BDD
-        //      --> appel back
-
-        //    synchroniser Oto
-        //      --> appel back
-
-        //    demandes update, modification des demandes en cours
-        //      --> appel back
-
-        //    MAJ des demandes de souscriptions
-        //      --> appel back
-
-      }
-    }
-  }
-
   def deletePlan(
       teamId: String,
       apiId: String,
@@ -1250,5 +1206,4 @@ class PlanController(
       }
     }
 
-    
 }

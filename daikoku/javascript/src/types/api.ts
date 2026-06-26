@@ -245,7 +245,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   aggregationApiKeysSecurity?: boolean;
   allowMultipleDemand?: string;
   allowMultipleKeys?: boolean;
-  authorizedTeams: { _id: string; name: string }[] | string[];
+  authorizedTeams: string[];
   autoRotation?: boolean;
   billingDuration?: IBillingDuration;
   costPerMonth?: number;
@@ -261,6 +261,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   paymentSettings?: IPaymentSettings;
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>;
+  subscriptionProcessChecksum: string;
   trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
 }
@@ -654,7 +655,7 @@ export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTestin
   aggregationApiKeysSecurity?: boolean;
   allowMultipleDemand?: string
   allowMultipleKeys?: boolean;
-  authorizedTeams: { _id: string; name: string }[] | string[]
+  authorizedTeams: { _id: string; name: string }[];
   autoRotation?: boolean;
   billingDuration?: IBillingDuration;
   costPerMonth?: number;
