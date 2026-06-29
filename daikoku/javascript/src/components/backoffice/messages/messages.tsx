@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { MessagesContext } from '../../backoffice';
 import { I18nContext } from '../../../contexts/i18n-context';
+import {MessageSquare} from "lucide-react";
 
 export const MessagesTopBarTools = (_: any) => {
     const { totalUnread } = useContext(MessagesContext);
@@ -22,7 +23,7 @@ export const MessagesTopBarTools = (_: any) => {
         onClick={() => setOpened(!opened)}
         title={translate('Access to the messages')}
       >
-                <i className="fas fa-comment-alt" />
+      <MessageSquare />
       </Link>
     </div>
   );

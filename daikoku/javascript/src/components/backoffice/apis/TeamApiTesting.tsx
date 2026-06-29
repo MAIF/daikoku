@@ -154,7 +154,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       />
       {!otoKeyExists && (
         <div className="col-6 d-flex justify-content-center align-items-center">
-          <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
+          <button className="btn --secondary" onClick={handleOtoroshiUsage}>
             <Translation i18nkey="testing.key.creation">
               Use Otoroshi to create testing ApiKey
             </Translation>
@@ -196,11 +196,11 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
               {translate("otoroshi.test.key.modal.description.4")}
             </p>
           </div>
-          <div className="d-flex justify-content-center align-items-center flex-grow-1">
-            <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
+          <div className="d-flex justify-content-center align-items-center flex-grow-1 gap-2">
+            <button className="btn --secondary" onClick={deleteOtoroshiKey}>
               <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
             </button>
-            <button className="btn btn-outline-success ms-1" onClick={handleOtoroshiUsage}>
+            <button className="btn --primary" onClick={handleOtoroshiUsage}>
               <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
             </button>
           </div>

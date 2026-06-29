@@ -20,6 +20,7 @@ import {
   theMachine,
 } from './initialization';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { CircleQuestionMark } from 'lucide-react';
 
 type IVisibleApiGQL = {
   api: {
@@ -403,7 +404,7 @@ const Help = () => {
         </div>
       )}
     >
-      <i className="ms-4 far fa-question-circle" />
+      <CircleQuestionMark />
     </BeautifulTitle>
   );
 };

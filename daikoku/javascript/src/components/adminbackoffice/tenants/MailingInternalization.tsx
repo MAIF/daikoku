@@ -24,11 +24,7 @@ function Breadcrumb() {
     {parts
       .map((part, i) => {
         return <Link key={part} to={pathname.split("/").slice(0, i + 3).join("/")}>
-          <button className='btn btn-sm btn-outline-primary' style={{
-            border: 'none',
-            // borderRadius: 0,
-            padding: '.5rem'
-          }}>{`/ ${part}`}</button>
+          <button className='btn --secondary'>{`/ ${part}`}</button>
         </Link>
       })}
   </p>
@@ -58,7 +54,7 @@ function InternalizationChooser({ domain, translate }) {
         <div className='card-body'>
           <p>{translate(description)}</p>
           <Link
-            className={`btn btn-success btn-outline ${domain === active ? 'active' : ''}`}
+            className={`btn --primary ${domain === active ? 'active' : ''}`}
             to={`/settings/internationalization/${active}`}
           >
             {translate('mailing_internalization.action')}

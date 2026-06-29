@@ -2,23 +2,16 @@ import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import AtSign from 'react-feather/dist/icons/at-sign';
-import CreditCard from 'react-feather/dist/icons/credit-card';
-import Globe from 'react-feather/dist/icons/globe';
-import List from 'react-feather/dist/icons/list';
-import Plus from 'react-feather/dist/icons/plus';
-import Settings from 'react-feather/dist/icons/settings';
-import Trash from 'react-feather/dist/icons/trash';
-import User from 'react-feather/dist/icons/user';
+import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { ModalContext } from '../../../contexts/modalContext';
+import { ModalContext } from '../../../contexts/modalContextInstance';
 import { IValidationStep } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
-import { Help } from '../apikeys/TeamApiKeysForApi';
+import { Help } from '../apikeys';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string>, info?: string }) => void;
@@ -161,7 +154,7 @@ const MotivationForm = (props: MotivationFormProps) => {
       </div>
       <div className="modal-footer">
         <button
-          className="btn btn-outline-success"
+          className="btn --primary"
           onClick={() => {
             props.saveMotivation({ schema: realSchema, formatter, formKeysToMetadata, info });
             close();
@@ -570,32 +563,18 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     setDraft(subscriptionProcess);
   };
 
-  // if (!draft.subscriptionProcess.length) {
-  //   return (
-  //     <div className="d-flex flex-column align-items-center">
-  //       <div> {translate('api.pricings.no.step.explanation')}</div>
-  //       <button
-  //         className="btn btn-outline-primary my-2"
-  //         onClick={() => addProcess(0)}
-  //       >
-  //         {translate('api.pricings.add.first.step.btn.label')}
-  //       </button>
-  //     </div>
-  //   );
-  // }
-
   const Documentation = props.documentation ?? React.Fragment
   return (
     <div>
       {props.documentation && <button
-        className='btn btn-outline-info mb-5'
+        className='btn --secondary mb-5'
         onClick={() => setShowDocumentation(!showDocumentation)}>
         {translate(`tenant.security.account.creation.process.doc.${showDocumentation ? 'close' : 'open'}.aria`)}
       </button>}
       <div className="d-flex flex-row align-items-center">
         {!!draft.length && (
           <button
-            className="btn btn-outline-primary sortable-list-btn"
+            className="btn --secondary --small --icon-only"
             onClick={() => addProcess(0)}
           >
             <Plus />
@@ -605,7 +584,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           <div className="d-flex flex-column align-items-center">
             <div> {translate('api.pricings.no.step.explanation')}</div>
             <button
-              className="btn btn-outline-primary my-2"
+              className="btn --primary my-2"
               onClick={() => addProcess(0)}
             >
               {translate('api.pricings.add.first.step.btn.label')}
@@ -628,7 +607,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                     className='d-flex flex-row justify-content-between'
                   >
                     <button
-                      className="btn btn-sm btn-outline-info"
+                      className="btn --secondary --small --icon-only"
                       onClick={() =>
                         openCustomModal({
                           title: translate('motivation.form.modal.title'),
@@ -671,7 +650,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                       >
                         {item.type === 'email' && (
                           <button
-                            className="btn btn-sm btn-outline-info"
+                            className="btn --secondary --small --icon-only"
                             onClick={() => editMailStep(item)}
                           >
                             <Settings size={15} />
@@ -679,42 +658,14 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                         )}
                         {item.type === 'httpRequest' && (
                           <button
-                            className="btn btn-sm btn-outline-info"
+                            className="btn --secondary --small --icon-only"
                             onClick={() => editHttpRequestStep(item)}
                           >
                             <Settings size={15} />
                           </button>
                         )}
-                        {/* {item.type === 'form' && (
-                          <button
-                            className="btn btn-sm btn-outline-info"
-                            onClick={() =>
-                              openCustomModal({
-                                title: translate('motivation.form.modal.title'),
-                                content: (
-                                  <MotivationForm
-                                    value={item}
-                                    saveMotivation={({ schema, formatter }) => {
-                                      const step = { ...item, schema, formatter };
-                                      const updatedPlan = {
-                                        ...draft,
-                                        subscriptionProcess:
-                                          draft.map(
-                                            (s) => (s.id === step.id ? step : s)
-                                          ),
-                                      };
-                                      setDraft(updatedPlan);
-                                    }}
-                                  />
-                                ),
-                              })
-                            }
-                          >
-                            <Settings size={15} />
-                          </button>
-                        )} */}
                         <button
-                          className="btn btn-sm btn-outline-danger"
+                          className="btn --secondary --small --icon-only"
                           // disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
                           onClick={() => deleteStep(item)}
                         >
@@ -731,7 +682,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                     />
                   </SortableItem>
                   <button
-                    className="btn btn-outline-primary sortable-list-btn"
+                    className="btn --secondary --small --icon-only"
                     onClick={() => addProcess(idx + 1)}
                   >
                     <Plus />
@@ -745,7 +696,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       </div>
       {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
       {(!!draft.length || !!props.process.length) && (
-        <button className='btn btn-outline-success' onClick={() => props.save(draft)}>save</button>
+        <button className='btn --primary' onClick={() => props.save(draft)}>save</button>
       )}
     </div>
   );

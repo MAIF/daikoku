@@ -9,6 +9,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import { ISession } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, daikoku, formatDate, manage } from '../../utils';
+import { Trash2 } from "lucide-react";
 
 export const SessionList = () => {
   const { connectedUser } = useContext(GlobalContext)
@@ -46,14 +47,14 @@ export const SessionList = () => {
       cell: (info) => {
         const session = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="d-flex justify-content-end">
             <button
               type="button"
-              className="btn btn-sm btn-outline-danger"
+              className="btn --secondary --small --icon-only"
               title="Delete this session"
               onClick={() => deleteSession(session)}
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
           </div>
         );
@@ -107,12 +108,12 @@ export const SessionList = () => {
               injectTopBar={() => (
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-danger"
+                  className="btn --tertiary"
                   title="Delete all session"
                   style={{ marginLeft: 10 }}
                   onClick={() => deleteSessions()}
                 >
-                  <i className="fas fa-trash me-1" />
+                  <Trash2 className="me-1" />
                   <Translation i18nkey="Delete all sessions">Delete all sessions</Translation>
                 </button>
               )}

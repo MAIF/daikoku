@@ -8,6 +8,7 @@ import {
   IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
+import { Key, Plus } from "lucide-react";
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void;
@@ -72,7 +73,7 @@ export const ApiKeySelectModal = (
       <div className="modal-footer">
         <button
           type="button"
-          className="btn btn-outline-danger"
+          className="btn --secondary"
           onClick={props.close}
         >
           {translate('Close')}
@@ -145,7 +146,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
           style={{ flex: 1, minHeight: '100px' }}
           className="d-flex align-items-center justify-content-center"
         >
-          <i className={`fas fa-${icon} fa-2x`} />
+          {icon}
         </div>
         <div
           style={{ flex: 1 }}
@@ -164,7 +165,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
       <Button
         onClick={() => props.create(true)}
         message={translate('aggregation.button.subscription.usual.label')}
-        icon="plus"
+        icon={<Plus />}
       />
       {props.aggregationApiKeysSecurity && (
         <Button
@@ -175,7 +176,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon="key"
+          icon={<Key />}
         />
       )}
     </div>

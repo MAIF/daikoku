@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
 import debounce from 'lodash/debounce';
 import { useContext, useState } from "react";
-import Plus from 'react-feather/dist/icons/plus';
+import { Plus } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -86,9 +86,9 @@ const Teams = () => {
         </div>
         <div className="modal-footer">
           {!tenant.teamCreationSecurity && (
-            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createTeam()}>
+            <button type="button" className='btn --primary' onClick={() => createTeam()}>
               <Plus />
-              <p className="m-0">{translate('dashboard.create.team.button.label')}</p>
+              {translate('dashboard.create.team.button.label')}
             </button>
           )}
         </div>

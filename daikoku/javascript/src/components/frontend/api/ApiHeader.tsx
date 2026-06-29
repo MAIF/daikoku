@@ -53,8 +53,8 @@ export const ApiHeader = ({
       .then((versions) =>
         setApiVersions(versions)
       );
-  }, []);
-      
+  }, [ownerTeam, params]);
+
   const transferSchema = {
     team: {
       type: type.string,
@@ -133,7 +133,7 @@ export const ApiHeader = ({
         )}
         <Can I={manage} a={API} team={ownerTeam}>
           <button
-            className="btn btn-sm btn-outline-primary px-3"
+            className="btn --secondary"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             aria-haspopup="menu"
@@ -185,7 +185,7 @@ export const ApiHeader = ({
                       content: <ApiFormRightPanel team={ownerTeam} api={newApi} apigroup={!!newApi.apis} handleSubmit={(api) =>
                         Services.createTeamApi(ownerTeam._id, api)
                           .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                          .then(() => toast.success("api.created.successful.toast")) //todo: move to new API
+                          .then(() => toast.success(translate({ key: 'api.created.successful.toast', replacements: [api.name] }))) //todo: move to new API
                       } />
                     }))}
                 >

@@ -43,6 +43,7 @@ import { Dashboard } from '../components/frontend/dashboard/Dashboard';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
+import { ColorThemeMigrationAlert } from '../components/utils/ColorThemeMigrationAlert';
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
@@ -154,11 +155,12 @@ export const DaikokuApp = () => {
     <MessagesProvider>
       <NavProvider>
         <ModalProvider>
+          <ColorThemeMigrationAlert />
           <TopBar />
           <div className="d-flex flex-row">
             <SideBar />
             <RightPanel />
-            <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto' }}>
+            <div className="wrapper flex-grow-1 container-fluid d-flex flex-column" style={{ overflow: 'auto'}}>
               {/*<Breadcrumb /> */}
               <Routes>
                 <Route

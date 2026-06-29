@@ -32,8 +32,8 @@ export const ApiDescription = ({
   const { customGraphQLClient } = useContext(GlobalContext);
 
   const getCmsPages = (): Promise<Array<ICmsPageGQL>> =>
-      customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
-        .then(res => res.pages)
+    customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
+      .then(res => res.pages)
 
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export const ApiDescription = ({
       />}
       {api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={ownerTeam}>
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --tertiary"
           aria-label={translate("api.home.config.api.aria.label")}
           style={{ position: "absolute", right: 0, top: 0 }}
           onClick={() => openRightPanel({

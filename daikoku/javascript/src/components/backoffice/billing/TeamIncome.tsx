@@ -10,6 +10,8 @@ import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
+import { CircleArrowLeft, CircleX, RefreshCw } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 
 type TeamIncomeGql = {
@@ -122,7 +124,8 @@ export const TeamIncome = () => {
   } else if (currentTeam && !isError(currentTeam)) {
     const sync = () => {
       setState({ ...state, loading: true });
-      Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(date));
+      return Services.syncTeamIncome(currentTeam._id)
+        .then(() => getBillingData(date));
     };
 
 
@@ -137,14 +140,14 @@ export const TeamIncome = () => {
             {!state.loading && (<div className="row">
               <div className="col apis">
                 <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center">
+                  <div className="col-12 month__selector d-flex align-items-center gap-2">
                     <MonthPicker updateDate={(date: Date) => {
                       setDate(date);
                       getBillingData(date);
                     }} value={date} />
-                    <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
-                      <i className="fas fa-sync-alt" />
-                    </button>
+                    <FeedbackButton className="btn --secondary --small --icon-only" onPress={sync}>
+                      <RefreshCw />
+                    </FeedbackButton>
                     {lastDate ? (<i className="ms-1">
                       <Translation i18nkey="date.update" replacements={[lastDate]}>
                         upd. {lastDate}
@@ -169,7 +172,9 @@ export const TeamIncome = () => {
                 {state.selectedApi && !state.selectedPlan && (<div className="api-plans-consumptions section p-2">
                   <div className="api__plans__consumption__header">
                     <h3 className="api__name">{state.selectedApi.name}</h3>
-                    <i className="far fa-times-circle quit" onClick={() => setState({ ...state, selectedApi: undefined })} />
+                    <button className="--ghost" onClick={() => setState({ ...state, selectedApi: undefined })}>
+                      <CircleX />
+                    </button>
                   </div>
                   {(state.consumptions
                     .filter((c: TeamIncomeGql) => c.api._id === state.selectedApi._id)
@@ -209,7 +214,9 @@ export const TeamIncome = () => {
                       {state.selectedApi.name} -{' '}
                       {(state.selectedPlan as any).customName}
                     </h3>
-                    <i className="far fa-arrow-alt-circle-left quit" onClick={() => setState({ ...state, selectedPlan: undefined })} />
+                    <button className="--ghost" onClick={() => setState({ ...state, selectedPlan: undefined })}>
+                      <CircleArrowLeft />
+                    </button>
                   </div>
                   {state.consumptions
                     .filter((c: TeamIncomeGql) => c.api._id === state.selectedApi._id && c.plan._id === state.selectedPlan._id)

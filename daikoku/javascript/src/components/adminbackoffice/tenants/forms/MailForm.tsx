@@ -30,6 +30,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         return (
           <FeedbackButton
             type='info'
+            className='btn --secondary'
             onPress={() => testMailConnection(props.tenant!._id, mailerType, rawValues)
               .then(r => isError(r) ? Promise.reject(r) : r)
             }

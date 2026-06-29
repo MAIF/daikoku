@@ -35,7 +35,7 @@ export const Alert = (props: AlertProps) => {
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-info" onClick={props.close}>
+        <button type="button" className="btn --primary" onClick={props.close}>
           {props?.closeMessage || translate('Close')}
         </button>
       </div>

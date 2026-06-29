@@ -65,7 +65,7 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
         }
         {...props}
       >
-        <div className={classNames(styles.TreeItem, 'tree-item')} ref={ref} style={style}>
+        <div className={classNames(styles.TreeItem, 'tree-item', 'd-flex gap-2')} ref={ref} style={style}>
           <Handle {...handleProps} />
           <span className={styles.Text}>{value}</span>
           {!clone && onUpdate && <Update onClick={onUpdate} />}
