@@ -2079,7 +2079,7 @@ class ApiService(
           if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](ApiUnauthorized)
       case _
-          if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>
+          if plan.visibility == UsagePlanVisibility.Private && api.team != team.id && !plan.authorizedTeams.contains(team.id) && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](PlanUnauthorized)
       case _ =>
         plan.subscriptionProcess match {

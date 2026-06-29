@@ -1,11 +1,12 @@
+import { ArrowRight } from "lucide-react";
 import { Widget } from "./widget";
 import { PropsWithChildren } from "react"
 
 type RevenusProps = {
-    title: string
-    size:  "small" | "medium" | "large"
-  }
-export const Revenus = (props:PropsWithChildren<RevenusProps>) => {
+  title: string
+  size: "small" | "medium" | "large"
+}
+export const Revenus = (props: PropsWithChildren<RevenusProps>) => {
   const isLoading = false;
   const isError = false;
   return (
@@ -24,15 +25,15 @@ export const Revenus = (props:PropsWithChildren<RevenusProps>) => {
             <h3>$4,390</h3>
           </div>
           <div className="percent d-flex align-items-center justify-content-center">
-            <i className="fa-solid fa-arrow-right fa-3x"></i>
+            <ArrowRight />
             <span className="ms-3">0%</span>
           </div>
           <div className="percent high d-flex align-items-center justify-content-center">
-            <i className="fa-solid fa-arrow-right fa-3x"></i>
+            <ArrowRight />
             <span className="ms-3">12%</span>
           </div>
           <div className="percent low d-flex align-items-center justify-content-center">
-            <i className="fa-solid fa-arrow-right fa-3x"></i>
+            <ArrowRight />
             <span className="ms-3">- 12%</span>
           </div>
         </div>

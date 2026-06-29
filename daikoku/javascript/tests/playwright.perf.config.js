@@ -14,5 +14,6 @@ export default defineConfig({
   use: {
     actionTimeout: 180_000,
     trace: 'on-first-retry',
+    baseURL: !!process.env.CI ? "http://localhost:13200" : "http://localhost:5173"
   },
 });

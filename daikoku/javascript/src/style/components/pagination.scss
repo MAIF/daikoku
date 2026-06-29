@@ -1,6 +1,7 @@
 @use "../variables";
 
-.pagination {
+// Skin legacy : exclut la pagination DS (.pagination--ds), qui a son propre skin plus bas.
+.pagination:not(.pagination--ds) {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -82,5 +83,37 @@
     border-bottom-right-radius: .25rem;
     border-top-right-radius: .25rem;
     margin-left: -1px;
+  }
+}
+
+// Skin "design system" : chaque unité est un bouton DS (.btn --ghost/--tertiary…), 16px entre
+// chaque. Totalement découplé du skin legacy ci-dessus -> les .btn contrôlent seuls leur rendu
+// (plus de couleur/soulignement hérités qui cassaient le ghost).
+.pagination.pagination--ds {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  padding-left: 0;
+  margin-top: 16px;
+
+  li {
+    display: flex; // le <a>.btn (inline-flex) se dimensionne seul
+  }
+
+  // page active -> rendu d'un .btn --primary (filled), quelle que soit la variante des autres
+  // liens. On cible le <li> actif (li.active.page-selector) : assez de classes pour dépasser
+  // la spécificité du :hover d'une variante (ghost/tertiary), hover/focus inclus.
+  li.active.page-selector > a.btn {
+    &,
+    &:hover,
+    &:focus-visible {
+      background-color: variables.$primary-color;
+      border-color: variables.$primary-color;
+      color: variables.$neutral-color-000;
+      box-shadow: none;
+    }
   }
 }

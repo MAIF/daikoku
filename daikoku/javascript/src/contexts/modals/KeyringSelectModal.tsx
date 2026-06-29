@@ -8,6 +8,7 @@ import {
   IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
+import { ArrowRight, Key, Plus } from "lucide-react";
 
 /** A keyring (trousseau) the user may pick to add the new subscription into.
  * `subscription` is the representative subscription carrying that keyring ;
@@ -81,7 +82,7 @@ export const KeyringSelectModal = (
       <div className="modal-footer">
         <button
           type="button"
-          className="btn btn-outline-danger"
+          className="btn --secondary"
           onClick={props.close}
         >
           {translate('Close')}
@@ -115,7 +116,8 @@ const KeyringsView = (props: KeyringsViewProps) => {
             onClick={() => props.onSelectKeyring(keyring.subscription)}
           >
             <div className="d-flex align-items-center gap-3">
-              <i className="fas fa-key fa-lg keyring-option__icon" />
+              <Key />
+              {/* <i className="fas fa-key fa-lg keyring-option__icon" /> */}
               <div className="d-flex flex-column">
                 <strong>{keyring.customName ?? keyring.planName}</strong>
                 <small className="text-muted">
@@ -133,7 +135,7 @@ const KeyringsView = (props: KeyringsViewProps) => {
             </div>
             <span className="btn btn-sm btn-outline-primary">
               {translate('keyring_select_modal.join')}
-              <i className="fas fa-arrow-right ms-2" />
+              <ArrowRight className='ms-2' />
             </span>
           </div>
         ))}
@@ -165,7 +167,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
           style={{ flex: 1, minHeight: '100px' }}
           className="d-flex align-items-center justify-content-center"
         >
-          <i className={`fas fa-${icon} fa-2x`} />
+          {icon}
         </div>
         <div
           style={{ flex: 1 }}
@@ -184,7 +186,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
       <Button
         onClick={() => props.create(true)}
         message={translate('aggregation.button.subscription.usual.label')}
-        icon="plus"
+        icon={<Plus />}
       />
       {props.aggregationApiKeysSecurity && (
         <Button
@@ -195,7 +197,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon="key"
+          icon={<Key />}
         />
       )}
     </div>

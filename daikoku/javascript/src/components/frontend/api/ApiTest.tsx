@@ -150,7 +150,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
       <Can I={manage} a={API} team={props.ownerTeam}>
         {/* <div className="mb-2 d-flex justify-content-end"> */}
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --primary"
           aria-label={translate('update.api.testing.btn.label')}
           data-bs-toggle="dropdown"
           aria-expanded="false"
@@ -186,7 +186,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('update.api.openapi.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+            <button className="btn --secondary" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
           </div>
         </Can>
       )}
@@ -194,7 +194,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('update.api.testing.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
+            <button className="btn --secondary" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
           </div>
         </Can>
       )}
@@ -243,6 +243,7 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
       <div className='d-flex flex-column'>
         <Select
           className='col-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}
@@ -259,8 +260,8 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
-                  {'ENV'}
+                <span className={`badge --primary text-uppercase`}>
+                  {translate('api.home.config.api.test.env.badge')}
                 </span>{props.data.label}
               </div>
             }

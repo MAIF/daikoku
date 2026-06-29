@@ -181,12 +181,12 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
         </React.Suspense>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+        <button type="button" className="btn --secondary" onClick={props.close}>
           <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button
           type="button"
-          className="btn btn-outline-success"
+          className="btn --primary"
           onClick={() => formRef.current?.handleSubmit()}
         >
           <Translation i18nkey={props.update ? 'Update' : 'Create'}>

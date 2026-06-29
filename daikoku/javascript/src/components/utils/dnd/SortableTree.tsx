@@ -243,7 +243,7 @@ export function SortableTree({
           </DragOverlay>,
           document.body
         )}
-        <button className='mt-4 flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd'
+        <button className='mt-4 flex-grow-1 btn --primary --small fake-documentation-page-dnd'
           onClick={() => handleUpdateItems(items)} >save</button>
       </SortableContext>
     </DndContext>

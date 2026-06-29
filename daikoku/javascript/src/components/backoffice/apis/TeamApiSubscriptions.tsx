@@ -27,6 +27,7 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
+import { Link, Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -127,10 +128,12 @@ export const TeamApiSubscriptions = ({
             </ul>
           </div>`;
             return (
-              <div className="d-flex flex-row justify-content-between">
+              <div className="d-flex flex-row justify-content-between align-items-center">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge badge-custom"><i className="fas fa-link" /></div>
+                  <div className="badge --primary">
+                    <Link />
+                  </div>
                 </BeautifulTitle>
               </div>
             );
@@ -211,38 +214,38 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const sub = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="btn-group gap-1">
             <BeautifulTitle title={translate("Update metadata")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
-                <i className="fas fa-pen" />
+                <Pen />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("Refresh secret")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
               >
-                <i className="fas fa-sync" />
+                <RefreshCw />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("api.delete.subscription")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >
-                <i className="fas fa-trash-alt"></i>
+                <Trash2 />
               </button>
             </BeautifulTitle>
           </div>
@@ -370,9 +373,9 @@ export const TeamApiSubscriptions = ({
 
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-      <div className="d-flex flex-row justify-content-start align-items-center mb-2">
+      <div className="d-flex flex-row justify-content-start align-items-center gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-info"
+          className="btn --tertiary"
           onClick={() =>
             openFormModal({
               actionLabel: translate("Filter"),
@@ -404,13 +407,13 @@ export const TeamApiSubscriptions = ({
           {translate("Filter")}
         </button>
         {!!filters && (
-          <div
-            className="clear cursor-pointer ms-1"
+          <button
+            className="btn --secondary"
             onClick={() => setFilters(undefined)}
           >
-            <i className="far fa-times-circle me-1" />
+            <RefreshCcw size={16} />
             <Translation i18nkey="clear filter">clear filter</Translation>
-          </div>
+          </button>
         )}
       </div>
       <div className="col-12">

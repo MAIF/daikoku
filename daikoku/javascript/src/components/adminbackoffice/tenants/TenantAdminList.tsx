@@ -19,6 +19,7 @@ import {
   manage,
   userHasAvatar,
 } from '../../utils';
+import {Trash2} from "lucide-react";
 
 const AdminList = () => {
   const context = useContext(GlobalContext);
@@ -147,7 +148,7 @@ const AdminList = () => {
         return (<AvatarWithAction key={admin._id} avatar={admin.picture} name={admin.name} infos={<span className="team-member__name">{admin.name}</span>} actions={[
           {
             action: () => removeAdmin(admin),
-            iconClass: 'fas fa-trash delete-icon',
+            icon: <Trash2 className="delete-icon" />,
             tooltip: translate('Remove admin rights'),
           },
         ]} />);

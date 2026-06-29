@@ -38,7 +38,7 @@ export const GuestPanel = () => {
   };
 
   const submit = (data: { username: string, password: string }) => {
-    
+
     setLoading(true)
     setLoginError(false);
 
@@ -50,10 +50,6 @@ export const GuestPanel = () => {
         if (res.status === 400) {
           setLoginError(true);
           setLoading(false)
-          buttonRef.current?.classList.add('active', 'btn-outline-danger')
-          setTimeout(() => {
-            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-          }, 800);
         } else if (res.redirected) {
           window.location.href = res.url;
         }
@@ -62,7 +58,6 @@ export const GuestPanel = () => {
 
   return (
     <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-      <div className="mb-3" style={{ height: '40px' }}></div>
       <div className="blocks">
         <div className="mb-3 block">
           {tenant.loginProvider === 'Local' && (
@@ -81,7 +76,7 @@ export const GuestPanel = () => {
                       <button
                         type="submit"
                         ref={buttonRef}
-                        className="btn btn-outline-success ms-2 shake"
+                        className="btn --primary ms-2 shake"
                         disabled={loading}
                         onClick={(e) => {
                           e.stopPropagation();

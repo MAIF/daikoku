@@ -624,7 +624,9 @@ case class SimpleSMTPSettings(
     fromEmail: String,
     template: Option[String],
     username: Option[String],
-    password: Option[String]
+    password: Option[String],
+    starttls: Option[Boolean] = None,
+    ssl: Option[Boolean] = None
 ) extends MailerSettings
     with CanJson[SimpleSMTPSettings] {
   def mailerType: String = "smtpClient"
@@ -632,6 +634,11 @@ case class SimpleSMTPSettings(
   def mailer(implicit env: Env): Mailer = {
     new SimpleSMTPSender(this)
   }
+
+  // Effective TLS settings: explicit value wins, otherwise deduced from the port
+  // (587 => STARTTLS, 465 => implicit SSL/TLS).
+  def useStartTls: Boolean = starttls.getOrElse(port == "587")
+  def useSsl: Boolean = ssl.getOrElse(port == "465")
 }
 
 case class SendgridSettings(

@@ -792,8 +792,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1161,8 +1161,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1301,8 +1301,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1441,8 +1441,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1596,8 +1596,8 @@
           "targets": [
             {
               "id": "target_1",
-              "hostname": "faker",
-              "port": 1080,
+              "hostname": "request.otoroshi.io",
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {
@@ -1750,8 +1750,8 @@
           "targets": [
             {
               "id": "target_1",
-              "hostname": "faker",
-              "port": 1080,
+              "hostname": "request.otoroshi.io",
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {

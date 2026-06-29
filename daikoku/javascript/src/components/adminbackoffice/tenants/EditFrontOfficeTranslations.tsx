@@ -35,7 +35,7 @@ export function EditFrontOfficeTranslations(props: any) {
       .then((store) => {
         if (isError(store)) {
           return store
-        } else  {
+        } else {
           const t = Object.entries({ ...globalTranslations })
             .map(([language, { translations: t }]) =>
               Object.entries(t)
@@ -58,7 +58,7 @@ export function EditFrontOfficeTranslations(props: any) {
                 }))
             .flatMap((f) => f)
             .filter((f) => typeof f.default === 'string' || f.default instanceof String)
-            .reduce<{[key: string]: Array<ITranslation>}>(
+            .reduce<{ [key: string]: Array<ITranslation> }>(
               (acc, current) => ({
                 ...acc,
                 [current.key]: acc[current.key] ? [...acc[current.key], current] : [current],
@@ -90,11 +90,11 @@ export function EditFrontOfficeTranslations(props: any) {
       enableSorting: false,
       cell: (info) => {
         return (
-          <div className='d-flex flex-row flex-wrap justify-content-end'>
+          <div className='d-flex flex-row flex-wrap justify-content-end gap-2'>
             {info.row.original.translations.map((translation: any) => {
               return (
                 <button type='button' key={translation.language}
-                  className='btn btn-outline-success me-2'
+                  className='btn --secondary --small --icon-only'
                   onClick={() => openFormModal({
                     title: `${translate('Translation')} : [${translation.language}]`,
                     schema: {

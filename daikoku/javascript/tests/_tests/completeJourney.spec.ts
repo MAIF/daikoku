@@ -19,7 +19,7 @@ const exposedPort = process.env.EXPOSED_PORT || 5173
 
 test('test a complete user journey', async ({ page }) => {
   //connection
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -37,7 +37,7 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByRole('button', { name: 'Create' }).click();
   await expect(page.getByRole('list')).toContainText('Team The A team created successfully');
   await page.locator('.navbar-panel-background').click();
-  
+
   //create a new API
   await page.getByRole('button', { name: 'Open creation menu' }).click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
@@ -135,7 +135,7 @@ test('test a complete user journey', async ({ page }) => {
   //todo: wait subscription ok
   await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
 
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.getByRole('heading', { name: 'second test api' }).click();
   // await page.getByText('Documentation').click();
   // await expect(page.getByRole('listitem')).toContainText('Usage');

@@ -3,7 +3,7 @@ import uniq from 'lodash/uniq';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
+import { RefreshCcw } from 'lucide-react';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
 import { randomColor } from '../../../utils';
@@ -30,7 +30,7 @@ export function TeamApiIssueTags({ value, onChange }: { value: IApi, onChange: (
       <div className="mb-3 row">
         <div className="col-sm-10">
           <button
-            className="btn btn-outline-success"
+            className="btn --primary"
             onClick={() =>
               openFormModal({
                 title: translate('issues.create_tag'),
@@ -146,7 +146,7 @@ export function TeamApiIssueTags({ value, onChange }: { value: IApi, onChange: (
                 />
                 <div className="ml-auto">
                   <button
-                    className="btn btn-sm btn-outline-danger"
+                    className="btn --secondary"
                     type="button"
                     onClick={() => deleteTag(issueTag.id)}
                   >
@@ -161,7 +161,7 @@ export function TeamApiIssueTags({ value, onChange }: { value: IApi, onChange: (
       {updated && (
         <div className="col-sm-12 d-flex justify-content-end">
           <button
-            className="btn btn-outline-success ml-auto"
+            className="btn --secondary"
             onClick={() => {
               onChange(api);
               setUpdated(false);

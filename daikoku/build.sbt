@@ -160,7 +160,34 @@ Test / parallelExecution := false
 Test / javaOptions ++= Seq(
   "--enable-native-access=ALL-UNNAMED"
 )
+// Trust the self-signed certificate used by the mailpit testcontainer in
+// SimpleSMTPSenderSpec (validated STARTTLS / implicit TLS). Safe to set
+// JVM-wide here: no test performs outbound TLS to a public CA, and CI/local
+// Docker is reached over a unix socket (no Docker TLS).
+Test / javaOptions ++= {
+  val truststore =
+    (baseDirectory.value / "test" / "resources" / "smtp" / "truststore.p12").getAbsolutePath
+  Seq(
+    s"-Djavax.net.ssl.trustStore=$truststore",
+    "-Djavax.net.ssl.trustStorePassword=changeit",
+    "-Djavax.net.ssl.trustStoreType=PKCS12"
+  )
+}
 
+// Coverage (scoverage). On Scala 3 the `coverageExcluded*` settings only filter the generated
+// report; they do NOT prevent instrumentation. Once instrumented, the generated Play router
+// (`router.Routes.documentation`) blows past the JVM 64KB method limit ("Method too large").
+// We therefore exclude the generated sources at the compiler level via Scala 3's native
+// `-coverage-exclude-*` flags, applied only when coverage is enabled (via the `coverage` command).
+coverageExcludedPackages := "<empty>;router\\..*;.*\\.Reverse.*;.*\\.RoutesPrefix.*;controllers\\.javascript\\..*"
+Compile / scalacOptions ++= {
+  if (coverageEnabled.value)
+    Seq(
+      "-coverage-exclude-classlikes:router\\..*;.*\\.Reverse.*;.*\\.RoutesPrefix.*;controllers\\.javascript\\..*",
+      "-coverage-exclude-files:.*/target/.*"
+    )
+  else Seq.empty
+}
 
 scalacOptions ++= Seq(
   "-feature",

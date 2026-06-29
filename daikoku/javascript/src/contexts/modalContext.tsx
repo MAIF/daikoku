@@ -1,8 +1,9 @@
 import { TBaseObject } from "@maif/react-forms";
-import React, { JSX, useState } from "react";
+import { JSX, ReactNode, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IWithTesting } from "../types";
+import { ModalContext } from "./modalContextInstance";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { KeyringSelectModal, IKeyringSelectModalProps } from "./modals/KeyringSelectModal";
@@ -36,7 +37,6 @@ import {
   SubscriptionMetadataModalProps,
   TeamSelectorModalProps,
   TestingApiKeyModalProps,
-  TModalContext
 } from "./modals/types";
 
 
@@ -67,7 +67,7 @@ const init: TModalContext = {
 
 export const ModalContext = React.createContext<TModalContext>(init);
 
-export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
+export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();
 
   const alert = (props: AlertModalProps) => new Promise<void>((success) => {

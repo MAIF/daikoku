@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import classNames from 'classnames';
-import ChevronLeft from 'react-feather/dist/icons/chevron-left'
-import ChevronRight from 'react-feather/dist/icons/chevron-right'
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { state } from '..';

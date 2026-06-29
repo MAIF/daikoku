@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
-import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
+import { RefreshCcw, Users } from 'lucide-react';
 
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
@@ -78,13 +78,12 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
             return (
               <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
                 <div className='d-flex flex-column justify-content-between'>
-                  <div className='item-title'><i className="fas fa-users me-2" />{d.team.name}</div>
+                  <div className='item-title'><Users className="me-2" />{d.team.name}</div>
                   <div className='ms-1'>{d.api.name} / {d.plan.customName}</div>
                   {actualStep && <i>{actualStep.step.name} - {actualStep.step.title}</i>}
                 </div>
                 {reRunable && <FeedbackButton
-                  type="primary"
-                  className="ms-1 btn-sm"
+                  className='btn --secondary'
                   onPress={() => runProcess(d.id)}
                   onSuccess={() => console.debug("success")}
                   feedbackTimeout={100}

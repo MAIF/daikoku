@@ -208,8 +208,8 @@ export const SecurityForm = (props: {
         <div className="mb-0">
           {translate('tenant.security.account.creation.process.doc.footer')}
           <div className='d-flex flex-start gap-2'>
-            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
-            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
           </div>
         </div>
       </div>
@@ -303,7 +303,7 @@ export const SecurityForm = (props: {
         .then(() => openModalForDispatchingAction()),
       value: { authorizedOtoroshiEntities: props.tenant.defaultAuthorizedOtoroshiEntities },
       moreAction: <button
-        className='btn btn-outline-danger'
+        className='btn --secondary'
         onClick={() => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: undefined })
           .then(() => openModalForDispatchingAction())}>
         {translate('tenant.security.clear.default.auth.otoroshi.entities.button.label')}
@@ -331,10 +331,10 @@ export const SecurityForm = (props: {
           }}
         />
         <div>
-          {tenant.authProvider === 'Local' && <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
         </div>
         <div>
-          <button onClick={() => openModal(otoroshis)} className='btn btn-outline-success'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
+          <button onClick={() => openModal(otoroshis)} className='btn --secondary'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
         </div>
       </div>
     );

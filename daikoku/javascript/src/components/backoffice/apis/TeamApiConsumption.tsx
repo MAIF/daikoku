@@ -208,7 +208,7 @@ const PlanLightConsumption = (props: PlanLightConsumptionType) => {
         <div className="mt-2 d-flex flex-row justify-content-center">
           <button
             aria-label={translate({ key: 'api.consumption.plan.btn.aria.label', replacements: [props.plan.customName] })}
-            className="btn btn-outline-primary mx-auto"
+            className="btn --primary"
             onClick={props.handleClick}>{translate("api.consumption.plan.btn.label")}</button>
         </div>
       </div>

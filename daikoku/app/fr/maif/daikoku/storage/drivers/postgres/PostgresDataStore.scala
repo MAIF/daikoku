@@ -844,7 +844,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) => createDatabase().map(_ => ())
+        case Some(_) =>
+          for {
+            _ <- createDatabase()
+            _ <- createIndexes()
+          } yield ()
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
@@ -917,7 +921,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
       "CREATE INDEX IF NOT EXISTS idx_job_started_at ON job_informations ((content->>'startedAt'));",
-      "CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));"
+      "CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));",
+      """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
+        |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+        |WHERE _deleted = false AND content->>'type' = 'Personal';""".stripMargin
     )
     indexes.foldLeft(Future.successful(())) { (acc, query) =>
       acc.flatMap(_ => reactivePg.rawQuery(query).map(_ => ()))
@@ -1585,7 +1592,7 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
 
 class PostgresAssetRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[Asset, AssetId](env, reactivePg) {
-  override def tableName: String = "cmspages"
+  override def tableName: String = "assets"
 
   override def format: Format[Asset] = json.AssetFormat
 

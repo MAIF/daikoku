@@ -1,18 +1,5 @@
 version: "3"
 services:
-  # faker:
-  #   image: mockserver/mockserver:latest
-  #   networks:
-  #     - basicsetup
-  #   volumes:
-  #     - ../daikoku/javascript/tests/config/mocks/initializer.json:/config/initializer.json
-  #   expose:
-  #     - 1081
-  #   ports:
-  #     - 1081:1080
-  #   environment:
-  #     MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
-
   openldap:
     image: osixia/openldap:latest
     environment:
@@ -31,17 +18,6 @@ services:
       - "389:389" # default port for unsecured LDAP
     command: --copy-service
     restart: unless-stopped
-  # postgres:
-  #  image: postgres:latest
-  #  networks:
-  #    - basicsetup
-  #  environment:
-  #    - POSTGRES_PASSWORD=postgres
-  #    - POSTGRES_USER=postgres
-  #  volumes:
-  #    - ../daikoku/javascript/tests/config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
-  #  ports:
-  #    - 5442:5432
 
   smtp:
     image: reachfive/fake-smtp-server:latest
@@ -59,30 +35,6 @@ services:
       - 6379
     ports:
       - 6379:6379
-
-  # daikoku:
-  #  image: maif/daikoku:latest
-  #  networks:
-  #    - basicsetup
-  #  environment:
-  #    - DAIKOKU_INIT_ADMIN_PASSWORD=password
-  #    - DAIKOKU_OTOROSHI_SYNC_CRON=false
-  #    - DAIKOKU_TENANT_PROVIDER=Hostname
-  #    # - DAIKOKU_INIT_HOST=daikoku.oto.tools
-  #    - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
-  #    - DAIKOKU_POSTGRES_HOST=postgres
-  #    - DAIKOKU_EXPOSED_ON=13200
-  #    - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state.ndjson
-  #    - DAIKOKU_MODE=test
-  #  ports:
-  #    - 13200:8080
-  #  volumes:
-  #    - ../daikoku/javascript/tests/config/daikoku:/usr/app/daikoku/imports
-  #  depends_on:
-  #    - postgres
-  #    - smtp
-  #    - openldap
-
   otoroshi:
     image: maif/otoroshi:latest
     networks:
@@ -101,25 +53,9 @@ services:
       - 8080:8080
     depends_on:
       - redis
-      # - daikoku
-      # - faker
-
-  # nginx:
-  #   image: nginx
-  #   networks:
-  #     - basicsetup
-  #   expose:
-  #     - 8080
-  #   ports:
-  #     - 80:8080
-  #   volumes:
-  #     - ../daikoku/javascript/tests/config/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - otoroshi
 
 networks:
   basicsetup:
     driver: bridge
     ipam:
       driver: default
-      # config:

@@ -2,16 +2,6 @@
 @use "sass:color";
 @use "sass:map";
 
-@mixin badge-custom($bg, $text) {
-  background-color: $bg;
-  // color: color-mix(in srgb, $bg 50%, #000);
-  color: $text;
-  border: 1px solid $text;
-  position: relative;
-  z-index: 0;
-  cursor: pointer;
-  padding: .5rem;
-}
 
 $badge-colors: (
   custom: (bg: variables.$badge-tags-bg-color, text: variables.$badge-tags-text-color),
@@ -20,26 +10,7 @@ $badge-colors: (
   success: (bg: variables.$success-color, text: color-mix(in srgb, variables.$success-color 10%, #000)),
   warning: (bg: variables.$warning-color, text: color-mix(in srgb, variables.$warning-color 20%, #000)),
   danger: (bg: variables.$danger-color, text: color-mix(in srgb, variables.$danger-color 0%, #fff)),
-
 );
-
-@each $name, $colors in $badge-colors {
-  .badge-custom-#{$name} {
-    @include badge-custom(map.get($colors, bg),
-      map.get($colors, text));
-  }
-}
-
-
-
-.badge-custom {
-  background-color: variables.$badge-tags-bg-color;
-  color: variables.$badge-tags-text-color;
-
-  &:hover {
-    background-color: variables.$badge-tags-bg-hover-color;
-  }
-}
 
 .issue__tag {
   border-radius: 7px;
@@ -47,4 +18,167 @@ $badge-colors: (
   font-size: 15px;
   padding: 0 7px;
   white-space: nowrap;
+}
+
+@mixin colored-tag($color, $bg-color) {
+  color: $color;
+  background-color: $bg-color;
+  border-color: $color;
+}
+
+// La map pilote le @each (variantes themed). Les tokens passent par variables.scss
+// qui porte la chaîne de fallback sémantique → primitive → littéral (cf. thème tenant
+// surchargeable et potentiellement incomplet).
+$theme-colors: (
+  primary: (color: variables.$primary-color, bg: variables.$primary-color-bg),
+  success: (color: variables.$success-color, bg: variables.$success-color-bg),
+  info: (color: variables.$info-color, bg: variables.$info-color-bg),
+  warning: (color: variables.$warning-color, bg: variables.$warning-color-bg),
+  danger: (color: variables.$danger-color, bg: variables.$danger-color-bg),
+  neutral: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
+  inactive: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
+  finished: (color: variables.$neutral-color-000, bg: #000),
+  // pas de token sémantique pour le noir
+);
+
+
+
+
+.tag {
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  letter-spacing: -3%;
+  width: fit-content;
+  text-wrap: nowrap;
+  white-space: nowrap;
+
+  &.tag-finished {
+    border-color: #000;
+  }
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -3%;
+  width: fit-content;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// button.chips {
+//   display: flex;
+//   align-items: center;
+//   gap: 4px;
+
+//   padding: 4px 8px;
+//   border: 1px solid variables.$primary-color;
+//   border-radius: 4px;
+
+//   font-family: inherit;
+//   font-size: 12px;
+//   font-weight: 400;
+//   line-height: 16px;
+//   letter-spacing: -3%;
+
+//   background-color: variables.$neutral-color-000;
+//   color: variables.$primary-color;
+//   cursor: pointer;
+
+//   &.--rounded {
+//     border-radius: 16px;
+//     padding: 4px 12px;
+//   }
+
+//   // hover réservé aux chips actifs
+//   &:not(:disabled):not(.--disabled):hover {
+//     background-color: variables.$primary-color-050;
+//   }
+
+//   // focus clavier uniquement, sans layout shift (RGAA 10.7)
+//   &:focus-visible {
+//     outline: 2px solid variables.$primary-color;
+//     outline-offset: 1px;
+//   }
+
+//   &:disabled,
+//   &.--disabled {
+//     background-color: variables.$neutral-color-bg;
+//     color: variables.$neutral-color;
+//     border-color: variables.$neutral-color;
+//     cursor: not-allowed;
+//   }
+
+//   &.--error {
+//     background-color: variables.$danger-color-bg;
+//     color: variables.$danger-color;
+//     border-color: variables.$danger-color;
+//   }
+
+//   &.--selected {
+//     background-color: variables.$primary-color;
+//     color: variables.$neutral-color-000;
+//   }
+// }
+
+// themed
+
+@each $name, $colors in $theme-colors {
+
+  .tag,
+  .badge {
+    &.--#{$name} {
+      background-color: map.get($colors, bg);
+      color: map.get($colors, color);
+      width: fit-content;
+
+      &.--ghost {
+        background-color: transparent;
+        border: 1px solid variables.$neutral-color-200;
+      }
+
+      &.--state::before {
+        content: '';
+        display: block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: map.get($colors, color);
+      }
+    }
+
+    &.--finished.--ghost {
+      color: map.get($theme-colors, finished, bg);
+      border-color: map.get($theme-colors, finished, bg);
+    }
+  }
+}
+
+.number-indicator {
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -3%;
+  border-radius: 4px;
+  min-width: 20px;
+
+
+  display: inline flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: variables.$danger-color;
+  color: variables.$neutral-color-000;
+
+  &.--inactive {
+    background-color: variables.$neutral-color-600;
+    border-color: variables.$neutral-color-600;
+  }
 }

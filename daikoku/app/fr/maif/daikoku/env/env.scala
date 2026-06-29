@@ -288,7 +288,9 @@ object InitConfig {
                 fromEmail = fromEmail,
                 template = None,
                 username = str("daikoku.init.mailer.username"),
-                password = str("daikoku.init.mailer.password")
+                password = str("daikoku.init.mailer.password"),
+                starttls = bool("daikoku.init.mailer.starttls"),
+                ssl = bool("daikoku.init.mailer.ssl")
               )
             )
           case "sendgrid" =>

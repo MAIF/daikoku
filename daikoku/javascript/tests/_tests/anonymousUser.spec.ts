@@ -18,10 +18,10 @@ test.beforeEach(async () => {
     .then(() => fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }))
-}) 
+})
 
 test('[public tenant] - external user can join a team', async ({ page }) => {
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'admin-api-tenant-default' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
@@ -81,9 +81,9 @@ test('[private tenant] - external user can join a team', async ({ page, request 
         "value": true
       }
     ]
-  }) 
+  })
 
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`);
+  await page.goto(`/auth/Local/login`);
   await page.locator('input[name="username"]').fill('admin@foo.bar');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
@@ -115,7 +115,7 @@ test('[private tenant] - external user can join a team', async ({ page, request 
   await page.locator('div.px-2').filter({ hasText: 'Validate your Evil Corp. account' }).waitFor({ state: 'visible' })
   await page.getByText('Validate your Evil Corp.').first().click();
   await page.getByRole('link', { name: 'Confirm' }).click();
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`);
+  await page.goto(`/auth/Local/login`);
   await page.locator('input[name="username"]').fill('bob@foo.bar');
   await page.locator('input[name="password"]').fill('Pa$$w0rd');
   await page.getByRole('button', { name: 'Login' }).click();
@@ -141,7 +141,7 @@ test('[Private tenant] - anonymous user automatically redirected', async ({ page
     ]
   })
 
-  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.goto(`/apis`);
   await page.waitForURL(`http://localhost:${exposedPort}/auth/Local/login`);
   await expect(page.getByRole('heading', { name: 'Login to Evil Corp.' })).toBeVisible();
 
@@ -161,7 +161,7 @@ test('[private tenant] - external user can signup', async ({page, request}) => {
     ]
   })
 
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`);
+  await page.goto(`/auth/Local/login`);
   await page.getByRole('link', { name: 'Create your account' }).click();
   await page.getByLabel('Name').fill('fifou');
   await page.getByLabel('Email address').fill('fifou@foo.bar');
@@ -181,7 +181,7 @@ test('[private tenant] - external user can signup', async ({page, request}) => {
 //anonymous user - private tenant
 // can signup
 test('[public tenant] - external user can signup', async ({ page }) => {
-  await page.goto(`http://localhost:${exposedPort}/`);
+  await page.goto(`/`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Create an account' }).click();
   await page.getByLabel('Name').fill('fifou');
@@ -215,8 +215,8 @@ test('[private tenant] - unlogged user can accept subscription demand', async ({
         "value": true
       }
     ]
-  }) 
-  
+  })
+
   await request.patch('http://localhost:9000/admin-api/usage-plans/lhsc79x9s0p4drv8j3ebapwrbnqhu1oo', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
@@ -238,7 +238,7 @@ test('[private tenant] - unlogged user can accept subscription demand', async ({
     ]
   })
 
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`);
+  await page.goto(`/auth/Local/login`);
   await page.locator('input[name="username"]').fill('admin@foo.bar');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
@@ -285,7 +285,7 @@ test('[public tenant] - unlogged user can accept subscription demand', async ({ 
     ]
   })
 
-  await page.goto(`http://localhost:${exposedPort}/auth/Local/login`);
+  await page.goto(`/auth/Local/login`);
   await page.locator('input[name="username"]').fill('admin@foo.bar');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();

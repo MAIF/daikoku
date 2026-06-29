@@ -2,7 +2,7 @@
 
 .right-panel-container {
   position: fixed;
-  height: calc(100vh - variables.$topbar-height);
+  height: calc(100vh - #{variables.$topbar-height});
   width: 0;
   overflow: hidden;
   z-index: 1000;
