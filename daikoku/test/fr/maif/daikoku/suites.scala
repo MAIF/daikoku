@@ -323,7 +323,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.keyringRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()

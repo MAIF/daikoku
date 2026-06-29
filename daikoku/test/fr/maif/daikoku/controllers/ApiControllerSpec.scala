@@ -6636,18 +6636,25 @@ class ApiControllerSpec()
         subscriptionProcess = Seq.empty,
         integrationProcess = IntegrationProcess.ApiKey
       )
+      val keyring = Keyring(
+        id = KeyringId("keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-removal"
+      )
       val payperUseSub = ApiSubscription(
         id = ApiSubscriptionId("test-removal"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
-        rotation = None,
-        integrationToken = "test-removal"
+        keyring = keyring.id
       )
 
       setupEnvBlocking(
@@ -6663,6 +6670,7 @@ class ApiControllerSpec()
             possibleUsagePlans = Seq(plan.id)
           )
         ),
+        keyrings = Seq(keyring),
         subscriptions = Seq(payperUseSub)
       )
 

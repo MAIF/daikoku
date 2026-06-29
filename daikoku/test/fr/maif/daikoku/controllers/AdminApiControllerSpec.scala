@@ -6883,9 +6883,8 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-          verifApi.status mustBe 200
-          (verifApi.json \ "_deleted").as[Boolean]
-        }
+        verifApi.status mustBe 200
+        (verifApi.json \ "_deleted").as[Boolean]
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
