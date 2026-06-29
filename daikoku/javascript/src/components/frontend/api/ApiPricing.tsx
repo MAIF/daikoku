@@ -4,8 +4,8 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useState, useMemo } from 'react';
-import { Plus, Settings, Trash2, KeyRound } from 'lucide-react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { KeyRound, Plus, Settings, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -16,20 +16,22 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
+  ApiPricingProps,
+  IApi,
+  IApiGQL,
   IOtoroshiSettings,
+  IPlansWithCount,
   isError,
   ISubscription,
-  ITeamSimple,
-  IThirdPartyPaymentSettings,
-  ApiPricingProps,
-  ITeamSelector,
-  OtoroshiEntitiesSelectorProps,
-  OtoroshiEntity,
-  IPlansWithCount, IApi, IUsagePlanGQL,
-  IUsagePlan,
   ISubscriptionWithApiInfo,
-  IApiGQL,
-  ITenant
+  ITeamSelector,
+  ITeamSimple,
+  ITenant,
+  IThirdPartyPaymentSettings,
+  IUsagePlan,
+  IUsagePlanGQL,
+  OtoroshiEntitiesSelectorProps,
+  OtoroshiEntity
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -44,10 +46,7 @@ import {
   Option,
   renderPricing
 } from '../../utils';
-import {
-  ColumnDef,
-  createColumnHelper,
-} from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import { QUERY_KEYS } from "../../../constants/queryKeys";
 
@@ -519,7 +518,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       {quotasDisplayed && <Form
         schema={quotasSchema}
         value={props.plan}
-        onSubmit={(data) => props.savePlan( convertIUsagePlanGQLToIUsagePlan({ ...props.plan, ...data }))}
+        onSubmit={(data) => props.savePlan(convertIUsagePlanGQLToIUsagePlan({ ...props.plan, ...data }))}
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
@@ -731,50 +730,59 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
 
 const SimpleTeamSelector = (props: {
   teams: Array<ITeamSimple>;
+  pendingTeams: Array<string>;
   showApiKeySelectModal: (teamId: string) => void;
 }) => {
-    const { translate } = useContext(I18nContext);
-
+  const { translate } = useContext(I18nContext);
   return (
     <div className="modal-body">
       <div>
         <div className="modal-description">
           {translate('team.selection.desc.request')}
         </div>
-          <div className="team-selection__container">
-            {props.teams.map(team => {
-              return <div
-                  key={team._id}
-                  className={classNames('team-selection team-selection__team selectable')}
+        <div className="team-selection__container">
+          {props.teams.map(team => {
+
+              const allowed = !props.pendingTeams.includes(team._id);
+
+
+            return <div
+              key={team._id}
+              className={classNames('team-selection team-selection__team selectable', {
+                    selectable: allowed,
+                    'cursor-forbidden': !allowed,
+                  })}
+              onClick={() => {  
+                    return allowed
+                      ? props.showApiKeySelectModal(team._id)
+                      : () => {
+                      };
+                  }}
+            >
+            {props.pendingTeams.includes(team._id) && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary disabled"
+              >
+                {translate('Request in progress')}
+              </button>
+            )}
+              {/*displayVerifiedBtn && !team.verified && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
                   onClick={() => {
-                    return props.showApiKeySelectModal(team._id);
+                    close();
+                    navigate(`/${team._humanReadableId}/settings/edition`);
                   }}
                 >
-                  {/*
-                  {props.pendingTeams.includes(team._id) && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary disabled"
-                    >
-                      {translate('Request in progress')}
-                    </button>
-                  )}
-                  {displayVerifiedBtn && !team.verified && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => {
-                        close();
-                        navigate(`/${team._humanReadableId}/settings/edition`);
-                      }}
-                    >
-                      {translate('Email not verified')}
-                    </button>
-                  )}*/}
-                  <span className="ms-2">{team.name}</span>
-                </div>
-            })}
-          </div>
+                  {translate('Email not verified')}
+                </button>
+              )*/}
+              <span className="ms-2">{team.name}</span>
+            </div>
+          })}
+        </div>
       </div>
     </div>
   );
@@ -800,7 +808,7 @@ const TeamSelector = (props: ITeamSelector) => {
             .filter(
               (t) => {
                 return !!props.allowMultipleDemand || !props.acceptedTeams.includes(t._id)
-            })
+              })
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((team) => {
               const allowed =
@@ -887,11 +895,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
   } = useContext(ModalContext);
   const { connectedUser, tenant, customGraphQLClient } = useContext(GlobalContext);
 
-  const [rowSelection, setRowSelection] = useState<{[planId: string]: boolean}>({});
-
+  const [rowSelection, setRowSelection] = useState<{ [planId: string]: boolean }>({});
 
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
-  // TODO Vérifier qu'il reste au moins une équipe pour laquelle on a le droit de demander une clé (si le plan n'autorise pas plusieurs souscriptions / équipe)
+    // TODO Vérifier qu'il reste au moins une équipe pour laquelle on a le droit de demander une clé (si le plan n'autorise pas plusieurs souscriptions / équipe)
     if (selectedPlans.length === 0) return true;
 
     return selectedPlans.some(
@@ -1759,7 +1766,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         (plan.otoroshiTarget && !isAccepted)) && (
                         <button
                           type="button"
-                          className="table-plan_action-button btn-outline-primary d-flex align-items-center gap-2"
+                          className="btn --secondary --small"
                           onClick={openTeamSelectorModal}
                         >
                           <KeyRound />
@@ -1778,7 +1785,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 connectedUser.isGuest && (
                   <button
                     type="button"
-                    className="table-plan_action-button btn-outline-primary d-flex align-items-center gap-2"
+                    className="btn --secondary --small"
                     onClick={() => openLoginOrRegisterModal({ tenant })}
                   >
                     <KeyRound />
@@ -1882,44 +1889,39 @@ export const ApiPricing = (props: ApiPricingProps) => {
           {
             label: translate('mail.apikey.demand.title'),
             onClick: async (plans, selectAll, ctx) => {
-            const teamsToDisplay = props.myTeams
-              .filter(team => {
-                // TODO : display impossible team with an explanation
-                // for instance indicate that a subscription already exist / is pending for a plan
-                const existPlanWithPayment = plans.some(plan => {
-                  plan.subscriptionProcess.some(p => p.type === "payment")
-                });
-                const isTeamAllowedForPaymentPlan = team.verified;
+              const teamsToDisplay = props.myTeams
+                .filter(team => {
+                  // TODO : display impossible team with an explanation
+                  // for instance indicate that a subscription already exist / is pending for a plan
+                  const existPlanWithPayment = plans.some(plan => {
+                    plan.subscriptionProcess.some(p => p.type === "payment")
+                  });
+                  const isTeamAllowedForPaymentPlan = team.verified;
 
 
-                const isPlanSubscribable = plans.some(p => {
-                  if (p.allowMultipleDemand) {
-                    return true;
-                  }
-                  const existSubscriptionForThisPlan = props.subscriptions.some(s => s.plan === p._id && s.team === team._id);
-                  return !existSubscriptionForThisPlan;
-                });
-
-                const isTeamAllowedByAllPlans = plans.every(plan => {
-                  return plan.visibility === "Public" || plan.authorizedTeams.some(aTeam => aTeam._id === team._id);
-                });
-
-                const hasDemandPendingForSingleDemandPlan = plans.filter(p => !p.allowMultipleDemand)
-                  .some(plan => {
-                    props.inProgressDemands.some(demand => demand.plan === plan._id && demand.team === team._id)
+                  const isPlanSubscribable = plans.every(p => {
+                    if (p.allowMultipleDemand) {
+                      return true;
+                    }
+                    const existSubscriptionForThisPlan = props.subscriptions.some(s => s.plan === p._id && s.team === team._id);
+                    return !existSubscriptionForThisPlan;
                   });
 
-                return (
-                  (!existPlanWithPayment || isTeamAllowedForPaymentPlan) &&
-                  props.api.team === team._id || isTeamAllowedByAllPlans) &&
-                  isPlanSubscribable &&
-                  !hasDemandPendingForSingleDemandPlan;
-              });
+                  const isTeamAllowedByAllPlans = plans.every(plan => {
+                    return plan.visibility === "Public" || plan.authorizedTeams.some(aTeam => aTeam._id === team._id);
+                  });
+
+                  return (
+                    (!existPlanWithPayment || isTeamAllowedForPaymentPlan) &&
+                    props.api.team === team._id || isTeamAllowedByAllPlans) &&
+                    isPlanSubscribable ;
+                });
 
               openCustomModal({
                 title: translate('team.selection.title'),
                 content: <SimpleTeamSelector
                   teams={teamsToDisplay}
+                  pendingTeams={props.inProgressDemands.map((s) => s.team)}
                   showApiKeySelectModal={(teamId) => {
                     Services.getAllTeamSubscriptions(teamId)
                       .then((subscriptions) =>
@@ -1934,11 +1936,62 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           teamApiSubscriptions: data
                         })
                       }).then(possibleKeyToExtendByPlans => {
-                        openCustomModal({
-                          content: <TableForSelectApiKeyCreation
-                            data={possibleKeyToExtendByPlans}
-                          />
-                         })
+                        openFormModal({
+                          title: translate("apikey_select_modal.title"),
+                          onSubmit: (apiKeyChoiceByPlan) => {
+                            const formStep = possibleKeyToExtendByPlans.at(0)?.plan.subscriptionProcess.find((s) =>
+                              s.type === 'form'
+                            );
+                            if (formStep) {
+                              openFormModal({
+                                title: translate('motivations.modal.title'),
+                                schema: formStep.schema,
+                                actionLabel: translate('Send'),
+                                value: undefined,
+                                description: formStep.info ?
+                                  <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
+                                onSubmit: (motivation) => {
+                                  possibleKeyToExtendByPlans.map(
+                                    ({ plan, subscriptions }) => {
+                                      const subscriptionId = apiKeyChoiceByPlan[plan._id];
+                                      const sub = subscriptions.find((sub) => sub._id === subscriptionId)
+                                      props.askForApikeys({ team: teamId, plan, apiKey: sub, motivation })
+                                    }
+                                  )
+                                }
+                              })
+                            } else {
+                              possibleKeyToExtendByPlans.map(
+                                    ({ plan, subscriptions }) => {
+                                      const subscriptionId = apiKeyChoiceByPlan[plan._id];
+                                      const sub = subscriptions.find((sub) => sub._id === subscriptionId)
+                                      props.askForApikeys({ team: teamId, plan, apiKey: sub })
+                                    }
+                                  )
+                                close()
+                            }
+                          }
+                          ,
+                          actionLabel: translate('Confirm'),
+                          noClose: true,
+                          schema: possibleKeyToExtendByPlans.reduce((acc, { plan, subscriptions }) => {
+                            acc[plan._id] = {
+                              type: "string",
+                              label: plan.customName,
+                              format: "select",
+                              defaultValue: "----",
+                              options:
+                                [{ label: translate("aggregation.button.subscription.usual.label"), value: "----" },
+                                ...(subscriptions.map((s) =>
+                                  ({ label: `${s.apiKey.clientName} : ${s._id}`, value: s._id })
+                                ))
+                                ]
+                            }
+                            return acc;
+                          }
+                            , {}
+                          )
+                        })
                       });
                   }}
                 />
@@ -1969,77 +2022,45 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
 
 function convertIUsagePlanGQLToIUsagePlan(plan: IUsagePlanGQL): IUsagePlan {
-  return {...plan, authorizedTeams: plan.authorizedTeams.map(team => team._id)};
+  return { ...plan, authorizedTeams: plan.authorizedTeams.map(team => team._id) };
 }
 
 
 function findCompatibleSubscriptionForMultiPlanRequest(
-  {plans,
+  { plans,
     tenant,
-    teamApiSubscriptions}:
-    {plans: IUsagePlanGQL[],
+    teamApiSubscriptions }:
+    {
+      plans: IUsagePlanGQL[],
       tenant: ITenant,
-      teamApiSubscriptions: {apis: IApiGQL[], subscriptions: ISubscriptionWithApiInfo[]}}
-): {planId: string, planName: string, subscriptions: ISubscriptionWithApiInfo[]}[] {
+      teamApiSubscriptions: { apis: IApiGQL[], subscriptions: ISubscriptionWithApiInfo[] }
+    }
+): { plan: IUsagePlanGQL, subscriptions: ISubscriptionWithApiInfo[] }[] {
 
-    const {apis, subscriptions} = teamApiSubscriptions;
+  const { apis, subscriptions } = teamApiSubscriptions;
 
-    const int = subscriptions.map((subscription) => {
-      const api = apis.find((a) => a._id === subscription.api);
-      const plan = Option(api?.possibleUsagePlans)
-        .flatMap((plans) =>
-          Option(plans.find((plan) => plan._id === subscription.plan))
-        )
-        .getOrNull();
-      return { subscription, api, plan };
-    });
+  const int = subscriptions.map((subscription) => {
+    const api = apis.find((a) => a._id === subscription.api);
+    const plan = Option(api?.possibleUsagePlans)
+      .flatMap((plans) =>
+        Option(plans.find((plan) => plan._id === subscription.plan))
+      )
+      .getOrNull();
+    return { subscription, api, plan };
+  });
 
-    const possibleKeysByPlanId = plans.map(plan => {
-      const filteredApiKeys = int
+  const possibleKeysByPlanId = plans.map(plan => {
+    const filteredApiKeys = int
       .filter(
         (infos) =>
           infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
           (infos.plan?.aggregationApiKeysSecurity)
       )
       .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
+      .filter(s => !s.subscription.parent)
       .map((infos) => infos.subscription);
 
-      return {planId: plan._id, planName: plan.customName, subscriptions: filteredApiKeys};
-    })
-    return possibleKeysByPlanId;
-}
-
-const TableForSelectApiKeyCreation = ( props: {data: {planId: string, planName: string, subscriptions: ISubscriptionWithApiInfo[]}[]})  => {
-  const { translate } = useContext(I18nContext);
-  return (
-    <div>
-      <table className="table">
-        <thead>
-          <tr>
-            <th scope="col">envs</th>
-            <th scope="col">options</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            props.data.map(({planName, subscriptions}) =>
-            <tr>
-              <td>{planName}</td>
-              <td><select>
-                  <option selected>{translate("dashboard.create.api.button.label")}</option>
-                {
-                  subscriptions.map((key) => {
-                    return <option>
-                        {translate("team_apikey_aggregatePlans_title")}
-                        {key.apiKey.clientName}
-                       </option>
-                    })}
-                </select></td>
-            </tr>
-          )
-          }
-        </tbody>
-      </table>
-    </div>
-  )
+    return { plan: plan, subscriptions: filteredApiKeys };
+  })
+  return possibleKeysByPlanId;
 }

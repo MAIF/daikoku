@@ -2332,7 +2332,6 @@ class ApiController(
     }
 
   def getAvailableEnvs(teamId: String, apiId: String, version: String): Action[AnyContent] = {
-    println(teamId)
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
