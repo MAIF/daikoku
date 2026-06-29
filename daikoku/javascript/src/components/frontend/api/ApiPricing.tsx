@@ -906,7 +906,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const { translate, Translation } = useContext(I18nContext);
   const queryClient = useQueryClient();
-  
+
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
   const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({ limit, offset, filters, sorting }) =>
     customGraphQLClient
@@ -1890,7 +1890,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   plan.subscriptionProcess.some(p => p.type === "payment")
                 });
                 const isTeamAllowedForPaymentPlan = team.verified;
-                
+
 
                 const isPlanSubscribable = plans.some(p => {
                   if (p.allowMultipleDemand) {
@@ -1899,7 +1899,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   const existSubscriptionForThisPlan = props.subscriptions.some(s => s.plan === p._id && s.team === team._id);
                   return !existSubscriptionForThisPlan;
                 });
-                
+
                 const isTeamAllowedByAllPlans = plans.every(plan => {
                   return plan.visibility === "Public" || plan.authorizedTeams.some(aTeam => aTeam._id === team._id);
                 });
@@ -1910,9 +1910,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   });
 
                 return (
-                  (!existPlanWithPayment || isTeamAllowedForPaymentPlan) && 
-                  props.api.team === team._id || isTeamAllowedByAllPlans) && 
-                  isPlanSubscribable && 
+                  (!existPlanWithPayment || isTeamAllowedForPaymentPlan) &&
+                  props.api.team === team._id || isTeamAllowedByAllPlans) &&
+                  isPlanSubscribable &&
                   !hasDemandPendingForSingleDemandPlan;
               });
 
@@ -1934,11 +1934,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           teamApiSubscriptions: data
                         })
                       }).then(possibleKeyToExtendByPlans => {
-                        console.log("possibleKeyToExtendByPlans", possibleKeyToExtendByPlans);
+                        openCustomModal({
+                          content: <TableForSelectApiKeyCreation
+                            data={possibleKeyToExtendByPlans}
+                          />
+                         })
                       });
                   }}
                 />
-              }) 
+              })
             },
           },
         ]}
@@ -1970,13 +1974,13 @@ function convertIUsagePlanGQLToIUsagePlan(plan: IUsagePlanGQL): IUsagePlan {
 
 
 function findCompatibleSubscriptionForMultiPlanRequest(
-  {plans, 
-    tenant, 
-    teamApiSubscriptions}: 
-    {plans: IUsagePlanGQL[], 
-      tenant: ITenant, 
+  {plans,
+    tenant,
+    teamApiSubscriptions}:
+    {plans: IUsagePlanGQL[],
+      tenant: ITenant,
       teamApiSubscriptions: {apis: IApiGQL[], subscriptions: ISubscriptionWithApiInfo[]}}
-): {[planId: string]: ISubscriptionWithApiInfo[]} {
+): {planId: string, planName: string, subscriptions: ISubscriptionWithApiInfo[]}[] {
 
     const {apis, subscriptions} = teamApiSubscriptions;
 
@@ -2000,16 +2004,13 @@ function findCompatibleSubscriptionForMultiPlanRequest(
       .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
       .map((infos) => infos.subscription);
 
-      return {planId: plan._id, keys: filteredApiKeys};
-    }).reduce((acc, {planId, keys}) => {
-      acc[planId] = keys;
-      return acc;
-    }, {});
-
+      return {planId: plan._id, planName: plan.customName, subscriptions: filteredApiKeys};
+    })
     return possibleKeysByPlanId;
 }
 
-const tableForApiKeyFormat = ( subscriptions: {planId: string, keys: ISubscriptionWithApiInfo[]}[])  => {
+const TableForSelectApiKeyCreation = ( props: {data: {planId: string, planName: string, subscriptions: ISubscriptionWithApiInfo[]}[]})  => {
+  const { translate } = useContext(I18nContext);
   return (
     <div>
       <table className="table">
@@ -2021,19 +2022,17 @@ const tableForApiKeyFormat = ( subscriptions: {planId: string, keys: ISubscripti
         </thead>
         <tbody>
           {
-            subscriptions.map(({planId, keys}) => 
+            props.data.map(({planName, subscriptions}) =>
             <tr>
-              <td>{planId}</td>
+              <td>{planName}</td>
               <td><select>
+                  <option selected>{translate("dashboard.create.api.button.label")}</option>
                 {
-                  keys.map((key) => {
-                    if (key.plan === planId) {
-                       return  (
-                       <option>Aggréger avec {key.adminCustomName}</option>
-                      )
-                      } else {
-                        return <option>Créer une clé</option>
-                      }
+                  subscriptions.map((key) => {
+                    return <option>
+                        {translate("team_apikey_aggregatePlans_title")}
+                        {key.apiKey.clientName}
+                       </option>
                     })}
                 </select></td>
             </tr>
