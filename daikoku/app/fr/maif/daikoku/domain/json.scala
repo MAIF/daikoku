@@ -1421,8 +1421,9 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
-            lastModificationAt =
-              (json \ "lastModificationAt").as(using DateTimeFormat),
+            lastModificationAt = (json \ "lastModificationAt")
+              .asOpt(using DateTimeFormat)
+              .getOrElse(DateTime.now()),
             content = (json \ "content").asOpt[String].getOrElse(""),
             cmsPage = (json \ "cmsPage").asOpt[String],
             remoteContentEnabled =
@@ -2170,14 +2171,17 @@ object json {
   val ApiFormat = new Format[Api] {
     override def reads(json: JsValue): JsResult[Api] = {
       Try {
+        val tenantId = (json \ "_tenant").as(using TenantIdFormat)
         JsSuccess(
           Api(
             id = (json \ "_id").as(using ApiIdFormat),
-            tenant = (json \ "_tenant").as(using TenantIdFormat),
+            tenant = tenantId,
             team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
-            lastUpdate = (json \ "lastUpdate").as(using DateTimeFormat),
+            lastUpdate = (json \ "lastUpdate")
+              .asOpt(using DateTimeFormat)
+              .getOrElse(DateTime.now()),
             createdAt = (json \ "createdAt")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
@@ -2188,14 +2192,24 @@ object json {
             descriptionCmsPage = (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
             image = (json \ "image").asOpt[String],
-            currentVersion = (json \ "currentVersion").as(using VersionFormat),
+            currentVersion = (json \ "currentVersion")
+              .asOpt(using VersionFormat)
+              .getOrElse(Version("1.0.0")),
             supportedVersions = (json \ "supportedVersions")
               .asOpt(using SeqVersionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
             testing = (json \ "testing").asOpt(using TestingFormat),
             documentation = (json \ "documentation")
-              .as(using ApiDocumentationFormat),
+              .asOpt(using ApiDocumentationFormat)
+              .getOrElse(
+                ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = tenantId,
+                  pages = Seq.empty,
+                  lastModificationAt = DateTime.now()
+                )
+              ),
             swagger = (json \ "swagger").asOpt(using SwaggerAccessFormat),
             tags = (json \ "tags")
               .asOpt[Seq[String]]
@@ -2205,9 +2219,12 @@ object json {
               .asOpt[Seq[String]]
               .map(_.toSet)
               .getOrElse(Set.empty),
-            visibility = (json \ "visibility").as(using ApiVisibilityFormat),
+            visibility = (json \ "visibility")
+              .asOpt(using ApiVisibilityFormat)
+              .getOrElse(ApiVisibility.Public),
             possibleUsagePlans = (json \ "possibleUsagePlans")
-              .as(using SeqUsagePlanIdFormat),
+              .asOpt(using SeqUsagePlanIdFormat)
+              .getOrElse(Seq.empty),
             defaultUsagePlan =
               (json \ "defaultUsagePlan").asOpt(using UsagePlanIdFormat),
             authorizedTeams = (json \ "authorizedTeams")
@@ -2226,7 +2243,9 @@ object json {
             parent = (json \ "parent").asOpt(using ApiIdFormat),
             isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false),
             apis = (json \ "apis").asOpt(using SetApiIdFormat),
-            state = (json \ "state").as(using ApiStateFormat),
+            state = (json \ "state")
+              .asOpt(using ApiStateFormat)
+              .getOrElse(ApiState.Created),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty)

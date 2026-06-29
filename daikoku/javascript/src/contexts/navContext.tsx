@@ -415,7 +415,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 className: { active: subTab === 'display-mode' },
               },
               remoteCatalogs: {
-                label: translate('Remote catalogs'),
+                label: translate('remote-catalog.title'),
                 action: () => navigateTo('settings/remote-catalogs'),
                 className: { active: subTab === 'remote-catalogs' },
               },

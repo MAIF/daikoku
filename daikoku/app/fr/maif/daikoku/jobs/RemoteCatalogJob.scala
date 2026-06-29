@@ -27,7 +27,7 @@ class RemoteCatalogJob(env: Env, engine: RemoteCatalogEngine) {
   def start(): Unit = {
     CatalogSources.initDefaults()
     stopped = false
-    if (env.config.remoteCatalogEnabled && env.config.otoroshiSyncMaster && refreshRef.get() == null) {
+    if (refreshRef.get() == null) {
       refreshRef.set(
         env.defaultActorSystem.scheduler.scheduleAtFixedRate(5.seconds, env.config.remoteCatalogInterval) { () =>
           if (!stopped) {

@@ -215,7 +215,7 @@ export const TenantEditComponent = ({
             <>
               {fromDaikokuAdmin && (
                 <h1>
-                  {tenant.name} - {translate('Remote catalogs')}
+                  {tenant.name} - {translate('remote-catalog.title')}
                 </h1>
               )}
               <RemoteCatalogsForm tenant={tenant} updateTenant={updateTenant} />

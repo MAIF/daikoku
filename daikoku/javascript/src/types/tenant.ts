@@ -184,13 +184,37 @@ export interface ITenantFull extends ITenant {
   remoteCatalogs: Array<IRemoteCatalog>;
 }
 
+export type RemoteCatalogSourceKind = 'file' | 'http' | 'github' | 'gitlab';
+
+export interface IFileSourceConfig {
+  path: string;
+  pre_command?: Array<string>;
+}
+export interface IHttpSourceConfig {
+  url: string;
+  headers?: { [key: string]: string };
+  timeout?: number;
+}
+export interface IGitSourceConfig {
+  repo: string;
+  branch?: string;
+  path?: string;
+  token?: string;
+  base_url?: string;
+  repo_patterns?: Array<string>;
+}
+export type IRemoteCatalogSourceConfig =
+  | IFileSourceConfig
+  | IHttpSourceConfig
+  | IGitSourceConfig;
+
 export interface IRemoteCatalogSource {
-  kind: string;
-  config: any;
+  kind: RemoteCatalogSourceKind;
+  config: IRemoteCatalogSourceConfig;
 }
 export interface IRemoteCatalogScheduling {
   enabled: boolean;
-  mode: string;
+  mode: 'interval' | 'cron';
   interval?: number;
   cronExpression?: string;
   deployArgs?: any;
@@ -203,6 +227,9 @@ export interface IRemoteCatalog {
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
   testDeployArgs?: any;
+}
+export interface IRemoteCatalogConfig {
+  defaultInterval: number;
 }
 
 export type TranslationItem = string | { s: string; p: string };

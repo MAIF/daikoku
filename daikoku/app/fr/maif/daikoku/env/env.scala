@@ -516,9 +516,6 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
 
-  lazy val remoteCatalogEnabled: Boolean = underlying
-    .getOptional[Boolean]("daikoku.remoteCatalog.enabled")
-    .getOrElse(false)
   lazy val remoteCatalogInterval: FiniteDuration = underlying
     .getOptional[Long]("daikoku.remoteCatalog.interval")
     .map(v => v.millis)

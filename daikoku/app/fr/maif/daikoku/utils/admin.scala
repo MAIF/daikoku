@@ -196,6 +196,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def readMetadata(e: Of): Map[String, String] = Map.empty
 
+  def reconcileMerge(existing: Of, incoming: Of): Of = incoming
+
   def reconcileUpsert(
       tenant: Tenant,
       raw: JsValue,
@@ -210,11 +212,11 @@ abstract class AdminApiController[Of, Id <: ValueType](
             case Left(error) => Future.successful(Left(error.getErrorMessage()))
             case Right(validated) =>
               existing match {
-                case Some(old) if toJson(old) == toJson(validated) =>
-                  Future.successful(Right("unchanged"))
-                case Some(_) =>
-                  if (dryRun) Future.successful(Right("updated"))
-                  else entityStore(tenant, env.dataStore).save(validated).map(_ => Right("updated"))
+                case Some(old) =>
+                  val toSave = reconcileMerge(old, validated)
+                  if (toJson(old) == toJson(toSave)) Future.successful(Right("unchanged"))
+                  else if (dryRun) Future.successful(Right("updated"))
+                  else entityStore(tenant, env.dataStore).save(toSave).map(_ => Right("updated"))
                 case None =>
                   if (dryRun) Future.successful(Right("created"))
                   else entityStore(tenant, env.dataStore).save(validated).map(_ => Right("created"))

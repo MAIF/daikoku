@@ -275,6 +275,7 @@ GET     /api/tenants/:tenantId/addable-admins           fr.maif.daikoku.controll
 POST    /api/tenants/:tenantId/admins                   fr.maif.daikoku.controllers.TenantController.addAdminsToTenant(tenantId)
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.daikoku.controllers.TenantController.removeAdminFromTenant(tenantId, adminId)
 GET     /api/tenants/:tenantId/remote-catalogs                          fr.maif.daikoku.controllers.RemoteCatalogController.list(tenantId)
+GET     /api/tenants/:tenantId/remote-catalogs/_config                  fr.maif.daikoku.controllers.RemoteCatalogController.config(tenantId)
 POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_deploy       fr.maif.daikoku.controllers.RemoteCatalogController.deploy(tenantId, catalogId)
 POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_test         fr.maif.daikoku.controllers.RemoteCatalogController.test(tenantId, catalogId)
 POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_undeploy     fr.maif.daikoku.controllers.RemoteCatalogController.undeploy(tenantId, catalogId)

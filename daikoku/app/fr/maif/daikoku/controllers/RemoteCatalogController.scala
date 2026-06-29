@@ -31,6 +31,19 @@ class RemoteCatalogController(
       }
     }
 
+  def config(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(AuditTrailEvent("@{user.name} has accessed remote catalog config"))(tenantId, ctx) { (_, _) =>
+        Future.successful(
+          Ok(
+            Json.obj(
+              "defaultInterval" -> env.config.remoteCatalogInterval.toMillis
+            )
+          )
+        )
+      }
+    }
+
   def deploy(tenantId: String, catalogId: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(AuditTrailEvent(s"@{user.name} has deployed remote catalog $catalogId"))(tenantId, ctx) {

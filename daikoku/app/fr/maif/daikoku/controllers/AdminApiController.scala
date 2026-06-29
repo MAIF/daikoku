@@ -448,6 +448,16 @@ class ApiAdminApiController(
 
   override def readMetadata(e: Api): Map[String, String] = e.metadata
 
+  override def reconcileMerge(existing: Api, incoming: Api): Api =
+    incoming.copy(
+      createdAt = existing.createdAt,
+      lastUpdate = existing.lastUpdate,
+      documentation =
+        if (incoming.documentation.pages.isEmpty) existing.documentation
+        else incoming.documentation
+    )
+
+
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant, ds: DataStore): Repo[Api, ApiId] =
     ds.apiRepo.forTenant(tenant)

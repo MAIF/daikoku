@@ -1,0 +1,7 @@
+kind: api
+_id: mon-api
+_tenant: default
+name: ma-super-api
+team: team-weather
+state: published
+isDefault: true
