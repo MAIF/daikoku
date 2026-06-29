@@ -69,7 +69,7 @@ class LoginControllerSpec()
         subscriptions = Seq(adminApiSubscription)
       )
       def getAdminApiHeader(
-          adminApiSubscription: ApiSubscription
+          keyring: Keyring
       ): Map[String, String] = {
         Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
             s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
@@ -84,7 +84,7 @@ class LoginControllerSpec()
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders(
           (Map("Host" -> tenant.domain) ++ _headers ++ getAdminApiHeader(
-            adminApiSubscription
+            adminApiKeyring
           )).toSeq*
         )
         .withFollowRedirects(true)

@@ -2034,7 +2034,9 @@ class GraphQLControllerSpec()
         s"""|{
             |  apiSubscriptionDetails(subscriptionId: "sec-test-sub", teamId: "${teamConsumerId.value}") {
             |    apiSubscription {
-            |      apiKey { clientSecret }
+            |      keyring {
+            |        apiKey { clientSecret }
+            |      }
             |    }
             |  }
             |}""".stripMargin
@@ -2058,7 +2060,7 @@ class GraphQLControllerSpec()
       )(using tenant, adminSession)
       respAdmin.status mustBe 200
       (respAdmin.json \ "errors").isDefined mustBe false
-      (respAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+      (respAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "keyring" \ "apiKey" \ "clientSecret")
         .asOpt[String] mustBe Some("sec-secret")
 
       // DaikokuAdmin: always allowed regardless of team role
@@ -2069,7 +2071,7 @@ class GraphQLControllerSpec()
       )(using tenant, daikokuAdminSession)
       respDaikokuAdmin.status mustBe 200
       (respDaikokuAdmin.json \ "errors").isDefined mustBe false
-      (respDaikokuAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+      (respDaikokuAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "keyring" \ "apiKey" \ "clientSecret")
         .asOpt[String] mustBe Some("sec-secret")
     }
   }

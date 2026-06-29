@@ -42,7 +42,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -58,7 +59,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -78,7 +80,8 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
@@ -98,7 +101,8 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -118,7 +122,8 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -144,7 +149,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -159,7 +165,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -175,7 +182,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val domain = "https://daikoku.io"
         val id = TenantId("creation")
@@ -200,7 +208,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "Evil corp."
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -224,7 +233,8 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "Evil corp."
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -254,7 +264,8 @@ class AdminApiControllerSpec
           tenants =
             Seq(tenant, tenant.copy(id = id, domain = "http://daikoku.io")),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
@@ -279,7 +290,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -296,7 +308,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -314,7 +327,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
@@ -332,7 +346,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -350,7 +365,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -376,7 +392,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -392,7 +409,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -409,7 +427,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
@@ -433,7 +452,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -458,7 +478,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -487,7 +508,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, tenantAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
@@ -513,7 +535,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -531,7 +554,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -549,7 +573,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -574,7 +599,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
@@ -592,7 +618,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
@@ -617,7 +644,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -635,7 +663,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val newUsers = json.SetUserWithPermissionFormat.writes(
@@ -665,7 +694,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -681,7 +711,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -698,7 +729,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams",
@@ -722,7 +754,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -747,7 +780,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -776,7 +810,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, tenantAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
@@ -802,6 +837,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -820,6 +856,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(
             defaultApi.api.copy(id = ApiId(IdGenerator.token(10)), name = "foo")
           ),
@@ -937,6 +974,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           teams = Seq(teamConsumer),
           usagePlans = defaultApi.plans
@@ -956,6 +994,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           usagePlans = defaultApi.plans
         )
@@ -972,6 +1011,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -989,6 +1029,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer, teamOwner)
@@ -1016,6 +1057,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamOwner),
@@ -1044,6 +1086,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamOwner),
@@ -1077,6 +1120,7 @@ class AdminApiControllerSpec
           users = Seq(tenantAdmin),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -1111,6 +1155,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(
             defaultApi.api,
             childApi,
@@ -1493,7 +1538,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -1633,7 +1679,8 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -1904,7 +1951,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -1933,7 +1981,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -1961,7 +2010,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages",
@@ -1996,7 +2046,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2032,7 +2083,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val content = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2076,7 +2128,8 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
@@ -2112,7 +2165,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2140,7 +2194,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         // tenant not found
@@ -2170,7 +2225,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
@@ -2199,7 +2255,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -2228,7 +2285,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2266,7 +2324,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2293,7 +2352,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2321,7 +2381,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2357,7 +2418,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val updatedNotif = notif.copy(sender = user.asNotificationSender)
@@ -2394,7 +2456,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2440,7 +2503,8 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
@@ -2482,6 +2546,7 @@ class AdminApiControllerSpec
           users = Seq(),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           sessions = Seq()
         )
 
@@ -2552,6 +2617,7 @@ class AdminApiControllerSpec
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           sessions = Seq(session)
         )
 
@@ -2570,7 +2636,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -2588,7 +2655,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2614,7 +2682,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
 
@@ -2640,7 +2709,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2665,7 +2735,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2686,7 +2757,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2707,7 +2779,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2728,7 +2801,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2744,7 +2818,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2761,7 +2836,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
@@ -2785,7 +2861,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2810,7 +2887,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2839,7 +2917,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val session = loginWithBlocking(user, tenant)
@@ -3776,6 +3855,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq()
         )
 
@@ -3846,6 +3926,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -3904,7 +3985,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
@@ -3936,6 +4018,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -4017,6 +4100,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -4047,6 +4131,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -4078,6 +4163,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4116,6 +4202,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val updated = message.copy(
@@ -4158,6 +4245,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val updated = message.copy(
@@ -4214,6 +4302,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4261,6 +4350,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
 
@@ -4301,6 +4391,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
 
@@ -4331,6 +4422,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
 
@@ -4363,6 +4455,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -4401,6 +4494,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
 
@@ -4440,6 +4534,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4486,6 +4581,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val updated = issue.copy(title = "foo")
@@ -4533,6 +4629,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val updated = issue.copy(title = "foo")
@@ -4584,6 +4681,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4618,6 +4716,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
@@ -4645,6 +4744,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
 
@@ -4673,6 +4773,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
 
@@ -4700,6 +4801,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
@@ -4725,6 +4827,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
@@ -4751,6 +4854,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4784,6 +4888,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val updated = post.copy(title = "foo")
@@ -4818,6 +4923,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val updated = post.copy(title = "foo")
@@ -4856,6 +4962,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -4895,6 +5002,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
@@ -4927,6 +5035,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
 
@@ -4960,6 +5069,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
 
@@ -4992,6 +5102,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
@@ -5022,6 +5133,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
@@ -5053,6 +5165,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -5091,6 +5204,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val updated = page.copy(name = "foo")
@@ -5130,6 +5244,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val updated = page.copy(name = "foo")
@@ -5173,6 +5288,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -5230,6 +5346,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
@@ -5257,6 +5374,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
@@ -5274,6 +5392,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
@@ -5298,6 +5417,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
 
@@ -5323,6 +5443,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -5355,6 +5476,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val updated = translation.copy(value = "foo")
@@ -5388,6 +5510,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val updated = translation.copy(value = "foo")
@@ -5425,6 +5548,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -5450,6 +5574,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -5494,6 +5619,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5588,6 +5714,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5606,6 +5733,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5648,6 +5776,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
@@ -5692,6 +5821,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5744,6 +5874,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
@@ -5796,6 +5927,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
@@ -5834,6 +5966,7 @@ class AdminApiControllerSpec
           users = Seq(tenantAdmin),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -5882,6 +6015,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -5922,6 +6056,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           teams = Seq(teamConsumer),
           usagePlans = defaultApi.plans,
@@ -6004,6 +6139,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -6023,6 +6159,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq()
@@ -6061,6 +6198,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -6100,6 +6238,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -6149,6 +6288,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -6199,6 +6339,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -6256,6 +6397,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -6323,6 +6465,7 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(userAdmin),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand),
@@ -6878,13 +7021,13 @@ class AdminApiControllerSpec
           operationsPending().isEmpty
         }
 
+        // once the deletion operations have drained, the api is physically
+        // removed (its subscriptions and plans are asserted gone below)
         val verifApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
-
-        verifApi.status mustBe 200
-        (verifApi.json \ "_deleted").as[Boolean]
+        verifApi.status mustBe 404
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
