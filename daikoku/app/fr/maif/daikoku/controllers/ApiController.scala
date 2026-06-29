@@ -2336,12 +2336,6 @@ class ApiController(
           (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
 
-            val cleanupPrivatePlan: EitherT[Future, AppError, Unit] =
-              if (plan.visibility == Private)
-                EitherT.right(env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-                  .save(plan.removeAuthorizedTeam(team.id)).map(_ => ()))
-              else EitherT.pure(())
-
             val done = Json.obj("archive" -> "done", "subscriptionId" -> subscriptionId)
 
             EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
@@ -2351,7 +2345,6 @@ class ApiController(
                   // standalone or child: delegate entirely to DeletionService
                   for {
                     _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                    _ <- if (subscription.parent.isEmpty) cleanupPrivatePlan else EitherT.pure[Future, AppError](())
                   } yield done
 
                 case childs: Seq[ApiSubscription] => action match {
@@ -2359,7 +2352,6 @@ class ApiController(
                     // delete all children + parent in one shot
                     for {
                       _ <- deletionService.deleteSubscriptions(childs ++ Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
                     } yield done
 
                   case Some("extraction") =>
@@ -2367,7 +2359,6 @@ class ApiController(
                     for {
                       _ <- apiService.condenseEitherT(childs.map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user))))
                       _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
                     } yield done
 
                   case _ =>
