@@ -70,6 +70,13 @@ class RemoteCatalogSpec
       headers = getAdminApiHeader(adminApiSubscription)
     )(using tenant)
 
+  private def getApi(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/apis/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiSubscription)
+    )(using tenant)
+
   private def kindResult(resp: WSResponse, kind: String): JsObject =
     (resp.json \ "results")
       .as[JsArray]
@@ -202,6 +209,59 @@ class RemoteCatalogSpec
 
       deployCall("cat-file", "_undeploy").status mustBe 200
       getTeam("team-weather").status mustBe 404
+    }
+
+    "preserve runtime social fields (stars/issues/posts/issuesTags) on API update" in {
+      val withPlans = defaultApi
+      val baseApi   = withPlans.api.copy(
+        team = defaultAdminTeam.id,
+        stars = 5,
+        issues = Seq(ApiIssueId("issue-1")),
+        posts = Seq(ApiPostId("post-1")),
+        issuesTags = Set(ApiIssueTag(ApiIssueTagId("tag-1"), "bug", "#ff0000"))
+      )
+
+      // ce que sert le catalog : même API (matchée par _id) mais social vidé + un champ non-social modifié
+      val incoming = baseApi
+        .copy(
+          name = "Renamed by catalog",
+          stars = 0,
+          issues = Seq.empty,
+          posts = Seq.empty,
+          issuesTags = Set.empty
+        )
+        .asJson
+        .as[JsObject] ++ Json.obj("kind" -> "api")
+
+      val path    = writeFile(Json.stringify(incoming))
+      val catalog = RemoteCatalog(
+        id = "cat-api",
+        name = "api catalog",
+        source = RemoteCatalogSource(kind = "file", config = Json.obj("path" -> path)),
+        scheduling = RemoteCatalogScheduling(),
+        allowedKinds = Set("api")
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(remoteCatalogs = Seq(catalog))),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(baseApi),
+        usagePlans = withPlans.plans,
+        subscriptions = Seq(adminApiSubscription)
+      )
+
+      val deploy = deployCall("cat-api", "_deploy")
+      deploy.status mustBe 200
+      // un champ non-social a changé → c'est bien un update, pas un "unchanged"
+      (kindResult(deploy, "api") \ "updated").as[Int] mustBe 1
+
+      val get = getApi(baseApi.id.value)
+      get.status mustBe 200
+      (get.json \ "name").as[String] mustBe "Renamed by catalog" // le full-replace s'applique aux champs non protégés
+      (get.json \ "stars").as[Int] mustBe 5                       // social préservé
+      (get.json \ "issues").as[Seq[String]] mustBe Seq("issue-1")
+      (get.json \ "posts").as[Seq[String]] mustBe Seq("post-1")
+      (get.json \ "issuesTags").as[JsArray].value.size mustBe 1
     }
   }
 }

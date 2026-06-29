@@ -454,7 +454,11 @@ class ApiAdminApiController(
       lastUpdate = existing.lastUpdate,
       documentation =
         if (incoming.documentation.pages.isEmpty) existing.documentation
-        else incoming.documentation
+        else incoming.documentation,
+      posts = existing.posts,
+      issues = existing.issues,
+      issuesTags = existing.issuesTags,
+      stars = existing.stars
     )
 
 
