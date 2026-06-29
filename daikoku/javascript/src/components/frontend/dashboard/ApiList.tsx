@@ -169,15 +169,16 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const subscriptionCount = info.row.original.subscriptionCount
           const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
+          const api = info.row.original.api
           return (
-            <>
-              <span>
+            <div className="d-flex">
+              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}>
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
-              </span>
+              </Link>
               {subscriptionDemandsCount > 0 && (
                 <span className="tag --warning">{subscriptionDemandsCount} en attente</span>
               )}
-            </>
+            </div>
           )
         },
       }),
@@ -198,7 +199,7 @@ export const ApiList = (props: ApiListProps) => {
 
           if (canRequestAccess) {
             return (
-              <div className="nav_item dropdown">
+              <div className="dropdown d-flex justify-content-end">
                 <button
                   type="button"
                   className="btn --secondary --icon-only"
