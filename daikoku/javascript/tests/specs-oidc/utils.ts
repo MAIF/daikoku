@@ -7,8 +7,7 @@ export const adminApikeySecret = 'admin_key_client_secret';
 export const otoroshiAdminApikeyId = 'admin-api-apikey-id';
 export const otoroshiAdminApikeySecret = 'admin-api-apikey-secret';
 
-// export const exposedPort = process.env.EXPOSED_PORT || 5173;
-export const exposedPort = 13200;
+export const exposedPort = process.env.EXPOSED_PORT || 5173;
 export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`;
 export const HOME = `http://localhost:${exposedPort}/`;

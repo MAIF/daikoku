@@ -286,19 +286,18 @@ $btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond gri
   @include button-focus;
 
   &:not(:disabled):not(.--disabled):active,
-  &:not(:disabled):not(.--disabled).active,
-  {
-  background-color: $btn-strong;
-  border-color: transparent;
-  color: $btn-on;
-}
+  &:not(:disabled):not(.--disabled).active {
+    background-color: $btn-strong;
+    border-color: transparent;
+    color: $btn-on;
+  }
 
-&:disabled,
-&.--disabled {
-  background-color: transparent;
-  border-color: transparent;
-  color: $btn-disabled;
-}
+  &:disabled,
+  &.--disabled {
+    background-color: transparent;
+    border-color: transparent;
+    color: $btn-disabled;
+  }
 }
 
 .btn.--icon {

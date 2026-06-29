@@ -418,7 +418,7 @@ export function DynamicTable<T>({
                   labelKey={f.labelKey}
                   labelKeyAll={f.labelKeyAll}
                   getCount={getCount}
-                  classNamePrefix="reactSelect"
+                  classNamePrefix="daikoku-select"
                   styles={menuStyle}
                   onChange={data => { seedFilterLabels(f.id, [...data]); handleSelectChange(data, f.id); }}
                   value={selectedIds.map(id => ({ label: cache[id] ?? id, value: id }))}
@@ -440,7 +440,7 @@ export function DynamicTable<T>({
                 labelKey={f.labelKey}
                 labelKeyAll={f.labelKeyAll}
                 getCount={getCount}
-                classNamePrefix="reactSelect"
+                classNamePrefix="daikoku-select"
                 styles={menuStyle}
                 onChange={data => handleSelectChange(data, f.id)}
                 value={getMultiselectValue(f.id, f.options ?? [])}
