@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, Eye, Key, Link as LucideLink, Menu, Terminal, UserRoundKey } from "lucide-react";
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -273,6 +273,23 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       }
     );
 
+  const deleteKeyring = (keyring: IKeyringForApiGql) =>
+    confirm({
+      message: translate({
+        key: 'keyring.delete.confirm',
+        replacements: [keyring.customName ?? keyring.apiKey.clientName],
+      }),
+    }).then((ok) => {
+      if (ok) {
+        Services.deleteKeyring(props.team._id, keyring._id).then((r) => {
+          if (!isError(r)) {
+            invalidate();
+            toast.success(translate('keyring.delete.success'));
+          }
+        });
+      }
+    });
+
   const confirmationSchema = (subscription: IKeyringSubscriptionGql) => ({
     validation: {
       type: type.string,
@@ -424,6 +441,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 toggle={toggleApiKey}
                 toggleRotation={toggleApiKeyRotation}
                 regenerateSecret={() => regenerateSecret(keyring)}
+                deleteKeyring={() => deleteKeyring(keyring)}
                 transferKey={transferApiKey}
                 deleteApiKey={(sub) => deleteApiKey(sub, keyring)}
                 makeUniqueApiKey={(sub) => makeUniqueApiKey(sub, keyring)}
@@ -454,6 +472,7 @@ type KeyringCardProps = {
     gracePeriod: number
   ) => Promise<void>;
   regenerateSecret: () => void;
+  deleteKeyring: () => void;
   transferKey: (subscription: IKeyringSubscriptionGql) => void;
   deleteApiKey: (subscription: IKeyringSubscriptionGql) => void;
   makeUniqueApiKey: (subscription: IKeyringSubscriptionGql) => void;
@@ -482,6 +501,7 @@ export const KeyringCard = ({
   toggle,
   toggleRotation,
   regenerateSecret,
+  deleteKeyring,
   transferKey,
   deleteApiKey,
   makeUniqueApiKey,
@@ -691,6 +711,12 @@ export const KeyringCard = ({
                 onClick={() => withLoader(regenerateSecret)}
               >
                 {translate('subscription.reset.secret.label')}
+              </span>
+              <span
+                className="dropdown-item cursor-pointer danger"
+                onClick={() => withLoader(deleteKeyring)}
+              >
+                {translate('keyring.delete.label')}
               </span>
             </div>
           </div>
@@ -947,7 +973,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                 aria-label={translate("subscription.copy.cli.auth.aria.label")}
                 onClick={() => {
                   navigator.clipboard
-                    .writeText(`Basic ${btoa(`${props.subscription.keyring?.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)
+                    .writeText(`Basic ${btoa(`${props.subscription.keyring?.apiKey?.clientId}:${props.subscription.keyring?.apiKey?.clientSecret}`)}`)
                     .then(() =>
                       toast.info(translate('credential.copy.success'))
                     )

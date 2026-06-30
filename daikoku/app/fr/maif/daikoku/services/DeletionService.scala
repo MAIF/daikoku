@@ -103,7 +103,8 @@ class DeletionService(
   private def prepareSubscriptionContext(
       subscription: ApiSubscription,
       tenant: Tenant,
-      user: User
+      user: User,
+      notificationActionFor: (Api, Keyring, ApiSubscription) => NotificationAction
   ): Future[Either[AppError, SubscriptionContext]] =
     (for {
       api <- EitherT.fromOptionF(
@@ -128,11 +129,7 @@ class DeletionService(
         team = Some(subscription.team),
         sender = user.asNotificationSender,
         notificationType = NotificationType.AcceptOnly,
-        action = NotificationAction.ApiKeyDeletionInformationV2(
-          api.id,
-          keyring.apiKey.clientId,
-          subscription.id
-        )
+        action = notificationActionFor(api, keyring, subscription)
       )
     } yield SubscriptionContext(subscription, keyring, api, plan, notif)).value
 
@@ -210,7 +207,17 @@ class DeletionService(
   def deleteSubscriptions(
       subscriptions: Seq[ApiSubscription],
       api: Api,
-      tenant: Tenant
+      tenant: Tenant,
+      notificationActionFor: (
+          Api,
+          Keyring,
+          ApiSubscription
+      ) => NotificationAction = (a, k, s) =>
+        NotificationAction.ApiKeyDeletionInformationV2(
+          a.id,
+          k.apiKey.clientId,
+          s.id
+        )
   ): EitherT[Future, AppError, Boolean] = {
     implicit val m: Materializer = env.defaultMaterializer
     AppLogger.debug(
@@ -240,7 +247,7 @@ class DeletionService(
       // Phase 2 — per impacted keyring, recompute its Otoroshi key without the
       // deleted subs, or delete the key + the keyring when no subscription
       // references it anymore.
-      _ <- EitherT.liftF(
+      deletedKeyringIds <- EitherT.liftF[Future, AppError, Seq[KeyringId]](
         Future.sequence(
           affectedKeyringIds.map { kid =>
             env.dataStore.apiSubscriptionRepo
@@ -257,19 +264,34 @@ class DeletionService(
                         .forTenant(tenant)
                         .deleteByIdLogically(kid)
                     )
-                else otoroshiSynchronizerJob.run(kid, tenant)
+                    .map(_ => Some(kid))
+                else otoroshiSynchronizerJob.run(kid, tenant).map(_ => None)
               }
           }
-        )
+        ).map(_.flatten)
       )
-      // Phase 3b — delete stale pending notifications referencing the deleted subscriptions
+      // Phase 3b — delete stale pending notifications referencing the deleted
+      // subscriptions, or the keyrings that have just been deleted
       _ <- EitherT.right[AppError](
         env.dataStore.notificationRepo
           .forTenant(tenant)
           .delete(
             Json.obj(
-              "action.subscription" -> Json.obj(
-                "$in" -> JsArray(subscriptions.map(s => JsString(s.id.value)))
+              "$or" -> JsArray(
+                Seq(
+                  Json.obj(
+                    "action.subscription" -> Json.obj(
+                      "$in" -> JsArray(
+                        subscriptions.map(s => JsString(s.id.value))
+                      )
+                    )
+                  ),
+                  Json.obj(
+                    "action.keyring" -> Json.obj(
+                      "$in" -> JsArray(deletedKeyringIds.map(_.asJson))
+                    )
+                  )
+                )
               )
             )
           )
@@ -278,7 +300,12 @@ class DeletionService(
       _ <- EitherT(
         Source(subscriptions)
           .mapAsync(1)(subscription =>
-            prepareSubscriptionContext(subscription, tenant, systemUser)
+            prepareSubscriptionContext(
+              subscription,
+              tenant,
+              systemUser,
+              notificationActionFor
+            )
           )
           .mapConcat {
             case Right(ctx) => List(ctx)

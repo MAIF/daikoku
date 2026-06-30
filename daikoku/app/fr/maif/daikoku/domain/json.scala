@@ -2412,7 +2412,12 @@ object json {
             customMaxPerMonth =
               (json \ "customMaxPerMonth").asOpt(using LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            keyring = (json \ "keyring").as(using KeyringIdFormat),
+            keyring = (json \ "keyring").toOption match {
+              // keyring can be serialized either as its raw id (DB / base format)
+              // or as the full embedded keyring object in API responses
+              case Some(o: JsObject) => (o \ "_id").as(using KeyringIdFormat)
+              case _                 => (json \ "keyring").as(using KeyringIdFormat)
+            },
             thirdPartySubscriptionInformations =
               (json \ "thirdPartySubscriptionInformations") match {
                 case JsDefined(value) =>
@@ -2970,6 +2975,8 @@ object json {
             ApiKeyDeletionInformationFormat.reads(json)
           case "ApiKeyDeletionInformationV2" =>
             ApiKeyDeletionInformationV2Format.reads(json)
+          case "ApiSubscriptionExpired" =>
+            ApiSubscriptionExpiredFormat.reads(json)
           case "ApiKeyRotationInProgress" =>
             ApiKeyRotationInProgressFormat.reads(json)
           case "ApiKeyRotationInProgressV2" =>
@@ -3036,6 +3043,11 @@ object json {
             ApiKeyDeletionInformationV2Format.writes(p).as[JsObject] ++ Json
               .obj(
                 "type" -> "ApiKeyDeletionInformationV2"
+              )
+          case p: ApiSubscriptionExpired =>
+            ApiSubscriptionExpiredFormat.writes(p).as[JsObject] ++ Json
+              .obj(
+                "type" -> "ApiSubscriptionExpired"
               )
           case p: ApiKeyRotationInProgress =>
             ApiKeyRotationInProgressFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3452,6 +3464,30 @@ object json {
         } get
 
       override def writes(o: ApiKeyDeletionInformationV2): JsValue =
+        Json.obj(
+          "api" -> o.api.value,
+          "clientId" -> o.clientId,
+          "subscription" -> o.subscription.value
+        )
+    }
+
+  val ApiSubscriptionExpiredFormat =
+    new Format[ApiSubscriptionExpired] {
+      override def reads(json: JsValue): JsResult[ApiSubscriptionExpired] =
+        Try {
+          JsSuccess(
+            ApiSubscriptionExpired(
+              api = (json \ "api").as(using ApiIdFormat),
+              clientId = (json \ "clientId").as[String],
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiSubscriptionExpired): JsValue =
         Json.obj(
           "api" -> o.api.value,
           "clientId" -> o.clientId,

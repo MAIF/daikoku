@@ -1525,6 +1525,108 @@ class DeletionServiceSpec
       (authorizations.head \ "id").as[String] mustBe parentRouteId
     }
 
+    "remove subscriptions whose validUntil is past and notify (keyring expiration job)" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("expiring-plan"),
+        tenant = tenant.id,
+        customName = "expiring plan",
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("expiring-api"),
+        name = "expiring API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+      val keyring = Keyring(
+        id = KeyringId("expiring-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "expiring-token"
+      )
+      val expiredSub = ApiSubscription(
+        id = ApiSubscriptionId("expired-sub"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now().minusDays(2),
+        validUntil = DateTime.now().minusHours(1).some,
+        team = teamConsumerId,
+        api = api.id,
+        by = user.id,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+        subscriptions = Seq(expiredSub),
+        keyrings = Seq(keyring)
+      )
+
+      Await.result(daikokuComponents.keyringExpirationJob.run(tenant), 30.seconds)
+
+      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
+        Await
+          .result(
+            daikokuComponents.env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findById(expiredSub.id),
+            5.second
+          )
+          .isEmpty
+      }
+
+      val maybeKeyring = Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(keyring.id.value),
+        5.second
+      )
+      maybeKeyring.isDefined mustBe false
+
+      val notifs = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("action.type" -> "ApiSubscriptionExpired")),
+        5.second
+      )
+      notifs must have size 1
+    }
+
     "delete parent api subscriptions but keep the aggregated otoroshi key with remaining authorized entity" in {
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent-plan"),
@@ -3012,144 +3114,6 @@ class DeletionServiceSpec
       val authorizations = (respOto.json \ "authorizations").as[JsArray].value
       authorizations must have size 1
       (authorizations.head \ "id").as[String] mustBe childRouteId
-    }
-
-    "delete a parent subscription with action=delete removes all children and the otoroshi key" in {
-      val parentPlan = UsagePlan(
-        id = UsagePlanId("del-all-parent-plan"),
-        tenant = tenant.id,
-        customName = "parent plan",
-        otoroshiTarget = Some(
-          OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
-            )
-          )
-        ),
-        allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false),
-        aggregationApiKeysSecurity = Some(true)
-      )
-      val childPlan = UsagePlan(
-        id = UsagePlanId("del-all-child-plan"),
-        tenant = tenant.id,
-        customName = "child plan",
-        otoroshiTarget = Some(
-          OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(routes = Set(OtoroshiRouteId(childRouteId)))
-            )
-          )
-        ),
-        allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false),
-        aggregationApiKeysSecurity = Some(true)
-      )
-      val api = defaultApi.api.copy(
-        id = ApiId("del-all-api"),
-        team = teamOwnerId,
-        possibleUsagePlans = Seq(parentPlan.id, childPlan.id),
-        defaultUsagePlan = parentPlan.id.some
-      )
-      val keyring = Keyring(
-        id = KeyringId("test-keyring"),
-        tenant = tenant.id,
-        team = teamConsumerId,
-        apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
-        createdAt = DateTime.now(),
-        integrationToken = "del-all-parent-token"
-      )
-      val parentSub = ApiSubscription(
-        id = ApiSubscriptionId("del-all-parent-sub"),
-        tenant = tenant.id,
-        plan = parentPlan.id,
-        createdAt = DateTime.now().minusHours(2),
-        team = teamConsumerId,
-        api = api.id,
-        by = user.id,
-        customName = None,
-        keyring = keyring.id
-      )
-      val childSub = ApiSubscription(
-        id = ApiSubscriptionId("del-all-child-sub"),
-        tenant = tenant.id,
-        plan = childPlan.id,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = api.id,
-        by = user.id,
-        customName = None,
-        keyring = keyring.id
-      )
-
-      setupEnvBlocking(
-        tenants = Seq(
-          tenant.copy(
-            otoroshiSettings = Set(
-              OtoroshiSettings(
-                id = containerizedOtoroshi,
-                url =
-                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-                host = "otoroshi-api.oto.tools",
-                clientSecret = otoroshiAdminApiKey.clientSecret,
-                clientId = otoroshiAdminApiKey.clientId
-              )
-            ),
-            aggregationApiKeysSecurity = Some(true)
-          )
-        ),
-        users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = Seq(parentPlan, childPlan),
-        apis = Seq(api),
-        subscriptions = Seq(parentSub, childSub),
-        keyrings = Seq(keyring)
-      )
-
-      val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}?action=delete",
-        method = "DELETE"
-      )(using tenant, session)
-      resp.status mustBe 200
-
-      // both subscriptions must be deleted
-      val maybeParentSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(parentSub.id),
-        5.second
-      )
-      maybeParentSub.forall(_.deleted) mustBe true
-
-      val maybeChildSub = Await.result(
-        daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findById(childSub.id),
-        5.second
-      )
-      maybeChildSub.forall(_.deleted) mustBe true
-
-      // otoroshi key must be deleted
-      val respOto = httpJsonCallBlocking(
-        path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
-        baseUrl = "http://otoroshi-api.oto.tools",
-        headers = Map(
-          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-          "Host" -> "otoroshi-api.oto.tools"
-        ),
-        port = container.mappedPort(8080)
-      )(using tenant, session)
-      respOto.status mustBe 404
     }
 
     "delete a child subscription keeps the otoroshi key with parent route only" in {

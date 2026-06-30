@@ -47,77 +47,6 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId)
   )
 
-  val ApiSubscriptionSafeFormat: Format[ApiSubscription] =
-    new Format[ApiSubscription] {
-      override def reads(json: JsValue): JsResult[ApiSubscription] =
-        Try {
-          JsSuccess(
-            ApiSubscription(
-              id = (json \ "_id").as(using ApiSubscriptionIdFormat),
-              tenant = (json \ "_tenant").as(using TenantIdFormat),
-              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-              plan = (json \ "plan").as(using UsagePlanIdFormat),
-              team = (json \ "team").as(using TeamIdFormat),
-              api = (json \ "api").as(using ApiIdFormat),
-              createdAt = (json \ "createdAt").as(using DateTimeFormat),
-              by = (json \ "by").as(using UserIdFormat),
-              customName = (json \ "customName").asOpt[String],
-              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-              keyring = (json \ "keyring").as(using KeyringIdFormat),
-              customMetadata = (json \ "customMetadata").asOpt[JsObject],
-              customMaxPerSecond =
-                (json \ "customMaxPerSecond").asOpt(using LongFormat),
-              customMaxPerDay =
-                (json \ "customMaxPerDay").asOpt(using LongFormat),
-              customMaxPerMonth =
-                (json \ "customMaxPerMonth").asOpt(using LongFormat),
-              customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
-            )
-          )
-        } recover { case e =>
-          JsError(e.getMessage)
-        } get
-      override def writes(o: ApiSubscription): JsValue =
-        Json.obj(
-          "_id" -> ApiSubscriptionIdFormat.writes(o.id),
-          "_tenant" -> o.tenant.asJson,
-          "_deleted" -> o.deleted,
-          "plan" -> UsagePlanIdFormat.writes(o.plan),
-          "team" -> TeamIdFormat.writes(o.team),
-          "api" -> ApiIdFormat.writes(o.api),
-          "createdAt" -> DateTimeFormat.writes(o.createdAt),
-          "by" -> UserIdFormat.writes(o.by),
-          "customName" -> o.customName
-            .map(id => JsString(id))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "enabled" -> o.enabled,
-          "keyring" -> KeyringIdFormat.writes(o.keyring),
-          "customMetadata" -> o.customMetadata,
-          "customMaxPerSecond" -> o.customMaxPerSecond
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customMaxPerDay" -> o.customMaxPerDay
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customMaxPerMonth" -> o.customMaxPerMonth
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customReadOnly" -> o.customReadOnly
-            .map(JsBoolean.apply)
-            .getOrElse(JsNull)
-            .as[JsValue]
-        )
-    }
-  val SeqApiSubscriptionSafeFormat: Format[Seq[ApiSubscription]] =
-    Format(
-      Reads.seq(using ApiSubscriptionSafeFormat),
-      Writes.seq(using ApiSubscriptionSafeFormat)
-    )
-
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
       setupEnvBlocking(
@@ -565,10 +494,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 1
+      respVerif.json.as[JsArray].value.size mustBe 1
     }
     "reject notification - api subscription" in {
       val process = Seq(
@@ -656,10 +582,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 0
+      respVerif.json.as[JsArray].value.size mustBe 0
     }
   }
 
@@ -876,10 +799,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 1
+      respVerif.json.as[JsArray].value.size mustBe 1
     }
     "reject notification - api subscription" in {
       val process = Seq(
@@ -971,10 +891,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 0
+      respVerif.json.as[JsArray].value.size mustBe 0
     }
     "create issue that notify subscribers of api" in {
       val issues = Seq(

@@ -285,6 +285,12 @@ object NotificationAction {
       subscription: ApiSubscriptionId
   ) extends NotificationAction
 
+  case class ApiSubscriptionExpired(
+      api: ApiId,
+      clientId: String,
+      subscription: ApiSubscriptionId
+  ) extends NotificationAction
+
   case class ApiKeyRotationInProgressV2(
       subscription: ApiSubscriptionId,
       api: ApiId,

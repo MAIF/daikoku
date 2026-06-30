@@ -268,6 +268,14 @@ export const updateKeyringCustomName = (
     body: JSON.stringify({ customName }),
   });
 
+export const deleteKeyring = (
+  teamId: string,
+  keyringId: string
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}`, {
+    method: 'DELETE',
+  });
+
 export const member = (teamId: string, userId: string) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {});
 
@@ -1908,6 +1916,20 @@ export const graphql = {
               clientId
             }
             ... on ApiKeyDeletionInformationV2 {
+            __typename
+              clientId
+              api {
+                _id
+                _humanReadableId
+                name
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
+              }
+            }
+            ... on ApiSubscriptionExpired {
             __typename
               clientId
               api {

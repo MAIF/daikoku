@@ -713,6 +713,47 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
 })
 
 
+test('[ASOAPI-10605] - [Consommateur] - supprimer un trousseau complet en une action', async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  // the aggregated otoroshi key exists before deletion
+  const MaybeControlApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
+    method: 'GET',
+    headers: {
+      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+    },
+  });
+  await expect(MaybeControlApiKey.status).toBe(200);
+
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+
+  await findAndGoToTeam('Vendeurs', page);
+  await page.getByText('Clés d\'API').click();
+  await page.getByRole('row', { name: 'API Papier' }).getByLabel('Voir les clés d\'API').click();
+
+  // delete the whole keyring in a single action -> all its subscriptions and its
+  // otoroshi key are removed
+  const card = page.locator('.keyring-card');
+  await card.getByLabel('Actions du trousseau').click();
+  await card.getByText('Supprimer le trousseau').click();
+  await page.getByRole('button', { name: 'Oui' }).click();
+  await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
+
+  // no more keyring card -> keyring deleted
+  await expect(page.locator('.keyring-card')).toBeHidden();
+  // the otoroshi key is gone
+  const maybeDeletedKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
+    method: 'GET',
+    headers: {
+      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+    },
+  });
+  await expect(maybeDeletedKey.status).toBe(404);
+})
+
 test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre équipe', async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 

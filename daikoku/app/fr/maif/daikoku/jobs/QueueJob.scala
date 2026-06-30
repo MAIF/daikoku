@@ -161,19 +161,11 @@ class QueueJob(
           .forTenant(subscription.tenant)
           .delete(
             Json.obj(
-              "action.type" ->
-                Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      "ApiKeyRotationInProgress",
-                      "ApiKeyRotationEndend",
-                      "ApiKeyRefresh"
-                    ).map(JsString.apply)
-                  )
-                ),
               "$or" -> JsArray(
-                clientIdMatch :+
-                  Json.obj("action.subscription" -> subscription.id.asJson)
+                clientIdMatch ++ Seq(
+                  Json.obj("action.subscription" -> subscription.id.asJson),
+                  Json.obj("action.keyring" -> subscription.keyring.asJson)
+                )
               )
             )
           )

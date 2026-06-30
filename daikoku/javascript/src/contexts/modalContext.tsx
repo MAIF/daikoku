@@ -8,7 +8,6 @@ import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { KeyringSelectModal, IKeyringSelectModalProps } from "./modals/KeyringSelectModal";
 import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiSelectModal";
-import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
@@ -39,33 +38,6 @@ import {
   TestingApiKeyModalProps,
 } from "./modals/types";
 
-
-const init: TModalContext = {
-  alert: () => Promise.resolve(),
-  confirm: () => Promise.resolve(true),
-  prompt: () => Promise.resolve("toto"),
-  openFormModal: () => { },
-  openTestingApikeyModal: () => { },
-  openSubMetadataModal: () => { },
-  openApiDocumentationSelectModal: () => { },
-  openTeamSelectorModal: () => { },
-  openInvitationTeamModal: () => { },
-  openSaveOrCancelModal: () => { },
-  openLoginOrRegisterModal: () => { },
-  openJoinTeamModal: () => { },
-  openContactModal: () => { },
-  openAssetSelectorModal: () => { },
-  openApiSelectModal: () => { },
-  openKeyringSelectModal: () => { },
-  openCustomModal: () => { },
-  close: () => { },
-  openRightPanel: () => { },
-  closeRightPanel: () => { },
-  rightPanelContent: undefined
-
-}
-
-export const ModalContext = React.createContext<TModalContext>(init);
 
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();

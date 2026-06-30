@@ -119,8 +119,8 @@ type NotificationActionGQL =
   }
   | { __typename: 'NewCommentOnIssueV2'; api: IApiGQL; issue: Issue }
   | { __typename: 'NewPostPublishedV2'; api: IApiGQL; post: IApiPost }
-  | { __typename: 'ApiKeyRefreshV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan; message?: string }
   | { __typename: 'ApiKeyDeletionInformationV2'; clientId: string; api: IApiGQL }
+  | { __typename: 'ApiSubscriptionExpired'; clientId: string; api: IApiGQL }
   | { __typename: 'TransferApiOwnership'; api: IApiGQL; team: ITeamFullGql }
   | { __typename: 'ApiSubscriptionAccept'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan }
   | { __typename: 'ApiSubscriptionReject'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan; message: string }
@@ -183,6 +183,7 @@ export const NotificationList = () => {
     { type: 'ApiAccess' }, { type: 'ApiSubscription' }, { type: 'ApiSubscriptionReject' },
     { type: 'ApiSubscriptionAccept' }, { type: 'OtoroshiSyncSubscriptionError' },
     { type: 'OtoroshiSyncApiError' }, { type: 'ApiKeyDeletionInformationV2' },
+    { type: 'ApiSubscriptionExpired' },
     { type: 'ApiKeyRotationInProgressV2' }, { type: 'ApiKeyRotationEndedV2' },
     { type: 'TeamInvitation' }, { type: 'ApiKeyRefreshV2' }, { type: 'NewPostPublishedV2' },
     { type: 'NewIssueOpenV2' }, { type: 'NewCommentOnIssueV2' }, { type: 'TransferApiOwnership' },
@@ -593,6 +594,24 @@ export const NotificationList = () => {
           </>
         );
       }
+      case 'ApiSubscriptionExpired': {
+        const desc = translate({ key: 'notif.subscription.expired' });
+        const clientId = notification.action.clientId;
+        return (
+          <>
+            {desc}
+            <a href='#' className='underline'
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <div>{translate('subscription.display.credentials.clientId')} : <i>{clientId}</i></div>,
+              })}>
+              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+            </a>
+          </>
+        );
+      }
       case 'OtoroshiSyncSubscriptionError':
       case 'OtoroshiSyncApiError':
         return notification.action.message;
@@ -700,6 +719,7 @@ export const NotificationList = () => {
       case "ApiSubscriptionAccept":
       case "OtoroshiSyncApiError":
       case "ApiKeyDeletionInformationV2":
+      case "ApiSubscriptionExpired":
       case "ApiKeyRotationInProgressV2":
       case "ApiKeyRotationEndedV2":
       case "NewPostPublishedV2":

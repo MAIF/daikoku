@@ -1556,19 +1556,19 @@ class OtoroshiSyncSpec()
       val apk =
         getApkFromOtoroshi(keyring.apiKey.clientId)
 
-      (apk \ "enabled").as[Boolean] mustBe false
+      // the child subscription keeps the keyring alive with its own config
+      (apk \ "enabled").as[Boolean] mustBe true
 
-      // FIXME: FIX IT
-//      (apk \ "authorizedEntities").as[JsArray].value.length mustBe 1
-//
-//      val metadata = (apk \ "metadata")
-//        .as[JsObject]
-//        .as[Map[String, String]]
-//      metadata.get("env") mustBe None
-//      metadata.get("usage") mustBe None
-//      metadata.get("isCron") mustBe None
-//      metadata.get("type") mustBe "child".some
-//      metadata.get("region") mustBe "eu-west".some
+      (apk \ "authorizedEntities").as[JsArray].value.length mustBe 1
+
+      val metadata = (apk \ "metadata")
+        .as[JsObject]
+        .as[Map[String, String]]
+      metadata.get("env") mustBe None
+      metadata.get("usage") mustBe None
+      metadata.get("isCron") mustBe None
+      metadata.get("type") mustBe "child".some
+      metadata.get("region") mustBe "eu-west".some
     }
 
     "be run after subscription update by api owner" in {

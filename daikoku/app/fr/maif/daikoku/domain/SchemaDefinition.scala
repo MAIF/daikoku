@@ -2835,6 +2835,28 @@ object SchemaDefinition {
       )
     )
 
+    lazy val ApiSubscriptionExpiredType = new PossibleObject(
+      ObjectType(
+        "ApiSubscriptionExpired",
+        "A notification triggered when a subscription has been removed because its validUntil date is past",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionExpired
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionExpired
+        ](
+          Field("clientId", StringType, resolve = _.value.clientId),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          )
+        )
+      )
+    )
+
     lazy val ApiKeyRotationInProgressType = new PossibleObject(
       ObjectType(
         "ApiKeyRotationInProgress",
@@ -3208,6 +3230,7 @@ object SchemaDefinition {
             OtoroshiSyncApiErrorType,
             ApiKeyDeletionInformationType,
             ApiKeyDeletionInformationV2Type,
+            ApiSubscriptionExpiredType,
             ApiKeyRotationInProgressType,
             ApiKeyRotationInProgressV2Type,
             ApiKeyRotationEndedType,

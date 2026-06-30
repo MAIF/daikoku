@@ -93,7 +93,10 @@ case class ApiSubscription(
     json.ApiSubscriptionFormat
       .writes(this)
       .as[JsObject] ++ Json.obj(
-      "keyring" -> Json.obj("clientName" -> keyring.apiKey.clientName)
+      "keyring" -> Json.obj(
+        "_id" -> json.KeyringIdFormat.writes(keyring.id),
+        "clientName" -> keyring.apiKey.clientName
+      )
     )
   def asSimpleJson: JsValue =
     Json.obj(

@@ -1619,6 +1619,63 @@ class ApiController(
       }
     }
 
+  def deleteKeyring(teamId: String, keyringId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has deleted keyring @{keyring._id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        import cats.implicits.*
+
+        ctx.setCtxValue("keyring._id", keyringId)
+        (for {
+          keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findOneNotDeleted(
+                Json.obj("_id" -> keyringId, "team" -> team.id.asJson)
+              ),
+            AppError.EntityNotFound("keyring")
+          )
+          subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+          )
+          apis <- EitherT.liftF[Future, AppError, Seq[Api]](
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$in" -> JsArray(subscriptions.map(_.api.asJson).distinct)
+                  )
+                )
+              )
+          )
+          _ <- subscriptions.groupBy(_.api).toList.traverse {
+            case (apiId, subs) =>
+              EitherT
+                .fromOption[Future][AppError, Api](
+                  apis.find(_.id == apiId),
+                  AppError.ApiNotFound
+                )
+                .flatMap(api =>
+                  deletionService.deleteSubscriptions(subs, api, ctx.tenant)
+                )
+          }
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .deleteByIdLogically(keyring.id)
+          )
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
   def updateApiSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
