@@ -79,7 +79,7 @@
     "@types/react-table": "^7.7.20",
     "@types/set-value": "^4.0.3",
     "@types/swagger-ui-dist": "^3.30.6",
-    "@vitejs/plugin-react": "^5.1.4",
+    "@vitejs/plugin-react": "^5.2.0",
     "oxlint": "^1.48.0",
     "pg": "^8.20.0",
     "prettier": "3.8.1",
@@ -87,7 +87,7 @@
     "sass": "^1.97.3",
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
-    "vite": "7.3.2",
+    "vite": "8.0.16",
     "vite-plugin-simple-html": "^1.1.0"
   }
 }
