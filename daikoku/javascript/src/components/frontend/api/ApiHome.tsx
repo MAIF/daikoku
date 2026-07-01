@@ -146,11 +146,14 @@ export const ApiHome = ({
   }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
   const askForApikeys = ({ team, plan, apiKey, motivation }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }
+  ) => {
+
     const myTeams = myTeamsQuery.data || []
     const api = apiQuery.data as IApi
+    const apiTeam = myTeams.find((t) => t._id === team);
 
-    if (api) {
+    if (api && apiTeam) {
       return (
         apiKey
           ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
@@ -158,26 +161,26 @@ export const ApiHome = ({
       ).then((result) => {
 
         if (isError(result)) {
-          return toast.error(result.error);
+          toast.error(result.error);
+          return null
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
+          return null
         } else if (Services.isCreationDone(result)) {
-          openRightPanel({
-            title: translate('api.pricing.created.subscription.panel.title'),
-            content: <SimpleApiKeyCard
-              api={api!}
-              plan={plan!}
-              apiTeam={ownerTeamQuery.data as ITeamSimple} //FIXME: maybe better code ;)
-              subscription={result.subscription}
-            />
-          })
+          console.log("isCrteationDone")
+          return { api, plan, apiTeam, subscription: result.subscription, status: 'created' as const };
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
+          toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
+          return { plan, teamName, status: 'waiting' as const };
         }
 
       })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["mySubscription"] }));
+        .then((createdResult) => {
+          queryClient.invalidateQueries({ queryKey: ["mySubscription"] })
+          return createdResult;
+        }
+        );
     } else {
       return Promise.reject(false)
     }

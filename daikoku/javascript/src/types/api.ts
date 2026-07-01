@@ -620,11 +620,16 @@ export interface ApiPricingProps {
   inProgressDemands: Array<ISubscriptionDemand>;
   askForApikeys: (x: {
     team: string;
-    plan: IUsagePlanGQL;
+    plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
-  }) => Promise<void>;
+  }) => Promise<ApiKeyResult | null | undefined>;
 }
+
+
+type ApiKeyResult = 
+  | { status: 'created'; api: IApi; plan: IUsagePlan; apiTeam: ITeamSimple; subscription: ISubscription }
+  | { status: 'waiting'; plan: IUsagePlan; teamName: string };
 
 
 export interface ITeamSelector {
