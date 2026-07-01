@@ -167,7 +167,7 @@ export const ApiHome = ({
           window.location.href = result.checkoutUrl
           return null
         } else if (Services.isCreationDone(result)) {
-          console.log("isCrteationDone")
+          console.log("preums")
           return { api, plan, apiTeam, subscription: result.subscription, status: 'created' as const };
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;

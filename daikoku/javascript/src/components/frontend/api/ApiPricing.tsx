@@ -1871,6 +1871,39 @@ export const ApiPricing = (props: ApiPricingProps) => {
     ] as ColumnDef<IUsagePlanGQL, any>[]
   }, [])
 
+  const displayResponseForSavingApikey = (promises) => {
+
+    Promise.all(promises).then((results) => {
+      const alteredApiKeys = results.filter((r) => r !== undefined && r !== null);
+      openRightPanel({
+        title: translate('api.pricing.created.subscription.panel.title'),
+        content: (
+          <div>
+            {alteredApiKeys.map((alteredApiKey) => {
+              if (alteredApiKey.status === 'waiting') {
+                return (
+                  <div key={alteredApiKey.teamName}>
+                    {translate({ key: 'subscription.plan.waiting', replacements: [alteredApiKey.plan.customName, alteredApiKey.teamName] })}
+                  </div>
+                );
+              } else {
+                return (
+                  <SimpleApiKeyCard
+                    key={alteredApiKey.subscription._id}
+                    api={alteredApiKey.api}
+                    plan={alteredApiKey.plan}
+                    apiTeam={alteredApiKey.apiTeam}
+                    subscription={alteredApiKey.subscription}
+                  />
+                );
+              }
+            })}
+          </div>
+        )
+      });
+    });
+  }
+
   return (
     <>
       <DynamicTable<IUsagePlanGQL>
@@ -1981,46 +2014,20 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                       motivation
                                     });
                                   });
+                                  displayResponseForSavingApikey(promises)
 
-                                  Promise.all(promises).then((results) => {
-                                    const alteredApiKeys = results.filter((r) => r !== undefined && r !== null);
-                                    openRightPanel({
-                                      title: translate('api.pricing.created.subscription.panel.title'),
-                                      content: (
-                                        <div>
-                                          {alteredApiKeys.map((alteredApiKey) => {
-                                            if (alteredApiKey.status === 'waiting') {
-                                              return (
-                                                <div key={alteredApiKey.teamName}>
-                                                  {alteredApiKey.plan.customName} - {alteredApiKey.teamName}
-                                                </div>
-                                              );
-                                            } else {
-                                              return (
-                                                <SimpleApiKeyCard
-                                                  key={alteredApiKey.subscription._id}
-                                                  api={alteredApiKey.api}
-                                                  plan={alteredApiKey.plan}
-                                                  apiTeam={alteredApiKey.apiTeam}
-                                                  subscription={alteredApiKey.subscription}
-                                                />
-                                              );
-                                            }
-                                          })}
-                                        </div>
-                                      )
-                                    });
-                                  });
                                 }
                               })
                             } else {
-                              compatibleSubscriptionsByPlan.map(
+                              const promises = compatibleSubscriptionsByPlan.map(
                                 ({ plan, subscriptions }) => {
                                   const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                   const sub = subscriptions.find((sub) => sub._id === subscriptionId)
                                   props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub })
                                 }
                               )
+                              displayResponseForSavingApikey(promises)
+
                               close()
                             }
                           }
