@@ -14,10 +14,10 @@ import {
   ResponseDone,
   ResponseError,
 } from '../../types';
-import { IApiKeySelectModalProps } from './ApiKeySelectModal';
-import { IApiSelectModalProps } from './ApiSelectModal';
-import { ICustomModalProps } from './CustomModal';
+import { IKeyringSelectModalProps } from './KeyringSelectModal';
+import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
+import { ICustomModalProps } from './CustomModal';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -43,7 +43,7 @@ export type TModalContext = {
   openJoinTeamModal: () => void;
   openContactModal: (p: IContactModalComponentProps) => void;
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
-  openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
+  openKeyringSelectModal: (p: IKeyringSelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;
@@ -112,6 +112,62 @@ export type TestingApiKeyModalProps<T extends IWithTesting> = {
 type LimitedTeam = {
   _id: string;
   name?: string;
+};
+interface ApiSubscriptionGql extends ISubscriptionCustomization {
+  _id: String;
+  apiKey: {
+    clientName: string;
+    clientId: string;
+    clientSecret: string;
+  };
+  plan: LimitedTeam;
+  team: {
+    _id: string;
+    name: string;
+    type: string;
+  };
+  createdAt: string;
+  api: {
+    _id: string;
+  };
+  customName: string;
+  enabled: boolean;
+  customMetadata: object;
+  customMaxPerSecond?: number;
+  customMaxPerDay?: number;
+  customMaxPerMonth?: number;
+  customReadOnly?: boolean;
+  adminCustomName?: string;
+}
+type NotificationGQL = {
+  _id: string;
+  action: {
+    message?: string;
+    motivation?: string;
+    api?: {
+      _id: string;
+      name: string;
+    };
+    team?: LimitedTeam;
+    plan?: {
+      _id: string;
+      customName?: string;
+      typeName: string;
+    };
+    user?: {
+      id: string;
+      name: string;
+    };
+    keyring?: {
+      _id: string;
+      customName?: string;
+      apiKey: {
+        clientName: string;
+        clientId: string;
+        clientSecret: string;
+      };
+    };
+  };
 };
 export type SubscriptionMetadataModalProps = {
   creationMode?: boolean;

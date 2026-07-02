@@ -147,28 +147,29 @@ class QueueJob(
 
   private def deleteSubscriptionNotifications(
       subscription: ApiSubscription
-  )(implicit dbConn: DbConn): Future[Boolean] = {
-    env.dataStore.notificationRepo
+  ): Future[Boolean] = {
+    env.dataStore.keyringRepo
       .forTenant(subscription.tenant)
-      .delete(
-        Json.obj(
-          "action.type" ->
-            Json.obj(
-              "$in" -> JsArray(
-                Seq(
-                  "ApiKeyRotationInProgress",
-                  "ApiKeyRotationEndend",
-                  "ApiKeyRefresh"
-                ).map(JsString.apply)
-              )
-            ),
-          "$or" -> Json.arr(
-            Json
-              .obj("action.clientId" -> JsString(subscription.apiKey.clientId)),
-            Json.obj("action.subscription" -> subscription.id.asJson)
+      .findById(subscription.keyring)
+      .flatMap { maybeKeyring =>
+        val clientIdMatch = maybeKeyring
+          .map(k =>
+            Seq(Json.obj("action.clientId" -> JsString(k.apiKey.clientId)))
           )
-        )
-      )
+          .getOrElse(Seq.empty)
+        env.dataStore.notificationRepo
+          .forTenant(subscription.tenant)
+          .delete(
+            Json.obj(
+              "$or" -> JsArray(
+                clientIdMatch ++ Seq(
+                  Json.obj("action.subscription" -> subscription.id.asJson),
+                  Json.obj("action.keyring" -> subscription.keyring.asJson)
+                )
+              )
+            )
+          )
+      }
   }
 
   private def deleteTeamNotifications(

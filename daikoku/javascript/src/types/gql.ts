@@ -73,9 +73,15 @@ export interface IApiGQL {
   metadata?: object;
 }
 
+export interface IKeyringGql {
+  _id: string;
+  customName: string | null;
+  apiKey: { clientName: string };
+}
+
 export interface IApiSubscriptionDetails {
   apiSubscription: IApiSubscriptionGql;
-  parentSubscription?: IApiSubscriptionGql;
+  keyring?: IKeyringGql;
   accessibleResources: Array<{
     apiSubscription: IApiSubscriptionGql;
     api: IApiGQL;

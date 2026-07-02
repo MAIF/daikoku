@@ -12,6 +12,7 @@ import fr.maif.daikoku.services.{
   ApiService,
   AssetsService,
   DeletionService,
+  KeyringService,
   TranslationsService,
   UserService
 }
@@ -55,10 +56,12 @@ class DaikokuComponentsInstances(context: Context)
   lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
   lazy val anonReportingJob = wire[AnonymousReportingJob]
   lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
+  lazy val keyringExpirationJob = wire[KeyringSubscriptionExpirationJob]
 
   lazy val otoroshiClient = wire[OtoroshiClient]
   lazy val paymentClient = wire[PaymentClient]
 
+  lazy val keyringService = wire[KeyringService]
   lazy val apiService = wire[ApiService]
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
@@ -249,6 +252,7 @@ class DaikokuComponentsInstances(context: Context)
   auditTrailPurgeJob.start()
   notificationPurgeJob.start()
   anonReportingJob.start()
+  keyringExpirationJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>
@@ -258,6 +262,7 @@ class DaikokuComponentsInstances(context: Context)
     auditTrailPurgeJob.stop()
     notificationPurgeJob.stop()
     anonReportingJob.stop()
+    keyringExpirationJob.stop()
     env.onShutdown()
     pgPool.close()
     FastFuture.successful(())

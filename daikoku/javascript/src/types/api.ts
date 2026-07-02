@@ -278,6 +278,7 @@ export interface IOtoroshiTarget {
   authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization?: {
     clientIdOnly: boolean;
+    readOnly?: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;
     metadata: { [key: string]: string };
@@ -368,7 +369,6 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
-  rotation: IRotation;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -377,8 +377,7 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent: string | null;
-  parentUp: boolean;
+  keyring: string | null;
 }
 
 export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
@@ -418,10 +417,18 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
   apiKey: { clientName: string };
 }
 
-export interface ISubscription extends IBaseSubscription {
+export interface IKeyring {
+  _id: string;
+  customName: string | null;
   apiKey: IApiKey;
   integrationToken: string;
   bearerToken?: string;
+  rotation?: IRotation;
+  enabled: boolean;
+}
+
+export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
+  keyring: IKeyring | null;
 }
 
 export interface ISubscriptionCustomization {
@@ -435,7 +442,6 @@ export interface ISubscriptionCustomization {
 }
 
 export interface ISubscriptionExtended extends ISubscription {
-  parentUp: boolean;
   planType: string;
   planName: string;
   apiName: string;
@@ -547,7 +553,7 @@ export interface ISubscriptionDemand {
   from: string;
   date: string;
   motivation?: object;
-  parentSubscriptionId?: string;
+  keyring?: string;
   customReadOnly?: boolean;
   customMetadata?: object;
   customMaxPerSecond?: number;

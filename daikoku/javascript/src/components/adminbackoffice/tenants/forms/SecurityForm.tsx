@@ -86,6 +86,17 @@ export const SecurityForm = (props: {
       deps: ['aggregationApiKeysSecurity'],
       visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
     },
+    keyringQuotaConflictStrategy: {
+      type: type.string,
+      format: format.select,
+      label: translate('tenant.keyringQuotaConflictStrategy.label'),
+      help: translate('tenant.keyringQuotaConflictStrategy.help'),
+      options: [
+        { value: 'LowestValue', label: translate('tenant.keyringQuotaConflictStrategy.lowest') },
+        { value: 'HighestValue', label: translate('tenant.keyringQuotaConflictStrategy.highest') },
+      ],
+      defaultValue: 'LowestValue',
+    },
     apiReferenceHideForGuest: {
       type: type.bool,
       label: translate('API reference visibility'),

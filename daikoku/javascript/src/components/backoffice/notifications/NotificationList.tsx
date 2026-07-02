@@ -4,7 +4,8 @@ import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash/debounce';
-import { useContext, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Ban, Check, Smile } from "lucide-react";
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
@@ -50,13 +51,76 @@ type NotificationActionGQL =
   | { __typename: 'TeamInvitation'; team: ITeamFullGql; user: IUser }
   | {
     __typename: 'ApiSubscription';
-    api: IApiGQL; team: ITeamFullGql; plan: IUsagePlan;
-    parentSubscriptionId: IApiSubscriptionGql; motivation: string; demand: ISubscriptionDemandGQL;
+    api: IApiGQL;
+    team: ITeamFullGql;
+    plan: IUsagePlan;
+    keyring?: {
+      _id: string;
+      customName: string | null;
+      apiKey: { clientName: string; clientId: string; clientSecret: string };
+    };
+    motivation: string;
+    demand: ISubscriptionDemandGQL;
+  }
+  | {
+    __typename: 'NewCommentOnIssueV2';
+    api: IApiGQL;
+    issue: Issue
+  }
+  | {
+    __typename: 'NewPostPublishedV2';
+    api: IApiGQL;
+    post: IApiPost
+  }
+  | {
+    __typename: 'ApiKeyRefreshV2';
+    keyring: {
+      _id: string;
+      customName: string | null;
+      apiKey: { clientName: string; clientId: string; clientSecret: string };
+      integrationToken: string;
+      bearerToken?: string;
+      rotation?: {
+        enabled: boolean;
+        rotationEvery: number;
+        gracePeriod: number;
+        pendingRotation: boolean;
+      };
+      subscriptions: Array<{
+        _id: string;
+        api: { _humanReadableId: string; currentVersion: string };
+        team: { _humanReadableId: string };
+      }>;
+    };
+    message?: string
+  }
+  | {
+    __typename: 'ApiKeyDeletionInformationV2';
+    clientId: string;
+    api: IApiGQL;
+  }
+  | {
+    __typename: 'TransferApiOwnership';
+    api: IApiGQL
+    team: ITeamFullGql;
+  }
+  | {
+    __typename: 'ApiSubscriptionAccept';
+    team: ITeamFullGql;
+    api: IApiGQL;
+    plan: IUsagePlan;
+  }
+  | {
+    __typename: 'ApiSubscriptionReject';
+    team: ITeamFullGql;
+    api: IApiGQL;
+    plan: IUsagePlan;
+    message: string;
   }
   | { __typename: 'NewCommentOnIssueV2'; api: IApiGQL; issue: Issue }
   | { __typename: 'NewPostPublishedV2'; api: IApiGQL; post: IApiPost }
-  | { __typename: 'ApiKeyRefreshV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan; message?: string }
   | { __typename: 'ApiKeyDeletionInformationV2'; clientId: string; api: IApiGQL }
+  | { __typename: 'ApiSubscriptionExpired'; clientId: string; api: IApiGQL }
   | { __typename: 'TransferApiOwnership'; api: IApiGQL; team: ITeamFullGql }
   | { __typename: 'ApiSubscriptionAccept'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan }
   | { __typename: 'ApiSubscriptionReject'; team: ITeamFullGql; api: IApiGQL; plan: IUsagePlan; message: string }
@@ -86,32 +150,6 @@ type NotificationGQL = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
-
-const getApiFromNotification = (
-  notification: NotificationGQL,
-): { _id: string; name: string; currentVersion?: string } | undefined => {
-  switch (notification.action.__typename) {
-    case 'ApiAccess':
-    case 'ApiSubscription':
-    case 'ApiSubscriptionReject':
-    case 'ApiSubscriptionAccept':
-    case 'OtoroshiSyncApiError':
-    case 'ApiKeyDeletionInformationV2':
-    case 'ApiKeyRotationInProgressV2':
-    case 'ApiKeyRotationEndedV2':
-    case 'ApiKeyRefreshV2':
-    case 'NewPostPublishedV2':
-    case 'NewIssueOpenV2':
-    case 'NewCommentOnIssueV2':
-    case 'TransferApiOwnership':
-    case 'CheckoutForSubscription': {
-      const _api = notification.action.api;
-      return { _id: _api._id, name: _api.name, currentVersion: _api.currentVersion };
-    }
-    default:
-      return;
-  }
-};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -145,6 +183,7 @@ export const NotificationList = () => {
     { type: 'ApiAccess' }, { type: 'ApiSubscription' }, { type: 'ApiSubscriptionReject' },
     { type: 'ApiSubscriptionAccept' }, { type: 'OtoroshiSyncSubscriptionError' },
     { type: 'OtoroshiSyncApiError' }, { type: 'ApiKeyDeletionInformationV2' },
+    { type: 'ApiSubscriptionExpired' },
     { type: 'ApiKeyRotationInProgressV2' }, { type: 'ApiKeyRotationEndedV2' },
     { type: 'TeamInvitation' }, { type: 'ApiKeyRefreshV2' }, { type: 'NewPostPublishedV2' },
     { type: 'NewIssueOpenV2' }, { type: 'NewCommentOnIssueV2' }, { type: 'TransferApiOwnership' },
@@ -314,9 +353,39 @@ export const NotificationList = () => {
               </FeedbackButton>
             </div>
           </div>
+        )
+      }
+      case 'ApiKeyRefreshV2': {
+        const sub = notification.action.keyring.subscriptions[0]
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-end">
+              {sub && (
+                <Link
+                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`}
+                  className="nav_item cursor-pointer no-bg"
+                  title={translate('notif.apikey.refresh.see_keyring')}
+                  aria-label={translate('notif.apikey.refresh.see_keyring')}
+                  onClick={() => {
+                    if (notification.status.status === 'Pending') accept(notification._id)
+                  }}
+                >
+                  <ArrowRight />
+                </Link>
+              )}
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="nav_item cursor-pointer no-bg"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <Check />
+            </button>}
+          </div>
         );
       }
-      case 'ApiKeyRefreshV2':
       case 'ApiKeyRotationInProgressV2':
       case 'ApiKeyRotationEndedV2':
         return (
@@ -333,6 +402,36 @@ export const NotificationList = () => {
             </FeedbackButton>}
           </div>
         );
+      case 'ApiSubscriptionAccept': {
+        const api = notification.action.api
+        const team = notification.action.team
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-center">
+              <Link
+                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}
+                className="btn --tertiary --small --icon-only"
+                title={translate('notif.api.demand.accept.see_key')}
+                aria-label={translate('notif.api.demand.accept.see_key')}
+                onClick={() => {
+                  if (notification.status.status === 'Pending') accept(notification._id)
+                }}
+              >
+                <ArrowRight />
+              </Link>
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="btn --tertiary --small --icon-only"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <Check />
+            </button>}
+          </div>
+        );
+      }
       default:
         return (
           <div className="action-container">
@@ -495,6 +594,24 @@ export const NotificationList = () => {
           </>
         );
       }
+      case 'ApiSubscriptionExpired': {
+        const desc = translate({ key: 'notif.subscription.expired' });
+        const clientId = notification.action.clientId;
+        return (
+          <>
+            {desc}
+            <a href='#' className='underline'
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <div>{translate('subscription.display.credentials.clientId')} : <i>{clientId}</i></div>,
+              })}>
+              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+            </a>
+          </>
+        );
+      }
       case 'OtoroshiSyncSubscriptionError':
       case 'OtoroshiSyncApiError':
         return notification.action.message;
@@ -543,26 +660,9 @@ export const NotificationList = () => {
         );
       }
       case 'ApiKeyRefreshV2': {
-        const __api = notification.action.api;
-        const __plan = notification.action.plan;
-        const __team = notification.action.api.team;
-        const __subscription = notification.action.subscription;
-        return (
-          <>
-            {translate('notif.apikey.refresh')}
-            <a href='#' className='underline'
-              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              onClick={() => alert({
-                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                message: <SimpleApiKeyCard //@ts-ignore
-                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                  subscription={__subscription} />,
-              })}>
-              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
-            </a>
-          </>
-        );
+        const keyring = notification.action.keyring
+        const keyringName = keyring.customName ?? keyring.apiKey.clientName
+        return translate({ key: 'notif.apikey.refresh', replacements: [keyringName] })
       }
       case 'TeamInvitation':
         return translate({ key: 'notif.team.invitation', replacements: [notification.action.team.name] });
@@ -609,7 +709,33 @@ export const NotificationList = () => {
       default:
         return '';
     }
-  };
+  }
+
+  const getApiFromNotification = (notification: NotificationGQL): { _id: string, name: string, currentVersion?: string } | undefined => {
+    switch (notification.action.__typename) {
+      case "ApiAccess":
+      case "ApiSubscription":
+      case "ApiSubscriptionReject":
+      case "ApiSubscriptionAccept":
+      case "OtoroshiSyncApiError":
+      case "ApiKeyDeletionInformationV2":
+      case "ApiSubscriptionExpired":
+      case "ApiKeyRotationInProgressV2":
+      case "ApiKeyRotationEndedV2":
+      case "NewPostPublishedV2":
+      case "NewIssueOpenV2":
+      case "NewCommentOnIssueV2":
+      case "TransferApiOwnership":
+      case "CheckoutForSubscription":
+        const _api = notification.action.api
+        return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
+      case "ApiKeyRefreshV2":
+      case "TeamInvitation":
+      case "OtoroshiSyncSubscriptionError":
+      case "ApiSubscriptionTransferSuccess":
+        return;
+    }
+  }
 
   const columnHelper = createColumnHelper<NotificationGQL>();
 

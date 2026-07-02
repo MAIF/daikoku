@@ -103,16 +103,16 @@ class MockController(
 
   def fakeOtoroshiApiKey(clientId: String) =
     Action.async {
-      env.dataStore.apiSubscriptionRepo
+      env.dataStore.keyringRepo
         .forAllTenant()
         .findOne(Json.obj("apiKey.clientId" -> clientId))
         .map {
-          case Some(subscription) =>
+          case Some(keyring) =>
             Ok(
               ActualOtoroshiApiKey(
                 clientId = clientId,
-                clientSecret = subscription.apiKey.clientSecret,
-                clientName = subscription.apiKey.clientName,
+                clientSecret = keyring.apiKey.clientSecret,
+                clientName = keyring.apiKey.clientName,
                 authorizedEntities = AuthorizedEntities(),
                 throttlingQuota = 10,
                 dailyQuota = 10000,
@@ -123,7 +123,7 @@ class MockController(
                 rotation = None
               ).asJson
             )
-          case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+          case _ => BadRequest(Json.obj("error" -> "Keyring not found"))
         }
     }
 
@@ -151,7 +151,7 @@ class MockController(
     Action.async {
       val r = scala.util.Random
 
-      env.dataStore.apiSubscriptionRepo
+      env.dataStore.keyringRepo
         .forAllTenant()
         .findOneNotDeleted(Json.obj("apiKey.clientId" -> apikey))
         .flatMap {
@@ -159,14 +159,27 @@ class MockController(
             FastFuture.successful(
               NotFound(Json.obj("error" -> "subscription not found"))
             )
-          case Some(sub) =>
-            env.dataStore.apiRepo
+          case Some(keyring) =>
+            env.dataStore.apiSubscriptionRepo
               .forAllTenant()
-              .findByIdNotDeleted(sub.api)
-              .map {
-                case None => NotFound(Json.obj("error" -> "api not found"))
-                case Some(api) =>
-                  Ok(Json.obj("hits" -> Json.obj("count" -> r.nextInt(100))))
+              .findOneNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+              .flatMap {
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "subscription not found"))
+                  )
+                case Some(sub) =>
+                  env.dataStore.apiRepo
+                    .forAllTenant()
+                    .findByIdNotDeleted(sub.api)
+                    .map {
+                      case None =>
+                        NotFound(Json.obj("error" -> "api not found"))
+                      case Some(api) =>
+                        Ok(
+                          Json.obj("hits" -> Json.obj("count" -> r.nextInt(100)))
+                        )
+                    }
               }
         }
     }
@@ -175,7 +188,7 @@ class MockController(
     Action.async {
       val r = scala.util.Random
 
-      env.dataStore.apiSubscriptionRepo
+      env.dataStore.keyringRepo
         .forAllTenant()
         .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
         .flatMap {
@@ -183,39 +196,52 @@ class MockController(
             FastFuture.successful(
               NotFound(Json.obj("error" -> "subscription not found"))
             )
-          case Some(sub) =>
-            env.dataStore.usagePlanRepo
+          case Some(keyring) =>
+            env.dataStore.apiSubscriptionRepo
               .forAllTenant()
-              .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
-              .map {
-                case None => NotFound(Json.obj("error" -> "plan not found"))
-                case Some(pp) =>
-                  val callPerSec =
-                    r.nextLong(pp.maxPerSecond.getOrElse(Long.MaxValue))
-                  val callPerDay =
-                    r.nextLong(pp.maxPerDay.getOrElse(Long.MaxValue))
-                  val callPerMonth =
-                    r.nextLong(pp.maxPerMonth.getOrElse(Long.MaxValue))
-
-                  Ok(
-                    ApiKeyQuotas(
-                      authorizedCallsPerSec =
-                        pp.maxPerSecond.getOrElse(Long.MaxValue),
-                      currentCallsPerSec = callPerSec,
-                      remainingCallsPerSec =
-                        pp.maxPerSecond.getOrElse(Long.MaxValue) - callPerSec,
-                      authorizedCallsPerDay =
-                        pp.maxPerDay.getOrElse(Long.MaxValue),
-                      currentCallsPerDay = callPerDay,
-                      remainingCallsPerDay =
-                        pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
-                      authorizedCallsPerMonth =
-                        pp.maxPerMonth.getOrElse(Long.MaxValue),
-                      currentCallsPerMonth = callPerMonth,
-                      remainingCallsPerMonth =
-                        pp.maxPerMonth.getOrElse(Long.MaxValue) - callPerMonth
-                    ).asJson
+              .findOneNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+              .flatMap {
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "subscription not found"))
                   )
+                case Some(sub) =>
+                  env.dataStore.usagePlanRepo
+                    .forAllTenant()
+                    .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
+                    .map {
+                      case None =>
+                        NotFound(Json.obj("error" -> "plan not found"))
+                      case Some(pp) =>
+                        val callPerSec =
+                          r.nextLong(pp.maxPerSecond.getOrElse(Long.MaxValue))
+                        val callPerDay =
+                          r.nextLong(pp.maxPerDay.getOrElse(Long.MaxValue))
+                        val callPerMonth =
+                          r.nextLong(pp.maxPerMonth.getOrElse(Long.MaxValue))
+
+                        Ok(
+                          ApiKeyQuotas(
+                            authorizedCallsPerSec =
+                              pp.maxPerSecond.getOrElse(Long.MaxValue),
+                            currentCallsPerSec = callPerSec,
+                            remainingCallsPerSec =
+                              pp.maxPerSecond
+                                .getOrElse(Long.MaxValue) - callPerSec,
+                            authorizedCallsPerDay =
+                              pp.maxPerDay.getOrElse(Long.MaxValue),
+                            currentCallsPerDay = callPerDay,
+                            remainingCallsPerDay =
+                              pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
+                            authorizedCallsPerMonth =
+                              pp.maxPerMonth.getOrElse(Long.MaxValue),
+                            currentCallsPerMonth = callPerMonth,
+                            remainingCallsPerMonth =
+                              pp.maxPerMonth
+                                .getOrElse(Long.MaxValue) - callPerMonth
+                          ).asJson
+                        )
+                    }
               }
         }
     }

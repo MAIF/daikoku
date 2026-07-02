@@ -1799,12 +1799,13 @@ class GraphQLControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
         teams = Seq(defaultAdminTeam.copy(tenant = tenant.id)),
+        keyrings = Seq(adminApiKeyring),
         subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader = Map(
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
       )
 
@@ -1978,18 +1979,25 @@ class GraphQLControllerSpec()
         possibleUsagePlans = Seq(plan.id),
         defaultUsagePlan = plan.id.some
       )
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("sec-test-key", "sec-client-id", "sec-secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = IdGenerator.token(32)
+      )
       val subscription = ApiSubscription(
         id = ApiSubscriptionId("sec-test-sub"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("sec-test-key", "sec-client-id", "sec-secret"),
         plan = plan.id,
         createdAt = org.joda.time.DateTime.now(),
         team = teamConsumerId,
         api = api.id,
         by = userAdmin.id,
         customName = None,
-        rotation = None,
-        integrationToken = IdGenerator.token(32)
+        keyring = keyring.id
       )
 
       // teamConsumer with apiKeyVisibility=Administrator: only Admins see the key
@@ -2014,6 +2022,7 @@ class GraphQLControllerSpec()
         ),
         apis = Seq(api),
         usagePlans = Seq(plan),
+        keyrings = Seq(keyring),
         subscriptions = Seq(subscription)
       )
 
@@ -2025,7 +2034,9 @@ class GraphQLControllerSpec()
         s"""|{
             |  apiSubscriptionDetails(subscriptionId: "sec-test-sub", teamId: "${teamConsumerId.value}") {
             |    apiSubscription {
-            |      apiKey { clientSecret }
+            |      keyring {
+            |        apiKey { clientSecret }
+            |      }
             |    }
             |  }
             |}""".stripMargin
@@ -2049,7 +2060,7 @@ class GraphQLControllerSpec()
       )(using tenant, adminSession)
       respAdmin.status mustBe 200
       (respAdmin.json \ "errors").isDefined mustBe false
-      (respAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+      (respAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "keyring" \ "apiKey" \ "clientSecret")
         .asOpt[String] mustBe Some("sec-secret")
 
       // DaikokuAdmin: always allowed regardless of team role
@@ -2060,7 +2071,7 @@ class GraphQLControllerSpec()
       )(using tenant, daikokuAdminSession)
       respDaikokuAdmin.status mustBe 200
       (respDaikokuAdmin.json \ "errors").isDefined mustBe false
-      (respDaikokuAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "apiKey" \ "clientSecret")
+      (respDaikokuAdmin.json \ "data" \ "apiSubscriptionDetails" \ "apiSubscription" \ "keyring" \ "apiKey" \ "clientSecret")
         .asOpt[String] mustBe Some("sec-secret")
     }
   }

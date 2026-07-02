@@ -216,6 +216,16 @@ object SchemaDefinition {
           .forTenant(ctx._2.tenant)
           .findByIds(demands)
     )(using HasId[SubscriptionDemand, DemandId](_.id))
+    lazy val keyringsFetcher = Fetcher(
+      config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
+      fetch = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          keyrings: Seq[KeyringId]
+      ) =>
+        ctx._1.keyringRepo
+          .forTenant(ctx._2.tenant)
+          .findByIds(keyrings)
+    )(using HasId[Keyring, KeyringId](_.id))
     lazy val usagePlansFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
@@ -557,10 +567,31 @@ object SchemaDefinition {
       )
     )
 
+    lazy val OtoroshiEntityType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      OtoroshiEntity
+    ](
+      ObjectTypeDescription(
+        "An Otoroshi entity (api, group or route) an api key is authorized on"
+      ),
+      ReplaceField(
+        "kind",
+        Field("kind", StringType, resolve = _.value.kind.value)
+      )
+    )
     lazy val ApiKeyRestrictionPathType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictionPath
-    ]()
+    ](
+      ReplaceField(
+        "authorizedEntity",
+        Field(
+          "authorizedEntity",
+          OptionType(OtoroshiEntityType),
+          resolve = _.value.authorizedEntity
+        )
+      )
+    )
     lazy val ApiKeyRestrictionsType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiKeyRestrictions
@@ -1566,7 +1597,7 @@ object SchemaDefinition {
     def requireApiKeyAccess(
         ctx: Context[
           (DataStore, DaikokuActionContext[JsValue]),
-          ApiSubscription
+          Keyring
         ]
     ): Future[Unit] = {
       val actionCtx = ctx.ctx._2
@@ -1586,6 +1617,78 @@ object SchemaDefinition {
       }
     }
 
+    lazy val KeyringType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      Keyring
+    ] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+      "KeyringType",
+      "A keyring: the entity owning the Otoroshi api key shared by aggregated subscriptions",
+      () =>
+        fields[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+          Field("_id", StringType, resolve = _.value.id.value),
+          Field(
+            "tenant",
+            OptionType(TenantType),
+            resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
+          ),
+          Field("deleted", BooleanType, resolve = _.value.deleted),
+          Field("enabled", BooleanType, resolve = _.value.enabled),
+          Field(
+            "customName",
+            OptionType(StringType),
+            resolve = _.value.customName
+          ),
+          Field(
+              "apiKey",
+              OtoroshiApiKeyType,
+              resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
+            ),
+          Field(
+            "otoroshiSettings",
+            OptionType(StringType),
+            resolve = _.value.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) => Some(id.value)
+              case KeyringOtoroshiBinding.Internal     => None
+            }
+          ),
+          Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
+          Field(
+            "rotation",
+            OptionType(ApiSubscriptionRotationType),
+            resolve = _.value.rotation
+          ),
+          Field(
+            "bearerToken",
+            OptionType(StringType),
+            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
+          ),
+          Field(
+            "integrationToken",
+            StringType,
+            resolve = _.value.integrationToken
+          ),
+          Field(
+            "subscriptions",
+            ListType(ApiSubscriptionType),
+            resolve = ctx =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
+          ),
+          Field(
+            "subscriptionsCount",
+            IntType,
+            resolve = ctx =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .count(
+                  Json.obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
+                )
+                .map(_.toInt)
+          )
+        )
+    )
+
     lazy val ApiSubscriptionType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       ApiSubscription
@@ -1601,17 +1704,6 @@ object SchemaDefinition {
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
-          Field(
-            "apiKey",
-            OtoroshiApiKeyType,
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
-          ),
-          Field(
-            "bearerToken",
-            OptionType(StringType),
-            resolve =
-              ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
-          ),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -1650,17 +1742,6 @@ object SchemaDefinition {
           ),
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
-            "rotation",
-            OptionType(ApiSubscriptionRotationType),
-            resolve = _.value.rotation
-          ),
-          Field(
-            "integrationToken",
-            StringType,
-            resolve = ctx =>
-              requireApiKeyAccess(ctx).map(_ => ctx.value.integrationToken)
-          ),
-          Field(
             "customMetadata",
             OptionType(JsonType),
             resolve = _.value.customMetadata
@@ -1692,9 +1773,9 @@ object SchemaDefinition {
             resolve = _.value.customReadOnly
           ),
           Field(
-            "parent",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx => apiSubscriptionsFetcher.deferOpt(ctx.value.parent)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field(
             "lastUsage",
@@ -1740,6 +1821,7 @@ object SchemaDefinition {
       maybeLastUsage
         .map(_.map(r => (r \ "date").as(using json.DateTimeFormat)))
         .merge
+        .recover { case _ => None }
     }
 
     lazy val TestingAuthType = EnumType(
@@ -2078,9 +2160,9 @@ object SchemaDefinition {
               resolve = _.value.apiSubscription
             ),
             Field(
-              "parentSubscription",
-              OptionType(ApiSubscriptionType),
-              resolve = _.value.parentSubscription
+              "keyring",
+              OptionType(KeyringType),
+              resolve = _.value.keyring
             ),
             Field(
               "accessibleResources",
@@ -2410,10 +2492,9 @@ object SchemaDefinition {
             resolve = _.value.motivation
           ),
           Field(
-            "parentSubscriptionId",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx =>
-              apiSubscriptionsFetcher.deferOpt(ctx.value.parentSubscriptionId)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           )
         )
     )
@@ -2446,10 +2527,9 @@ object SchemaDefinition {
             resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
           ),
           Field(
-            "parentSubscriptionId",
-            OptionType(ApiSubscriptionType),
-            resolve = ctx =>
-              apiSubscriptionsFetcher.deferOpt(ctx.value.parentSubscriptionId)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field(
             "motivation",
@@ -2696,26 +2776,15 @@ object SchemaDefinition {
     lazy val ApiKeyRefreshV2Type = new PossibleObject(
       ObjectType(
         "ApiKeyRefreshV2",
-        "An Otoroshi notification triggered when an api key has been refreshed",
+        "A notification triggered when a keyring's secret has been refreshed",
         interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
           NotificationActionType
         ),
         fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
           Field(
-            "api",
-            OptionType(ApiType),
-            resolve = ctx => apisFetcher.defer(ctx.value.api)
-          ),
-          Field(
-            "subscription",
-            OptionType(ApiSubscriptionType),
-            resolve =
-              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
-          ),
-          Field(
-            "plan",
-            OptionType(UsagePlanType),
-            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+            "keyring",
+            OptionType(KeyringType),
+            resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
           ),
           Field("message", OptionType(StringType), resolve = _.value.message)
         )
@@ -2763,6 +2832,28 @@ object SchemaDefinition {
 //            OptionType(ApiSubscriptionType),
 //            resolve = ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
 //          )
+        )
+      )
+    )
+
+    lazy val ApiSubscriptionExpiredType = new PossibleObject(
+      ObjectType(
+        "ApiSubscriptionExpired",
+        "A notification triggered when a subscription has been removed because its validUntil date is past",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionExpired
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionExpired
+        ](
+          Field("clientId", StringType, resolve = _.value.clientId),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          )
         )
       )
     )
@@ -3140,6 +3231,7 @@ object SchemaDefinition {
             OtoroshiSyncApiErrorType,
             ApiKeyDeletionInformationType,
             ApiKeyDeletionInformationV2Type,
+            ApiSubscriptionExpiredType,
             ApiKeyRotationInProgressType,
             ApiKeyRotationInProgressV2Type,
             ApiKeyRotationEndedType,
@@ -3599,6 +3691,29 @@ object SchemaDefinition {
             Field("total", LongType, resolve = _.value._2)
           )
       )
+    lazy val KeyringListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[Keyring], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[Keyring], Long)
+      ](
+        "Keyrings",
+        "Keyrings as a collection of keyrings and the total of",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[Keyring], Long)
+          ](
+            Field(
+              "keyrings",
+              ListType(KeyringType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2)
+          )
+      )
 
     lazy val CmsPageType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
@@ -3993,6 +4108,55 @@ object SchemaDefinition {
             ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
+              ctx,
+              ctx.arg(ID),
+              ctx.arg(TEAM_ID_NOT_OPT),
+              ctx.arg(VERSION),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
+          }
+        )
+      )
+
+    def getApiKeyrings(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        apiId: String,
+        teamId: String,
+        version: String,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
+    ) = {
+      CommonServices
+        .getApiKeyrings(
+          teamId,
+          apiId,
+          version,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(using ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
+    }
+
+    def keyringsQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "keyrings",
+          KeyringListType,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getApiKeyrings(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
@@ -4575,31 +4739,26 @@ object SchemaDefinition {
     }
 
     (
-      Schema(
-        ObjectType(
-          "Query",
-          () =>
-            fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
-              allFields() ++
-                teamQueryFields() ++
-                apiQueryFields() ++
-                apiWithSubscriptionsQueryFields() ++
-                subscriptionDemandsForTeamAdmin() ++
-                teamSubscriptionDemands() ++
-                getAllTagsQueryFields() ++
-                getAllCategoriesQueryFields() ++
-                apiConsumptionQuery() ++
-                apiSubscriptionsQueryFields() ++
-                teamIncomeQuery() ++
-                myNotificationQuery() ++
-                allTeamsQuery() ++
-                getSubscriptionDetailsFields() ++
-                getAuditTrailQueryFields() ++
-                cmsSinglePageFields() ++
-                cmsPageFields()*
-            )
-        )
-      ),
+      Schema(ObjectType("Query",
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
+          teamQueryFields() ++
+          apiQueryFields() ++
+          apiWithSubscriptionsQueryFields() ++
+          subscriptionDemandsForTeamAdmin() ++
+          teamSubscriptionDemands() ++
+          getAllTagsQueryFields() ++
+          getAllCategoriesQueryFields() ++
+          apiConsumptionQuery() ++
+          apiSubscriptionsQueryFields() ++
+          keyringsQueryFields() ++
+          teamIncomeQuery() ++
+          myNotificationQuery() ++
+          allTeamsQuery() ++
+          getSubscriptionDetailsFields() ++
+          getAuditTrailQueryFields() ++
+          cmsSinglePageFields() ++
+          cmsPageFields()*)
+      )),
       DeferredResolver.fetchers(
         tenantsFetcher,
         teamsFetcher,
@@ -4610,6 +4769,7 @@ object SchemaDefinition {
         apiDocumentationPagesFetcher,
         apiSubscriptionsFetcher,
         apiSubscriptionDemandsFetcher,
+        keyringsFetcher,
         usagePlansFetcher,
         accountCreationsFetcher,
         userSessionsFetcher,
