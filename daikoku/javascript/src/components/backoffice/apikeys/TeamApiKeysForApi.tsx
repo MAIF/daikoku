@@ -14,6 +14,7 @@ import {
   useTeamBackOffice,
 } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { SwitchButton } from '../../inputs/Switch';
 import * as Services from '../../../services';
 import {
   IApi,
@@ -138,6 +139,7 @@ export interface IKeyringSubscriptionGql {
 export interface IKeyringForApiGql {
   _id: string;
   customName: string | null;
+  enabled: boolean;
   integrationToken: string;
   bearerToken?: string;
   subscriptionsCount: number;
@@ -195,6 +197,18 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         invalidate();
       }
     );
+
+  const toggleKeyring = (keyringId: string, enabled: boolean) =>
+    Services.toggleKeyring(props.team._id, keyringId, enabled).then(() => {
+      toast.success(
+        translate(
+          enabled
+            ? 'keyring.successfully.enabled'
+            : 'keyring.successfully.disabled'
+        )
+      );
+      invalidate();
+    });
 
   const toggleApiKey = (subscription: IKeyringSubscriptionGql) =>
     Services.archiveApiKey(
@@ -274,20 +288,45 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     );
 
   const deleteKeyring = (keyring: IKeyringForApiGql) =>
-    confirm({
-      message: translate({
-        key: 'keyring.delete.confirm',
-        replacements: [keyring.customName ?? keyring.apiKey.clientName],
-      }),
-    }).then((ok) => {
-      if (ok) {
+    openFormModal({
+      title: translate('apikeys.delete.confirm.modal.title'),
+      description: (
+        <div className='alert alert-danger' role='alert'>
+          <h4 className='alert-heading'>{translate('Warning')}</h4>
+          <p>
+            {translate({
+              key: 'keyring.delete.confirm',
+              replacements: [keyring.customName ?? keyring.apiKey.clientName],
+            })}
+          </p>
+        </div>
+      ),
+      schema: {
+        validation: {
+          type: type.string,
+          label: translate({
+            key: 'keyring.delete.confirm.label',
+            replacements: [keyring.customName ?? keyring.apiKey.clientName],
+          }),
+          constraints: [
+            constraints.required(translate('constraints.required.value')),
+            constraints.matches(
+              new RegExp(
+                `^${escapeRegExp(keyring.customName ?? keyring.apiKey.clientName)}$`
+              ),
+              translate('constraints.match.keyring')
+            ),
+          ],
+        },
+      },
+      actionLabel: translate('Confirm'),
+      onSubmit: () =>
         Services.deleteKeyring(props.team._id, keyring._id).then((r) => {
           if (!isError(r)) {
             invalidate();
             toast.success(translate('keyring.delete.success'));
           }
-        });
-      }
+        }),
     });
 
   const confirmationSchema = (subscription: IKeyringSubscriptionGql) => ({
@@ -438,6 +477,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 keyring={keyring}
                 updateCustomName={updateCustomName}
                 updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
+                toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
                 toggle={toggleApiKey}
                 toggleRotation={toggleApiKeyRotation}
                 regenerateSecret={() => regenerateSecret(keyring)}
@@ -464,6 +504,7 @@ type KeyringCardProps = {
   apiLink: string;
   updateCustomName: (subscriptionId: string, name: string) => Promise<void>;
   updateKeyringName: (name: string) => Promise<void>;
+  toggleKeyring: (enabled: boolean) => Promise<void>;
   toggle: (subscription: IKeyringSubscriptionGql) => Promise<void>;
   toggleRotation: (
     subscription: IKeyringSubscriptionGql,
@@ -498,6 +539,7 @@ export const KeyringCard = ({
   apiLink,
   updateCustomName,
   updateKeyringName,
+  toggleKeyring,
   toggle,
   toggleRotation,
   regenerateSecret,
@@ -581,7 +623,7 @@ export const KeyringCard = ({
         aria-label={ariaLabel}
         onClick={() => copy(value)}
       >
-        <i className={`fa ${icon}`} />
+        {icon}
       </button>
     </BeautifulTitle>
   );
@@ -605,6 +647,43 @@ export const KeyringCard = ({
             {keyring.subscriptionsCount} {translate('Subscriptions')}
           </small>
         </div>
+
+        <Can
+          I={manage}
+          a={apikey}
+          team={currentTeam}
+          orElse={
+            <span
+              className={classNames('badge --state', {
+                '--success': keyring.enabled,
+                '--danger': !keyring.enabled,
+              })}
+            >
+              {translate(
+                keyring.enabled
+                  ? 'subscription.enable.label'
+                  : 'subscription.disable.label'
+              )}
+            </span>
+          }
+        >
+          <div className="d-flex align-items-center gap-2">
+            <SwitchButton
+              checked={keyring.enabled}
+              ariaLabel={translate('keyring.state.aria.label')}
+              onSwitch={(checked: boolean) =>
+                withLoader(() => toggleKeyring(checked))
+              }
+            />
+            <span className="text-muted">
+              {translate(
+                keyring.enabled
+                  ? 'subscription.enable.label'
+                  : 'subscription.disable.label'
+              )}
+            </span>
+          </div>
+        </Can>
 
         <div className="d-flex gap-2 flex-wrap ms-auto align-items-center">
           {!isApiCMS &&
@@ -644,6 +723,7 @@ export const KeyringCard = ({
             )}
 
           {/* Keyring-level menu : refresh secret / rotation */}
+          <Can I={manage} a={apikey} team={currentTeam}>
           <div className="dropdown">
             <Menu
               className="dropdown-menu-button"
@@ -681,14 +761,17 @@ export const KeyringCard = ({
               </span>
               {!aggregated && !disableRotation && (
                 <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={() =>
+                  className={classNames('dropdown-item cursor-pointer', {
+                    disabled: !keyring.enabled,
+                  })}
+                  onClick={() => {
+                    if (!keyring.enabled) return;
                     openFormModal({
                       title: translate('ApiKey rotation'),
                       actionLabel: translate('Save'),
                       schema: settingsSchema,
                       onSubmit: (data: IRotation) => {
-                        if (rotationTarget?.enabled) {
+                        if (keyring.enabled) {
                           withLoader(() =>
                             toggleRotation(
                               rotationTarget,
@@ -700,15 +783,19 @@ export const KeyringCard = ({
                         }
                       },
                       value: keyring.rotation,
-                    })
-                  }
+                    });
+                  }}
                 >
                   {translate('subscription.rotation.update.label')}
                 </span>
               )}
               <span
-                className="dropdown-item cursor-pointer danger"
-                onClick={() => withLoader(regenerateSecret)}
+                className={classNames('dropdown-item cursor-pointer danger', {
+                  disabled: !keyring.enabled,
+                })}
+                onClick={() => {
+                  if (keyring.enabled) withLoader(regenerateSecret);
+                }}
               >
                 {translate('subscription.reset.secret.label')}
               </span>
@@ -720,6 +807,7 @@ export const KeyringCard = ({
               </span>
             </div>
           </div>
+          </Can>
         </div>
       </div>
 

@@ -117,7 +117,6 @@ const KeyringsView = (props: KeyringsViewProps) => {
           >
             <div className="d-flex align-items-center gap-3">
               <Key />
-              {/* <i className="fas fa-key fa-lg keyring-option__icon" /> */}
               <div className="d-flex flex-column">
                 <strong>{keyring.customName ?? keyring.planName}</strong>
                 <small className="text-muted">

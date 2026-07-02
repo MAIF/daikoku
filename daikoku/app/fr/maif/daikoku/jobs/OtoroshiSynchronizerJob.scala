@@ -512,7 +512,7 @@ class OtoroshiSynchronizerJob(
       forceNewValue: Boolean = false
   ): ActualOtoroshiApiKey = {
     oldApiKey.copy(
-      enabled = true,
+      enabled = if (forceNewValue) newApikey.enabled else true,
       // validUntil is never pushed on a keyring's Otoroshi key: it cannot be
       // arbitrated between members sharing the key.
       validUntil = None,
@@ -613,7 +613,8 @@ class OtoroshiSynchronizerJob(
           merged.copy(
             clientId = keyring.apiKey.clientId,
             clientSecret = keyring.apiKey.clientSecret,
-            clientName = keyring.apiKey.clientName
+            clientName = keyring.apiKey.clientName,
+            enabled = keyring.enabled
           )
         )
     }
@@ -675,6 +676,8 @@ class OtoroshiSynchronizerJob(
     val allowClientIdOnlyIsEqual =
       apikey.allowClientIdOnly == apikeyFromSubscriptions.allowClientIdOnly
 
+    val enabledIsEqual = apikey.enabled == apikeyFromSubscriptions.enabled
+
     metadataIsEqual &&
     tagsIsEqual &&
     restrictionsIsEqual &&
@@ -683,7 +686,8 @@ class OtoroshiSynchronizerJob(
     monthlyQuotaIsEqual &&
     authorizedEntitiesIsEqual &&
     readOnlyIsEqual &&
-    allowClientIdOnlyIsEqual
+    allowClientIdOnlyIsEqual &&
+    enabledIsEqual
   }
 
   private def synchronizeApikeys(

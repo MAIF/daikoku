@@ -647,6 +647,46 @@ class ApiService(
     } yield result).value
   }
 
+  def toggleKeyringState(
+      tenant: Tenant,
+      keyringId: KeyringId,
+      team: Team,
+      enabled: Boolean
+  ): Future[Either[AppError, JsObject]] = {
+    import cats.implicits.*
+
+    (for {
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findByIdNotDeleted(keyringId.value),
+        AppError.EntityNotFound(s"Keyring ${keyringId.value}")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        keyring.team == team.id,
+        (),
+        AppError.ForbiddenAction
+      )
+      updatedKeyring = keyring.copy(enabled = enabled)
+      _ <- EitherT.liftF(
+        env.dataStore.keyringRepo.forTenant(tenant.id).save(updatedKeyring)
+      )
+      // reconcile the Otoroshi key from the persisted keyring state ; the sync
+      // job now honors keyring.enabled. Internal binding has no Otoroshi key.
+      _ <- EitherT.liftF[Future, AppError, Unit](
+        keyring.otoroshiSettings match {
+          case KeyringOtoroshiBinding.Otoroshi(_) =>
+            otoroshiSynchronisator.run(keyring.id, tenant)
+          case KeyringOtoroshiBinding.Internal =>
+            FastFuture.successful(())
+        }
+      )
+    } yield Json.obj(
+      "done" -> true,
+      "keyring" -> updatedKeyring.asJson
+    )).value
+  }
+
   private def regenerateOnBinding(
       tenant: Tenant,
       keyring: Keyring,

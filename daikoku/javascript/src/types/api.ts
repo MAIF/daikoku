@@ -424,6 +424,7 @@ export interface IKeyring {
   integrationToken: string;
   bearerToken?: string;
   rotation?: IRotation;
+  enabled: boolean;
 }
 
 export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {

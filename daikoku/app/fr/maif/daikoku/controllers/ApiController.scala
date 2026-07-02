@@ -2272,6 +2272,20 @@ class ApiController(
       }
     }
 
+  def toggleKeyring(teamId: String, keyringId: String, enabled: Boolean) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has ${if (enabled) "enabled" else "disabled"} keyring @{keyring.id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        ctx.setCtxValue("keyring.id", keyringId)
+        apiService
+          .toggleKeyringState(ctx.tenant, KeyringId(keyringId), team, enabled)
+          .map(_.fold(_.render(), Ok(_)))
+      }
+    }
+
   def deleteApiSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(

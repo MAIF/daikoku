@@ -1632,6 +1632,7 @@ object SchemaDefinition {
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
+          Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
             OptionType(StringType),

@@ -137,7 +137,8 @@ case class Keyring(
     bearerToken: Option[String] = None,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
-    ] = None
+    ] = None,
+    enabled: Boolean = true
 ) extends CanJson[Keyring] {
   override def asJson: JsValue = json.KeyringFormat.writes(this)
 

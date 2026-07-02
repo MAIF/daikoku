@@ -276,6 +276,16 @@ export const deleteKeyring = (
     method: 'DELETE',
   });
 
+export const toggleKeyring = (
+  teamId: string,
+  keyringId: string,
+  enabled: boolean
+): PromiseWithError<unknown> =>
+  customFetch(
+    `/api/teams/${teamId}/keyrings/${keyringId}/_enable?enabled=${enabled}`,
+    { method: 'PUT' }
+  );
+
 export const member = (teamId: string, userId: string) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {});
 
@@ -1721,6 +1731,7 @@ export const graphql = {
         keyrings {
           _id
           customName
+          enabled
           integrationToken
           bearerToken
           subscriptionsCount

@@ -2541,7 +2541,8 @@ object json {
                         .some
                   }
                 case _: JsUndefined => None
-              }
+              },
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true)
           )
         )
       } recover { case e =>
@@ -2572,7 +2573,8 @@ object json {
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "enabled" -> o.enabled
       )
   }
 
