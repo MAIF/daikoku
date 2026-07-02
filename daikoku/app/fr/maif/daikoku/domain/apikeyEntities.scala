@@ -140,6 +140,18 @@ case class Keyring(
     ] = None
 ) extends CanJson[Keyring] {
   override def asJson: JsValue = json.KeyringFormat.writes(this)
+
+  /** Keyring JSON safe to expose outside Daikoku (e.g. subscription process
+    * HTTP step): keeps only the apiKey clientId/clientName and drops the
+    * clientSecret, integrationToken and bearerToken.
+    */
+  def asSafeJson: JsValue =
+    json.KeyringFormat.writes(this).as[JsObject] ++ Json.obj(
+      "apiKey" -> Json.obj(
+        "clientName" -> apiKey.clientName,
+        "clientId" -> apiKey.clientId
+      )
+    ) - "integrationToken" - "bearerToken"
 }
 
 object RemainingQuotas {

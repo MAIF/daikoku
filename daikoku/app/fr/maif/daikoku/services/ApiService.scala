@@ -1396,7 +1396,7 @@ class ApiService(
               "team" -> team.asJson,
               "aggregate" -> keyring.fold[JsValue](JsNull)(k =>
                 Json.obj(
-                  "keyring" -> k.asJson,
+                  "keyring" -> k.asSafeJson,
                   "subscriptions" -> keyringSubscriptions.map(sub => {
                     Json.obj(
                       "subscription" -> sub.asJson,
