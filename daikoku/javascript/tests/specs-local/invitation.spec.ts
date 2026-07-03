@@ -23,7 +23,7 @@ test.beforeEach(async () => {
   await resetState();
 });
 
-test("[#1073] Inviter un inconnu dans une équipe d'un tenant local privé", async ({ page }) => {
+test("[#1073] Inviter un inconnu dans une équipe d'un tenant local privé", async ({ page, browser }) => {
   // Configure the account-creation (sign-up) workflow and give the inviting admin
   // a local password (the seeded user comes from an LDAP origin in the state).
   await fetch(`http://localhost:${exposedPort}/admin-api/tenants/${tenant}`, {
@@ -122,31 +122,34 @@ test("[#1073] Inviter un inconnu dans une équipe d'un tenant local privé", asy
   await expect(page.getByText('En attente (1)')).toBeVisible();
 
   // Logout, then open the invitation mail.
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.goto(EMAIL_UI);
-  await expect(page.locator('div').filter({ hasText: /^robert\.california@dundermifflin\.com$/ })).toBeVisible();
-  await page.getByText("Rejoindre l'équipe API Division", { exact: true }).click();
+  const robertContext = await browser.newContext();
+  const robertPage = await robertContext.newPage();
+
+  // await page.getByRole('img', { name: 'user menu' }).click();
+  // await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await robertPage.goto(EMAIL_UI);
+  await expect(robertPage.locator('div').filter({ hasText: /^robert\.california@dundermifflin\.com$/ })).toBeVisible();
+  await robertPage.getByText("Rejoindre l'équipe API Division", { exact: true }).click();
 
   // following the token link must reach the join modal (not "bye bye" on a private tenant).
-  await page.getByRole('link', { name: "Cliquez pour rejoindre l'é" }).click();
-  await expect(page.getByRole('heading', { name: 'team invitation' })).toBeVisible();
-  await page.getByRole('button', { name: 'Accepter' }).click();
+  await robertPage.getByRole('link', { name: "Cliquez pour rejoindre l'équipe" }).click();
+  await expect(robertPage.getByRole('heading', { name: 'team invitation' })).toBeVisible();
+  await robertPage.getByRole('button', { name: 'Accepter' }).click();
 
   // Sign-up form.
-  await expect(page.getByRole('heading', { name: 'Inscription à Dunder Mifflin' })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Nom' }).fill(ROBERT.name);
-  await page.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
-  await page.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(ROBERT.password!);
-  await page.getByRole('textbox', { name: 'Confirmation de mot de passe' }).fill(ROBERT.password!);
-  await page.getByRole('button', { name: "Création d'un compte" }).click();
-  await expect(page.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
+  await expect(robertPage.getByRole('heading', { name: 'Inscription à Dunder Mifflin' })).toBeVisible();
+  await robertPage.getByRole('textbox', { name: 'Nom' }).fill(ROBERT.name);
+  await robertPage.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
+  await robertPage.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(ROBERT.password!);
+  await robertPage.getByRole('textbox', { name: 'Confirmation de mot de passe' }).fill(ROBERT.password!);
+  await robertPage.getByRole('button', { name: "Création d'un compte" }).click();
+  await expect(robertPage.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
 
   // Confirm the account via the confirmation mail.
-  await page.goto(EMAIL_UI);
-  await page.getByText('Confirmez votre adresse e-mail pour activer votre compte Dunder Mifflin', { exact: true }).click();
-  const page2Promise = page.waitForEvent('popup');
-  await page.getByRole('link', { name: '👉 [Confirmer mon adresse e-' }).click();
+  await robertPage.goto(EMAIL_UI);
+  await robertPage.getByText('Confirmez votre adresse e-mail pour activer votre compte Dunder Mifflin', { exact: true }).click();
+  const page2Promise = robertPage.waitForEvent('popup');
+  await robertPage.getByRole('link', { name: '👉 [Confirmer mon adresse e-' }).click();
   const page2 = await page2Promise;
   await expect(page2.getByRole('heading', { name: 'Adresse email confirmée' })).toBeVisible();
 

@@ -101,7 +101,7 @@ export const ApiList = (props: ApiListProps) => {
         id: 'tags',
         meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags'), size: 15 },
         cell: (info) => (
-          <div className="d-flex gap-1">
+          <div className="d-flex gap-1 align-items-center">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
                 className="tag --primary"
@@ -171,7 +171,7 @@ export const ApiList = (props: ApiListProps) => {
           const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
           const api = info.row.original.api
           return (
-            <div className="d-flex">
+            <div className="d-flex align-items-center gap-1">
               <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}>
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
               </Link>
