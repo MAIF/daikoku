@@ -266,9 +266,9 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
     * Port 587 uses STARTTLS (upgrade a plaintext connection), port 465 uses
     * implicit SSL/TLS. Both are deduced from the port when not explicitly set,
     * see [[SimpleSMTPSettings.useStartTls]] / [[SimpleSMTPSettings.useSsl]].
-    * Without this, providers such as Scaleway reject authentication
-    * ("502 5.7.0 Please authenticate first" on 587) or refuse plaintext
-    * connections (on 465).
+    * Without this, providers such as Scaleway reject authentication ("502 5.7.0
+    * Please authenticate first" on 587) or refuse plaintext connections (on
+    * 465).
     */
   private def buildProperties(): Properties = {
     val properties = new Properties()

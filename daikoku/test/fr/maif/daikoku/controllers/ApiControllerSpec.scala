@@ -6480,15 +6480,21 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
 
-
       val planAuthorizedTeamCheck = httpJsonCallBlocking(
         path =
-          s"/api/me/visible-apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans",
+          s"/api/me/visible-apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans"
       )(using tenant, session)
       planAuthorizedTeamCheck.status mustBe 200
 
-      val planJson = planAuthorizedTeamCheck.json.as[JsArray].value.find(json => (json \ "customName").as[String] == "MyPrivatePlan").get
-      (planJson \ "authorizedTeams").as[Seq[String]] must contain theSameElementsAs (Seq(teamConsumerId.value))
+      val planJson = planAuthorizedTeamCheck.json
+        .as[JsArray]
+        .value
+        .find(json => (json \ "customName").as[String] == "MyPrivatePlan")
+        .get
+      (planJson \ "authorizedTeams")
+        .as[Seq[String]] must contain theSameElementsAs (Seq(
+        teamConsumerId.value
+      ))
 
     }
   }

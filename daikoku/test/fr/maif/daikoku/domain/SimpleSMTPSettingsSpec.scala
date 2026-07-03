@@ -57,7 +57,8 @@ class SimpleSMTPSettingsSpec extends PlaySpec {
 
   "SimpleSMTPSettings JSON format" should {
     "round-trip the starttls and ssl fields" in {
-      val original = settings(port = "587", starttls = Some(true), ssl = Some(false))
+      val original =
+        settings(port = "587", starttls = Some(true), ssl = Some(false))
       val parsed = json.SimpleSMTPClientSettingsFormat
         .reads(original.asJson)
         .get
