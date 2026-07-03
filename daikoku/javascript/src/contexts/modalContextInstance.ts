@@ -18,12 +18,12 @@ const init: TModalContext = {
   openContactModal: () => { console.error("ModalProvider is missing in the tree: openContactModal is a no-op"); },
   openAssetSelectorModal: () => { console.error("ModalProvider is missing in the tree: openAssetSelectorModal is a no-op"); },
   openApiSelectModal: () => { console.error("ModalProvider is missing in the tree: openApiSelectModal is a no-op"); },
-  openApiKeySelectModal: () => { console.error("ModalProvider is missing in the tree: openApiKeySelectModal is a no-op"); },
   openCustomModal: () => { console.error("ModalProvider is missing in the tree: openCustomModal is a no-op"); },
   close: () => { console.error("ModalProvider is missing in the tree: close is a no-op"); },
   openRightPanel: () => { console.error("ModalProvider is missing in the tree: openRightPanel is a no-op"); },
   closeRightPanel: () => { console.error("ModalProvider is missing in the tree: closeRightPanel is a no-op"); },
-  rightPanelContent: undefined
+  openKeyringSelectModal: () => { console.error("ModalProvider is missing in the tree: openKeyringSelectModal is a no-op"); },
+  rightPanelContent: undefined,
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
