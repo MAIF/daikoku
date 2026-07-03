@@ -561,8 +561,7 @@ export const MyProfile = () => {
                 </button>
                 <FeedbackButton
                   className="btn --primary"
-                  // onPress={valid as () => Promise<void>}
-                  onPress={() => new Promise((resolve, reject) => setTimeout(() => reject({ error: "test d'erreur catché" }), 2000))}
+                  onPress={valid as () => Promise<void>}
                 >
                   <Translation i18nkey="Save">Save</Translation>
                 </FeedbackButton>
