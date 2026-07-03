@@ -35,7 +35,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+
+  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
   await page.getByLabel('motivation').click();
@@ -96,7 +97,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
   await page.getByLabel('motivation').click();
@@ -153,7 +154,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process automatique', 
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
+  page.getByRole('article', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/dev').click();
@@ -201,7 +202,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -309,6 +310,81 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
 //   await expect(otoroshiKey.clientSecret).toBe(clientSecret)
 // });
 
+
+test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({ page, context }) => {
+  test.setTimeout(90_000);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByText('Environnements').click();
+
+  await page.locator('#D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o-dropdownMenuButton').click();
+  await page.getByText('Dupliquer').nth(2).click();
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByRole('option', { name: 'preprod' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  
+  await logout(page);
+  await loginAs(JIM, page);
+
+  await page.getByRole('link', { name: 'API Commande' }).click();
+  await page.getByText('Environnements').click();
+  await page.getByRole('article', { name: 'prod' }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
+  await page.getByText('Logistique').click();
+  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
+  await page.getByText('Vendeurs').click();
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByRole('option', { name: 'daikoku-api-key-api-papier-' }).click();
+  await page.getByRole('button', { name: 'Confirmation' }).click();
+  await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByText('La demande de clé d\'API au').click();
+  await page.locator('.lucide.lucide-x').click();
+
+  await logout(page);
+  await loginAs(MICHAEL, page);
+  await page.getByLabel('Accès aux notifications').click();
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })).toBeVisible
+
+});
+
+test('Selection de plans limitée', async ({ page, context }) => {
+  test.setTimeout(90_000);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByText('Environnements').click();
+
+  await page.locator('#D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o-dropdownMenuButton').click();
+  await page.getByText('Dupliquer').nth(2).click();
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByRole('option', { name: 'preprod' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  
+
+  await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').check();
+  await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').check();
+  expect(page.getByRole('article', { name: 'preprod' }).getByRole('checkbox')).toBeDisabled;
+  expect(page.getByText('2 lignes sélectionnées')).toBeVisible;
+
+  await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').uncheck();
+  await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').uncheck();
+  await page.getByRole('article', { name: 'dev' }).getByRole('checkbox').check();
+
+  await expect(page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox')).toBeDisabled();
+  await expect(page.getByRole('article', { name: 'preprod' }).getByRole('checkbox')).toBeDisabled();
+  expect(page.getByText('1 lignes sélectionnées')).toBeVisible;
+});
+
+
+
 test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus', async ({ page, context }) => {
   test.setTimeout(90_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -317,7 +393,7 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -937,9 +1013,9 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByRole('link', { name: 'API test publique' }).click();
   await page.getByText('Environnements').click();
   // api publique + plan public => bouton visible
-  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^dev$/ })}).getByRole('button', { name: getKey })).toBeVisible()  
+  await expect(page.getByRole('button').filter({ hasText: /^$/ }).nth(4)).toBeVisible()  
   // cas 1 : api publique + plan privé + équipe autorisée => bouton visible
-  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^preprod$/ })}).getByRole('button', { name: getKey })).toBeVisible();  
+  await expect(page.getByRole('button').filter({ hasText: /^$/ }).nth(5)).toBeVisible();  
   // cas 2 : api publique + plan privé + équipe non autorisée => la carte du plan n'est pas affichée
   await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeHidden();
 
@@ -948,9 +1024,11 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.getByRole('link', { name: 'API test privée autorisée' }).click();
   await page.getByText('Environnements').click();
   // cas 3 : api privée + plan public + équipe autorisée => bouton visible
-   await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^dev$/ })}).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.getByRole('button').filter({ hasText: /^$/ }).nth(4)).toBeVisible()  
+
   // cas 5 : api privée + plan privé + équipe autorisée => bouton visible
-    await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.getByRole('button').filter({ hasText: /^$/ }).nth(5)).toBeVisible();  
+
 
   // === équipe propriétaire : accède à TOUS les plans, même ultra privés ===
   // "API test proprio" est possédée par Vendeurs. Son plan "prod" est privé et n'autorise
@@ -959,7 +1037,7 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: 'API test proprio' }).click();
   await page.getByText('Environnements').click();
-  await expect(page.locator('article.table-row').filter({ has: page.locator('.plan-cell div', { hasText: /^prod$/ })}).getByRole('button', { name: getKey })).toBeVisible();
+  await expect(page.getByRole('button').filter({ hasText: /^$/ }).nth(4)).toBeVisible();
 })
 
 

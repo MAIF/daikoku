@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, Settings, Trash2 } from 'lucide-react';
+import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -26,7 +26,6 @@ import {
   ISubscriptionWithApiInfo,
   ITeamSelector,
   ITeamSimple,
-  ITeamFullGql,
   ITenant,
   IThirdPartyPaymentSettings,
   IUsagePlan,
@@ -1217,14 +1216,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
             title: translate('motivations.modal.title'),
             schema: formStep.schema,
             onSubmit: (motivation) =>
-              props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey, motivation }),
+              props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey, motivation })
+                .then((response) => {
+                  if (response?.status === 'waiting') {
+                    toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response.teamName] }));
+                  }
+                  close();
+                }),
             actionLabel: translate('Send'),
             value: apiKey?.customMetadata,
-            description: formStep.info ?
-              <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>
+            description: formStep.info
+              ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} />
+              : <></>
           });
         } else {
-          props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey }).then(() => close());
+          props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey })
+            .then((response) => {
+              if (response?.status === 'created') { // ✅ 'waiting' et non 'created'
+                toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response?.apiTeam?.name] }));
+                // response.teamName est déjà une string ici
+              }
+              close();
+            });
         }
       };
 
@@ -1631,7 +1644,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'plan',
-        meta: { className: "plan-cell", title: translate('api.pricings.name.table.title'), size: 5 },
+        meta: {
+          className: "plan-cell",
+          title: tenant.display === 'environment'
+                          ? translate('api.pricings.name.table.env')
+                          : translate('api.pricings.name.table.title'),
+          size: 6 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1643,7 +1661,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'description',
-        meta: { className: "description-cell", title: translate('api.pricings.description.table.title'), size: 20 },
+        meta: { className: "description-cell", title: translate('api.pricings.description.table.title'), size: 10 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1684,7 +1702,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'otoroshi-cible',
-        meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 10 },
+        meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
 
@@ -1700,7 +1718,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'process',
-        meta: { className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 15 },
+        meta: { className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 5 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1716,9 +1734,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       }),
       columnHelper.display({
-        id: 'apiKeySubscription',
-        meta: { className: "apiKeySubscription-cell", size: 20 },
+        id: 'action',
+        meta: { className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 4 },
         cell: (info) => {
+
           const plan: IUsagePlanGQL = info.cell.row.original
           const {
             otoroshiTargetIsDefined,
@@ -1730,7 +1749,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
           } = otoroshiTargetColumn(plan)
 
           return (
-            <div className="p-2">
+            <div className="d-flex flex-row align-items-center">
+
+              <div className="p-2">
               {
                 !connectedUser.isGuest &&
                 (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
@@ -1738,10 +1759,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 (
                   <button
                     type="button"
-                    className="table-plan_action-button d-flex inactive align-items-center gap-2"
+                    aria-label={translate("Get API key")}
+                    className="btn btn-outline-secondary btn-square-sm"
                   >
-                    <KeyRound />
-                    <Translation i18nkey="Get API key" />
+                    <KeyRound size={16}/>
                   </button>
                 )
               }
@@ -1766,15 +1787,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         (plan.otoroshiTarget && !isAccepted)) && (
                         <button
                           type="button"
-                          className="btn --secondary --small"
+                          className="btn btn-outline-secondary btn-square-sm"
+                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
                           onClick={openTeamSelectorModal}
                         >
-                          <KeyRound />
-                          <Translation
-                            i18nkey={
-                              isAutomaticProcess ? 'Get API key' : 'Request API key'
-                            }
-                          />
+                          <KeyRound size={16}/>
                         </button>
                       )
                     }
@@ -1785,75 +1802,55 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 connectedUser.isGuest && (
                   <button
                     type="button"
-                    className="btn --secondary --small"
+                    className="btn btn-outline-secondary btn-square-sm"
+                    aria-label={translate("Get API key")}
                     onClick={() => openLoginOrRegisterModal({ tenant })}
                   >
-                    <KeyRound />
-                    <Translation i18nkey="Get API key" />
+                    <KeyRound size={16} />
                   </button>
                 )
               }
             </div>
-          )
-        }
-      }),
-      columnHelper.display({
-        id: 'action',
-        meta: { className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 4 },
-        cell: (info) => {
-          const plan = info.cell.row.original
-
-          return (
-            <div className="d-flex flex-row align-items-center">
               <div className="p-2">
                 <Can I={manage} a={API} team={props.ownerTeam}>
-                  <div>
-                    <Settings
-                      className="cursor-pointer dropdown-menu-button"
-                      style={{ fontSize: '20px' }}
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                      id={`${plan._id}-dropdownMenuButton`}
-                    />
+                    <div>
+                      <button
+                        className="btn btn-outline-secondary btn-square-sm"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        id={`${plan._id}-dropdownMenuButton`}
+                      >
+                        <EllipsisVertical size={16} />
+                      </button>
                     <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
-                      <span className="dropdown-item cursor-pointer"
+                      <span className="dropdown-item cursor-pointer  .ms-1"
                         onClick={() => actions(plan).editPlan()}>
+                        <Pencil size={16} />
                         {tenant.display === 'environment'
                           ? translate('pricing.edit.env.btn.label')
                           : translate('Edit plan')}
                       </span>
+                      <Can I={manage} a={API} team={props.ownerTeam}>
+                        <span className='dropdown-item cursor-pointer'
+                          onClick={() => actions(plan).editProcess()}>
+                        <Pencil size={16}  />
+                          {translate('pricing.edit.process.btn.label')}
+                          </span>
+                      </Can>
                       {props.api.visibility !== 'AdminOnly' && <>
                         <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).duplicatePlan()}>
+                          <CopyPlus size={16}  />
                           {tenant.display === 'environment'
                             ? translate('pricing.clone.env.btn.label')
                             : translate('Duplicate plan')}
                         </span>
-
-                        <span className='dropdown-item cursor-pointer'
-                          onClick={() => actions(plan).editQuotas()}
-                        >{translate('pricing.edit.quota.env.btn.label')}
-                        </span>
-                        <span className='dropdown-item cursor-pointer'
-                          onClick={() => actions(plan).editPricing()}
-                        >{translate('pricing.edit.pricing.env.btn.label')}
-                        </span>
-                        <Can I={manage} a={API} team={props.ownerTeam}>
-                          <span className='dropdown-item cursor-pointer'
-                            onClick={() => actions(plan).editOtoroshiTarget()}
-                          >{translate('pricing.edit.otoroshiTarget.env.btn.label')}
-                          </span>
-                          <span className='dropdown-item cursor-pointer'
-                            onClick={() => actions(plan).editProcess()}
-                          >{translate('pricing.edit.process.btn.label')}
-                          </span>
-                        </Can>
-                        <div className="dropdown-divider" />
                         <span
-                          className="dropdown-item cursor-pointer danger"
+                          className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).deleteWithConfirm()}
                         >
+                          <Trash2 size={16}  />
                           {tenant.display === 'environment'
                             ? translate('pricing.delete.env.btn.label')
                             : translate('Delete plan')}
@@ -1911,6 +1908,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         columns={columns}
         fetchData={usagePlansFetchData}
         getRowId={plan => plan._id}
+        getRowAriaLabel={plan => plan.customName}
         tableClassName="col-12 api_list_container"
         dataClassName="api-table table-rows"
         countLabelKey="Plan"
@@ -2015,7 +2013,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                     });
                                   });
                                   displayResponseForSavingApikey(promises)
-
                                 }
                               })
                             } else {
@@ -2027,7 +2024,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 }
                               )
                               displayResponseForSavingApikey(promises)
-
                               close()
                             }
                           }
@@ -2061,18 +2057,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         ]}
         toolbar={
           <>
-            {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
-              {
                 <button
                   type='button'
                   onClick={() => createNewPlan()}
                   className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
                   <p className="m-0">{translate('api.pricings.creation.button.label')}</p>
-                </button>
-              }
-            </Can>
-            }
+                </button>              
+
           </>
         }
       />
@@ -2084,7 +2076,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 function convertIUsagePlanGQLToIUsagePlan(plan: IUsagePlanGQL): IUsagePlan {
   return { ...plan, authorizedTeams: plan.authorizedTeams.map(team => team._id) };
 }
-
 
 function findCompatibleSubscriptionForMultiPlanRequest(
   { plans,

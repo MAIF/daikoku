@@ -158,24 +158,21 @@ export const ApiHome = ({
         apiKey
           ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
           : Services.askForApiKey(api._id, team, plan._id, motivation)
-      ).then((result) => {
-
-        if (isError(result)) {
-          toast.error(result.error);
-          return null
-        } else if (Services.isCheckoutUrl(result)) {
-          window.location.href = result.checkoutUrl
-          return null
-        } else if (Services.isCreationDone(result)) {
-          console.log("preums")
-          return { api, plan, apiTeam, subscription: result.subscription, status: 'created' as const };
-        } else if (result.creation === 'waiting') {
-          const teamName = myTeams.find((t) => t._id === team)!.name;
-          toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
-          return { plan, teamName, status: 'waiting' as const };
-        }
-
-      })
+      )
+        .then((result) => {
+          if (isError(result)) {
+            toast.error(result.error);
+            return null
+          } else if (Services.isCheckoutUrl(result)) {
+            window.location.href = result.checkoutUrl
+            return null
+          } else if (Services.isCreationDone(result)) {
+            return { api, plan, teamName: apiTeam, subscription: result.subscription, status: 'created' as const };
+          } else if (result.creation === 'waiting') {
+            const apiTeam = myTeams.find((t) => t._id === team)!.name;
+            return { plan, teamName: apiTeam, status: 'waiting' as const };
+          }
+        })
         .then((createdResult) => {
           queryClient.invalidateQueries({ queryKey: ["mySubscription"] })
           return createdResult;
