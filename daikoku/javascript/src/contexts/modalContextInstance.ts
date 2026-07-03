@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-import { TModalContext } from "./modals/types";
+import { TModalContext } from './modals/types';
 
 const init: TModalContext = {
   alert: () => Promise.resolve(),
@@ -18,7 +18,7 @@ const init: TModalContext = {
   openContactModal: () => { console.error("ModalProvider is missing in the tree: openContactModal is a no-op"); },
   openAssetSelectorModal: () => { console.error("ModalProvider is missing in the tree: openAssetSelectorModal is a no-op"); },
   openApiSelectModal: () => { console.error("ModalProvider is missing in the tree: openApiSelectModal is a no-op"); },
-  openKeyringSelectModal: () => { console.error("ModalProvider is missing in the tree: openKeyringSelectModal is a no-op"); },
+  openApiKeySelectModal: () => { console.error("ModalProvider is missing in the tree: openApiKeySelectModal is a no-op"); },
   openCustomModal: () => { console.error("ModalProvider is missing in the tree: openCustomModal is a no-op"); },
   close: () => { console.error("ModalProvider is missing in the tree: close is a no-op"); },
   openRightPanel: () => { console.error("ModalProvider is missing in the tree: openRightPanel is a no-op"); },

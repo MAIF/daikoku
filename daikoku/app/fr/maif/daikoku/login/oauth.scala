@@ -394,7 +394,8 @@ object OAuth2Support {
         )
         email <- EitherT.fromOption[Future](
           (userFromOauth \ authConfig.emailField)
-            .asOpt[String].map(_.toLowerCase),
+            .asOpt[String]
+            .map(_.toLowerCase),
           AppError.EntityNotFound("No email found")
         )
         picture <- EitherT.pure[Future, AppError](

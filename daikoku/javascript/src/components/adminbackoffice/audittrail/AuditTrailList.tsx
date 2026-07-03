@@ -3,7 +3,7 @@ import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, ge
 import classNames from 'classnames';
 import { subHours } from 'date-fns';
 import { useContext, useMemo, useState } from "react";
-import Pagination from 'react-paginate';
+import Pagination from '../../utils/Pagination';
 
 import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from "../../../contexts/globalContext";

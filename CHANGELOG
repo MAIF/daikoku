@@ -999,3 +999,12 @@ We'd like to thank all the contributors who worked on this release!
 - team information is visible event for unconnected users [#1092](https://github.com/MAIF/daikoku/issues/1092)
 - User invitation does not work on private tenant [#1073](https://github.com/MAIF/daikoku/issues/1073)
 
+## [v18.12.0] - 2026-07-03
+
+## :beetle: Bug Fixes
+
+- Deleting key associated with private plant removes my team from this plan authorized team [#1144](https://github.com/MAIF/daikoku/issues/1144)
+- Email error after team creation with helm and Scaleway transactionnel email [#1127](https://github.com/MAIF/daikoku/issues/1127)
+- Uppercase in email adresses causes chaos [#1121](https://github.com/MAIF/daikoku/issues/1121)
+- User impersonation without validated emails [#1120](https://github.com/MAIF/daikoku/issues/1120)
+

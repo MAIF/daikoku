@@ -57,12 +57,18 @@ export default defineConfig({
         index: resolve(__dirname, 'index.html'),
       },
       output: {
-        manualChunks: {
-          highlight: ['highlight.js'],
-          asyncapi: ['@asyncapi/react-component'],
-          swagger: ['swagger-ui-dist'],
-          asciidoctor: ['asciidoctor'],
-          backofffice: ['@maif/react-forms', 'xstate', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
+        manualChunks(id) {
+          if (id.includes('node_modules/highlight.js')) return 'highlight';
+          if (id.includes('node_modules/@asyncapi/react-component')) return 'asyncapi';
+          if (id.includes('node_modules/swagger-ui-dist')) return 'swagger';
+          if (id.includes('node_modules/asciidoctor')) return 'asciidoctor';
+          if (
+            id.includes('node_modules/@maif/react-forms') ||
+            id.includes('node_modules/xstate') ||
+            id.includes('node_modules/@dnd-kit/')
+          ) {
+            return 'backofffice';
+          }
         },
       }
     },
@@ -74,6 +80,7 @@ export default defineConfig({
     } as any
   },
   optimizeDeps: {
+    include: ['react-paginate'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

@@ -4,7 +4,7 @@ import { ChangeEvent, ReactNode, useCallback, useContext, useEffect, useMemo, us
 import { useSearchParams } from 'react-router-dom';
 import Select, { MultiValue, OptionProps, ValueContainerProps, components } from 'react-select';
 import AsyncSelect from 'react-select/async';
-import Pagination from 'react-paginate';
+import Pagination from '../utils/Pagination';
 import {
   ColumnDef,
   ColumnFiltersState,
