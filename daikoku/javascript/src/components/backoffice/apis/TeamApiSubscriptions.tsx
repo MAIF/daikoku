@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import Pagination from 'react-paginate';
+import Pagination from '../../utils/Pagination';
 import { toast } from "sonner";
 
 import { I18nContext, ModalContext } from "../../../contexts";

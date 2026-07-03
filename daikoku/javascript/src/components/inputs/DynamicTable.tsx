@@ -4,7 +4,7 @@ import { ChangeEvent, ReactNode, useCallback, useContext, useEffect, useMemo, us
 import { useSearchParams } from 'react-router-dom';
 import Select, { MultiValue, OptionProps, ValueContainerProps, components } from 'react-select';
 import AsyncSelect from 'react-select/async';
-import ReactPaginate from 'react-paginate';
+import Pagination from '../utils/Pagination';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -21,12 +21,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
 import { ChevronLeft, ChevronRight, Ellipsis, RefreshCcw, Search } from 'lucide-react';
-
-// Vite 8 / Rolldown mis-handles react-paginate's CJS `__esModule` interop and
-// exposes `{ default: fn }` instead of the component, which crashes rendering
-// with "Element type is invalid ... got: object". Unwrap defensively so it works
-// whether the interop is correct (default = component) or broken (default nested).
-const Pagination = ((ReactPaginate as any)?.default ?? ReactPaginate) as typeof ReactPaginate;
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

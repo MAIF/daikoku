@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
-import Pagination from "react-paginate";
+import Pagination from "../../utils/Pagination";
 import Select from "react-select";
 
 import { I18nContext } from "../../../contexts/i18n-context";

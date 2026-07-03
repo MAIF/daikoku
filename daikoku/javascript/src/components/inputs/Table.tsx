@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table';
 import classNames from 'classnames';
 import React, { ReactNode, RefObject, useContext, useEffect, useImperativeHandle, useState } from 'react';
-import Pagination from 'react-paginate';
+import Pagination from '../utils/Pagination';
 import Select from 'react-select';
 
 import { I18nContext } from '../../contexts';

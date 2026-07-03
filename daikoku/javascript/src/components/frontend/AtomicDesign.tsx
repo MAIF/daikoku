@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Pagination from "react-paginate";
+import Pagination from "../utils/Pagination";
 import Select from "react-select";
 
 export const AtomicDesign = () => {
