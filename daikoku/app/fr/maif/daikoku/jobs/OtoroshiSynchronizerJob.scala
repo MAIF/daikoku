@@ -521,16 +521,24 @@ class OtoroshiSynchronizerJob(
       metadata = oldApiKey.metadata ++
         newApikey.metadata ++
         Map(
-          "daikoku__metadata" -> mergeMetaValue(
-            "daikoku__metadata",
-            oldApiKey.metadata,
-            newApikey.metadata
-          ),
-          "daikoku__tags" -> mergeMetaValue(
-            "daikoku__tags",
-            oldApiKey.metadata,
-            newApikey.metadata
-          )
+          "daikoku__metadata" ->
+            (if (forceNewValue)
+               newApikey.metadata.getOrElse("daikoku__metadata", "")
+             else
+               mergeMetaValue(
+                 "daikoku__metadata",
+                 oldApiKey.metadata,
+                 newApikey.metadata
+               )),
+          "daikoku__tags" ->
+            (if (forceNewValue)
+               newApikey.metadata.getOrElse("daikoku__tags", "")
+             else
+               mergeMetaValue(
+                 "daikoku__tags",
+                 oldApiKey.metadata,
+                 newApikey.metadata
+               ))
         ),
       restrictions = ApiKeyRestrictions(
         enabled =

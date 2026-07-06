@@ -2162,6 +2162,188 @@ class OtoroshiSyncSpec()
       metadata.get("isCron") mustBe None
     }
 
+    "not keep the deleted subscription metadata names in daikoku__metadata after a child subscription deletion" in {
+      val parentDevPlan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "dev",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            otoroshiSettings = containerizedOtoroshi,
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            ),
+            apikeyCustomization = ApikeyCustomization(
+              metadata = Json.obj("env" -> "prod"),
+              customMetadata = Seq(
+                CustomMetadata(
+                  key = "region",
+                  possibleValues = Set("eu-west", "eu-east")
+                )
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val childDevPlan = UsagePlan(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        customName = "dev",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            otoroshiSettings = containerizedOtoroshi,
+            authorizedEntities = Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            ),
+            apikeyCustomization = ApikeyCustomization(
+              metadata = Json.obj("type" -> "child"),
+              customMetadata = Seq(
+                CustomMetadata(
+                  key = "usage",
+                  possibleValues = Set("cron", "api")
+                )
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentDevPlan.id),
+        defaultUsagePlan = parentDevPlan.id.some
+      )
+
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childDevPlan.id),
+        defaultUsagePlan = childDevPlan.id.some
+      )
+
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
+      val consumerParentDevSubscription = ApiSubscription(
+        id = ApiSubscriptionId("consumer-parent-dev"),
+        tenant = tenant.id,
+        plan = parentDevPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = user.id,
+        customName = Some("Parent dev"),
+        customMetadata = Json.obj("region" -> "eu-west").some,
+        keyring = keyring.id
+      )
+      val consumerChildDevSubscription = ApiSubscription(
+        id = ApiSubscriptionId("consumer-child-dev"),
+        tenant = tenant.id,
+        plan = childDevPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi.id,
+        by = user.id,
+        customName = Some("Child dev"),
+        keyring = keyring.id,
+        customMetadata = Json.obj("usage" -> "cron", "isCron" -> true).some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(tenantAdmin, userAdmin, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentDevPlan, childDevPlan),
+        subscriptions =
+          Seq(consumerParentDevSubscription, consumerChildDevSubscription),
+        keyrings = Seq(keyring)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      // sync the aggregated key first so it advertises both subscriptions'
+      // metadata: env, region (parent) and type, usage, isCron (child)
+      triggerSyncJob(session)
+      val beforeMeta = getApkMetadataFromOtoroshi(keyring.apiKey.clientId)
+        .getOrElse("daikoku__metadata", "")
+        .split('|')
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .toSet
+      beforeMeta.contains("type") mustBe true
+      beforeMeta.contains("usage") mustBe true
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${consumerChildDevSubscription.id.value}",
+        method = "DELETE"
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      val metadata = getApkMetadataFromOtoroshi(keyring.apiKey.clientId)
+
+      // the deleted child's metadata values are already removed from the key
+      metadata.get("env") mustBe "prod".some
+      metadata.get("region") mustBe "eu-west".some
+      metadata.get("type") mustBe None
+      metadata.get("usage") mustBe None
+      metadata.get("isCron") mustBe None
+
+      // daikoku__metadata must only advertise the remaining subscription's keys,
+      // not the names inherited from the deleted child plan/subscription
+      val daikokuMeta = metadata
+        .getOrElse("daikoku__metadata", "")
+        .split('|')
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .toSet
+      daikokuMeta.contains("env") mustBe true
+      daikokuMeta.contains("region") mustBe true
+      daikokuMeta.contains("type") mustBe false
+      daikokuMeta.contains("usage") mustBe false
+      daikokuMeta.contains("isCron") mustBe false
+    }
+
     "be run after subscription creation" in {
       val plan = UsagePlan(
         id = UsagePlanId("parent.dev"),

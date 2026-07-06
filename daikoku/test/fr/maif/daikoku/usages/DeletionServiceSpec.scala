@@ -1084,6 +1084,130 @@ class DeletionServiceSpec
       respVerifOto.status mustBe 404
     }
 
+    "physically delete the keyring through the deletion queue once no subscription references it" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("keyring-purge-plan"),
+        tenant = tenant.id,
+        customName = "keyring purge plan",
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("keyring-purge-api"),
+        name = "keyring purge API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+      val keyring = Keyring(
+        id = KeyringId("keyring-to-purge"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "purge-token"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("keyring-purge-sub"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = user.id,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+
+      def operationsPending() =
+        Await.result(
+          daikokuComponents.env.dataStore.operationRepo
+            .forTenant(tenant)
+            .find(
+              Json.obj(
+                "status" -> Json.obj(
+                  "$in" -> JsArray(
+                    Seq(
+                      JsString(OperationStatus.Idle.name),
+                      JsString(OperationStatus.InProgress.name)
+                    )
+                  )
+                )
+              )
+            ),
+          5.second
+        )
+
+      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
+        val maybeSub = Await.result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findById(sub.id),
+          5.second
+        )
+        maybeSub.isEmpty
+      }
+      org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
+        operationsPending().isEmpty
+      }
+
+      // the keyring must be physically removed, not only flagged _deleted.
+      // findById does not filter on _deleted, so a soft-deleted keyring would
+      // still be returned here.
+      val maybeKeyring = Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(keyring.id),
+        5.second
+      )
+      maybeKeyring mustBe None
+    }
+
     "be completed by delete a plan" in {
       val userPersonalTeam = Team(
         id = TeamId("user-team"),

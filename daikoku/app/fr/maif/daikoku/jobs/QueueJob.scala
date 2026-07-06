@@ -493,6 +493,32 @@ class QueueJob(
       })
   }
 
+  private def deleteKeyring(o: Operation): Future[Unit] = {
+    env.dataStore
+      .withTransaction {
+        for {
+          _ <- env.dataStore.operationRepo
+            .forTenant(o.tenant)
+            .save(o.copy(status = OperationStatus.InProgress))
+          _ <- env.dataStore.keyringRepo.forTenant(o.tenant).deleteById(o.itemId)
+          _ <- env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+        } yield ()
+      }
+      .map(_ =>
+        logger.debug(
+          s"[deletion job] :: keyring ${o.itemId} successfully deleted"
+        )
+      )
+      .recover(e => {
+        logger.error(
+          s"[deletion job] :: [id ${o.id}] :: error during deletion of keyring ${o.itemId}: $e"
+        )
+        env.dataStore.operationRepo
+          .forTenant(o.tenant)
+          .save(o.copy(status = OperationStatus.Error))
+      })
+  }
+
   // ***************************
   // *** THIRD PARTY PAYMENT ***
   // ***************************
@@ -685,6 +711,8 @@ class QueueJob(
             deleteTeam(firstOperation)
           case (ItemType.User, OperationAction.Delete) =>
             deleteUser(firstOperation)
+          case (ItemType.Keyring, OperationAction.Delete) =>
+            deleteKeyring(firstOperation)
           case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
             deleteThirdPartySubscription(firstOperation)
           case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>

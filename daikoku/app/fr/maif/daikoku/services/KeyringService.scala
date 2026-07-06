@@ -3,6 +3,7 @@ package fr.maif.daikoku.services
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.OtoroshiApiKeyFormat
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.utils.IdGenerator
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,10 +56,38 @@ class KeyringService(env: Env) {
         )
       )
 
-  /** Logically delete the keyring when no subscription references it anymore.
-    * The deletion of the underlying Otoroshi api key is the caller's
-    * responsibility. Returns true when the keyring was deleted.
+  /** Logically delete the keyring and enqueue its physical deletion in the
+    * deletion queue. The operation is only enqueued when the keyring was not
+    * already flagged deleted, so callers can invoke this idempotently without
+    * piling up duplicate operations. The deletion of the underlying Otoroshi
+    * api key is the caller's responsibility. Returns true when the keyring was
+    * deleted.
     */
+  def deleteKeyring(
+      tenant: TenantId,
+      keyring: KeyringId
+  ): Future[Boolean] =
+    env.dataStore.keyringRepo
+      .forTenant(tenant)
+      .deleteByIdLogically(keyring)
+      .flatMap {
+        case true =>
+          env.dataStore.operationRepo
+            .forTenant(tenant)
+            .save(
+              Operation(
+                DatastoreId(IdGenerator.token(32)),
+                tenant = tenant,
+                itemId = keyring.value,
+                itemType = ItemType.Keyring,
+                action = OperationAction.Delete
+              )
+            )
+            .map(_ => true)
+        case false => Future.successful(false)
+      }
+
+  /** Logically delete the keyring when no subscription references it anymore. */
   def deleteKeyringIfEmpty(
       tenant: TenantId,
       keyring: KeyringId
@@ -67,10 +96,7 @@ class KeyringService(env: Env) {
       .forTenant(tenant)
       .count(Json.obj("keyring" -> keyring.asJson, "_deleted" -> false))
       .flatMap {
-        case 0L =>
-          env.dataStore.keyringRepo
-            .forTenant(tenant)
-            .deleteByIdLogically(keyring)
-        case _ => Future.successful(false)
+        case 0L => deleteKeyring(tenant, keyring)
+        case _  => Future.successful(false)
       }
 }

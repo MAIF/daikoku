@@ -233,6 +233,9 @@ object ItemType {
   case object UsagePlan extends ItemType {
     def name: String = "UsagePlan"
   }
+  case object Keyring extends ItemType {
+    def name: String = "Keyring"
+  }
   val values: Seq[ItemType] =
     Seq(User, Team, Api, Subscription)
   def apply(name: String): Option[ItemType] =
@@ -245,6 +248,7 @@ object ItemType {
       case "ThirdPartySubscription" => ThirdPartySubscription.some
       case "ThirdPartyProduct"      => ThirdPartyProduct.some
       case "UsagePlan"              => UsagePlan.some
+      case "Keyring"                => Keyring.some
       case _                        => None
     }
 }

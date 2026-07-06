@@ -19,7 +19,8 @@ class DeletionService(
     env: Env,
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
-    otoroshiSynchronizerJob: OtoroshiSynchronizerJob
+    otoroshiSynchronizerJob: OtoroshiSynchronizerJob,
+    keyringService: KeyringService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -259,11 +260,7 @@ class DeletionService(
                 if (remaining.isEmpty)
                   otoroshiSynchronizerJob
                     .runForDeletion(kid, tenant)
-                    .flatMap(_ =>
-                      env.dataStore.keyringRepo
-                        .forTenant(tenant)
-                        .deleteByIdLogically(kid)
-                    )
+                    .flatMap(_ => keyringService.deleteKeyring(tenant.id, kid))
                     .map(_ => Some(kid))
                 else otoroshiSynchronizerJob.run(kid, tenant).map(_ => None)
               }

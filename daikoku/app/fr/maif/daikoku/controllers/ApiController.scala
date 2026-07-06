@@ -23,7 +23,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiService, DeletionService}
+import fr.maif.daikoku.services.{ApiService, DeletionService, KeyringService}
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.*
@@ -58,7 +58,8 @@ class ApiController(
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
     translator: Translator,
     paymentClient: PaymentClient,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    keyringService: KeyringService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -1666,9 +1667,7 @@ class ApiController(
                 )
           }
           _ <- EitherT.liftF[Future, AppError, Boolean](
-            env.dataStore.keyringRepo
-              .forTenant(ctx.tenant)
-              .deleteByIdLogically(keyring.id)
+            keyringService.deleteKeyring(ctx.tenant.id, keyring.id)
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
