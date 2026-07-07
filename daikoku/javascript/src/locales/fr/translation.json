@@ -1445,6 +1445,8 @@
   "subscription.extract.button.label": "Détacher du trousseau",
   "subscription.enable.label": "Activé",
   "subscription.disable.label": "Désactivé",
+  "keyring.enable.action.label": "Activer le trousseau",
+  "keyring.disable.action.label": "Désactiver le trousseau",
   "subscriptions.hide.link": "Cacher le lien",
   "subscriptions.display.link": "Afficher le lien",
   "subscriptions.link.explanation.1": "Pour transférer votre souscription à une autre équipe, veuillez suivre les étapes ci-dessous :",

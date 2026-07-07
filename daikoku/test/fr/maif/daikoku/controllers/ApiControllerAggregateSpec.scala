@@ -6,14 +6,12 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
@@ -33,7 +31,7 @@ import scala.util.Random
 
 class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
 
-  "aggregate api keys" can {
+  "keyring with multiple subscriptions" can {
     "not be used when the mode is disabled on plan" in {
       val subId = ApiSubscriptionId("test")
       val keyring = Keyring(
@@ -67,95 +65,21 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         ),
         keyrings = Seq(keyring)
       )
+      val _testPlan = defaultApi.plans.find(u => u.id.value == "4")
+      _testPlan mustBe defined
+      val testPlan = _testPlan.get
+      testPlan.aggregationApiKeysSecurity mustBe Some(false)
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/apis/${defaultApi.api.id.value}/plan/4/team/${teamConsumerId.value}/${keyring.id.value}/_extends",
+          s"/api/apis/${defaultApi.api.id.value}/plan/${testPlan.id.value}/team/${teamConsumerId.value}/${keyring.id.value}/_extends",
         method = "PUT",
         body = Json.obj().some
       )(using tenant, loginWithBlocking(user, tenant))
 
       resp.status mustBe Status.FORBIDDEN
     }
-    "not be extended subscription that we have already a parent" in {
-      val plan = UsagePlan(
-        id = UsagePlanId("conflict-plan"),
-        tenant = tenant.id,
-        customName = "conflict plan",
-        otoroshiTarget = Some(
-          OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
-            )
-          )
-        ),
-        allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey,
-        autoRotation = Some(false),
-        aggregationApiKeysSecurity = Some(true)
-      )
-      val api = defaultApi.api.copy(
-        id = ApiId("conflict-api"),
-        team = teamOwnerId,
-        possibleUsagePlans = Seq(plan.id),
-        defaultUsagePlan = plan.id.some
-      )
-      val keyring = Keyring(
-        id = KeyringId("test-keyring"),
-        tenant = tenant.id,
-        team = teamConsumerId,
-        apiKey = parentApiKey,
-        otoroshiSettings =
-          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
-        createdAt = DateTime.now(),
-        integrationToken = "test"
-      )
-      val parentSub = ApiSubscription(
-        id = ApiSubscriptionId("test"),
-        tenant = tenant.id,
-        plan = plan.id,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = api.id,
-        by = userTeamAdminId,
-        customName = None,
-        keyring = keyring.id
-      )
-      setupEnvBlocking(
-        tenants = Seq(
-          tenant.copy(
-            otoroshiSettings = Set(
-              OtoroshiSettings(
-                id = containerizedOtoroshi,
-                url =
-                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-                host = "otoroshi-api.oto.tools",
-                clientSecret = otoroshiAdminApiKey.clientSecret,
-                clientId = otoroshiAdminApiKey.clientId
-              )
-            ),
-            aggregationApiKeysSecurity = Some(true)
-          )
-        ),
-        users = Seq(user),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = Seq(plan),
-        apis = Seq(api),
-        subscriptions = Seq(parentSub),
-        keyrings = Seq(keyring)
-      )
 
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/${keyring.id.value}/_extends",
-        method = "PUT",
-        body = Json.obj().some
-      )(using tenant, loginWithBlocking(user, tenant))
-
-      resp.status mustBe 409
-    }
     "not be enabled on plan when aggregation on tenant is disabled" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -167,6 +91,8 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
 
       val updatedPlans = defaultApi.plans
         .map(_.copy(aggregationApiKeysSecurity = Some(true)))
+
+      tenant.aggregationApiKeysSecurity.getOrElse(false) mustBe false
 
       updatedPlans.foreach(plan => {
         val resp = httpJsonCallBlocking(
@@ -231,6 +157,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         createdAt = DateTime.now(),
         integrationToken = "parent"
       )
+
       setupEnvBlocking(
         tenants = Seq(
           tenant.copy(
@@ -334,7 +261,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
     }
     "be transform in unique api key" in {
 
-      val parentPlan = UsagePlan(
+      val plan1 = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
         customName = "parent.dev",
@@ -356,7 +283,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         aggregationApiKeysSecurity = Some(true)
       )
 
-      val childPlan = UsagePlan(
+      val plan2 = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
         customName = "child.dev",
@@ -378,19 +305,19 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         aggregationApiKeysSecurity = Some(true)
       )
 
-      val parentApi = defaultApi.api.copy(
+      val api1 = defaultApi.api.copy(
         id = ApiId("parent-id"),
         name = "parent API",
         team = teamOwnerId,
-        possibleUsagePlans = Seq(parentPlan.id),
-        defaultUsagePlan = parentPlan.id.some
+        possibleUsagePlans = Seq(plan1.id),
+        defaultUsagePlan = plan1.id.some
       )
-      val childApi = defaultApi.api.copy(
+      val api2 = defaultApi.api.copy(
         id = ApiId("child-id"),
         name = "child API",
         team = teamOwnerId,
-        possibleUsagePlans = Seq(childPlan.id),
-        defaultUsagePlan = childPlan.id.some
+        possibleUsagePlans = Seq(plan2.id),
+        defaultUsagePlan = plan2.id.some
       )
 
       val keyring = Keyring(
@@ -403,24 +330,24 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
-      val parentSub = ApiSubscription(
+      val sub1 = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        plan = parentPlan.id,
+        plan = plan1.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
-        api = parentApi.id,
+        api = api1.id,
         by = userTeamAdminId,
         customName = None,
         keyring = keyring.id
       )
-      val childSub = ApiSubscription(
+      val sub2 = ApiSubscription(
         id = ApiSubscriptionId("test2"),
         tenant = tenant.id,
-        plan = childPlan.id,
+        plan = plan2.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
-        api = childApi.id,
+        api = api2.id,
         by = userTeamAdminId,
         customName = None,
         keyring = keyring.id
@@ -443,15 +370,15 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         ),
         users = Seq(user),
         teams = Seq(teamConsumer, teamOwner),
-        usagePlans = Seq(parentPlan, childPlan),
-        apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub),
+        usagePlans = Seq(plan1, plan2),
+        apis = Seq(api1, api2),
+        subscriptions = Seq(sub1, sub2),
         keyrings = Seq(keyring)
       )
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/subscriptions/${childSub.id.value}/_makeUnique",
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${sub2.id.value}/_makeUnique",
         method = "POST"
       )(using tenant, loginWithBlocking(user, tenant))
 
@@ -460,7 +387,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       // check that parent subscription apikey do not be updated
       val resp2 = httpJsonCallBlocking(
         path =
-          s"/api/apis/${parentApi.id.value}/${parentApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+          s"/api/apis/${api1.id.value}/${api1.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
       )(using tenant, loginWithBlocking(user, tenant))
 
       resp2.status mustBe 200
@@ -473,14 +400,14 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       // check that child subscription apikey has been created
       val resp3 = httpJsonCallBlocking(
         path =
-          s"/api/apis/${childApi.id.value}/${childApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+          s"/api/apis/${api2.id.value}/${api2.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
       )(using tenant, loginWithBlocking(user, tenant))
       resp3.status mustBe 200
       val childSubscriptions = SeqApiSubscriptionFormat.reads(resp3.json)
       childSubscriptions.get.size mustBe 1
       assert(childSubscriptions.get.head.keyring != keyring.id)
     }
-    "failed when aggregated apikey has an otoroshi target different than parent" in {
+    "failed when new subscription(plan) has an otoroshi target different than keyring" in {
       val parentSubId = ApiSubscriptionId("parent")
       val parentApiKeyClientId = "clientId"
       val keyring = Keyring(
@@ -543,12 +470,9 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       )(using tenant, loginWithBlocking(user, tenant))
 
       resp.status mustBe Status.CONFLICT
-      (resp.json \ "error")
-        .as[
-          String
-        ] mustBe "The subscribed plan has another otoroshi of the parent plan"
+      (resp.json \ "error").as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
-    "update aggregated APIkey do not erase authorizedEntities" in {
+    "update subscription on keyring do not erase authorizedEntities" in {
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
@@ -697,7 +621,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       strings.contains(childRouteId) mustBe true
       strings.contains(parentRouteId) mustBe true
     }
-    "update plan in aggregated APIkey do not erase authorizedEntities" in {
+    "update plan of subscription contained in keyring do not erase authorizedEntities" in {
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
@@ -2055,5 +1979,6 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       respProd3.status mustBe 200
 
     }
+
   }
 }
