@@ -931,12 +931,12 @@ export const KeyringCard = ({
                         >
                           {translate('subscription.custom.name.update.label')}
                         </span>
-                        <span
+                        {!aggregated && <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => withLoader(() => transferKey(sub))}
                         >
                           {translate('subscription.transfer.label')}
-                        </span>
+                        </span>}
                         <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => withLoader(() => toggle(sub))}
