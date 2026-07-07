@@ -1199,6 +1199,19 @@
             "transform_request": 0,
             "match_route": 0
           }
+        },
+        {
+          "plugin_index": {
+            "transform_request": 1
+          },
+          "nodeId": "cp:otoroshi.next.plugins.OverrideHost-0",
+          "plugin": "cp:otoroshi.next.plugins.OverrideHost",
+          "enabled": true,
+          "debug": false,
+          "include": [],
+          "exclude": [],
+          "bound_listeners": [],
+          "config": {}
         }
       ]
     },
@@ -1789,6 +1802,19 @@
               "wipe_backend_request": true,
               "update_quotas": true
             }
+          },
+          {
+            "plugin_index": {
+              "transform_request": 1
+            },
+            "nodeId": "cp:otoroshi.next.plugins.OverrideHost-0",
+            "plugin": "cp:otoroshi.next.plugins.OverrideHost",
+            "enabled": true,
+            "debug": false,
+            "include": [],
+            "exclude": [],
+            "bound_listeners": [],
+            "config": {}
           }
         ],
         "kind": "proxy.otoroshi.io/Route"
