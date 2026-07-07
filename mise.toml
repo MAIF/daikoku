@@ -44,6 +44,9 @@ dir = "daikoku"
 run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_light.ndjson\""
 raw=true
 
+[tasks."dev:db"]
+run = "PGGSSENCMODE=disable PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres"
+
 [tasks."dev:back:empty"]
 dir = "daikoku"
 run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf\""

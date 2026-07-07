@@ -38,3 +38,9 @@ processes:
     depends_on:
       Containers:
         condition: process_healthy
+  Database:
+    command: "mise run dev:db"
+    is_interactive: true
+    depends_on:
+      Backend:
+        condition: process_healthy
