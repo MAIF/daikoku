@@ -229,8 +229,6 @@ jobs:
           OTOROSHI_URL: http://otoroshi-api.oto.tools:8080
 
       - name: Run Playwright tests (${{ matrix.suite.name }})
-        env:
-          CI: true
         run: |
           cd ./daikoku/javascript/tests
           if [[ "${{ matrix.suite.name }}" == "perf" ]]; then
