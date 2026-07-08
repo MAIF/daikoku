@@ -307,7 +307,7 @@ class PlanController(
                 ) &&
                 plan.otoroshiTarget.exists(
                   _.apikeyCustomization.customMetadata.nonEmpty &&
-                    plan.subscriptionProcess.forall(_.name != "teamAdmin")
+                    plan.subscriptionProcess.steps.forall(_.name != "teamAdmin")
                 )
               ) {
                 plan.addSubscriptionStep(
@@ -427,7 +427,7 @@ class PlanController(
               .mapAsync(1)(demand => {
 
                 val newSteps =
-                  updatedPlan.subscriptionProcess.map(validationStep => {
+                  updatedPlan.subscriptionProcess.steps.map(validationStep => {
                     val demandStep =
                       demand.steps.find(_.step.id == validationStep.id)
 
@@ -452,8 +452,10 @@ class PlanController(
               })
               .runWith(Sink.ignore)
               .map(_ => {
-                updatedPlan.subscriptionProcess.foreach(step => {
-                  if (!oldPlan.subscriptionProcess.exists(_.id == step.id)) {
+                updatedPlan.subscriptionProcess.steps.foreach(step => {
+                  if (
+                    !oldPlan.subscriptionProcess.steps.exists(_.id == step.id)
+                  ) {
                     for {
                       demands <-
                         env.dataStore.subscriptionDemandRepo
@@ -492,7 +494,7 @@ class PlanController(
                       )
                     } yield ()
                   } else if (
-                    !oldPlan.subscriptionProcess
+                    !oldPlan.subscriptionProcess.steps
                       .find(_.id == step.id)
                       .contains(step)
                   ) {
@@ -1174,7 +1176,7 @@ class PlanController(
                       .map(_.asSafeJson)
                       .getOrElse(Json.obj())) +
                     ("subscriptionProcess" -> JsArray(
-                      p.subscriptionProcess.map {
+                      p.subscriptionProcess.steps.map {
                         case process @ ValidationStep.Form(_, _, _, _, _, _) =>
                           process.asJson
                         case process => Json.obj("name" -> process.name)

@@ -29,14 +29,21 @@ object SubscriptionUtil {
   private def normalizeStep(step: ValidationStep): JsValue =
     canonical(ignoredKeys.foldLeft(step.asJson.as[JsObject])(_ - _))
 
-  def processChecksum(steps: Seq[ValidationStep]): String = {
-    val payload =
-      JsArray(steps.map(normalizeStep)).toString
-        .getBytes(java.nio.charset.StandardCharsets.UTF_8)
-    java.security.MessageDigest
-      .getInstance("SHA-256")
-      .digest(payload)
-      .map("%02x".format(_))
-      .mkString
+  def processChecksum(steps: Seq[ValidationStep]): Option[String] = {
+    steps match {
+      case Nil => None
+      case _ =>
+        val payload =
+          JsArray(steps.map(normalizeStep)).toString
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8)
+
+        Some(
+          java.security.MessageDigest
+            .getInstance("SHA-256")
+            .digest(payload)
+            .map("%02x".format(_))
+            .mkString
+        )
+    }
   }
 }

@@ -1,22 +1,27 @@
 package fr.maif.daikoku.domain
 
 import cats.data.EitherT
-import cats.syntax.option._
+import cats.syntax.option.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.json.{
+  BillingTimeUnitFormat,
+  LongFormat,
   SeqIssueIdFormat,
   SeqPostIdFormat,
   SeqTeamIdFormat,
-  SetApiTagFormat
+  SetApiTagFormat,
+  SubscriptionProcessFormat
 }
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils.{IdGenerator, ReplaceAllWith}
+import fr.maif.daikoku.utils.SubscriptionUtil.processChecksum
+import fr.maif.daikoku.utils.{IdGenerator, ReplaceAllWith, SubscriptionUtil}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, Days}
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object OtoroshiTarget {
   val expressionReplacer = ReplaceAllWith("\\$\\{([^}]*)\\}")
@@ -123,6 +128,13 @@ case class BillingDuration(value: Long, unit: BillingTimeUnit)
       case BillingTimeUnit.Year => 235L
       case _                    => 0L
     }
+}
+
+case class SubscriptionProcess(
+    steps: Seq[ValidationStep] = Seq.empty
+) extends CanJson[SubscriptionProcess] {
+  val checksum: Option[String] = processChecksum(steps)
+  def asJson: JsValue = SubscriptionProcessFormat.writes(this)
 }
 
 sealed trait ApiVisibility {
@@ -260,7 +272,7 @@ case class UsagePlan(
     swagger: Option[SwaggerAccess] = None,
     testing: Option[Testing] = None,
     documentation: Option[ApiDocumentation] = None,
-    subscriptionProcess: Seq[ValidationStep] = Seq.empty,
+    subscriptionProcess: SubscriptionProcess = SubscriptionProcess(),
     visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     formKeysToMetadata: Option[Seq[String]] = None,
@@ -296,10 +308,16 @@ case class UsagePlan(
   ): UsagePlan = {
     idx match {
       case Some(value) =>
-        val (front, back) = this.subscriptionProcess.splitAt(value)
-        this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        val (front, back) = this.subscriptionProcess.steps.splitAt(value)
+        this.copy(subscriptionProcess =
+          SubscriptionProcess(
+            steps = front ++ List(step) ++ back
+          )
+        )
       case None =>
-        this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+        this.copy(subscriptionProcess =
+          SubscriptionProcess(steps = this.subscriptionProcess.steps :+ step)
+        )
     }
   }
 

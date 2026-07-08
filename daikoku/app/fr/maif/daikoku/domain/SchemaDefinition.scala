@@ -1181,7 +1181,7 @@ object SchemaDefinition {
           Field(
             "subscriptionProcess",
             ListType(ValidationStepInterfaceType),
-            resolve = _.value.subscriptionProcess,
+            resolve = _.value.subscriptionProcess.steps,
             possibleTypes = List(
               ValidationStepEmail,
               ValidationStepAdmin,
@@ -1192,9 +1192,8 @@ object SchemaDefinition {
           ),
           Field(
             "subscriptionProcessChecksum",
-            StringType,
-            resolve = ctx =>
-              SubscriptionUtil.processChecksum(ctx.value.subscriptionProcess)
+            OptionType(StringType),
+            resolve = _.value.subscriptionProcess.checksum
           ),
           Field(
             "integrationProcess",

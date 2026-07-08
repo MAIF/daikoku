@@ -28,6 +28,7 @@ import play.api.Logger
 import play.api.libs.json.*
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.DataStore
+import fr.maif.daikoku.utils.SubscriptionUtil.processChecksum
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -1429,28 +1430,65 @@ object evolution_1840_a extends EvolutionScript {
       logger.info(
         s"Begin evolution $version - Extract form step from admin step"
       )
-
       dataStore.usagePlanRepo
         .forAllTenant()
         .streamAllRaw()
         //        .filter(plan => (plan \ "subscriptionProcess").asOpt[JsArray].exists(_.value.nonEmpty))
         //        .filter(plan => (plan \ "subscriptionProcess").as[JsArray].value.exists(step => (step \ "type").as[String] == "teamAdmin"))
-        .mapAsync(10) { plan =>
-          logger.info(s"evolution for plan ${(plan \ "_id").as[String]}")
+        .mapAsync(10) { plan1840 =>
+          logger.info(s"evolution for plan ${(plan1840 \ "_id").as[String]}")
 
           // recuperer le schema et le formatter
-          (plan \ "subscriptionProcess")
+          (plan1840 \ "subscriptionProcess")
             .as[JsArray]
             .value
             .find(step => (step \ "type").as[String] == "teamAdmin") match {
             case None =>
-              logger.warn("no step admin found")
-              FastFuture.successful(false)
-            case Some(oldAdminStep) =>
-              logger.info(
-                s"admin step found for plan ${(plan \ "_id").as[String]}"
+              val planId = (plan1840 \ "_id").as[String]
+              logger.warn(
+                s"no admin step found for plan $planId, migrating subscriptionProcess anyway"
               )
-              // creer le step form
+
+              val rawSteps = (plan1840 \ "subscriptionProcess").as[JsArray]
+
+              val steps = json.SeqValidationStepFormat.reads(rawSteps) match {
+                case JsSuccess(value, _) => value
+                case JsError(errors) =>
+                  logger.error(s"FAILED parsing steps for plan $planId")
+                  logger.error(
+                    s"raw subscriptionProcess: ${Json.stringify(rawSteps)}"
+                  )
+                  logger.error(s"errors: $errors")
+                  throw new RuntimeException(s"invalid steps for plan $planId")
+              }
+
+              val newSubProcess = SubscriptionProcess(steps = steps)
+
+              val plan = json.UsagePlanFormat.reads(
+                plan1840.as[
+                  JsObject
+                ] + ("subscriptionProcess" -> newSubProcess.asJson)
+              ) match {
+                case JsSuccess(value, _) => value
+                case JsError(errors) =>
+                  logger.error(s"FAILED parsing plan $planId")
+                  logger.error(s"errors: $errors")
+                  throw new RuntimeException(s"invalid plan $planId")
+              }
+
+              dataStore.usagePlanRepo
+                .forAllTenant()
+                .save(plan)
+
+            case Some(oldAdminStep) =>
+              val planId = (plan1840 \ "_id").as[String]
+              logger.error(
+                s"ABOUT TO PROCESS plan $planId with oldAdminStep: ${Json.stringify(oldAdminStep)}"
+              )
+              logger.error(
+                s"full subscriptionProcess: ${Json.stringify((plan1840 \ "subscriptionProcess").get)}"
+              )
+
               val newFormStep = ValidationStep.Form(
                 id = IdGenerator.token(32),
                 title = "form",
@@ -1458,12 +1496,19 @@ object evolution_1840_a extends EvolutionScript {
                 formatter = (oldAdminStep \ "formatter").asOpt[String]
               )
               // creer le nouveau step d'admin
+              logger.info(
+                s"oldAdminStep raw: ${Json.stringify(oldAdminStep)}"
+              )
+              val rawSteps = (plan1840 \ "subscriptionProcess").as[JsArray]
+              logger.info(
+                s"raw subscriptionProcess for plan ${(plan1840 \ "_id").as[String]}: ${Json.stringify(rawSteps)}"
+              )
               val newAdminStep =
                 oldAdminStep.as(using json.ValidationStepFormat)
               // save le plan modifié
-              val subscriptionProcess = json.SeqValidationStepFormat.reads(
+              val steps = json.SeqValidationStepFormat.reads(
                 JsArray(
-                  (plan \ "subscriptionProcess")
+                  (plan1840 \ "subscriptionProcess")
                     .as[JsArray]
                     .value
                     .map(step =>
@@ -1473,15 +1518,38 @@ object evolution_1840_a extends EvolutionScript {
                     )
                     .prepended(newFormStep.asJson)
                 )
-              )
+              ) match {
+                case JsSuccess(value, _) => value
+                case JsError(errors) =>
+                  logger.error(
+                    s"failed to parse steps for plan ${(plan1840 \ "_id").as[String]}: $errors"
+                  )
+                  throw new RuntimeException(
+                    s"invalid steps for plan ${(plan1840 \ "_id").as[String]}"
+                  )
+              }
 
-              val _plan = plan
-                .as(using json.UsagePlanFormat)
-                .copy(subscriptionProcess = subscriptionProcess.get)
-              logger.info(Json.stringify(_plan.asJson))
+              val newSubProcess = SubscriptionProcess(steps = steps)
+
+              val plan = json.UsagePlanFormat.reads(
+                plan1840.as[
+                  JsObject
+                ] + ("subscriptionProcess" -> newSubProcess.asJson)
+              ) match {
+                case JsSuccess(value, _) => value
+                case JsError(errors) =>
+                  logger.error(
+                    s"failed to parse plan ${(plan1840 \ "_id").as[String]}: $errors"
+                  )
+                  throw new RuntimeException(
+                    s"invalid plan ${(plan1840 \ "_id").as[String]}"
+                  )
+              }
+
               dataStore.usagePlanRepo
                 .forAllTenant()
-                .save(_plan)
+                .save(plan)
+
           }
 
         }

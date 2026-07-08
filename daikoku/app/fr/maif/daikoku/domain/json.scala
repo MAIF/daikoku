@@ -64,6 +64,27 @@ object json {
       )
   }
 
+  val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
+    override def reads(json: JsValue): JsResult[SubscriptionProcess] =
+      json match {
+        case JsArray(_) =>
+          SeqValidationStepFormat
+            .reads(json)
+            .map(steps => SubscriptionProcess(steps = steps))
+        case obj: JsObject =>
+          (obj \ "steps")
+            .validate(using SeqValidationStepFormat)
+            .map(steps => SubscriptionProcess(steps = steps))
+        case _ =>
+          JsError("subscriptionProcess is neither an array nor an object")
+      }
+
+    override def writes(o: SubscriptionProcess): JsValue = Json.obj(
+      "steps" -> Json.toJson(o.steps)(using SeqValidationStepFormat),
+      "checkSum" -> o.checksum
+    )
+  }
+
   val LongFormat = new Format[Long] {
     override def reads(json: JsValue): JsResult[Long] =
       Try {
@@ -781,6 +802,10 @@ object json {
 
   val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue): JsResult[UsagePlan] =
+      AppLogger.error("=================================")
+      AppLogger.error(json.toString)
+      AppLogger.error("=================================")
+
       Try {
         JsSuccess(
           UsagePlan(
@@ -810,8 +835,9 @@ object json {
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(using SeqValidationStepFormat),
+            subscriptionProcess = (json \ "subscriptionProcess").as(using
+              SubscriptionProcessFormat
+            ),
             integrationProcess = (json \ "integrationProcess")
               .asOpt(using IntegrationProcessFormat)
               .getOrElse(IntegrationProcess.ApiKey),
@@ -881,9 +907,8 @@ object json {
           .map(JsBoolean.apply)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
+        "subscriptionProcess" ->
+          o.subscriptionProcess.asJson,
         "integrationProcess" -> IntegrationProcessFormat.writes(
           o.integrationProcess
         ),
