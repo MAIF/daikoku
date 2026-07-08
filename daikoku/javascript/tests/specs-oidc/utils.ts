@@ -37,6 +37,7 @@ export const loginOidcAs = async (user: IUser, page: Page, waitForHome: boolean 
 export const logout = async (page: Page) => {
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
+    // @ts-ignore
   if(env.process?.CI) {
     await page.getByRole('button', { name: 'Yes' }).click();
   }
