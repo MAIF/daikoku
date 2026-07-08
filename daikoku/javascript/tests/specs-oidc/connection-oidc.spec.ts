@@ -1,6 +1,7 @@
 import test, { expect } from '@playwright/test';
 import { PAM, JIM, MICHAEL, TOBY, IUser } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginOidcAs, logout, tenant } from './utils';
+import { env } from 'process';
 
 test.beforeEach(async () => {
   await fetch(`http://localhost:${exposedPort}/admin-api/state/reset`, {
@@ -155,25 +156,21 @@ test('Health check', async () => {
     }
   }).then(r => r.json()))
 
-  expect(resultHealth).toEqual(
-    {
+  const expected = {
       datastore: 'UP',
       'Dunder Mifflin': {
         tenantMode: 'Default',
         status: {
           mailer: 'UP',
           S3: 'ABSENT',
-          otoroshi: [
-            {
-              "http://otoroshi:8080 (otoroshi-api.oto.tools)": "UP"
-            }
-          ]
+          otoroshi: env.process?.CI ? [{"http://otoroshi:8080 (otoroshi-api.oto.tools)": "UP"}]: [{"http://localhost:8080 (otoroshi-api.oto.tools)": "UP"}]
         },
       },
       "status": "UP",
       "version": actualVersion.version
-    }
-  )
+    };
+
+  expect(resultHealth).toEqual(expected)
 });
 
 test("[#1121]: handle uppercase in user mail & [#1120]: connected user has no more invitation prop", async ({ page, browser }) => {
