@@ -164,7 +164,7 @@ test('Health check', async () => {
           mailer: 'UP',
           S3: 'ABSENT',
           // @ts-ignore
-          otoroshi: env.process?.CI ? [{"http://otoroshi:8080 (otoroshi-api.oto.tools)": "UP"}]: [{"http://localhost:8080 (otoroshi-api.oto.tools)": "UP"}]
+          otoroshi: process.env.CI ? [{"http://otoroshi:8080 (otoroshi-api.oto.tools)": "UP"}]: [{"http://localhost:8080 (otoroshi-api.oto.tools)": "UP"}]
         },
       },
       "status": "UP",
