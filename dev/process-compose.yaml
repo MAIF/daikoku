@@ -6,6 +6,7 @@ processes:
       if [[ $DB = "true" ]] ;
       then mise run pg ;
       else echo Database is already running, wont start one ;
+      while true; do sleep 10000; done ;
       fi
     shutdown:
       command: |
