@@ -1,17 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import { AlertCircle, MoreHorizontal, Pen, RefreshCcw, Trash2, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
+import { toast } from 'sonner';
 
 import { api as API, formatDate, getInitials, manage, userHasAvatar } from '../../..';
-import { I18nContext } from '../../../../contexts';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
-import { Can, getColorByBgColor, randomColor } from '../../../utils';
 import { IApi, isError, Issue, ITeamSimple, IUserSimple } from '../../../../types';
-import { ModalContext } from '../../../../contexts';
+import { Can, getColorByBgColor, randomColor } from '../../../utils';
 
 const styles = {
   commentHeader: {
@@ -221,15 +220,15 @@ export function ApiTimelineIssue({
       </h1>)}
       {connectedUser && !connectedUser.isGuest && (<Can I={manage} a={API} team={team}>
         <div className="d-flex">
-          {editionMode ? (<div className="d-flex ms-3">
-            <button className="btn btn-outline-success me-1" onClick={() => updateIssue(issue)}>
+          {editionMode ? (<div className="d-flex ms-3 gap-2">
+            <button className="btn --secondary" onClick={() => updateIssue(issue)}>
               {translate('Save')}
             </button>
-            <button className="btn btn-outline-primary" onClick={() => handleEdition(false)}>
+            <button className="btn --secondary" onClick={() => handleEdition(false)}>
               {translate('Cancel')}
             </button>
           </div>) : (<>
-            <button className="btn btn-outline-primary me-1" onClick={() => handleEdition(true)}>
+            <button className="btn --secondary" onClick={() => handleEdition(true)}>
               {translate('Edit')}
             </button>
           </>)}
@@ -344,18 +343,20 @@ function Comment({
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (
-                <div className="ml-auto">
-                  <button className="btn btn-xs btn-outline-primary me-1" onClick={editComment}>
+                <div className="ml-auto d-flex gap-2">
+                  <button className="btn --secondary --small --icon-only" onClick={editComment}>
                     <Pen className="align-self-center" />
                   </button>
                   {i !== 0 && (
-                    <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>
+                    <button className="btn --secondary --small --icon-only" onClick={removeComment}>
                       <Trash2 className="align-self-center" />
                     </button>
                   )}
                 </div>
               ) : (
-                <MoreHorizontal className="align-self-center ml-auto" style={{ cursor: 'pointer' }} onClick={() => toggleActions(true)} />
+                <button className='btn --secondary --small --icon-only' onClick={() => toggleActions(true)}>
+                  <MoreHorizontal />
+                </button>
               )}
             </>
           )}
@@ -454,24 +455,23 @@ function NewComment({
             }}
             footer={({ valid }) => {
               return (
-                <div className="d-flex mt-3 justify-content-end">
+                <div className="d-flex mt-3 justify-content-end gap-2">
                   <Can I={manage} a={API} team={team}>
                     <>
                       {open && (
-                        <button type="button" className="btn btn-outline-danger me-1" onClick={closeIssue}>
-                          <AlertCircle className="me-2" />
+                        <button type="button" className="btn --secondary" onClick={closeIssue}>
                           {translate('issues.actions.close')}
                         </button>
                       )}
                       {!open && (
-                        <button type="button" className="btn btn-outline-success me-1" onClick={openIssue}>
+                        <button type="button" className="btn --secondary" onClick={openIssue}>
                           <AlertCircle className="me-2" />
                           {translate('issues.actions.reopen')}
                         </button>
                       )}
                     </>
                   </Can>
-                  <button type="button" className="btn btn-outline-success" onClick={valid}>
+                  <button type="button" className="btn --secondary" onClick={valid}>
                     {translate('issues.actions.comment')}
                   </button>
                 </div>

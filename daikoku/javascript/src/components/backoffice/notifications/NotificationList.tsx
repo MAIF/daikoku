@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Ban, Check, Smile, X } from "lucide-react";
-import {useContext, useState} from 'react';
+import debounce from 'lodash/debounce';
+import { useContext, useMemo } from 'react';
+import { ArrowRight, Ban, Check, Smile } from "lucide-react";
 
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -48,10 +49,10 @@ type NotificationActionGQL =
   | { __typename: 'ApiAccess'; api: IApiGQL; team: ITeamFullGql }
   | { __typename: 'TeamInvitation'; team: ITeamFullGql; user: IUser }
   | {
-  __typename: 'ApiSubscription';
-  api: IApiGQL; team: ITeamFullGql; plan: IUsagePlan;
-  parentSubscriptionId: IApiSubscriptionGql; motivation: string; demand: ISubscriptionDemandGQL;
-}
+    __typename: 'ApiSubscription';
+    api: IApiGQL; team: ITeamFullGql; plan: IUsagePlan;
+    parentSubscriptionId: IApiSubscriptionGql; motivation: string; demand: ISubscriptionDemandGQL;
+  }
   | { __typename: 'NewCommentOnIssueV2'; api: IApiGQL; issue: Issue }
   | { __typename: 'NewPostPublishedV2'; api: IApiGQL; post: IApiPost }
   | { __typename: 'ApiKeyRefreshV2'; api: IApiGQL; subscription: IApiSubscriptionGql; plan: IUsagePlan; message?: string }
@@ -83,13 +84,6 @@ type NotificationGQL = {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const VISIBLE_APIS = `
-  query AllVisibleApis ($limit: Int, $offset: Int) {
-    visibleApis (limit: $limit, offset: $offset) {
-      apis { api { name _id } }
-    }
-  }`
 
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
 
@@ -128,16 +122,20 @@ export const NotificationList = () => {
   const { customGraphQLClient, tenant, reloadUnreadNotificationsCount } = useContext(GlobalContext);
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
-  const [rowSelection, setRowSelection] = useState({});
 
-  const visibleApisRequest = useQuery({
-    queryKey: ['apis'],
-    queryFn: () =>
-      customGraphQLClient.request<{ visibleApis: { apis: [{ api: { _id: string; name: string } }] } }>(
-        VISIBLE_APIS, { limit: -1, offset: 0 }
-      ),
-    select: d => d.visibleApis.apis.map(a => a.api),
-  });
+  // Server-side autocomplete for the API filter: instead of fetching every
+  // visible API up front (blocking) we load a handful at a time as the user
+  // types. The DynamicTable keeps the id->label cache needed to render the
+  // labels of already-selected APIs.
+  const loadApiOptions = useMemo(
+    () =>
+      debounce((input: string, callback: (options: Array<{ label: string; value: string }>) => void) => {
+        Services.getMyVisibleApisLight(input, -1).then(apis => {
+          callback(apis.map(a => ({ label: a.name, value: a._id })));
+        });
+      }, 300),
+    []
+  );
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -159,12 +157,12 @@ export const NotificationList = () => {
   // ─── Actions ─────────────────────────────────────────────────────────────
 
   const accept = (notification: string, sub?: CustomSubscriptionData) => {
-    Services.acceptNotificationOfTeam(notification, sub)
+    return Services.acceptNotificationOfTeam(notification, sub)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
   const reject = (notification: string, message?: string) => {
-    Services.rejectNotificationOfTeam(notification, message)
+    return Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
@@ -199,23 +197,22 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-end">
               <a href={`/${notification.action.api.team._humanReadableId}/${notification.action.api._humanReadableId}/${notification.action.api.currentVersion}/news`}
-                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                 className="nav_item cursor-pointer bg-info" target='_blank'
-                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+                onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
+                className="btn --tertiary --small --icon-only" target='_blank'
+                title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
                 <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       case 'NewIssueOpenV2':
@@ -225,23 +222,23 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-end">
               <a href={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/${notification.action.issue._id}`}
-                 onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                 className="nav_item cursor-pointer bg-info" target='_blank'
-                 title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-                 aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+                onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
+                className="btn --tertiary --small --icon-only"
+                target='_blank'
+                title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
               >
                 <ArrowRight />
               </a>
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       }
@@ -254,52 +251,49 @@ export const NotificationList = () => {
           return (
             <div className='action-container'>
               <div className="d-flex justify-content-end gap-2">
-                <button className="nav_item cursor-pointer bg-success"
-                        title={translate('Accept')} aria-label={translate('Accept')}
-                        onClick={() =>
-                          Services.getSubscriptionDemand(notification.team!._id, _demand._id)
-                            .then(demand => {
-                              if (!isError(demand)) {
-                                openSubMetadataModal({
-                                  save: (sub) => accept(notification._id, sub),
-                                  api: _api._id,
-                                  plan: _plan._id,
-                                  team: _team,
-                                  subscriptionDemand: demand,
-                                  creationMode: true,
-                                })
-                              }
-                            })
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
+                  onPress={() =>
+                    Services.getSubscriptionDemand(notification.team!._id, _demand._id)
+                      .then(demand => {
+                        if (!isError(demand)) {
+                          openSubMetadataModal({
+                            save: (sub) => accept(notification._id, sub),
+                            api: _api._id,
+                            plan: _plan._id,
+                            team: _team,
+                            subscriptionDemand: demand,
+                            creationMode: true,
+                          })
                         }
+                      })
+                  }
                 >
                   <Check />
-                </button>
-                <button className="nav_item cursor-pointer bg-danger"
-                        title={translate('Reject')} aria-label={translate('Reject')}
-                        onClick={() => {
-                          openFormModal<{ message: string }>({
-                            title: translate('Message'),
-                            schema: {
-                              message: {
-                                type: type.string, format: format.text, label: null,
-                                constraints: [constraints.required()],
-                              },
-                            },
-                            onSubmit: ({ message }) => reject(notification._id, message),
-                            actionLabel: translate('Send')
-                          })
-                        }}
+                </FeedbackButton>
+                <button
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
+                  onClick={() => {
+                    openFormModal<{ message: string }>({
+                      title: translate('Message'),
+                      schema: {
+                        message: {
+                          type: type.string, format: format.text, label: null,
+                          constraints: [constraints.required()],
+                        },
+                      },
+                      onSubmit: ({ message }) => reject(notification._id, message),
+                      actionLabel: translate('Send')
+                    })
+                  }}
                 >
                   <Ban />
                 </button>
               </div>
-              <button type="button" className="nav_item cursor-pointer no-bg" disabled={true}
-                      title={translate('notifications.page.table.read.action.label')}
-                      aria-label={translate('notifications.page.table.read.action.label')}
-                      onClick={() => { }}
-              >
-                <X />
-              </button>
             </div>
           );
         } else {
@@ -311,13 +305,14 @@ export const NotificationList = () => {
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton type="success" className="nav_item cursor-pointer ms-1"
-                              onPress={() =>
-                                Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
-                                  .then(r => window.location.href = r.checkoutUrl)
-                              }
-                              onSuccess={() => { }} feedbackTimeout={100} disabled={false}>
-                {translate('Checkout')}
+              <FeedbackButton
+                className="btn --tertiary --small --icon-only"
+                onPress={() =>
+                  Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
+                    .then(r => window.location.href = r.checkoutUrl)
+                }
+                onSuccess={() => { }} feedbackTimeout={100}>
+                <ArrowRight />
               </FeedbackButton>
             </div>
           </div>
@@ -330,51 +325,55 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-end">
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
+            {notification.status.status === 'Pending' && <FeedbackButton
+              className="btn --tertiary --small --icon-only"
               title={translate('notifications.page.table.read.action.label')}
               aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
+              onPress={() => accept(notification._id)}
             >
-              <X />
-            </button>}
+              <Ban />
+            </FeedbackButton>}
           </div>
         );
       default:
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && <button
-                className="nav_item cursor-pointer bg-success"
-                title={translate('Accept')}
-                aria-label={translate('Accept')}
-                onClick={() => accept(notification._id)}
-              >
-                <Check />
-              </button>}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <button
-                  className="nav_item cursor-pointer bg-danger"
-                  title={translate('Reject')}
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
+                  onPress={() => accept(notification._id)}
+                >
+                  <Check />
+                </FeedbackButton>
+              )}
+              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  onPress={() => reject(notification._id)}
+                  onSuccess={() => { }} feedbackTimeout={100} disabled={false}
+                  // title={translate('Reject')}
                   aria-label={translate('Reject')}
-                  onClick={() => reject(notification._id)}
+                  title={translate('Reject')}
+                // onClick={() => reject(notification._id)}
                 >
                   <Ban />
-                </button>
+                </FeedbackButton>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
             </div>
-            {notification.status.status === 'Pending' && <button
-              type="button"
-              className="nav_item cursor-pointer no-bg"
-              disabled={notification.notificationType.value === 'AcceptOrReject'}
-              title={translate('notifications.page.table.read.action.label')}
-              aria-label={translate('notifications.page.table.read.action.label')}
-              onClick={() => accept(notification._id)}
-            >
-              <X />
-            </button>}
+            {notification.status.status === 'Pending' && notification.notificationType.value !== 'AcceptOrReject' && (
+              <FeedbackButton
+                className="btn --tertiary --small --icon-only"
+                title={translate('notifications.page.table.read.action.label')}
+                aria-label={translate('notifications.page.table.read.action.label')}
+                onPress={() => accept(notification._id)}
+              >
+                <Ban />
+              </FeedbackButton>
+            )}
           </div>
         );
     }
@@ -403,58 +402,58 @@ export const NotificationList = () => {
           <>
             {desc}
             <a href='#' title={translate('notifications.page.subscription.demand.detail.button.label')}
-               aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
-               className='underline'
-               onClick={() => openCustomModal({
-                 title: translate('notifications.page.subscription.demand.detail.modal.title'),
-                 content: (
-                   <div>
-                     {[['API', _api.name], ['Plan/Env', _plan.customName], ['Message', _motivation], ['Equipe', _team.name], ['demandeur', notification.sender.name], ['Date', notification.date]].map(([label, val]) => (
-                       <div key={label as string} className="notification-subscription-demand-summary">
-                         <span className='label'>{label}</span>
-                         <span>{val}</span>
-                       </div>
-                     ))}
-                     <div className="accordion" id="accordionExample">
-                       <div className="accordion-item">
-                         <h2 className="accordion-header">
-                           <button className="accordion-button collapsed" type="button"
-                                   data-bs-toggle="collapse" data-bs-target="#collapseOne"
-                                   aria-expanded="false" aria-controls="collapseOne">
-                             [{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]
-                           </button>
-                         </h2>
-                         <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
-                           <div className="accordion-body">
-                             <pre>{JSON.stringify(_demand.motivation, null, 4)}</pre>
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
-                 ),
-                 actions: (close) => notification.status.status === 'Pending' ? (
-                   <>
-                     <button className='btn btn-outline-danger' onClick={close}>{translate('Reject')}</button>
-                     <button className='btn btn-outline-success'
-                             onClick={() => Services.getSubscriptionDemand(notification.team!._id, _demand._id)
-                               .then(demand => {
-                                 if (!isError(demand)) {
-                                   openSubMetadataModal({
-                                     save: (sub) => accept(notification._id, sub),
-                                     api: _api._id, plan: _plan._id, team: _team,
-                                     subscriptionDemand: demand, creationMode: true,
-                                   });
-                                 }
-                               })}>
-                       {translate('Accept')}
-                     </button>
-                   </>
-                 ) : (
-                   <button className="btn btn-outline-info">{translate('Close')}</button>
-                 ),
-                 noClose: true,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
+              className='underline'
+              onClick={() => openCustomModal({
+                title: translate('notifications.page.subscription.demand.detail.modal.title'),
+                content: (
+                  <div>
+                    {[['API', _api.name], ['Plan/Env', _plan.customName], ['Message', _motivation], ['Equipe', _team.name], ['demandeur', notification.sender.name], ['Date', notification.date]].map(([label, val]) => (
+                      <div key={label as string} className="notification-subscription-demand-summary">
+                        <span className='label'>{label}</span>
+                        <span>{val}</span>
+                      </div>
+                    ))}
+                    <div className="accordion" id="accordionExample">
+                      <div className="accordion-item">
+                        <h2 className="accordion-header">
+                          <button className="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapseOne"
+                            aria-expanded="false" aria-controls="collapseOne">
+                            [{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]
+                          </button>
+                        </h2>
+                        <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                          <div className="accordion-body">
+                            <pre>{JSON.stringify(_demand.motivation, null, 4)}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ),
+                actions: (close) => notification.status.status === 'Pending' ? (
+                  <>
+                    <button className='btn --secondary' onClick={close}>{translate('Reject')}</button>
+                    <button className='btn --primary'
+                      onClick={() => Services.getSubscriptionDemand(notification.team!._id, _demand._id)
+                        .then(demand => {
+                          if (!isError(demand)) {
+                            openSubMetadataModal({
+                              save: (sub) => accept(notification._id, sub),
+                              api: _api._id, plan: _plan._id, team: _team,
+                              subscriptionDemand: demand, creationMode: true,
+                            });
+                          }
+                        })}>
+                      {translate('Accept')}
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn --primary">{translate('Close')}</button>
+                ),
+                noClose: true,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]</span>
             </a>
           </>
@@ -467,12 +466,12 @@ export const NotificationList = () => {
           <>
             {desc}
             <a href='#' className='underline'
-               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               onClick={() => alert({
-                 title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
-                 message: <div><i>{_message}</i></div>,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
+                message: <div><i>{_message}</i></div>,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
@@ -487,12 +486,12 @@ export const NotificationList = () => {
           <>
             {desc}
             <a href='#' className='underline'
-               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               onClick={() => alert({
-                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                 message: <div>{translate('subscription.display.credentials.clientId')} : <i>{clientId}</i></div>,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <div>{translate('subscription.display.credentials.clientId')} : <i>{clientId}</i></div>,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
@@ -510,14 +509,14 @@ export const NotificationList = () => {
           <>
             {translate('notif.apikey.rotation.inprogress')}
             <a href='#' className='underline'
-               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               onClick={() => alert({
-                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                 message: <SimpleApiKeyCard //@ts-ignore
-                   api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                   subscription={__subscription} />,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <SimpleApiKeyCard //@ts-ignore
+                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
+                  subscription={__subscription} />,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
@@ -532,14 +531,14 @@ export const NotificationList = () => {
           <>
             {translate('notif.apikey.rotation.ended')}
             <a href='#' className='underline'
-               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               onClick={() => alert({
-                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                 message: <SimpleApiKeyCard //@ts-ignore
-                   api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                   subscription={__subscription} />,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <SimpleApiKeyCard //@ts-ignore
+                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
+                  subscription={__subscription} />,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
@@ -554,14 +553,14 @@ export const NotificationList = () => {
           <>
             {translate('notif.apikey.refresh')}
             <a href='#' className='underline'
-               aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-               onClick={() => alert({
-                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
-                 message: <SimpleApiKeyCard //@ts-ignore
-                   api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
-                   subscription={__subscription} />,
-               })}>
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <SimpleApiKeyCard //@ts-ignore
+                  api={__api} plan={__plan} apiTeam={__team as ITeamSimple} //@ts-ignore
+                  subscription={__subscription} />,
+              })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
@@ -592,17 +591,17 @@ export const NotificationList = () => {
             {description}
             {value && (
               <a href='#' className='underline'
-                 aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
-                 title={translate('notifications.page.account.creation.attempt.detail.button.label')}
-                 onClick={() => alert({
-                   title: translate('notifications.page.account.creation.attempt.detail.modal.title'),
-                   message: (
-                     <div>
-                       {!!formattedValue && <em>{formattedValue}</em>}
-                       <pre>{JSON.stringify(value, null, 2)}</pre>
-                     </div>
-                   ),
-                 })}>
+                aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
+                title={translate('notifications.page.account.creation.attempt.detail.button.label')}
+                onClick={() => alert({
+                  title: translate('notifications.page.account.creation.attempt.detail.modal.title'),
+                  message: (
+                    <div>
+                      {!!formattedValue && <em>{formattedValue}</em>}
+                      <pre>{JSON.stringify(value, null, 2)}</pre>
+                    </div>
+                  ),
+                })}>
                 <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
               </a>
             )}
@@ -614,11 +613,9 @@ export const NotificationList = () => {
     }
   };
 
-  // ─── Table columns ────────────────────────────────────────────────────────
-
   const columnHelper = createColumnHelper<NotificationGQL>();
 
-  const buildColumns = ({ setColumnFilters, selectAll }: DynamicTableColumnCtx) => [
+  const buildColumns = ({ setColumnFilters, selectAll, seedFilterLabels }: DynamicTableColumnCtx) => [
     columnHelper.display({
       id: 'select',
       meta: { className: 'select-cell', size: 5 },
@@ -650,12 +647,13 @@ export const NotificationList = () => {
         const api = getApiFromNotification(notification, visibleApisRequest.data);
         if (!api) return null;
         return (
-          <a href='#' onClick={() =>
+          <a href='#' onClick={() => {
+            seedFilterLabels('api', [{ label: api.name, value: api._id }]);
             setColumnFilters(prev => [
               ...prev.filter(f => f.id !== 'api'),
               { id: 'api', value: [api._id] },
-            ])
-          }>
+            ]);
+          }}>
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         );
@@ -670,7 +668,7 @@ export const NotificationList = () => {
         const label = translate(`notifications.page.filters.type.${typeName}.label`);
         return (
           <span
-            className="badge --primary"
+            className="tag --primary"
             onClick={() =>
               setColumnFilters(prev => [
                 ...prev.filter(f => f.id !== 'type'),
@@ -786,8 +784,7 @@ export const NotificationList = () => {
       type: 'multiselect',
       labelKey: 'notifications.page.filters.api.label',
       labelKeyAll: 'notifications.page.filters.all.api.label',
-      options: (visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id })),
-      isLoading: visibleApisRequest.isLoading || visibleApisRequest.isPending,
+      loadOptions: loadApiOptions,
       countKey: 'api',
     },
     {
@@ -853,9 +850,10 @@ export const NotificationList = () => {
         fetchData={fetchData}
         filters={filters}
         defaultFilters={defaultColumnFilters}
-        enableRowSelection={true}
-        rowSelection={rowSelection}
-        setRowSelection={setRowSelection}
+        enableRowSelection={row => {
+          const n = row.original;
+          return n.status.status === 'Pending' && n.notificationType.value === 'AcceptOnly';
+        }}
         bulkActions={bulkActions}
         pageSize={25}
         getRowId={row => row._id}

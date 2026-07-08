@@ -1040,27 +1040,19 @@ class LoginController(
                         authorizedOtoroshiEntities = None,
                         contact = accountCreation.email
                       )
-                      def getUser() =
-                        User(
-                          id = userId,
-                          tenants = Set(ctx.tenant.id),
-                          origins = Set(ctx.tenant.authProvider),
-                          name = accountCreation.name,
-                          email = accountCreation.email,
-                          picture = accountCreation.avatar,
-                          lastTenant = Some(ctx.tenant.id),
-                          password = Some(accountCreation.password),
-                          personalToken = Some(IdGenerator.token(32)),
-                          defaultLanguage = None
-                        )
 
-                      val user = optUser
-                        .map { u =>
-                          getUser().copy(invitation =
-                            u.invitation.map(_.copy(registered = true))
-                          )
-                        }
-                        .getOrElse(getUser())
+                      val user = User(
+                        id = userId,
+                        tenants = Set(ctx.tenant.id),
+                        origins = Set(ctx.tenant.authProvider),
+                        name = accountCreation.name,
+                        email = accountCreation.email,
+                        picture = accountCreation.avatar,
+                        lastTenant = Some(ctx.tenant.id),
+                        password = Some(accountCreation.password),
+                        personalToken = Some(IdGenerator.token(32)),
+                        defaultLanguage = None
+                      )
 
                       val userCreation = for {
                         _ <-

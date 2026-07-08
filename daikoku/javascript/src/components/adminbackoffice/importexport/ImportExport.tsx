@@ -44,22 +44,22 @@ export const ImportExport = () => {
             <a
               href={`/api/state/export?download=true&export-audit-trail=${!!exportAuditTrail}`}
               target="_blank"
-              className="btn btn-outline-info"
+              className="btn --secondary"
             >
-              <Download className="me-1" />
+              <Download />
               <Translation i18nkey="download state">download state</Translation>
             </a>
             <button
               type="button"
               style={{ marginLeft: 10 }}
               onClick={importState}
-              className="btn btn-outline-info"
+              className="btn --secondary"
             >
-              <Upload className="me-1" />
+              <Upload />
               {uploading ? translate('importing ...') : translate('import state')}
             </button>
-            <div className="d-flex justify-content-start align-items-center mt-2">
-              <label className="me-3">{translate('audittrail.export.label')}</label>
+            <div className="d-flex justify-content-start align-items-center gap-2 mt-2">
+              <label>{translate('audittrail.export.label')}</label>
               <BooleanInput onChange={setExportAuditTrail} value={exportAuditTrail} />
             </div>
             <input

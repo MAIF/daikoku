@@ -1,11 +1,11 @@
-import {createColumnHelper} from '@tanstack/react-table';
-import {useContext, useEffect, useRef} from 'react';
-import {Link, useNavigate} from 'react-router-dom';
-import {I18nContext, ModalContext} from '../../../contexts';
+import { createColumnHelper } from '@tanstack/react-table';
+import { useContext, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import {ICmsPageGQL} from '../../../types';
-import {Table, TableRef} from '../../inputs';
-import {Eye, Pen, Trash2} from "lucide-react";
+import { ICmsPageGQL } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Eye, Pen, Trash2 } from "lucide-react";
 
 type PagesProps = {
   pages: Array<ICmsPageGQL>
@@ -56,26 +56,26 @@ export const Pages = ({
         const itemPath = value.path ? (value.path.startsWith('/') ? `/_${value.path}` : `/_/${value.path}`) : '#'
 
         return (
-          <div className="d-flex align-items-center justify-content-center">
+          <div className="d-flex align-items-center justify-content-center gap-1">
             <Link
               to={`/settings/pages/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
-              <button className="btn btn-outline-info btn-sm me-1">
-                <Pen/>
+              <button className="btn --tertiary --small --icon-only">
+                <Pen />
               </button>
             </Link>
             <button
               type="button"
-              className="btn btn-sm btn-outline-danger me-1"
+              className="btn --tertiary --small --icon-only"
               title={translate('Delete page')}
               onClick={e => {
                 e.stopPropagation();
-                confirm({message: translate('Delete page')})
+                confirm({ message: translate('Delete page') })
                   .then((ok) => {
                     if (ok) {
                       Services.removeCmsPage(value.id).then((res) => {
                         if (res.error)
-                          alert({message: res});
+                          alert({ message: res });
                         else {
                           reload()
                         }
@@ -84,7 +84,7 @@ export const Pages = ({
                   });
               }}
             >
-              <Trash2/>
+              <Trash2 />
             </button>
             {value.path && <Link
               to={itemPath}
@@ -92,9 +92,9 @@ export const Pages = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}>
               <button
-                className="btn btn-outline-info btn-sm me-1"
+                className="btn --tertiary --small --icon-only"
               >
-                <Eye/>
+                <Eye />
               </button>
             </Link>}
           </div>

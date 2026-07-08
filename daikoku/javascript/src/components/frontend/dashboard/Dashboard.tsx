@@ -112,7 +112,7 @@ export const Dashboard = (_: NewHomeProps) => {
             {!!unreadNotificationsCount && (
               <button
                 onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription","ApiAccess"]}]')}
-                className="btn btn-outline-secondary">
+                className="btn --secondary">
                 <div className="d-flex gap-2 align-items-center">
                   {translate('dashboard.demands.tile.title')}
                   <span className="number-indicator">{unreadNotificationsCount}</span>
@@ -121,13 +121,13 @@ export const Dashboard = (_: NewHomeProps) => {
             )}
             {canCreateApi && <div className="d-flex justify-content-end gap-1">
               <button type="button"
-                className='btn btn-outline-primary d-flex align-items-center gap-2'
+                className='btn --primary'
                 onClick={() => createApi({})}>
                 <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
               </button>
               <div className="nav_item dropdown" style={{ color: '#fff' }}>
                 <button type="button"
-                  className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+                  className='btn --secondary --icon-only'
                   data-bs-toggle="dropdown" aria-expanded="false"
                   aria-label={translate('dashboard.more.creation.option.button.label')}>
                   <MoreVertical />

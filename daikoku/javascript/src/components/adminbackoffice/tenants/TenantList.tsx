@@ -6,7 +6,7 @@ import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contex
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types';
 import { AvatarWithAction, Can, daikoku, manage, PaginatedComponent } from '../../utils';
-import {ChevronsRight, Pen, Trash2, UserCheck, Link} from "lucide-react";
+import { Pen, Trash2, UserCheck, Link, Plus } from "lucide-react";
 
 export const TenantList = () => {
   useDaikokuBackOffice();
@@ -36,8 +36,8 @@ export const TenantList = () => {
   };
 
   const removeTenant = (tenantId: string) => {
-    if (tenants.length === 1 ) {
-      alert({ message: translate('delete.last.tenant.confirm')})
+    if (tenants.length === 1) {
+      alert({ message: translate('delete.last.tenant.confirm') })
     } else {
       (confirm({ message: translate('delete.tenant.confirm') }))
         .then((ok) => {
@@ -60,11 +60,11 @@ export const TenantList = () => {
             <Translation i18nkey="Tenant" isPlural>
               Tenants
             </Translation>
-            <a className="btn btn-sm btn-outline-primary mb-1 ms-1" title={translate('Create a new tenant')} href="#" onClick={(e) => {
+            <a className="btn --secondary --icon-only ms-2" title={translate('Create a new tenant')} href="#" onClick={(e) => {
               e.preventDefault();
               createNewTenant();
             }}>
-              <ChevronsRight />
+              <Plus />
             </a>
           </h1>
           <div className="col-5">

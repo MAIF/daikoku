@@ -183,7 +183,17 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
         color: variables.$text-color-black;
 
         &:hover {
-          color: variables.$primary-color;
+          svg {
+            fill: variables.$neutral-color-500 !important;
+          }
+        }
+
+        svg {
+          fill: none;
+
+          &.active {
+            fill: variables.$neutral-color-900;
+          }
         }
       }
     }

@@ -2063,7 +2063,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
                   <p className="m-0">{translate('api.pricings.creation.button.label')}</p>
-                </button>              
+                </button>
 
           </>
         }

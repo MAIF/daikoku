@@ -442,7 +442,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           openCustomModal({
             title: translate("subscriptions.transfer.modal.title"),
             content: <DisplayLink value={response.link} />,
-            actions: (close) => <button className='btn btn-outline-info' onClick={() => {
+            actions: (close) => <button className='btn --primary' onClick={() => {
               navigator.clipboard
                 .writeText(response.link)
                 .then(() => {
@@ -803,7 +803,7 @@ export const ApiKeyCard = ({
             <div className='api-subscription__infos__name'>{_customName}</div>
             <div className='d-flex gap-2'>
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.copy.apikey.aria.label")}
                   onClick={() => {
                     navigator.clipboard
@@ -820,7 +820,7 @@ export const ApiKeyCard = ({
                 </button>
               </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.token.help")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.copy.tokan.aria.label")}
                   onClick={() => {
                     navigator.clipboard
@@ -837,7 +837,7 @@ export const ApiKeyCard = ({
                 </button>
               </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.bearer.token.help")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.copy.bearer.token.aria.label")}
                   onClick={() => {
                     navigator.clipboard
@@ -854,7 +854,7 @@ export const ApiKeyCard = ({
                 </button>
               </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.copy.basic.auth.aria.label")}
                   onClick={() => {
                     navigator.clipboard
@@ -871,7 +871,7 @@ export const ApiKeyCard = ({
                 </button>
               </BeautifulTitle>}
               {isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.copy.cli.auth.aria.label")}
                   onClick={() => {
                     navigator.clipboard
@@ -888,7 +888,7 @@ export const ApiKeyCard = ({
                 </button>
               </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.display.credentials")}>
-                <button className='btn btn-sm btn-outline-info'
+                <button className='btn --secondary --small'
                   aria-label={translate("subscription.display.credentials")}
                   onClick={() => openCustomModal({
                     title: _customName,
@@ -966,7 +966,9 @@ export const ApiKeyCard = ({
               </span>
               <div className="dropdown-divider" />
               {!subscription.parent && !disableRotation && <span
-                className="dropdown-item cursor-pointer"
+                className={classNames("dropdown-item cursor-pointer", {
+                  disabled: !subscription.enabled
+                })}
                 onClick={() => openFormModal({
                   title: translate("ApiKey rotation"),
                   actionLabel: translate('Save'),
@@ -1050,7 +1052,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
           <div className='api-subscription__infos__name'>{_customName}</div>
           <div className='d-flex gap-2'>
             {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
-              <button className='btn btn-sm btn-outline-info' onClick={() => {
+              <button className='btn --secondary --small' onClick={() => {
                 navigator.clipboard
                   .writeText(`${props.subscription.apiKey.clientId}:${props.subscription.apiKey.clientSecret}`)
                   .then(() =>
@@ -1065,7 +1067,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
               </button>
             </BeautifulTitle>}
             {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.token.help")}>
-              <button className='btn btn-sm btn-outline-info' onClick={() => {
+              <button className='btn --secondary --small' onClick={() => {
                 navigator.clipboard
                   .writeText(props.subscription.integrationToken)
                   .then(() =>
@@ -1080,7 +1082,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
               </button>
             </BeautifulTitle>}
             {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
-              <button className='btn btn-sm btn-outline-info' onClick={() => {
+              <button className='btn --secondary --small' onClick={() => {
                 navigator.clipboard
                   .writeText(`Basic ${btoa(`${props.subscription.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)
                   .then(() =>
@@ -1095,7 +1097,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
               </button>
             </BeautifulTitle>}
             {!!isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
-              <button className='btn btn-sm btn-outline-info'
+              <button className='btn --secondary --small'
                 aria-label={translate("subscription.copy.cli.auth.aria.label")}
                 onClick={() => {
                   navigator.clipboard

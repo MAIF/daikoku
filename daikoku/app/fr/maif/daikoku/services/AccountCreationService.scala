@@ -68,15 +68,16 @@ class AccountCreationService {
           .collectFirst { case s: ValidationStep.Form => s }
           .flatMap(_.formKeysToMetadata)
 
-      metadataFromMotivation: Option[JsObject] = for {
-        motiv <- accountCreation.value.some
-        keys <- formKeysToMetadata
-      } yield {
-        val filtered = motiv.fields.collect {
-          case (k, v) if keys.contains(k) => (k, v)
+      metadataFromMotivation: Option[JsObject] =
+        for {
+          motiv <- accountCreation.value.some
+          keys <- formKeysToMetadata
+        } yield {
+          val filtered = motiv.fields.collect {
+            case (k, v) if keys.contains(k) => (k, v)
+          }
+          JsObject(filtered)
         }
-        JsObject(filtered)
-      }
 
       user = User(
         id = userId,
@@ -93,20 +94,13 @@ class AccountCreationService {
           metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
       )
 
-      _user =
-        optUser
-          .map { u =>
-            user.copy(invitation = u.invitation.map(_.copy(registered = true)))
-          }
-          .getOrElse(user)
-
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.teamRepo
           .forTenant(tenant.id)
           .save(team)
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
-        env.dataStore.userRepo.save(_user)
+        env.dataStore.userRepo.save(user)
       )
       mailData = Map(
         "tenant" -> JsString(tenant.name),

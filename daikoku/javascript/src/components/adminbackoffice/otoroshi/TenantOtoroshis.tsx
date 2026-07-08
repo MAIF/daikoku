@@ -11,7 +11,8 @@ import * as Services from '../../../services';
 import { IOtoroshiSettings, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, tenant as TENANT, manage } from '../../utils';
-import {Pen, Trash2} from "lucide-react";
+import { Pen, Trash2 } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 export const TenantOtoroshis = () => {
   const { tenant, connectedUser } = useContext(GlobalContext);
@@ -50,12 +51,12 @@ export const TenantOtoroshis = () => {
       cell: (info) => {
         const otoroshi = info.row.original;
         return (
-          <div >
+          <div className='d-flex justify-content-end gap-1'>
             {isTenantAdmin && (
               <Link to={`/settings/otoroshis/${otoroshi._id}`}>
                 <button
                   type="button"
-                  className="btn btn-outline-info me-1"
+                  className="btn --tertiary --small --icon-only"
                   title={translate('Edit this settings')}
                 >
                   <Pen />
@@ -63,14 +64,13 @@ export const TenantOtoroshis = () => {
               </Link>
             )}
             {isTenantAdmin && (
-              <button
-                type="button"
-                className="btn btn-outline-danger"
+              <FeedbackButton
+                className="btn --tertiary --small --icon-only"
                 title={translate('Delete this settings')}
-                onClick={() => onDelete(otoroshi._id)}
+                onPress={() => onDelete(otoroshi._id)}
               >
                 <Trash2 />
-              </button>
+              </FeedbackButton>
             )}
           </div>
         );
@@ -79,7 +79,7 @@ export const TenantOtoroshis = () => {
   ];
 
   const onDelete = (id: string) => {
-    (confirm({ message: translate('otoroshi.settings.delete.confirm') }))
+    return confirm({ message: translate('otoroshi.settings.delete.confirm') })
       .then((ok) => {
         if (ok) {
           Services.deleteOtoroshiSettings(tenant._id, id)
@@ -107,7 +107,7 @@ export const TenantOtoroshis = () => {
       <div>
         <button
           type="button"
-          className="btn btn-sm btn-outline-success my-1 ms-1"
+          className="btn --primary mt-2"
           title={translate('otoroshi.list.add.label')}
           onClick={() => createNewSettings()}
         >

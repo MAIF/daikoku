@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner';
 
 import { DaikokuApp } from './apps';
 import { GlobalContext, GlobalContextProvider } from './contexts/globalContext';
@@ -16,6 +16,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 import './style/main.scss';
 
 import 'bootstrap';
+import { Option, ReactFormsProvider } from "@maif/react-forms";
 
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;
@@ -35,28 +36,25 @@ const queryClient = new QueryClient({
 const ToasterComponent = () => {
   const { theme } = useContext(GlobalContext)
 
-  useEffect(() => {
-    const handleClick = (event) => {
-      const toastEl = event.target.closest('[data-sonner-toast]')
-      if (!toastEl) return
-      // on laisse les boutons (close/action/cancel) gérer leur propre clic
-      if (event.target.closest('button')) return
-
-      toast.dismiss() // ferme tous les toasts visibles
-    }
-
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [])
-
   return (
-    <Toaster 
-      richColors 
-      position="top-right" 
-      theme={theme.toLocaleLowerCase() as 'light' | 'dark'} 
-      containerAriaLabel='notifications' 
-    />
+    <Toaster closeButton={true} richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} containerAriaLabel='notifications' />
   )
+}
+
+const reactfromProviderOption: Option = {
+  actions: {
+    submit: { className: 'btn --primary' },
+    cancel: { className: 'btn --secondary' },
+    reset: { className: 'btn --secondary' },
+    add: { className: 'btn --secondary --small' },
+    remove: { className: 'btn --tertiary --small' },
+    addEntry: { className: 'btn --secondary --small --icon-only' },
+    removeEntry: { className: 'btn --secondary --small --icon-only' },
+    markdownTab: { className: 'btn --secondary --small' },
+    fileUpload: { className: 'btn --secondary --small' },
+    collapse: { className: 'btn --secondary --small --icon-only' },
+    selectButton: { className: 'btn --secondary' },
+  }
 }
 
 root.render(
@@ -64,8 +62,10 @@ root.render(
     <QueryClientProvider client={queryClient}>
       <GlobalContextProvider>
         <I18nProvider>
-          <ToasterComponent />
-          <DaikokuApp />
+          <ReactFormsProvider options={reactfromProviderOption}>
+            <ToasterComponent />
+            <DaikokuApp />
+          </ReactFormsProvider>
         </I18nProvider>
       </GlobalContextProvider>
     </QueryClientProvider>

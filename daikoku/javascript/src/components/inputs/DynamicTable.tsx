@@ -1,9 +1,10 @@
 import classNames from 'classnames';
 import debounce from 'lodash/debounce';
-import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Select, { MultiValue, OptionProps, ValueContainerProps, components } from 'react-select';
-import Pagination from 'react-paginate';
+import AsyncSelect from 'react-select/async';
+import Pagination from '../utils/Pagination';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -45,9 +46,16 @@ export type FilterDef =
     type: 'multiselect';
     labelKey: string;
     labelKeyAll: string;
-    options: FilterOption[];
+    options?: FilterOption[];
     isLoading?: boolean;
     countKey?: string;
+    /**
+     * Async option loader. When provided, the filter renders an AsyncSelect that
+     * fetches options server-side (non-blocking) instead of relying on the static
+     * `options` list. Labels of already-selected values are resolved from an
+     * internal cache populated by loads, selections, and `seedFilterLabels`.
+     */
+    loadOptions?: (input: string, callback: (options: FilterOption[]) => void) => void;
   }
   | {
     id: string;
@@ -173,6 +181,11 @@ const menuStyle = {
 export type DynamicTableColumnCtx = {
   setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>;
   selectAll: boolean;
+  /**
+   * Seed the label cache of an async multiselect filter so that a value set from
+   * a column cell (e.g. clicking an API name) shows its label rather than its id.
+   */
+  seedFilterLabels: (filterId: string, options: FilterOption[]) => void;
 };
 
 export type DynamicTableProps<T> = {
@@ -240,6 +253,15 @@ export function DynamicTable<T>({
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const [page, setPage] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
+  // id->label cache per async multiselect filter, used to render the labels of
+  // already-selected values without refetching the whole option list.
+  const [asyncLabelCache, setAsyncLabelCache] = useState<Record<string, Record<string, string>>>({});
+  const seedFilterLabels = useCallback((filterId: string, options: FilterOption[]) => {
+    setAsyncLabelCache(prev => ({
+      ...prev,
+      [filterId]: { ...prev[filterId], ...Object.fromEntries(options.map(o => [o.value, o.label])) },
+    }));
+  }, []);
   const [textInputVals, setTextInputVals] = useState<Record<string, string>>(() => {
     const vals: Record<string, string> = {};
     initialFilters.forEach((f: { id: string; value: unknown }) => {
@@ -287,8 +309,8 @@ export function DynamicTable<T>({
   const filterCounts = dataQuery.data?.filterCounts;
 
   const resolvedColumns = useMemo(
-    () => typeof columns === 'function' ? columns({ setColumnFilters, selectAll }) : columns,
-    // setColumnFilters is stable from useState
+    () => typeof columns === 'function' ? columns({ setColumnFilters, selectAll, seedFilterLabels }) : columns,
+    // setColumnFilters and seedFilterLabels are stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [columns, selectAll]
   );
@@ -322,8 +344,26 @@ export function DynamicTable<T>({
 
   // Filter helpers
   const handleSelectChange = (data: MultiValue<FilterOption>, id: string) => {
-    setColumnFilters([...columnFilters.filter(f => f.id !== id), { id, value: data.map(d => d.value) }]);
+    // Drop the filter entirely when nothing is selected, otherwise an empty
+    // `{ id, value: [] }` entry lingers (keeping the "clear filters" button shown
+    // and triggering a needless refetch).
+    setColumnFilters([
+      ...columnFilters.filter(f => f.id !== id),
+      ...(data.length ? [{ id, value: data.map(d => d.value) }] : []),
+    ]);
   };
+
+  // The "clear filters" button should reflect the active filters, not the default
+  // ones (e.g. a permanent `unreadOnly` default) nor leftover empty entries.
+  const isMeaningfulFilter = (v: unknown) =>
+    !(Array.isArray(v) && v.length === 0) && v !== '';
+  const normalizeFilters = (fs: ColumnFiltersState) =>
+    fs
+      .filter(f => isMeaningfulFilter(f.value))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  const hasActiveFilters =
+    JSON.stringify(normalizeFilters(columnFilters)) !==
+    JSON.stringify(normalizeFilters(defaultFilters));
 
 
   const getMultiselectValue = (id: string, options: FilterOption[]) => {
@@ -375,13 +415,43 @@ export function DynamicTable<T>({
               if (!f.countKey || !filterCounts) return undefined;
               return filterCounts[f.countKey]?.find(c => c.key === v)?.total;
             };
+            if (f.loadOptions) {
+              const loadOptions = f.loadOptions;
+              const cache = asyncLabelCache[f.id] ?? {};
+              const selectedIds = (columnFilters.find(cf => cf.id === f.id)?.value as string[]) ?? [];
+              return (
+                <AsyncSelect
+                  key={f.id}
+                  isMulti
+                  cacheOptions
+                  defaultOptions
+                  // @ts-ignore
+                  components={{ ValueContainer: SummaryValueContainer, Option: CustomOption, MultiValue: () => null }}
+                  loadOptions={(input: string, callback: (options: FilterOption[]) => void) =>
+                    loadOptions(input, opts => { seedFilterLabels(f.id, opts); callback(opts); })
+                  }
+                  isLoading={f.isLoading}
+                  closeMenuOnSelect={false}
+                  hideSelectedOptions={false}
+                  isSearchable
+                  isClearable={false}
+                  labelKey={f.labelKey}
+                  labelKeyAll={f.labelKeyAll}
+                  getCount={getCount}
+                  classNamePrefix="daikoku-select"
+                  styles={menuStyle}
+                  onChange={data => { seedFilterLabels(f.id, [...data]); handleSelectChange(data, f.id); }}
+                  value={selectedIds.map(id => ({ label: cache[id] ?? id, value: id }))}
+                />
+              );
+            }
             return (
               <Select
                 key={f.id}
                 isMulti
                 // @ts-ignore
                 components={{ ValueContainer: SummaryValueContainer, Option: CustomOption, MultiValue: () => null }}
-                options={f.options}
+                options={f.options ?? []}
                 isLoading={f.isLoading}
                 closeMenuOnSelect={false}
                 hideSelectedOptions={false}
@@ -393,7 +463,7 @@ export function DynamicTable<T>({
                 classNamePrefix="daikoku-select"
                 styles={menuStyle}
                 onChange={data => handleSelectChange(data, f.id)}
-                value={getMultiselectValue(f.id, f.options)}
+                value={getMultiselectValue(f.id, f.options ?? [])}
               />
             );
           }
@@ -444,7 +514,7 @@ export function DynamicTable<T>({
             return (
               <div key={f.id} className="btn-group" role="group">
                 <button
-                  className={classNames('btn btn-outline-secondary', { active: boolVal })}
+                  className={classNames('btn', { '--primary': boolVal, '--secondary': !boolVal })}
                   aria-pressed={boolVal}
                   onClick={() =>
                     setColumnFilters([
@@ -456,7 +526,7 @@ export function DynamicTable<T>({
                   {f.onLabel}
                 </button>
                 <button
-                  className={classNames('btn btn-outline-secondary', { active: !boolVal })}
+                  className={classNames('btn', { '--primary': !boolVal, '--secondary': boolVal })}
                   aria-pressed={!boolVal}
                   onClick={() =>
                     setColumnFilters([
@@ -472,7 +542,7 @@ export function DynamicTable<T>({
           }
           return null;
         })}
-        {!!columnFilters.length && (
+        {hasActiveFilters && (
           <button
             className="btn --secondary"
             onClick={() => {
@@ -537,7 +607,7 @@ export function DynamicTable<T>({
           bulkActions.map((action, i) => (
             <button
               key={i}
-              className="ms-2 btn btn-sm btn-outline-secondary"
+              className="btn --secondary --small ms-2"
               onClick={() => handleBulkAction(action)}
             >
               {action.label}
@@ -547,7 +617,7 @@ export function DynamicTable<T>({
           table.getIsAllPageRowsSelected() &&
           table.getSelectedRowModel().rows.length < totalSelectable && (
             <button
-              className="btn btn-sm btn-outline-secondary ms-3"
+              className="btn --secondary --small ms-3"
               onClick={() => setSelectAll(true)}
             >
               {translate({
@@ -584,7 +654,7 @@ export function DynamicTable<T>({
         {renderFilterToolbar()}
         {dataQuery.data && countLabelKey && (
           <div className="mt-2">
-            <span className="text-muted small">
+            <span className="small">
               <span className="fw-bold">{totalFiltered}</span>
               {totalFiltered < total
                 ? ` ${translate({ key: countLabelKey, plural: totalFiltered > 1 })} (sur ${total})`

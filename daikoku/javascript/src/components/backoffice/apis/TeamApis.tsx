@@ -101,11 +101,11 @@ export const TeamApis = () => {
           ? `/${currentTeam._humanReadableId}/apigroups/${api._humanReadableId}/apis`
           : `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
         return (
-          <div>
+          <div className='d-flex justify-content-end gap-2'>
             <Link
               rel="noopener"
               to={viewUrl}
-              className="btn btn-sm btn-outline-info me-1"
+              className="btn --secondary --small --icon-only"
               title="View this Api"
             >
               <Share />
@@ -115,7 +115,7 @@ export const TeamApis = () => {
                 <button
                   key={`delete-${api._humanReadableId}`}
                   type="button"
-                  className="btn btn-sm btn-outline-danger"
+                  className="btn --secondary --small --icon-only"
                   title={translate("Delete this Api")}
                   onClick={() => getVersionsAndDeleteApi(api)}
                 >

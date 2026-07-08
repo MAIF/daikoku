@@ -89,7 +89,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     return <div className="d-flex col flex-column section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --primary"
           aria-label={translate('update.api.openapi.btn.label')}
           data-bs-toggle="dropdown"
           aria-expanded="false"
@@ -123,7 +123,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
           <Can I={manage} a={API} team={props.ownerTeam}>
             <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
               <div>{translate('update.api.openapi.not.found.alert')}</div>
-              <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+              <button className="btn --secondary" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
             </div>
           </Can>
         )}
@@ -173,6 +173,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
       <div className='d-flex flex-column'>
         <Select
           className='col-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}

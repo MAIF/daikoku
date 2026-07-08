@@ -22,7 +22,7 @@ import {
 
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
-import {Pen, Shield, Trash2, User, UserCog} from "lucide-react";
+import { Pen, Shield, Trash2, User, UserCog } from "lucide-react";
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -200,7 +200,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <Can I={manage} a={team} team={currentTeam}>
-        <button className="btn btn-outline-success" type="button" onClick={() => {
+        <button className="btn --primary" type="button" onClick={() => {
           openInvitationTeamModal({
             team: currentTeam,
             searchLdapMember: searchLdapMember,

@@ -8,7 +8,7 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';
-import {Edit, Trash2} from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const table = useRef<TableRef>(undefined);
@@ -83,10 +83,10 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       cell: (info) => {
         const settings = info.row.original;
         return (
-          <div >
+          <div className='d-flex justify-content-end gap-1'>
             <button
               type="button"
-              className="btn btn-outline-info me-1"
+              className="btn --secondary --small --icon-only"
               title={translate('Edit')}
               onClick={() => editSettings(settings.type, settings)}
             >
@@ -94,7 +94,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
             </button>
             <button
               type="button"
-              className="btn btn-outline-danger"
+              className="btn --secondary --small --icon-only"
               title={translate('Delete')}
               onClick={() => deleteSettings(settings)}
             >
@@ -197,7 +197,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       <div>
         <button
           type="button"
-          className="btn btn-sm btn-outline-success my-1 ms-1"
+          className="btn --primary m-1"
           title={translate('third-party.payment.list.add.label')}
           onClick={() => {
             openFormModal({

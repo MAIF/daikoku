@@ -51,7 +51,7 @@ export const SessionModal = (props: { session: ISimpleSession }) => {
               >
                 <button
                   type="button"
-                  className="btn btn-outline-success"
+                  className="btn --primary"
                   onClick={() => extendSession(close)}
                 >
                   {extendMySession}

@@ -38,6 +38,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
     <div>
       <Select
         className='col-3'
+        classNamePrefix="reactSelect"
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
         onChange={t => setSelectedTeam(t!.value)}

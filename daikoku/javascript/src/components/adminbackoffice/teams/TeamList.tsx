@@ -2,7 +2,7 @@ import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from 'react';
-import Pagination from "react-paginate";
+import Pagination from "../../utils/Pagination";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {Pen, Plus, Trash2, Users} from 'lucide-react';

@@ -57,7 +57,7 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
       type: type.string,
       label: () => <div>{translate("tenant.edit.clientNamePattern.label")}
         <button type='button'
-          className='btn btn-outline-info ms-1'
+          className='btn --ghost --icon-only ms-2'
           onClick={() => alert({
             title: translate('tenant.edit.clientNamePattern.label'),
             message: <div>

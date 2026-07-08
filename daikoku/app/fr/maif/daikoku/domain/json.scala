@@ -1039,7 +1039,9 @@ object json {
             password = (json \ "password")
               .asOpt[String]
               .map(_.trim)
-              .filterNot(_.isEmpty)
+              .filterNot(_.isEmpty),
+            starttls = (json \ "starttls").asOpt[Boolean],
+            ssl = (json \ "ssl").asOpt[Boolean]
           )
         )
       } recover { case e =>
@@ -1065,6 +1067,14 @@ object json {
           .as[JsValue],
         "password" -> o.password
           .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "starttls" -> o.starttls
+          .map(JsBoolean.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "ssl" -> o.ssl
+          .map(JsBoolean.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )

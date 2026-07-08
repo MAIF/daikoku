@@ -88,10 +88,10 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
           />
         </div>
         <div className="modal-footer">
-          <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+          <button type="button" className="btn --secondary" onClick={props.close}>
             {translate('Close')}
           </button>
-          <button type="button" disabled={!selectedPlan} className="btn btn-outline-success" onClick={clonePlan}>
+          <button type="button" disabled={!selectedPlan} className="btn --primary" onClick={clonePlan}>
             {translate('Choose')}
           </button>
         </div>

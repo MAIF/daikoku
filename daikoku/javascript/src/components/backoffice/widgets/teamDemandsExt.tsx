@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
-import {RefreshCcw, Users} from 'lucide-react';
+import { RefreshCcw, Users } from 'lucide-react';
 
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
@@ -83,8 +83,7 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
                   {actualStep && <i>{actualStep.step.name} - {actualStep.step.title}</i>}
                 </div>
                 {reRunable && <FeedbackButton
-                  type="primary"
-                  className="ms-1 btn-sm"
+                  className='btn --secondary'
                   onPress={() => runProcess(d.id)}
                   onSuccess={() => console.debug("success")}
                   feedbackTimeout={100}

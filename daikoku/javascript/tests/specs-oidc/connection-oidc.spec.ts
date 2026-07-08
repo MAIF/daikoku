@@ -176,3 +176,44 @@ test('Health check', async () => {
   )
 });
 
+test("[#1121]: handle uppercase in user mail & [#1120]: connected user has no more invitation prop", async ({ page, browser }) => {
+  await page.goto(ACCUEIL);
+  await loginOidcAs(MICHAEL, page);
+
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.getByRole('button', { name: 'Créer une équipe' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('Vendeurs');
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await page.getByRole('link', { name: 'Vendeurs' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
+  await page.getByRole('button', { name: 'Envoyer l\'invitation' }).click();
+  await page.getByText('En attente (1)').click();
+  await expect(page.getByText('andy.bernard@dundermifflin.com', { exact: true })).toBeVisible();
+
+  const andyContext = await browser.newContext();
+  const andyPage = await andyContext.newPage();
+
+  await andyPage.goto('http://localhost:1080/');
+  await andyPage.getByText('Rejoindre l\'équipe Vendeurs').first().click();
+  await andyPage.getByRole('link', { name: 'Cliquez pour rejoindre l\'é' }).click();
+  await expect(andyPage.getByText('L\'équipe Vendeurs vous a invité')).toBeVisible();
+  await andyPage.getByRole('link', { name: 'Accepter' }).click();
+  await andyPage.getByRole('textbox', { name: 'Username' }).fill('andy.bernard@dundermifflin.com');
+  await andyPage.getByRole('textbox', { name: 'Password' }).fill('password');
+  await andyPage.getByRole('button', { name: 'Login' }).click();
+  await andyPage.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await andyPage.getByRole('button', { name: 'Accepter' }).click();
+  await andyPage.getByRole('button', { name: 'Mes équipes' }).click();
+  await andyPage.getByRole('link', { name: 'Vendeurs' }).click();
+  await expect(andyPage.getByRole('heading', { name: 'Vendeurs' })).toBeVisible();
+
+  page.goto(ACCUEIL)
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Paramètres Daikoku' }).click();
+  await page.getByText('Utilisateurs', { exact: true }).click();
+  await expect(page.getByText('Andy Bernard')).toBeVisible();
+})
+

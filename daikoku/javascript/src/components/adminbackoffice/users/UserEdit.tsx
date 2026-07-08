@@ -12,7 +12,7 @@ import * as Services from '../../../services';
 import { ITenant, IUser } from '../../../types';
 import { Can, daikoku, manage, Spinner } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
-import {Loader, Trash2, UserCircle} from "lucide-react";
+import { Loader, Trash2, UserCircle } from "lucide-react";
 
 const Avatar = ({
   setValue,
@@ -97,14 +97,14 @@ const Avatar = ({
       </div>
       <div className="">
         <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues?.email}>
+          <button type="button" className="btn --tertiary" onClick={setGravatarLink} disabled={!rawValues?.email}>
             <UserCircle className="me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
             <button
               type="button"
-              className="btn btn-outline-info"
+              className="btn --tertiary"
               onClick={setPictureFromProvider}
               disabled={!!rawValues?.pictureFromProvider}
             >
@@ -151,7 +151,7 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
       />
       <button
         type="button"
-        className="btn btn-outline-primary"
+        className="btn --tertiary"
         disabled={uploading}
         onClick={trigger}
         style={{ width: 100, height: 100, borderRadius: '50%' }}
@@ -224,7 +224,7 @@ export const UserEdit = () => {
         return (
           <div className="d-flex flex-row">
             <input className="form-control" disabled={true} value={value} />
-            <button type="button" className="btn btn-outline-success ms-2" onClick={reloadToken}>
+            <button type="button" className="btn --ghost" onClick={reloadToken}>
               {translate('Reload')}
             </button>
           </div>
@@ -276,19 +276,19 @@ export const UserEdit = () => {
           onSubmit={save}
           footer={({ valid }) => {
             return (
-              <div className="d-flex justify-content-end">
-                <button className="btn btn-outline-danger" onClick={() => navigate('/settings/users')}>
+              <div className="d-flex justify-content-end gap-2">
+                <button className="btn --secondary" onClick={() => navigate('/settings/users')}>
                   <Translation i18nkey="Cancel">Cancel</Translation>
                 </button>
                 <button
                   type="button"
-                  className="btn btn-outline-danger ms-2"
+                  className="btn --secondary"
                   onClick={() => removeUser(queryUser.data)}
                 >
                   <Trash2 className="me-1" />
                   <Translation i18nkey="Delete">Delete</Translation>
                 </button>
-                <button className="btn btn-outline-success ms-2" onClick={valid}>
+                <button className="btn --primary" onClick={valid}>
                   <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>

@@ -73,18 +73,28 @@ test('[ASOAPI-10506] - Supprimer définitivement un utilisateur ', async ({ page
 
 test('[ASOAPI-10506] - Supprimer définitivement un utilisateur (cas particulier d\'utilisateur avec APIkey active)', async ({ page }) => {
   //l'utilisateur qui a deja une clé d'api est dwight
+
   const getDwightAvatar = (): Locator => {
     return page.locator(".avatar-with-action__infos", { hasText: DWIGHT.name })
   }
 
-  const beginningKey = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/${dwightPaperApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  })
-  await expect(beginningKey.status).toBe(200)
+  await expect.poll(async () => {
+    const beginningKey = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/${dwightPaperApiKeyId}`, {
+      method: 'GET',
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    });
+    return beginningKey.status;
+  }, {
+    // Custom expect message for reporting, optional.
+    message: 'Retrieve dwightPaperApiKey',
+    // Poll for 10 seconds; defaults to 5 seconds. Pass 0 to disable timeout.
+    timeout: 10_000,
+  }).toBe(200);
+
+
 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)

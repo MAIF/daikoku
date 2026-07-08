@@ -3,7 +3,7 @@ import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, ge
 import classNames from 'classnames';
 import { subHours } from 'date-fns';
 import { useContext, useMemo, useState } from "react";
-import Pagination from 'react-paginate';
+import Pagination from '../../utils/Pagination';
 
 import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from "../../../contexts/globalContext";
@@ -95,7 +95,7 @@ export const AuditTrailList = () => {
         return (
           <button
             type="button"
-            className="btn btn-sm btn-outline-info"
+            className="btn --secondary --small"
             onClick={() => alert({
               title: translate('Event.details.modal.title'),
               message: <pre style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color: '#{"var(--level2_text-color, #6c757d)"}', padding: 10 }}>

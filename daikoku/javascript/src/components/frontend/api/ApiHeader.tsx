@@ -53,7 +53,7 @@ export const ApiHeader = ({
       .then((versions) =>
         setApiVersions(versions)
       );
-  }, []);
+  }, [ownerTeam, params]);
 
   const transferSchema = {
     team: {
@@ -133,7 +133,7 @@ export const ApiHeader = ({
         )}
         <Can I={manage} a={API} team={ownerTeam}>
           <button
-            className="btn btn-sm btn-outline-primary px-3"
+            className="btn --secondary"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             aria-haspopup="menu"

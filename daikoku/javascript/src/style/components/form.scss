@@ -1,10 +1,16 @@
 @use "../variables";
 
 .form-control,
-.form-control:focus {
+.form-control:focus,
+.mrf-input,
+.mrf-input[readonly] {
   background-color: variables.$form-bg-color;
   color: variables.$form-text-color;
   border-color: variables.$form-border-color;
+
+  &::placeholder {
+    color: variables.$form-text-color;
+  }
 }
 
 .form-control:disabled,
@@ -22,7 +28,7 @@
   grid-template-rows: auto 70px;
   row-gap: 5px;
   height: calc(100vh - 80px);
-  
+
 
   .usage-plan-form {
     grid-row: 1 / 2;

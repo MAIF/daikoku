@@ -22,18 +22,18 @@ run = [{task = "install:frontdeps"}, {task = "install:playwright"},  {task = "in
 
 
 [tasks."install:back"]
-run = "docker-compose -f dev/docker-compose-full.yml pull && cd daikoku && sbt compile"
+run = "docker-compose -f dev/docker-compose-light.yml pull && cd daikoku && sbt compile"
 
 [tasks.install]
 run = [{task = "install:front"}, {task = "install:back"}]
 
 [tasks."dev:containers"]
 dir = "dev"
-run = "docker-compose -f docker-compose-full.yml rm -f && docker-compose --ansi=always -f docker-compose-full.yml up"
+run = "docker-compose -f docker-compose-light.yml rm -f && docker-compose --ansi=always -f docker-compose-light.yml up"
 
 [tasks."dev:clean"]
 dir = "dev"
-run = "docker-compose -f docker-compose-full.yml down && docker-compose -f docker-compose-full.yml rm -f"
+run = "docker-compose -f docker-compose-light.yml down && docker-compose -f docker-compose-light.yml rm -f"
 
 [tasks."dev:front"]
 dir = "daikoku/javascript"
@@ -41,8 +41,11 @@ run = "FORCE_COLOR=1 npm run dev"
 
 [tasks."dev:back"]
 dir = "daikoku"
-run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson\""
+run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_light.ndjson\""
 raw=true
+
+[tasks."dev:db"]
+run = "PGGSSENCMODE=disable PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres"
 
 [tasks."dev:back:empty"]
 dir = "daikoku"
@@ -104,6 +107,9 @@ run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
 [tasks."test:front:oidc"]
 dir="dev"
 run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
+
+[tasks."seed:update"]
+run = "scripts/update-seeds.sh \"${DAIKOKU_URL:-http://localhost:9000}\" \"${ADMIN_USERNAME:-admin@foo.bar}\" \"${ADMIN_PASS:-password}\" \"${TENANT_ID:-default}\""
 
 [tasks."test:front:report"]
 dir="daikoku/javascript"

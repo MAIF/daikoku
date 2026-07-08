@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { ReactNode, useContext, useEffect, useState } from 'react';
-import Pagination from 'react-paginate';
+import Pagination from './Pagination';
 import { I18nContext } from '../../contexts/i18n-context';
 
 type Props<T> = {

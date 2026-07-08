@@ -4,7 +4,7 @@ import { useContext, useRef } from 'react';
 import { I18nContext } from '../../contexts';
 import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, ITeamInvitationModalProps } from './types';
-import {Users} from "lucide-react";
+import { Users } from "lucide-react";
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
   const ref = useRef<FormRef>(undefined);
@@ -54,10 +54,10 @@ export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModa
         />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => props.close()}>
+        <button type="button" className="btn --secondary" onClick={() => props.close()}>
           {translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
+        <button type="button" className="btn --primary" onClick={() => ref.current?.handleSubmit()}>
           {isLDAPProvider ? translate('Search') : translate('team_member.send_email')}
         </button>
       </div>

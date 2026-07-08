@@ -10,7 +10,7 @@ import * as Services from '../../../services';
 import { IAsset, ITeamSimple } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, tenant as TENANT, asset, manage } from '../../utils';
-import {Download, Eye, Pen, RefreshCw, Trash2} from "lucide-react";
+import { Download, Eye, Pen, RefreshCw, Trash2 } from "lucide-react";
 
 
 const mimeTypes = [
@@ -119,7 +119,7 @@ const ReplaceButton = (props: any) => {
 
   return (
     <>
-      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-info">
+      <button type="button" onClick={trigger} className="btn --secondary --small --icon-only">
         <RefreshCw />
       </button>
       <input
@@ -277,12 +277,12 @@ export const AssetsList = ({
       cell: (info) => {
         const item = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="d-flex justify-content-end gap-2">
             {item.contentType.startsWith('text') && (
               <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
-                className="btn btn-sm btn-outline-info"
+                className="btn --secondary --small --icon-only"
               >
                 <Pen />
               </button>
@@ -294,26 +294,20 @@ export const AssetsList = ({
               displayError={(error) => toast.error(error)}
               postAction={() => tableRef.current?.update()}
             />
-            <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
-              <button
-                className="btn btn-sm btn-outline-info"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
-              >
-                <Eye />
-              </button>
+            <a href={assetLink(item.meta.asset, false)}
+              className="btn --secondary --small --icon-only"
+              target="_blank" rel="noreferrer noopener" >
+              <Eye />
             </a>
-            <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
-              <button
-                className="btn btn-sm btn-outline-info me-1"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
-              >
-                <Download />
-              </button>
+            <a href={assetLink(item.meta.asset, true)}
+              target="_blank" rel="noreferrer noopener"
+              className="btn --secondary --small --icon-only">
+              <Download />
             </a>
             <button
               type="button"
               onClick={() => deleteAsset(item)}
-              className="btn btn-sm btn-outline-danger"
+              className="btn --secondary --small --icon-only"
             >
               <Trash2 />
             </button>
@@ -443,7 +437,7 @@ export const AssetsList = ({
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button
-            className='btn mt-1 me-2 btn-outline-success'
+            className='btn --primary m-1'
             onClick={() => openFormModal({
               title: translate("Add asset"),
               schema,

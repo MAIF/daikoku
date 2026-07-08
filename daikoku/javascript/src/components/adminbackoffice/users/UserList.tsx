@@ -10,7 +10,7 @@ import * as Services from '../../../services';
 import { IUserSimple, isError } from '../../../types';
 import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
 import { constraints, type } from '@maif/react-forms';
-import {Pen, Shield, Trash2, UserCheck} from "lucide-react";
+import { HatGlasses, Pen, Shield, Trash2, UserCheck } from "lucide-react";
 
 export const UserList = () => {
   const { connectedUser } = useContext(GlobalContext);
@@ -123,7 +123,7 @@ export const UserList = () => {
                 },
                 {
                   link: `/api/admin/users/${user._id}/_impersonate`,
-                  icon: <UserCheck />,
+                  icon: <HatGlasses />,
                   tooltip: translate('Impersonate this user'),
                 },
                 {

@@ -10,7 +10,7 @@
     "prettier": "prettier --write --single-quote --trailing-comma es5 --print-width 100 --tab-width 2 --jsx-bracket-same-line \"src/**/*.{ts, tsx}\"",
     "lint": "oxlint src/",
     "lint:fix": "oxlint --fix src/",
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "tsc && vite build && mkdir -p ../public/assets && rm -rf ../public/assets/* && rm -f ../public/index.html &&  cp -r ./dist/assets/* ../public/ && cp ./dist/index.html ../public/",
     "preview": "vite preview",
     "test": "playwright test --config tests/playwright.config.js --workers 1 --trace on"
@@ -20,7 +20,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
-    "@maif/react-forms": "^1.6.13",
+    "@maif/react-forms": "^1.7.3",
     "@popperjs/core": "^2.11.8",
     "@tanstack/react-query": "5.90.21",
     "@tanstack/react-table": "^8.21.3",
@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@playwright/test": "1.61.0",
+    "@playwright/test": "^1.61.0",
     "@types/jquery": "^3.5.33",
     "@types/js-md5": "^0.8.0",
     "@types/node": "^25.2.3",
@@ -79,7 +79,7 @@
     "@types/react-table": "^7.7.20",
     "@types/set-value": "^4.0.3",
     "@types/swagger-ui-dist": "^3.30.6",
-    "@vitejs/plugin-react": "^5.1.4",
+    "@vitejs/plugin-react": "^5.2.0",
     "oxlint": "^1.48.0",
     "pg": "^8.20.0",
     "prettier": "3.8.1",
@@ -87,7 +87,7 @@
     "sass": "^1.97.3",
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
-    "vite": "7.3.2",
+    "vite": "8.0.16",
     "vite-plugin-simple-html": "^1.1.0"
   }
 }

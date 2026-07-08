@@ -101,7 +101,7 @@ export const ApiList = (props: ApiListProps) => {
         id: 'tags',
         meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags'), size: 15 },
         cell: (info) => (
-          <div className="d-flex gap-1">
+          <div className="d-flex gap-1 align-items-center">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
                     className="tag --primary"
@@ -169,22 +169,23 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const subscriptionCount = info.row.original.subscriptionCount
           const subscriptionDemandsCount = info.row.original.subscriptionDemands.length
+          const api = info.row.original.api
           return (
-            <>
-              <span>
+            <div className="d-flex align-items-center gap-1">
+              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}>
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
-              </span>
+              </Link>
               {subscriptionDemandsCount > 0 && (
                 <span className="tag --warning">{subscriptionDemandsCount} en attente</span>
               )}
-            </>
+            </div>
           )
         },
       }),
       columnHelper.display({
         id: 'action',
         enableColumnFilter: false,
-        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions'), size: 1 },
+        meta: { className: 'action-cell', title: translate('dashboard.apis.table.header.label.actions'), size: 5 },
         cell: (info) => {
           const api = info.row.original.api
           const authorizations = info.row.original.authorizations
@@ -198,10 +199,10 @@ export const ApiList = (props: ApiListProps) => {
 
           if (canRequestAccess) {
             return (
-              <div className="nav_item dropdown">
+              <div className="dropdown d-flex justify-content-end">
                 <button
                   type="button"
-                  className="btn btn-outline-secondary btn-icon d-flex align-items-center gap-2"
+                  className="btn --secondary --icon-only"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                   aria-label={translate('dashboard.more.creation.option.button.label')}

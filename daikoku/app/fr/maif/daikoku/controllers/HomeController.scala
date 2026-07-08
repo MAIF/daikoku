@@ -14,22 +14,20 @@ import fr.maif.daikoku.controllers.authorizations.async.TenantAdminOnly
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.CmsRequestRenderingFormat
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.utils.{Errors, OtoroshiClient, S3Configuration}
+import fr.maif.daikoku.services.{CmsPage, CmsRequestRendering}
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.future.EnhancedObject
+import fr.maif.daikoku.utils.{Errors, OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.connectors.s3.BucketAccess
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs
 import play.api.libs.json.*
 import play.api.mvc.*
-import fr.maif.daikoku.services.{CmsPage, CmsRequestRendering}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
-import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
-import io.vertx.core.json.JsonObject
-import org.apache.pekko.stream.connectors.s3.BucketAccess
 
 enum ServiceStatus(val value: String):
   case Up extends ServiceStatus("UP")
@@ -124,7 +122,6 @@ class HomeController(
 
   def healthDetailed(): Action[AnyContent] = {
     Action.async { ctx =>
-      println(env.config.detailedHealthAccessKey)
       ctx.getQueryString("access_key") match {
         case Some(key) if env.config.detailedHealthAccessKey.contains(key) => {
           val datastoreHealth = env.dataStore match {

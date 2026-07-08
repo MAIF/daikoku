@@ -72,7 +72,7 @@ services:
       - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
       - DAIKOKU_POSTGRES_HOST=postgres
       - DAIKOKU_EXPOSED_ON=13200
-      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state.ndjson
+      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_ldap.ndjson
       - DAIKOKU_MODE=test
       - DAIKOKU_HEALTH_ACCESS_KEY=secret
     ports:

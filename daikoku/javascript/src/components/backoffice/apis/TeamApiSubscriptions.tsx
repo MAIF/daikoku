@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import Pagination from 'react-paginate';
+import Pagination from '../../utils/Pagination';
 import { toast } from "sonner";
 
 import { I18nContext, ModalContext } from "../../../contexts";
@@ -226,12 +226,12 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const sub = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="btn-group gap-1">
             <BeautifulTitle title={translate("Update metadata")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
@@ -242,7 +242,7 @@ export const TeamApiSubscriptions = ({
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
               >
@@ -253,7 +253,7 @@ export const TeamApiSubscriptions = ({
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >
@@ -387,7 +387,7 @@ export const TeamApiSubscriptions = ({
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       <div className="d-flex flex-row justify-content-start align-items-center gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-info"
+          className="btn --tertiary"
           onClick={() =>
             openFormModal({
               actionLabel: translate("Filter"),

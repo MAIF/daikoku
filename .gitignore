@@ -41,5 +41,6 @@ daikoku/public/asyncapi-*
 daikoku/public/backofffice-*
 daikoku/public/highlight-*
 daikoku/public/swagger-*
+daikoku/public/rolldown-runtime-*
 stats.html
 project/

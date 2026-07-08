@@ -11,6 +11,7 @@ import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { CircleArrowLeft, CircleX, RefreshCw } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 
 type TeamIncomeGql = {
@@ -123,7 +124,8 @@ export const TeamIncome = () => {
   } else if (currentTeam && !isError(currentTeam)) {
     const sync = () => {
       setState({ ...state, loading: true });
-      Services.syncTeamIncome(currentTeam._id).then(() => getBillingData(date));
+      return Services.syncTeamIncome(currentTeam._id)
+        .then(() => getBillingData(date));
     };
 
 
@@ -138,14 +140,14 @@ export const TeamIncome = () => {
             {!state.loading && (<div className="row">
               <div className="col apis">
                 <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center">
+                  <div className="col-12 month__selector d-flex align-items-center gap-2">
                     <MonthPicker updateDate={(date: Date) => {
                       setDate(date);
                       getBillingData(date);
                     }} value={date} />
-                    <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
+                    <FeedbackButton className="btn --secondary --small --icon-only" onPress={sync}>
                       <RefreshCw />
-                    </button>
+                    </FeedbackButton>
                     {lastDate ? (<i className="ms-1">
                       <Translation i18nkey="date.update" replacements={[lastDate]}>
                         upd. {lastDate}

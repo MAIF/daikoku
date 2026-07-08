@@ -458,6 +458,12 @@ button.nav_item {
 
   $placeholder-color: color-mix(in srgb, variables.$level1_text-color 95%, #fff);
 
+  &:active,
+  &:focus {
+    border-color: variables.$form-bg-color !important;
+    background-color: variables.$form-bg-color !important;
+  }
+
   .fake-placeholder {
     color: $placeholder-color;
   }
