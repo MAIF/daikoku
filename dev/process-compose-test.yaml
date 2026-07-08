@@ -4,7 +4,8 @@ processes:
   Postgres:
     command: |
       if [[ $DB = "true" ]] ;
-      then mise run pg ;
+      then mise run pg:clean ;
+      mise run pg ;
       else echo Database is already running, wont start one ;
       while true; do sleep 10000; done ;
       fi
