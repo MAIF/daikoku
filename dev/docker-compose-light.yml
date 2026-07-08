@@ -1,18 +1,5 @@
 version: "3"
 services:
-  postgres:
-    image: postgres:latest
-    container_name: postgres_daikoku
-    networks:
-      - basicsetup
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-    volumes:
-      - ../daikoku/javascript/tests/config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
-    ports:
-      - 5432:5432
-
   otoroshi:
     image: maif/otoroshi:latest
     networks:

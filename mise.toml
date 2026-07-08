@@ -4,6 +4,20 @@ sbt = "1.12"
 node = "24"
 "github:F1bonacc1/process-compose" = "1"
 
+
+[tasks.pg]
+dir="dev"
+run="docker-compose --ansi=always -f ./docker-compose-pg.yml up"
+
+[tasks."pg:clean"]
+dir="dev"
+run="docker-compose --ansi=always -f ./docker-compose-pg.yml down && docker-compose --ansi=always -f ./docker-compose-pg.yml rm -f"
+
+[tasks."pg:logs"]
+dir="dev"
+run="docker-compose --ansi=always -f ./docker-compose-pg.yml logs -f"
+
+
 [tasks."install:doc"]
 dir = "manual"
 run = "npm install"
@@ -22,7 +36,8 @@ run = [{task = "install:frontdeps"}, {task = "install:playwright"},  {task = "in
 
 
 [tasks."install:back"]
-run = "docker-compose -f dev/docker-compose-light.yml pull && cd daikoku && sbt compile"
+dir = "daikoku"
+run = "sbt compile"
 
 [tasks.install]
 run = [{task = "install:front"}, {task = "install:back"}]
@@ -30,6 +45,7 @@ run = [{task = "install:front"}, {task = "install:back"}]
 [tasks."dev:containers"]
 dir = "dev"
 run = "docker-compose -f docker-compose-light.yml rm -f && docker-compose --ansi=always -f docker-compose-light.yml up"
+
 
 [tasks."dev:clean"]
 dir = "dev"
@@ -45,52 +61,74 @@ run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf -Dda
 raw=true
 
 [tasks."dev:db"]
-run = "PGGSSENCMODE=disable PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres"
+usage = '''
+flag "-d <d>" help="Database to connect to" default="daikoku" {
+  choices "daikoku" "daikoku_test"
+}
+'''
+run = "PGGSSENCMODE=disable PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d $usage_d"
 
 [tasks."dev:back:empty"]
 dir = "daikoku"
-run = "sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf\""
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password sbt --color=true -jvm-debug 5005 \"~run -Dconfig.resource=local.conf\""
 raw=true
 
 [tasks.dev]
-run = "process-compose -f ./dev/process-compose.yaml -p 9999"
+usage = '''
+flag "--mode <mode>" help="Initialization mode" default="local" {
+  choices "ldap" "oidc" "local" "empty"
+}
+flag "--test" help="Display playwright test ui, only for oidc and local modes"
+'''
 
-[tasks."dev:empty"]
-run = "process-compose -f ./dev/process-compose-dev-empty.yaml -p 9999"
+run = '''
+if [[ $usage_test = 'true' ]] && ( [[ $usage_mode = 'local' ]] || [[ $usage_mode = 'empty' ]] ) ;
+then echo "no tests available in local mode, --test flag is only available for oidc an ldap modes" ;
+exit 1;
+fi;
+
+if [[ $usage_test = 'true' ]] ;
+then echo '--test is specified, starting playwright test ui' ;
+else PC_DISABLED_PROCESSES="Test" ;
+fi ;
+
+if nc -z localhost 5432 > /dev/null 2> /dev/null ;
+then echo echo "Database seems to be running (port 5432 is used). Will not start another DB." ;
+DB=false
+else echo "No database running (port 5432 is free), will start one" ;
+DB=true
+fi ;
+
+TEST=$usage_test MODE=$usage_mode DB=$DB PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose -f ./dev/process-compose.yaml -p 9999 ;
+'''
 
 [tasks.doc]
 dir = "manual"
 run = "npm start"
 
-[tasks."test:back:containers"]
-dir = "daikoku/javascript/tests"
-run = "docker-compose -f docker-compose-test-backend.yml  rm -f && docker-compose -f docker-compose-test-backend.yml up"
-
-#dir = "javascript/tests/config/daikoku/daikoku_state_local_test.ndjson"
-
 [tasks."test:front:ldap:containers"]
-dir="daikoku/javascript/tests"
-run = "docker-compose -f docker-compose-local-pg.yml rm -f && docker-compose --ansi=always -f docker-compose-local-pg.yml up"
+dir="dev"
+run = "docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up"
 
 [tasks."test:front:oidc:containers"]
 dir="dev"
-run = "docker-compose -f docker-compose-oidc-pg.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc-pg.yml up"
+run = "docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up"
 
 [tasks."test:front:ldap:backend"]
 dir="daikoku"
-run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
+run = "DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
 
 [tasks."test:front:oidc:backend"]
 dir="daikoku"
-run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
+run = "DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
 
 [tasks."test:front:ldap:clean"]
-dir="daikoku/javascript/tests"
-run = "docker-compose -f docker-compose-local-pg.yml down && docker-compose -f docker-compose-local-pg.yml rm -f"
+dir="dev"
+run = "docker-compose -f docker-compose-ldap.yml down && docker-compose -f docker-compose-ldap.yml rm -f"
 
 [tasks."test:front:oidc:clean"]
 dir="dev"
-run = "docker-compose -f docker-compose-oidc-pg.yml down && docker-compose -f docker-compose-oidc-pg.yml rm -f"
+run = "docker-compose -f docker-compose-oidc.yml down && docker-compose -f docker-compose-oidc.yml rm -f"
 
 [tasks."test:front:ldap:run"]
 dir="daikoku/javascript"
@@ -100,28 +138,21 @@ run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/p
 dir="daikoku/javascript"
 run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.oidc.config.js --ui --project chromium"
 
-[tasks."test:front:ldap"]
-dir="dev"
-run="process-compose -f process-compose-test-front-ldap.yaml -p 9999"
+[tasks."test:front:local:run"]
+dir="daikoku/javascript"
+run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.local.config.js --ui --project chromium"
 
-[tasks."test:front:oidc"]
-dir="dev"
-run="process-compose -f process-compose-test-front-oidc.yaml -p 9999"
 
 [tasks."seed:update"]
 run = "scripts/update-seeds.sh \"${DAIKOKU_URL:-http://localhost:9000}\" \"${ADMIN_USERNAME:-admin@foo.bar}\" \"${ADMIN_PASS:-password}\" \"${TENANT_ID:-default}\""
 
-[tasks."test:front:report"]
-dir="daikoku/javascript"
-run = "npx playwright show-report tests/playwright-report"
-
-[tasks."test:back:clean"]
-dir = "daikoku/javascript/tests"
-run = "docker-compose -f docker-compose-test-backend.yml down && docker-compose -f docker-compose-test-backend.yml rm -f"
-
 [tasks."test:back"]
-run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
-
-
-[tasks.tests]
-run = [{task = "test:front"}, {task = "test:back"}]
+run = '''
+if nc -z localhost 5432 > /dev/null 2> /dev/null ;
+then echo echo "Database seems to be running (port 5432 is used). Will not start another DB." ;
+DB=false
+else echo "No database running (port 5432 is free), will start one" ;
+DB=true
+fi ;
+DB=$DB process-compose -f ./dev/process-compose-test.yaml -p 9999 -t=false
+'''
