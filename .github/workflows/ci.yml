@@ -232,12 +232,11 @@ jobs:
         run: |
           cd ./daikoku/javascript/tests
           if [[ "${{ matrix.suite.name }}" == "perf" ]]; then
-            npx playwright test --trace on  --config ${{ matrix.suite.playwright-config }}
+            CI=true npx playwright test --trace on  --config ${{ matrix.suite.playwright-config }}
           else
-            npx playwright test --trace on --config ${{ matrix.suite.playwright-config }} --project chromium
+            CI=true npx playwright test --trace on --config ${{ matrix.suite.playwright-config }} --project chromium
           fi
         env:
-          CI: true
           EXPOSED_PORT: 13200
           DAIKOKU_URL: http://localhost:13200
           POSTGRES_HOST: localhost

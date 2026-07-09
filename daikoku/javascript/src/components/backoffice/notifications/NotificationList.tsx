@@ -89,9 +89,7 @@ const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: tru
 
 const getApiFromNotification = (
   notification: NotificationGQL,
-  apis?: Array<{ _id: string; name: string }>
 ): { _id: string; name: string; currentVersion?: string } | undefined => {
-  if (!apis) return;
   switch (notification.action.__typename) {
     case 'ApiAccess':
     case 'ApiSubscription':
@@ -644,7 +642,7 @@ export const NotificationList = () => {
       meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 15 },
       cell: (info) => {
         const notification = info.row.original;
-        const api = getApiFromNotification(notification, visibleApisRequest.data);
+        const api = getApiFromNotification(notification);
         if (!api) return null;
         return (
           <a href='#' onClick={() => {
@@ -657,7 +655,7 @@ export const NotificationList = () => {
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         );
-      },
+      }
     }),
     columnHelper.accessor('action.__typename', {
       id: 'type',

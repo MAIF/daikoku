@@ -230,9 +230,9 @@ export function DynamicTable<T>({
   dataClassName,
   countLabelKey,
   tableClassName,
-  rowSelection = {},
   onSelectionChange,
-  setRowSelection = () => {},
+  rowSelection: controlledRowSelection,  
+  setRowSelection: controlledSetRowSelection,  
   isRowSelectable
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
@@ -253,6 +253,15 @@ export function DynamicTable<T>({
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const [page, setPage] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
+
+  // Sélection interne utilisée quand le parent ne contrôle pas `rowSelection`.
+  // Permet à isRowSelectable/bulkActions de fonctionner "out of the box"
+  // sans que l'appelant ait à gérer l'état lui-même.
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+  const rowSelection = controlledRowSelection ?? internalRowSelection;
+  const setRowSelection = controlledSetRowSelection ?? setInternalRowSelection;
+
+
   // id->label cache per async multiselect filter, used to render the labels of
   // already-selected values without refetching the whole option list.
   const [asyncLabelCache, setAsyncLabelCache] = useState<Record<string, Record<string, string>>>({});

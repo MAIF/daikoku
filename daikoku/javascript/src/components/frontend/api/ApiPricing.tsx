@@ -1232,9 +1232,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
         } else {
           props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey })
             .then((response) => {
-              if (response?.status === 'created') { // ✅ 'waiting' et non 'created'
+              if (response?.status === 'created') { 
                 toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response?.apiTeam?.name] }));
-                // response.teamName est déjà une string ici
               }
               close();
             });
@@ -1869,7 +1868,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
   }, [])
 
   const displayResponseForSavingApikey = (promises) => {
-
     Promise.all(promises).then((results) => {
       const alteredApiKeys = results.filter((r) => r !== undefined && r !== null);
       openRightPanel({
@@ -2020,7 +2018,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 ({ plan, subscriptions }) => {
                                   const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                   const sub = subscriptions.find((sub) => sub._id === subscriptionId)
-                                  props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub })
+                                  return props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub })
                                 }
                               )
                               displayResponseForSavingApikey(promises)

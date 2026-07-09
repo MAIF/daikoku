@@ -1,24 +1,35 @@
 version: "0.5"
 
-log_level: debug
-
 processes:
-  Containers:
-    command: "mise run test:back:containers"
+  Postgres:
+    command: |
+      if [[ $DB = "true" ]] ;
+      then mise run pg:clean ;
+      mise run pg ;
+      else echo Database is already running, wont start one ;
+      while true; do sleep 10000; done ;
+      fi
     readiness_probe:
       exec:
-        command: "docker inspect daikoku-backend-test-postgres 2>/dev/null | grep -q '\"Running\": true'"
+        command: "nc -z localhost 5432 > /dev/null 2> /dev/null"
       initial_delay_seconds: 3
       period_seconds: 5
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 3
     shutdown:
-      command: "mise run test:back:clean"
+      command: |
+        if $DB = "true" ;
+        then echo "killing database..." ;
+        mise run pg:clean ;
+        else echo "disconnecting from container logs..." ;
+        pkill -f "mise run pg:logs" ;
+        fi
   Tests:
-    command: "sbt test --color=true"
+    command: sbt --color=true test
     depends_on:
-      Containers:
+      Postgres:
         condition: process_healthy
     working_dir: "daikoku"
-    exit_on_end: true
+    availability:
+      exit_on_end: true

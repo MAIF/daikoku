@@ -1,8 +1,28 @@
 version: "0.5"
 
 processes:
+  Postgres:
+    command: |
+      if [[ $DB = "true" ]] ;
+      then mise run pg:clean ;
+      mise run pg ;
+      else echo Database is already running, wont start one ;
+      while true; do sleep 10000; done ;
+      fi
+    shutdown:
+      command: |
+        if $DB = "true" ;
+        then mise run pg:clean ;
+        else pkill -f "mise run pg:logs" ;
+        fi
   Containers:
-    command: "mise run dev:containers"
+    command: |
+      if [[ $MODE = "ldap" ]] ;
+      then mise run test:front:ldap:containers ;
+      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+      then mise run dev:containers ;
+      else mise run test:front:oidc:containers ;
+      fi
     readiness_probe:
       http_get:
         host: otoroshi-api.oto.tools
@@ -15,9 +35,23 @@ processes:
       success_threshold: 1
       failure_threshold: 20
     shutdown:
-      command: "mise run dev:clean"
+      command: |
+        if [[ $MODE = "ldap" ]] ;
+        then mise run test:front:ldap:clean ;
+        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+        then mise run dev:clean ;
+        else mise run test:front:oidc:clean ;
+        fi
   Backend:
-    command: "mise run dev:back"
+    command: |
+      if [[ $MODE = "ldap" ]] ;
+      then mise run test:front:ldap:backend ;
+      elif [[ $MODE = "local" ]] ;
+      then mise run dev:back ;
+      elif [[ $MODE = "empty" ]] ;
+      then mise run dev:back:empty ;
+      else mise run test:front:oidc:backend ;
+      fi
     is_tty: true
     depends_on:
       Containers:
@@ -38,9 +72,22 @@ processes:
     depends_on:
       Containers:
         condition: process_healthy
-  Database:
-    command: "mise run dev:db"
+  Database-shell:
+    command: |
+      if [[ $MODE = "ldap" ]] || [[ $MODE = "oidc" ]] ;
+      then mise run dev:db -d daikoku_test;
+      else mise run dev:db -d daikoku;
+      fi
     is_interactive: true
     depends_on:
       Backend:
         condition: process_healthy
+  Test:
+    disabled:
+    command: |
+      if [[ $MODE = "ldap" ]] ;
+      then mise run test:front:ldap:run ;
+      elif [[ $MODE = "oidc" ]] ;
+      then mise run test:front:oidc:run ;
+      else echo "no tests for this mode" ;
+      fi

@@ -426,6 +426,7 @@ test('Voir ses notifications', async ({ page }) => {
 
 
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  
   await expect(page.getByText('58 notifications')).toBeVisible();
   // await expect(page.getByLabel('notifications', { exact: true })).toContainText('58');
   await expect(page.getByRole('article')).toHaveCount(25);
