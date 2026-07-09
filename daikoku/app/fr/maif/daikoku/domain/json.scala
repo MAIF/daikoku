@@ -802,10 +802,6 @@ object json {
 
   val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue): JsResult[UsagePlan] =
-      AppLogger.error("=================================")
-      AppLogger.error(json.toString)
-      AppLogger.error("=================================")
-
       Try {
         JsSuccess(
           UsagePlan(
