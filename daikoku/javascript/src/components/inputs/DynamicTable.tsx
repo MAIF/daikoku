@@ -593,9 +593,9 @@ export function DynamicTable<T>({
             type="checkbox"
             className="form-check-input"
             checked={table.getIsAllPageRowsSelected()}
-            onChange={e => {
+            onChange={() => {
               if (selectAll) setSelectAll(false);
-              table.getToggleAllPageRowsSelectedHandler()(e);
+              handleToggleAllPageRowsSelected();
             }}
           />
         </label>
@@ -638,6 +638,44 @@ export function DynamicTable<T>({
         {!someSelected && renderColumnHeaders(true)}
       </div>
     );
+  };
+
+  // Toggle "select all" custom : contrairement au handler par défaut de
+  // TanStack, on évalue isRowSelectable ligne par ligne en tenant compte des
+  // lignes déjà cochées dans CE MÊME clic (pas seulement de la sélection
+  // préexistante), pour éviter de cocher des lignes mutuellement incompatibles.
+  const handleToggleAllPageRowsSelected = () => {
+    const pageRows = table.getRowModel().rows;
+    const allPageRowsSelected = pageRows.every(row => rowSelection[row.id]);
+
+    if (allPageRowsSelected) {
+      // Décoche les lignes de la page courante
+      const newSelection = { ...rowSelection };
+      pageRows.forEach(row => { delete newSelection[row.id]; });
+      setRowSelection(newSelection);
+      return;
+    }
+
+    const newSelection = { ...rowSelection };
+    let accumulatedSelected = [...selectedRows];
+    let noRowSelectable = true;
+
+    pageRows.forEach(row => {
+      if (newSelection[row.id]) return; // déjà sélectionnée
+      const canSelect = isRowSelectable
+        ? isRowSelectable(row.original, accumulatedSelected)
+        : (typeof enableRowSelection === 'function' ? enableRowSelection(row) : enableRowSelection !== false);
+      if (canSelect) {
+        noRowSelectable = false
+        newSelection[row.id] = true;
+        accumulatedSelected = [...accumulatedSelected, row.original];
+      }
+    });
+    if (noRowSelectable) {
+        setRowSelection({});
+        return
+      }
+    setRowSelection(newSelection);
   };
 
   const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
