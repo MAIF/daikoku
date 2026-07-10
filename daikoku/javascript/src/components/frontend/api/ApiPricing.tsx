@@ -1103,10 +1103,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const updatePlan = (plan: IUsagePlanGQL, creation: boolean = false) => {
+  const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
 
     // Convertier IUsagePlanGQL en IUsagePlan
-    const planToUse = convertIUsagePlanGQLToIUsagePlan(plan)
+    const planToUse = plan
     availableEnvQuery.refetch().then(({ data: availableEnvs = [] }) => {
       openRightPanel({
         title: creation ? translate("api.home.create.plan.form.title") : translate("api.home.update.plan.form.title"),
@@ -1138,7 +1138,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan()
               .then(p => {
                 close()
-                updatePlan(p, true)
+                updatePlan(convertIUsagePlanGQLToIUsagePlan(p), true)
               })}>
               {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
@@ -1165,7 +1165,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       Services.fetchNewPlan()
         .then((plan) => {
           close()
-          updatePlan(plan, true)
+          updatePlan(convertIUsagePlanGQLToIUsagePlan(plan), true)
         })
     }
   }
@@ -1232,7 +1232,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         } else {
           props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey })
             .then((response) => {
-              if (response?.status === 'created') { 
+              if (response?.status === 'created') {
                 toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response?.apiTeam?.name] }));
               }
               close();
@@ -1538,7 +1538,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           customName: `${plan.customName} (copy)`,
           paymentSettings: undefined,
         };
-        updatePlan(clone, true)
+        updatePlan(convertIUsagePlanGQLToIUsagePlan(clone), true)
       },
       deleteWithConfirm: () => {
         const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
@@ -1574,7 +1574,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         })
       },
       editPlan: () => {
-        updatePlan(plan)
+        updatePlan(convertIUsagePlanGQLToIUsagePlan(plan))
       },
       editQuotas: () => {
         if (userCanUpdatePlan)
