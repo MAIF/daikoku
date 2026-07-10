@@ -84,7 +84,7 @@ export const ApiKeySelectModal = (
 };
 
 type ApiKeysViewProps = {
-  plan: IFastPlan | IUsagePlanGQL;
+  plan: IFastPlan | IUsagePlanGQL | IUsagePlan;
   apiKeys: Array<ISubscriptionWithApiInfo>;
   extendApiKey: (key: ISubscriptionWithApiInfo) => void;
 };

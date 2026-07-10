@@ -167,10 +167,10 @@ export const ApiHome = ({
             window.location.href = result.checkoutUrl
             return null
           } else if (Services.isCreationDone(result)) {
-            return { api, plan, teamName: apiTeam, subscription: result.subscription, status: 'created' as const };
+            return { api, plan, apiTeam: teamGQLToSimple(apiTeam), subscription: result.subscription, status: 'created' as const };
           } else if (result.creation === 'waiting') {
-            const apiTeam = myTeams.find((t) => t._id === team)!.name;
-            return { plan, teamName: apiTeam, status: 'waiting' as const };
+            const teamName = myTeams.find((t) => t._id === team)!.name;
+            return { plan, teamName, status: 'waiting' as const };
           }
         })
         .then((createdResult) => {
