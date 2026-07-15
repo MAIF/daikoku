@@ -682,13 +682,12 @@ export const KeyringCard = ({
 
           {/* Keyring-level menu : refresh secret / rotation */}
           <Can I={manage} a={apikey} team={currentTeam}>
-            <div className="dropdown">
+            <button className="btn --ghost --icon-only dropdown" aria-label={translate('keyring.actions.aria.label')}>
               <Menu
                 className="dropdown-menu-button cursor-pointer"
                 style={{ fontSize: '20px' }}
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
-                aria-label={translate('keyring.actions.aria.label')}
                 id={`keyring-dropdown-${keyring._id}`}
               />
               <div
@@ -719,7 +718,6 @@ export const KeyringCard = ({
                 </button>
                 {/* TODO: better label */}
                 <button className={classNames('dropdown-item cursor-pointer')}
-                  aria-label={translate('keyring.state.aria.label')}
                   onClick={() => toggleKeyring(!keyring.enabled)}
                 >
                   {translate(
@@ -729,7 +727,7 @@ export const KeyringCard = ({
                   )}
                 </button>
                 {!aggregated && !disableRotation && (
-                  <span
+                  <button
                     className={classNames('dropdown-item cursor-pointer', {
                       disabled: !keyring.enabled,
                     })}
@@ -756,9 +754,10 @@ export const KeyringCard = ({
                     }}
                   >
                     {translate('subscription.rotation.update.label')}
-                  </span>
+                  </button>
                 )}
-                <span
+                <div className="dropdown-divider" />
+                <button
                   className={classNames('dropdown-item cursor-pointer danger', {
                     disabled: !keyring.enabled,
                   })}
@@ -767,15 +766,15 @@ export const KeyringCard = ({
                   }}
                 >
                   {translate('subscription.reset.secret.label')}
-                </span>
-                <span
+                </button>
+                <button
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => withLoader(deleteKeyring)}
                 >
                   {translate('keyring.delete.label')}
-                </span>
+                </button>
               </div>
-            </div>
+            </button>
           </Can>
         </div>
       </div>
@@ -862,13 +861,12 @@ export const KeyringCard = ({
                 </td>
                 <td className="text-end">
                   <Can I={manage} a={apikey} team={currentTeam}>
-                    <div className="dropdown">
+                    <button className="btn --ghost --small --icon-only dropdown" aria-label={translate('subscription.actions.aria.label')}>
                       <Menu
                         className="cursor-pointer dropdown-menu-button"
                         style={{ fontSize: '18px' }}
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
-                        aria-label={translate('subscription.actions.aria.label')}
                         id={`dropdown-${sub._id}`}
                       />
                       <div
@@ -876,7 +874,7 @@ export const KeyringCard = ({
                         aria-labelledby={`dropdown-${sub._id}`}
                         style={{ zIndex: 1 }}
                       >
-                        <span
+                        <button
                           className="dropdown-item cursor-pointer"
                           onClick={() =>
                             openFormModal({
@@ -902,38 +900,38 @@ export const KeyringCard = ({
                           }
                         >
                           {translate('subscription.custom.name.update.label')}
-                        </span>
+                        </button>
                         {!aggregated && <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => withLoader(() => transferKey(sub))}
                         >
                           {translate('subscription.transfer.label')}
                         </span>}
-                        <span
+                        <button
                           className="dropdown-item cursor-pointer"
                           onClick={() => withLoader(() => toggle(sub))}
                         >
                           {sub.enabled
                             ? translate('subscription.disable.button.label')
                             : translate('subscription.enable.button.label')}
-                        </span>
+                        </button>
                         {aggregated && (
-                          <span
+                          <button
                             className="dropdown-item cursor-pointer danger"
                             onClick={() => withLoader(() => makeUniqueApiKey(sub))}
                           >
                             {translate('subscription.extract.button.label')}
-                          </span>
+                          </button>
                         )}
                         <div className="dropdown-divider" />
-                        <span
+                        <button
                           className="dropdown-item cursor-pointer danger"
                           onClick={() => withLoader(() => deleteApiKey(sub))}
                         >
                           {translate('subscription.delete.button.label')}
-                        </span>
+                        </button>
                       </div>
-                    </div>
+                    </button>
                   </Can>
                 </td>
               </tr>

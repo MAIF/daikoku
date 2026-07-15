@@ -1,4 +1,4 @@
-import test, { expect } from '@playwright/test';
+import test, { expect, Locator } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL, IUser, DWIGHT } from './users';
@@ -865,23 +865,31 @@ test('[#1096] - visibilité du bouton de souscription selon la visibilité API/p
 })
 test("[] - [Consommateur] - les actions d'administration des clés doivent être accessibles uniquement aux admins d'une équipe", async ({ page, context }) => {
 
-  async function checkBurgerButtonVisibility(visible: Boolean) {
+  async function checkBurgerButtonVisibility(visible: boolean) {
     const keyUrl = `${HOME}vendeurs/settings/apikeys/api-commande/1.0.0`
     const card = page.locator('.keyring-card').first()
-    const burgerLocator = page.locator('.api-subscription').first().locator('.dropdown-menu-button').first()
-    const switchLocator = card.getByRole('switch', { name: 'État du trousseau' })
+
+    const keyringMenuButton = card.getByRole('button', { name: 'Actions du trousseau' });
+    const keyringSwitchButton = await card.getByRole('button', { name: 'Désactiver le trousseau' });
+
     await page.goto(keyUrl)
 
     if (visible) {
-      await expect(burgerLocator).toBeVisible()
-      await expect(switchLocator).toBeVisible()
+      await expect(keyringMenuButton).toBeVisible();
+      await keyringMenuButton.click();
+      await expect(keyringSwitchButton).toBeVisible();
+      await page.keyboard.press('Escape');
     } else {
       // Ensure that api key card is displayed before asserting on burger button absence
       await expect(page.getByRole("button", { name: "Copier le clientId et le clientSecret" })).toBeVisible()
-      await expect(burgerLocator).not.toBeVisible()
+      await expect(keyringMenuButton).not.toBeVisible()
       // non-admin : pas de switch, mais le statut du trousseau reste visible
-      await expect(switchLocator).not.toBeVisible()
-      await expect(card.locator('[class~="--state"]')).toBeVisible()
+      await expect(keyringSwitchButton).not.toBeVisible()
+      const states = card.locator('[class~="--state"]')
+      await expect(states).toHaveCount(3)
+      for (const state of await states.all()) {
+        await expect(state).toBeVisible()
+      }
     }
   }
 
@@ -919,10 +927,11 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
   const card = page.locator('.keyring-card').first();
 
   // désactivation du trousseau via le switch (admin)
-  await Promise.all([
-    page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200),
-    card.getByRole('switch', { name: 'État du trousseau' }).click(),
-  ]);
+  await card.getByRole('button', { name: 'Actions du trousseau' }).click();
+  await card.getByRole('button', { name: 'Désactiver le trousseau' }).click();
+  await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
+
+
 
   // menu keyring : rotation + réinit. secret grisés tant que le trousseau est désactivé
   await card.locator('[id^="keyring-dropdown-"]').click();
@@ -930,7 +939,7 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
   await expect(page.locator('.disabled', { hasText: 'Réinit. le secret' })).toBeVisible();
 })
 
-test("[ASOAPI-keyring-state] - [Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoroshi sans toucher aux souscriptions", async ({ page }) => {
+test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoroshi sans toucher aux souscriptions", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await findAndGoToTeam('Logistique', page);
@@ -938,13 +947,13 @@ test("[ASOAPI-keyring-state] - [Consommateur] - désactiver/réactiver un trouss
   await page.getByRole('row', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
 
   const card = page.locator('.keyring-card', { hasText: 'prod' });
-  const keyringSwitch = card.getByRole('switch', { name: 'État du trousseau' });
 
   // désactiver le trousseau -> la clé Otoroshi est désactivée
-  await Promise.all([
-    page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200),
-    keyringSwitch.click(),
-  ]);
+
+  await card.getByRole('button', { name: 'Actions du trousseau' }).click();
+  await card.getByRole('button', { name: 'Désactiver le trousseau' }).click();
+  await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
+
   const disabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',
     headers: {
@@ -958,10 +967,10 @@ test("[ASOAPI-keyring-state] - [Consommateur] - désactiver/réactiver un trouss
   await expect(card.locator('.api-subscription__value__type')).toContainText('Activé');
 
   // réactiver le trousseau -> la clé Otoroshi est réactivée (la souscription est active)
-  await Promise.all([
-    page.waitForResponse(r => r.url().includes('/_enable?enabled=true') && r.status() === 200),
-    keyringSwitch.click(),
-  ]);
+  await card.getByRole('button', { name: 'Actions du trousseau' }).click();
+  await card.getByRole('button', { name: 'Activer le trousseau' }).click();
+  await page.waitForResponse(r => r.url().includes('/_enable?enabled=true') && r.status() === 200)
+
   const enabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',
     headers: {
