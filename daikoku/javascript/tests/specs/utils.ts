@@ -10,6 +10,9 @@ export const otoroshiAdminApikeySecret = 'admin-api-apikey-secret';
 export const logistiqueCommandeProdApiKeyId = 'lBHBZFjUbWx5CEShf1NYe1gO0N0vtWVQ'
 export const logistiqueCommandeProdApiKeySecret = 'YwbzNgYSup3eCdxBIRa9HqM22tGoHI02v8AfZM2glyNV9OsGVOI9mciE62y9s1Bj'
 
+export const logistiqueCommandeDevApiKeyId = '5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl'
+export const logistiqueCommandeDevApiKeySecret = 'kGTq8a3eG7FIs7T1gOVWehMxhqqIS72QFmOZ2TRM42h6jt0PvtftGd43fe4QED9w'
+
 export const vendeursPapierExtendedDevApiKeyId = 'BdGLTEAxmFsTg7NnlumBPzyX75Vre3al'
 export const vendeursPapierExtendedDevApiKeySecret = 'jmEX0x62DRmqAwL92YdF5VugN6iV3FOQuPq7idgwXTELpcQgaIBSU4sBxebapLQW'
 
