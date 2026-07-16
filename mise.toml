@@ -143,6 +143,35 @@ dir="daikoku/javascript"
 run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.local.config.js --ui --project chromium"
 
 
+# --- coverage-instrumented backends (sbt coverage run, NOT ~run) --------------
+# `run` (not `~run`) so the instrumented statement map isn't rewritten by the watcher.
+[tasks."test:front:ldap:backend:coverage"]
+dir="daikoku"
+run = "DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_ldap.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt coverage run --color=true"
+
+[tasks."test:front:oidc:backend:coverage"]
+dir="daikoku"
+run = "DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt coverage run --color=true"
+
+[tasks."test:front:local:backend:coverage"]
+dir="daikoku"
+run = "DAIKOKU_POSTGRES_DATABASE=daikoku DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_light.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt coverage run --color=true"
+
+# --- headless playwright runs for coverage (no --ui) --------------------------
+# Run from tests/ (not javascript/): there are two Playwright installs and only the
+# tests/ one resolves the specs — running from javascript/ yields "No tests found".
+[tasks."test:front:ldap:run:coverage"]
+dir="daikoku/javascript/tests"
+run="PLAYWRIGHT_HTML_OPEN=never FORCE_COLOR=1 npx playwright test --workers 1 --config playwright.config.js --project chromium"
+
+[tasks."test:front:oidc:run:coverage"]
+dir="daikoku/javascript/tests"
+run="PLAYWRIGHT_HTML_OPEN=never FORCE_COLOR=1 npx playwright test --workers 1 --config playwright.oidc.config.js --project chromium"
+
+[tasks."test:front:local:run:coverage"]
+dir="daikoku/javascript/tests"
+run="PLAYWRIGHT_HTML_OPEN=never FORCE_COLOR=1 npx playwright test --workers 1 --config playwright.local.config.js --project chromium"
+
 [tasks."seed:update"]
 run = "scripts/update-seeds.sh \"${DAIKOKU_URL:-http://localhost:9000}\" \"${ADMIN_USERNAME:-admin@foo.bar}\" \"${ADMIN_PASS:-password}\" \"${TENANT_ID:-default}\""
 
@@ -156,3 +185,73 @@ DB=true
 fi ;
 DB=$DB process-compose -f ./dev/process-compose-test.yaml -p 9999 -t=false
 '''
+
+# =============================================================================
+# Consolidated Scala coverage: backend unit tests + the 3 e2e suites (ldap /
+# oidc / local), all instrumented, merged into ONE scoverage report.
+#
+#   mise run coverage
+#
+# How it works: one instrumented build; after each run the scoverage measurement
+# files are harvested out to `coverage-measurements/` (tagged per run so nothing
+# collides), then reassembled before `coverageReport`. See
+# scripts/coverage-measurements.sh.
+#
+# NOTE: local-only — it drives the backend via sbt. CI runs a prebuilt (optimised,
+# non-instrumented) Docker image, so this cannot run there as-is.
+# =============================================================================
+
+[tasks."coverage:reset"]
+run = "bash scripts/coverage-measurements.sh reset"
+
+# Each step chains with `;` (not a mise array) so the harvest ALWAYS runs even when
+# tests fail — coverage is still collected — and the task exits 0 so the top-level
+# `coverage` orchestrator doesn't abort on a red suite.
+[tasks."coverage:unit"]
+dir = "daikoku"
+# Backend tests connect to an external postgres (test/resources/application.conf →
+# database = "daikoku_test"), so start one, wait until daikoku_test answers, run the
+# instrumented tests, harvest, then tear the DB down. `|| true` keeps the harvest running
+# even when tests fail (mise runs tasks under `set -e`) — coverage is collected regardless.
+run = '''
+mise run pg:clean || true ;
+mise run pg &
+echo "[coverage] waiting for postgres (daikoku_test) ..." ;
+n=0 ;
+until docker exec daikoku_postgres pg_isready -U postgres -d daikoku_test > /dev/null 2>&1 ; do
+  n=$((n+1)) ; [ $n -gt 90 ] && { echo "[coverage] postgres not ready after ~180s, continuing anyway" ; break ; } ; sleep 2 ;
+done ;
+sbt coverage clean test --color=true || true ;
+bash ../scripts/coverage-measurements.sh harvest unit ;
+mise run pg:clean || true
+'''
+
+[tasks."coverage:e2e:ldap"]
+dir = "dev"
+run = "MODE=ldap process-compose -f process-compose-coverage.yaml -p 9999 -t=false || true ; bash ../scripts/coverage-measurements.sh harvest ldap"
+
+[tasks."coverage:e2e:oidc"]
+dir = "dev"
+run = "MODE=oidc process-compose -f process-compose-coverage.yaml -p 9999 -t=false || true ; bash ../scripts/coverage-measurements.sh harvest oidc"
+
+[tasks."coverage:e2e:local"]
+dir = "dev"
+run = "MODE=local process-compose -f process-compose-coverage.yaml -p 9999 -t=false || true ; bash ../scripts/coverage-measurements.sh harvest local"
+
+[tasks."coverage:report"]
+dir = "daikoku"
+run = [
+  "bash ../scripts/coverage-measurements.sh assemble",
+  "sbt coverageReport --color=true",
+  "echo '[coverage] consolidated report → daikoku/target/scala-3.8.2/scoverage-report/index.html'",
+]
+
+[tasks."coverage"]
+run = [
+  {task = "coverage:reset"},
+  {task = "coverage:unit"},
+  {task = "coverage:e2e:ldap"},
+  {task = "coverage:e2e:oidc"},
+  {task = "coverage:e2e:local"},
+  {task = "coverage:report"},
+]

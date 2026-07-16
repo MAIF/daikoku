@@ -188,6 +188,7 @@ Compile / scalacOptions ++= {
     )
   else Seq.empty
 }
+
 scalacOptions ++= Seq(
   "-feature",
   "-language:higherKinds",
