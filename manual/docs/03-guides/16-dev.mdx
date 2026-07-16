@@ -47,14 +47,14 @@ To login see [demo-data](#demo-data).
 Below command will run Daikoku in a dev setup without any data.
 
 ```sh
-mise run dev:empty
+mise run dev --mode empty
 ```
 
 Once everything is started, browser to [http://localhost:5173](http://localhost:5173) to get started.
 
 In this mode source code update will trigger frontend hot reload / backend recompilation.
 
-A default password will be generated, and user / password will be visible in Daikoku logs.
+Default user is `admin@daikoku.io` and default password is `password`.
 
 ### Running tests
 
@@ -69,7 +69,7 @@ mise run test:back
 Alternatively, below command will start backend test dependencies, this will allow you to run/debug tests yourself (throught `sbt test` or Intellij).
 
 ```sh
-mise run test:back:containers
+mise run pg
 ```
 
 ### Frontend tests
@@ -79,25 +79,36 @@ mise run test:back:containers
 Below command will run all necessary dependencies and open Playwright UI for LDAP tests
 
 ```sh
-mise run test:front:ldap
+mise run dev --mode ldap --test
 ```
 
 You can browse to [http://localhost:5173](http://localhost:5173) to use frontend.
 
 Moreover, as for previous dev command, source code update will trigger frontend hot reload / backend recompilation.
+
+If you just want to start test setup without playwright UI, you can just run
+
+```sh
+mise run dev --mode ldap
+```
 
 #### OIDC
 
 Below command will run all necessary dependencies and open Playwright UI for OIDC tests
 
 ```sh
-mise run test:front:oidc
+mise run dev --mode oidc --test
 ```
 
 You can browse to [http://localhost:5173](http://localhost:5173) to use frontend.
 
 Moreover, as for previous dev command, source code update will trigger frontend hot reload / backend recompilation.
 
+As for ldap, you can juste start test setup without playwright UI by running :
+
+```sh
+mise run dev --mode oidc
+```
 
 ### Documentation
 
@@ -108,6 +119,18 @@ mise run doc
 ```
 
 Once everything is started, browse to [http://localhost:3000/daikoku/](http://localhost:3000/daikoku/)
+
+
+
+### Keep postgres instance running
+
+If you want to keep a postgres instance running accross your dev / test tasks, run below command in a separated terminal.
+
+```sh
+mise run pg
+```
+
+All above mise command will detect that a postgres is already running and won't shut it down when terminated.
 
 ---
 
@@ -149,18 +172,18 @@ npm install
 
 
 #### Potsgres
-Run a local PostgreSQL and an instance of otoroshi dedicated to Daikoku:
+Run a local PostgreSQL dedicated to Daikoku, you should keep this running in a dedicated shell all the time (for dev & tests).
 
 ```bash
 cd
-docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-full.yml up
+docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
 ```
 
 :::note Default connection info
 
 * **Host**: `localhost`
 * **Port**: `5432`
-* **Database**: `daikoku`
+* **Database**: `daikoku` (or `daikoku_test` for tests)
 * **User / Password**: `postgres` / `postgres`
   :::
 
@@ -189,7 +212,7 @@ Then in sbt shell start backend with "hot reload":
 if you want demo data already loaded, use below command:
 
 ```bash
-~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_full.ndjson
+~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_light.ndjson
 ```
 
 if you prefer a fresh daikoku instance, use below command:
@@ -223,10 +246,11 @@ If you started your Daikoku instance without demo data, a default password will 
 
 ### Running backend tests
 
-To tun backend test, you'll first need to run some containers:
+To tun backend test, you'll first need to run postgres (if not already done) :
 
-```sh
-docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-test-backend.yml  rm -f && docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-test-backend.yml up
+```bash
+cd
+docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
 ```
 
 Then you can run backend test using either your IDE or
@@ -238,19 +262,20 @@ sbt test
 
 ### Running frontend tests
 
-#### LDAP
+First of all, you'll need a running postgres instance (if not already started):
 
-First start needed containers
-
-```sh
-docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-local-pg.yml rm -f && docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-local-pg.yml up
+```bash
+cd
+docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
 ```
 
-Then start backend
+#### LDAP
+
+First start backend
 
 ```sh
 cd $DAIKOKU_PROJECT_ROOT/daikoku
-DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
 ```
 
 Finally start frontend
@@ -270,17 +295,11 @@ npx playwright test --workers 1 --config ./tests/playwright.config.js --ui --pro
 
 #### OIDC
 
-First start needed containers
-
-```sh
-docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-oidc-pg.yml rm -f && docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-oidc-pg.yml up
-```
-
-Then start backend
+First start backend
 
 ```sh
 cd $DAIKOKU_PROJECT_ROOT/daikoku
-DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
 ```
 
 Finally start frontend

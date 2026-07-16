@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { IUser } from "./users";
+import { env } from "process";
 
 export const adminApikeyId = 'admin_key_client_id';
 export const adminApikeySecret = 'admin_key_client_secret';
@@ -36,5 +37,7 @@ export const loginOidcAs = async (user: IUser, page: Page, waitForHome: boolean 
 export const logout = async (page: Page) => {
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByRole('button', { name: 'Yes' }).click();
+  if(process.env?.CI) {
+    await page.getByRole('button', { name: 'Yes' }).click();
+  }
 };
