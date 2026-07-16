@@ -91,12 +91,7 @@ export const TenantList = () => {
               link: `/api/tenants/${tenant._id}/_redirect`,
               icon: <Link />,
               tooltip: translate('Go to tenant'),
-            },
-            {
-              redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
-              icon: <UserCheck />,
-              tooltip: translate('Admins'),
-            },
+            }
           ]} />);
         }} />
       </div>
