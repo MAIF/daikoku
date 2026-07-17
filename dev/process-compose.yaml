@@ -13,7 +13,6 @@ processes:
       command: |
         if $DB = "true" ;
         then mise run pg:clean ;
-        else pkill -f "mise run pg:logs" ;
         fi
   Containers:
     command: |

@@ -13,10 +13,6 @@ run="docker-compose --ansi=always -f ./docker-compose-pg.yml up"
 dir="dev"
 run="docker-compose --ansi=always -f ./docker-compose-pg.yml down && docker-compose --ansi=always -f ./docker-compose-pg.yml rm -f"
 
-[tasks."pg:logs"]
-dir="dev"
-run="docker-compose --ansi=always -f ./docker-compose-pg.yml logs -f"
-
 
 [tasks."install:doc"]
 dir = "manual"

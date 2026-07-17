@@ -23,7 +23,6 @@ processes:
         then echo "killing database..." ;
         mise run pg:clean ;
         else echo "disconnecting from container logs..." ;
-        pkill -f "mise run pg:logs" ;
         fi
   Tests:
     command: sbt --color=true test
