@@ -1017,9 +1017,6 @@ class ApiService(
         // implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
         val newClientSecret = IdGenerator.token(64)
-        val updatedSubscription = subscription.copy(apiKey =
-          subscription.apiKey.copy(clientSecret = newClientSecret)
-        )
 
         val r: EitherT[Future, AppError, JsObject] = for {
           subscriptionTeam <- EitherT.liftF(
@@ -1048,9 +1045,13 @@ class ApiService(
           apiKey <- EitherT(
             otoroshiClient.getApikey(subscription.apiKey.clientId)
           )
-          _ <- EitherT.liftF(
+          key <- EitherT(
             otoroshiClient
               .updateApiKey(apiKey.copy(clientSecret = newClientSecret))
+          )
+          updatedSubscription = subscription.copy(
+            apiKey = subscription.apiKey.copy(clientSecret = newClientSecret),
+            bearerToken = key.bearer
           )
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo

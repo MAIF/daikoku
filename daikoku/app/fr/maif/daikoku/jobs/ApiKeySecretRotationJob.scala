@@ -326,7 +326,8 @@ class ApiKeySecretRotationJob(
                   rotation =
                     subscription.rotation.map(_.copy(pendingRotation = true)),
                   apiKey = subscription.apiKey
-                    .copy(clientSecret = otoroshiActualSecret)
+                    .copy(clientSecret = otoroshiActualSecret),
+                  bearerToken = apk.bearer
                 )
                 .some
 

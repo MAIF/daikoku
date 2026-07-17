@@ -3731,6 +3731,132 @@ class ApiControllerSpec()
         5.second
       ) mustBe None
     }
+
+    "refresh clientSecret of a subscription" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "parent.dev",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner,
+          teamConsumer,
+          defaultAdminTeam
+        ),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+      )
+      val otoroshiTarget = plan.otoroshiTarget
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val demand = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Some(Json.obj())
+      )(using tenant, session)
+      logger.info(Json.stringify(demand.json))
+      demand.status mustBe 200
+
+      val sub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .findAll(), 5.seconds).head
+
+      sub.api mustBe api.id
+      val apikey = sub.apiKey
+      val bearer = sub.bearerToken
+      bearer mustBe defined
+
+      val respPreVerifOtoApikey = httpJsonCallBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(using tenant, session)
+
+      respPreVerifOtoApikey.status mustBe 200
+      val verifOtoApikey = respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      logger.info(Json.stringify(respPreVerifOtoApikey.json))
+      verifOtoApikey.clientId mustBe apikey.clientId
+      verifOtoApikey.clientSecret mustBe apikey.clientSecret
+      verifOtoApikey.bearer mustBe bearer
+
+      val refresh = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_refresh",
+        method = "POST",
+      )(using tenant, session)
+
+      val refreshSub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .findAll(), 5.seconds).head
+
+      refreshSub.api mustBe api.id
+      val refreshApikey = refreshSub.apiKey
+      val refreshBearer = refreshSub.bearerToken
+      refreshBearer mustBe defined
+      refreshApikey must not be apikey
+
+
+      val respRefreshVerifOtoApikey = httpJsonCallBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(using tenant, session)
+
+      respRefreshVerifOtoApikey.status mustBe 200
+      val refreshOtoApikey = respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      logger.info(Json.stringify(respRefreshVerifOtoApikey.json))
+      refreshOtoApikey.clientId mustBe refreshApikey.clientId
+      refreshOtoApikey.clientSecret mustBe refreshApikey.clientSecret
+      refreshOtoApikey.bearer mustBe refreshBearer
+
+    }
   }
 
   "a api editor" can {
