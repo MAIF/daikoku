@@ -3782,7 +3782,7 @@ class ApiControllerSpec()
           defaultAdminTeam
         ),
         usagePlans = Seq(plan),
-        apis = Seq(api),
+        apis = Seq(api)
       )
       val otoroshiTarget = plan.otoroshiTarget
 
@@ -3796,8 +3796,14 @@ class ApiControllerSpec()
       logger.info(Json.stringify(demand.json))
       demand.status mustBe 200
 
-      val sub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .findAll(), 5.seconds).head
+      val sub = Await
+        .result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findAll(),
+          5.seconds
+        )
+        .head
 
       sub.api mustBe api.id
       val apikey = sub.apiKey
@@ -3816,7 +3822,8 @@ class ApiControllerSpec()
       )(using tenant, session)
 
       respPreVerifOtoApikey.status mustBe 200
-      val verifOtoApikey = respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      val verifOtoApikey =
+        respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
       logger.info(Json.stringify(respPreVerifOtoApikey.json))
       verifOtoApikey.clientId mustBe apikey.clientId
       verifOtoApikey.clientSecret mustBe apikey.clientSecret
@@ -3825,18 +3832,23 @@ class ApiControllerSpec()
       val refresh = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_refresh",
-        method = "POST",
+        method = "POST"
       )(using tenant, session)
 
-      val refreshSub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .findAll(), 5.seconds).head
+      val refreshSub = Await
+        .result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findAll(),
+          5.seconds
+        )
+        .head
 
       refreshSub.api mustBe api.id
       val refreshApikey = refreshSub.apiKey
       val refreshBearer = refreshSub.bearerToken
       refreshBearer mustBe defined
       refreshApikey must not be apikey
-
 
       val respRefreshVerifOtoApikey = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
@@ -3850,7 +3862,8 @@ class ApiControllerSpec()
       )(using tenant, session)
 
       respRefreshVerifOtoApikey.status mustBe 200
-      val refreshOtoApikey = respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      val refreshOtoApikey =
+        respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
       logger.info(Json.stringify(respRefreshVerifOtoApikey.json))
       refreshOtoApikey.clientId mustBe refreshApikey.clientId
       refreshOtoApikey.clientSecret mustBe refreshApikey.clientSecret
