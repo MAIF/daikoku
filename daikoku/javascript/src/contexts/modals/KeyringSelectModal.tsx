@@ -123,7 +123,7 @@ const KeyringsView = (props: KeyringsViewProps) => {
                   {keyring.apiName}{keyring.customName ? '' : ` · ${keyring.planName}`}
                 </small>
                 {keyring.aggregated && (
-                  <span className="badge badge-custom align-self-start mt-1">
+                  <span className="badge --primary align-self-start mt-1">
                     {translate({
                       key: 'keyring_select_modal.keys_count',
                       replacements: [String(keyring.count)],

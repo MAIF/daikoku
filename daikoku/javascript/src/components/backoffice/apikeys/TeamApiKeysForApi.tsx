@@ -848,11 +848,11 @@ export const KeyringCard = ({
                       : '-'}
                   </span>
                 </td>
-                <td>
+                <td className='d-flex gap-1'>
                   {sub.tags.map((t) => (
                     <span
                       key={t}
-                      className="badge badge-custom me-1 cursor-pointer"
+                      className="badge --primary cursor-pointer"
                       onClick={() => handleTagClick(t)}
                     >
                       {t}

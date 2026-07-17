@@ -735,14 +735,13 @@ class ApiService(
             )
           )
           apiKey <- EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
-          _ <- EitherT.liftF(
-            otoroshiClient
-              .updateApiKey(apiKey.copy(clientSecret = newClientSecret))
+          otoApk <- EitherT(
+            otoroshiClient.updateApiKey(apiKey.copy(clientSecret = newClientSecret))
           )
           _ <- EitherT.liftF(
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
-              .save(updatedKeyring)
+              .save(updatedKeyring.copy(bearerToken = otoApk.bearer))
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),

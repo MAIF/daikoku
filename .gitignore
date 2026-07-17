@@ -45,3 +45,4 @@ daikoku/public/swagger-*
 daikoku/public/rolldown-runtime-*
 stats.html
 project/
+.vibe

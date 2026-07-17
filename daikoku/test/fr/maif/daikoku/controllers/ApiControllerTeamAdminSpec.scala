@@ -1,10 +1,7 @@
 package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
-import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
@@ -12,24 +9,15 @@ import fr.maif.daikoku.domain.NotificationAction.{
 }
 import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain.UsagePlanVisibility.{Private, Public}
-import fr.maif.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
-import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
-import org.awaitility.scala.AwaitilitySupport
 import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfter
-import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import org.testcontainers.containers.BindMode
-import play.api.http.Status
 import play.api.libs.json.*
 
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
-import scala.util.Random
 
 class ApiControllerTeamAdminSpec()
     extends ApiControllerSpecBase {
@@ -3182,6 +3170,138 @@ class ApiControllerTeamAdminSpec()
           .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
+    }
+
+    "refresh clientSecret of a subscription" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "parent.dev",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(
+          teamOwner,
+          teamConsumer,
+          defaultAdminTeam
+        ),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+      )
+      val otoroshiTarget = plan.otoroshiTarget
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val demand = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Some(Json.obj())
+      )(using tenant, session)
+      demand.status mustBe 200
+
+      val sub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .findAll(), 5.seconds).head
+      sub.api mustBe api.id
+      val _keyring = Await.result(daikokuComponents.env.dataStore.keyringRepo.forTenant(tenant)
+        .findById(sub.keyring), 5.seconds)
+
+      _keyring mustBe defined
+      val keyring = _keyring.get
+
+      val apikey = keyring.apiKey
+      val bearer = keyring.bearerToken
+      bearer mustBe defined
+
+      val respPreVerifOtoApikey = httpJsonCallBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(using tenant, session)
+
+      respPreVerifOtoApikey.status mustBe 200
+      val verifOtoApikey = respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      verifOtoApikey.clientId mustBe apikey.clientId
+      verifOtoApikey.clientSecret mustBe apikey.clientSecret
+      verifOtoApikey.bearer mustBe bearer
+
+      val refresh = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}/_refresh",
+        method = "POST",
+      )(using tenant, session)
+
+      val _refreshKeyring = Await.result(daikokuComponents.env.dataStore.keyringRepo.forTenant(tenant)
+        .findById(sub.keyring), 5.seconds)
+
+      _refreshKeyring mustBe defined
+      val refreshKeyring = _refreshKeyring.get
+
+
+
+      val refreshApikey = refreshKeyring.apiKey
+      val refreshBearer = refreshKeyring.bearerToken
+      refreshBearer mustBe defined
+      refreshApikey must not be apikey
+
+
+      val respRefreshVerifOtoApikey = httpJsonCallBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(using tenant, session)
+
+      respRefreshVerifOtoApikey.status mustBe 200
+      val refreshOtoApikey = respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      refreshOtoApikey.clientId mustBe refreshApikey.clientId
+      refreshOtoApikey.clientSecret mustBe refreshApikey.clientSecret
+      refreshOtoApikey.bearer mustBe refreshBearer
+
     }
   }
 

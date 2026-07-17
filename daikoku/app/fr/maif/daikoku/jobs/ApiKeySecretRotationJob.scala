@@ -341,7 +341,8 @@ class ApiKeySecretRotationJob(
                   rotation =
                     keyring.rotation.map(_.copy(pendingRotation = true)),
                   apiKey = keyring.apiKey
-                    .copy(clientSecret = otoroshiActualSecret)
+                    .copy(clientSecret = otoroshiActualSecret),
+                  bearerToken = apk.bearer
                 )
                 .some
 
