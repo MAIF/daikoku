@@ -10,11 +10,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Helpers around the Keyring (trousseau) entity.
   *
-  * A Keyring owns the Otoroshi api key shared by every subscription
-  * referencing it. Several subscriptions point to a single keyring; the unique
-  * Otoroshi api key is recomputed on the fly by merging each referencing
-  * subscription. A keyring lives as long as at least one subscription
-  * references it.
+  * A Keyring owns the Otoroshi api key shared by every subscription referencing
+  * it. Several subscriptions point to a single keyring; the unique Otoroshi api
+  * key is recomputed on the fly by merging each referencing subscription. A
+  * keyring lives as long as at least one subscription references it.
   */
 class KeyringService(env: Env) {
 
@@ -87,7 +86,8 @@ class KeyringService(env: Env) {
         case false => Future.successful(false)
       }
 
-  /** Logically delete the keyring when no subscription references it anymore. */
+  /** Logically delete the keyring when no subscription references it anymore.
+    */
   def deleteKeyringIfEmpty(
       tenant: TenantId,
       keyring: KeyringId

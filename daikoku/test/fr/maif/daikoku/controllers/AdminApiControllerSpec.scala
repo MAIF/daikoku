@@ -1330,7 +1330,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1373,7 +1374,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1457,7 +1459,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1559,7 +1562,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1698,7 +1702,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1739,7 +1744,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1787,7 +1793,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1836,7 +1843,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -1893,7 +1901,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -2947,7 +2956,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3028,7 +3038,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3141,7 +3152,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3254,7 +3266,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3400,7 +3413,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3477,7 +3491,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3555,7 +3570,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3640,7 +3656,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -3727,7 +3744,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("name", "id", "secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "token"
         )
@@ -6547,8 +6565,10 @@ class AdminApiControllerSpec
           id = KeyringId("personal-keyring"),
           tenant = tenant.id,
           team = userPersonalTeam.id,
-          apiKey = OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "test"
         )
@@ -6749,8 +6769,10 @@ class AdminApiControllerSpec
           id = KeyringId("personal-keyring"),
           tenant = tenant.id,
           team = userPersonalTeam.id,
-          apiKey = OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "test"
         )
@@ -6895,8 +6917,10 @@ class AdminApiControllerSpec
           id = KeyringId("personal-keyring"),
           tenant = tenant.id,
           team = userPersonalTeam.id,
-          apiKey = OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "test"
         )
@@ -7114,8 +7138,10 @@ class AdminApiControllerSpec
           id = KeyringId("personal-keyring"),
           tenant = tenant.id,
           team = userPersonalTeam.id,
-          apiKey = OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "test"
         )
@@ -7286,8 +7312,13 @@ class AdminApiControllerSpec
           id = KeyringId("standalone-keyring"),
           tenant = tenant.id,
           team = teamConsumerId,
-          apiKey = OtoroshiApiKey("standalone-name", "standalone-id", "standalone-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          apiKey = OtoroshiApiKey(
+            "standalone-name",
+            "standalone-id",
+            "standalone-secret"
+          ),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "standalone-token"
         )
@@ -7342,7 +7373,8 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           team = teamConsumerId,
           apiKey = OtoroshiApiKey("notif-name", "notif-id", "notif-secret"),
-          otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
           createdAt = DateTime.now(),
           integrationToken = "notif-token"
         )
@@ -7483,7 +7515,11 @@ class AdminApiControllerSpec
           notif(
             "n-key-deletion-v2",
             NotificationAction
-              .ApiKeyDeletionInformationV2(api.id, keyring.apiKey.clientId, sub.id)
+              .ApiKeyDeletionInformationV2(
+                api.id,
+                keyring.apiKey.clientId,
+                sub.id
+              )
           ),
           notif(
             "n-key-rotation-in-progress-v2",

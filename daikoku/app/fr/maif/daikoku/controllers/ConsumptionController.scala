@@ -415,7 +415,9 @@ class ConsumptionController(
               .findNotDeleted(
                 Json.obj(
                   "_id" -> Json.obj(
-                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson).distinct)
+                    "$in" -> JsArray(
+                      subscriptions.map(_.keyring.asJson).distinct
+                    )
                   )
                 )
               )

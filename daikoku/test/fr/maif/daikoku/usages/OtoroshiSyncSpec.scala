@@ -136,7 +136,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -231,7 +232,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -339,7 +341,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -471,7 +474,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -595,7 +599,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -706,7 +711,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -749,8 +755,7 @@ class OtoroshiSyncSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
       val updateMetaInOto = httpJsonCallBlocking(
-        path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         method = "PATCH",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
@@ -825,7 +830,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -932,7 +938,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1020,7 +1027,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1182,7 +1190,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1336,7 +1345,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1491,7 +1501,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1609,7 +1620,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1749,7 +1761,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1908,7 +1921,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -2090,7 +2104,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -2246,7 +2261,8 @@ class OtoroshiSyncSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )

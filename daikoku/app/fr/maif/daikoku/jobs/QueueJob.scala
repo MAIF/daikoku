@@ -500,7 +500,9 @@ class QueueJob(
           _ <- env.dataStore.operationRepo
             .forTenant(o.tenant)
             .save(o.copy(status = OperationStatus.InProgress))
-          _ <- env.dataStore.keyringRepo.forTenant(o.tenant).deleteById(o.itemId)
+          _ <- env.dataStore.keyringRepo
+            .forTenant(o.tenant)
+            .deleteById(o.itemId)
           _ <- env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
         } yield ()
       }

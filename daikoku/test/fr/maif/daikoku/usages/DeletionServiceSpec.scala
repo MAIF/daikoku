@@ -129,7 +129,11 @@ class DeletionServiceSpec
       notif(
         "n-key-rotation-ended",
         NotificationAction
-          .ApiKeyRotationEnded(keyring.apiKey.clientId, api.id.value, plan.id.value)
+          .ApiKeyRotationEnded(
+            keyring.apiKey.clientId,
+            api.id.value,
+            plan.id.value
+          )
       ),
       notif(
         "n-key-refresh",
@@ -216,7 +220,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -459,8 +464,7 @@ class DeletionServiceSpec
 
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
-        path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -490,7 +494,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -659,7 +664,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -826,7 +832,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1069,8 +1076,7 @@ class DeletionServiceSpec
 
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
-        path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -1115,7 +1121,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "purge-token"
       )
@@ -1224,7 +1231,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1455,8 +1463,7 @@ class DeletionServiceSpec
 
       // verif oto apikey
       val respVerifOto = httpJsonCallBlocking(
-        path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -1527,7 +1534,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -1680,7 +1688,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "expiring-token"
       )
@@ -1721,7 +1730,10 @@ class DeletionServiceSpec
         keyrings = Seq(keyring)
       )
 
-      Await.result(daikokuComponents.keyringExpirationJob.run(tenant), 30.seconds)
+      Await.result(
+        daikokuComponents.keyringExpirationJob.run(tenant),
+        30.seconds
+      )
 
       org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
         Await
@@ -1809,7 +1821,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2021,7 +2034,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = sharedApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2222,7 +2236,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2393,7 +2408,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2572,7 +2588,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2761,7 +2778,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent-token"
       )
@@ -2888,7 +2906,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "consumer-token"
       )
@@ -3026,7 +3045,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "standalone-token"
       )
@@ -3143,7 +3163,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "promote-parent-token"
       )
@@ -3288,7 +3309,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "child-del-parent-token"
       )
@@ -3409,7 +3431,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )
@@ -3514,7 +3537,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )
@@ -3642,7 +3666,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )
@@ -3769,7 +3794,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )
@@ -3895,7 +3921,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )
@@ -4016,7 +4043,8 @@ class DeletionServiceSpec
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "notif-token"
       )

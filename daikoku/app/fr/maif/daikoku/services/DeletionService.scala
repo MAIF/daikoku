@@ -105,7 +105,11 @@ class DeletionService(
       subscription: ApiSubscription,
       tenant: Tenant,
       user: User,
-      notificationActionFor: (Api, Keyring, ApiSubscription) => NotificationAction
+      notificationActionFor: (
+          Api,
+          Keyring,
+          ApiSubscription
+      ) => NotificationAction
   ): Future[Either[AppError, SubscriptionContext]] =
     (for {
       api <- EitherT.fromOptionF(
@@ -249,23 +253,27 @@ class DeletionService(
       // deleted subs, or delete the key + the keyring when no subscription
       // references it anymore.
       deletedKeyringIds <- EitherT.liftF[Future, AppError, Seq[KeyringId]](
-        Future.sequence(
-          affectedKeyringIds.map { kid =>
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findNotDeleted(Json.obj("keyring" -> kid.asJson))
-              .flatMap { keyringSubs =>
-                val remaining =
-                  keyringSubs.filterNot(s => deletedIds.contains(s.id))
-                if (remaining.isEmpty)
-                  otoroshiSynchronizerJob
-                    .runForDeletion(kid, tenant)
-                    .flatMap(_ => keyringService.deleteKeyring(tenant.id, kid))
-                    .map(_ => Some(kid))
-                else otoroshiSynchronizerJob.run(kid, tenant).map(_ => None)
-              }
-          }
-        ).map(_.flatten)
+        Future
+          .sequence(
+            affectedKeyringIds.map { kid =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(tenant)
+                .findNotDeleted(Json.obj("keyring" -> kid.asJson))
+                .flatMap { keyringSubs =>
+                  val remaining =
+                    keyringSubs.filterNot(s => deletedIds.contains(s.id))
+                  if (remaining.isEmpty)
+                    otoroshiSynchronizerJob
+                      .runForDeletion(kid, tenant)
+                      .flatMap(_ =>
+                        keyringService.deleteKeyring(tenant.id, kid)
+                      )
+                      .map(_ => Some(kid))
+                  else otoroshiSynchronizerJob.run(kid, tenant).map(_ => None)
+                }
+            }
+          )
+          .map(_.flatten)
       )
       // Phase 3b — delete stale pending notifications referencing the deleted
       // subscriptions, or the keyrings that have just been deleted

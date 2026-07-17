@@ -1984,7 +1984,8 @@ class GraphQLControllerSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("sec-test-key", "sec-client-id", "sec-secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = IdGenerator.token(32)
       )

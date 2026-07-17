@@ -31,8 +31,7 @@ import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 import scala.util.Random
 
-class ApiControllerSubscriptionApiSpec()
-    extends ApiControllerSpecBase {
+class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
 
   "a subscription" should {
     "be not available right now if plan's subscription process is manual" in {
@@ -395,7 +394,8 @@ class ApiControllerSubscriptionApiSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -489,7 +489,8 @@ class ApiControllerSubscriptionApiSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -934,7 +935,8 @@ class ApiControllerSubscriptionApiSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test-removal"
       )

@@ -760,7 +760,9 @@ case class AuthorizedEntities(
   def asOtoroshiEntities: Seq[OtoroshiEntity] =
     groups.toSeq.map(g =>
       OtoroshiEntity(OtoroshiEntityKind.Group, g.value)
-    ) ++ routes.toSeq.map(r => OtoroshiEntity(OtoroshiEntityKind.Route, r.value))
+    ) ++ routes.toSeq.map(r =>
+      OtoroshiEntity(OtoroshiEntityKind.Route, r.value)
+    )
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
       a.groups.contains(g)

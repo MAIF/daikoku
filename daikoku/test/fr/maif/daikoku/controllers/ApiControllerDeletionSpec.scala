@@ -31,8 +31,7 @@ import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 import scala.util.Random
 
-class ApiControllerDeletionSpec()
-    extends ApiControllerSpecBase {
+class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
 
   "a deletion of a plan" must {
     "delete all subscriptions" in {
@@ -66,7 +65,8 @@ class ApiControllerDeletionSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test-removal"
       )
@@ -161,7 +161,8 @@ class ApiControllerDeletionSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test-removal"
       )
@@ -447,7 +448,8 @@ class ApiControllerDeletionSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test-removal"
       )
@@ -490,15 +492,21 @@ class ApiControllerDeletionSpec()
 
       resp.status mustBe 200
 
-
       val planAuthorizedTeamCheck = httpJsonCallBlocking(
         path =
-          s"/api/me/visible-apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans",
+          s"/api/me/visible-apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans"
       )(using tenant, session)
       planAuthorizedTeamCheck.status mustBe 200
 
-      val planJson = planAuthorizedTeamCheck.json.as[JsArray].value.find(json => (json \ "customName").as[String] == "MyPrivatePlan").get
-      (planJson \ "authorizedTeams").as[Seq[String]] must contain theSameElementsAs (Seq(teamConsumerId.value))
+      val planJson = planAuthorizedTeamCheck.json
+        .as[JsArray]
+        .value
+        .find(json => (json \ "customName").as[String] == "MyPrivatePlan")
+        .get
+      (planJson \ "authorizedTeams")
+        .as[Seq[String]] must contain theSameElementsAs (Seq(
+        teamConsumerId.value
+      ))
 
     }
   }

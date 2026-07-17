@@ -1639,10 +1639,10 @@ object SchemaDefinition {
             resolve = _.value.customName
           ),
           Field(
-              "apiKey",
-              OtoroshiApiKeyType,
-              resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
-            ),
+            "apiKey",
+            OtoroshiApiKeyType,
+            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
+          ),
           Field(
             "otoroshiSettings",
             OptionType(StringType),
@@ -1660,7 +1660,8 @@ object SchemaDefinition {
           Field(
             "bearerToken",
             OptionType(StringType),
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
+            resolve =
+              ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
           ),
           Field(
             "integrationToken",
@@ -1682,7 +1683,8 @@ object SchemaDefinition {
               env.dataStore.apiSubscriptionRepo
                 .forTenant(ctx.ctx._2.tenant)
                 .count(
-                  Json.obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
+                  Json
+                    .obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
                 )
                 .map(_.toInt)
           )
@@ -4739,26 +4741,32 @@ object SchemaDefinition {
     }
 
     (
-      Schema(ObjectType("Query",
-        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
-          teamQueryFields() ++
-          apiQueryFields() ++
-          apiWithSubscriptionsQueryFields() ++
-          subscriptionDemandsForTeamAdmin() ++
-          teamSubscriptionDemands() ++
-          getAllTagsQueryFields() ++
-          getAllCategoriesQueryFields() ++
-          apiConsumptionQuery() ++
-          apiSubscriptionsQueryFields() ++
-          keyringsQueryFields() ++
-          teamIncomeQuery() ++
-          myNotificationQuery() ++
-          allTeamsQuery() ++
-          getSubscriptionDetailsFields() ++
-          getAuditTrailQueryFields() ++
-          cmsSinglePageFields() ++
-          cmsPageFields()*)
-      )),
+      Schema(
+        ObjectType(
+          "Query",
+          () =>
+            fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
+              allFields() ++
+                teamQueryFields() ++
+                apiQueryFields() ++
+                apiWithSubscriptionsQueryFields() ++
+                subscriptionDemandsForTeamAdmin() ++
+                teamSubscriptionDemands() ++
+                getAllTagsQueryFields() ++
+                getAllCategoriesQueryFields() ++
+                apiConsumptionQuery() ++
+                apiSubscriptionsQueryFields() ++
+                keyringsQueryFields() ++
+                teamIncomeQuery() ++
+                myNotificationQuery() ++
+                allTeamsQuery() ++
+                getSubscriptionDetailsFields() ++
+                getAuditTrailQueryFields() ++
+                cmsSinglePageFields() ++
+                cmsPageFields()*
+            )
+        )
+      ),
       DeferredResolver.fetchers(
         tenantsFetcher,
         teamsFetcher,

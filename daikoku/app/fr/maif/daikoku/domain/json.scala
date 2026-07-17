@@ -1342,7 +1342,9 @@ object json {
         "method" -> o.method,
         "path" -> o.path
       ) ++ o.authorizedEntity
-        .map(e => Json.obj("authorized_entity" -> OtoroshiEntityFormat.writes(e)))
+        .map(e =>
+          Json.obj("authorized_entity" -> OtoroshiEntityFormat.writes(e))
+        )
         .getOrElse(Json.obj())
 
     override def reads(json: JsValue): JsResult[ApiKeyRestrictionPath] =
@@ -2416,7 +2418,7 @@ object json {
               // keyring can be serialized either as its raw id (DB / base format)
               // or as the full embedded keyring object in API responses
               case Some(o: JsObject) => (o \ "_id").as(using KeyringIdFormat)
-              case _                 => (json \ "keyring").as(using KeyringIdFormat)
+              case _ => (json \ "keyring").as(using KeyringIdFormat)
             },
             thirdPartySubscriptionInformations =
               (json \ "thirdPartySubscriptionInformations") match {
@@ -2495,7 +2497,8 @@ object json {
     override def reads(json: JsValue): JsResult[KeyringOtoroshiBinding] =
       (json \ "type").asOpt[String] match {
         case Some("Otoroshi") =>
-          (json \ "id").validate(using OtoroshiSettingsIdFormat)
+          (json \ "id")
+            .validate(using OtoroshiSettingsIdFormat)
             .map(KeyringOtoroshiBinding.Otoroshi(_))
         case Some("Internal") => JsSuccess(KeyringOtoroshiBinding.Internal)
         case Some(other) =>
@@ -2505,7 +2508,10 @@ object json {
 
     override def writes(o: KeyringOtoroshiBinding): JsValue = o match {
       case KeyringOtoroshiBinding.Otoroshi(id) =>
-        Json.obj("type" -> "Otoroshi", "id" -> OtoroshiSettingsIdFormat.writes(id))
+        Json.obj(
+          "type" -> "Otoroshi",
+          "id" -> OtoroshiSettingsIdFormat.writes(id)
+        )
       case KeyringOtoroshiBinding.Internal =>
         Json.obj("type" -> "Internal")
     }
@@ -2522,8 +2528,9 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             customName = (json \ "customName").asOpt[String],
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
-            otoroshiSettings =
-              (json \ "otoroshiSettings").as(using KeyringOtoroshiBindingFormat),
+            otoroshiSettings = (json \ "otoroshiSettings").as(using
+              KeyringOtoroshiBindingFormat
+            ),
             createdAt = (json \ "createdAt").as(using DateTimeFormat),
             rotation =
               (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
@@ -2562,7 +2569,9 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
-        "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(o.otoroshiSettings),
+        "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(
+          o.otoroshiSettings
+        ),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "rotation" -> o.rotation
           .map(ApiSubscriptionyRotationFormat.writes)

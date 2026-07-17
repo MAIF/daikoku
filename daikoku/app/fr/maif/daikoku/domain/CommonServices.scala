@@ -1175,10 +1175,14 @@ object CommonServices {
         )
         .map { rows =>
           val keyrings = rows.flatMap(row =>
-            (row \ "content").asOpt[JsValue].flatMap(json.KeyringFormat.reads(_).asOpt)
+            (row \ "content")
+              .asOpt[JsValue]
+              .flatMap(json.KeyringFormat.reads(_).asOpt)
           )
           val total =
-            rows.headOption.flatMap(row => (row \ "total").asOpt[Long]).getOrElse(0L)
+            rows.headOption
+              .flatMap(row => (row \ "total").asOpt[Long])
+              .getOrElse(0L)
           Right[AppError, (Seq[Keyring], Long)]((keyrings, total))
         }
     }

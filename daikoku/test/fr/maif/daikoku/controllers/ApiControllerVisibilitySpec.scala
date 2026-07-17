@@ -31,8 +31,7 @@ import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 import scala.util.Random
 
-class ApiControllerVisibilitySpec()
-    extends ApiControllerSpecBase {
+class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
 
   "Anyone" can {
     "ask access for an api" in {
@@ -243,7 +242,8 @@ class ApiControllerVisibilitySpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -320,7 +320,8 @@ class ApiControllerVisibilitySpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -430,7 +431,8 @@ class ApiControllerVisibilitySpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )

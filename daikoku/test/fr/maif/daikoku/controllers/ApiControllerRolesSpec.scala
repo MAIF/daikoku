@@ -31,8 +31,7 @@ import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 import scala.util.Random
 
-class ApiControllerRolesSpec()
-    extends ApiControllerSpecBase {
+class ApiControllerRolesSpec() extends ApiControllerSpecBase {
 
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
@@ -429,7 +428,8 @@ class ApiControllerRolesSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -1372,7 +1372,8 @@ class ApiControllerRolesSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1446,7 +1447,8 @@ class ApiControllerRolesSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1512,7 +1514,8 @@ class ApiControllerRolesSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )

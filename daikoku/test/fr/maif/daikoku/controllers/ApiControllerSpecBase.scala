@@ -39,7 +39,6 @@ trait ApiControllerSpecBase
     with ForAllTestContainer
     with AwaitilitySupport {
 
-
   val pwd = System.getProperty("user.dir")
 
   override val container: GenericContainer = GenericContainer(

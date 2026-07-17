@@ -396,7 +396,8 @@ object evolution_157 extends EvolutionScript {
                           .find(o => o.id.value == otoSettingsId)
                       )
 
-                      legacyClientId = (value \ "apiKey" \ "clientId").as[String]
+                      legacyClientId = (value \ "apiKey" \ "clientId")
+                        .as[String]
                       realApk <- OptionT.liftF(
                         otoroshiClient
                           .getApikey(legacyClientId)(using otoSettings)

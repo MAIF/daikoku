@@ -417,7 +417,9 @@ class OtoroshiClient(env: Env) {
       .flatMap { keyrings =>
         val keyringById = keyrings.map(k => k.id -> k).toMap
         val subByClientId = subscriptions
-          .flatMap(s => keyringById.get(s.keyring).map(k => k.apiKey.clientId -> s))
+          .flatMap(s =>
+            keyringById.get(s.keyring).map(k => k.apiKey.clientId -> s)
+          )
           .toMap
         otoroshiSettings.elasticConfig match {
           case Some(config) =>
@@ -491,7 +493,10 @@ class OtoroshiClient(env: Env) {
               })
           case None =>
             for {
-              elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
+              elasticConfig <- EitherT.fromOptionF(
+                getElasticConfig(),
+                Json.arr()
+              )
               updatedSettings =
                 otoroshiSettings.copy(elasticConfig = elasticConfig.some)
               updatedTenant = tenant.copy(

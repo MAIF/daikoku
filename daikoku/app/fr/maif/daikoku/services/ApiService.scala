@@ -294,7 +294,8 @@ class ApiService(
             team = team.id,
             customName = customName,
             apiKey = tunedApiKey.asOtoroshiApiKey,
-            otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
+            otoroshiSettings =
+              KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
             createdAt = DateTime.now(),
             rotation = plan.autoRotation.map(rotation =>
               ApiSubscriptionRotation(enabled = rotation)
@@ -436,16 +437,16 @@ class ApiService(
         env.dataStore.withTransaction {
           for {
             _ <- env.dataStore.keyringRepo
-                .forTenant(tenant.id)
-                .save(keyring)
+              .forTenant(tenant.id)
+              .save(keyring)
             _ <- env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant.id)
-                .save(apiSubscription)
+              .forTenant(tenant.id)
+              .save(apiSubscription)
             _ <- env.dataStore.tenantRepo.save(
-                tenant.copy(adminSubscriptions =
-                  tenant.adminSubscriptions :+ apiSubscription.id
-                )
+              tenant.copy(adminSubscriptions =
+                tenant.adminSubscriptions :+ apiSubscription.id
               )
+            )
           } yield apiSubscription
         }
       )
@@ -605,7 +606,9 @@ class ApiService(
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
               .findById(updatedSubscription.keyring),
-            AppError.EntityNotFound(s"Keyring ${updatedSubscription.keyring.value}")
+            AppError.EntityNotFound(
+              s"Keyring ${updatedSubscription.keyring.value}"
+            )
           )
         } yield updatedSubscription.asSafeJson(keyring).as[JsObject]
 
@@ -637,13 +640,15 @@ class ApiService(
       updatedKeyring = keyring.copy(
         apiKey = keyring.apiKey.copy(clientSecret = newClientSecret)
       )
-      result <- EitherT(regenerateOnBinding(
-        tenant,
-        keyring,
-        updatedKeyring,
-        newClientSecret,
-        user
-      ))
+      result <- EitherT(
+        regenerateOnBinding(
+          tenant,
+          keyring,
+          updatedKeyring,
+          newClientSecret,
+          user
+        )
+      )
     } yield result).value
   }
 
@@ -736,7 +741,9 @@ class ApiService(
           )
           apiKey <- EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
           otoApk <- EitherT(
-            otoroshiClient.updateApiKey(apiKey.copy(clientSecret = newClientSecret))
+            otoroshiClient.updateApiKey(
+              apiKey.copy(clientSecret = newClientSecret)
+            )
           )
           _ <- EitherT.liftF(
             env.dataStore.keyringRepo
@@ -1389,7 +1396,9 @@ class ApiService(
       keyring <- EitherT.liftF[Future, AppError, Option[Keyring]](
         demand.keyring.fold(
           FastFuture.successful(Option.empty[Keyring])
-        )(kid => env.dataStore.keyringRepo.forTenant(tenant).findById(kid.value))
+        )(kid =>
+          env.dataStore.keyringRepo.forTenant(tenant).findById(kid.value)
+        )
       )
       keyringSubscriptions <-
         EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
@@ -1955,7 +1964,7 @@ class ApiService(
         team: Team
     ): EitherT[Future, AppError, Unit] = {
       keyringId match {
-        case None => EitherT.pure[Future, AppError](())
+        case None      => EitherT.pure[Future, AppError](())
         case Some(kid) =>
           // readOnly the joining subscription will have, to enforce uniformity
           val joiningReadOnly = customReadOnly.getOrElse(

@@ -19,8 +19,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 
-class ApiControllerTeamAdminSpec()
-    extends ApiControllerSpecBase {
+class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
 
   "a team administrator" can {
     "not initialize tenant apis" in {
@@ -427,7 +426,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -620,7 +620,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = userPersonalTeam.id,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1037,7 +1038,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1116,7 +1118,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1240,7 +1243,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "test"
       )
@@ -1289,9 +1293,11 @@ class ApiControllerTeamAdminSpec()
           s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
         body = Some(
-          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson(
-            keyring
-          )
+          sub
+            .copy(customMetadata = Some(Json.obj("foo" -> "bar")))
+            .asSafeJson(
+              keyring
+            )
         )
       )(using tenant, session)
       resp.status mustBe 403
@@ -1567,7 +1573,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "token"
       )
@@ -1720,7 +1727,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -1844,7 +1852,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -1853,7 +1862,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_owner_token"
       )
@@ -2003,7 +2013,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2012,7 +2023,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_owner_token"
       )
@@ -2163,7 +2175,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2172,7 +2185,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_owner_token"
       )
@@ -2322,7 +2336,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2331,7 +2346,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_owner_token"
       )
@@ -2485,7 +2501,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2613,7 +2630,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2742,7 +2760,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2870,7 +2889,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamOwnerId,
         apiKey = parentApiKeyWith2childs,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -2969,7 +2989,8 @@ class ApiControllerTeamAdminSpec()
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "parent_token"
       )
@@ -3222,7 +3243,7 @@ class ApiControllerTeamAdminSpec()
           defaultAdminTeam
         ),
         usagePlans = Seq(plan),
-        apis = Seq(api),
+        apis = Seq(api)
       )
       val otoroshiTarget = plan.otoroshiTarget
 
@@ -3235,11 +3256,21 @@ class ApiControllerTeamAdminSpec()
       )(using tenant, session)
       demand.status mustBe 200
 
-      val sub = Await.result(daikokuComponents.env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-        .findAll(), 5.seconds).head
+      val sub = Await
+        .result(
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findAll(),
+          5.seconds
+        )
+        .head
       sub.api mustBe api.id
-      val _keyring = Await.result(daikokuComponents.env.dataStore.keyringRepo.forTenant(tenant)
-        .findById(sub.keyring), 5.seconds)
+      val _keyring = Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(sub.keyring),
+        5.seconds
+      )
 
       _keyring mustBe defined
       val keyring = _keyring.get
@@ -3260,7 +3291,8 @@ class ApiControllerTeamAdminSpec()
       )(using tenant, session)
 
       respPreVerifOtoApikey.status mustBe 200
-      val verifOtoApikey = respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      val verifOtoApikey =
+        respPreVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
       verifOtoApikey.clientId mustBe apikey.clientId
       verifOtoApikey.clientSecret mustBe apikey.clientSecret
       verifOtoApikey.bearer mustBe bearer
@@ -3268,22 +3300,23 @@ class ApiControllerTeamAdminSpec()
       val refresh = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}/_refresh",
-        method = "POST",
+        method = "POST"
       )(using tenant, session)
 
-      val _refreshKeyring = Await.result(daikokuComponents.env.dataStore.keyringRepo.forTenant(tenant)
-        .findById(sub.keyring), 5.seconds)
+      val _refreshKeyring = Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(sub.keyring),
+        5.seconds
+      )
 
       _refreshKeyring mustBe defined
       val refreshKeyring = _refreshKeyring.get
-
-
 
       val refreshApikey = refreshKeyring.apiKey
       val refreshBearer = refreshKeyring.bearerToken
       refreshBearer mustBe defined
       refreshApikey must not be apikey
-
 
       val respRefreshVerifOtoApikey = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${apikey.clientId}",
@@ -3297,7 +3330,8 @@ class ApiControllerTeamAdminSpec()
       )(using tenant, session)
 
       respRefreshVerifOtoApikey.status mustBe 200
-      val refreshOtoApikey = respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
+      val refreshOtoApikey =
+        respRefreshVerifOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
       refreshOtoApikey.clientId mustBe refreshApikey.clientId
       refreshOtoApikey.clientSecret mustBe refreshApikey.clientSecret
       refreshOtoApikey.bearer mustBe refreshBearer

@@ -268,10 +268,7 @@ export const updateKeyringCustomName = (
     body: JSON.stringify({ customName }),
   });
 
-export const deleteKeyring = (
-  teamId: string,
-  keyringId: string
-): PromiseWithError<unknown> =>
+export const deleteKeyring = (teamId: string, keyringId: string): PromiseWithError<unknown> =>
   customFetch(`/api/teams/${teamId}/keyrings/${keyringId}`, {
     method: 'DELETE',
   });
@@ -281,10 +278,9 @@ export const toggleKeyring = (
   keyringId: string,
   enabled: boolean
 ): PromiseWithError<unknown> =>
-  customFetch(
-    `/api/teams/${teamId}/keyrings/${keyringId}/_enable?enabled=${enabled}`,
-    { method: 'PUT' }
-  );
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_enable?enabled=${enabled}`, {
+    method: 'PUT',
+  });
 
 export const member = (teamId: string, userId: string) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {});

@@ -167,7 +167,7 @@ case class Child(
     user: UserForSync,
     plan: PlanForSync
 ) {
-  
+
   def getContext(
       team: Team,
       tenant: Tenant,

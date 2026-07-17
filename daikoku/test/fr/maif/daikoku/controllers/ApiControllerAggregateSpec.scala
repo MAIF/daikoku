@@ -6,7 +6,10 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.{Private, Public}
@@ -470,7 +473,9 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       )(using tenant, loginWithBlocking(user, tenant))
 
       resp.status mustBe Status.CONFLICT
-      (resp.json \ "error").as[String] mustBe "The subscribed plan has another otoroshi of the parent plan"
+      (resp.json \ "error").as[
+        String
+      ] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
     "update subscription on keyring do not erase authorizedEntities" in {
       val parentPlan = UsagePlan(
@@ -1690,7 +1695,8 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = parentApiKey,
-        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
         integrationToken = "token"
       )
@@ -1720,8 +1726,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
 
       // teamOwner tries to delete a keyring owned by teamConsumer
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/keyrings/${keyring.id.value}",
+        path = s"/api/teams/${teamOwnerId.value}/keyrings/${keyring.id.value}",
         method = "DELETE"
       )(using tenant, session)
       resp.status mustBe 404

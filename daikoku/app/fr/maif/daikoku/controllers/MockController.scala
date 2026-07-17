@@ -177,7 +177,8 @@ class MockController(
                         NotFound(Json.obj("error" -> "api not found"))
                       case Some(api) =>
                         Ok(
-                          Json.obj("hits" -> Json.obj("count" -> r.nextInt(100)))
+                          Json
+                            .obj("hits" -> Json.obj("count" -> r.nextInt(100)))
                         )
                     }
               }
@@ -225,20 +226,18 @@ class MockController(
                             authorizedCallsPerSec =
                               pp.maxPerSecond.getOrElse(Long.MaxValue),
                             currentCallsPerSec = callPerSec,
-                            remainingCallsPerSec =
-                              pp.maxPerSecond
-                                .getOrElse(Long.MaxValue) - callPerSec,
+                            remainingCallsPerSec = pp.maxPerSecond
+                              .getOrElse(Long.MaxValue) - callPerSec,
                             authorizedCallsPerDay =
                               pp.maxPerDay.getOrElse(Long.MaxValue),
                             currentCallsPerDay = callPerDay,
-                            remainingCallsPerDay =
-                              pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
+                            remainingCallsPerDay = pp.maxPerDay
+                              .getOrElse(Long.MaxValue) - callPerDay,
                             authorizedCallsPerMonth =
                               pp.maxPerMonth.getOrElse(Long.MaxValue),
                             currentCallsPerMonth = callPerMonth,
-                            remainingCallsPerMonth =
-                              pp.maxPerMonth
-                                .getOrElse(Long.MaxValue) - callPerMonth
+                            remainingCallsPerMonth = pp.maxPerMonth
+                              .getOrElse(Long.MaxValue) - callPerMonth
                           ).asJson
                         )
                     }
