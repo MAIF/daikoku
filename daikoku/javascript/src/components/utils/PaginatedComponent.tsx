@@ -2,6 +2,7 @@ import classNames from 'classnames';
 import React, { ReactNode, useContext, useEffect, useState } from 'react';
 import Pagination from './Pagination';
 import { I18nContext } from '../../contexts/i18n-context';
+import { CircleQuestionMark } from 'lucide-react';
 
 type Props<T> = {
   items: T[];
@@ -35,7 +36,7 @@ export const PaginatedComponent = <T extends object>(props: Props<T>) => {
 
   return (<div className="section">
     <div className="flex-column">
-      {(props as any).help && (<i className="far fa-question-circle ms-1 cursor-pointer" style={{ fontSize: '20px' }} onClick={() => (props as any).help()} />)}
+      {(props as any).help && (<CircleQuestionMark className="ms-1 cursor-pointer" style={{ fontSize: '20px' }} onClick={() => (props as any).help()} />)}
       <div className={classNames('d-flex flex-wrap', {
         'flex-wrap': (props as any).wrap,
         'flex-column': props.columnMode,

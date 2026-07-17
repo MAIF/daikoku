@@ -516,6 +516,20 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
 
+  lazy val keyringExpirationJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
+    .getOrElse(false)
+  lazy val keyringExpirationJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.cronExpression")
+  lazy val keyringExpirationJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.keyringExpirationJob.interval")
+    .map(v => v.millis)
+    .getOrElse(24.hours)
+  lazy val keyringExpirationJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Cron)
+
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
     .getOrElse("secret")

@@ -58,9 +58,9 @@ jobs:
 
       - name: Set up Node.js
         if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
-          node-version: latest
+          node-version: lts/*
 
       - name: Set up JDK 17
         if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
@@ -149,9 +149,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: lts/*
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3

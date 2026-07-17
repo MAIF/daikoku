@@ -147,28 +147,29 @@ class QueueJob(
 
   private def deleteSubscriptionNotifications(
       subscription: ApiSubscription
-  )(implicit dbConn: DbConn): Future[Boolean] = {
-    env.dataStore.notificationRepo
+  ): Future[Boolean] = {
+    env.dataStore.keyringRepo
       .forTenant(subscription.tenant)
-      .delete(
-        Json.obj(
-          "action.type" ->
-            Json.obj(
-              "$in" -> JsArray(
-                Seq(
-                  "ApiKeyRotationInProgress",
-                  "ApiKeyRotationEndend",
-                  "ApiKeyRefresh"
-                ).map(JsString.apply)
-              )
-            ),
-          "$or" -> Json.arr(
-            Json
-              .obj("action.clientId" -> JsString(subscription.apiKey.clientId)),
-            Json.obj("action.subscription" -> subscription.id.asJson)
+      .findById(subscription.keyring)
+      .flatMap { maybeKeyring =>
+        val clientIdMatch = maybeKeyring
+          .map(k =>
+            Seq(Json.obj("action.clientId" -> JsString(k.apiKey.clientId)))
           )
-        )
-      )
+          .getOrElse(Seq.empty)
+        env.dataStore.notificationRepo
+          .forTenant(subscription.tenant)
+          .delete(
+            Json.obj(
+              "$or" -> JsArray(
+                clientIdMatch ++ Seq(
+                  Json.obj("action.subscription" -> subscription.id.asJson),
+                  Json.obj("action.keyring" -> subscription.keyring.asJson)
+                )
+              )
+            )
+          )
+      }
   }
 
   private def deleteTeamNotifications(
@@ -492,6 +493,32 @@ class QueueJob(
       })
   }
 
+  private def deleteKeyring(o: Operation): Future[Unit] = {
+    env.dataStore
+      .withTransaction {
+        for {
+          _ <- env.dataStore.operationRepo
+            .forTenant(o.tenant)
+            .save(o.copy(status = OperationStatus.InProgress))
+          _ <- env.dataStore.keyringRepo.forTenant(o.tenant).deleteById(o.itemId)
+          _ <- env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+        } yield ()
+      }
+      .map(_ =>
+        logger.debug(
+          s"[deletion job] :: keyring ${o.itemId} successfully deleted"
+        )
+      )
+      .recover(e => {
+        logger.error(
+          s"[deletion job] :: [id ${o.id}] :: error during deletion of keyring ${o.itemId}: $e"
+        )
+        env.dataStore.operationRepo
+          .forTenant(o.tenant)
+          .save(o.copy(status = OperationStatus.Error))
+      })
+  }
+
   // ***************************
   // *** THIRD PARTY PAYMENT ***
   // ***************************
@@ -684,6 +711,8 @@ class QueueJob(
             deleteTeam(firstOperation)
           case (ItemType.User, OperationAction.Delete) =>
             deleteUser(firstOperation)
+          case (ItemType.Keyring, OperationAction.Delete) =>
+            deleteKeyring(firstOperation)
           case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
             deleteThirdPartySubscription(firstOperation)
           case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>

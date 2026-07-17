@@ -406,93 +406,106 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings,
       tenant: Tenant
   ): EitherT[Future, JsArray, JsArray] = {
-    otoroshiSettings.elasticConfig match {
-      case Some(config) =>
-        new ElasticReadsAnalytics(config, env)
-          .query(
-            Json.obj(
-              "query" -> Json.obj(
-                "bool" -> Json.obj(
-                  "filter" -> Json.arr(
-                    Json.obj(
-                      "terms" -> Json.obj(
-                        "identity.identity.keyword" -> JsArray(
-                          subscriptions
-                            .map(_.apiKey.clientId)
-                            .map(JsString.apply)
-                        )
-                      )
-                    )
-                  )
-                )
-              ),
-              "aggs" -> Json.obj(
-                "lastUsages" -> Json.obj(
-                  "terms" -> Json.obj(
-                    "field" -> "identity.identity.keyword"
-                  ),
-                  "aggs" -> Json.obj(
-                    "latest" -> Json.obj(
-                      "top_hits" -> Json.obj(
-                        "size" -> 1,
-                        "sort" -> Json.arr(
-                          Json.obj(
-                            "@timestamp" -> Json.obj(
-                              "order" -> "desc"
+    val keyringIds = subscriptions.map(_.keyring).distinct
+    val keyringsF = env.dataStore.keyringRepo
+      .forTenant(tenant.id)
+      .findNotDeleted(
+        Json.obj("_id" -> Json.obj("$in" -> JsArray(keyringIds.map(_.asJson))))
+      )
+    EitherT
+      .liftF[Future, JsArray, Seq[Keyring]](keyringsF)
+      .flatMap { keyrings =>
+        val keyringById = keyrings.map(k => k.id -> k).toMap
+        val subByClientId = subscriptions
+          .flatMap(s => keyringById.get(s.keyring).map(k => k.apiKey.clientId -> s))
+          .toMap
+        otoroshiSettings.elasticConfig match {
+          case Some(config) =>
+            new ElasticReadsAnalytics(config, env)
+              .query(
+                Json.obj(
+                  "query" -> Json.obj(
+                    "bool" -> Json.obj(
+                      "filter" -> Json.arr(
+                        Json.obj(
+                          "terms" -> Json.obj(
+                            "identity.identity.keyword" -> JsArray(
+                              subByClientId.keys.toSeq.distinct
+                                .map(JsString.apply)
                             )
                           )
                         )
                       )
                     )
-                  )
+                  ),
+                  "aggs" -> Json.obj(
+                    "lastUsages" -> Json.obj(
+                      "terms" -> Json.obj(
+                        "field" -> "identity.identity.keyword"
+                      ),
+                      "aggs" -> Json.obj(
+                        "latest" -> Json.obj(
+                          "top_hits" -> Json.obj(
+                            "size" -> 1,
+                            "sort" -> Json.arr(
+                              Json.obj(
+                                "@timestamp" -> Json.obj(
+                                  "order" -> "desc"
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  ),
+                  "size" -> 0
                 )
-              ),
-              "size" -> 0
-            )
-          )
-          .map(resp => {
-            AppLogger.warn(Json.stringify(resp))
-            val buckets =
-              (resp \ "aggregations" \ "lastUsages" \ "buckets")
-                .asOpt[JsArray]
-                .getOrElse(Json.arr())
-            JsArray(buckets.value.map(agg => {
-              val key = (agg \ "key").as[String]
-              val lastUsage =
-                (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
-              val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
-
-              Json.obj(
-                "clientName" -> key,
-                "date" -> date,
-                "subscription" -> subscriptions
-                  .find(_.apiKey.clientId == key)
-                  .map(_.id.asJson)
-                  .getOrElse(JsNull)
-                  .as[JsValue]
               )
-            }))
-          })
-          .leftMap(e => {
-            AppLogger.error(e.getErrorMessage())
-            Json.arr()
-          })
-      case None =>
-        for {
-          elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
-          updatedSettings =
-            otoroshiSettings.copy(elasticConfig = elasticConfig.some)
-          updatedTenant = tenant.copy(
-            otoroshiSettings = tenant.otoroshiSettings
-              .filter(_.id != otoroshiSettings.id) + updatedSettings
-          )
-          _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
-          r <- getSubscriptionLastUsage(subscriptions)(using
-            updatedSettings,
-            updatedTenant
-          )
-        } yield r
-    }
+              .map(resp => {
+                AppLogger.warn(Json.stringify(resp))
+                val buckets =
+                  (resp \ "aggregations" \ "lastUsages" \ "buckets")
+                    .asOpt[JsArray]
+                    .getOrElse(Json.arr())
+                JsArray(buckets.value.map(agg => {
+                  val key = (agg \ "key").as[String]
+                  val lastUsage =
+                    (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
+                  val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
+
+                  Json.obj(
+                    "clientName" -> key,
+                    "date" -> date,
+                    "subscription" -> subByClientId
+                      .get(key)
+                      .map(_.id.asJson)
+                      .getOrElse(JsNull)
+                      .as[JsValue]
+                  )
+                }))
+              })
+              .leftMap(e => {
+                AppLogger.error(e.getErrorMessage())
+                Json.arr()
+              })
+          case None =>
+            for {
+              elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
+              updatedSettings =
+                otoroshiSettings.copy(elasticConfig = elasticConfig.some)
+              updatedTenant = tenant.copy(
+                otoroshiSettings = tenant.otoroshiSettings
+                  .filter(_.id != otoroshiSettings.id) + updatedSettings
+              )
+              _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
+              r <- getSubscriptionLastUsage(subscriptions)(using
+                updatedSettings,
+                updatedTenant
+              )
+            } yield r
+        }
+      }
   }
 
   private def getElasticConfig()(implicit

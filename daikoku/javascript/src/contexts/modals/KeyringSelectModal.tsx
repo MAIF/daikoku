@@ -8,20 +8,33 @@ import {
   IUsagePlan
 } from '../../types';
 import { IBaseModalProps } from './types';
-import { Key, Plus } from "lucide-react";
+import { ArrowRight, Key, Plus } from "lucide-react";
 
-export interface IApiKeySelectModalProps {
-  onSubscribe: () => void;
-  plan: IUsagePlan | IFastPlan;
-  apiKeys: Array<ISubscriptionWithApiInfo>;
-  extendApiKey: (key: ISubscription) => void;
+/** A keyring (trousseau) the user may pick to add the new subscription into.
+ * `subscription` is the representative subscription carrying that keyring ;
+ * `aggregated` is true when the keyring already gathers more than one key. */
+export interface IKeyringOption {
+  keyringId: string;
+  apiName: string;
+  planName: string;
+  customName?: string | null;
+  count: number;
+  aggregated: boolean;
+  subscription: ISubscription;
 }
 
-export const ApiKeySelectModal = (
-  props: IApiKeySelectModalProps & IBaseModalProps
+export interface IKeyringSelectModalProps {
+  onSubscribe: () => void;
+  plan: IUsagePlan | IFastPlan;
+  keyrings: Array<IKeyringOption>;
+  onSelectKeyring: (key: ISubscription) => void;
+}
+
+export const KeyringSelectModal = (
+  props: IKeyringSelectModalProps & IBaseModalProps
 ) => {
-  const [showApiKeys, toggleApiKeysView] = useState(false);
-  const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
+  const [showKeyrings, toggleKeyringsView] = useState(false);
+  const [showSelectOrCreateKeyring, toggleSelectOrCreateKeyring] = useState(true);
 
   const { translate } = useContext(I18nContext);
 
@@ -30,9 +43,9 @@ export const ApiKeySelectModal = (
     props.onSubscribe();
   };
 
-  const extendApiKey = (apiKey: ISubscription) => {
+  const selectKeyring = (subscription: ISubscription) => {
     props.close();
-    props.extendApiKey(apiKey);
+    props.onSelectKeyring(subscription);
   };
 
   return (
@@ -49,25 +62,21 @@ export const ApiKeySelectModal = (
         />
       </div>
       <div className="modal-body">
-        {showSelectOrCreateApiKey && (
-          <SelectOrCreateApiKey
-            disableExtendButton={props.apiKeys.length <= 0}
+        {showSelectOrCreateKeyring && (
+          <SelectOrCreateKeyring
+            disableExtendButton={props.keyrings.length <= 0}
             create={(o: boolean) => {
               if (o) finalAction();
               else {
-                toggleSelectOrCreateApiKey(false);
-                toggleApiKeysView(true);
+                toggleSelectOrCreateKeyring(false);
+                toggleKeyringsView(true);
               }
             }}
             aggregationApiKeysSecurity={props.plan.aggregationApiKeysSecurity}
           />
         )}
-        {showApiKeys && (
-          <ApiKeysView
-            plan={props.plan}
-            apiKeys={props.apiKeys}
-            extendApiKey={extendApiKey}
-          />
+        {showKeyrings && (
+          <KeyringsView keyrings={props.keyrings} onSelectKeyring={selectKeyring} />
         )}
       </div>
       <div className="modal-footer">
@@ -83,52 +92,63 @@ export const ApiKeySelectModal = (
   );
 };
 
-type ApiKeysViewProps = {
-  plan: IUsagePlan | IFastPlan;
-  apiKeys: Array<ISubscriptionWithApiInfo>;
-  extendApiKey: (key: ISubscriptionWithApiInfo) => void;
+type KeyringsViewProps = {
+  keyrings: Array<IKeyringOption>;
+  onSelectKeyring: (key: ISubscription) => void;
 };
 
-const ApiKeysView = (props: ApiKeysViewProps) => {
+const KeyringsView = (props: KeyringsViewProps) => {
   const { translate } = useContext(I18nContext);
+  const keyrings = [...props.keyrings].sort((a, b) =>
+    (a.customName ?? a.planName).localeCompare(b.customName ?? b.planName)
+  );
   return (
     <div>
-      <h5 className="modal-title" id="modal-title">
-        {translate('apikey_select_modal.select_your_api_key')}
+      <h5 className="modal-title mb-3" id="modal-title">
+        {translate('apikey_select_modal.select_your_keyring')}
       </h5>
-      <div className="team-selection__container">
-        {props.apiKeys
-          .filter((a) => !a.parent)
-          .sort(
-            (a, b) =>
-              a.apiName.localeCompare(b.apiName) ||
-              (a.customName || a.planName).localeCompare(
-                b.customName || b.planName
-              )
-          )
-          .map((apiKey) => {
-            return (
-              <div
-                key={apiKey._id}
-                className="team-selection team-selection__team selectable mt-1"
-                onClick={() => props.extendApiKey(apiKey)}
-              >
-                <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName || apiKey.planName
-                  }`}</span>
+      <div className="d-flex flex-column gap-2">
+        {keyrings.map((keyring) => (
+          <div
+            key={keyring.keyringId}
+            className="keyring-option selectable d-flex align-items-center justify-content-between p-3"
+            role="button"
+            onClick={() => props.onSelectKeyring(keyring.subscription)}
+          >
+            <div className="d-flex align-items-center gap-3">
+              <Key />
+              <div className="d-flex flex-column">
+                <strong>{keyring.customName ?? keyring.planName}</strong>
+                <small className="text-muted">
+                  {keyring.apiName}{keyring.customName ? '' : ` · ${keyring.planName}`}
+                </small>
+                {keyring.aggregated && (
+                  <span className="badge badge-custom align-self-start mt-1">
+                    {translate({
+                      key: 'keyring_select_modal.keys_count',
+                      replacements: [String(keyring.count)],
+                    })}
+                  </span>
+                )}
               </div>
-            );
-          })}
+            </div>
+            <span className="btn btn-sm btn-outline-primary">
+              {translate('keyring_select_modal.join')}
+              <ArrowRight className='ms-2' />
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-type SelectOrCreateApiKeyProps = {
+type SelectOrCreateKeyringProps = {
   create: (t: boolean) => void;
   disableExtendButton: boolean;
   aggregationApiKeysSecurity?: boolean;
 };
-const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
+const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
   const Button = ({ onClick, message, icon, disabled }: any) => (
     <button
       type="button"

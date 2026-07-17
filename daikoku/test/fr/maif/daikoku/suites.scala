@@ -197,6 +197,10 @@ object testUtils {
           daikokuComponents.env.dataStore.translationRepo
             .forAllTenant()
             .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.keyringRepo
+            .forAllTenant()
+            .deleteAll()
       } yield (logger.info("[DaikokuSpecHelper] :: flush database finished"))
     }
 
@@ -219,7 +223,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -241,7 +246,8 @@ object testUtils {
           operations,
           subscriptionDemands,
           usagePlans,
-          translations
+          translations,
+          keyrings
         ),
         5.second
       )
@@ -266,7 +272,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ): Future[Unit] = {
       for {
 //        _ <- waitForDaikokuSetup()
@@ -307,6 +314,14 @@ object testUtils {
         _ <- Source(apis.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiRepo
+              .forAllTenant()
+              .save(i)
+          )
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(keyrings.toList)
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.keyringRepo
               .forAllTenant()
               .save(i)
           )
@@ -1241,22 +1256,30 @@ object testUtils {
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
+    val adminApiKey = OtoroshiApiKey(
+      clientName = "admin-apikey-test",
+      clientId = IdGenerator.token(10),
+      clientSecret = IdGenerator.token(10)
+    )
+    val adminApiKeyring = Keyring(
+      id = KeyringId("admin-keyring-test"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      apiKey = adminApiKey,
+      otoroshiSettings = KeyringOtoroshiBinding.Internal,
+      createdAt = DateTime.now(),
+      integrationToken = IdGenerator.token(64)
+    )
     val adminApiSubscription = ApiSubscription(
       id = ApiSubscriptionId(IdGenerator.token(32)),
       tenant = Tenant.Default,
-      apiKey = OtoroshiApiKey(
-        clientName = "admin-apikey-test",
-        clientId = IdGenerator.token(10),
-        clientSecret = IdGenerator.token(10)
-      ),
       plan = adminApiPlan.id,
       createdAt = DateTime.now(),
       team = defaultAdminTeam.id,
       api = adminApi.id,
       by = tenantAdmin.id,
       customName = Some("admin key for test"),
-      rotation = None,
-      integrationToken = IdGenerator.token(64)
+      keyring = adminApiKeyring.id
     )
 
     val adminApi2plan = UsagePlan(

@@ -454,11 +454,6 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
             action: () => navigateTo('assets'),
             className: { active: currentTab === 'assets' },
           },
-          init: {
-            label: translate('Initialization'),
-            action: () => navigateTo('init'),
-            className: { active: currentTab === 'init' },
-          },
           internationalization: {
             label: translate('internationalization'),
             action: () => navigateTo('internationalization'),

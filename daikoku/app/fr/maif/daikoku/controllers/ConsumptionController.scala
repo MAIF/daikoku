@@ -90,26 +90,36 @@ class ConsumptionController(
                       )
                     )
                   case Some(plan) =>
-                    env.dataStore.consumptionRepo
+                    env.dataStore.keyringRepo
                       .forTenant(ctx.tenant.id)
-                      .find(
-                        Json.obj(
-                          "clientId" -> subscription.apiKey.clientId,
-                          "from" -> Json.obj("$gte" -> fromTimestamp),
-                          "to" -> Json.obj("$lte" -> toTimestamp)
-                        ),
-                        Some(Json.obj("from" -> 1))
-                      )
-                      .map(consumptions =>
-                        Ok(
-                          Json.obj(
-                            "plan" -> plan.asJson,
-                            "consumptions" -> JsArray(
-                              consumptions.map(_.asJson)
-                            )
+                      .findById(subscription.keyring)
+                      .flatMap {
+                        case None =>
+                          FastFuture.successful(
+                            NotFound(Json.obj("error" -> "Keyring not found"))
                           )
-                        )
-                      )
+                        case Some(keyring) =>
+                          env.dataStore.consumptionRepo
+                            .forTenant(ctx.tenant.id)
+                            .find(
+                              Json.obj(
+                                "clientId" -> keyring.apiKey.clientId,
+                                "from" -> Json.obj("$gte" -> fromTimestamp),
+                                "to" -> Json.obj("$lte" -> toTimestamp)
+                              ),
+                              Some(Json.obj("from" -> 1))
+                            )
+                            .map(consumptions =>
+                              Ok(
+                                Json.obj(
+                                  "plan" -> plan.asJson,
+                                  "consumptions" -> JsArray(
+                                    consumptions.map(_.asJson)
+                                  )
+                                )
+                              )
+                            )
+                      }
                 }
           }
       }
@@ -261,10 +271,21 @@ class ConsumptionController(
                           case Some(otoSettings) =>
                             implicit val otoroshiSettings: OtoroshiSettings =
                               otoSettings
-                            otoroshiClient
-                              .getApiKeyQuotas(subscription.apiKey.clientId)
-                              .map(result => Ok(result))
-
+                            env.dataStore.keyringRepo
+                              .forTenant(ctx.tenant.id)
+                              .findById(subscription.keyring)
+                              .flatMap {
+                                case None =>
+                                  FastFuture.successful(
+                                    NotFound(
+                                      Json.obj("error" -> "Keyring not found")
+                                    )
+                                  )
+                                case Some(keyring) =>
+                                  otoroshiClient
+                                    .getApiKeyQuotas(keyring.apiKey.clientId)
+                                    .map(result => Ok(result))
+                              }
                         }
                     }
                 }
@@ -388,6 +409,16 @@ class ConsumptionController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.value))
+          keyrings <-
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant.id)
+              .findNotDeleted(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson).distinct)
+                  )
+                )
+              )
           subscribedApis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
@@ -427,9 +458,9 @@ class ConsumptionController(
                       .find(a => a.id == c.api)
                       .map(a => a.name)
                       .getOrElse(c.api.value)
-                  val clientName: String = subscriptions
-                    .find(s => s.apiKey.clientId == c.clientId)
-                    .map(s => s.apiKey.clientName)
+                  val clientName: String = keyrings
+                    .find(k => k.apiKey.clientId == c.clientId)
+                    .map(k => k.apiKey.clientName)
                     .getOrElse(c.clientId)
                   val plan: String = plans
                     .find(p => p.id == c.plan)
