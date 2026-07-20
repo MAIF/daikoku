@@ -2342,7 +2342,8 @@ object json {
               enabled = (json \ "enabled").as[Boolean],
               rotationEvery = (json \ "rotationEvery").as(using LongFormat),
               gracePeriod = (json \ "gracePeriod").as(using LongFormat),
-              nextSecret = (json \ "nextSecret").asOpt[String]
+              nextSecret = (json \ "nextSecret").asOpt[String],
+              bearer = (json \ "bearer").asOpt[String]
             )
           )
         } recover { case e =>
@@ -2354,7 +2355,8 @@ object json {
           "enabled" -> o.enabled,
           "rotationEvery" -> o.rotationEvery,
           "gracePeriod" -> o.gracePeriod,
-          "nextSecret" -> o.nextSecret
+          "nextSecret" -> o.nextSecret,
+          "bearer" -> o.bearer
         )
     }
 
@@ -2363,10 +2365,13 @@ object json {
       Try {
         JsSuccess(
           ApiSubscriptionRotation(
-            enabled = (json \ "enabled").as[Boolean],
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotationEvery = (json \ "rotationEvery").as(using LongFormat),
             gracePeriod = (json \ "gracePeriod").as(using LongFormat),
-            pendingRotation = (json \ "pendingRotation").as[Boolean]
+            pendingRotation =
+              (json \ "pendingRotation").asOpt[Boolean].getOrElse(false),
+            nextSecret = (json \ "nextSecret").asOpt[String],
+            nextBearer = (json \ "nextBearer").asOpt[String]
           )
         )
       } recover { case e =>
@@ -2378,7 +2383,9 @@ object json {
         "enabled" -> o.enabled,
         "rotationEvery" -> o.rotationEvery,
         "gracePeriod" -> o.gracePeriod,
-        "pendingRotation" -> o.pendingRotation
+        "pendingRotation" -> o.pendingRotation,
+        "nextSecret" -> o.nextSecret,
+        "nextBearer" -> o.nextBearer
       )
   }
 

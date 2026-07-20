@@ -1591,7 +1591,10 @@ object SchemaDefinition {
     ](
       ObjectTypeDescription(
         "A configuration to cover the rotation of the credentials of an api key"
-      )
+      ),
+      // derivation is structural: without this, the next credentials would be
+      // exposed unguarded, unlike Keyring.bearerToken which requires api key access
+      ExcludeFields("nextSecret", "nextBearer")
     )
 
     def requireApiKeyAccess(

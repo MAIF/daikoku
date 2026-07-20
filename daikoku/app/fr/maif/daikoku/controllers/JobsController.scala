@@ -73,7 +73,7 @@ class JobsController(
           .orElse(ctx.getQueryString("key")) match {
           case Some(key) if env.config.rotationJobKey.contains(key) =>
             rotationJob
-              .run(tenant = tenant)
+              .run(tenant = tenant, parallelism = parallelism)
               .map(_ => Ok(Json.obj("done" -> true)))
           case _ => AppError.Unauthorized.renderF()
         }
