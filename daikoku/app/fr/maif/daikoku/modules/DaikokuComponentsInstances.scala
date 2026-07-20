@@ -124,7 +124,6 @@ class DaikokuComponentsInstances(context: Context)
   lazy val apiKeyConsumptionAdminApiController =
     wire[ApiKeyConsumptionAdminApiController]
   lazy val auditEventAdminApiController = wire[AuditEventAdminApiController]
-  lazy val integrationApiController = wire[IntegrationApiController]
   lazy val translationController = wire[TranslationController]
   lazy val adminApiSwaggerController = wire[AdminApiSwaggerController]
   lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]

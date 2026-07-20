@@ -1120,7 +1120,6 @@ object testUtils {
       name = "Bobby daikoku Admin",
       email = "bobby.daikoku.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       isDaikokuAdmin = true,
       defaultLanguage = None
@@ -1132,7 +1131,6 @@ object testUtils {
       name = "Bobby tenant Admin",
       email = "bobby.tenant.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       isDaikokuAdmin = false,
       defaultLanguage = None
@@ -1144,7 +1142,6 @@ object testUtils {
       name = "Bobby Admin",
       email = "bobby.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
@@ -1155,7 +1152,6 @@ object testUtils {
       name = "Bobby Editor",
       email = "bobby.editor@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
@@ -1166,7 +1162,6 @@ object testUtils {
       name = "Bobby",
       email = "bobby@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )

@@ -872,7 +872,6 @@ class DaikokuEnv(
                   password = Some(
                     BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
                   ),
-                  personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
 

@@ -780,7 +780,6 @@ class TeamController(
         password =
           Some(BCrypt.hashpw("invited-user-password", BCrypt.gensalt())),
         lastTenant = Some(ctx.tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         invitation = Some(
           UserInvitation(

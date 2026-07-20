@@ -384,7 +384,6 @@ class GraphQLControllerSpec()
         name = "unauthorized guy",
         email = "unauthorized@gmail.com",
         lastTenant = _tenant.id.some,
-        personalToken = Some(IdGenerator.token(32)),
         password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
         defaultLanguage = None
       )
@@ -1104,7 +1103,6 @@ class GraphQLControllerSpec()
         name = "unauthorized guy",
         email = "unauthorized@gmail.com",
         lastTenant = _tenant.id.some,
-        personalToken = Some(IdGenerator.token(32)),
         password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
         defaultLanguage = None
       )

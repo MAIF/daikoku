@@ -2050,7 +2050,6 @@ object json {
               .getOrElse(Seq.empty[JsObject]),
             isDaikokuAdmin =
               (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false),
-            personalToken = (json \ "personalToken").asOpt[String],
             lastTenant = (json \ "lastTenant").asOpt(using TenantIdFormat),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
@@ -2087,10 +2086,6 @@ object json {
         "pictureFromProvider" -> o.pictureFromProvider,
         "password" -> o.password,
         "isDaikokuAdmin" -> o.isDaikokuAdmin,
-        "personalToken" -> o.personalToken
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
         "hardwareKeyRegistrations" -> JsArray(o.hardwareKeyRegistrations),
         "lastTenant" -> o.lastTenant
           .map(_.asJson)

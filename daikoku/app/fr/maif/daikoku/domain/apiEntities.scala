@@ -692,24 +692,6 @@ case class Api(
       "isDefault" -> isDefault,
       "state" -> json.ApiStateFormat.writes(state)
     )
-  def asIntegrationJson(teams: Seq[Team]): JsValue = {
-    val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
-    Json.obj(
-      "id" -> s"${t}/${name.urlPathSegmentSanitized}",
-      "team" -> t,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "currentVersion" -> currentVersion.asJson,
-      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
-      "stars" -> stars,
-      "metadata" -> JsObject(
-        metadata.view.mapValues(JsString.apply).toSeq
-      )
-    )
-  }
   def asPublicWithAuthorizationsJson(): JsValue =
     Json.obj(
       "_id" -> id.value,

@@ -1050,7 +1050,6 @@ class LoginController(
                         picture = accountCreation.avatar,
                         lastTenant = Some(ctx.tenant.id),
                         password = Some(accountCreation.password),
-                        personalToken = Some(IdGenerator.token(32)),
                         defaultLanguage = None
                       )
 

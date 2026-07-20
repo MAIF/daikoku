@@ -290,7 +290,6 @@ class LoginControllerSpec()
         name = "Michael Scott",
         email = "michael.scott@dundermifflin.com",
         lastTenant = None,
-        personalToken = Some("001"),
         password = None,
         defaultLanguage = None
       )
@@ -376,7 +375,6 @@ class LoginControllerSpec()
         name = "Michael Scott",
         email = "michael.scott@dundermifflin.com",
         lastTenant = None,
-        personalToken = Some("001"),
         password = None,
         defaultLanguage = None,
         failedLoginAttempts = 2,

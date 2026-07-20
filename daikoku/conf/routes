@@ -487,16 +487,6 @@ GET     /admin-api/credentials/:token                   fr.maif.daikoku.controll
 POST     /admin-api/search                               fr.maif.daikoku.controllers.GraphQLController.adminApiSearch()
 GET      /admin-api/schema                               fr.maif.daikoku.controllers.GraphQLController.adminApiSchema()
 
-
-GET     /integration-api/apis                           fr.maif.daikoku.controllers.IntegrationApiController.findAll()
-GET     /integration-api/:teamId                        fr.maif.daikoku.controllers.IntegrationApiController.findAllTeam(teamId)
-GET     /integration-api/:teamId/:apiId/complete        fr.maif.daikoku.controllers.IntegrationApiController.apiComplete(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/description     fr.maif.daikoku.controllers.IntegrationApiController.apiDescription(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/plans           fr.maif.daikoku.controllers.IntegrationApiController.apiPlans(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/documentation   fr.maif.daikoku.controllers.IntegrationApiController.apiDocumentation(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.daikoku.controllers.IntegrationApiController.apiSwagger(teamId, apiId)
-GET     /integration-api/:teamId/:apiId                 fr.maif.daikoku.controllers.IntegrationApiController.api(teamId, apiId)
-
 ### NoDocs ###
 GET     /*path                      fr.maif.daikoku.controllers.HomeController.indexWithPath(path)
 

@@ -995,7 +995,6 @@ class NotificationControllerSpec()
         name = "other",
         email = "other@gmail.com",
         lastTenant = None,
-        personalToken = Some(IdGenerator.token(32)),
         password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
         defaultLanguage = None
       )

@@ -166,7 +166,6 @@ object OtoroshiIdentityFilter {
                                     user.picture.getOrElse(user.email.gravatar),
                                   isDaikokuAdmin = isDaikokuAdmin,
                                   lastTenant = Some(tenant.id),
-                                  personalToken = Some(IdGenerator.token(32)),
                                   defaultLanguage = None
                                 )
                                 val newTeam = Team(

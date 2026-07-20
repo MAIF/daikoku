@@ -331,7 +331,6 @@ object OAuth2Support {
         pictureFromProvider = picture.isDefined,
         isDaikokuAdmin = isDaikokuAdmin,
         lastTenant = Some(tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         metadata = getFilteredMetadataFromOauth(
           authConfig,

@@ -32,7 +32,6 @@ class DeletionService(
     origins = Set.empty,
     name = "Daikoku",
     email = "system@daikoku.io",
-    personalToken = None,
     lastTenant = None,
     defaultLanguage = None
   )
