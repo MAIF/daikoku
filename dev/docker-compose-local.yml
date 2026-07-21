@@ -15,6 +15,13 @@ services:
       - "../daikoku/javascript/tests/config/otoroshi:/usr/app/otoroshi/imports"
     ports:
       - 8080:8080
+  smtp:
+    image: reachfive/fake-smtp-server:latest
+    networks:
+      - basicsetup
+    ports:
+      - 1080:1080
+      - 1025:1025
 
 networks:
   basicsetup:

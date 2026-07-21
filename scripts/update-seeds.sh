@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SEED_FILES=(
-    "dev/config/daikoku_state_light.ndjson"
+    "dev/config/daikoku_state_local.ndjson"
     "dev/config/daikoku_state_ldap.ndjson"
     "dev/config/daikoku_state_oidc.ndjson"
     "daikoku/javascript/tests/config/daikoku/daikoku_state_ldap.ndjson"
