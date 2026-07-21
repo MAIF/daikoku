@@ -443,6 +443,21 @@ class ApiKeySecretRotationJobSpec()
         .flatMap(_.nextSecret) mustBe Some(nextSecret)
       reloadKeyring(broken.id, tenant.id).rotation
         .map(_.pendingRotation) mustBe Some(false)
+
+      // the run reports itself as partially completed: one keyring failed while
+      // the others went through (the failing keyring detail lands in the audit).
+      val jobInfo = Await.result(
+        daikokuComponents.env.dataStore.JobInformationRepo
+          .forTenant(tenant.id)
+          .findById(
+            DatastoreId(
+              s"${JobName.ApiKeyRotationVerifier.value}-${tenant.id.value}"
+            )
+          ),
+        10.seconds
+      )
+      jobInfo.map(_.status) mustBe Some(JobStatus.PartiallyCompleted)
+      logger.info(Json.stringify(jobInfo.get.asJson))
     }
 
     "not touch the keyrings of another tenant" in {

@@ -12,20 +12,16 @@ import fr.maif.daikoku.storage.drivers.postgres.{
   ColJsonArray,
   PostgresDataStore
 }
-import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Time, Translator}
-import org.apache.pekko.actor.Cancellable
-import org.apache.pekko.stream.Materializer
+import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
 import org.apache.pekko.stream.scaladsl.Sink
-import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
-import cron4s.*
-import cron4s.lib.joda.*
 
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
-import scala.concurrent.duration.*
-import scala.concurrent.{ExecutionContext, Future}
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.Future
+import scala.jdk.CollectionConverters.*
 
 /** The api/plan/team ids attached to a keyring, used only to address
   * notifications: the rotation itself is driven by the keyring alone.
@@ -57,191 +53,38 @@ private object RotationContext {
 
 class ApiKeySecretRotationJob(
     client: OtoroshiClient,
-    env: Env,
+    override protected val env: Env,
     translator: Translator,
     messagesApi: MessagesApi
-) {
-  private val logger = Logger("APIkey-Rotation-Synchronizer")
+) extends AbstractJob[Unit] {
 
-  private val ref = new AtomicReference[Cancellable]()
+  override protected val logger: Logger =
+    Logger("APIkey-Rotation-Synchronizer")
+  override protected val jobName: JobName = JobName.ApiKeyRotationVerifier
+  override protected val lockedBy: String = "apikey-rotation-verifier-job"
+  override protected val defaultInput: Unit = ()
 
-  implicit val ec: ExecutionContext = env.defaultExecutionContext
-  implicit val mat: Materializer = env.defaultMaterializer
+  override protected val jobConfig: JobConfig = JobConfig(
+    enabled = env.config.rotationJobEnabled,
+    schedulingMode = env.config.rotationJobSchedulingMode,
+    cronExpression = env.config.rotationJobCronExpr,
+    interval = env.config.rotationJobInterval
+  )
+
   implicit val ev: Env = env
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
 
-  def start(): Unit = {
-    val syncAvalaible =
-      env.config.rotationJobEnabled && env.config.otoroshiSyncMaster // FIXME: use also otoroshiSyncMaster ???
-
-    if (syncAvalaible && ref.get() == null) {
-      env.config.rotationJobSchedulingMode match {
-        case SchedulingMode.Cron =>
-          val cronExpr = env.config.rotationJobCronExpr.map(Cron.unsafeParse)
-
-          def scheduleNext(): Unit = {
-            val now = DateTime.now()
-            cronExpr.flatMap(_.next[DateTime](now)) match {
-              case Some(nextRun) =>
-                val delayMillis =
-                  Math.max(nextRun.getMillis - now.getMillis, 1000)
-                val delay = delayMillis.millis
-
-                logger.info(
-                  s"next cron run scheduled at $nextRun (in ${delay.toSeconds}s)"
-                )
-
-                ref.set(
-                  env.defaultActorSystem.scheduler.scheduleOnce(delay) {
-                    logger.info(s"cron triggered at $now")
-                    val _ = runForAllTenants()
-                      .recover { case e: Throwable =>
-                        logger.error("cron sync failed", e)
-                      }
-                      .andThen { case _ =>
-                        scheduleNext()
-                      }
-                    ()
-                  }
-                )
-
-              case None =>
-                logger.error(
-                  s"could not compute next run from cron expression: ${env.config.rotationJobCronExpr.getOrElse("")}"
-                )
-            }
-          }
-
-          scheduleNext()
-
-        case SchedulingMode.Interval =>
-          ref.set(
-            env.defaultActorSystem.scheduler
-              .scheduleAtFixedRate(10.seconds, env.config.rotationJobInterval) {
-                () =>
-                  runForAllTenants()
-                    .recover { case e: Throwable =>
-                      logger.error("interval sync failed", e)
-                    }
-              }
-          )
-      }
-    }
-  }
-
-  def stop(): Unit = {
-    Option(ref.get()).foreach(_.cancel())
-  }
-
-  private def runForAllTenants(): Future[Unit] =
-    env.dataStore.tenantRepo
-      .findAllNotDeleted()
-      .flatMap(tenants => Future.sequence(tenants.map(tenant => run(tenant))))
-      .map(_ => ())
-
-  def run(tenant: Tenant, parallelism: Int = 25): Future[Unit] = {
-    logger.info(s"run apikey rotation check for tenant ${tenant.id.value}")
-
-    val jobRepo = env.dataStore.JobInformationRepo.forTenant(tenant)
-    val jobId = DatastoreId(s"rotation-${IdGenerator.token(16)}")
-    val now = DateTime.now()
-
-    val jobInfo = JobInformation(
-      id = jobId,
-      tenant = tenant.id,
-      jobName = JobName.ApiKeyRotationVerifier,
-      lockedBy = "apikey-rotation-verifier-job",
-      lockedAt = now,
-      expiresAt = now.plusMinutes(5),
-      cursor = 0L,
-      startedAt = now,
-      lastBatchAt = now,
-      status = JobStatus.Running
-    )
-
-    // expiresAt doubles as a heartbeat: if Daikoku crashes it stops being
-    // refreshed and the next run considers the job stale instead of skipping
-    // forever.
-    def saveCursor(cursor: Long): Future[Boolean] = jobRepo.save(
-      jobInfo.copy(cursor = cursor, expiresAt = DateTime.now().plusMinutes(5))
-    )
-
-    def doRun(maybeLastCursor: Option[Long] = None): Future[Unit] =
-      synchronizeRotations(tenant, parallelism, saveCursor, maybeLastCursor)
-        .flatMap { _ =>
-          logger.info("[Rotation] verify rotation ended")
-          jobRepo
-            .save(
-              jobInfo.copy(
-                status = JobStatus.Completed,
-                lastBatchAt = DateTime.now()
-              )
-            )
-            .map(_ => ())
-        }
-        .recoverWith { case e =>
-          logger.error(s"[Rotation] verify rotation failed: ${e.getMessage}", e)
-          jobRepo
-            .save(
-              jobInfo
-                .copy(status = JobStatus.Failed, lastBatchAt = DateTime.now())
-            )
-            .map(_ => ())
-        }
-
-    Time.concurrentTime(
-      jobRepo
-        .find(
-          Json.obj("jobName" -> JobName.ApiKeyRotationVerifier.value),
-          sort = Some(Json.obj("startedAt" -> -1)),
-          maxDocs = 1
-        )
-        .map(_.headOption)
-        .flatMap {
-          case Some(lastJob)
-              if lastJob.status == JobStatus.Running && lastJob.expiresAt.isAfterNow =>
-            logger.info(
-              "[Rotation] can't run another ApiKeyRotationVerifier, already one is running"
-            )
-            Future.successful(())
-
-          case Some(lastJob)
-              if lastJob.status == JobStatus.Running && lastJob.expiresAt.isBeforeNow =>
-            logger.info(
-              s"[Rotation] stale running job detected (expiresAt=${lastJob.expiresAt}), marking as Failed and resuming from cursor ${lastJob.cursor}"
-            )
-            jobRepo
-              .save(lastJob.copy(status = JobStatus.Failed))
-              .flatMap(_ => jobRepo.save(jobInfo.copy(cursor = lastJob.cursor)))
-              .flatMap(_ => doRun(Some(lastJob.cursor)))
-
-          case Some(lastJob) if lastJob.status == JobStatus.Failed =>
-            logger.info(
-              s"[Rotation] previous job failed, resuming from cursor ${lastJob.cursor}"
-            )
-            jobRepo
-              .save(jobInfo.copy(cursor = lastJob.cursor))
-              .flatMap(_ => doRun(Some(lastJob.cursor)))
-
-          case _ =>
-            logger.info("[Rotation] starting fresh rotation check")
-            jobRepo.save(jobInfo).flatMap(_ => doRun())
-        },
-      "Rotation verifying run"
-    )
-  }
-
-  private def synchronizeRotations(
+  override protected def process(
       tenant: Tenant,
+      input: Unit,
       parallelism: Int,
       saveCursor: Long => Future[Boolean],
-      maybeLastCursor: Option[Long]
-  ): Future[Unit] = {
-
+      fromCursor: Option[Long]
+  ): Future[JobRunResult] = {
     implicit val language: String = "en"
 
-    val cursorClause = maybeLastCursor
+    val cursorClause = fromCursor
       .map(c => s"AND (k.content ->> 'createdAt')::bigint >= $c")
       .getOrElse("")
 
@@ -270,11 +113,11 @@ class ApiKeySecretRotationJob(
 
     val processed = new AtomicLong(0)
     val synced = new AtomicLong(0)
-    val errored = new AtomicLong(0)
-    val lastCursor = new AtomicLong(maybeLastCursor.getOrElse(0L))
+    val failures = new ConcurrentLinkedQueue[JobItemFailure]()
+    val lastCursor = new AtomicLong(fromCursor.getOrElse(0L))
 
     logger.debug(
-      s"[Rotation] starting for tenant ${tenant.id.value} with parallelism=$parallelism, cursor=${maybeLastCursor
+      s"[Rotation] starting for tenant ${tenant.id.value} with parallelism=$parallelism, cursor=${fromCursor
           .getOrElse(0L)}"
     )
 
@@ -326,7 +169,12 @@ class ApiKeySecretRotationJob(
               synced.incrementAndGet()
               Future.successful(())
             case Left(err) =>
-              errored.incrementAndGet()
+              failures.add(
+                JobItemFailure(
+                  keyring.id.value,
+                  Json.stringify(AppError.toJson(err))
+                )
+              )
               logger.error(
                 s"[Rotation] keyring ${keyring.id.value} failed: ${Json.stringify(AppError.toJson(err))}"
               )
@@ -342,10 +190,16 @@ class ApiKeySecretRotationJob(
       }
       .runWith(Sink.ignore)
       .map { _ =>
-        logger.info(
-          s"[Rotation] tenant ${tenant.id.value}: processed=${processed.get()}, synced=${synced
-              .get()}, errored=${errored.get()}"
+        val result = JobRunResult(
+          processed = processed.get(),
+          succeeded = synced.get(),
+          failures = failures.asScala.toSeq,
+          lastCursor = Some(lastCursor.get())
         )
+        logger.info(
+          s"[Rotation] tenant ${tenant.id.value}: processed=${result.processed}, synced=${result.succeeded}, errored=${result.failures.size}"
+        )
+        result
       }
   }
 

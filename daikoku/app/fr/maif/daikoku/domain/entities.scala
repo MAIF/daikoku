@@ -174,6 +174,7 @@ enum JobStatus(val value: String):
   case Running extends JobStatus("running")
   case Failed extends JobStatus("failed")
   case Completed extends JobStatus("completed")
+  case PartiallyCompleted extends JobStatus("partially_completed")
 
 enum JobName(val value: String):
   case ApiKeySynchronization extends JobName("ApiKeySynchronization")
