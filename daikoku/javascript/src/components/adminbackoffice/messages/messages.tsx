@@ -5,8 +5,7 @@ import orderBy from 'lodash/orderBy';
 import sortBy from 'lodash/sortBy';
 import values from 'lodash/values';
 import { useContext, useEffect, useState } from 'react';
-import Send from 'react-feather/dist/icons/send';
-import ChevronLeft from 'react-feather/dist/icons/chevron-left';
+import {Send, ChevronLeft, Trash2} from 'lucide-react';
 import Select from 'react-select';
 import { differenceInDays, format, formatDistanceToNow } from 'date-fns';
 
@@ -198,8 +197,8 @@ export const AdminMessages = () => {
           const unreadCount = messages.filter((m) => !m.readBy.includes(connectedUser?._id)).length;
           return { chat, user, messages, unreadCount, maxDate };
         }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc'])
-          .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
-            const lastMessageDateDisplayed = differenceInDays(new Date, maxDate) > 1 ? format(maxDate, 'd MMM', { locale: getLanguageFns(language) }) : formatDistanceToNow(maxDate, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language)});
+          .map(({ chat, user, unreadCount, maxDate }, idx) => {
+            const lastMessageDateDisplayed = differenceInDays(new Date, maxDate) > 1 ? format(maxDate, 'd MMM', { locale: getLanguageFns(language) }) : formatDistanceToNow(maxDate, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) });
             return (<div key={idx} className={classNames('p-3 cursor-pointer d-flex flex-row messages-sender level2-link__with-bg', {
               'level2-link__active-bg': selectedChat === chat,
             })} onClick={() => setSelectedChat(chat)}>
@@ -217,7 +216,7 @@ export const AdminMessages = () => {
                     e.stopPropagation();
                     closeSelectedChat(chat);
                   }}>
-                    <i className="fas fa-trash" />
+                    <Trash2 />
                   </a>
                 </div>
                 <div className="d-flex justify-content-end">

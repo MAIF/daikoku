@@ -335,7 +335,6 @@ object OAuth2Support {
         pictureFromProvider = picture.isDefined,
         isDaikokuAdmin = isDaikokuAdmin,
         lastTenant = Some(tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         metadata = getFilteredMetadataFromOauth(
           authConfig,
@@ -367,6 +366,7 @@ object OAuth2Support {
       val updatedUser = u.copy(
         name = name,
         email = email,
+        invitation = None,
         tenants = u.tenants + tenant.id,
         origins = u.origins + AuthProvider.OAuth2,
         picture =
@@ -399,7 +399,8 @@ object OAuth2Support {
         )
         email <- EitherT.fromOption[Future](
           (userFromOauth \ authConfig.emailField)
-            .asOpt[String],
+            .asOpt[String]
+            .map(_.toLowerCase),
           AppError.EntityNotFound("No email found")
         )
         picture <- EitherT.pure[Future, AppError](

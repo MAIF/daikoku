@@ -1150,18 +1150,26 @@ class TeamControllerSpec()
 
     "get his team home information" in {
       val subPlanId = UsagePlanId("5")
-      val sub       = ApiSubscription(
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamOwnerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
+      val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = subPlanId,
         createdAt = DateTime.now(),
         team = teamOwnerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = None,
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1170,6 +1178,7 @@ class TeamControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(sub),
+        keyrings = Seq(keyring),
         notifications = Seq(
           Notification(
             id = NotificationId("untreated-notification"),
@@ -1419,11 +1428,19 @@ class TeamControllerSpec()
 
       val personalSub =
         (respSub.json \ "subscription").as(using json.ApiSubscriptionFormat)
+      val personalSubKeyring = Await
+        .result(
+          daikokuComponents.env.dataStore.keyringRepo
+            .forTenant(tenant)
+            .findById(personalSub.keyring),
+          5.seconds
+        )
+        .get
 
       // get key in oto and test secret
       val respOtoApikey = httpJsonCallWithoutSessionBlocking(
         path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubKeyring.apiKey.clientId}",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
           "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret
@@ -1437,7 +1454,7 @@ class TeamControllerSpec()
 
       val otoApiKey =
         respOtoApikey.json.as(using json.ActualOtoroshiApiKeyFormat)
-      otoApiKey.clientSecret mustBe personalSub.apiKey.clientSecret
+      otoApiKey.clientSecret mustBe personalSubKeyring.apiKey.clientSecret
 
       val respDelete = httpJsonCallBlocking(
         path =
@@ -1448,7 +1465,7 @@ class TeamControllerSpec()
 
       val respOtoApikey2 = httpJsonCallWithoutSessionBlocking(
         path =
-          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubKeyring.apiKey.clientId}",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
           "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret

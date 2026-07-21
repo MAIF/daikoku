@@ -1,15 +1,14 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
+import { useContext, useEffect, useRef } from 'react';
 
-import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../contexts';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';
-import { deleteOtoroshiSettings } from '../../../../services';
+import { Edit, Trash2 } from "lucide-react";
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const table = useRef<TableRef>(undefined);
@@ -84,22 +83,22 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       cell: (info) => {
         const settings = info.row.original;
         return (
-          <div >
+          <div className='d-flex justify-content-end gap-1'>
             <button
               type="button"
-              className="btn btn-outline-info me-1"
+              className="btn --secondary --small --icon-only"
               title={translate('Edit')}
               onClick={() => editSettings(settings.type, settings)}
             >
-              <i className="fas fa-edit" />
+              <Edit />
             </button>
             <button
               type="button"
-              className="btn btn-outline-danger"
+              className="btn --secondary --small --icon-only"
               title={translate('Delete')}
               onClick={() => deleteSettings(settings)}
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
           </div>
         );
@@ -137,7 +136,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   }
 
   const deleteSettings = (paymentSetttings: IThirdPartyPaymentSettings) => {
-    const thirdPartyPaymentSettings = [...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== paymentSetttings._id)];
+    const thirdPartyPaymentSettings = props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== paymentSetttings._id);
 
     confirm({
       message: translate('third-party.payment.settings.delete.confirm.message'),
@@ -176,7 +175,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
           .then(() => table.current?.update())
       },
-      actionLabel: !!paymentSetttings ? translate('Update') : translate('Create')
+      actionLabel: paymentSetttings ? translate('Update') : translate('Create')
     })
   }
 
@@ -198,7 +197,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       <div>
         <button
           type="button"
-          className="btn btn-sm btn-outline-success my-1 ms-1"
+          className="btn --primary m-1"
           title={translate('third-party.payment.list.add.label')}
           onClick={() => {
             openFormModal({

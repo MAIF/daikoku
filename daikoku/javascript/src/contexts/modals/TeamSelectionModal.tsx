@@ -1,7 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useState } from 'react';
-import Square from 'react-feather/dist/icons/square';
-import CheckSquare from 'react-feather/dist/icons/check-square';
+import { Square, CheckSquare } from 'lucide-react';
 
 import { I18nContext } from '../../contexts';
 import { ITeamSimple } from '../../types';
@@ -26,14 +25,14 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     if (selectedTeams.length === allTeams.length) {
       setSelectedTeams([]);
     } else {
-      setSelectedTeams([...allTeams.map((t) => t._id)]);
+      setSelectedTeams(allTeams.map((t) => t._id));
     }
   };
 
   const getButton = (team: ITeamSimple) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
-        <button type="button" className="btn btn-sm btn-outline-primary disabled">
+        <button type="button" className="btn --secondary --small disabled">
           <Translation i18nkey="Request in progress" />
         </button>
       );
@@ -128,13 +127,13 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={close} aria-label={translate('Close')}>
+        <button type="button" className="btn --secondary" onClick={close} aria-label={translate('Close')}>
           {translate('Close')}
         </button>
         {!!allTeamSelector && (
           <button
             type="button"
-            className={classNames('btn btn-outline-success', {
+            className={classNames('btn --primary', {
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}

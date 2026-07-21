@@ -86,6 +86,17 @@ export const SecurityForm = (props: {
       deps: ['aggregationApiKeysSecurity'],
       visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
     },
+    keyringQuotaConflictStrategy: {
+      type: type.string,
+      format: format.select,
+      label: translate('tenant.keyringQuotaConflictStrategy.label'),
+      help: translate('tenant.keyringQuotaConflictStrategy.help'),
+      options: [
+        { value: 'LowestValue', label: translate('tenant.keyringQuotaConflictStrategy.lowest') },
+        { value: 'HighestValue', label: translate('tenant.keyringQuotaConflictStrategy.highest') },
+      ],
+      defaultValue: 'LowestValue',
+    },
     apiReferenceHideForGuest: {
       type: type.bool,
       label: translate('API reference visibility'),
@@ -167,7 +178,7 @@ export const SecurityForm = (props: {
       type: 'teamAdmin',
       id: nanoid(),
       title: 'admin validation',
-      team: teamQuery.data?._id!
+      team: teamQuery.data!._id
     }];
 
     return (
@@ -197,8 +208,8 @@ export const SecurityForm = (props: {
         <div className="mb-0">
           {translate('tenant.security.account.creation.process.doc.footer')}
           <div className='d-flex flex-start gap-2'>
-            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
-            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
           </div>
         </div>
       </div>
@@ -212,7 +223,7 @@ export const SecurityForm = (props: {
       content: <SubscriptionProcessEditor
         save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
         process={props.tenant?.accountCreationProcess ?? []}
-        team={teamQuery.data?._id!}
+        team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
       />
@@ -279,7 +290,7 @@ export const SecurityForm = (props: {
                 return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
               },
               deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
-              render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities", teamId: teamQuery.data?._id! }),
+              render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities", teamId: teamQuery.data!._id }),
               label: translate('Authorized entities'),
               placeholder: translate('Authorized.entities.placeholder'),
               help: translate('authorized.entities.help'),
@@ -292,7 +303,7 @@ export const SecurityForm = (props: {
         .then(() => openModalForDispatchingAction()),
       value: { authorizedOtoroshiEntities: props.tenant.defaultAuthorizedOtoroshiEntities },
       moreAction: <button
-        className='btn btn-outline-danger'
+        className='btn --secondary'
         onClick={() => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: undefined })
           .then(() => openModalForDispatchingAction())}>
         {translate('tenant.security.clear.default.auth.otoroshi.entities.button.label')}
@@ -320,10 +331,10 @@ export const SecurityForm = (props: {
           }}
         />
         <div>
-          {tenant.authProvider === 'Local' && <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
         </div>
         <div>
-          <button onClick={() => openModal(otoroshis)} className='btn btn-outline-success'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
+          <button onClick={() => openModal(otoroshis)} className='btn --secondary'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
         </div>
       </div>
     );

@@ -261,6 +261,37 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
   import java.util.{Date, Properties}
 
+  /** Build the JavaMail properties, including TLS handling.
+    *
+    * Port 587 uses STARTTLS (upgrade a plaintext connection), port 465 uses
+    * implicit SSL/TLS. Both are deduced from the port when not explicitly set,
+    * see [[SimpleSMTPSettings.useStartTls]] / [[SimpleSMTPSettings.useSsl]].
+    * Without this, providers such as Scaleway reject authentication ("502 5.7.0
+    * Please authenticate first" on 587) or refuse plaintext connections (on
+    * 465).
+    */
+  private def buildProperties(): Properties = {
+    val properties = new Properties()
+    properties.put("mail.smtp.host", settings.host)
+    properties.put("mail.smtp.port", Integer.valueOf(settings.port))
+    properties.put(
+      "mail.smtp.auth",
+      java.lang.Boolean.valueOf(settings.username.isDefined)
+    )
+
+    if (settings.useStartTls) {
+      properties.put("mail.smtp.starttls.enable", "true")
+      properties.put("mail.smtp.starttls.required", "true")
+    }
+
+    if (settings.useSsl) {
+      properties.put("mail.smtp.ssl.enable", "true")
+      properties.put("mail.smtp.ssl.checkserveridentity", "true")
+    }
+
+    properties
+  }
+
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
       ec: ExecutionContext,
@@ -278,13 +309,7 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
       )
       .map(templatedBody => {
 
-        val properties = new Properties()
-        properties.put("mail.smtp.host", settings.host)
-        properties.put("mail.smtp.port", Integer.valueOf(settings.port))
-        properties.put(
-          "mail.smtp.auth",
-          java.lang.Boolean.valueOf(settings.username.isDefined)
-        )
+        val properties = buildProperties()
 
         val authenticator = (settings.username, settings.password) match {
           case (Some(username), Some(password)) =>
@@ -341,13 +366,7 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
   override def testConnection(
       tenant: Tenant
   )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = {
-    val properties = new Properties()
-    properties.put("mail.smtp.host", settings.host)
-    properties.put("mail.smtp.port", Integer.valueOf(settings.port))
-    properties.put(
-      "mail.smtp.auth",
-      java.lang.Boolean.valueOf(settings.username.isDefined).toString
-    )
+    val properties = buildProperties()
 
     val authenticator = (settings.username, settings.password) match {
       case (Some(username), Some(password)) =>
@@ -362,7 +381,14 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
     Try {
       val transport = session.getTransport("smtp")
-      transport.connect(settings.host, settings.port.toInt, null, null)
+      // Connect with the configured credentials so the test also validates
+      // authentication (and STARTTLS/SSL), not only TCP reachability.
+      transport.connect(
+        settings.host,
+        settings.port.toInt,
+        settings.username.orNull,
+        settings.password.orNull
+      )
       transport.close() // Important : fermer la connexion après le test
     } match {
       case Failure(e) =>

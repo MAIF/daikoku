@@ -31,18 +31,18 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
         </div>
       </div>
       <div
-        className="p-2 d-flex align-items-center justify-content-end"
+        className="p-2 d-flex align-items-center justify-content-end gap-2"
         style={{ borderTop: '1px solid #dee2e6' }}
       >
         <a
           href={`/auth/${loginProvider}/login?redirect=${location.pathname}`}
-          className="btn btn-outline-success mx-1 login-button"
+          className="btn --primary login-button"
         >
           {translate('Login')}
         </a>
         {loginProvider === 'Local' && <a
           href={`/signup?redirect=${location.pathname}`}
-          className="btn btn-outline-success register-button"
+          className="btn --secondary register-button"
         >
           {translate('Register')}
         </a>}

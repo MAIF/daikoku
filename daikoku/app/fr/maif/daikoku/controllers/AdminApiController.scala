@@ -635,18 +635,13 @@ class ApiSubscriptionAdminApiController(
         env.dataStore.userRepo.findById(entity.by),
         AppError.ParsingPayloadError("By not found")
       )
-      _ <- entity.parent match {
-        case Some(parent) =>
-          EitherT
-            .fromOptionF[Future, AppError, ApiSubscription](
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(entity.tenant)
-                .findById(parent),
-              AppError.ParsingPayloadError(s"Parent subscription not found")
-            )
-            .map(_ => ())
-        case None => EitherT.pure[Future, AppError](())
-      }
+      _ <- EitherT
+        .fromOptionF[Future, AppError, Keyring](
+          env.dataStore.keyringRepo
+            .forTenant(entity.tenant)
+            .findById(entity.keyring),
+          AppError.ParsingPayloadError(s"Keyring not found")
+        )
 
     } yield entity
   }
@@ -846,12 +841,12 @@ class CredentialsAdminApiController(
 
   def getCredentials(token: String) =
     DaikokuApiAction.async { ctx =>
-      env.dataStore.apiSubscriptionRepo
+      env.dataStore.keyringRepo
         .forAllTenant()
         .findOne(Json.obj("integrationToken" -> token))
         .map {
-          case None => NotFound(Json.obj("error" -> "Subscription not found"))
-          case Some(sub) => Ok(sub.apiKey.asJson)
+          case None => NotFound(Json.obj("error" -> "Keyring not found"))
+          case Some(keyring) => Ok(keyring.apiKey.asJson)
         }
     }
 }

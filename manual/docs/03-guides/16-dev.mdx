@@ -13,77 +13,200 @@ import TabItem from '@theme/TabItem';
 This guide aims at helping people willing to contribute to the Daikoku codebase.
 This guide will help you set up a **full Daikoku development environment** — including PostgreSQL (via Docker), the **frontend (Vite)**, and the **backend (Scala + Play)** — with live reload enabled.
 
-> Replace or export `$DAIKOKU_PROJECT_ROOT` with your local daikoku project path, for example `~/projects/daikoku` in case you did something
-like `git clone git@github.com:MAIF/daikoku.git ~/projects/daikoku`
+
+## With mise
+
+The easiest way to get started with Daikoku is through the use of [mise](https://mise.jdx.dev/).
+
+This section assumes that you have mise installed.
+
+### Installing dependencies
+
+Below command wil install frontend dependencies, doc dependencies, playwright, backend dependencies & pull needed docker images.
+
+```sh
+mise run install
+```
+
+### Running Daikoku with demo data
+
+Below command will run Daikoku in a dev setup.
+
+```sh
+mise run dev # Local auth setup, same as mise run dev --mode local
+mise run dev --mode ldap # LDAP auth setup
+mise run dev --mode oidc # OIDC auth setup
+```
+
+Once everything is started, browser to [http://localhost:5173](http://localhost:5173) to get started.
+
+In this mode source code update will trigger frontend hot reload / backend recompilation.
+
+To login see [demo-data](#demo-data).
+
+### Running Daikoku without demo data
+
+Below command will run Daikoku in a dev setup without any data.
+
+```sh
+mise run dev --mode empty
+```
+
+Once everything is started, browser to [http://localhost:5173](http://localhost:5173) to get started.
+
+In this mode source code update will trigger frontend hot reload / backend recompilation.
+
+Default user is `admin@daikoku.io` and default password is `password`.
+
+### Running tests
+
+#### Backend tests
+
+Below command will run backend test (one shot):
+
+```sh
+mise run test:back
+```
+
+Alternatively, below command will start backend test dependencies, this will allow you to run/debug tests yourself (throught `sbt test` or Intellij).
+
+```sh
+mise run pg
+```
+
+#### Frontend tests
+
+Frontend test are split into 3 categories, depending on auth mode (ldap, oidc or local).
+
+Below commands will start daikoku with Playwright test UI for associated auth mode.
+
+In this mode, backend and frontend are started in hot reload mode, allowing you to easily debug failing tests.
+
+```sh
+mise run dev --test # Local auth tests, equivalent to mise run dev --mode local --test
+mise run dev --mode ldap --test
+mise run dev --mode oidc --test
+```
+
+### Documentation
+
+Below command will start documentation in dev mode
+
+```sh
+mise run doc
+```
+
+Once everything is started, browse to [http://localhost:3000/daikoku/](http://localhost:3000/daikoku/)
+
+
+
+### Keep postgres instance running
+
+If you want to keep a postgres instance running accross your dev / test tasks, run below command in a separated terminal.
+
+```sh
+mise run pg
+```
+
+All above mise command will detect that a postgres is already running and won't shut it down when terminated.
 
 ---
 
-## 1) Prerequisites
+## Without Mise
+
+> Replace or export `$DAIKOKU_PROJECT_ROOT` with your local daikoku project path, for example `~/projects/daikoku` in case you did something
+like `git clone git@github.com:MAIF/daikoku.git ~/projects/daikoku`
+
+### Prerequisites
 
 Make sure you have the following installed:
 
 - **JDK 21+**
-- **Scala** & **sbt** (latest recommended version)
+- **sbt 1.X**
 - **Node LTS** & **npm** (Vite requires a modern Node version)
-- **Docker** (to run PostgreSQL, and later Elasticsearch, Otoroshi and Minio)
-- a clone of the **Daikoku code repository** (`git clone git@github.com:MAIF/daikoku.git`)
+- **Docker/colima/podman/...**  (to run PostgreSQL, Otoroshi and other needed containers for various need)
 
----
 
-## 2) Start dependencies in Docker
 
-Run a local PostgreSQL and an instance of otoroshi dedicated to Daikoku:
+### Installing dependencies
 
+#### Frontend depdendencies
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
+npm install
+npx playwright install chromium
+```
+
+#### Doc dependencies
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/manual
+npm install
+```
+
+
+### Run daikoku in dev mode
+
+
+#### Potsgres
+Run a local PostgreSQL dedicated to Daikoku, you should keep this running in a dedicated shell all the time (for dev & tests).
 
 ```bash
-docker-compose -f $DAIKOKU_PROJECT_ROOT/daikoku/javascript/tests/docker-compose-very-local.yml up
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
 :::note Default connection info
 
 * **Host**: `localhost`
 * **Port**: `5432`
-* **Database**: `daikoku`
+* **Database**: `daikoku` (or `daikoku_test` for tests)
 * **User / Password**: `postgres` / `postgres`
   :::
 
----
 
-## 3) Start the Frontend (Vite Dev Server)
-
-In **Terminal A**, go to the `javascript` folder and start the Vite development server:
+#### Frontend
 
 ```bash
 cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
-npm install
 npm run dev
 ```
 
 By default, the UI will run on **[http://localhost:5173](http://localhost:5173)**.
 
----
 
-## 4) Start the Backend in Hot Reload Mode
+#### Backend
 
-In **Terminal B**, start the backend with `sbt`:
+First start a sbt shell with below commands
 
 ```bash
 cd $DAIKOKU_PROJECT_ROOT/daikoku
 sbt
 ```
 
-Inside the `sbt` console:
+Then in sbt shell start backend with "hot reload":
 
-```sbt
+if you want demo data already loaded, use below command:
+
+```bash
+~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_local.ndjson
+```
+
+if you prefer a fresh daikoku instance, use below command:
+
+```bash
 ~run -Dconfig.resource=local.conf
+
 ```
 
 This will automatically reload the backend each time you change Scala or configuration files.
 
----
 
-
-## 5) Open the Application
+#### Open the Application
 
 * **Frontend (Vite)**: [http://localhost:5173](http://localhost:5173)
 * **Backend (Play)**: runs on its default port (typically 9000, depending on config)
@@ -91,55 +214,111 @@ This will automatically reload the backend each time you change Scala or configu
 👉 Open your browser at **[http://localhost:5173](http://localhost:5173)** to start working. An error may be displayed at first while Daikoku backend setups the database. Just wait a few seconds an refresh to see Daikoku UI.
 
 
-## 6) Log in
+#### Login
 
-To log in with above setup, you'll have to use one of the following users:
+##### With some demo data
 
-- admin@foo.bar / password
-- dwight.schrute@dundermifflin.com / password
-- jim.halpert@dundermifflin.com / password
-- michael.scott@dundermifflin.com / password
+See [demo-data](#demo-data).
 
----
+##### Without demo data
 
-## Troubleshooting
+If you started your Daikoku instance without demo data, a default password will be generated, and user / password will be visible in Daikoku logs.
 
-### Port 5173 already in use
 
-Change the Vite port (`--port 5174`)  and the exposedPort (`-Ddaikoku.exposedOn=5174`) in sbt console or stop the conflicting process.
+### Running backend tests
 
-### PostgreSQL connection issues
-
-Make sure the container is running:
+To tun backend test, you'll first need to run postgres (if not already done) :
 
 ```bash
-docker ps | grep postgres_daikoku
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
-Test database access:
+Then you can run backend test using either your IDE or
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku
+sbt test
+```
+
+### Running frontend tests
+
+First of all, you'll need a running postgres instance (if not already started):
 
 ```bash
-docker exec -it postgres_daikoku psql -U postgres -d postgres -c '\dt'
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
-### sbt not reloading properly
+#### LDAP
 
-Ensure you’re running **JDK 21+** and clear the build cache if needed:
+First start backend
 
-```bash
-sbt clean
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=$DAIKOKU_PROJECT_ROOT/dev/config/daikoku_state_ldap.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
 ```
 
-### Node dependency problems
+Finally start frontend
 
-Clean and reinstall:
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
+``` sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
+npm run dev
 ```
 
----
+You can start tests, for instance with UI:
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
+npx playwright test --workers 1 --config ./tests/playwright.config.js --ui --project chromium
+```
+
+
+#### OIDC
+
+First start backend
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=$DAIKOKU_PROJECT_ROOT/dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
+```
+
+Finally start frontend
+
+``` sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
+npm run dev
+```
+
+You can start tests, for instance with UI:
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/daikoku/javascript
+npx playwright test --workers 1 --config ./tests/playwright.oidc.config.js --ui --project chromium
+```
+
+### Running doc
+
+```sh
+cd $DAIKOKU_PROJECT_ROOT/manual
+npm start
+```
+
+## Demo data
+
+If you did setup you Daikoku instance with pre-defined data, you'll have to use one of the following users:
+
+- admin@foo.bar / password (daikoku admin)
+- dwight.schrute@dundermifflin.com / password (User rights on "Vendeurs" team)
+- jim.halpert@dundermifflin.com / password (Admin rights on "Vendeurs" and "Logistique" teams)
+- michael.scott@dundermifflin.com / password (daikoku admin)
+
 
 ## Contribution Tips
 

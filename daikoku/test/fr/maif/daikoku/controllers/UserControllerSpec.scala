@@ -127,18 +127,26 @@ class UserControllerSpec()
         users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val teamInvitationNotif = Notification(
@@ -195,6 +203,7 @@ class UserControllerSpec()
         apis = Seq(defaultApi.api),
         usagePlans = defaultApi.plans,
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif, teamInvitationNotif),
         teams = Seq(
@@ -245,8 +254,8 @@ class UserControllerSpec()
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      // subscription is now fully deleted
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation
@@ -459,18 +468,26 @@ class UserControllerSpec()
           Set(UserWithPermission(randomUser.id, TeamPermission.Administrator))
       )
 
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = userPersonalTeam.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test"
+      )
       val personalSubscription = ApiSubscription(
         id = ApiSubscriptionId("1"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = defaultApi.plans.head.id,
         createdAt = DateTime.now(),
         team = userPersonalTeam.id,
         api = defaultApi.api.id,
         by = randomUser.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
 
       val teamInvitationNotif = Notification(
@@ -527,6 +544,7 @@ class UserControllerSpec()
         apis = Seq(defaultApi.api),
         usagePlans = defaultApi.plans,
         subscriptions = Seq(personalSubscription),
+        keyrings = Seq(keyring),
         subscriptionDemands = Seq(subscriptionDemand),
         notifications = Seq(subDemandNotif, teamInvitationNotif),
         teams = Seq(
@@ -585,8 +603,8 @@ class UserControllerSpec()
         5.second
       )
 
-      _maybeSubscription.isDefined mustBe true
-      _maybeSubscription.forall(_.deleted) mustBe true
+      // subscription is fully deleted
+      _maybeSubscription mustBe empty
 
       // test if notification by user, for user are cleaned
       // 1 - teamInvitation

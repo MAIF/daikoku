@@ -1,0 +1,33 @@
+version: "0.5"
+
+processes:
+  Postgres:
+    command: |
+      if [[ $DB = "true" ]] ;
+      then mise run pg:clean ;
+      mise run pg ;
+      else echo Database is already running, wont start one ;
+      fi
+    readiness_probe:
+      exec:
+        command: "nc -z localhost 5432 > /dev/null 2> /dev/null"
+      initial_delay_seconds: 3
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    shutdown:
+      command: |
+        if $DB = "true" ;
+        then echo "killing database..." ;
+        mise run pg:clean ;
+        else echo "disconnecting from container logs..." ;
+        fi
+  Tests:
+    command: sbt --color=true test
+    depends_on:
+      Postgres:
+        condition: process_healthy
+    working_dir: "daikoku"
+    availability:
+      exit_on_end: true

@@ -1,6 +1,5 @@
 
-import { JSX, PropsWithChildren, ReactNode } from 'react';
-import { IModalProps } from './ApiSelectModal';
+import { JSX, ReactNode } from 'react';
 import { IBaseModalProps } from './types';
 
 /**
@@ -16,10 +15,10 @@ import { IBaseModalProps } from './types';
         {content}
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => close()}>
+        <button type="button" className="btn --secondary" onClick={() => close()}>
           {translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => actionAndClose()}>
+        <button type="button" className="btn --primary" onClick={() => actionAndClose()}>
           {actionLabel}
         </button>
       </div>

@@ -1,29 +1,28 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from 'classnames';
 import { subHours } from 'date-fns';
-import { GraphQLClient } from "graphql-request";
 import { useContext, useMemo, useState } from "react";
-import Pagination from 'react-paginate';
 
+import Pagination from '../../utils/Pagination';
 import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
+import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from '../../../services';
 import { IAuditTrailEventGQL } from '../../../types';
 import { Filter } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import { Can, formatDate, manage, tenant } from '../../utils';
-import { GlobalContext } from "../../../contexts/globalContext";
 
 type NotificationColumnMeta = {
   style?: { [x: string]: string };
 };
 declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
 }
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
-  const queryClient = useQueryClient();
 
   const { alert } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
@@ -96,7 +95,7 @@ export const AuditTrailList = () => {
         return (
           <button
             type="button"
-            className="btn btn-sm btn-outline-info"
+            className="btn --secondary --small"
             onClick={() => alert({
               title: translate('Event.details.modal.title'),
               message: <pre style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color: '#{"var(--level2_text-color, #6c757d)"}', padding: 10 }}>
@@ -136,7 +135,6 @@ export const AuditTrailList = () => {
     setFrom(from);
     setTo(to);
   };
-
   return (
     <Can I={manage} a={tenant} dispatchError>
       <main>

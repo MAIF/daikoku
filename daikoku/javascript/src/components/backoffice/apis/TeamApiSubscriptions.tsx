@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import Pagination from 'react-paginate';
+import Pagination from '../../utils/Pagination';
 import { toast } from "sonner";
 
 import { I18nContext, ModalContext } from "../../../contexts";
@@ -27,6 +27,7 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
+import { Link, Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -39,11 +40,6 @@ type SubscriptionsFilter = {
 };
 export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string;
-  apiKey: {
-    clientName: string;
-    clientId: string;
-    clientSecret: string;
-  };
   plan: IUsagePlan;
   team: {
     _id: string;
@@ -63,19 +59,12 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  parent?: {
+  keyring?: {
     _id: string;
-    adminCustomName: string;
-    enabled: boolean;
-    validUntil: number;
-    api: {
-      _id: string;
-      name: string;
-    };
-    plan: {
-      _id: string;
-      customName: string;
-      type: string;
+    customName: string | null;
+    subscriptionsCount: number;
+    apiKey: {
+      clientName: string;
     };
   };
 }
@@ -123,7 +112,7 @@ export const TeamApiSubscriptions = ({
   const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
   const columns = [
     columnHelper.accessor(
-      (row) => row.adminCustomName || row.apiKey.clientName,
+      (row) => row.adminCustomName || row.keyring?.apiKey.clientName || '',
       {
         id: "subscription",
         header: translate("Name"),
@@ -131,20 +120,20 @@ export const TeamApiSubscriptions = ({
         enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
-          if (sub.parent) {
+          if ((sub.keyring?.subscriptionsCount ?? 0) > 1) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
-              <li>${translate("Api")}: ${sub.parent.api.name}</li>
-              <li>${translate("Plan")}: ${sub.parent.plan.customName}</li>
-              <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
+              <li>${translate("aggregated.apikey.badge.keyring.name")}: ${sub.keyring?.customName ?? sub.keyring?.apiKey.clientName ?? ''}</li>
             </ul>
           </div>`;
             return (
-              <div className="d-flex flex-row justify-content-between">
+              <div className="d-flex flex-row justify-content-between align-items-center">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge badge-custom">A</div>
+                  <div className="badge --primary">
+                    <Link />
+                  </div>
                 </BeautifulTitle>
               </div>
             );
@@ -179,7 +168,7 @@ export const TeamApiSubscriptions = ({
         const sub = info.row.original;
         return (
           <SwitchButton
-            disabled={sub.parent && !sub.parent?.enabled}
+            disabled={false}
             ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             onSwitch={(value) => {
               return Services.archiveSubscriptionByOwner(
@@ -225,38 +214,38 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const sub = info.row.original;
         return (
-          <div className="btn-group">
+          <div className="btn-group gap-1">
             <BeautifulTitle title={translate("Update metadata")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
-                <i className="fas fa-pen" />
+                <Pen />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("Refresh secret")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
               >
-                <i className="fas fa-sync" />
+                <RefreshCw />
               </button>
             </BeautifulTitle>
             <BeautifulTitle title={translate("api.delete.subscription")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn --tertiary --small --icon-only"
                 aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >
-                <i className="fas fa-trash-alt"></i>
+                <Trash2 />
               </button>
             </BeautifulTitle>
           </div>
@@ -315,7 +304,7 @@ export const TeamApiSubscriptions = ({
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.regenerateApiKeySecret(currentTeam._id, sub._id),
+      Services.regenerateApiKeySecret(currentTeam._id, sub.keyring!._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
@@ -351,7 +340,7 @@ export const TeamApiSubscriptions = ({
 
   const deleteApiSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
+      Services.deleteApiSubscription(sub.team._id, sub._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
@@ -384,9 +373,9 @@ export const TeamApiSubscriptions = ({
 
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-      <div className="d-flex flex-row justify-content-start align-items-center mb-2">
+      <div className="d-flex flex-row justify-content-start align-items-center gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-info"
+          className="btn --tertiary"
           onClick={() =>
             openFormModal({
               actionLabel: translate("Filter"),
@@ -418,13 +407,13 @@ export const TeamApiSubscriptions = ({
           {translate("Filter")}
         </button>
         {!!filters && (
-          <div
-            className="clear cursor-pointer ms-1"
+          <button
+            className="btn --secondary"
             onClick={() => setFilters(undefined)}
           >
-            <i className="far fa-times-circle me-1" />
+            <RefreshCcw size={16} />
             <Translation i18nkey="clear filter">clear filter</Translation>
-          </div>
+          </button>
         )}
       </div>
       <div className="col-12">

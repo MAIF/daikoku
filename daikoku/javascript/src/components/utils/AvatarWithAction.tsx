@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Tooltip as ReactToolTip } from 'react-tooltip';
 import { nanoid } from 'nanoid';
+import React, {ReactNode, useEffect, useState} from 'react';
 import { BeautifulTitle } from './BeautifulTitle';
-import { IUser, IUserSimple } from '../../types';
+
+import { IUserSimple } from '../../types';
 
 type Props = {
   avatar?: string;
@@ -12,12 +12,12 @@ type Props = {
     action?: ((...args: any[]) => any) | any[];
     redirect?: () => void,
     link?: string;
-    iconClass: string;
+    icon: ReactNode;
     tooltip?: string;
   }[];
 };
 
-export const userHasAvatar = (user: IUserSimple) => user.isGuest || !user.picture.includes('anonymous')
+export const userHasAvatar = (user: IUserSimple) => user.isGuest || !user.picture?.includes('anonymous')
 
 export const getInitials = (fullName: string): string | undefined => {
   if (!fullName) return "";
@@ -48,39 +48,36 @@ export const AvatarWithAction = (props: Props) => {
       setSecondaryActions([]);
     }
     action();
+
   };
 
-  const getAction = (action: any, idx: any) => {
+  const getAction = (action: any) => {
     const uuid = nanoid();
     let ActionComponent;
 
     if (Array.isArray(action.action)) {
       ActionComponent = (
         <span>
-          <i
-            className={action.iconClass}
-            onClick={() => {
-              // ReactToolTip.hide();
-              setSecondaryActions(action.action);
-            }}
-          />
+          {React.cloneElement(action.icon, { onClick: () => setSecondaryActions(action.action) })}
         </span>
       );
     } else if (action.link) {
       ActionComponent = (
         <a href={action.link} target='_blank' aria-label={action.ariaLabel}>
-          <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+          {React.cloneElement(action.icon, { onClick: () => handleAction(action.action) })}
         </a>
       );
     } else if (action.redirect) {
       ActionComponent = (
         <span onClick={() => action.redirect()} aria-label={action.ariaLabel}>
-          <i className={action.iconClass} />
+          {action.icon}
         </span>
       );
     } else {
       ActionComponent = (
-        <i className={action.iconClass} onClick={() => handleAction(action.action)} aria-label={action.ariaLabel} />
+        <a href={action.link} target='_blank' aria-label={action.ariaLabel}>
+          {React.cloneElement(action.icon, { onClick: () => handleAction(action.action) })}
+        </a>
       );
     }
 
@@ -108,8 +105,8 @@ export const AvatarWithAction = (props: Props) => {
           {!props.avatar?.includes('anonymous') && !!props.avatar && <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />}
         </div>
         <div className="avatar-with-action__infos" id={id}>{props.infos}</div>
-        {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}
-        {!!secondaryActions.length && secondaryActions.map((action, idx) => getAction(action, idx))}
+        {!secondaryActions.length && props.actions.map((action) => getAction(action))}
+        {!!secondaryActions.length && secondaryActions.map((action) => getAction(action))}
       </div>
     </div>
   );

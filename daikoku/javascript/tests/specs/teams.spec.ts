@@ -1,7 +1,8 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { DWIGHT, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam, updateUserRightForTeam } from './utils';
+import { after } from 'lodash';
 
 
 test.beforeEach(async () => {
@@ -50,7 +51,9 @@ test("un admin daikoku peut creer une équipe quelque soit la securité", async 
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' })).toBeHidden();
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Réglage du tenant' }).click();
+
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Équipes', { exact: true }).click();
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
@@ -99,7 +102,8 @@ test("un admin de tenant peut creer une équipe quelque soit la securité", asyn
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' })).toBeHidden();
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Réglage du tenant' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Équipes', { exact: true }).click();
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
@@ -152,7 +156,7 @@ test("Inviter un utilisateur dans une équipe sans caseSensitive", async ({ page
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByRole('textbox', { name: 'Email' }).fill('Andy.BERNARD@dundermifflin.com');
   await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
-  await page.waitForTimeout(1000);
+  // await page.waitForTimeout(1500);
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await page.waitForTimeout(1000);
@@ -168,13 +172,13 @@ test("Inviter un utilisateur dans une équipe sans caseSensitive", async ({ page
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
-  
+
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Se connecter' }).click();
   await page.locator('input[name="username"]').fill('michael.scott@dundermifflin.com');
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  
+
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await page.getByRole('link', { name: 'API Division' }).click();
   await page.getByText('Membres').click();
@@ -225,6 +229,7 @@ test("inviter un utilisateur plusieurs fois en case insensitive ne doit pas cré
   await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
   await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
   await page.waitForTimeout(1000)
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await page.waitForTimeout(1000)
@@ -252,11 +257,65 @@ test("inviter un utilisateur plusieurs fois en case insensitive ne doit pas cré
   await page.getByRole('textbox', { name: 'Email' }).click();
   await page.getByRole('textbox', { name: 'Email' }).fill('andy.bernard@dundermifflin.com');
   await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Paramètres Daikoku' }).click();
   await page.getByText('Utilisateurs', { exact: true }).click();
-  expect(page.getByText('Andy Bernard').first()).toBeVisible;
-  expect(page.getByText('Andy Bernard').nth(1)).not.toBeAttached();
+  await expect(page.getByText('Andy Bernard')).toBeVisible();
+  await expect(page.getByText('Andy Bernard').nth(1)).not.toBeAttached();
 });
+
+test("[#1092] - un membre simple d'une équipe ne peut pas accéder à la page d'édition (redirigé vers le dashboard + toast)", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+
+  await page.goto(`/api-division/settings/edition`);
+
+  await expect(page.getByText('Unauthorized').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/apis/);
+});
+
+test("[#1092] - un administrateur d'équipe peut accéder à la page d'édition", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page);
+
+  await page.goto(`/vendeurs/settings/edition`);
+
+  await expect(page).toHaveURL(/\/vendeurs\/settings\/edition/);
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeVisible();
+});
+
+
+test("[#1079] - un membre non admin et non api editor d'une équipe ne doit pas voir les entrées de menu vers assets, Information, Revenus et Statistiques", async ({ page }) => {
+  await updateUserRightForTeam({
+    teamId: apiDivision,
+    userId: DWIGHT.id!,
+    right: "User"
+  });
+  await page.goto(ACCUEIL);
+  await loginAs(DWIGHT, page);
+
+  await page.goto(`/api-division/settings/dashboard`);
+
+  const sideBarLocator = page.getByText('API DivisionParamètres')
+  await expect(sideBarLocator.getByText('Membres')).toBeVisible()
+  await expect(sideBarLocator.getByText('Informations')).not.toBeVisible();
+  await expect(sideBarLocator.getByText('Assets')).not.toBeVisible();
+  await expect(sideBarLocator.getByText('Revenus')).not.toBeVisible();
+  await expect(sideBarLocator.getByText('Statistiques')).not.toBeVisible();
+})
+
+test("[#1079] - l'admin d'une équipe voit toutes les entrées de menu associée à son équipe", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`/api-division/settings/dashboard`);
+
+  const sideBarLocator = page.getByText('API DivisionParamètres')
+  await expect(sideBarLocator.getByText('Informations')).toBeVisible();
+  await expect(sideBarLocator.getByText('Assets')).toBeVisible();
+  await expect(sideBarLocator.getByText('Statistiques')).toBeVisible();
+  await expect(sideBarLocator.getByText('Revenus')).toBeVisible();
+})

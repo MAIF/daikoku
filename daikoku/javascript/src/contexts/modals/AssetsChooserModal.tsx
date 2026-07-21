@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
-import { useContext, useState } from 'react';
+import { ReactNode, useContext, useState } from 'react';
 
 import { BeautifulTitle } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IAsset, ITeamSimple } from '../../types';
 import { ResponseError, isError } from '../../types/api';
-import { ModalContext } from '../modalContext';
+import { ModalContext } from '../modalContextInstance';
 import { IAssetSelectorModalProps, IBaseModalProps } from './types';
 
 export const MimeTypeFilter = {
@@ -81,10 +81,10 @@ export const AssetSelectorModal = (props: IAssetSelectorModalProps & IBaseModalP
       </div>
     </div>
     <div className="modal-footer">
-      <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+      <button type="button" className="btn --secondary" onClick={props.close}>
         <Translation i18nkey="Close">Close</Translation>
       </button>
-      <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
+      <button type="button" className="btn --primary" onClick={() => selectAssetAndCloseModal()}>
         <Translation i18nkey="Select">Select</Translation>
       </button>
     </div>
@@ -99,7 +99,7 @@ type AssetChooserProps = {
   label: string,
   classNames?: string,
   onSelect: (asset: IAsset) => void,
-  icon?: string
+  icon?: ReactNode
   noClose?: boolean
 }
 
@@ -159,7 +159,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
 
   if (assetsRequest.isLoading) {
     return (
-      <button type="button" className="btn btn-outline-success ms-1" disabled>
+      <button type="button" className="btn --sedcondary --small" disabled>
         <Translation i18nkey="loading">loading...</Translation>
       </button>
     );
@@ -168,7 +168,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     return (
       <button
         type="button"
-        className={props.classNames ? props.classNames : classNames('btn btn-outline-primary ms-1', { disabled: !assets.length })}
+        className={props.classNames ? props.classNames : classNames('btn --secondary --small', { disabled: !assets.length })}
         onClick={() => assets.length &&
           openAssetSelectorModal({
             assets,
@@ -178,26 +178,12 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
           })
         }
       >
-        <i
-          className={
-            props.icon
-              ? props.icon
-              : classNames('fas me-1', {
-                'fa-user-circle': !!props.onlyPreview,
-                'fa-file': !props.onlyPreview,
-              })
-          }
-        />{' '}
         {props.label}
       </button>
     );
   } else {
     return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
-      <button type="button" className="btn btn-outline-info ms-1 cursor-help" disabled>
-        <i className={classNames('fas', {
-          'fa-user-circle me-1': !!props.onlyPreview,
-          'fa-file me-1': !props.onlyPreview,
-        })} />
+      <button type="button" className="btn --secondary --icon-only ms-1 cursor-help" disabled>
         {props.label}
       </button>
     </BeautifulTitle>);

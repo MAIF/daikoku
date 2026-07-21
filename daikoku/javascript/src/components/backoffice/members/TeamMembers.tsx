@@ -22,6 +22,7 @@ import {
 
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
+import { Pen, Shield, Trash2, User, UserCog } from "lucide-react";
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -99,8 +100,8 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
           if (ok) {
             const teamId = currentTeam._id;
             Services.removeMemberFromTeam(teamId, member._id)
-              .then(({ done, team }) => {
-                done
+              .then(({ done }) => {
+                return done
                   ? toast.success(translate({ key: 'remove.member.success', replacements: [member.name] }))
                   : toast.error(translate('Failure'));
               })
@@ -115,7 +116,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
     return Services.addMembersToTeam(teamId, [member._id])
       .then(({ done }) => {
         setState({ ...state, selectedMember: undefined });
-        done
+        return done
           ? toast.success(translate({ key: 'member.now.invited', replacements: [member.name] }))
           : toast.error(translate('Failure'));
       })
@@ -147,7 +148,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
         const newPermission = userHavePemission(member, permission) ? user : permission;
         Services.updateTeamMemberPermission(teamId, [member._id], newPermission)
           .then(({ done }) => {
-            done
+            return done
               ? toast.success(translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] }))
               : toast.error(translate('Failure'));
           })
@@ -199,7 +200,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <Can I={manage} a={team} team={currentTeam}>
-        <button className="btn btn-outline-success" type="button" onClick={() => {
+        <button className="btn --primary" type="button" onClick={() => {
           openInvitationTeamModal({
             team: currentTeam,
             searchLdapMember: searchLdapMember,
@@ -239,15 +240,15 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       alert({
         message: <div className="d-flex flex-column">
           <div>
-            <i className="fas fa-shield-alt me-1" />
+            <Shield className="me-1" />
             {translate('permission.caption.administrator')}
           </div>
           <div>
-            <i className="fas fa-pencil-alt me-1" />
+            <Pen className="me-1" />
             {translate('permission.caption.apiEditor')}
           </div>
           <div>
-            <i className="fas fa-user-alt me-1" />
+            <User className="me-1" />
             {translate('permission.caption.user')}
           </div>
           {/* @ts-ignore */}
@@ -255,36 +256,36 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       });
     }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
       const isAdmin = userHavePemission(member, administrator);
-      const isApiEditor = userHavePemission(member, apiEditor); 
-      
+      const isApiEditor = userHavePemission(member, apiEditor);
+
       return (<AvatarWithAction key={member._id} avatar={member.picture} name={member.name} infos={<>
-        {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
-        {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />)}
+        {userHavePemission(member, administrator) && (<Shield style={{ marginRight: '10px' }} />)}
+        {userHavePemission(member, apiEditor) && (<Pen style={{ marginRight: '10px' }} />)}
         <span className="team-member__name">{member.name}</span>
       </>} actions={CanIDoAction(connectedUser, manage, team, currentTeam) ? [
         {
           action: () => removeMember(member),
-          iconClass: 'fas fa-trash delete-icon',
+          icon: <Trash2 className="delete-icon" />,
           tooltip: translate('Remove member'),
         },
         {
           action: [
             {
               action: () => togglePermission(member, administrator),
-              iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'}`,
+              icon: <Shield className={isAdmin ? 'admin-active' : 'admin-inactive'} />,
               tooltip: `${isAdmin
                 ? translate('Remove administrator status')
                 : translate('Add administrator status')}`,
             },
             {
               action: () => togglePermission(member, apiEditor),
-              iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'}`,
+              icon: <Pen className={isApiEditor ? 'admin-active' : 'admin-inactive'} />,
               tooltip: `${isApiEditor
                 ? translate('Remove api editor status')
                 : translate('Add api editor status')}`,
             },
           ],
-          iconClass: 'fas fa-user-cog',
+          icon: <UserCog />,
           tooltip: translate('Manage permissions'),
         },
       ] : []} />);
@@ -310,7 +311,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
                         .then(() => updateMembers(currentTeam));
                   });
               },
-              iconClass: 'fas fa-trash delete-icon',
+              icon: <Trash2 className="delete-icon" />,
               tooltip: translate('Remove invitation'),
             },
           ] : []} />);

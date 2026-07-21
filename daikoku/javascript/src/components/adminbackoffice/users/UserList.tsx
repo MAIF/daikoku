@@ -10,12 +10,13 @@ import * as Services from '../../../services';
 import { IUserSimple, isError } from '../../../types';
 import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
 import { constraints, type } from '@maif/react-forms';
+import { HatGlasses, Pen, Shield, Trash2, UserCheck } from "lucide-react";
 
 export const UserList = () => {
   const { connectedUser } = useContext(GlobalContext);
   useDaikokuBackOffice();
 
-  const { alert, confirm, openFormModal } = useContext(ModalContext);
+  const { alert, openFormModal } = useContext(ModalContext);
 
   const [users, setUsers] = useState<Array<IUserSimple>>([]);
   const [search, setSearch] = useState<string>();
@@ -106,28 +107,28 @@ export const UserList = () => {
               avatar={user.picture}
               name={user.name}
               infos={<>
-                {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
+                {user.isDaikokuAdmin && (<Shield style={{ marginRight: '10px' }} />)}
                 <span className="team__name text-truncate">{user.name}</span>
               </>}
               actions={[
                 {
                   action: () => removeUser(user),
-                  iconClass: 'fas fa-trash delete-icon',
+                  icon: <Trash2 className="delete-icon" />,
                   tooltip: translate('Remove user'),
                 },
                 {
                   redirect: () => navigate(`/settings/users/${user._humanReadableId}`),
-                  iconClass: 'fas fa-pen',
+                  icon: <Pen />,
                   tooltip: translate('Edit user'),
                 },
                 {
                   link: `/api/admin/users/${user._id}/_impersonate`,
-                  iconClass: 'fas fa-user-ninja',
+                  icon: <HatGlasses />,
                   tooltip: translate('Impersonate this user'),
                 },
                 {
                   action: () => toggleAdmin(user),
-                  iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'}`,
+                  icon: <Shield className={user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'} />,
                   tooltip: translate('toggle admin status'),
                 },
               ]} />);

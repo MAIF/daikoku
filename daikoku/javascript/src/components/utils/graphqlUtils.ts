@@ -1,4 +1,4 @@
-import { ITeamSimple, ITenant } from '../../types';
+import { ITeamSimple } from '../../types';
 import { ITeamFullGql } from '../../types/gql';
 
 export const teamGQLToLegitTeam = (teamGQL: ITeamFullGql): ITeamSimple => {

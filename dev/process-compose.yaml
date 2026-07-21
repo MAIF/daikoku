@@ -1,0 +1,120 @@
+version: "0.5"
+
+disable_env_expansion: true
+env_cmds:
+  DAIKOKU_POSTGRES_DATABASE: " [ $TEST ] && echo 'daikoku_test' || echo 'daikoku' "
+processes:
+  Postgres:
+    command: |
+      if nc -z localhost 5432 > /dev/null 2> /dev/null ;
+      then echo Database is already running, wont start one ;
+      else mise run pg:clean --name tmp-daikoku-postgres ;
+      mise run pg --name tmp-daikoku-postgres ;
+      fi
+    shutdown:
+      command: |
+        mise run pg:clean --name tmp-daikoku-postgres
+  Containers:
+    working_dir: "dev"
+    command: |
+      if [[ $MODE = "ldap" ]] ;
+      then docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up ;
+      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+      then docker-compose -f docker-compose-local.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml up ;
+      else docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up ;
+      fi
+    readiness_probe:
+      http_get:
+        host: otoroshi-api.oto.tools
+        scheme: http
+        path: "/health"
+        port: 8080
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 20
+    shutdown:
+      command: |
+        if [[ $MODE = "ldap" ]] ;
+        then docker-compose -f dev/docker-compose-ldap.yml down && docker-compose -f dev/docker-compose-ldap.yml rm -f ;
+        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+        then docker-compose -f dev/docker-compose-local.yml down && docker-compose -f dev/docker-compose-local.yml rm -f ;
+        else docker-compose -f dev/docker-compose-oidc.yml down && docker-compose -f dev/docker-compose-oidc.yml rm -f ;
+        fi
+  Backend:
+    env_cms:
+      DAIKOKU_OTOROSHI_SYNC_CRON: " [ $TEST ] && echo 'false' || echo 'true' "
+    working_dir: "daikoku"
+    command: |
+      echo $DAIKOKU_POSTGRES_DATABASE
+      export sbt_args=$( [ ${COVERAGE} ] && echo "coverage run" || echo "~run" );
+      sbt_params=" -Dconfig.resource=local.conf --color=true -jvm-debug 5005"
+      if [[ $MODE = "ldap" ]] ;
+      then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_ldap.ndjson sbt $sbt_args $sbt_params ;
+      elif [[ $MODE = "local" ]] ;
+      then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_local.ndjson sbt $sbt_args $sbt_params ;
+      elif [[ $MODE = "empty" ]] ;
+      then DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params
+      else DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
+      fi
+    is_tty: true
+    depends_on:
+      Containers:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: localhost
+        scheme: http
+        path: "/health"
+        port: 9000
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 1000000
+  Frontend:
+    working_dir: "daikoku/javascript"
+    command: "FORCE_COLOR=1 npm run dev"
+    depends_on:
+      Containers:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: localhost
+        scheme: http
+        path: "/health"
+        port: 5173
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 1000000
+  Database-shell:
+    command: |
+      mise run pg:cli -d ${DAIKOKU_POSTGRES_DATABASE}
+    is_interactive: true
+    depends_on:
+      Backend:
+        condition: process_healthy
+  Test:
+    environment:
+      - "PLAYWRIGHT_HTML_OPEN=never"
+      - "FORCE_COLOR=1"
+    working_dir: "daikoku/javascript"
+    depends_on:
+      Frontend:
+        condition: process_healthy
+    command: |
+      pui=$( [ -z ${COVERAGE} ] && echo "--ui" ) ;
+      pargs="--workers 1 ${pui}"
+      if [[ $MODE = "ldap" ]] ;
+      then npx playwright test --config ./tests/playwright.config.js ${pargs} ;
+      elif [[ $MODE = "oidc" ]] ;
+      then npx playwright test --config ./tests/playwright.oidc.config.js ${pargs} ;
+      elif [[ $MODE = "local" ]] ;
+      then npx playwright test --config ./tests/playwright.local.config.js ${pargs} ;
+      else echo "no tests for this mode" ;
+      fi
+    availability:
+      exit_on_end: true # todo should be for coverage only, not tests

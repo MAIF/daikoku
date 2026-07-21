@@ -1,0 +1,205 @@
+[tools]
+java = "temurin-21"
+sbt = "1.12"
+node = "24"
+"github:F1bonacc1/process-compose" = "1"
+
+
+[tasks.pg]
+usage='''
+flag "--name <name>" help="postgres docker container name" default="daikoku-postgres"
+'''
+description="Run Postgres database in docker container. Use this task if you want to keep a postgres database running in background instead of recreating one each time."
+dir="dev"
+run='''
+docker run -e POSTGRES_PASSWORD="postgres" -e POSTGRES_USER="postgres" -p 5432:5432 --volume ./postgres:/docker-entrypoint-initdb.d --name ${usage_name} postgres
+'''
+
+[tasks."pg:clean"]
+usage='''
+flag "--name <name>" help="postgres docker container name" default="daikoku-postgres"
+'''
+description="Clean Postgres database used by 'pg' task. This will delete container (and therefore associated data)."
+dir="dev"
+run='''
+if docker container inspect ${usage_name} > /dev/null 2>&1 ;
+then echo "Stopping container ${usage_name}" ;
+docker rm -f ${usage_name} ;
+else echo "No container ${usage_name} existing, nothing to clean" ;
+fi ;
+'''
+
+[tasks."install:doc"]
+description="Install node dependencies for manual. Don't use this task directly, use 'install' task instead."
+dir = "manual"
+hide=true
+run = "npm install"
+
+[tasks."install:playwright"]
+description="Install needed browser for playwright. Don't use this task directly, use 'install' task instead."
+dir = "daikoku/javascript"
+hide=true
+run = "npx playwright install chromium"
+
+[tasks."install:frontdeps"]
+description="Install node fontend dependencies. Don't use this task directly, use 'install' task instead."
+dir = "daikoku/javascript"
+hide=true
+run = "npm install"
+
+[tasks."install:front"]
+description="Install everything needed to run daikoku frontend, frontend tests & manual. Don't use this task directly, use 'install' task instead."
+dir = "daikoku/javascript"
+hide=true
+run = [{task = "install:frontdeps"}, {task = "install:playwright"},  {task = "install:doc"}]
+
+
+[tasks."install:back"]
+description="Compile daikoku backend, installing missing dependency if needed. Don't use this task directly, use 'install' task instead."
+dir = "daikoku"
+hide=true
+run = "sbt compile"
+
+[tasks.install]
+description="Install everything you need to run daikoku back / front / manual / tests / ..."
+run = [{task = "install:front"}, {task = "install:back"}]
+
+[tasks."pg:cli"]
+description="Open psql client to postgres database, used to provide basic sql access in process-compose"
+usage = '''
+flag "-d <d>" help="Database to connect to" default="daikoku" {
+  choices "daikoku" "daikoku_test"
+}
+'''
+run = '''
+if $(docker inspect daikoku-postgres | grep -q "running") ;
+then docker exec -it daikoku-postgres psql -U postgres -d $usage_d;
+elif $(docker inspect tmp-daikoku-postgres | grep -q "running") ;
+then docker exec -it tmp-daikoku-postgres psql -U postgres -d $usage_d ;
+elif [ -v psql ] ;
+then PGGSSENCMODE=disable PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d $usage_d ;
+else echo "Sorry, no postgres container nor psql executable found, can't connect to database" ;
+fi ;
+'''
+
+[tasks.dev]
+description='''
+Start daikoku instance.
+--mode parameter indicate auth provider to use, --test flag indicate to start playwright test UI (ldap/oidc mode only)
+'''
+usage = '''
+flag "--mode <mode>" help="Initialization mode" default="local" {
+  choices "ldap" "oidc" "local" "empty"
+}
+flag "--test" help="Display playwright test ui, only for oidc and local modes"
+'''
+
+run = '''
+if [[ $usage_test = 'true' ]] && ( [[ $usage_mode = 'empty' ]] ) ;
+then echo "--test flag and --mode empty are not compatible" ;
+exit 1;
+fi;
+
+if [[ $usage_test = 'true' ]] ;
+then echo '--test is specified, starting playwright test ui' ;
+else PC_DISABLED_PROCESSES="Test" ;
+fi ;
+
+TEST=$usage_test MODE=$usage_mode PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose --hide-disabled -f ./dev/process-compose.yaml -p 9999;
+'''
+
+[tasks.doc]
+description = "run daikoku documentation locally"
+dir = "manual"
+run = "npm start"
+
+[tasks."seed:update"]
+description="Update Daikoku seed file (for instance all dev/config/*.ndjson files) and update root theme for these files."
+run = "scripts/update-seeds.sh \"${DAIKOKU_URL:-http://localhost:9000}\" \"${ADMIN_USERNAME:-admin@foo.bar}\" \"${ADMIN_PASS:-password}\" \"${TENANT_ID:-default}\""
+
+[tasks."test:back"]
+description="Run Daikoku backend tests"
+run = '''
+if nc -z localhost 5432 > /dev/null 2> /dev/null ;
+then echo echo "Database seems to be running (port 5432 is used). Will not start another DB." ;
+DB=false
+else echo "No database running (port 5432 is free), will start one" ;
+DB=true
+fi ;
+DB=$DB process-compose -f ./dev/process-compose-test.yaml -p 9999 -t=false
+'''
+
+
+# =============================================================================
+# Consolidated Scala coverage: backend unit tests + the 3 e2e suites (ldap /
+# oidc / local), all instrumented, merged into ONE scoverage report.
+#
+#   mise run coverage
+#
+# How it works: one instrumented build; after each run the scoverage measurement
+# files are harvested out to `coverage-measurements/` (tagged per run so nothing
+# collides), then reassembled before `coverageReport`. See
+# scripts/coverage-measurements.sh.
+#
+# NOTE: local-only — it drives the backend via sbt. CI runs a prebuilt (optimised,
+# non-instrumented) Docker image, so this cannot run there as-is.
+# =============================================================================
+
+[tasks."coverage:reset"]
+hide=true
+run = "bash scripts/coverage-measurements.sh reset"
+
+# Each step chains with `;` (not a mise array) so the harvest ALWAYS runs even when
+# tests fail — coverage is still collected — and the task exits 0 so the top-level
+# `coverage` orchestrator doesn't abort on a red suite.
+[tasks."coverage:unit"]
+hide=true
+dir = "daikoku"
+# Backend tests connect to an external postgres (test/resources/application.conf →
+# database = "daikoku_test"), so start one, wait until daikoku_test answers, run the
+# instrumented tests, harvest, then tear the DB down. `|| true` keeps the harvest running
+# even when tests fail (mise runs tasks under `set -e`) — coverage is collected regardless.
+run = '''
+mise run pg:clean || true ;
+mise run pg &
+echo "[coverage] waiting for postgres (daikoku_test) ..." ;
+n=0 ;
+until nc -z localhost 5432 > /dev/null 2> /dev/null ; do
+  n=$((n+1)) ; [ $n -gt 90 ] && { echo "[coverage] postgres not ready after ~180s, continuing anyway" ; break ; } ; sleep 2 ;
+done ;
+sbt coverage clean test --color=true || true ;
+bash ../scripts/coverage-measurements.sh harvest unit ;
+mise run pg:clean || true
+'''
+
+[tasks."coverage:e2e:ldap"]
+hide=true
+run = "MODE=ldap COVERAGE=true process-compose -f ./dev/process-compose.yaml -p 9999 -t=false || true ; bash ./scripts/coverage-measurements.sh harvest ldap"
+
+[tasks."coverage:e2e:oidc"]
+hide=true
+run = "MODE=oidc COVERAGE=true process-compose -f ./dev/process-compose.yaml -p 9999 -t=false || true ; bash ./scripts/coverage-measurements.sh harvest oidc"
+
+[tasks."coverage:e2e:local"]
+hide=true
+run = "MODE=local COVERAGE=true process-compose -f ./dev/process-compose.yaml -p 9999 -t=false || true ; bash ./scripts/coverage-measurements.sh harvest local"
+
+[tasks."coverage:report"]
+hide=true
+dir = "daikoku"
+run = [
+  "bash ../scripts/coverage-measurements.sh assemble",
+  "sbt coverageReport --color=true",
+  "echo '[coverage] consolidated report → daikoku/target/scala-3.8.2/scoverage-report/index.html'",
+]
+
+[tasks."coverage"]
+description="Compute coverage of both backend tests & playwright test on daikoku backend code."
+run = [
+  {task = "coverage:reset"},
+  {task = "coverage:unit"},
+  {task = "coverage:e2e:ldap"},
+  {task = "coverage:e2e:oidc"},
+  {task = "coverage:e2e:local"},
+  {task = "coverage:report"},
+]

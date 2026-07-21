@@ -221,7 +221,7 @@ object NotificationAction {
       team: TeamId,
       demand: DemandId,
       step: SubscriptionDemandStepId,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      keyring: Option[KeyringId] = None,
       motivation: Option[String]
   ) extends NotificationAction
 
@@ -285,6 +285,12 @@ object NotificationAction {
       subscription: ApiSubscriptionId
   ) extends NotificationAction
 
+  case class ApiSubscriptionExpired(
+      api: ApiId,
+      clientId: String,
+      subscription: ApiSubscriptionId
+  ) extends NotificationAction
+
   case class ApiKeyRotationInProgressV2(
       subscription: ApiSubscriptionId,
       api: ApiId,
@@ -298,9 +304,7 @@ object NotificationAction {
   ) extends NotificationAction
 
   case class ApiKeyRefreshV2(
-      subscription: ApiSubscriptionId,
-      api: ApiId,
-      plan: UsagePlanId,
+      keyring: KeyringId,
       message: Option[String] = None
   ) extends NotificationAction
 

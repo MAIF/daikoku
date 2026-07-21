@@ -102,7 +102,7 @@ object testUtils {
           val newDuration = timeout * 2
           runIfDatabaseAvailable(newDuration)
         } else {
-          FailedStatus
+          fail("Failed to setup tests")
         }
       }
 
@@ -198,6 +198,10 @@ object testUtils {
           daikokuComponents.env.dataStore.translationRepo
             .forAllTenant()
             .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.keyringRepo
+            .forAllTenant()
+            .deleteAll()
       } yield (logger.info("[DaikokuSpecHelper] :: flush database finished"))
     }
 
@@ -220,7 +224,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -242,7 +247,8 @@ object testUtils {
           operations,
           subscriptionDemands,
           usagePlans,
-          translations
+          translations,
+          keyrings
         ),
         5.second
       )
@@ -267,7 +273,8 @@ object testUtils {
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
-        translations: Seq[Translation] = Seq.empty
+        translations: Seq[Translation] = Seq.empty,
+        keyrings: Seq[Keyring] = Seq.empty
     ): Future[Unit] = {
       for {
 //        _ <- waitForDaikokuSetup()
@@ -277,7 +284,7 @@ object testUtils {
         _ <- Source(tenants.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.tenantRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -285,7 +292,7 @@ object testUtils {
         _ <- Source(users.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.userRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -293,7 +300,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.teamRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -301,7 +308,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.usagePlanRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -309,7 +316,15 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
+          )
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(keyrings.toList)
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.keyringRepo
+              .forAllTenant()
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -317,7 +332,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiSubscriptionRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -325,7 +340,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.notificationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -333,28 +348,28 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.consumptionRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(sessions.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.userSessionRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(resets.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.passwordResetRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(creations.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.accountCreationRepo
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -362,7 +377,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.messageRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -370,7 +385,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiIssueRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -378,7 +393,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiPostRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -386,7 +401,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.cmsRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -394,7 +409,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.apiDocumentationPageRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -402,7 +417,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.operationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -410,7 +425,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.subscriptionDemandRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -418,7 +433,7 @@ object testUtils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.translationRepo
               .forAllTenant()
-              .save(i)(using daikokuComponents.env.defaultExecutionContext)
+              .save(i)
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
@@ -1207,7 +1222,6 @@ object testUtils {
       name = "Bobby daikoku Admin",
       email = "bobby.daikoku.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       isDaikokuAdmin = true,
       defaultLanguage = None
@@ -1219,7 +1233,6 @@ object testUtils {
       name = "Bobby tenant Admin",
       email = "bobby.tenant.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       isDaikokuAdmin = false,
       defaultLanguage = None
@@ -1231,7 +1244,6 @@ object testUtils {
       name = "Bobby Admin",
       email = "bobby.admin@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
@@ -1242,7 +1254,6 @@ object testUtils {
       name = "Bobby Editor",
       email = "bobby.editor@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
@@ -1253,7 +1264,6 @@ object testUtils {
       name = "Bobby",
       email = "bobby@gmail.com",
       lastTenant = None,
-      personalToken = Some(IdGenerator.token(32)),
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
@@ -1343,22 +1353,30 @@ object testUtils {
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
+    val adminApiKey = OtoroshiApiKey(
+      clientName = "admin-apikey-test",
+      clientId = IdGenerator.token(10),
+      clientSecret = IdGenerator.token(10)
+    )
+    val adminApiKeyring = Keyring(
+      id = KeyringId("admin-keyring-test"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      apiKey = adminApiKey,
+      otoroshiSettings = KeyringOtoroshiBinding.Internal,
+      createdAt = DateTime.now(),
+      integrationToken = IdGenerator.token(64)
+    )
     val adminApiSubscription = ApiSubscription(
       id = ApiSubscriptionId(IdGenerator.token(32)),
       tenant = Tenant.Default,
-      apiKey = OtoroshiApiKey(
-        clientName = "admin-apikey-test",
-        clientId = IdGenerator.token(10),
-        clientSecret = IdGenerator.token(10)
-      ),
       plan = adminApiPlan.id,
       createdAt = DateTime.now(),
       team = defaultAdminTeam.id,
       api = adminApi.id,
       by = tenantAdmin.id,
       customName = Some("admin key for test"),
-      rotation = None,
-      integrationToken = IdGenerator.token(64)
+      keyring = adminApiKeyring.id
     )
 
     val adminApi2plan = UsagePlan(

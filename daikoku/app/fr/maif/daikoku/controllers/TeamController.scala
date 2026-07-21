@@ -298,9 +298,14 @@ class TeamController(
                     if (emailVerification.validUntil.isAfter(DateTime.now)) {
                       val newTeam = team.copy(verified = true)
                       val result: EitherT[Future, AppError, Result] = (for {
-                        _ <- EitherT.liftF(teamRepo.save(newTeam))
                         _ <- EitherT.liftF(
-                          emailVerificationRepo.deleteById(emailVerification.id)
+                          env.dataStore.withTransaction {
+                            for {
+                              _ <- teamRepo.save(newTeam)
+                              _ <- emailVerificationRepo
+                                .deleteById(emailVerification.id)
+                            } yield ()
+                          }
                         )
                       } yield {
                         Status(302)(
@@ -390,7 +395,7 @@ class TeamController(
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
-                    .deleteLogically(Json.obj("teamId" -> team.id.value))
+                    .delete(Json.obj("teamId" -> team.id.value))
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
@@ -496,7 +501,7 @@ class TeamController(
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)
-                          .deleteLogically(Json.obj("teamId" -> team.id.value))
+                          .delete(Json.obj("teamId" -> team.id.value))
                       _ <-
                         env.dataStore.emailVerificationRepo
                           .forTenant(ctx.tenant)
@@ -775,7 +780,6 @@ class TeamController(
         password =
           Some(BCrypt.hashpw("invited-user-password", BCrypt.gensalt())),
         lastTenant = Some(ctx.tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         invitation = Some(
           UserInvitation(

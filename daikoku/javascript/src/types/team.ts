@@ -33,7 +33,7 @@ export interface IUserSimple {
   _id: string;
   _humanReadableId: string;
   email: string;
-  picture: string;
+  picture?: string;
   isDaikokuAdmin: boolean;
   defaultLanguage?: string;
   isGuest: boolean;

@@ -232,36 +232,6 @@ object LoginFilter {
       case ("get", r"/asset-thumbnails/.*") => Some(pass)
       case (_, r"/admin-api/.*")            => Some(pass)
       case (_, r"/cms-api/.*")              => Some(pass)
-      case (_, r"/integration-api/.*") =>
-        Some(
-          request
-            .getQueryString("token")
-            .orElse(request.headers.get("X-Personal-Token")) match {
-            case None =>
-              AppLogger.info("No personal token found")
-              org.apache.pekko.http.scaladsl.util.FastFuture.successful(
-                Results.Unauthorized(Json.obj("error" -> "not authorized"))
-              )
-            case Some(token) =>
-              env.dataStore.userRepo
-                .findOneNotDeleted(Json.obj("personalToken" -> token))
-                .flatMap {
-                  case None =>
-                    AppLogger.info("No user found")
-                    org.apache.pekko.http.scaladsl.util.FastFuture.successful(
-                      Results
-                        .Unauthorized(Json.obj("error" -> "not authorized"))
-                    )
-                  case Some(_user) =>
-                    val user = _user.copy(tenants = _user.tenants + tenant.id)
-                    nextFilter(
-                      request
-                        .addAttr(IdentityAttrs.TenantKey, tenant)
-                        .addAttr(IdentityAttrs.UserKey, user)
-                    )
-                }
-          }
-        )
       case _ => None
     }
   }
@@ -309,7 +279,24 @@ class LoginFilter(env: Env)(implicit
       theMaybeTeam: Option[Team] <-
         if (maybePersonnalTeam.isDefined)
           FastFuture.successful(maybePersonnalTeam)
-        else teamRepo.save(backupTeam).map(_ => Some(backupTeam))
+        else
+          // Concurrent first-login requests can all reach this branch before any of them
+          // commits. The uniq_team_personal_user index lets a single INSERT win and rejects
+          // the others (the failure is swallowed by reactivePg). We re-read afterwards so we
+          // always return the team that actually persisted, never a phantom backupTeam.
+          teamRepo
+            .save(backupTeam)
+            .flatMap(_ =>
+              teamRepo
+                .findOne(
+                  Json.obj(
+                    "type" -> TeamType.Personal.name,
+                    "users.userId" -> user.id.value,
+                    "_deleted" -> false
+                  )
+                )
+                .map(_.orElse(Some(backupTeam)))
+            )
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)
       // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
@@ -365,7 +352,7 @@ class LoginFilter(env: Env)(implicit
                 LoginFilter
                   .handleWhitelistedRoute(request, tenant, nextFilter, env)
                   .getOrElse {
-                    AppLogger.info("no session found")
+                    AppLogger.debug("no session found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   }
               case Some(sessionId) =>

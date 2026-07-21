@@ -22,7 +22,7 @@ export const ApiIssue = (props: ApiIssueProps) => {
 
   const [filter, setFilter] = useState('open');
   const { translate } = useContext(I18nContext);
-  
+
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all version', label: `${translate('All version')}` });
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export const ApiIssue = (props: ApiIssueProps) => {
     return (
       <div className="container-fluid">
         <Can I={manage} a={API} team={props.ownerTeam} orElse={<Navigate to="/" />}>
-          <TeamApiIssueTags value={api} onChange={onChange} basePath={`${basePath}/issues`} />
+          <TeamApiIssueTags value={api} onChange={onChange} />
         </Can>
       </div>
     );

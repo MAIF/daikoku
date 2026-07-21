@@ -9,6 +9,8 @@ import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { getInitials, Spinner, userHasAvatar } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
+import { Copy, Loader, Save, Trash2, UserCircle } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type TwoFactorAuthenticationProps = {
   user: IUser
@@ -80,7 +82,7 @@ const TwoFactorAuthentication = ({
       {backupCodes ? (
         <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
           <span className="my-3">{translate('2fa.backup_codes_message')}</span>
-          <div className="d-flex w-100 mb-3">
+          <div className="d-flex w-100 mb-3 gap-2">
             <input
               type="text"
               disabled={true}
@@ -88,18 +90,18 @@ const TwoFactorAuthentication = ({
               className="form-control"
             />
             <button
-              className="btn btn-outline-success ms-1"
+              className="btn --secondary"
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(backupCodes);
                 toast.success(translate('Copied'));
               }}
             >
-              <i className="fas fa-copy" />
+              <Copy />
             </button>
           </div>
           <button
-            className="btn btn-outline-success"
+            className="btn --primary"
             type="button"
             onClick={() => window.location.reload()}
           >
@@ -165,7 +167,7 @@ const TwoFactorAuthentication = ({
               required
             />
             <button
-              className="btn btn-outline-success"
+              className="btn --primary"
               type="button"
               onClick={verify}
             >
@@ -182,7 +184,7 @@ const TwoFactorAuthentication = ({
           {user?.twoFactorAuthentication?.enabled ? (
             <button
               onClick={disable2FA}
-              className="btn btn-outline-danger"
+              className="btn --secondary"
               type="button"
             >
               {translate('2fa.disable_action')}
@@ -190,7 +192,7 @@ const TwoFactorAuthentication = ({
           ) : (
             <button
               onClick={getQRCode}
-              className="btn btn-outline-success"
+              className="btn --primary"
               type="button"
             >
               {translate('2fa.enable_action')}
@@ -204,7 +206,7 @@ const TwoFactorAuthentication = ({
             {translate('2fa.backup_codes')}
           </label>
           <div className="col-sm-10">
-            <div className="d-flex">
+            <div className="d-flex gap-2">
               <input
                 type="text"
                 disabled={true}
@@ -212,11 +214,11 @@ const TwoFactorAuthentication = ({
                 className="form-control"
               />
               <button
-                className="btn btn-outline-success ms-1"
+                className="btn --secondary"
                 type="button"
                 onClick={copyToClipboard}
               >
-                <i className="fas fa-copy" />
+                <Copy />
               </button>
             </div>
           </div>
@@ -229,7 +231,6 @@ const TwoFactorAuthentication = ({
 const Avatar = ({
   setValue,
   rawValues,
-  value,
   onChange,
   tenant
 }: any) => {
@@ -307,19 +308,19 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} tenant={tenant} />
       </div>
       <div>
-        <div className="d-flex mt-1 justify-content-end">
-          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
-            <i className="fas fa-user-circle me-1" />
+        <div className="d-flex mt-1 justify-content-end gap-1">
+          <button type="button" className="btn --tertiary" onClick={setGravatarLink}>
+            <UserCircle />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
           {isOtherOriginThanLocal && (
             <button
               type="button"
-              className="btn btn-outline-info"
+              className="btn --tertiary"
               onClick={setPictureFromProvider}
               disabled={rawValues.pictureFromProvider}
             >
-              <i className="fas fa-user-circle me-1" />
+              <UserCircle className="me-1" />
               <Translation i18nkey="Set avatar from auth. provider">
                 Set avatar from auth. Provider
               </Translation>
@@ -370,12 +371,12 @@ const PictureUpload = (props: PictureUploadProps) => {
       />
       <button
         type="button"
-        className="btn btn-outline-primary"
+        className="btn --tertiary"
         disabled={uploading}
         onClick={trigger}
         style={{ width: 100, height: 100, borderRadius: '50%' }}
       >
-        {uploading && <i className="fas fa-spinner" />}
+        {uploading && <Loader />}
         {!uploading && (
           <div className="text-white">
             <Translation i18nkey="Change your picture">Change your picture</Translation>
@@ -479,7 +480,7 @@ export const MyProfile = () => {
   }, []);
 
   const save = (data: any) => {
-    Services.updateUserById(data)
+    return Services.updateUserById(data)
       .then((user) => {
         setUser(user);
         reloadContext();
@@ -549,27 +550,21 @@ export const MyProfile = () => {
           onSubmit={save}
           footer={({ valid }) => {
             return (
-              <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
+              <div className="d-flex justify-content-end gap-1 mt-3">
                 <button
                   type="button"
-                  className="btn btn-outline-danger"
+                  className="btn --secondary"
                   style={{ marginLeft: 5 }}
                   onClick={removeUser}
                 >
-                  <i className="fas fa-trash me-1" />
                   <Translation i18nkey="Delete my profile">Delete my profile</Translation>
                 </button>
-                <button
-                  style={{ marginLeft: 5 }}
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={valid}
+                <FeedbackButton
+                  className="btn --primary"
+                  onPress={valid as () => Promise<void>}
                 >
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Save">Save</Translation>
-                  </span>
-                </button>
+                  <Translation i18nkey="Save">Save</Translation>
+                </FeedbackButton>
               </div>
             );
           }}
@@ -589,10 +584,10 @@ export const MyProfile = () => {
                 onSubmit={updatePassword}
                 footer={({ valid }) => {
                   return (
-                    <div className="d-flex justify-content-end">
+                    <div className="d-flex justify-content-end mt-2">
                       <button
                         type="button"
-                        className="btn btn-outline-success my-2"
+                        className="btn --secondary"
                         onClick={valid}
                       >
                         <span>

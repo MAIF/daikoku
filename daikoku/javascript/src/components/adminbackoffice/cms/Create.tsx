@@ -9,7 +9,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import { ICmsPageGQL } from '../../../types/gql';
 
 
-export const Create = (props: any) => {
+export const Create = () => {
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
@@ -18,7 +18,7 @@ export const Create = (props: any) => {
 
   const [loading, setLoading] = useState(true);
 
-  const [value, setValue] = useState<any>({});
+  const [value, setValue] = useState({});
 
   useEffect(() => {
     const id = params.id;
@@ -47,7 +47,7 @@ export const Create = (props: any) => {
   const flow = ['content']
 
   return <>
-    <button className="btn btn-sm btn-outline-info my-3" style={{ flex: 1 }} type="button"
+    <button className="btn --secondary mt-2" type="button"
       onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
       {translate('cms.create.back_to_pages')}
     </button>

@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import Sun from 'react-feather/dist/icons/sun'
-import Moon from 'react-feather/dist/icons/moon'
-
-import * as Services from '../../../../services';
-import { I18nContext } from '../../../../contexts/i18n-context';
 import classNames from 'classnames';
+import { useContext, useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+
 import { GlobalContext } from '../../../../contexts/globalContext';
-import { ModalContext } from '../../../../contexts/modalContext';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import { ModalContext } from '../../../../contexts/modalContextInstance';
+import * as Services from '../../../../services';
 import { DaikokuMode } from '../../../../types';
 
 export const DarkModeActivator = (props: { className: string }) => {
@@ -39,7 +38,7 @@ export const DarkModeActivator = (props: { className: string }) => {
   );
 };
 
-export const SettingsPanel = ({ }) => {
+export const SettingsPanel = () => {
   const [version, setVersion] = useState();
 
   const { translate, isTranslationMode } = useContext(I18nContext);

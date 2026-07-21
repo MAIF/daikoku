@@ -12,9 +12,9 @@ export type IMessage = {
   sender: string;
   participants: Array<string>;
   readBy: Array<string>;
-  message: String;
+  message: string;
   closed?: Date;
-  send: Boolean;
+  send: boolean;
 };
 
 export type IChatClosedDate = { chat: string; date: number };

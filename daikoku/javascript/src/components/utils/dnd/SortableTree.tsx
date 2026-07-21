@@ -1,44 +1,43 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Announcements,
   DndContext,
-  closestCenter,
+  DragEndEvent,
+  DragMoveEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  DropAnimation,
   KeyboardSensor,
+  MeasuringStrategy,
+  Modifier,
   PointerSensor,
+  UniqueIdentifier,
+  closestCenter,
+  defaultDropAnimation,
   useSensor,
   useSensors,
-  DragStartEvent,
-  DragOverlay,
-  DragMoveEvent,
-  DragEndEvent,
-  DragOverEvent,
-  MeasuringStrategy,
-  DropAnimation,
-  Modifier,
-  defaultDropAnimation,
-  UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS, usePrevious } from '@dnd-kit/utilities';
-import isEqual from 'lodash/isEqual'
+import { CSS } from '@dnd-kit/utilities';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { SortableTreeItem } from './components/sortableTreeItem';
 
+import { sortableTreeKeyboardCoordinates } from './keyboardCoordinates';
+import type { FlattenedItem, SensorContext } from './types';
 import {
   buildTree,
   flattenTree,
-  getProjection,
   getChildCount,
-  removeItem,
+  getProjection,
   removeChildrenOf,
+  removeItem,
   setProperty,
 } from './utilities';
-import type { FlattenedItem, SensorContext, TreeItem, TreeItems } from './types';
-import { sortableTreeKeyboardCoordinates } from './keyboardCoordinates';
-import { SortableTreeItem } from './components/sortableTreeItem';
 
 
 
@@ -94,7 +93,6 @@ export function SortableTree({
   handleUpdateItem,
   confirmRemoveItem
 }: Props) {
-  const isFirstRender = useRef(true);
   const [items, setItems] = useState(() => defaultItems);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
@@ -104,8 +102,6 @@ export function SortableTree({
     overId: UniqueIdentifier;
   } | null>(null);
 
-
-  const previousItems = usePrevious(items)
 
   // useEffect(() => {
   //   if (isFirstRender.current) {
@@ -247,7 +243,7 @@ export function SortableTree({
           </DragOverlay>,
           document.body
         )}
-        <button className='mt-4 flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd'
+        <button className='mt-4 flex-grow-1 btn --primary --small fake-documentation-page-dnd'
           onClick={() => handleUpdateItems(items)} >save</button>
       </SortableContext>
     </DndContext>

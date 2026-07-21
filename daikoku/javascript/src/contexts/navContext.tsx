@@ -1,15 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
-import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { teamPermissions } from '../components/utils';
+import { api, CanIDoAction, manage, teamPermissions, team as TeamRightScope } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, INavMenu, ITeamSimple, ITenant, IUsagePlan, isError, isUsagePlan } from '../types';
+import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
-import { ModalContext } from './modalContext';
-import { NavContext, navMode, officeMode, TNavContext } from './navUtils';
+import { ModalContext } from './modalContextInstance';
+import { NavContext, navMode, officeMode } from './navUtils';
 
 const fakeMenu = {
   blocks: {
@@ -65,7 +65,7 @@ export const NavProvider = (props: PropsWithChildren) => {
 };
 
 export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsagePlan[]) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext);
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
@@ -173,15 +173,15 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         order: 2,
         links: {
           contact: {
-            component: ( connectedUser.isGuest ? 
+            component: (connectedUser.isGuest ?
               <a
-                className="btn btn-sm btn-outline-primary mb-2"
+                className="btn --secondary --small mb-2"
                 href={`mailto:${team?.contact}`}
               >
                 {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
               </a> :
-               <button
-                className="btn btn-sm btn-outline-primary mb-2"
+              <button
+                className="btn --secondary --small mb-2"
                 onClick={() =>
                   openContactModal({
                     team: api?.team,
@@ -230,6 +230,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
 export const useTeamBackOffice = () => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
+  const { connectedUser, isTenantAdmin, tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
 
@@ -246,72 +247,83 @@ export const useTeamBackOffice = () => {
     enabled: !!teamId
   })
 
-  const schema = (currentTab: string, team: ITeamSimple): INavMenu => ({
-    title: team.name,
-    blocks: {
-      links: {
-        order: 1,
+  const schema = (currentTab: string, team: ITeamSimple): INavMenu => {
+    const isTeamAdmin = CanIDoAction(connectedUser, manage, TeamRightScope, team, isTenantAdmin, tenant, tenant);
+    return {
+      title: team.name,
+      blocks: {
         links: {
-          settings: {
-            label: translate('Settings'),
-            action: () => navigateTo('dashboard'),
-            className: {
-              active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
-            },
-            childs: {
-              informations: {
-                label: translate('Informations'),
-                action: () => navigateTo('edition'),
-                className: { active: currentTab === 'edition' },
+          order: 1,
+          links: {
+            settings: {
+              label: translate('Settings'),
+              action: () => navigateTo('dashboard'),
+              className: {
+                active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
               },
-              assets: {
-                label: translate({ key: 'Asset', plural: true }),
-                action: () => navigateTo('assets'),
-                className: { active: currentTab === 'assets' },
-              },
-              members: {
-                label: translate({ key: 'Member', plural: true }),
-                action: () => navigateTo('members'),
-                visible: team.type !== 'Personal',
-                className: { active: currentTab === 'members' },
-              },
-            },
-          },
-          apis: {
-            label: translate('Apis'),
-            action: () => navigateTo('apis'),
-            className: {
-              active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
-            },
-          },
-          apikeys: {
-            label: translate({ key: 'API key', plural: true }),
-            action: () => navigateTo('apikeys'),
-            className: { active: ['apikeys', 'consumption'].includes(currentTab) },
-            childs: {
-              stats: {
-                label: translate('Global stats'),
-                action: () => navigateTo('consumption'),
-                className: { active: currentTab === 'consumption' },
+              childs: {
+                ...(isTeamAdmin ? {
+                  informations: {
+                    label: translate('Informations'),
+                    action: () => navigateTo('edition'),
+                    className: { active: currentTab === 'edition' },
+                  }
+                } : {}),
+                ...(isTeamAdmin ? {
+                  assets: {
+                    label: translate({ key: 'Asset', plural: true }),
+                    action: () => navigateTo('assets'),
+                    className: { active: currentTab === 'assets' },
+                  }
+                } : {}),
+                members: {
+                  label: translate({ key: 'Member', plural: true }),
+                  action: () => navigateTo('members'),
+                  visible: team.type !== 'Personal',
+                  className: { active: currentTab === 'members' },
+                },
               },
             },
-          },
-          billing: {
-            label: translate('Billing'),
-            action: () => navigateTo('billing'),
-            className: { active: ['billing', 'income'].includes(currentTab) },
-            childs: {
-              income: {
-                label: translate('Income'),
-                action: () => navigateTo('income'),
-                className: { active: currentTab === 'income' },
+            apis: {
+              label: translate('Apis'),
+              action: () => navigateTo('apis'),
+              className: {
+                active: ['apis', 'subscriptions', 'consumptions'].includes(currentTab)
               },
             },
+            ...(isTeamAdmin ? {
+              apikeys: {
+                label: translate({ key: 'API key', plural: true }),
+                action: () => navigateTo('apikeys'),
+                className: { active: ['apikeys', 'consumption'].includes(currentTab) },
+                childs: {
+                  stats: {
+                    label: translate('Global stats'),
+                    action: () => navigateTo('consumption'),
+                    className: { active: currentTab === 'consumption' },
+                  },
+                },
+              }
+            } : {}),
+            ...(isTeamAdmin ? {
+              billing: {
+                label: translate('Billing'),
+                action: () => navigateTo('billing'),
+                className: { active: ['billing', 'income'].includes(currentTab) },
+                childs: {
+                  income: {
+                    label: translate('Income'),
+                    action: () => navigateTo('income'),
+                    className: { active: currentTab === 'income' },
+                  },
+                },
+              }
+            } : {})
           },
         },
-      },
+      }
     }
-  });
+  };
 
   const navigateTo = (navTab: string) => {
     navigate(`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/${navTab}`);
@@ -442,11 +454,6 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
             action: () => navigateTo('assets'),
             className: { active: currentTab === 'assets' },
           },
-          init: {
-            label: translate('Initialization'),
-            action: () => navigateTo('init'),
-            className: { active: currentTab === 'init' },
-          },
           internationalization: {
             label: translate('internationalization'),
             action: () => navigateTo('internationalization'),
@@ -483,7 +490,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
   return { addMenu, tenant };
 };
 
-export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
+export const useDaikokuBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
@@ -510,6 +517,11 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
               label: translate('User sessions'),
               action: () => navigateTo('sessions'),
               className: { active: currentTab === 'sessions' },
+            },
+            loggers: {
+              label: translate('Loggers'),
+              action: () => navigateTo('loggers'),
+              className: { active: currentTab === 'loggers' },
             },
             importexport: {
               label: translate('Import / Export'),

@@ -2,23 +2,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
 import debounce from 'lodash/debounce';
 import { useContext, useState } from "react";
+import { Plus } from 'lucide-react';
 import { Link } from "react-router-dom";
-import Plus from 'react-feather/dist/icons/plus';
+import { toast } from "sonner";
 
 import { I18nContext, ModalContext } from "../../../../contexts";
 import { GlobalContext } from "../../../../contexts/globalContext";
 import * as Services from '../../../../services';
 import { isError } from "../../../../types";
-import { Spinner } from "../../Spinner";
-import { toast } from "sonner";
 import { teamSchema } from "../../../backoffice/teams/TeamEdit";
+import { Spinner } from "../../Spinner";
 
 const Teams = () => {
   const [search, setSearch] = useState('')
 
   const { translate } = useContext(I18nContext)
   const { close, openFormModal } = useContext(ModalContext)
-  const { tenant, isTenantAdmin } = useContext(GlobalContext)
+  const { tenant } = useContext(GlobalContext)
 
   const queryClient = useQueryClient();
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
@@ -70,7 +70,7 @@ const Teams = () => {
               <div className="ms-2 block__entries block__border d-flex flex-column">
                 {myTeamsRequest.data
                   .filter(team => team.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
-                  .map((team, resultIdx) => {
+                  .map((team) => {
                     return (
                       <Link to={`/${team._humanReadableId}/settings/dashboard`}
                         className={classNames("block__entry__link")}
@@ -86,9 +86,9 @@ const Teams = () => {
         </div>
         <div className="modal-footer">
           {!tenant.teamCreationSecurity && (
-            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createTeam()}>
+            <button type="button" className='btn --primary' onClick={() => createTeam()}>
               <Plus />
-              <p className="m-0">{translate('dashboard.create.team.button.label')}</p>
+              {translate('dashboard.create.team.button.label')}
             </button>
           )}
         </div>
@@ -101,7 +101,7 @@ const Teams = () => {
 }
 
 export const TeamPanel = () => {
-  const { openCustomModal, close } = useContext(ModalContext)
+  const { openCustomModal } = useContext(ModalContext)
   const { translate } = useContext(I18nContext)
   const { connectedUser } = useContext(GlobalContext)
 
@@ -122,7 +122,7 @@ export const TeamPanel = () => {
       aria-label={translate("topbar.link.my.teams.label")}
       className="notification-link notification-link-color a-fake"
       style={{ border: 'none', background: 'none' }}
-      onClick={(e) => openModal()}
+      onClick={() => openModal()}
     >
       {translate('topbar.link.my.teams.label')}
     </button>

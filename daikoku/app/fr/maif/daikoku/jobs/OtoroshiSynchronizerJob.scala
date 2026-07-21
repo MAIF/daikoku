@@ -49,13 +49,6 @@ object SyncMode {
   case object Delete extends SyncMode
 }
 
-case class SyncApiSubscriptionContext(
-    subscription: ApiSubscription,
-    api: Api,
-    usagePlan: UsagePlan,
-    by: User
-)
-
 object LongExtensions {
   implicit class HumanReadableExtension(duration: Long) {
     final def toHumanReadable: String = {
@@ -119,7 +112,6 @@ object UserForSync {
 }
 
 case class SubscriptionForSync(
-    apiKey: OtoroshiApiKey,
     customMetadata: Option[JsObject],
     metadata: Option[JsObject],
     enabled: Boolean,
@@ -132,7 +124,6 @@ case class SubscriptionForSync(
 )
 object SubscriptionForSync {
   def readFromJson(json: JsValue): SubscriptionForSync = SubscriptionForSync(
-    apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
     customMetadata = (json \ "customMetadata").asOpt[JsObject],
     metadata = (json \ "metadata").asOpt[JsObject],
     enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
@@ -177,19 +168,11 @@ case class Child(
     plan: PlanForSync
 ) {
 
-  private def metadataObjectToMap(
-      obj: Map[String, JsValue]
-  ): Map[String, String] = {
-    obj.map {
-      case (k, JsString(v))  => k -> v
-      case (k, JsBoolean(v)) => k -> v.toString
-      case (k, JsNumber(v))  => k -> v.toString
-      case (k, JsNull)       => k -> ""
-      case (k, v)            => k -> Json.stringify(v)
-    }
-  }
-
-  def getContext(team: Team, tenant: Tenant): Map[String, String] = Map(
+  def getContext(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Map[String, String] = Map(
     "user.id" -> user.id.value,
     "user.name" -> user.name,
     "user.email" -> user.email,
@@ -201,23 +184,33 @@ case class Child(
     "team.name" -> team.name,
     "tenant.id" -> tenant.id.value,
     "tenant.name" -> tenant.name,
-    "client.id" -> subscription.apiKey.clientId,
-    "client.name" -> subscription.apiKey.clientName
+    "client.id" -> keyringApiKey.clientId,
+    "client.name" -> keyringApiKey.clientName
   ) ++
     team.metadata.map(t => ("team.metadata." + t._1, t._2)) ++
     user.metadata.map(t => ("user.metadata." + t._1, t._2)) ++
     plan.metadata.map(t => ("plan.metadata." + t._1, t._2)) ++
     api.metadata.map(t => ("api.metadata." + t._1, t._2))
 
-  def computeTags(team: Team, tenant: Tenant): Set[String] = {
+  def computeTags(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Set[String] = {
     val planTags = plan.otoroshiTarget
       .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
       .getOrElse(Set.empty[String])
 
-    planTags.map(OtoroshiTarget.processValue(_, getContext(team, tenant)))
+    planTags.map(
+      OtoroshiTarget.processValue(_, getContext(team, tenant, keyringApiKey))
+    )
   }
 
-  def computeMetadata(team: Team, tenant: Tenant): Map[String, String] = {
+  def computeMetadata(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): Map[String, String] = {
     val planMeta = metadataObjectToMap(
       plan.otoroshiTarget
         .flatMap(
@@ -240,23 +233,30 @@ case class Child(
 
     val newMetaFromDk =
       (planMeta ++ customMetaFromSub ++ metadataFromSub).map { case (a, b) =>
-        a -> OtoroshiTarget.processValue(b, getContext(team, tenant))
+        a -> OtoroshiTarget.processValue(
+          b,
+          getContext(team, tenant, keyringApiKey)
+        )
       }
 
     newMetaFromDk
   }
 
-  def asOtoroshiApikey(team: Team, tenant: Tenant): ActualOtoroshiApiKey = {
+  def asOtoroshiApikey(
+      team: Team,
+      tenant: Tenant,
+      keyringApiKey: OtoroshiApiKey
+  ): ActualOtoroshiApiKey = {
     val maybeTarget: Option[OtoroshiTarget] = plan.otoroshiTarget
     val maybeCustomization: Option[ApikeyCustomization] =
       maybeTarget.map(_.apikeyCustomization)
-    val meta = computeMetadata(team, tenant)
-    val tags = computeTags(team, tenant)
+    val meta = computeMetadata(team, tenant, keyringApiKey)
+    val tags = computeTags(team, tenant, keyringApiKey)
 
     ActualOtoroshiApiKey(
-      clientId = subscription.apiKey.clientId,
-      clientSecret = subscription.apiKey.clientSecret,
-      clientName = subscription.apiKey.clientName,
+      clientId = keyringApiKey.clientId,
+      clientSecret = keyringApiKey.clientSecret,
+      clientName = keyringApiKey.clientName,
       authorizedEntities = maybeTarget
         .flatMap(t => t.authorizedEntities)
         .getOrElse(AuthorizedEntities()),
@@ -281,8 +281,15 @@ case class Child(
         "daikoku__metadata" -> meta.keys.mkString(" | "),
         "daikoku__tags" -> tags.mkString(" | ")
       ),
-      restrictions =
-        maybeCustomization.map(_.restrictions).getOrElse(ApiKeyRestrictions()),
+      restrictions = maybeCustomization
+        .map(_.restrictions)
+        .getOrElse(ApiKeyRestrictions())
+        .scopedTo(
+          maybeTarget
+            .flatMap(_.authorizedEntities)
+            .getOrElse(AuthorizedEntities())
+            .asOtoroshiEntities
+        ),
       rotation = subscription.rotation
         .map(r =>
           ApiKeyRotation(
@@ -309,16 +316,6 @@ object Child {
     )
   }
 }
-
-case class SyncInformation(
-    parent: SyncApiSubscriptionContext,
-    childs: Seq[SyncApiSubscriptionContext],
-    team: Team,
-    apk: ActualOtoroshiApiKey,
-    otoroshiSettings: OtoroshiSettings,
-    tenant: Tenant,
-    tenantAdminTeam: Team
-)
 
 class OtoroshiSynchronizerJob(
     client: OtoroshiClient,
@@ -356,16 +353,6 @@ class OtoroshiSynchronizerJob(
     val list2 = getListFromMeta(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
-
-  case class ComputedInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      apk: ActualOtoroshiApiKey,
-      computedApk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
 
   def start(): Unit = {
     val syncAvalaible =
@@ -492,40 +479,54 @@ class OtoroshiSynchronizerJob(
        |  'metadata', $alias.content -> 'metadata'
        |)""".stripMargin
 
-  private def getOtoroshiTarget(
-      tenant: Tenant,
-      usagePlan: PlanForSync
-  ): Option[OtoroshiSettings] = {
-    usagePlan.otoroshiTarget
-      .flatMap(target =>
-        tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings)
-      )
-  }
+  /** Resolve two diverging quota values into the single value the keyring's
+    * Otoroshi key must hold, according to the tenant strategy.
+    */
+  private def resolveQuota(
+      a: Long,
+      b: Long,
+      strategy: KeyringQuotaConflictStrategy
+  ): Long =
+    strategy match {
+      case KeyringQuotaConflictStrategy.LowestValue  => math.min(a, b)
+      case KeyringQuotaConflictStrategy.HighestValue => math.max(a, b)
+    }
 
   private def mergeOtoroshiApikeys(
       oldApiKey: ActualOtoroshiApiKey,
       newApikey: ActualOtoroshiApiKey,
+      strategy: KeyringQuotaConflictStrategy =
+        KeyringQuotaConflictStrategy.LowestValue,
       forceNewValue: Boolean = false
   ): ActualOtoroshiApiKey = {
     oldApiKey.copy(
-      enabled = true,
-      validUntil =
-        List(oldApiKey.validUntil, newApikey.validUntil).flatten.minOption,
+      enabled = if (forceNewValue) newApikey.enabled else true,
+      // validUntil is never pushed on a keyring's Otoroshi key: it cannot be
+      // arbitrated between members sharing the key.
+      validUntil = None,
       tags =
         if (forceNewValue) newApikey.tags else oldApiKey.tags ++ newApikey.tags,
       metadata = oldApiKey.metadata ++
         newApikey.metadata ++
         Map(
-          "daikoku__metadata" -> mergeMetaValue(
-            "daikoku__metadata",
-            oldApiKey.metadata,
-            newApikey.metadata
-          ),
-          "daikoku__tags" -> mergeMetaValue(
-            "daikoku__tags",
-            oldApiKey.metadata,
-            newApikey.metadata
-          )
+          "daikoku__metadata" ->
+            (if (forceNewValue)
+               newApikey.metadata.getOrElse("daikoku__metadata", "")
+             else
+               mergeMetaValue(
+                 "daikoku__metadata",
+                 oldApiKey.metadata,
+                 newApikey.metadata
+               )),
+          "daikoku__tags" ->
+            (if (forceNewValue)
+               newApikey.metadata.getOrElse("daikoku__tags", "")
+             else
+               mergeMetaValue(
+                 "daikoku__tags",
+                 oldApiKey.metadata,
+                 newApikey.metadata
+               ))
         ),
       restrictions = ApiKeyRestrictions(
         enabled =
@@ -556,16 +557,26 @@ class OtoroshiSynchronizerJob(
           ),
       throttlingQuota =
         if (forceNewValue) newApikey.throttlingQuota
-        else math.min(oldApiKey.throttlingQuota, newApikey.throttlingQuota),
+        else
+          resolveQuota(
+            oldApiKey.throttlingQuota,
+            newApikey.throttlingQuota,
+            strategy
+          ),
       dailyQuota =
         if (forceNewValue) newApikey.dailyQuota
-        else math.min(oldApiKey.dailyQuota, newApikey.dailyQuota),
+        else resolveQuota(oldApiKey.dailyQuota, newApikey.dailyQuota, strategy),
       monthlyQuota =
         if (forceNewValue) newApikey.monthlyQuota
-        else math.min(oldApiKey.monthlyQuota, newApikey.monthlyQuota),
-      readOnly =
-        if (forceNewValue) newApikey.readOnly
-        else oldApiKey.readOnly && newApikey.readOnly,
+        else
+          resolveQuota(
+            oldApiKey.monthlyQuota,
+            newApikey.monthlyQuota,
+            strategy
+          ),
+      // readOnly is not merged: every subscription of a keyring shares the
+      // same value (enforced when extending), so we just take it as-is.
+      readOnly = newApikey.readOnly,
       allowClientIdOnly =
         if (forceNewValue) newApikey.allowClientIdOnly
         else oldApiKey.allowClientIdOnly && newApikey.allowClientIdOnly
@@ -573,20 +584,36 @@ class OtoroshiSynchronizerJob(
   }
 
   private def mergeAggregation(
-      parent: Child,
-      children: Seq[Child],
+      keyring: Keyring,
+      subscriptions: Seq[Child],
       team: Team,
       tenant: Tenant
   ): Option[ActualOtoroshiApiKey] = {
-    // FIXME: c'est le shit si on veut supprimer une api avec la aprentSubscription
-    if (parent.subscription.enabled)
-      children
-        .foldLeft(parent.asOtoroshiApikey(team, tenant)) { case (acc, item) =>
-          mergeOtoroshiApikeys(acc, item.asOtoroshiApikey(team, tenant))
+    // The keyring's Otoroshi key is enabled as soon as one member subscription
+    // is enabled; only enabled members take part in the merge. No enabled
+    // member (or none at all) -> None -> the key is disabled / deleted.
+    subscriptions.filter(_.subscription.enabled).toList match {
+      case Nil => None
+      case head :: tail =>
+        val merged = tail.foldLeft(
+          head.asOtoroshiApikey(team, tenant, keyring.apiKey)
+        ) { case (acc, item) =>
+          mergeOtoroshiApikeys(
+            acc,
+            item.asOtoroshiApikey(team, tenant, keyring.apiKey),
+            strategy = tenant.keyringQuotaConflictStrategy
+          )
         }
-        .some
-    else
-      None
+        // The keyring is authoritative for the api key identity.
+        Some(
+          merged.copy(
+            clientId = keyring.apiKey.clientId,
+            clientSecret = keyring.apiKey.clientSecret,
+            clientName = keyring.apiKey.clientName,
+            enabled = keyring.enabled
+          )
+        )
+    }
   }
 
   private def clearApikey(
@@ -645,6 +672,8 @@ class OtoroshiSynchronizerJob(
     val allowClientIdOnlyIsEqual =
       apikey.allowClientIdOnly == apikeyFromSubscriptions.allowClientIdOnly
 
+    val enabledIsEqual = apikey.enabled == apikeyFromSubscriptions.enabled
+
     metadataIsEqual &&
     tagsIsEqual &&
     restrictionsIsEqual &&
@@ -653,12 +682,13 @@ class OtoroshiSynchronizerJob(
     monthlyQuotaIsEqual &&
     authorizedEntitiesIsEqual &&
     readOnlyIsEqual &&
-    allowClientIdOnlyIsEqual
+    allowClientIdOnlyIsEqual &&
+    enabledIsEqual
   }
 
   private def synchronizeApikeys(
-      entity: ApiId | UsagePlanId | ApiSubscriptionId | SyncAllSubscription =
-        SyncAllSubscription(),
+      entity: ApiId | UsagePlanId | ApiSubscriptionId | KeyringId |
+        SyncAllSubscription = SyncAllSubscription(),
       tenant: Tenant,
       parallelism: Int = 25,
       saveCursor: Long => Future[Boolean],
@@ -666,63 +696,46 @@ class OtoroshiSynchronizerJob(
       mode: SyncMode = SyncMode.Sync
   ): Future[Unit] = {
 
+    // The keyrings to process: those owning at least one subscription matching
+    // the entity (or the keyring of a given subscription).
     val predicate: String = entity match {
       case apiId: ApiId =>
-        s"""AND (s.content ->> 'api' = '${apiId.value}'
-           |     OR s._id IN (SELECT content ->> 'parent' FROM api_subscriptions WHERE content ->> 'api' = '${apiId.value}' AND content ->> 'parent' IS NOT NULL))""".stripMargin
+        s"AND k._id IN (SELECT content ->> 'keyring' FROM api_subscriptions WHERE content ->> 'api' = '${apiId.value}' AND content ->> 'keyring' IS NOT NULL)"
       case usagePlanId: UsagePlanId =>
-        s"""AND (s.content ->> 'plan' = '${usagePlanId.value}'
-           |     OR s._id IN (SELECT content ->> 'parent' FROM api_subscriptions WHERE content ->> 'plan' = '${usagePlanId.value}' AND content ->> 'parent' IS NOT NULL))""".stripMargin
+        s"AND k._id IN (SELECT content ->> 'keyring' FROM api_subscriptions WHERE content ->> 'plan' = '${usagePlanId.value}' AND content ->> 'keyring' IS NOT NULL)"
       case subscriptionId: ApiSubscriptionId =>
-        s"""AND (s._id = '${subscriptionId.value}'
-           |     OR s._id = (SELECT content ->> 'parent' FROM api_subscriptions WHERE _id = '${subscriptionId.value}'))""".stripMargin
+        s"AND k._id IN (SELECT content ->> 'keyring' FROM api_subscriptions WHERE _id = '${subscriptionId.value}' AND content ->> 'keyring' IS NOT NULL)"
+      case keyringId: KeyringId =>
+        s"AND k._id = '${keyringId.value}'"
       case _: SyncAllSubscription => ""
     }
 
     val cursorClause = maybeLastCursor
-      .map(c => s"AND (s.content ->> 'createdAt')::bigint >= $c")
+      .map(c => s"AND (k.content ->> 'createdAt')::bigint >= $c")
       .getOrElse("")
 
     val findAllSubscriptionsFromEntityStreamSql: String =
       s"""
-         |SELECT json_build_object(
-         |               'subscription', p.subscription,
-         |               'api', p.api,
-         |               'user', p."user",
-         |               'plan', p.plan
-         |       ) AS parent,
+         |SELECT k.content AS keyring,
          |       COALESCE(json_agg(
          |        json_build_object(
          |                'subscription', ${subscriptionFields("s")},
          |                'api', ${apiFields("apis")},
          |                'user', ${userFields("users")},
          |                'plan', ${planFields("usage_plans")}
-         |        )) FILTER (WHERE s._id IS NOT NULL AND usage_plans._id IS NOT NULL), '[]'::json) AS children,
+         |        )) FILTER (WHERE s._id IS NOT NULL AND apis._id IS NOT NULL AND usage_plans._id IS NOT NULL), '[]'::json) AS subscriptions,
          |        teams.content AS team
-         |FROM (
-         |    SELECT s._id as parent_id, s.content ->> 'team' as team_id, s.content ->> 'createdAt' as created_at,
-         |           (${subscriptionFields(
-          "s"
-        )})::jsonb as subscription, (${userFields(
-          "users"
-        )})::jsonb as "user", (${planFields(
-          "usage_plans"
-        )})::jsonb as plan, (${apiFields("apis")})::jsonb as api
-         |    FROM api_subscriptions s
-         |    INNER JOIN apis ON apis._id = s.content ->> 'api'
-         |    LEFT JOIN users ON users._id = s.content ->> 'by'
-         |    INNER JOIN usage_plans ON usage_plans._id = s.content ->> 'plan'
-         |    WHERE s.content ->> 'parent' IS NULL
-         |      $predicate
-         |      $cursorClause
-         |) p
-         |LEFT JOIN api_subscriptions s ON p.parent_id = s.content ->> 'parent' AND (s.content ->> 'enabled')::bool IS TRUE
+         |FROM keyrings k
+         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id AND (s.content ->> '_deleted')::bool IS NOT TRUE
          |LEFT JOIN apis ON apis._id = s.content ->> 'api'
          |LEFT JOIN users ON users._id = s.content ->> 'by'
          |LEFT JOIN usage_plans ON usage_plans._id = s.content ->> 'plan'
-         |INNER JOIN teams ON teams._id = p.team_id
-         |GROUP BY p.parent_id, p.created_at, p.subscription, p.api, p.plan, p.user, teams.content
-         |ORDER BY p.created_at
+         |LEFT JOIN teams ON teams._id = s.content ->> 'team'
+         |WHERE (k.content ->> '_deleted')::bool IS NOT TRUE
+         |  $predicate
+         |  $cursorClause
+         |GROUP BY k._id, k.content, teams.content
+         |ORDER BY (k.content ->> 'createdAt')::bigint
          |""".stripMargin
 
     val processed = new java.util.concurrent.atomic.AtomicLong(0)
@@ -744,44 +757,51 @@ class OtoroshiSynchronizerJob(
       .queryRawMappedStream(
         findAllSubscriptionsFromEntityStreamSql,
         Seq(
-          Col("parent", ColJson),
-          Col("children", ColJsonArray),
+          Col("keyring", ColJson),
+          Col("subscriptions", ColJsonArray),
           Col("team", ColJson)
         )
       )
       .mapAsync(parallelism) { row =>
-        val parent = Child.readFromJson((row \ "parent").as[JsObject])
-        val children = (row \ "children")
+        val keyring = (row \ "keyring").as(using json.KeyringFormat)
+        val subscriptions = (row \ "subscriptions")
           .asOpt[Seq[JsValue]]
           .map(_.filter(_ != JsNull).map(Child.readFromJson))
           .getOrElse(Seq.empty)
-        val team = (row \ "team").as(using TeamFormat)
-        // createdAt est inclus dans subscriptionFields, accessible via parent > subscription
-        val createdAt = (row \ "parent" \ "subscription" \ "createdAt")
-          .asOpt[Long]
-          .getOrElse(0L)
+        // team is absent when the keyring has no live subscription anymore
+        val maybeTeam = (row \ "team").asOpt(using TeamFormat)
+        val createdAt = (row \ "keyring" \ "createdAt").as[Long]
+
+        val clientId = keyring.apiKey.clientId
 
         (for {
           otoroshiSettings <- EitherT.fromOption[Future](
-            getOtoroshiTarget(tenant, parent.plan),
+            // keyring.otoroshiSettings is a KeyringOtoroshiBinding : unwrap it
+            // before matching the tenant's OtoroshiSettings by id
+            keyring.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) =>
+                tenant.otoroshiSettings.find(_.id == id)
+              case KeyringOtoroshiBinding.Internal => None
+            },
             AppError.EntityNotFound(
-              s"otoroshi target not found for subscription ${parent.subscription.apiKey.clientId} (plan ${parent.plan.id.value})"
+              s"otoroshi settings not found for keyring ${keyring.id.value} (apikey $clientId)"
             )
           )
           _ = logger.info(
-            s"[sync:$mode] processing apikey ${parent.subscription.apiKey.clientId}, enabled=${parent.subscription.enabled}, children=${children.size}"
+            s"[sync:$mode] processing apikey $clientId (keyring ${keyring.id.value}), subscriptions=${subscriptions.size}"
           )
           apikey <- EitherT(
-            client.getApikey(parent.subscription.apiKey.clientId)(using
-              otoroshiSettings
-            )
+            client.getApikey(clientId)(using otoroshiSettings)
           )
-          apk <- mergeAggregation(parent, children, team, tenant) match {
+          apk <- maybeTeam
+            .flatMap(team =>
+              mergeAggregation(keyring, subscriptions, team, tenant)
+            ) match {
             case Some(apikeyFromSubscriptions) =>
               // Active subscriptions remain — recalculate merged key (Sync and Delete)
               val equals = isEqual(apikey, apikeyFromSubscriptions)
               logger.info(
-                s"[sync:$mode] apikey ${parent.subscription.apiKey.clientId} — mergeAggregation=Some, equals=$equals"
+                s"[sync:$mode] apikey $clientId — mergeAggregation=Some, equals=$equals"
               )
               if (!equals) {
                 val cleanApikey = clearApikey(apikey)
@@ -791,7 +811,7 @@ class OtoroshiSynchronizerJob(
                   forceNewValue = true
                 )
                 logger.info(
-                  s"[sync:$mode] updating apikey ${parent.subscription.apiKey.clientId} (${children.size} children)"
+                  s"[sync:$mode] updating apikey $clientId (${subscriptions.size} subscriptions)"
                 )
                 EitherT(
                   client.updateApiKey(key = computedKey)(using otoroshiSettings)
@@ -803,17 +823,15 @@ class OtoroshiSynchronizerJob(
               mode match {
                 case SyncMode.Delete =>
                   logger.info(
-                    s"[sync:Delete] DELETING apikey ${parent.subscription.apiKey.clientId} in Otoroshi"
+                    s"[sync:Delete] DELETING apikey $clientId in Otoroshi"
                   )
                   client
-                    .deleteApiKey(parent.subscription.apiKey.clientId)(using
-                      otoroshiSettings
-                    )
+                    .deleteApiKey(clientId)(using otoroshiSettings)
                     .map(_ => apikey)
                 case SyncMode.Sync =>
                   if (apikey.enabled) {
                     logger.info(
-                      s"[sync:Sync] disabling apikey ${parent.subscription.apiKey.clientId} in Otoroshi"
+                      s"[sync:Sync] disabling apikey $clientId in Otoroshi"
                     )
                     EitherT(
                       client.updateApiKey(key = apikey.copy(enabled = false))(
@@ -833,7 +851,7 @@ class OtoroshiSynchronizerJob(
             case Left(error) =>
               errored.incrementAndGet()
               logger.error(
-                s"Error synchronizing apikey ${parent.subscription.apiKey.clientId}: ${error.getErrorMessage()}"
+                s"Error synchronizing apikey $clientId: ${error.getErrorMessage()}"
               )
             case Right(_) =>
               synced.incrementAndGet()
@@ -876,7 +894,7 @@ class OtoroshiSynchronizerJob(
   }
 
   def run(
-      entryPoint: ApiId | UsagePlanId | ApiSubscriptionId |
+      entryPoint: ApiId | UsagePlanId | ApiSubscriptionId | KeyringId |
         SyncAllSubscription = SyncAllSubscription(),
       tenant: Tenant,
       parallelism: Int = 25
@@ -979,7 +997,7 @@ class OtoroshiSynchronizerJob(
   }
 
   def runForDeletion(
-      entryPoint: ApiId | UsagePlanId | ApiSubscriptionId,
+      entryPoint: ApiId | UsagePlanId | ApiSubscriptionId | KeyringId,
       tenant: Tenant,
       parallelism: Int = 25
   ): Future[Unit] = {

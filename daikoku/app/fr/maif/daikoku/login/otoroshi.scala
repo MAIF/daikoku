@@ -166,7 +166,6 @@ object OtoroshiIdentityFilter {
                                     user.picture.getOrElse(user.email.gravatar),
                                   isDaikokuAdmin = isDaikokuAdmin,
                                   lastTenant = Some(tenant.id),
-                                  personalToken = Some(IdGenerator.token(32)),
                                   defaultLanguage = None
                                 )
                                 val newTeam = Team(
@@ -281,7 +280,7 @@ object OtoroshiIdentityFilter {
                                     )
                                   )
                                 )
-                                val updatedUser = u
+                                val updatedUser = u.copy(invitation = None)
                                 for {
                                   tenantTeam <-
                                     env.dataStore.teamRepo
@@ -461,7 +460,12 @@ object OtoroshiIdentityFilter {
                         val maybeSession = for {
                           session <-
                             env.dataStore.userSessionRepo
-                              .findOne(Json.obj("userEmail" -> user.email))
+                              .findOne(
+                                Json.obj(
+                                  "userEmail" -> user.email,
+                                  "impersonatorId" -> JsNull
+                                )
+                              )
                           impersonatedSession <-
                             env.dataStore.userSessionRepo
                               .findOne(

@@ -58,9 +58,9 @@ jobs:
 
       - name: Set up Node.js
         if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
-          node-version: latest
+          node-version: lts/*
 
       - name: Set up JDK 17
         if: steps.changes.outputs.needs_build == 'true' || github.event_name == 'workflow_dispatch'
@@ -126,24 +126,32 @@ jobs:
       matrix:
         suite:
           - name: ldap
-            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
           - name: oidc
-            compose-file: ./daikoku/javascript/tests/docker-compose-openid.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-oidc.yml
             playwright-config: playwright.oidc.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
+          - name: local
+            compose-file: ./daikoku/javascript/tests/docker-compose-local.yml
+            playwright-config: playwright.local.config.js
+            health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
           - name: perf
-            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            compose-file: ./daikoku/javascript/tests/docker-compose-ldap.yml
             playwright-config: playwright.perf.config.js
             health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
     name: "test-${{ matrix.suite.name }}"
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: lts/*
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -170,12 +178,21 @@ jobs:
 
       - name: Wait for API to be ready
         run: |
-          echo "Waiting for services to be up..."
+          echo "Waiting for Daikoku to be up..."
           until curl --silent --fail ${{ matrix.suite.health-url }}; do
             printf '.'
             sleep 2
           done
           echo "daikoku is ready!"
+
+      - name: Wait for otoroshi to be ready
+        run: |
+          echo "Waiting for Otoroshi to be up..."
+          until curl --silent --fail ${{ matrix.suite.otoroshi-health-url }}; do
+            printf '.'
+            sleep 2
+          done
+          echo "otoroshi is ready!"
 
       - name: Install Playwright
         timeout-minutes: 10
@@ -215,12 +232,11 @@ jobs:
         run: |
           cd ./daikoku/javascript/tests
           if [[ "${{ matrix.suite.name }}" == "perf" ]]; then
-            npx playwright test --config ${{ matrix.suite.playwright-config }}
+            CI=true npx playwright test --trace on  --config ${{ matrix.suite.playwright-config }}
           else
-            npx playwright test --config ${{ matrix.suite.playwright-config }} --project chromium
+            CI=true npx playwright test --trace on --config ${{ matrix.suite.playwright-config }} --project chromium
           fi
         env:
-          CI: true
           EXPOSED_PORT: 13200
           DAIKOKU_URL: http://localhost:13200
           POSTGRES_HOST: localhost
@@ -228,3 +244,9 @@ jobs:
           POSTGRES_DB: daikoku_demo_komainu
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && failure() }}
+        with:
+          name: playwright-report
+          path: daikoku/javascript/tests/playwright-report/
+          retention-days: 7

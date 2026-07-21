@@ -1,10 +1,10 @@
-import React, { useContext, useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ISession, ISimpleSession } from '../../types';
+import { ISimpleSession } from '../../types';
 import { I18nContext } from '../i18n-context';
-import { ModalContext } from '../modalContext';
+import { ModalContext } from '../modalContextInstance';
 
-export const SessionModal = (props: {session: ISimpleSession}) => {
+export const SessionModal = (props: { session: ISimpleSession }) => {
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export const SessionModal = (props: {session: ISimpleSession}) => {
               >
                 <button
                   type="button"
-                  className="btn btn-outline-success"
+                  className="btn --primary"
                   onClick={() => extendSession(close)}
                 >
                   {extendMySession}

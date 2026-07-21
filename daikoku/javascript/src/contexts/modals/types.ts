@@ -1,30 +1,23 @@
-import { Flow, Schema, TBaseObject, Option } from '@maif/react-forms';
+import { Flow, Option, Schema, TBaseObject } from '@maif/react-forms';
+import { JSX, ReactNode } from 'react';
 import {
-  IApi,
-  IApiKey,
   IAsset,
   IImportingDocumentation,
-  INotification,
   IOtoroshiApiKey,
-  ISafeSubscription,
-  ISubscription,
   ISubscriptionCustomization,
   ISubscriptionDemand,
   ITeamSimple,
   ITenant,
-  ITesting,
   ITestingConfig,
-  IUsagePlan,
   IUserSimple,
   IWithTesting,
   ResponseDone,
   ResponseError,
 } from '../../types';
-import { IApiKeySelectModalProps } from './ApiKeySelectModal';
-import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
-import { CustomSubscriptionData } from './SubscriptionMetadataModal';
+import { IApiSelectModalProps } from './ApiSelectModal';
 import { ICustomModalProps } from './CustomModal';
-import { JSX, ReactNode } from 'react';
+import { IKeyringSelectModalProps } from './KeyringSelectModal';
+import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -41,7 +34,7 @@ export type TModalContext = {
   prompt: (p: PromptModalProps) => Promise<string | undefined>;
   openFormModal: <T extends TBaseObject>(p: IFormModalProps<T>) => void;
   openTestingApikeyModal: <T extends IWithTesting>(p: TestingApiKeyModalProps<T>) => void;
-  openSubMetadataModal: <T extends IWithTesting>(p: SubscriptionMetadataModalProps<T>) => void;
+  openSubMetadataModal: (p: SubscriptionMetadataModalProps) => void;
   openApiDocumentationSelectModal: (p: IApiDocumentationSelectModalProps) => void;
   openTeamSelectorModal: (p: TeamSelectorModalProps) => void;
   openInvitationTeamModal: (p: ITeamInvitationModalProps) => void;
@@ -50,7 +43,7 @@ export type TModalContext = {
   openJoinTeamModal: () => void;
   openContactModal: (p: IContactModalComponentProps) => void;
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
-  openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
+  openKeyringSelectModal: (p: IKeyringSelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;
@@ -120,62 +113,7 @@ type LimitedTeam = {
   _id: string;
   name?: string;
 };
-interface ApiSubscriptionGql extends ISubscriptionCustomization {
-  _id: String;
-  apiKey: {
-    clientName: string;
-    clientId: string;
-    clientSecret: string;
-  };
-  plan: LimitedTeam;
-  team: {
-    _id: string;
-    name: string;
-    type: string;
-  };
-  createdAt: string;
-  api: {
-    _id: string;
-  };
-  customName: string;
-  enabled: boolean;
-  customMetadata: object;
-  customMaxPerSecond?: number;
-  customMaxPerDay?: number;
-  customMaxPerMonth?: number;
-  customReadOnly?: boolean;
-  adminCustomName?: string;
-}
-type NotificationGQL = {
-  _id: string;
-  action: {
-    message?: string;
-    motivation?: string;
-    api?: {
-      _id: string;
-      name: string;
-    };
-    team?: LimitedTeam;
-    plan?: {
-      _id: string;
-      customName?: string;
-      typeName: string;
-    };
-    user?: {
-      id: string;
-      name: string;
-    };
-    parentSubscriptionId?: {
-      _id: string;
-      apiKey: {
-        clientName: string;
-        clientId: string;
-        clientSecret: string;
-      };
-    };
-  };
-};
-export type SubscriptionMetadataModalProps<T> = {
+export type SubscriptionMetadataModalProps = {
   creationMode?: boolean;
   api?: string;
   plan?: string;

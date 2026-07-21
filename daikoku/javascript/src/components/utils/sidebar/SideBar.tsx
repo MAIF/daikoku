@@ -1,8 +1,6 @@
 import classNames from 'classnames';
 import { JSX, useContext, useEffect, useMemo, useState } from 'react';
-import ArrowLeft from 'react-feather/dist/icons/arrow-left';
-import Bell from 'react-feather/dist/icons/bell';
-import MessageSquare from 'react-feather/dist/icons/message-square';
+import { ArrowLeft, Bell, MessageSquare } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { getInitials, userHasAvatar } from '../..';
@@ -77,8 +75,8 @@ export const SideBar = () => {
 };
 
 export const TopBar = () => {
-  const [panelState, setPanelState] = useState(state.closed);
-  const [panelContent, setPanelContent] = useState<JSX.Element>();
+  const [_panelState, setPanelState] = useState(state.closed);
+  const [_panelContent, setPanelContent] = useState<JSX.Element>();
 
   const location = useLocation();
 
@@ -123,142 +121,142 @@ export const TopBar = () => {
   }
 
   return (
-      !(location.pathname === "/maintenance") &&
-        <div className="navbar-top d-flex flex-row align-items-center px-4">
-          <div className="navbar_left d-flex flex-row align-items-center gap-3">
-            {tenant.homePageVisible && (
-              <a
-                href='/'
-                title={translate("Daikoku.home")}
-                aria-label={translate("Daikoku.home")}
-                className="brand notification-link notification-link-color"
-              >
-                {themedMinLogo && <img style={{maxHeight: '40px'}} src={themedMinLogo} alt="logo"/>}
-                {tenant.name}
-              </a>
+    !(location.pathname === "/maintenance") &&
+    <div className="navbar-top d-flex flex-row align-items-center px-4">
+      <div className="navbar_left d-flex flex-row align-items-center gap-3">
+        {tenant.homePageVisible && (
+          <a
+            href='/'
+            title={translate("Daikoku.home")}
+            aria-label={translate("Daikoku.home")}
+            className="brand notification-link notification-link-color"
+          >
+            {themedMinLogo && <img style={{ maxHeight: '40px' }} src={themedMinLogo} alt="logo" />}
+            {tenant.name}
+          </a>
+        )}
+        {!tenant.homePageVisible && (
+          <Link
+            to='/apis'
+            title={translate("Daikoku.home")}
+            aria-label={translate("Daikoku.home")}
+            className="brand notification-link notification-link-color d-flex gap-3"
+          >
+            {themedMinLogo && <img style={{ maxHeight: '40px', width: 'auto' }} src={themedMinLogo} alt="logo" />}
+            {tenant.name}
+          </Link>
+        )}
+        <Link
+          to="/apis"
+          title={translate("API.list")}
+          aria-label={translate("API.list")}
+          className="notification-link notification-link-color"
+        >
+          {translate('topbar.link.dashboard.label')}
+        </Link>
+        <TeamPanel />
+
+      </div>
+      <div className="navbar_middle d-flex justify-content-center flex-grow-1">
+        {!connectedUser.isGuest && <SearchPanel />}
+      </div>
+      <div className="navbar_right d-flex align-items-center gap-2">
+        {isAdmin && (
+          <Link
+            to="/settings/messages"
+            className={classNames(
+              'nav-item notification-link  notification-link-color messages-link cursor-pointer',
+              {
+                'unread-notifications': totalUnread > 0,
+              }
             )}
-            {!tenant.homePageVisible && (
-              <Link
-                to='/apis'
-                title={translate("Daikoku.home")}
-                aria-label={translate("Daikoku.home")}
-                className="brand notification-link notification-link-color d-flex gap-3"
-              >
-                {themedMinLogo && <img style={{maxHeight: '40px', width: 'auto'}} src={themedMinLogo} alt="logo"/>}
-                {tenant.name}
-              </Link>
+            title={translate('Access to the messages')}
+          >
+            <MessageSquare />
+          </Link>
+        )}
+        {!connectedUser.isGuest && !isAdmin && (
+          <button
+            className={classNames(
+              'nav_item notification-link notification-link-color messages-link cursor-pointer',
+              {
+                'unread-notifications': totalUnread > 0,
+              }
             )}
+            aria-label={translate("sidebar.messages.button.aria.label")}
+          >
+            <MessageSquare
+              onClick={() => {
+                setPanelState(state.opened);
+                setPanelContent(<MessagePanel />);
+              }}
+            />
+          </button>
+        )}
+        {!connectedUser.isGuest && (
+          <button
+            className="nav_item"
+            aria-label={translate("sidebar.notifications.button.aria.label")}>
             <Link
-              to="/apis"
-              title={translate("API.list")}
-              aria-label={translate("API.list")}
-              className="notification-link notification-link-color"
+              className={classNames({
+                'notification-link notification-link-color': true,
+                'unread-notifications': !!unreadNotificationsCount,
+              })}
+              to="/notifications"
+              title={translate('Access to the notifications')}
+              aria-label={translate('Access to the notifications')}
             >
-              {translate('topbar.link.dashboard.label')}
+              <Bell />
             </Link>
-            <TeamPanel/>
+          </button>
+        )}
+        <DarkModeActivator className="nav-item notification-link notification-link-color" />
 
+        <div className="nav_item dropdown" style={{ color: '#fff' }}>
+          <button className="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {!userHasAvatar(connectedUser) && <div
+              role="img" aria-label="user menu"
+              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
+              className="logo-anonymous user-logo avatar-without-img"
+              onClick={() => {
+                if (!connectedUser.isGuest) {
+                  setPanelState(state.opened);
+                  setPanelContent(<SettingsPanel />);
+                } else {
+                  setPanelState(state.opened);
+                  setPanelContent(<GuestPanel />);
+                }
+              }}
+              title={
+                impersonator
+                  ? `${connectedUser.name} (${connectedUser.email}) ${translate(
+                    'Impersonated by'
+                  )} ${impersonator.name} (${impersonator.email})`
+                  : connectedUser.name
+              }
+            >{getInitials(connectedUser.name)}</div>}
+            {userHasAvatar(connectedUser) && <img
+              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
+              src={connectedUser.picture}
+              className="logo-anonymous user-logo"
+              title={
+                impersonator
+                  ? `${connectedUser.name} (${connectedUser.email}) ${translate(
+                    'Impersonated by'
+                  )} ${impersonator.name} (${impersonator.email})`
+                  : connectedUser.name
+              }
+              alt="user menu"
+            />}
+
+          </button>
+          <div className="dropdown-menu" style={{ width: '400px' }}>
+            {!connectedUser.isGuest && <SettingsPanel />}
+            {connectedUser.isGuest && <GuestPanel />}
           </div>
-          <div className="navbar_middle d-flex justify-content-center flex-grow-1">
-            {!connectedUser.isGuest && <SearchPanel/>}
-          </div>
-          <div className="navbar_right d-flex align-items-center gap-2">
-            {isAdmin && (
-              <Link
-                to="/settings/messages"
-                className={classNames(
-                  'nav-item notification-link  notification-link-color messages-link cursor-pointer',
-                  {
-                    'unread-notifications': totalUnread > 0,
-                  }
-                )}
-                title={translate('Access to the messages')}
-              >
-                <MessageSquare/>
-              </Link>
-            )}
-            {!connectedUser.isGuest && !isAdmin && (
-              <button
-                className={classNames(
-                  'nav_item notification-link notification-link-color messages-link cursor-pointer',
-                  {
-                    'unread-notifications': totalUnread > 0,
-                  }
-                )}
-                aria-label={translate("sidebar.messages.button.aria.label")}
-              >
-                <MessageSquare
-                  onClick={() => {
-                    setPanelState(state.opened);
-                    setPanelContent(<MessagePanel/>);
-                  }}
-                />
-              </button>
-            )}
-            {!connectedUser.isGuest && (
-              <button
-                className="nav_item"
-                aria-label={translate("sidebar.notifications.button.aria.label")}>
-                <Link
-                  className={classNames({
-                    'notification-link notification-link-color': true,
-                    'unread-notifications': !!unreadNotificationsCount,
-                  })}
-                  to="/notifications"
-                  title={translate('Access to the notifications')}
-                  aria-label={translate('Access to the notifications')}
-                >
-                  <Bell/>
-                </Link>
-              </button>
-            )}
-            <DarkModeActivator className="nav-item notification-link notification-link-color"/>
 
-            <div className="nav_item dropdown" style={{color: '#fff'}}>
-              <button className="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                {!userHasAvatar(connectedUser) && <div
-                  role="img" aria-label="user menu"
-                  style={{width: '35px', height: '35px', ...impersonatorStyle}}
-                  className="logo-anonymous user-logo avatar-without-img"
-                  onClick={() => {
-                    if (!connectedUser.isGuest) {
-                      setPanelState(state.opened);
-                      setPanelContent(<SettingsPanel/>);
-                    } else {
-                      setPanelState(state.opened);
-                      setPanelContent(<GuestPanel/>);
-                    }
-                  }}
-                  title={
-                    impersonator
-                      ? `${connectedUser.name} (${connectedUser.email}) ${translate(
-                        'Impersonated by'
-                      )} ${impersonator.name} (${impersonator.email})`
-                      : connectedUser.name
-                  }
-                >{getInitials(connectedUser.name)}</div>}
-                {userHasAvatar(connectedUser) && <img
-                  style={{width: '35px', height: '35px', ...impersonatorStyle}}
-                  src={connectedUser.picture}
-                  className="logo-anonymous user-logo"
-                  title={
-                    impersonator
-                      ? `${connectedUser.name} (${connectedUser.email}) ${translate(
-                        'Impersonated by'
-                      )} ${impersonator.name} (${impersonator.email})`
-                      : connectedUser.name
-                  }
-                  alt="user menu"
-                />}
-
-              </button>
-              <div className="dropdown-menu" style={{width: '400px'}}>
-                {!connectedUser.isGuest && <SettingsPanel/>}
-                {connectedUser.isGuest && <GuestPanel/>}
-              </div>
-
-            </div>
-          </div>
         </div>
+      </div>
+    </div>
   )
 }

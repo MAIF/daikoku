@@ -792,8 +792,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -891,6 +891,19 @@
             "validate_access": 0,
             "transform_request": 0,
             "match_route": 0
+          }
+        },
+        {
+          "plugin_index": {},
+          "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+          "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+          "enabled": true,
+          "debug": false,
+          "include": [],
+          "exclude": [],
+          "bound_listeners": [],
+          "config": {
+            "limit": 524288
           }
         }
       ]
@@ -1161,8 +1174,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1260,6 +1273,19 @@
             "validate_access": 0,
             "transform_request": 0,
             "match_route": 0
+          }
+        },
+        {
+          "plugin_index": {},
+          "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+          "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+          "enabled": true,
+          "debug": false,
+          "include": [],
+          "exclude": [],
+          "bound_listeners": [],
+          "config": {
+            "limit": 524288
           }
         }
       ]
@@ -1301,8 +1327,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1400,6 +1426,19 @@
             "validate_access": 0,
             "transform_request": 0,
             "match_route": 0
+          }
+        },
+        {
+          "plugin_index": {},
+          "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+          "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+          "enabled": true,
+          "debug": false,
+          "include": [],
+          "exclude": [],
+          "bound_listeners": [],
+          "config": {
+            "limit": 524288
           }
         }
       ]
@@ -1441,8 +1480,8 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "faker",
-            "port": 1080,
+            "hostname": "request.otoroshi.io",
+            "port": 8080,
             "tls": false,
             "weight": 1,
             "predicate": {
@@ -1540,6 +1579,19 @@
             "validate_access": 0,
             "transform_request": 0,
             "match_route": 0
+          }
+        },
+        {
+          "plugin_index": {},
+          "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+          "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+          "enabled": true,
+          "debug": false,
+          "include": [],
+          "exclude": [],
+          "bound_listeners": [],
+          "config": {
+            "limit": 524288
           }
         }
       ]
@@ -1596,8 +1648,8 @@
           "targets": [
             {
               "id": "target_1",
-              "hostname": "faker",
-              "port": 1080,
+              "hostname": "request.otoroshi.io",
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {
@@ -1696,6 +1748,19 @@
               "transform_request": 0,
               "match_route": 0
             }
+          },
+          {
+            "plugin_index": {},
+            "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+            "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+            "enabled": true,
+            "debug": false,
+            "include": [],
+            "exclude": [],
+            "bound_listeners": [],
+            "config": {
+              "limit": 524288
+            }
           }
         ],
         "kind": "proxy.otoroshi.io/Route"
@@ -1750,8 +1815,8 @@
           "targets": [
             {
               "id": "target_1",
-              "hostname": "faker",
-              "port": 1080,
+              "hostname": "request.otoroshi.io",
+              "port": 8080,
               "tls": false,
               "weight": 1,
               "predicate": {
@@ -1850,6 +1915,19 @@
               "pass_with_user": false,
               "wipe_backend_request": true,
               "update_quotas": true
+            }
+          },
+          {
+            "plugin_index": {},
+            "nodeId": "cp:otoroshi.next.plugins.EchoBackend-0",
+            "plugin": "cp:otoroshi.next.plugins.EchoBackend",
+            "enabled": true,
+            "debug": false,
+            "include": [],
+            "exclude": [],
+            "bound_listeners": [],
+            "config": {
+              "limit": 524288
             }
           }
         ],

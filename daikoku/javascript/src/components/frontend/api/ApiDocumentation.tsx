@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
+import { ChevronLeft, ChevronRight, Feather, FileImage } from "lucide-react";
 import { useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Select from 'react-select';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 
 
 import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
@@ -19,8 +21,9 @@ import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '.
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 
+//@ts-ignore
 import 'highlight.js/styles/monokai.css';
-import { GlobalContext } from '../../../contexts/globalContext';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
@@ -223,7 +226,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                 title={translate('Lorem Ipsum')}
                 onClick={() => insert(loremIpsum)}
               >
-                <i className={`fas fa-feather-alt`} />
+                <Feather />
               </button>
               <button
                 type="button"
@@ -232,7 +235,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                 title={translate('Long Lorem Ipsum')}
                 onClick={() => insert(longLoremIpsum)}
               >
-                <i className={`fas fa-feather`} />
+                <Feather />
               </button>
               <BeautifulTitle
                 place="bottom"
@@ -243,7 +246,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
                   onlyPreview
                   tenantMode={false}
                   team={props.ownerTeam}
-                  icon="fas fa-file-image"
+                  icon={<FileImage />}
                   classNames="btn-for-descriptionToolbar"
                   onSelect={(asset) => insert(asset.link)}
                   label={translate("Insert URL")}
@@ -336,7 +339,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   }
 
   const fetchNewPageAndUpdate = () => {
-    Services.fetchNewApiDocPage()
+    return Services.fetchNewApiDocPage()
       .then(page => {
         openRightPanel({
           title: translate("doc.page.create.modal.title"),
@@ -355,9 +358,9 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
     <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --primary"
           aria-label={translate("api.home.config.api.aria.label")}
-          style={{ position: "absolute", right: 0, top: 0 }}
+          style={{ position: "absolute", right: 0, top: -10 }}
           onClick={() => setView(view === 'documentation' ? 'update' : 'documentation')}>
           {view === 'documentation' ? translate('api.home.config.api.documentation.btn.label.edit') : translate('api.home.config.api.documentation.btn.label.view')}
         </button>
@@ -371,13 +374,13 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
               'justify-content-between': !!prev,
               'justify-content-end': !prev,
             })}>
-              {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
-                <i className="fas fa-chevron-left me-1" />
+              {prev && (<button className='btn --secondary' onClick={() => setPageId(prev)}>
+                <ChevronLeft className="me-1" />
                 <Translation i18nkey="Previous page">Previous page</Translation>
               </button>)}
-              {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
+              {next && (<button className='btn --secondary' onClick={() => setPageId(next)}>
                 <Translation i18nkey="Next page">Next page</Translation>
-                <i className="fas fa-chevron-right ms-1" />
+                <ChevronRight className="ms-1" />
               </button>)}
             </div>
             <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api} />
@@ -389,10 +392,11 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('update.api.documentation.not.found.alert')}</div>
-            <button className="btn btn-outline-info"
-              onClick={() => fetchNewPageAndUpdate()}>
+            <FeedbackButton
+              className="btn --secondary"
+              onPress={() => fetchNewPageAndUpdate()}>
               {translate('add.api.documention.btn.label')}
-            </button>
+            </FeedbackButton>
           </div>
         </Can>
       )}
@@ -607,7 +611,7 @@ const mimeTypes = [
   {
     label: '.cms : Page from CMS',
     value: 'cms/page',
-    render: ({ api, page }: RenderProps) => {
+    render: ({ page }: RenderProps) => {
       return page.remoteContentUrl
     }
   },
@@ -649,7 +653,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
         if (isError(envs)) {
           return []
         } else {
-          setSelectedEnvironment(prev => !!prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs.find(e => !!e.documentation) || envs[0])
+          setSelectedEnvironment(prev => prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs.find(e => !!e.documentation) || envs[0])
           return envs
         }
       }),
@@ -675,6 +679,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
       <div className='d-flex flex-column p-3'>
         <Select
           className='col-3 mb-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}
@@ -691,7 +696,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
+                <span className={`badge --primary`}>
                   {'ENV'}
                 </span>{props.data.label}
               </div>

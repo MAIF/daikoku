@@ -1,7 +1,8 @@
-import { FormEvent, useContext, useEffect, useRef, useState } from 'react';
-import * as Services from '../../services/index';
-import { I18nContext } from '../../contexts';
+import { SubmitEvent, useContext, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+
+import { I18nContext } from '../../contexts';
+import * as Services from '../../services/index';
 
 export function LoginPage() {
   const { Translation, translate } = useContext(I18nContext);
@@ -27,29 +28,25 @@ export function LoginPage() {
     });
   };
 
-  const submit = (e: FormEvent<HTMLElement>) => {
+  const submit = (e: SubmitEvent<HTMLElement>) => {
     setLoading(true);
 
     e.preventDefault();
     const { username, password } = state;
     const action = `/auth/${provider}/callback`;
-      Services.login(username, password, action, searchParams.get('redirect'))
-        .then((res) => {
-          if (res.status === 400) {
-            setState({
-              ...state,
-              loginError: true,
-            });
-            setLoading(false);
-            buttonRef.current?.classList.add('active', 'btn-outline-danger')
-            setTimeout(() => {
-              buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-            }, 800);
-          }
-          else if (res.redirected) {
-            window.location.href = res.url;
-          }
-        });
+    Services.login(username, password, action, searchParams.get('redirect'))
+      .then((res) => {
+        if (res.status >= 400) {
+          setState({
+            ...state,
+            loginError: true,
+          });
+          setLoading(false);
+        }
+        else if (res.redirected) {
+          window.location.href = res.url;
+        }
+      });
   };
 
   const { loginError } = state;
@@ -96,7 +93,7 @@ export function LoginPage() {
             />
           </div>
           <div className="mb-3 d-grid gap-1">
-            <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
+            <button type="submit" ref={buttonRef} className="btn --primary shake" disabled={loading}>
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>

@@ -1,12 +1,13 @@
-import React, {FunctionComponent, PropsWithChildren, useContext, useEffect, useState} from 'react';
-import {Option} from '../components/utils/Option';
+import React, { FunctionComponent, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { Option } from '../components/utils/Option';
 import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';
-import {Language, TOptions} from '../types/types';
-import {TranslationItem} from '../types/tenant';
-import {isError} from '../types';
-import {GlobalContext} from './globalContext';
+import { Language, TOptions } from '../types/types';
+import { TranslationItem } from '../types/tenant';
+import { isError } from '../types';
+import { GlobalContext } from './globalContext';
+import { Check, X } from "lucide-react";
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
@@ -65,7 +66,7 @@ export const I18nProvider = ({
   children
 }: any) => {
 
-  const {connectedUser, tenant} = useContext(GlobalContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
 
   const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse(Language.en);
   const currentLanguage = Option(connectedUser?.defaultLanguage).getOrElse(tenantDefaultLanguage);
@@ -145,10 +146,10 @@ export const I18nProvider = ({
 
 
 
-  function translate(key:string):string;
+  function translate(key: string): string;
   function translate(params: TranslateParams): string;
   function translate(x: (string | TranslateParams)): string {
-    const params = typeof x === 'string' ? {key: x} : x
+    const params = typeof x === 'string' ? { key: x } : x
     if (!language) {
       return params.defaultResponse || params.key;
     }
@@ -193,7 +194,7 @@ export const I18nProvider = ({
     if (isTranslationMode) {
       if (showEditButton)
         return (
-          <div className="d-flex">
+          <div className="d-flex gap-2">
             <input
               type="text"
               className="form-control"
@@ -201,18 +202,16 @@ export const I18nProvider = ({
               onChange={() => { }}
             />
             <button
-              className="btn btn-sm btn-outline-success mx-1"
-              style={{ minWidth: '38px' }}
+              className="btn --secondary --small --icon-only"
               onClick={() => setShowEditButton(false)}
             >
-              <i className="fas fa-check" />
+              <Check />
             </button>
             <button
-              className="btn btn-sm btn-outline-danger"
-              style={{ minWidth: '38px' }}
+              className="btn --secondary --small --icon-only"
               onClick={() => setShowEditButton(false)}
             >
-              <i className="fas fa-times" />
+              <X />
             </button>
           </div>
         );

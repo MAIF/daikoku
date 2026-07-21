@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { ITeamSimple, ITenantFull, IUser, isError } from '../../../types';
@@ -19,6 +19,7 @@ import {
   manage,
   userHasAvatar,
 } from '../../utils';
+import {Trash2} from "lucide-react";
 
 const AdminList = () => {
   const context = useContext(GlobalContext);
@@ -26,7 +27,7 @@ const AdminList = () => {
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState<Array<IUser>>([]);
   const [admins, setAdmins] = useState<Array<IUser>>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [team, setTeam] = useState<ITeamSimple>();
   const [tenant, setTenant] = useState<ITenantFull>();
   const [filteredAdmins, setFilteredAdmins] = useState<Array<IUser>>([]);
@@ -47,9 +48,9 @@ const AdminList = () => {
         setAdmins(maybeAdministration.admins);
         setTeam(maybeAdministration.team);
       }
-      if (!isError(tenant)){
+      if (!isError(tenant)) {
         setTenant(tenant);
-      } 
+      }
       setAddableAdmins(addableAdmins);
       setLoading(false);
     });
@@ -147,7 +148,7 @@ const AdminList = () => {
         return (<AvatarWithAction key={admin._id} avatar={admin.picture} name={admin.name} infos={<span className="team-member__name">{admin.name}</span>} actions={[
           {
             action: () => removeAdmin(admin),
-            iconClass: 'fas fa-trash delete-icon',
+            icon: <Trash2 className="delete-icon" />,
             tooltip: translate('Remove admin rights'),
           },
         ]} />);

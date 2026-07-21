@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { useContext } from 'react';
-import ExternalLink from 'react-feather/dist/icons/external-link'
+import {ExternalLink, PlusSquare} from 'lucide-react'
 
 import { I18nContext } from '../../../contexts';
 import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
@@ -15,7 +15,7 @@ export const ApiTotal = (props: any) => {
         <span className="unit">{getCurrencySymbol('EUR')}</span>
       </div>
       <div>
-        <i className="fas fa-plus-square" />
+        <PlusSquare />
       </div>
     </div>
   );

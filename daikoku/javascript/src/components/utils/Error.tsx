@@ -1,10 +1,10 @@
 import { useContext } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { I18nContext } from '../../contexts';
 export const Error = () => {
     const { hash } = useLocation();
     const { translate } = useContext(I18nContext);
-    
+
     const decodedHash = hash ? atob(hash.slice(1)) : '???'
 
     return (
@@ -13,7 +13,7 @@ export const Error = () => {
                 {decodedHash}
             </div>
             <div className="d-flex justify-content-end">
-                <Link className='btn btn-outline-success' to="/">{translate('go_back')}</Link>
+                <Link className='btn --primary' to="/">{translate('go_back')}</Link>
             </div>
         </div>
     )

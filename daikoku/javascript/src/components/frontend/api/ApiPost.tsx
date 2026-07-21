@@ -1,8 +1,7 @@
 import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
-import ArrowLeft from 'react-feather/dist/icons/arrow-left';
-import ArrowRight from 'react-feather/dist/icons/arrow-right';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
@@ -22,7 +21,7 @@ type ApiPostProps = {
 
 
 export function ApiPost(props: ApiPostProps) {
-  const { translate, language } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { openRightPanel, closeRightPanel, confirm } = useContext(ModalContext);
   const { connectedUser } = useContext(GlobalContext);
   const queryClient = useQueryClient();
@@ -52,17 +51,6 @@ export function ApiPost(props: ApiPostProps) {
       ]
     },
   };
-
-  function savePost(post: any) {
-    Services.savePost(props.api._id, props.ownerTeam._id, post._id, post)
-      .then((res) => {
-        if (res.error) {
-          toast.error(translate('team_api_post.failed'));
-        } else {
-          toast.success(translate('team_api_post.saved'));
-        }
-      });
-  }
 
   function publishPost(post: IApiPost) {
     Services.publishNewPost(props.api._id, props.ownerTeam._id, {
@@ -130,7 +118,7 @@ export function ApiPost(props: ApiPostProps) {
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className="mb-2 d-flex justify-content-end">
             <button
-              className="btn btn-sm btn-outline-primary px-3"
+              className="btn --primary"
               aria-label={translate('api.home.config.api.news.btn.label')}
               data-bs-toggle="dropdown"
               aria-expanded="false"
@@ -170,17 +158,17 @@ export function ApiPost(props: ApiPostProps) {
           </div>
         </Can>
         <div className='d-flex flex-row justify-content-between'>
-          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
+          <button className="btn --secondary --icon-only" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
             <ArrowLeft />
           </button>
-          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
+          <button className="btn --secondary --icon-only" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
             <ArrowRight />
           </button>
         </div>
         {!postQuery.data.posts.length && (
           <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
             <div>{translate('api.post.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
+            <button className="btn --secondary" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
           </div>
         )}
         {!!postQuery.data.posts.length && postQuery.data.posts.map((post, i) => {

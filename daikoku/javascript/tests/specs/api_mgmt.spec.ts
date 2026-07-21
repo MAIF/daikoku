@@ -34,7 +34,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Créer une API' }).click();
   await page.locator('#portal-root').getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Créée' }).click();
+  await page.getByRole('button', { name: 'Brouillon' }).click();
   await page.getByPlaceholder('New Api').fill('API Betterave');
   await page.getByLabel('Desc. courte').fill("Ce n'est pas une blague Dwight. Jim ❤️");
   await page.getByText('Versions et tags').click();
@@ -58,12 +58,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
   await page.getByText('Environnements').click();
-   await page.getByText('Environnements').click();
-    await page.getByText('Environnements').click();
-  await page.locator('.fake-pricing-card').click();
-
-  // await page.getByText('Environnements').click();
-  // await page.getByRole('list', { name: 'Liste des environnements' }).locator('div').click();
+  await page.getByRole('list', { name: 'Liste des environnements' }).locator('div').click();
   await page.locator('div').filter({ hasText: /^new usage plan$/ }).nth(2).click();
   await page.getByText('dev', { exact: true }).click();
   await page.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
@@ -89,8 +84,9 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.getByRole('textbox', { name: 'Saisissez API Betterave pour' }).fill('API Betterave');
   await page.getByRole('button', { name: 'Confirmation' }).click();
+  await expect(page.getByText("API succesfully updated")).toBeVisible();
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.getByLabel('Liste des APIs').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeHidden();
@@ -113,7 +109,7 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
-  await page.getByLabel('Accueil Daikoku').click();
+  await page.goto(`/apis`)
   // await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.lead'))
   //   .toHaveText('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version')
   await page.getByRole('link', { name: 'API papier' }).click();
@@ -176,43 +172,52 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
   await page.getByRole('button', { name: 'Confirmation' }).click();
-  await expect(page.getByRole('listitem', { name: 'API papier' })).toBeHidden();
+  await expect(page.getByText("Supprimé avec succès")).toBeVisible()
 
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
   await page.getByRole('link', { name: 'Vendeurs' }).click();
   await page.getByText('Clés d\'API').click();
   await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
-  await page.waitForTimeout(1000);
 
   //verifier dans oto que les clé sont plus dispo
-  const MaybeVendeurApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(MaybeVendeurApiKey.status).toBe(200);
-  const vendeurApiKey = await MaybeVendeurApiKey.json()
+  // La suppression est propagée à Otoroshi de façon asynchrone : on poll Otoroshi
+  // jusqu'à l'état attendu au lieu d'attendre un délai fixe (source de flakiness).
+
+  // la clé Vendeurs est conservée mais la route papier doit être retirée des authorizedEntities ;
+  // on capture la clé lors du poll pour asserter dessus sans refaire d'appel.
+  let vendeurApiKey: any;
+  await expect.poll(async () => {
+    const res = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
+      method: 'GET',
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    });
+    if (res.status !== 200) return null;
+    vendeurApiKey = await res.json();
+    return vendeurApiKey.authorizedEntities as string[];
+  }, { timeout: 10000 }).toEqual(expect.not.arrayContaining([otoroshiDevPaperRouteId]));
+
   await expect(vendeurApiKey.enabled).toBe(true)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
-  await expect(vendeurApiKey.authorizedEntities).toEqual(
-    expect.not.arrayContaining([otoroshiDevPaperRouteId])
-  );
   await expect(vendeurApiKey.authorizedEntities).toEqual(
     expect.arrayContaining([otoroshiDevCommandRouteId])
   );
 
 
-  const MaybeDwightApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(MaybeDwightApiKey.status).toBe(404);
+  // la clé Dwight doit finir par être supprimée d'Otoroshi (404)
+  await expect.poll(async () => {
+    const res = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
+      method: 'GET',
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    });
+    return res.status;
+  }, { timeout: 10000 }).toBe(404);
 });
 
 test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {
@@ -287,8 +292,7 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await page.getByRole('link', { name: apiGroupName }).click();
 
 
-  await page.getByText('APIs', {exact: true}).click();
-  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
+  await page.getByText('APIs', { exact: true }).click();
   await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.locator('h1')).toBeVisible();

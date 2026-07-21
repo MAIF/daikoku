@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 
-export function customizeFetch(store: any) {
+export function customizeFetch() {
   let willRedirect = false;
   (window as any).old_fetch = window.fetch;
   window.fetch = (...args) => {

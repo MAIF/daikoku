@@ -29,6 +29,6 @@ class ReplaceAllWith(regex: String) {
 
 object RegexUtil {
   def cleanRegex(regex: String): String = {
-    regex.replaceAll("""([.\[\]^?\-+*?()\$|\\])""", """\\$1""")
+    regex.replaceAll("""([.\[\]^?\-+*?()\$|\\'])""", """\\$1""")
   }
 }

@@ -86,6 +86,7 @@ PUT     /api/me/password                                fr.maif.daikoku.controll
 
 GET     /api/me/notifications/unread-count              fr.maif.daikoku.controllers.NotificationController.myUnreadNotificationsCount()
 
+GET     /api/me/visible-apis                                    fr.maif.daikoku.controllers.ApiController.getMyVisibleApisLight(research: Option[String], limit: Int ?= 10)
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.daikoku.controllers.ApiController.getVisibleApi(humanReadableId, version)
 GET     /api/me/visible-apis/:apiId/:version/plans/:planId       fr.maif.daikoku.controllers.ApiController.getVisiblePlan(apiId, version, planId)
 GET     /api/me/visible-apis/:apiId/:version/plans              fr.maif.daikoku.controllers.ApiController.getVisiblePlans(apiId, version)
@@ -139,10 +140,12 @@ GET		  /api/teams/:teamId/subscriptions/:id/_transfer          fr.maif.daikoku.c
 PUT		  /api/teams/:teamId/subscriptions/:id/_retrieve          fr.maif.daikoku.controllers.ApiController.transferSubscription(teamId, id)
 POST	  /api/teams/:teamId/subscriptions/:id/_makeUnique        fr.maif.daikoku.controllers.ApiController.makeUniqueSubscription(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.updateApiSubscription(teamId, id)
-DELETE  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.deleteApiSubscription(teamId, id, action: Option[String] ?= Some("promotion"), child: Option[String] ?= None)
+DELETE  /api/teams/:teamId/subscriptions/:id                    fr.maif.daikoku.controllers.ApiController.deleteApiSubscription(teamId, id)
 POST    /api/teams/:teamId/subscriptions/:id/_rotation          fr.maif.daikoku.controllers.ApiController.toggleApiKeyRotation(teamId, id)
-POST    /api/teams/:teamId/subscriptions/:id/_refresh           fr.maif.daikoku.controllers.ApiController.regenerateApiKeySecret(teamId, id)
-POST    /api/subscriptions/_init                                fr.maif.daikoku.controllers.ApiController.initSubscriptions()
+POST    /api/teams/:teamId/keyrings/:id/_refresh                fr.maif.daikoku.controllers.ApiController.regenerateKeyringSecret(teamId, id)
+PUT     /api/teams/:teamId/keyrings/:id/name                    fr.maif.daikoku.controllers.ApiController.updateKeyringCustomName(teamId, id)
+DELETE  /api/teams/:teamId/keyrings/:id                         fr.maif.daikoku.controllers.ApiController.deleteKeyring(teamId, id)
+PUT     /api/teams/:teamId/keyrings/:id/_enable                 fr.maif.daikoku.controllers.ApiController.toggleKeyring(teamId, id, enabled: Boolean)
 POST    /api/teams/:teamId/subscriptions/_lastUsage             fr.maif.daikoku.controllers.ApiController.getApiSubscriptionsUsage(teamId)
 POST    /api/apis/_init                                         fr.maif.daikoku.controllers.ApiController.initApis()
 GET     /api/teams/:teamId/subscription/:id/informations        fr.maif.daikoku.controllers.ApiController.getSubscriptionInformations(teamId, id)
@@ -297,6 +300,10 @@ DELETE  /api/admin/sessions/:id                         fr.maif.daikoku.controll
 DELETE  /api/admin/sessions                             fr.maif.daikoku.controllers.SessionController.deleteAllSessions()
 GET     /api/admin/sessions                             fr.maif.daikoku.controllers.SessionController.allSessions()
 POST    /api/session/_renew                             fr.maif.daikoku.controllers.SessionController.sessionRenew()
+
+GET     /api/admin/loggers                               fr.maif.daikoku.controllers.LoggersController.getAllLoggers()
+GET     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.getLogLevel(name)
+PUT     /api/admin/loggers/:name/level                   fr.maif.daikoku.controllers.LoggersController.changeLogLevel(name, newLevel: Option[String])
 
 GET     /api/entities/tenant                            fr.maif.daikoku.controllers.EntitiesController.newTenant()
 GET     /api/entities/team                              fr.maif.daikoku.controllers.EntitiesController.newTeam()
@@ -479,16 +486,6 @@ GET     /admin-api/credentials/:token                   fr.maif.daikoku.controll
 
 POST     /admin-api/search                               fr.maif.daikoku.controllers.GraphQLController.adminApiSearch()
 GET      /admin-api/schema                               fr.maif.daikoku.controllers.GraphQLController.adminApiSchema()
-
-
-GET     /integration-api/apis                           fr.maif.daikoku.controllers.IntegrationApiController.findAll()
-GET     /integration-api/:teamId                        fr.maif.daikoku.controllers.IntegrationApiController.findAllTeam(teamId)
-GET     /integration-api/:teamId/:apiId/complete        fr.maif.daikoku.controllers.IntegrationApiController.apiComplete(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/description     fr.maif.daikoku.controllers.IntegrationApiController.apiDescription(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/plans           fr.maif.daikoku.controllers.IntegrationApiController.apiPlans(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/documentation   fr.maif.daikoku.controllers.IntegrationApiController.apiDocumentation(teamId, apiId)
-GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.daikoku.controllers.IntegrationApiController.apiSwagger(teamId, apiId)
-GET     /integration-api/:teamId/:apiId                 fr.maif.daikoku.controllers.IntegrationApiController.api(teamId, apiId)
 
 ### NoDocs ###
 GET     /*path                      fr.maif.daikoku.controllers.HomeController.indexWithPath(path)

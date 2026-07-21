@@ -1,6 +1,6 @@
 import classNames from "classnames";
-import { PropsWithChildren, useContext, useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { PropsWithChildren, ReactNode, useContext, useEffect, useState } from "react";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { toast } from 'sonner';
 
 import { I18nContext, useTeamBackOffice } from "../../contexts";
@@ -16,7 +16,7 @@ import {
   TeamIncome,
   TeamMembers,
 } from "../backoffice";
-import { Spinner } from "../utils";
+import { Can, Spinner, read, manage, api, apikey, asset, stat, team, backoffice } from "../utils";
 import { LastDemands, LastDemandsExt } from "./widgets";
 import { TeamApis } from "./apis/TeamApis";
 
@@ -48,7 +48,7 @@ const TeamBackOfficeHome = () => {
         <div className="col">
           <div className="d-flex flex-row justify-content-center gap-1">
             <button
-              className={classNames("btn btn-outline-primary", {
+              className={classNames("btn --secondary", {
                 active: mode === "producer",
               })}
               onClick={() => setMode("producer")}
@@ -56,7 +56,7 @@ const TeamBackOfficeHome = () => {
               {translate('team.dashboard.label.producer')}
             </button>
             <button
-              className={classNames("btn btn-outline-primary", {
+              className={classNames("btn --secondary", {
                 active: mode === "consumer",
               })}
               onClick={() => setMode("consumer")}
@@ -79,6 +79,44 @@ const TeamBackOfficeHome = () => {
 
 };
 
+/**
+ * Route guard for the team back-office. Loads the current team and only renders
+ * its children if the connected user has the required permission on it.
+ * Otherwise it shows an "Unauthorized" toast and redirects the user away
+ * (back to the team dashboard by default, or to `fallback` when given).
+ */
+type TeamRouteProps = {
+  I: number;
+  a: string;
+  children: ReactNode;
+  fallback?: string;
+};
+const TeamRoute = ({ I, a, children, fallback }: TeamRouteProps) => {
+  const { teamId } = useParams();
+  const { currentTeam, isLoading } = useTeamBackOffice();
+
+  if (isLoading) {
+    return <Spinner />;
+  }
+
+  // Not a team we can read (unknown team / not a member): get out.
+  if (!currentTeam || isError(currentTeam)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <Can
+      I={I}
+      a={a}
+      team={currentTeam}
+      dispatchError
+      orElse={<Navigate to={fallback ?? `/${teamId}/settings/dashboard`} replace />}
+    >
+      {children}
+    </Can>
+  );
+};
+
 export const TeamBackOffice = () => {
 
   return (
@@ -86,24 +124,24 @@ export const TeamBackOffice = () => {
       <main role="main" className="ml-sm-auto px-4 mt-3">
         <BackOfficeContent>
           <Routes>
-            <Route path={`/edition`} element={<TeamEdit />} />
-            <Route path={`/assets`} element={<TeamAssets />} />
+            <Route path={`/edition`} element={<TeamRoute I={manage} a={team}><TeamEdit /></TeamRoute>} />
+            <Route path={`/assets`} element={<TeamRoute I={manage} a={asset}><TeamAssets /></TeamRoute>} />
 
-            <Route path={`/consumption`} element={<TeamConsumption />} />
-            <Route path={`/billing`} element={<TeamBilling />} />
-            <Route path={`/income`} element={<TeamIncome />} />
+            <Route path={`/consumption`} element={<TeamRoute I={read} a={stat}><TeamConsumption /></TeamRoute>} />
+            <Route path={`/billing`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
+            <Route path={`/income`} element={<TeamRoute I={manage} a={team}><TeamIncome /></TeamRoute>} />
             <Route
               path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
-              element={<TeamApiKeyConsumption />}
+              element={<TeamRoute I={read} a={apikey}><TeamApiKeyConsumption /></TeamRoute>}
             />
             <Route
               path={`/apikeys/:apiId/:versionId`}
-              element={<TeamApiKeysForApi />}
+              element={<TeamRoute I={read} a={apikey}><TeamApiKeysForApi /></TeamRoute>}
             />
-            <Route path={`/apikeys`} element={<TeamApiKeys />} />
-            <Route path={`/members`} element={<TeamMembers />} />
-            <Route path={`/apis`} element={<TeamApis />} />
-            <Route path="/dashboard" element={<TeamBackOfficeHome />} />
+            <Route path={`/apikeys`} element={<TeamRoute I={read} a={apikey}><TeamApiKeys /></TeamRoute>} />
+            <Route path={`/members`} element={<TeamRoute I={read} a={team}><TeamMembers /></TeamRoute>} />
+            <Route path={`/apis`} element={<TeamRoute I={read} a={api}><TeamApis /></TeamRoute>} />
+            <Route path="/dashboard" element={<TeamRoute I={read} a={backoffice} fallback="/"><TeamBackOfficeHome /></TeamRoute>} />
           </Routes>
         </BackOfficeContent>
       </main>

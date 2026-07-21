@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { IApi, IFastPlan, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptions } from "../../types";
 
 import { I18nContext } from "../../contexts/i18n-context";
+import { CircleX } from 'lucide-react';
 
 export function partition<T>(array: Array<T>, isValid: (x: T) => boolean): Array<Array<T>> {
   return array.reduce(
@@ -87,12 +88,12 @@ export const FilterPreview = (props: FilterType) => {
           </span>
         )}
         {!!props.selectedProducer?.value && (
-            <span>
+          <span>
             {translate('filter.preview.team')} <strong>{props.selectedProducer?.label}</strong>
-              &nbsp;
+            &nbsp;
           </span>
         )}
-        {props.seeOnlySubs === true && (
+        {/* {props.seeOnlySubs === true && (
           <span>
             {translate('fastMode.onlySubs.info')}
           </span>
@@ -101,10 +102,10 @@ export const FilterPreview = (props: FilterType) => {
           <span>
             {translate('fastMode.planSearch.info')} <strong>{props.filterPlan}</strong>
           </span>
-        )}
+        )} */}
       </div>
       <div className="clear cursor-pointer" onClick={props.clearFilter}>
-        <i className="far fa-times-circle me-1" />
+        <CircleX className="me-1" />
         <Translation i18nkey="clear filter">clear filter</Translation>
       </div>
     </div>
@@ -131,21 +132,21 @@ export const isPromise = (value: any) => {
   return Boolean(value && typeof value.then === 'function');
 }
 export const cleanPromise = <T extends { [x: string]: any } | any[] | string | number | boolean,>(obj: T): T => {
-    if (!!obj && Array.isArray(obj)) {
-      return obj.map(cleanPromise) as T
-    } else if (!!obj && typeof obj === 'object') {
-      return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
-        if (isPromise(v)) {
-          return [k, `promise-${k}`];
-        } else if (typeof v === "object") {
-          return [k, cleanPromise(v)];
-        } else {
-          return [k, v];
-        }
-      })) as T;
-    }
-    return obj;
-  };
+  if (!!obj && Array.isArray(obj)) {
+    return obj.map(cleanPromise) as T
+  } else if (!!obj && typeof obj === 'object') {
+    return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
+      if (isPromise(v)) {
+        return [k, `promise-${k}`];
+      } else if (typeof v === "object") {
+        return [k, cleanPromise(v)];
+      } else {
+        return [k, v];
+      }
+    })) as T;
+  }
+  return obj;
+};
 
 /**
  * Escapes special characters in a string so it can be safely used in a regular expression.

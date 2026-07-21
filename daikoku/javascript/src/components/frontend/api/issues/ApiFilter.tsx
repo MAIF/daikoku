@@ -9,6 +9,8 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { api as API, Can, CanIDoAction, manage } from '../../../utils';
 import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
+import { Tag } from "lucide-react";
+import { FeedbackButton } from '../../../utils/FeedbackButton';
 
 type ApiFilterProps = {
   handleFilter,
@@ -104,24 +106,30 @@ export function ApiFilter({
 
   return (
     <div className="d-flex flex-row justify-content-between">
-      <div className="d-flex align-items-center">
+      <div className="d-flex align-items-center gap-2">
         <button
-          className={classNames(`btn btn-outline-info`, { active: filter === 'all' })}
-          style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+          className={classNames(`btn`, {
+            '--primary': filter === 'all',
+            '--secondary': filter !== 'all'
+          })}
           onClick={() => handleFilter('all')}
         >
           {translate('All')}
         </button>
         <button
-          className={classNames(`btn btn-outline-info`, { active: filter === 'open' })}
-          style={{ borderRadius: 0 }}
+          className={classNames(`btn`, {
+            '--primary': filter === 'open',
+            '--secondary': filter !== 'open',
+          })}
           onClick={() => handleFilter('open')}
         >
           {translate('issues.open')}
         </button>
         <button
-          className={classNames(`btn btn-outline-info`, { active: filter === 'closed' })}
-          style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+          className={classNames(`btn`, {
+            '--primary': filter === 'closed',
+            '--secondary': filter !== 'closed',
+          })}
           onClick={() => handleFilter('closed')}
         >
           {translate('issues.closed')}
@@ -144,26 +152,25 @@ export function ApiFilter({
       </div>
 
       {connectedUser && !connectedUser.isGuest && (
-        <div>
+        <div className='d-flex gap-2'>
           <Can I={manage} a={API} team={ownerTeam}>
-            <Link to={`${basePath}/labels`} className="btn btn-outline-info">
-              <i className="fa fa-tag me-1" />
+            <Link to={`${basePath}/labels`} className="btn --secondary">
+              <Tag />
               {translate('issues.tags')}
             </Link>
           </Can>
-          <button
-            className="btn btn-outline-success ms-1"
-            onClick={() =>
-              Services.fetchNewIssue()
-                .then((newIssue) => openFormModal({
-                  title: translate('issues.new_issue'),
-                  schema,
-                  onSubmit: d => createIssue({...d, comments: [{content: d.comment, by: connectedUser._id}]}),
-                  value: newIssue,
-                  actionLabel: translate('Create')
-                }))}>
+          <FeedbackButton
+            className="btn --primary"
+            onPress={() => Services.fetchNewIssue()
+              .then((newIssue) => openFormModal({
+                title: translate('issues.new_issue'),
+                schema,
+                onSubmit: d => createIssue({ ...d, comments: [{ content: d.comment, by: connectedUser._id }] }),
+                value: newIssue,
+                actionLabel: translate('Create')
+              }))}>
             {translate('issues.new_issue')}
-          </button>
+          </FeedbackButton>
         </div>
       )}
     </div>

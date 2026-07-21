@@ -14,7 +14,7 @@ import fr.maif.daikoku.domain.json.TenantFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.OAuth2Config
-import fr.maif.daikoku.services.ApiService
+import fr.maif.daikoku.services.{ApiService, DeletionService}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.utils.JWKSAlgoSettings
@@ -26,11 +26,12 @@ import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Try, Using}
 
 class TenantController(
     DaikokuAction: DaikokuAction,
     apiService: ApiService,
+    deletionService: DeletionService,
     env: Env,
     cc: ControllerComponents,
     translator: Translator
@@ -259,6 +260,31 @@ class TenantController(
                 env.dataStore.usagePlanRepo
                   .forTenant(tenantForCreation)
                   .save(adminApiPlan)
+
+              defaultThemeBody = env.environment
+                .resourceAsStream("public/themes/default.css")
+                .map(stream =>
+                  Using.resource(stream)(s =>
+                    scala.io.Source.fromInputStream(s).mkString
+                  )
+                )
+                .getOrElse {
+                  AppLogger.warn(
+                    "public/themes/default.css not found, using empty default color theme"
+                  )
+                  ""
+                }
+
+              colorThemePage = Tenant.getCustomizationCmsPage(
+                tenantId = tenant.id,
+                pageId = "color-theme",
+                contentType = "text/css",
+                body = defaultThemeBody
+              )
+
+              _ <- env.dataStore.cmsRepo
+                .forTenant(tenant.id)
+                .save(colorThemePage)
             } yield {
               Created(tenantForCreation.asJsonWithJwt)
             }
@@ -279,20 +305,20 @@ class TenantController(
             ctx.setCtxValue("tenant.name", tenant.name)
             ctx.setCtxValue("tenant.id", tenant.id)
             for {
-              _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAllLogically()
+              _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAll()
               _ <-
                 env.dataStore.apiSubscriptionRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
+                  .deleteAll()
               _ <-
                 env.dataStore.apiDocumentationPageRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
+                  .deleteAll()
               _ <-
                 env.dataStore.notificationRepo
                   .forTenant(tenant)
-                  .deleteAllLogically()
-              _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAllLogically()
+                  .deleteAll()
+              _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()
               _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
               _ <- env.dataStore.userRepo.updateMany(
                 Json.obj("lastTenant" -> tenant.id.asJson),
@@ -363,11 +389,10 @@ class TenantController(
                                       ),
                                     AppError.ApiNotFound
                                   )
-                                  _ <- apiService.deleteUsagePlan(
-                                    plan,
-                                    api,
-                                    ctx.tenant,
-                                    ctx.user
+                                  _ <- deletionService.deleteUsagePlanByQueue(
+                                    plan.id,
+                                    api.id,
+                                    ctx.tenant.id
                                   )
                                 } yield api
                               })

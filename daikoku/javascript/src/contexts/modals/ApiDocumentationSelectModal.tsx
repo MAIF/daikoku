@@ -67,13 +67,13 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
         )}
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+        <button type="button" className="btn b--secondary" onClick={props.close}>
           {translate('Cancel')}
         </button>
-        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(true)}>
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn --secondary" onClick={() => importPages(true)}>
           {translate('documentation.import.page.reuse.btn.label')}
         </button>
-        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(false)}>
+        <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn --secondary" onClick={() => importPages(false)}>
           {translate('documentation.import.page.clone.btn.label')}
         </button>
 

@@ -23,7 +23,8 @@ import fr.maif.daikoku.services.{
   ApiLifeCycleService,
   ApiService,
   MailService,
-  DeletionService
+  DeletionService,
+  KeyringService
 }
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
@@ -75,7 +76,8 @@ class ApiController(
     paymentClient: PaymentClient,
     mailService: MailService,
     apiLifeCycleService: ApiLifeCycleService,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    keyringService: KeyringService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -346,13 +348,13 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.asJson))
-          parentSubs <-
+          keyringSiblings <-
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
                 Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+                  "keyring" -> Json.obj(
+                    "$in" -> subscriptions.map(_.keyring.value)
                   )
                 )
               )
@@ -363,7 +365,7 @@ class ApiController(
                 Json.obj(
                   "_id" -> Json.obj(
                     "$in" -> JsArray(
-                      (parentSubs ++ subscriptions).map(_.api.asJson)
+                      (keyringSiblings ++ subscriptions).map(_.api.asJson)
                     )
                   )
                 )
@@ -561,7 +563,15 @@ class ApiController(
       }
     }
 
-  def getVisiblePlan(apiId: String, version: String, planId: String) =
+  def getMyVisibleApisLight(research: Option[String], limit: Int): Action[AnyContent] =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      CommonServices.getVisibleApisLight(research, limit)(using ctx, env, ec).map {
+        case Right(apis) => Ok(JsArray(apis))
+        case Left(error) => error.render()
+      }
+    }
+
+  def getVisiblePlan(apiId: String, version: String, planId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1084,7 +1094,6 @@ class ApiController(
               customName = Some(data.apiKey.clientName),
               rotation = None,
               integrationToken = IdGenerator.token(64)
-
             )
           )
 
@@ -1241,7 +1250,7 @@ class ApiController(
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
           motivation = motivation,
-          parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
+          keyringId = Some(KeyringId(apiKeyId))
         )
       }
     }
@@ -1346,7 +1355,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.stepValidatorRepo
               .forTenant(ctx.tenant)
-              .deleteByIdLogically(validator.id)
+              .deleteById(validator.id)
           )
         } yield Redirect("/apis"))
           .leftMap(_.render())
@@ -1666,7 +1675,7 @@ class ApiController(
 
   def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has update custom name for subscription @{subscription._id}"
         )
@@ -1686,11 +1695,103 @@ class ApiController(
             case Some(subscription) =>
               val updatedSubscription =
                 subscription.copy(customName = Some(customName))
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant)
-                .save(updatedSubscription)
-                .map(_ => Ok(updatedSubscription.asSafeJson))
+              for {
+                _ <- env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant)
+                  .save(updatedSubscription)
+                maybeKeyring <- env.dataStore.keyringRepo
+                  .forTenant(ctx.tenant)
+                  .findById(updatedSubscription.keyring)
+              } yield maybeKeyring match {
+                case Some(keyring) => Ok(updatedSubscription.asSafeJson(keyring))
+                case None =>
+                  NotFound(Json.obj("error" -> "keyring not found"))
+              }
           }
+      }
+    }
+
+  def updateKeyringCustomName(teamId: String, keyringId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiKeyAction(
+        AuditTrailEvent(
+          s"@{user.name} has updated custom name for keyring @{keyring._id}"
+        )
+      )(teamId, ctx) { _ =>
+        val customName =
+          (ctx.request.body.as[JsObject] \ "customName").as[String].trim
+        env.dataStore.keyringRepo
+          .forTenant(ctx.tenant)
+          .findOneNotDeleted(
+            Json.obj("_id" -> keyringId, "team" -> teamId)
+          )
+          .flatMap {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "keyring not found"))
+              )
+            case Some(keyring) =>
+              val updated = keyring.copy(customName = Some(customName))
+              env.dataStore.keyringRepo
+                .forTenant(ctx.tenant)
+                .save(updated)
+                .map(_ => Ok(updated.asJson))
+          }
+      }
+    }
+
+  def deleteKeyring(teamId: String, keyringId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has deleted keyring @{keyring._id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        import cats.implicits.*
+
+        ctx.setCtxValue("keyring._id", keyringId)
+        (for {
+          keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findOneNotDeleted(
+                Json.obj("_id" -> keyringId, "team" -> team.id.asJson)
+              ),
+            AppError.EntityNotFound("keyring")
+          )
+          subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+          )
+          apis <- EitherT.liftF[Future, AppError, Seq[Api]](
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$in" -> JsArray(subscriptions.map(_.api.asJson).distinct)
+                  )
+                )
+              )
+          )
+          _ <- subscriptions.groupBy(_.api).toList.traverse {
+            case (apiId, subs) =>
+              EitherT
+                .fromOption[Future][AppError, Api](
+                  apis.find(_.id == apiId),
+                  AppError.ApiNotFound
+                )
+                .flatMap(api =>
+                  deletionService.deleteSubscriptions(subs, api, ctx.tenant)
+                )
+          }
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            keyringService.deleteKeyring(ctx.tenant.id, keyring.id)
+          )
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -1772,42 +1873,34 @@ class ApiController(
             apiTeam: Team,
             plan: UsagePlan,
             sub: ApiSubscription,
-            parentSub: Option[ApiSubscription]
+            keyringSiblings: Seq[ApiSubscription]
         ): Future[JsValue] = {
           val name: String = plan.customName
-          val r = sub
-            .asAuthorizedJson(
-              teamPermission,
-              plan.integrationProcess,
-              ctx.user.isDaikokuAdmin
-            )
-            .as[JsObject] ++
-            Json.obj("planName" -> name) ++
-            Json.obj("apiName" -> api.name) ++
-            Json.obj("apiVersion" -> api.currentVersion.value) ++
-            Json.obj("_humanReadableId" -> api.humanReadableId) ++
-            Json.obj("parentUp" -> false) ++
-            Json.obj("apiLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/description") ++
-            Json.obj("planLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing")
-          sub.parent match {
-            case None => FastFuture.successful(r)
-            case Some(parentId) =>
-              parentSub match {
-                case Some(parent) =>
-                  FastFuture.successful(
-                    r ++ Json.obj("parentUp" -> parent.enabled)
+          // the subscription shares its keyring with at least one other one
+          val aggregated = keyringSiblings.nonEmpty
+          env.dataStore.keyringRepo
+            .forTenant(ctx.tenant)
+            .findById(sub.keyring)
+            .map { maybeKeyring =>
+              val subJson = maybeKeyring match {
+                case Some(keyring) =>
+                  sub.asAuthorizedJson(
+                    keyring,
+                    teamPermission,
+                    plan.integrationProcess,
+                    ctx.user.isDaikokuAdmin
                   )
-                case None =>
-                  env.dataStore.apiSubscriptionRepo
-                    .forTenant(ctx.tenant.id)
-                    .findById(parentId.value)
-                    .map {
-                      case None    => r
-                      case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
-                    }
+                case None => sub.asJson
               }
-
-          }
+              subJson.as[JsObject] ++
+                Json.obj("planName" -> name) ++
+                Json.obj("apiName" -> api.name) ++
+                Json.obj("apiVersion" -> api.currentVersion.value) ++
+                Json.obj("_humanReadableId" -> api.humanReadableId) ++
+                Json.obj("aggregated" -> aggregated) ++
+                Json.obj("apiLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/description") ++
+                Json.obj("planLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing")
+            }
         }
 
         def findSubscriptions(
@@ -1837,23 +1930,21 @@ class ApiController(
               repo
                 .findNotDeleted(
                   Json.obj(
-                    "parent" -> Json
-                      .obj("$in" -> subscriptions.map(s => s.id.value))
+                    "keyring" -> Json
+                      .obj("$in" -> subscriptions.map(_.keyring.value))
                   )
                 )
-                .flatMap { subs =>
+                .flatMap { keyringMembers =>
+                  val all = (subscriptions ++ keyringMembers).distinctBy(_.id)
                   Future
                     .sequence(
-                      (subscriptions ++ subs)
+                      all
                         .map(sub => {
-                          (sub.parent match {
-                            case Some(_) =>
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .findByIdNotDeleted(sub.api.value)
-                            case None => FastFuture.successful(Some(api))
-                          }).flatMap {
-                            case Some(api) =>
+                          env.dataStore.apiRepo
+                            .forTenant(ctx.tenant.id)
+                            .findByIdNotDeleted(sub.api.value)
+                            .flatMap {
+                            case Some(subApi) =>
                               env.dataStore.usagePlanRepo
                                 .forTenant(ctx.tenant)
                                 .findByIdNotDeleted(sub.plan)
@@ -1862,15 +1953,15 @@ class ApiController(
                                     FastFuture.successful(Json.obj()) //FIXME
                                   case Some(plan) =>
                                     env.dataStore.teamRepo.forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(api.team)
+                                      .findByIdNotDeleted(subApi.team)
                                       .flatMap {
                                         case Some(team) => subscriptionToJson(
-                                          api = api,
+                                          api = subApi,
                                           apiTeam = team,
                                           plan = plan,
                                           sub = sub,
-                                          parentSub = sub.parent.flatMap(p =>
-                                            subscriptions.find(s => s.id == p)
+                                          keyringSiblings = all.filter(s =>
+                                            s.keyring == sub.keyring && s.id != sub.id
                                           )
                                         )
                                         case None => FastFuture.successful(Json.obj()) //FIXME
@@ -1922,15 +2013,23 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.value))
-          parentSubs <-
+          keyringSiblings <-
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
                 Json.obj(
+                  "keyring" -> Json.obj(
+                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson))
+                  )
+                )
+              )
+          keyrings <-
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj(
                   "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      subscriptions.flatMap(s => s.parent).map(_.asJson)
-                    )
+                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson).distinct)
                   )
                 )
               )
@@ -1941,7 +2040,7 @@ class ApiController(
                 Json.obj(
                   "_id" -> Json.obj(
                     "$in" -> JsArray(
-                      (subscriptions ++ parentSubs).map(_.api.asJson)
+                      (subscriptions ++ keyringSiblings).map(_.api.asJson)
                     )
                   )
                 )
@@ -1964,21 +2063,25 @@ class ApiController(
               subscriptions
                 .map(sub => {
                   val api = apis.find(a => a.id == sub.api)
-                  val plan = plans
-                    .find(p => p.id == sub.plan)
-                  val planIntegrationProcess = plan
+                  val plan = plans.find(p => p.id == sub.plan)
+                  val planIntegration = plan
                     .map(_.integrationProcess)
                     .getOrElse(IntegrationProcess.Automatic)
+                  val keyring = keyrings.find(k => k.id == sub.keyring)
 
                   val apiName: String = api.map(_.name).getOrElse("")
                   val planName: String = plan.map(_.customName).getOrElse("")
-                  sub
-                    .asAuthorizedJson(
-                      teamPermission,
-                      planIntegrationProcess,
-                      ctx.user.isDaikokuAdmin
-                    )
-                    .as[JsObject]  ++
+                  val subJson = keyring match {
+                    case Some(k) =>
+                      sub.asAuthorizedJson(
+                        k,
+                        teamPermission,
+                        planIntegration,
+                        ctx.user.isDaikokuAdmin
+                      )
+                    case None => sub.asJson
+                  }
+                  subJson.as[JsObject] ++
                     Json.obj("apiName" -> apiName, "planName" -> planName)
                 })
             )
@@ -2036,7 +2139,7 @@ class ApiController(
       enabled: Option[Boolean]
   ) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2106,7 +2209,12 @@ class ApiController(
         (for {
           subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
             AppError.SubscriptionNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+          keyringSize <- EitherT.liftF[Future, AppError, Long](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant)
+              .count(Json.obj("keyring" -> subscription.keyring.asJson, "_deleted" -> false))
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](keyringSize <= 1, (), AppError.EntityConflict("Subscription is part of aggregation"))
 
           transfer = ApiSubscriptionTransfer(
             id = DatastoreId(IdGenerator.token(16)),
@@ -2170,56 +2278,15 @@ class ApiController(
     }
 
   private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
-    subscription.parent match {
+    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+      tenant.otoroshiSettings.find(_.id == id)
+    } match {
       case None =>
-        EitherT.leftT[Future, JsObject](AppError.MissingParentSubscription).value
-      case Some(parentSubscriptionId) =>
-        plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-          tenant.otoroshiSettings.find(_.id == id)
-        } match {
-          case None =>
-            FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
-          case Some(otoroshiSettings) =>
-            implicit val o: OtoroshiSettings = otoroshiSettings
-            import cats.implicits.*
-            (for {
-              apikey <- EitherT(
-                apiService.extractSubscriptionFromAggregation(
-                  subscription,
-                  tenant,
-                  user
-                )
-              )
-              createdApiKey <-
-                EitherT(otoroshiClient.createApiKey(apikey)(using o))
-              _ <- EitherT.right[AppError](
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant.id)
-                  .save(
-                    subscription.copy(
-                      parent = None,
-                      metadata = Some(
-                        JsObject(
-                          apikey.metadata
-                            .filterNot(i => i._1.startsWith("daikoku_"))
-                            .view
-                            .mapValues(i => JsString(i))
-                            .toSeq
-                        )
-                      ),
-                      apiKey = subscription.apiKey.copy(
-                        clientId = createdApiKey.clientId,
-                        clientSecret = createdApiKey.clientSecret,
-                        clientName = createdApiKey.clientName
-                      ),
-                      bearerToken = createdApiKey.bearer
-                    )
-                  )
-              )
-            } yield {
-              Json.obj("created" -> true)
-            }).value
-        }
+        FastFuture.successful(Left(OtoroshiSettingsNotFound))
+      case Some(otoroshiSettings) =>
+        apiService.makeSubscriptionUnique(subscription, tenant, user)(using
+          otoroshiSettings
+        )
     }
   }
 
@@ -2274,7 +2341,7 @@ class ApiController(
 
   def toggleApiKeyRotation(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2305,33 +2372,40 @@ class ApiController(
       }
     }
 
-  def regenerateApiKeySecret(teamId: String, subscriptionId: String) =
+  def regenerateKeyringSecret(teamId: String, keyringId: String) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has regenerate apikey secret @{subscription.id} of @{team.name} - @{team.id}"
+          s"@{user.name} has regenerate keyring secret @{keyring.id} of @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        apiSubscriptionAction(
-          ctx.tenant,
-          team,
-          subscriptionId,
-          (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-            ctx.setCtxValue("subscription", subscription)
-            apiService.regenerateApiKeySecret(
-              ctx.tenant,
-              subscription,
-              plan,
-              api,
-              team,
-              ctx.user
-            )
-          }
-        )
+        ctx.setCtxValue("keyring.id", keyringId)
+        apiService
+          .regenerateKeyringSecret(
+            ctx.tenant,
+            KeyringId(keyringId),
+            team,
+            ctx.user
+          )
+          .map(_.fold(_.render(), Ok(_)))
       }
     }
 
-  def deleteApiSubscription(teamId: String, subscriptionId: String, action: Option[String], childId: Option[String]): Action[AnyContent] =
+  def toggleKeyring(teamId: String, keyringId: String, enabled: Boolean) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has ${if (enabled) "enabled" else "disabled"} keyring @{keyring.id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        ctx.setCtxValue("keyring.id", keyringId)
+        apiService
+          .toggleKeyringState(ctx.tenant, KeyringId(keyringId), team, enabled)
+          .map(_.fold(_.render(), Ok(_)))
+      }
+    }
+
+  def deleteApiSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2346,48 +2420,15 @@ class ApiController(
           (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
 
-            val cleanupPrivatePlan: EitherT[Future, AppError, Unit] =
-              if (plan.visibility == Private)
-                EitherT.right(env.dataStore.usagePlanRepo.forTenant(ctx.tenant)
-                  .save(plan.removeAuthorizedTeam(team.id)).map(_ => ()))
-              else EitherT.pure(())
-
             val done = Json.obj("archive" -> "done", "subscriptionId" -> subscriptionId)
 
-            EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-              .find(Json.obj("parent" -> subscription.id.asJson)))
-              .flatMap {
-                case Nil =>
-                  // standalone or child: delegate entirely to DeletionService
-                  for {
-                    _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                    _ <- if (subscription.parent.isEmpty) cleanupPrivatePlan else EitherT.pure[Future, AppError](())
-                  } yield done
-
-                case childs: Seq[ApiSubscription] => action match {
-                  case Some("delete") =>
-                    // delete all children + parent in one shot
-                    for {
-                      _ <- deletionService.deleteSubscriptions(childs ++ Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
-                    } yield done
-
-                  case Some("extraction") =>
-                    // extract each child to a standalone key, then delete parent
-                    for {
-                      _ <- apiService.condenseEitherT(childs.map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user))))
-                      _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant)
-                      _ <- cleanupPrivatePlan
-                    } yield done
-
-                  case _ =>
-                    // promote a specific child (or oldest) then delete parent
-                    val electedId = childId.flatMap(id => childs.find(_.id.value == id)).map(_.id)
-                    for {
-                      _ <- deletionService.deleteSubscriptions(Seq(subscription), api, ctx.tenant, electedChildId = electedId)
-                    } yield done
-                }
-              }.value
+            (for {
+              _ <- deletionService.deleteSubscriptions(
+                Seq(subscription),
+                api,
+                ctx.tenant
+              )
+            } yield done).value
           })
         )
       }
@@ -3198,7 +3239,7 @@ class ApiController(
         ctx.setCtxValue("page.id", pageId)
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
-          .deleteByIdLogically(pageId)
+          .deleteById(pageId)
           .map { _ =>
             Ok(Json.obj("done" -> true))
           }
@@ -3375,13 +3416,30 @@ class ApiController(
                 )
               )
             case Some(api) =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant)
-                .findNotDeleted(Json.obj("api" -> api.id.asJson))
-                .map(subs => {
-                  ctx.setCtxValue("api.id", api.id.value)
-                  Ok(JsArray(subs.map(_.asSafeJson)))
-                })
+              for {
+                subs <- env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant)
+                  .findNotDeleted(Json.obj("api" -> api.id.asJson))
+                keyrings <- env.dataStore.keyringRepo
+                  .forTenant(ctx.tenant)
+                  .findNotDeleted(
+                    Json.obj(
+                      "_id" -> Json.obj(
+                        "$in" -> JsArray(subs.map(_.keyring.asJson).distinct)
+                      )
+                    )
+                  )
+              } yield {
+                ctx.setCtxValue("api.id", api.id.value)
+                val keyringById = keyrings.map(k => k.id -> k).toMap
+                Ok(
+                  JsArray(
+                    subs.flatMap(sub =>
+                      keyringById.get(sub.keyring).map(sub.asSafeJson)
+                    )
+                  )
+                )
+              }
             case None =>
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "Api not found"))

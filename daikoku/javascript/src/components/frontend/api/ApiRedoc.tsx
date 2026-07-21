@@ -1,7 +1,6 @@
 import AsyncApiComponent from "@asyncapi/react-component/browser/index.js";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
 import Select from 'react-select';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 
@@ -14,6 +13,7 @@ import { api as API, Can, manage } from '../../utils';
 import { Option } from '../../utils/Option';
 import { Spinner } from '../../utils/Spinner';
 
+//@ts-ignore
 import "@asyncapi/react-component/styles/default.min.css";
 import { toast } from "sonner";
 
@@ -55,13 +55,13 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     .map(url => url.substring(url.lastIndexOf('/') + 1))
     .orElse(props.swaggerConf?.content)
     .map(c => {
-      if (c.match(/^[-a-zA-Z0-9@:%_\+.~#?&=]+\.[A-Za-z]{4}$/)) {
+      if (c.match(/^[\w\-. ]+\.[A-Za-z]{2,5}$/)) {
         return c
       }
       try {
         JSON.parse(c);
         return "openAPI.json";
-      } catch (e) {
+      } catch {
         return "openAPI.yaml";
       }
     })
@@ -89,7 +89,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     return <div className="d-flex col flex-column section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
         <button
-          className="btn btn-sm btn-outline-primary px-3"
+          className="btn --primary"
           aria-label={translate('update.api.openapi.btn.label')}
           data-bs-toggle="dropdown"
           aria-expanded="false"
@@ -117,13 +117,13 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
         {props.swaggerConf?.specificationType === SpecificationType.openapi &&
           <RedocStandalone
             specUrl={props.swaggerUrl}
-            options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
+            options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...props.swaggerConf?.additionalConf }} />}
         {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
         {!props.swaggerConf && (
           <Can I={manage} a={API} team={props.ownerTeam}>
             <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
               <div>{translate('update.api.openapi.not.found.alert')}</div>
-              <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+              <button className="btn --secondary" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
             </div>
           </Can>
         )}
@@ -173,6 +173,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
       <div className='d-flex flex-column'>
         <Select
           className='col-3'
+          classNamePrefix="reactSelect"
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}
@@ -193,7 +194,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
               return <div className='d-flex align-items-center m-0' style={{
                 gap: '.5rem'
               }}>
-                <span className={`badge badge-custom`}>
+                <span className={`badge --primary`}>
                   {'ENV'}
                 </span>{props.data.label}
               </div>

@@ -14,9 +14,26 @@ import fr.maif.daikoku.domain.{
   TeamApiKeyVisibility,
   Tenant
 }
+import fr.maif.daikoku.audit.ElasticAnalyticsConfig
+import fr.maif.daikoku.domain.{
+  AuditTrailConfig,
+  ConsoleMailerSettings,
+  MailerSettings,
+  MailgunSettings,
+  MailjetSettings,
+  OtoroshiSettings,
+  OtoroshiSettingsId,
+  SendgridSettings,
+  SimpleSMTPSettings
+}
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider.Local
-import fr.maif.daikoku.login.{AuthProvider, LoginFilter, OAuth2Config}
+import fr.maif.daikoku.login.{
+  AuthProvider,
+  LdapConfig,
+  LoginFilter,
+  OAuth2Config
+}
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.storage.DataStore
 import fr.maif.daikoku.utils.*
@@ -98,108 +115,249 @@ case class DataConfig(
 
 case class AuthProviderConfig(
     defaultprovider: AuthProvider,
-    oauth2config: Option[OAuth2Config]
+    oauth2config: Option[OAuth2Config],
+    ldapConfig: Option[LdapConfig]
+)
+
+/** Optional fields used to seed the default tenant on the very first boot. */
+case class InitTenantConfig(
+    name: Option[String],
+    title: Option[String],
+    defaultLanguage: Option[String],
+    defaultMessage: Option[String],
+    isPrivate: Option[Boolean],
+    creationSecurity: Option[Boolean],
+    teamCreationSecurity: Option[Boolean],
+    subscriptionSecurity: Option[Boolean],
+    aggregationApiKeysSecurity: Option[Boolean]
 )
 
 case class InitConfig(
     host: String,
     admin: AdminConfig,
     data: DataConfig,
-    authProviderConfig: AuthProviderConfig
+    authProviderConfig: AuthProviderConfig,
+    tenant: InitTenantConfig,
+    otoroshi: Option[OtoroshiSettings],
+    bucket: Option[S3Configuration],
+    mailer: Option[MailerSettings],
+    audit: Option[AuditTrailConfig]
 )
 
 object InitConfig {
   def apply(configuration: Configuration): InitConfig = {
     val generatedPassword = IdGenerator.token(32)
+
+    def str(key: String): Option[String] =
+      configuration.getOptional[String](key)
+    def bool(key: String): Option[Boolean] =
+      configuration.getOptional[Boolean](key)
+    def csv(key: String): Seq[String] =
+      str(key)
+        .map(_.split(",").toSeq.map(_.trim).filter(_.nonEmpty))
+        .getOrElse(Seq.empty)
+
+    val provider = str("daikoku.init.authProvider.default")
+      .flatMap(AuthProvider.apply)
+      .getOrElse(Local)
+
+    val oauth2config =
+      Option.when(provider == AuthProvider.OAuth2)(
+        OAuth2Config(
+          clientId = str("daikoku.init.authProvider.oauth2.client-id")
+            .getOrElse("client"),
+          clientSecret = str("daikoku.init.authProvider.oauth2.client-secret"),
+          tokenUrl = str("daikoku.init.authProvider.oauth2.token-url")
+            .getOrElse("http://localhost:8082/oauth/token"),
+          authorizeUrl = str("daikoku.init.authProvider.oauth2.authorized-url")
+            .getOrElse("http://localhost:8082/oauth/authorize"),
+          userInfoUrl = str("daikoku.init.authProvider.oauth2.user-info-url")
+            .getOrElse("http://localhost:8082/userinfo"),
+          loginUrl = str("daikoku.init.authProvider.oauth2.login-url")
+            .getOrElse("http://localhost:8082/login"),
+          logoutUrl = str("daikoku.init.authProvider.oauth2.logout-url"),
+          scope = str("daikoku.init.authProvider.oauth2.scope")
+            .getOrElse("openid profile email name"),
+          jwtVerifier = None,
+          nameField = str("daikoku.init.authProvider.oauth2.name-field")
+            .getOrElse("name"),
+          emailField = str("daikoku.init.authProvider.oauth2.email-field")
+            .getOrElse("email"),
+          pictureField = str("daikoku.init.authProvider.oauth2.picture-field")
+            .getOrElse("picture"),
+          callbackUrl = str("daikoku.init.authProvider.oauth2.callback-url")
+            .getOrElse("http://localhost:8080/auth/oauth2/callback"),
+          roleClaim = str("daikoku.init.authProvider.oauth2.role-claim"),
+          adminRole = str("daikoku.init.authProvider.oauth2.admin-role"),
+          userRole = str("daikoku.init.authProvider.oauth2.user-role")
+        )
+      )
+
+    val ldapConfig =
+      Option
+        .when(provider == AuthProvider.LDAP)(
+          str("daikoku.init.authProvider.ldap.search-base").map { searchBase =>
+            LdapConfig(
+              serverUrls = csv("daikoku.init.authProvider.ldap.server-urls"),
+              searchBase = searchBase,
+              userBase = str("daikoku.init.authProvider.ldap.user-base"),
+              groupFilter = str("daikoku.init.authProvider.ldap.group-filter"),
+              adminGroupFilter =
+                str("daikoku.init.authProvider.ldap.admin-group-filter"),
+              searchFilter = str("daikoku.init.authProvider.ldap.search-filter")
+                .getOrElse("(mail=${username})"),
+              adminUsername =
+                str("daikoku.init.authProvider.ldap.admin-username"),
+              adminPassword =
+                str("daikoku.init.authProvider.ldap.admin-password"),
+              nameFields = {
+                val fields = csv("daikoku.init.authProvider.ldap.name-fields")
+                if (fields.isEmpty) Seq("cn") else fields
+              },
+              emailField = str("daikoku.init.authProvider.ldap.email-field")
+                .getOrElse("mail"),
+              useSsl = bool("daikoku.init.authProvider.ldap.use-ssl")
+            )
+          }
+        )
+        .flatten
+
+    val otoroshi = str("daikoku.init.otoroshi.url").map { url =>
+      OtoroshiSettings(
+        id = OtoroshiSettingsId(IdGenerator.token(32)),
+        url = url,
+        host = str("daikoku.init.otoroshi.host").getOrElse(""),
+        clientId = str("daikoku.init.otoroshi.clientId")
+          .getOrElse("admin-api-apikey-id"),
+        clientSecret = str("daikoku.init.otoroshi.clientSecret")
+          .getOrElse("admin-api-apikey-secret")
+      )
+    }
+
+    val bucket = str("daikoku.init.s3.bucket").map { bucket =>
+      S3Configuration(
+        bucket = bucket,
+        endpoint = str("daikoku.init.s3.endpoint").getOrElse(""),
+        region = str("daikoku.init.s3.region").getOrElse("us-east-1"),
+        access = str("daikoku.init.s3.access").getOrElse(""),
+        secret = str("daikoku.init.s3.secret").getOrElse(""),
+        chunkSize = configuration
+          .getOptional[Int]("daikoku.init.s3.chunkSize")
+          .getOrElse(1024 * 1024 * 8),
+        v4auth = bool("daikoku.init.s3.v4auth").getOrElse(true)
+      )
+    }
+
+    val mailer: Option[MailerSettings] =
+      str("daikoku.init.mailer.type").flatMap { mtype =>
+        val fromTitle =
+          str("daikoku.init.mailer.fromTitle").getOrElse("Daikoku")
+        val fromEmail =
+          str("daikoku.init.mailer.fromEmail").getOrElse("daikoku@foo.bar")
+        mtype.toLowerCase match {
+          case "console" => Some(ConsoleMailerSettings())
+          case "mailgun" =>
+            Some(
+              MailgunSettings(
+                domain = str("daikoku.init.mailer.domain").getOrElse(""),
+                eu = bool("daikoku.init.mailer.eu").getOrElse(false),
+                key = str("daikoku.init.mailer.key").getOrElse(""),
+                fromTitle = fromTitle,
+                fromEmail = fromEmail,
+                template = None
+              )
+            )
+          case "mailjet" =>
+            Some(
+              MailjetSettings(
+                apiKeyPublic =
+                  str("daikoku.init.mailer.apiKeyPublic").getOrElse(""),
+                apiKeyPrivate =
+                  str("daikoku.init.mailer.apiKeyPrivate").getOrElse(""),
+                fromTitle = fromTitle,
+                fromEmail = fromEmail,
+                template = None
+              )
+            )
+          case "smtpclient" | "smtp" =>
+            Some(
+              SimpleSMTPSettings(
+                host = str("daikoku.init.mailer.host").getOrElse("localhost"),
+                port = str("daikoku.init.mailer.port").getOrElse("25"),
+                fromTitle = fromTitle,
+                fromEmail = fromEmail,
+                template = None,
+                username = str("daikoku.init.mailer.username"),
+                password = str("daikoku.init.mailer.password"),
+                starttls = bool("daikoku.init.mailer.starttls"),
+                ssl = bool("daikoku.init.mailer.ssl")
+              )
+            )
+          case "sendgrid" =>
+            Some(
+              SendgridSettings(
+                apikey =
+                  str("daikoku.init.mailer.sendgridApiKey").getOrElse(""),
+                fromTitle = fromTitle,
+                fromEmail = fromEmail,
+                template = None
+              )
+            )
+          case _ => None
+        }
+      }
+
+    val audit = {
+      val alertsEmails = csv("daikoku.init.audit.alertsEmails")
+      val elastic = str("daikoku.init.audit.elastic.clusterUri").map { uri =>
+        ElasticAnalyticsConfig(
+          clusterUri = uri,
+          index = str("daikoku.init.audit.elastic.index"),
+          `type` = str("daikoku.init.audit.elastic.type"),
+          user = str("daikoku.init.audit.elastic.user"),
+          password = str("daikoku.init.audit.elastic.password")
+        )
+      }
+      Option.when(alertsEmails.nonEmpty || elastic.isDefined)(
+        AuditTrailConfig(elasticConfigs = elastic, alertsEmails = alertsEmails)
+      )
+    }
+
     InitConfig(
-      host = configuration
-        .getOptional[String]("daikoku.init.host")
-        .getOrElse("localhost"),
+      host = str("daikoku.init.host").getOrElse("localhost"),
       AdminConfig(
-        name = configuration
-          .getOptional[String]("daikoku.init.admin.name")
-          .getOrElse("Daikoku admin"),
-        email = configuration
-          .getOptional[String]("daikoku.init.admin.email")
-          .getOrElse("admin@otoroshi.io"),
-        password = configuration
-          .getOptional[String]("daikoku.init.admin.password")
-          .getOrElse(generatedPassword)
+        name = str("daikoku.init.admin.name").getOrElse("Daikoku admin"),
+        email = str("daikoku.init.admin.email").getOrElse("admin@otoroshi.io"),
+        password =
+          str("daikoku.init.admin.password").getOrElse(generatedPassword)
       ),
       DataConfig(
-        from = configuration.getOptional[String]("daikoku.init.data.from"),
+        from = str("daikoku.init.data.from"),
         headers = configuration
           .getOptional[Map[String, String]]("daikoku.init.data.headers")
           .getOrElse(Map.empty[String, String])
       ),
       authProviderConfig = AuthProviderConfig(
-        defaultprovider = configuration.getOptional[String](
-          "daikoku.init.authProvider.default"
-        ) match {
-          case Some(value) => AuthProvider.apply(value).getOrElse(Local)
-          case None        => Local
-        },
-        oauth2config = configuration.getOptional[String](
-          "daikoku.init.authProvider.default"
-        ) match {
-          case Some(e) if e.toLowerCase == "oauth2" =>
-            OAuth2Config(
-              clientId = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.client-secret"
-              ),
-              clientSecret = configuration.getOptional[String](
-                "daikoku.init.authProvider.oauth2.client-secret"
-              ),
-              tokenUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.token-url"
-              ),
-              authorizeUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.authorized-url"
-              ),
-              userInfoUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.user-info-url"
-              ),
-              loginUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.login-url"
-              ),
-              logoutUrl = configuration.getOptional[String](
-                "daikoku.init.authProvider.oauth2.logout-url"
-              ),
-              scope = configuration
-                .getOptional[String]("daikoku.init.authProvider.oauth2.scope")
-                .getOrElse("openid profile email name"),
-              jwtVerifier = None,
-              nameField = configuration
-                .getOptional[String](
-                  "daikoku.init.authProvider.oauth2.name-field"
-                )
-                .getOrElse("name"),
-              emailField = configuration
-                .getOptional[String](
-                  "daikoku.init.authProvider.oauth2.email-field"
-                )
-                .getOrElse("email"),
-              pictureField = configuration
-                .getOptional[String](
-                  "daikoku.init.authProvider.oauth2.picture-field"
-                )
-                .getOrElse("picture"),
-              callbackUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.callback-url"
-              ),
-              roleClaim = configuration.getOptional[String](
-                "daikoku.init.authProvider.oauth2.role-claim"
-              ),
-              adminRole = configuration.getOptional[String](
-                "daikoku.init.authProvider.oauth2.admin-role"
-              ),
-              userRole = configuration.getOptional[String](
-                "daikoku.init.authProvider.oauth2.user-role"
-              )
-            ).some
-          case _ => None
-        }
-      )
+        defaultprovider = provider,
+        oauth2config = oauth2config,
+        ldapConfig = ldapConfig
+      ),
+      tenant = InitTenantConfig(
+        name = str("daikoku.init.tenant.name"),
+        title = str("daikoku.init.tenant.title"),
+        defaultLanguage = str("daikoku.init.tenant.defaultLanguage"),
+        defaultMessage = str("daikoku.init.tenant.defaultMessage"),
+        isPrivate = bool("daikoku.init.tenant.isPrivate"),
+        creationSecurity = bool("daikoku.init.tenant.creationSecurity"),
+        teamCreationSecurity = bool("daikoku.init.tenant.teamCreationSecurity"),
+        subscriptionSecurity = bool("daikoku.init.tenant.subscriptionSecurity"),
+        aggregationApiKeysSecurity =
+          bool("daikoku.init.tenant.aggregationApiKeysSecurity")
+      ),
+      otoroshi = otoroshi,
+      bucket = bucket,
+      mailer = mailer,
+      audit = audit
     )
   }
 }
@@ -357,6 +515,20 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.verifierJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
+
+  lazy val keyringExpirationJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
+    .getOrElse(false)
+  lazy val keyringExpirationJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.cronExpression")
+  lazy val keyringExpirationJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.keyringExpirationJob.interval")
+    .map(v => v.millis)
+    .getOrElse(24.hours)
+  lazy val keyringExpirationJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Cron)
 
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
@@ -618,28 +790,57 @@ class DaikokuEnv(
                   contact = "no-replay@daikoku.io"
                 )
 
+                // Auth module settings for the default tenant, derived from the
+                // configured provider. Falls back to a bare session config.
+                val initAuthProviderSettings: JsObject =
+                  config.init.authProviderConfig.defaultprovider match {
+                    case AuthProvider.OAuth2 =>
+                      config.init.authProviderConfig.oauth2config
+                        .map(_.asJson.as[JsObject])
+                        .getOrElse(Json.obj("sessionMaxAge" -> 86400))
+                    case AuthProvider.LDAP =>
+                      config.init.authProviderConfig.ldapConfig
+                        .map(_.asJson)
+                        .getOrElse(Json.obj("sessionMaxAge" -> 86400))
+                    case _ =>
+                      Json.obj("sessionMaxAge" -> 86400)
+                  }
+
                 val tenant = Tenant(
                   id = Tenant.Default,
-                  name = "Daikoku Default Tenant",
+                  name =
+                    config.init.tenant.name.getOrElse("Daikoku Default Tenant"),
                   domain = config.init.host,
-                  defaultLanguage = Some("En"),
+                  defaultLanguage =
+                    config.init.tenant.defaultLanguage.orElse(Some("En")),
                   style = Some(
                     DaikokuStyle
                       .template(Tenant.Default)
                       .copy(
-                        title = "Daikoku Default Tenant"
+                        title = config.init.tenant.title
+                          .getOrElse("Daikoku Default Tenant")
                       )
                   ),
                   contact = "contact@foo.bar",
-                  mailerSettings = Some(ConsoleMailerSettings()),
+                  // No mailer configured -> console mailer by default.
+                  mailerSettings =
+                    config.init.mailer.orElse(Some(ConsoleMailerSettings())),
                   authProvider = config.init.authProviderConfig.defaultprovider,
-                  authProviderSettings =
-                    config.init.authProviderConfig.oauth2config
-                      .map(_.asJson)
-                      .getOrElse(Json.obj("sessionMaxAge" -> 86400)),
-                  bucketSettings = None,
-                  otoroshiSettings = Set(),
-                  adminApi = adminApiDefaultTenantId
+                  authProviderSettings = initAuthProviderSettings,
+                  bucketSettings = config.init.bucket,
+                  otoroshiSettings = config.init.otoroshi.toSet,
+                  adminApi = adminApiDefaultTenantId,
+                  isPrivate = config.init.tenant.isPrivate.getOrElse(true),
+                  creationSecurity = config.init.tenant.creationSecurity,
+                  teamCreationSecurity =
+                    config.init.tenant.teamCreationSecurity,
+                  subscriptionSecurity =
+                    config.init.tenant.subscriptionSecurity,
+                  aggregationApiKeysSecurity =
+                    config.init.tenant.aggregationApiKeysSecurity,
+                  defaultMessage = config.init.tenant.defaultMessage,
+                  auditTrailConfig =
+                    config.init.audit.getOrElse(AuditTrailConfig())
                 )
 
                 val (adminApiDefaultTenant, adminApiDefaultPlan) =
@@ -671,7 +872,6 @@ class DaikokuEnv(
                   password = Some(
                     BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
                   ),
-                  personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
 
@@ -753,10 +953,14 @@ class DaikokuEnv(
                       .forTenant(tenant.id)
                       .save(jsPage)
                 } yield {
-                  AppLogger.warn("")
-                  AppLogger.warn(
-                    s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                  )
+                  val passwordEmpty = configuration.getOptional[String]("daikoku.init.admin.password").isEmpty
+
+                  if (passwordEmpty) {
+                    AppLogger.warn("")
+                    AppLogger.warn(
+                      s"You can log in with ${config.init.admin.email} / ${config.init.admin.password}"
+                    )
+                  }
                   AppLogger.warn("")
                   AppLogger.warn(
                     "Please avoid using the default tenant for anything else than configuring Daikoku"

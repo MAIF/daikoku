@@ -1,4 +1,5 @@
 .DS_Store
+coverage-measurements
 .metals
 .vscode
 .bsp
@@ -41,5 +42,7 @@ daikoku/public/asyncapi-*
 daikoku/public/backofffice-*
 daikoku/public/highlight-*
 daikoku/public/swagger-*
+daikoku/public/rolldown-runtime-*
 stats.html
 project/
+.vibe

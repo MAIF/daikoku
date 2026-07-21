@@ -73,9 +73,15 @@ export interface IApiGQL {
   metadata?: object;
 }
 
+export interface IKeyringGql {
+  _id: string;
+  customName: string | null;
+  apiKey: { clientName: string };
+}
+
 export interface IApiSubscriptionDetails {
   apiSubscription: IApiSubscriptionGql;
-  parentSubscription?: IApiSubscriptionGql;
+  keyring?: IKeyringGql;
   accessibleResources: Array<{
     apiSubscription: IApiSubscriptionGql;
     api: IApiGQL;
@@ -124,7 +130,7 @@ export interface ICmsPageGQL {
   authenticated: boolean;
   metadata: object;
   contentType: string;
-  tags: String[];
+  tags: string[];
   lastPublishedDate: number;
 }
 

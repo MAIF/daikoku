@@ -2,7 +2,6 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 
-import { toast } from "sonner";
 import { I18nContext } from '../../../../contexts';
 import { testMailConnection } from "../../../../services";
 import { IMailerSettings, isError, ITenantFull, MailerType } from '../../../../types';
@@ -31,7 +30,8 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         return (
           <FeedbackButton
             type='info'
-            onPress={() => testMailConnection(props.tenant?._id!, mailerType, rawValues)
+            className='btn --secondary'
+            onPress={() => testMailConnection(props.tenant!._id, mailerType, rawValues)
               .then(r => isError(r) ? Promise.reject(r) : r)
             }
             feedbackTimeout={1000}
@@ -65,6 +65,16 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           type: type.string,
           format: format.password,
           label: translate('smtp_client.password'),
+        },
+        starttls: {
+          type: type.bool,
+          label: translate('smtp_client.starttls'),
+          help: translate('smtp_client.starttls.help'),
+        },
+        ssl: {
+          type: type.bool,
+          label: translate('smtp_client.ssl'),
+          help: translate('smtp_client.ssl.help'),
         },
         ...basicMailSchema,
       };

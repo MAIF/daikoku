@@ -1,17 +1,12 @@
-import {PropsWithChildren, type SubmitEvent, useContext, useEffect, useRef, useState} from 'react';
+import { type SubmitEvent, useContext, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { I18nContext } from "../../contexts";
 import * as Services from '../../services/index';
-import {useParams, useSearchParams} from 'react-router-dom';
-import {I18nContext} from "../../contexts";
-import {AuthProvider, ITenant} from "../../types";
+import { AuthProvider } from "../../types";
 
-const Translation = (props: PropsWithChildren<{}>) => {
-  return (
-    <div>{props.children}</div>
-  )
-}
 
-export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
-  const { Translation, translate } = useContext(I18nContext);
+export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
+  const { Translation } = useContext(I18nContext);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const [searchParams] = useSearchParams();
@@ -49,10 +44,6 @@ export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
             loginError: true,
           });
           setLoading(false);
-          buttonRef.current?.classList.add('active', 'btn-outline-danger')
-          setTimeout(() => {
-            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-          }, 800);
         }
         else if (res.redirected) {
           window.location.href = res.url;
@@ -70,17 +61,17 @@ export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
           <div className={"flex-column d-flex"} >
             <button
               type="button"
-              className="btn btn-outline-primary shake gap-1 mb-2 "
+              className="btn --primary shake gap-1 mb-2 "
               onClick={() => {
-                location.href=`/auth/${provider}/login`
+                location.href = `/auth/${provider}/login`
               }
-            }>
+              }>
               Connexion openId
             </button>
             <button
               type="button"
-              className="btn btn-outline-primary shake gap-1 mb-2"
-              onClick={() => {setToggleLogin(!toggleLogin)}}>
+              className="btn --secondary shake gap-1 mb-2"
+              onClick={() => { setToggleLogin(!toggleLogin) }}>
               Connexion Locale
             </button>
           </div>
@@ -125,12 +116,12 @@ export const MaintenancePage = ({provider} : {provider: AuthProvider}) =>  {
               />
             </div>
             <div className="mb-3 d-grid gap-1">
-              <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
+              <button type="submit" ref={buttonRef} className="btn --primary shake" disabled={loading}>
                 <Translation i18nkey="login.btn.label">Login</Translation>
               </button>
             </div>
           </form>
-          )}
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
-import React, { Children, PropsWithChildren } from 'react';
-import { PlacesType, Tooltip as ReactToolTip, VariantType } from 'react-tooltip';
 import { nanoid } from 'nanoid';
+import { PropsWithChildren } from 'react';
+import { PlacesType, Tooltip as ReactToolTip, VariantType } from 'react-tooltip';
 
 type BeautifulTitleProps = {
   title: string,
@@ -21,7 +21,7 @@ export const BeautifulTitle = ({
   const id: string = nanoid(4);
   return (
     <>
-      <ReactToolTip className='bf-tooltip' anchorId={`tooltip-${id}`} place={place || 'bottom'} variant={variant || 'dark'} />
+      <ReactToolTip className='bf-tooltip' data-tooltip-id={`tooltip-${id}`} place={place || 'bottom'} variant={variant || 'dark'} />
       {!html && <span id={`tooltip-${id}`} {...props} data-tooltip-content={title} >
         {props.children}
       </span>}
