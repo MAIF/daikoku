@@ -15,7 +15,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     hmr: {
-      host: '*.oto.tools',
+      host: 'localhost',
       port: 5173,
     },
     allowedHosts: true,
