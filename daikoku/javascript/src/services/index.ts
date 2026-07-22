@@ -688,7 +688,7 @@ export const apiSubscriptions = (
 ): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
-export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>
+export const archiveSubscriptionByOwner = (ownerId: string, subscriptionId: string, enabled: boolean) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
     {
@@ -1700,6 +1700,7 @@ export const graphql = {
           }
           customName
           enabled
+          state
           tags
           metadata
           customMetadata
@@ -1747,6 +1748,7 @@ export const graphql = {
             customName
             adminCustomName
             enabled
+            state
             createdAt
             validUntil
             tags
@@ -1767,7 +1769,7 @@ export const graphql = {
       }
     }
     `,
-    getApiSubscriptionsTotal: `
+  getApiSubscriptionsTotal: `
     query getApiSubscriptionsTotal ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
         total

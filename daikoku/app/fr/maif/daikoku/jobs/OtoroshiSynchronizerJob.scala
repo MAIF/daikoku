@@ -3,11 +3,12 @@ package fr.maif.daikoku.jobs
 import cats.data.EitherT
 import cats.implicits.*
 import cats.syntax.option.*
-import cron4s._
-import cron4s.lib.joda._
+import cron4s.*
+import cron4s.lib.joda.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.{
+  ApiSubscriptionStateFormat,
   ApiSubscriptionyRotationFormat,
   OtoroshiApiKeyFormat,
   OtoroshiTargetFormat,
@@ -115,18 +116,24 @@ case class SubscriptionForSync(
     customMetadata: Option[JsObject],
     metadata: Option[JsObject],
     enabled: Boolean,
+    state: ApiSubscriptionState,
     rotation: Option[ApiSubscriptionRotation],
     validUntil: Option[DateTime],
     customMaxPerSecond: Option[Long],
     customMaxPerDay: Option[Long],
     customMaxPerMonth: Option[Long],
     customReadOnly: Option[Boolean]
-)
+) {
+  def isActive: Boolean = enabled && state == ApiSubscriptionState.Active
+}
 object SubscriptionForSync {
   def readFromJson(json: JsValue): SubscriptionForSync = SubscriptionForSync(
     customMetadata = (json \ "customMetadata").asOpt[JsObject],
     metadata = (json \ "metadata").asOpt[JsObject],
     enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+    state = (json \ "state")
+      .asOpt(using ApiSubscriptionStateFormat)
+      .getOrElse(ApiSubscriptionState.Active),
     rotation = (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
     validUntil = (json \ "validUntil").asOpt[Long].map(l => new DateTime(l)),
     customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
@@ -260,7 +267,7 @@ case class Child(
       authorizedEntities = maybeTarget
         .flatMap(t => t.authorizedEntities)
         .getOrElse(AuthorizedEntities()),
-      enabled = subscription.enabled,
+      enabled = subscription.isActive,
       allowClientIdOnly = maybeCustomization.exists(_.clientIdOnly),
       readOnly = subscription.customReadOnly.getOrElse(
         maybeCustomization.exists(_.readOnly)
@@ -442,6 +449,7 @@ class OtoroshiSynchronizerJob(
        |  'customMetadata', $alias.content -> 'customMetadata',
        |  'metadata', $alias.content -> 'metadata',
        |  'enabled', $alias.content -> 'enabled',
+       |  'state', $alias.content -> 'state',
        |  'rotation', $alias.content -> 'rotation',
        |  'validUntil', $alias.content -> 'validUntil',
        |  'team', $alias.content -> 'team',
@@ -590,10 +598,10 @@ class OtoroshiSynchronizerJob(
       tenant: Tenant
   ): Option[ActualOtoroshiApiKey] = {
     // The keyring's Otoroshi key is enabled as soon as one member subscription
-    // is enabled; only enabled members take part in the merge. No enabled
-    // member (or none at all) -> None -> the key is disabled / deleted.
-    subscriptions.filter(_.subscription.enabled).toList match {
-      case Nil => None
+    // is enabled; only enabled and active members take part in the merge. No enabled
+    // member (or none at all) or blocked -> None -> the key is disabled / deleted.
+    subscriptions.filter(_.subscription.isActive).toList match {
+      case Nil          => None
       case head :: tail =>
         val merged = tail.foldLeft(
           head.asOtoroshiApikey(team, tenant, keyring.apiKey)

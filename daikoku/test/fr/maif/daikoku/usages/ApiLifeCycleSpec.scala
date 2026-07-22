@@ -50,7 +50,6 @@ class ApiLifeCycleSpec
 
   "API life cycle" must {
     "be smart" in {
-      Await.result(waitForDaikokuSetup(), 5.second)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, userApiEditor, user),
@@ -64,34 +63,6 @@ class ApiLifeCycleSpec
               UserWithPermission(userTeamAdminId, Administrator),
               UserWithPermission(userTeamUserId, Administrator)
             )
-          )
-        ),
-        subscriptions = Seq(
-          ApiSubscription(
-            id = ApiSubscriptionId(IdGenerator.token(12)),
-            tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", "id", "secret"),
-            plan = defaultApi.plans.head.id,
-            createdAt = DateTime.now(),
-            team = teamConsumerId,
-            api = defaultApi.api.id,
-            by = userTeamAdminId,
-            customName = None,
-            rotation = None,
-            integrationToken = "token"
-          ),
-          ApiSubscription(
-            id = ApiSubscriptionId(IdGenerator.token(12)),
-            tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", "id", "secret"),
-            plan = defaultApi.plans.reverse.head.id,
-            createdAt = DateTime.now(),
-            team = teamOwner.id,
-            api = defaultApi.api.id,
-            by = userTeamAdminId,
-            customName = None,
-            rotation = None,
-            integrationToken = "token"
           )
         )
       )
@@ -212,54 +183,80 @@ class ApiLifeCycleSpec
           defaultApi.api.copy(possibleUsagePlans = Seq(planProd.id, planDev.id))
         ),
         usagePlans = Seq(planProd, planDev),
+        keyrings = Seq(
+          Keyring(
+            id = KeyringId("keyring1"),
+            tenant = tenant.id,
+            team = teamConsumerId,
+            apiKey = otoroshiApiKey1,
+            otoroshiSettings =
+              KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+            createdAt = DateTime.now(),
+            integrationToken = "test 1"
+          ),
+          Keyring(
+            id = KeyringId("keyring2"),
+            tenant = tenant.id,
+            team = teamOwnerId,
+            apiKey = otoroshiApiKey2,
+            otoroshiSettings =
+              KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+            createdAt = DateTime.now(),
+            integrationToken = "test 2"
+          ),
+          Keyring(
+            id = KeyringId("keyring3"),
+            tenant = tenant.id,
+            team = teamOwnerId,
+            apiKey = otoroshiApiKey3,
+            otoroshiSettings =
+              KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+            createdAt = DateTime.now(),
+            integrationToken = "test 3"
+          )
+        ),
         subscriptions = Seq(
           ApiSubscription(
             id = ApiSubscriptionId(IdGenerator.token(12)),
             tenant = tenant.id,
-            apiKey = otoroshiApiKey1,
             plan = planProd.id,
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-            rotation = None,
-            integrationToken = "token"
+            keyring = KeyringId("keyring1")
           ),
           ApiSubscription(
             id = ApiSubscriptionId(IdGenerator.token(12)),
             tenant = tenant.id,
-            apiKey = otoroshiApiKey2,
             plan = planDev.id,
             createdAt = DateTime.now(),
             team = teamOwner.id,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-            rotation = None,
-            integrationToken = "token"
+            keyring = KeyringId("keyring2")
           ),
           ApiSubscription(
             id = ApiSubscriptionId(IdGenerator.token(12)),
             tenant = tenant.id,
-            apiKey = otoroshiApiKey3,
             plan = planDev.id,
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
-            rotation = None,
-            integrationToken = "token"
+            keyring = KeyringId("keyring2")
           )
         )
       )
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
 
-      checkOtoroshiKeyEnabling(otoroshiApiKey1)
-      checkOtoroshiKeyEnabling(otoroshiApiKey2)
-      checkOtoroshiKeyEnabling(otoroshiApiKey3)
+      // This test focuses on the notifications emitted on lifecycle changes.
+      // The Otoroshi key behaviour on block is covered by the dedicated keyring
+      // test ("discard blocked subscriptions from a shared keyring key ...").
 
       changingAPIState(session = adminSession, state = ApiState.Deprecated)
 
@@ -278,16 +275,182 @@ class ApiLifeCycleSpec
         numberOfUserNotif = 2
       )
 
-      checkOtoroshiKeyEnabling(otoroshiApiKey1, enabled = false)
-      checkOtoroshiKeyEnabling(otoroshiApiKey2, enabled = false)
-      checkOtoroshiKeyEnabling(otoroshiApiKey3, enabled = false)
-      // todo: check notification (2 users, 3 teams, 1 teams with 2 admins, 1 teams with just users)
       // todo : check mail (test container)
 
       // TODO: écrire un test pour la gestion des versions
       // Se passer de souscriptions : il  a une version par default (version 1) dans un premier temps.
       // Si on crée d'autres versions, il faudrait pouvoir les définir comme par défault. Si on passe l'api default à bloqué
       // Ne pas modifier deux versions avec une seule requête
+    }
+
+    "discard blocked subscriptions from a shared keyring key, and disable it on full lifecycle block" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      // Two plans of the same API pointing to two distinct Otoroshi routes.
+      val planParent = UsagePlan(
+        id = UsagePlanId("parent"),
+        tenant = tenant.id,
+        customName = "parent",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val planChild = UsagePlan(
+        id = UsagePlanId("child"),
+        tenant = tenant.id,
+        customName = "child",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val api = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(planParent.id, planChild.id)
+      )
+
+      // One consumer keyring aggregating the two subscriptions -> one shared
+      // Otoroshi key whose authorizedEntities are the union of the two routes.
+      val keyring = Keyring(
+        id = KeyringId("keyring-lifecycle"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-lifecycle"
+      )
+      val subParent = ApiSubscription(
+        id = ApiSubscriptionId("sub-parent"),
+        tenant = tenant.id,
+        plan = planParent.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+      val subChild = ApiSubscription(
+        id = ApiSubscriptionId("sub-child"),
+        tenant = tenant.id,
+        plan = planChild.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(planParent, planChild),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(subParent, subChild)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val clientId = otoroshiApiKey1.clientId
+      val parentRoute = OtoroshiRouteId(parentRouteId)
+      val childRoute = OtoroshiRouteId(childRouteId)
+
+      // Phase 0 — initial sync: the shared key aggregates both routes and is enabled.
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute, childRoute)
+      )
+
+      // Phase 1 — the API producer blocks the child subscription: its route is
+      // discarded from the shared key, but the key stays enabled (parent still active).
+      archiveSubscriptionByOwner(adminSession, subChild.id, enabled = false)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute)
+      )
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        blocked = true,
+        routes = Seq(childRoute)
+      )
+
+      // Phase 2 — the producer re-activates the child subscription: route restored (rollback).
+      archiveSubscriptionByOwner(adminSession, subChild.id, enabled = true)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute, childRoute)
+      )
+
+      // Phase 3 — full lifecycle block: every subscription becomes Blocked, the
+      // shared key is disabled. Disabling does NOT strip authorizedEntities.
+      changingAPIState(adminSession, ApiState.Blocked)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = false,
+        routes = Seq(parentRoute, childRoute)
+      )
+
+      // Phase 4 — lifecycle deblock (Blocked -> Deprecated; Blocked -> Published
+      // is forbidden by checkPreviousState): subscriptions become Active again,
+      // key re-enabled (rollback).
+      changingAPIState(adminSession, ApiState.Deprecated)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute, childRoute)
+      )
     }
 
 //    "when blocking aggregated ApiKey" in {
@@ -588,8 +751,6 @@ class ApiLifeCycleSpec
         body = Some(apiVersion1.copy(state = ApiState.Blocked).asJson)
       )(using tenant, adminSession)
 
-      println(resp.body)
-
       resp.status mustBe 200
       (resp.json \ "state").as(using
         json.ApiStateFormat
@@ -615,27 +776,346 @@ class ApiLifeCycleSpec
 
     }
 
+    "restrict the per-subscription block to API editors of the producer team" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("auth-plan"),
+        tenant = tenant.id,
+        customName = "auth",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(plan.id)
+      )
+      val keyring = Keyring(
+        id = KeyringId("keyring-auth"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-auth"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("sub-auth"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(plan),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(sub)
+      )
+
+      // `user` is only a TeamUser of the producer team -> forbidden
+      val teamUserSession = loginWithBlocking(user, tenant)
+      val forbidden = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}/_archiveByOwner?enabled=false",
+        method = "PUT"
+      )(using tenant, teamUserSession)
+      forbidden.status mustBe 403
+
+      // an ApiEditor of the producer team is allowed
+      val editorSession = loginWithBlocking(userApiEditor, tenant)
+      val allowed = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}/_archiveByOwner?enabled=false",
+        method = "PUT"
+      )(using tenant, editorSession)
+      allowed.status mustBe 200
+    }
+
+    "prevent a consumer from re-enabling a subscription blocked by the API producer" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("precedence-plan"),
+        tenant = tenant.id,
+        customName = "precedence",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(plan.id)
+      )
+      val keyring = Keyring(
+        id = KeyringId("keyring-precedence"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-precedence"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("sub-precedence"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(plan),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(sub)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+
+      // the API producer blocks the subscription (state -> Blocked)
+      archiveSubscriptionByOwner(adminSession, sub.id, enabled = false)
+
+      // the consumer (team admin) cannot toggle it back through its own endpoint
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_archive?enabled=true",
+        method = "PUT"
+      )(using tenant, adminSession)
+      resp.status mustBe 403
+    }
+
+    "keep a shared keyring key alive for other APIs when one API is blocked" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      // Api A -> childRoute, Api B -> parentRoute, both aggregated on one keyring.
+      val planA = UsagePlan(
+        id = UsagePlanId("plan-a"),
+        tenant = tenant.id,
+        customName = "a",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(childRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val planB = UsagePlan(
+        id = UsagePlanId("plan-b"),
+        tenant = tenant.id,
+        customName = "b",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val apiA = defaultApi.api.copy(
+        id = ApiId("api-a"),
+        name = "api A",
+        team = teamOwnerId,
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(planA.id),
+        defaultUsagePlan = planA.id.some
+      )
+      val apiB = defaultApi.api.copy(
+        id = ApiId("api-b"),
+        name = "api B",
+        team = teamOwnerId,
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(planB.id),
+        defaultUsagePlan = planB.id.some
+      )
+
+      val keyring = Keyring(
+        id = KeyringId("keyring-shared"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-shared"
+      )
+      val subA = ApiSubscription(
+        id = ApiSubscriptionId("sub-a"),
+        tenant = tenant.id,
+        plan = planA.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = apiA.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+      val subB = ApiSubscription(
+        id = ApiSubscriptionId("sub-b"),
+        tenant = tenant.id,
+        plan = planB.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = apiB.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(apiA, apiB),
+        usagePlans = Seq(planA, planB),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(subA, subB)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val childRoute = OtoroshiRouteId(childRouteId)
+      val parentRoute = OtoroshiRouteId(parentRouteId)
+
+      // initial sync: the shared key aggregates both APIs' routes
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(childRoute, parentRoute)
+      )
+
+      // block Api A only
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${apiA.id.value}/${apiA.currentVersion.value}",
+        method = "PUT",
+        body = Some(apiA.copy(state = ApiState.Blocked).asJson)
+      )(using tenant, adminSession)
+      resp.status mustBe 200
+      triggerSyncJob(adminSession)
+
+      // Api B's route remains, Api A's route is discarded, the key stays enabled
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute)
+      )
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        blocked = true,
+        routes = Seq(childRoute)
+      )
+    }
+
     def changingAPIState(
         session: UserSession,
         state: ApiState,
         statusResponse: Int = 200
     ) = {
       logger.info(s"changing api default state to ${state.name}")
-      {
-        val resp = httpJsonCallBlocking(
-          path =
-            s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
-          method = "PUT",
-          body = Some(defaultApi.api.copy(state = state).asJson)
-        )(using tenant, session)
-        resp.status mustBe statusResponse
-        if (statusResponse == 200) {
-          (resp.json \ "state").as(using json.ApiStateFormat) mustBe state
-          logger.info(
-            s" api state changed to ${(resp.json \ "state").as(using json.ApiStateFormat)}"
-          )
-
-        }
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
+        method = "PUT",
+        body = Some(defaultApi.api.copy(state = state).asJson)
+      )(using tenant, session)
+      resp.status mustBe statusResponse
+      if (statusResponse == 200) {
+        (resp.json \ "state").as(using json.ApiStateFormat) mustBe state
       }
     }
 
@@ -708,7 +1188,9 @@ class ApiLifeCycleSpec
 
     def checkOtoroshiKeyEnabling(
         apk: OtoroshiApiKey,
-        enabled: Boolean = true
+        enabled: Boolean = true,
+        blocked: Boolean = false,
+        routes: Seq[OtoroshiRouteId]
     ) = {
       def respVerifOto = httpJsonCallWithoutSessionBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${apk.clientId}",
@@ -721,7 +1203,43 @@ class ApiLifeCycleSpec
         hostHeader = "otoroshi-api.oto.tools"
       )(using tenant)
 
-      (respVerifOto.json \ "enabled").as[Boolean] mustBe true
+      (respVerifOto.json \ "enabled").as[Boolean] mustBe enabled
+      val authorizedEntities =
+        (respVerifOto.json \ "authorizedEntities").as[JsArray]
+
+      if (blocked)
+        routes.foreach(r =>
+          authorizedEntities.value
+            .map(_.as[String]) must not contain (s"route_${r.value}")
+        )
+      else
+        routes.foreach(r =>
+          authorizedEntities.value.map(_.as[String]) must contain(
+            s"route_${r.value}"
+          )
+        )
+    }
+
+    def triggerSyncJob(session: UserSession): Unit = {
+      val resp = httpJsonCallBlocking(
+        path = "/api/jobs/otoroshi/_sync?key=secret",
+        method = "POST",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+    }
+
+    def archiveSubscriptionByOwner(
+        session: UserSession,
+        subscriptionId: ApiSubscriptionId,
+        enabled: Boolean
+    ): Unit = {
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${subscriptionId.value}/_archiveByOwner?enabled=$enabled",
+        method = "PUT"
+      )(using tenant, session)
+      resp.status mustBe 200
     }
   }
 

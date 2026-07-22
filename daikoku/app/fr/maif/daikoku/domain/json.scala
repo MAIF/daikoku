@@ -2493,7 +2493,8 @@ object json {
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "state" -> o.state.name
       )
   }
 
@@ -2652,9 +2653,11 @@ object json {
 
   val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
     override def reads(json: JsValue) =
-      json.as[String] match {
-        case "blocked" => JsSuccess(ApiSubscriptionState.Blocked)
-        case "active"  => JsSuccess(ApiSubscriptionState.Active)
+      json.asOpt[String] match {
+        case None => JsSuccess(ApiSubscriptionState.Active)
+        case Some("blocked") => JsSuccess(ApiSubscriptionState.Blocked)
+        case Some("active")  => JsSuccess(ApiSubscriptionState.Active)
+        case Some(str)          => JsError(s"Bad ApiSubscriptionState value: $str")
       }
 
     override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)

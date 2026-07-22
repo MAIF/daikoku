@@ -3,10 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import Pagination from '../../utils/Pagination';
 import { toast } from "sonner";
+import Pagination from '../../utils/Pagination';
 
+import { Link, Menu, RefreshCcw } from "lucide-react";
 import { I18nContext, ModalContext } from "../../../contexts";
+import { GlobalContext } from "../../../contexts/globalContext";
 import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
 import * as Services from "../../../services";
 import {
@@ -17,7 +19,7 @@ import {
   IUsagePlan,
   ResponseError
 } from "../../../types";
-import { Filter, SwitchButton, TableRef } from "../../inputs";
+import { Filter, TableRef } from "../../inputs";
 import {
   api as API,
   BeautifulTitle,
@@ -26,8 +28,6 @@ import {
   manage,
   Spinner
 } from "../../utils";
-import { GlobalContext } from "../../../contexts/globalContext";
-import { Link, Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -51,6 +51,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   api: IApiGQL;
   customName: string;
   enabled: boolean;
+  state: 'active' | 'blocked';
   customMetadata?: JSON;
   adminCustomName?: string;
   customMaxPerSecond?: number;
@@ -159,29 +160,22 @@ export const TeamApiSubscriptions = ({
       cell: (info) => info.getValue(),
       enableColumnFilter: true,
     }),
-    columnHelper.accessor("enabled", {
+    columnHelper.display({
       header: translate("Enabled"),
       enableColumnFilter: false,
       enableSorting: false,
       meta: { style: { textAlign: "center" } },
       cell: (info) => {
         const sub = info.row.original;
-        return (
-          <SwitchButton
-            disabled={false}
-            ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-            onSwitch={(value) => {
-              return Services.archiveSubscriptionByOwner(
-                currentTeam._id,
-                sub._id,
-                value
-              )
-                .then(() => queryClient.invalidateQueries({ queryKey: ["subscriptions"] }))
-                .then(() => tableRef.current?.update())
-            }}
-            checked={sub.enabled}
-          />
-        );
+        return <span className={classNames("badge --state d-flex align-items-center gap-2", {
+          "--success": sub.enabled && sub.state === 'active',
+          "--danger": !sub.enabled || sub.state === 'blocked',
+        })}>
+          {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
+          {(sub.state === "blocked") && translate('subscription.blocked.label')}
+          {(!sub.enabled && sub.state === "active") && translate('subscription.disable.label')}
+
+        </span>
       },
     }),
     columnHelper.accessor("createdAt", {
@@ -213,43 +207,52 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "center", width: "120px" } },
       cell: (info) => {
         const sub = info.row.original;
+
         return (
-          <div className="btn-group gap-1">
-            <BeautifulTitle title={translate("Update metadata")}>
-              <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("Update metadata")}
-                onClick={() => updateMeta(sub)}
+          <Can I={manage} a={API} team={currentTeam}>
+            <button className="btn --ghost --small --icon-only dropdown" aria-label={translate('subscription.actions.aria.label')}>
+              <Menu
+                className="cursor-pointer dropdown-menu-button"
+                style={{ fontSize: '18px' }}
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                id={`dropdown-${sub._id}`}
+              />
+              <div
+                className="dropdown-menu dropdown-menu-end"
+                aria-labelledby={`dropdown-${sub._id}`}
+                style={{ zIndex: 1 }}
               >
-                <Pen />
-              </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("Refresh secret")}>
-              <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("Refresh secret")}
-                onClick={() => regenerateSecret(sub)}
-              >
-                <RefreshCw />
-              </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("api.delete.subscription")}>
-              <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("api.delete.subscription")}
-                onClick={() => deleteSubscription(sub)}
-              >
-                <Trash2 />
-              </button>
-            </BeautifulTitle>
-          </div>
-        );
+                <button
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => updateMeta(sub)
+                  }
+                >
+                  {translate("Update metadata")}
+                </button>
+                <div className="dropdown-divider" />
+                {api.state !== 'blocked' && <span
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => toggleApiSubscriptionState(sub)}
+                >
+                  {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
+                </span>}
+                {api.state !== 'blocked' && <span
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => regenerateSecret(sub)}
+                >
+                  {translate("Refresh secret")}
+                </span>}
+                <button
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => deleteSubscription(sub)}
+                >
+                  {translate("api.delete.subscription")}
+                </button>
+              </div>
+            </button>
+          </Can>
+        )
       },
     }),
   ];
@@ -314,10 +317,23 @@ export const TeamApiSubscriptions = ({
     // },
   });
 
+  const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
+    if (api.state !== 'blocked')
+      return Services.archiveSubscriptionByOwner(
+        currentTeam._id,
+        sub._id,
+        sub.state !== 'active'
+      )
+        .then(() => queryClient.invalidateQueries({ queryKey: ["subscriptions"] }))
+        .then(() => tableRef.current?.update())
+  }
+
   const regenerateSecret = (sub: IApiSubscriptionGql) => {
     const plan = sub.plan;
+    if (api.state === 'blocked')
+      return
 
-    confirm({
+    return confirm({
       message: translate({
         key: "secret.refresh.confirm",
         replacements: [

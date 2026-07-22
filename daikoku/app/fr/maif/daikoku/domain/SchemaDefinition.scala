@@ -1786,6 +1786,11 @@ object SchemaDefinition {
               getOtoroshiUsage(ctx.value)(using
                 ctx.ctx._2.tenant
               ) // FIXME: maybe bulk like defer is good option
+          ),
+          Field(
+            "state",
+            StringType,
+            resolve = _.value.state.name
           )
         )
     )

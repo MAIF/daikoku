@@ -220,10 +220,6 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   }, { timeout: 10000 }).toBe(404);
 });
 
-test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {
-  //todo: wait #800 (https://github.com/MAIF/daikoku/issues/800)
-});
-
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);

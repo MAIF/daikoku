@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
-import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, Eye, FileKey, Key, Link as LucideLink, Menu, Terminal, UserRoundKey } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, FileKey, Key, Link as LucideLink, Menu, Terminal } from "lucide-react";
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -127,6 +127,7 @@ export interface IKeyringSubscriptionGql {
   customName: string | null;
   adminCustomName?: string;
   enabled: boolean;
+  state: 'active' | 'blocked';
   createdAt: number;
   validUntil?: number;
   tags: Array<string>;
@@ -806,12 +807,12 @@ export const KeyringCard = ({
                       })}
                     />
                     <span className={classNames("badge --state d-flex align-items-center gap-2", {
-                      "--success": sub.enabled,
-                      "--danger": !sub.enabled,
+                      "--success": sub.enabled && sub.state === 'active',
+                      "--danger": !sub.enabled || sub.state === 'blocked',
                     })}>
-                      {sub.enabled
-                        ? translate('subscription.enable.label')
-                        : translate('subscription.disable.label')}
+                      {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
+                      {(sub.state === "blocked") && translate('subscription.blocked.label')}
+                      {(!sub.enabled && sub.state === "active") && translate('subscription.disable.label')}
                     </span>
                   </div>
                 </td>
@@ -848,16 +849,18 @@ export const KeyringCard = ({
                       : '-'}
                   </span>
                 </td>
-                <td className='d-flex gap-1'>
-                  {sub.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="badge --primary cursor-pointer"
-                      onClick={() => handleTagClick(t)}
-                    >
-                      {t}
-                    </span>
-                  ))}
+                <td className=''>
+                  <div className='d-flex gap-1'>
+                    {sub.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="badge --primary cursor-pointer"
+                        onClick={() => handleTagClick(t)}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </td>
                 <td className="text-end">
                   <Can I={manage} a={apikey} team={currentTeam}>
@@ -907,14 +910,14 @@ export const KeyringCard = ({
                         >
                           {translate('subscription.transfer.label')}
                         </span>}
-                        <button
+                        {sub.state !== 'blocked' && <button
                           className="dropdown-item cursor-pointer"
                           onClick={() => withLoader(() => toggle(sub))}
                         >
                           {sub.enabled
                             ? translate('subscription.disable.button.label')
                             : translate('subscription.enable.button.label')}
-                        </button>
+                        </button>}
                         {aggregated && (
                           <button
                             className="dropdown-item cursor-pointer danger"

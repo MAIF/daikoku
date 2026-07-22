@@ -17,6 +17,13 @@ souscriptions.
 
 Fichier cœur : `daikoku/app/fr/maif/daikoku/services/ApiLifeCycleService.scala` (432 lignes).
 
+### Suivi
+
+Chaque item porte deux cases à cocher :
+
+- **Fait (dev)** — coché par Quentin quand l'implémentation est terminée.
+- **Relu & OK (Claude)** — coché après relecture validée.
+
 ---
 
 ## A. Correctness backend — bloquant, à faire en premier
@@ -26,12 +33,18 @@ Fichier cœur : `daikoku/app/fr/maif/daikoku/services/ApiLifeCycleService.scala`
    `apikeyEntities.scala:127-157`). Ce fichier ne compile pas → **vérifier avec `sbt Test/compile`
    dans `daikoku/`**, la CI est probablement rouge. La correction découle de la section B (on ne
    patche plus Otoroshi en direct).
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 2. **Bug type** — `ApiLifeCycleService.scala:78` (`handleApiDeblocking`) : `"enabled" -> api.state.name`
    écrit la **String** `"published"` dans le champ **booléen** `enabled`. À supprimer (le déblocage
    passe désormais par `state = Active` + resync, cf. B).
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 3. **Match non exhaustif** — `json.scala:2654-2658` : `ApiSubscriptionStateFormat.reads` ne gère que
    `"active"`/`"blocked"` → `MatchError` sur toute autre valeur (aujourd'hui masqué par un `Try`
    englobant). Ajouter un cas par défaut (fallback `Active` ou `JsError`).
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 
 ## B. Intégration keyring (le vrai trou fonctionnel)
 
@@ -53,16 +66,24 @@ souscriptions puis laisse `otoroshiSynchronisator.run(api.id, tenant)` (déjà a
      clé « vide » (désactivation) proprement. **Ne pas** supprimer le keyring (contrairement à
      `DeletionService.deleteSubscriptions` → `deleteKeyringIfEmpty`) : la souscription reste, donc le
      keyring reste.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 2. **`handleApiBlocking`** (`:162-229`) : garder le `$set state = "blocked"` sur les souscriptions de
    l'API, **supprimer** le bloc `disableOtoroshiApiKey`/`_.apiKey.clientId` (l.410-431 + appel l.226)
    et les `AppLogger.warn` de secours (l.214-225). Garder `manageApiDefaultVersion`, les
    notifications et mails. Retirer le TODO l.188.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 3. **`handleApiDeblocking`** (`:61-124`) : `$set state = "active"` uniquement (retirer `enabled`),
    supprimer tout le bloc Otoroshi commenté (l.90-121). Le resync post-updateApi ré-inclut les
    souscriptions `Active`.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 4. **Honorer `KeyringOtoroshiBinding.Internal`** (`apikeyEntities.scala:123-125`) : pas d'appel
    Otoroshi pour ces keyrings — déjà géré par le synchronizer/`toggleKeyringState`, donc automatique
    si on délègue au synchronizer.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 
 ## C. Câbler `ApiSubscriptionState` de bout en bout
 
@@ -72,11 +93,19 @@ Aujourd'hui `state` (`apikeyEntities.scala:76`) est écrit en raw `$set` mais : 
 
 1. **JSON** : ajouter `"state" -> state.name` dans `ApiSubscriptionFormat.writes`, et lecture déjà
    présente (`json.scala:2437-2439`). Sans ça, tout le mécanisme de blocage est volatile.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 2. **GraphQL** : exposer `state` sur `ApiSubscriptionType` (`SchemaDefinition.scala:1694-1791`).
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 3. **Frontend types** : ajouter `state: 'active' | 'blocked'` à `IBaseSubscription`
    (`daikoku/javascript/src/types/api.ts:360-381`) — hérité par `ISubscription`/`ISafeSubscription`/etc.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 4. **UI** : badge d'état par souscription. Décommenter/finir les tags par souscription dans
    `ApiList.tsx:132-147` et/ou afficher le badge dans la vue de gestion des souscriptions.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 
 ## D. Toggle d'une souscription par l'admin de l'API (nouvelle capacité)
 
@@ -86,13 +115,21 @@ Réutiliser `ApiSubscriptionState` comme levier manuel :
    souscription (`Active`↔`Blocked`), puis `otoroshiSynchronisator.run`. S'inspirer de
    `toggleKeyringState` (`ApiService.scala:655-693`) / `toggleKeyring`
    (`ApiController.scala:2394-2406`) et de `toggleApiKeyRotation` (`:2342-2373`).
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 2. **Autorisation** : accessible uniquement aux **admins de l'API souscrite** (équipe productrice),
    pas au consommateur — reprendre le pattern d'autorisation existant sur les endpoints d'API.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 3. **UI** : bouton toggle dans la vue de visualisation des souscriptions, branché sur l'endpoint.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 4. **Relation `enabled` vs `state`** : à clarifier à l'implémentation — `enabled` est le toggle
    existant (côté consommateur), `state` le levier producteur/lifecycle. Le merge (B.1) doit
    considérer une souscription contributive ssi `enabled && state == Active`. Éviter d'introduire
    deux sources de vérité contradictoires ; documenter la règle retenue.
+   - [x] Fait (dev)
+   - [x] Relu & OK (Claude)
 
 ## E. Nettoyage & tests
 
@@ -100,18 +137,26 @@ Réutiliser `ApiSubscriptionState` comme levier manuel :
    - `daikoku/test/daikoku/ApiLifeCycleSpec.scala`
    - `daikoku/app/services/ApiLifeCycleService.scala` (le vrai est
      `daikoku/app/fr/maif/daikoku/services/ApiLifeCycleService.scala`)
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 2. **Playwright cassé** — `daikoku/javascript/tests/specs/api_lifecycle.spec.ts` : ~17 assertions
    écrites `expect(...).toBeVisible;` (accès propriété, `()` manquants) → **no-op, n'assertent rien**
    (l.68, 82, 85, 113, 123, 130, 132, 157, 192-239 ; certaines `;;`). Corriger en `.toBeVisible()`.
    Corriger aussi le titre typo/dupliqué l.252 (« pass vdvto Blocked ») et le vocabulaire « Draft »
    (aucun état `draft` dans `ApiState`).
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 3. **Tests Scala** : dans `daikoku/test/fr/maif/daikoku/usages/ApiLifeCycleSpec.scala`, décommenter /
    écrire le cas `"when blocking aggregated ApiKey"` (l.293) — **le porter sur le modèle keyring** :
    vérifier que bloquer une API discard bien la contribution au keyring partagé sans supprimer la
    souscription, et que le déblocage la restaure (rollback). Ajouter un test du toggle par souscription
    (section D) et de son autorisation.
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 4. **`TEST_COVERAGE.md`** : mettre à jour les lignes deprecation/lifecycle (§3, §4, §5) et référencer
    `ApiLifeCycleService` / `ApiLifeCycleSpec`.
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 
 ## Points à confirmer pendant l'implémentation
 
@@ -124,11 +169,21 @@ Réutiliser `ApiSubscriptionState` comme levier manuel :
 ## Vérification (end-to-end)
 
 1. `cd daikoku && sbt Test/compile` — doit repasser au vert (valide A.1).
+   - [x] Fait (dev)
+   - [ ] Relu & OK (Claude)
 2. `cd daikoku/javascript && npm run build` (tsc) — valide le type TS `state` (C.3).
+   - [x] Fait (dev)
+   - [ ] Relu & OK (Claude)
 3. `mise run test:back` — exécute `ApiLifeCycleSpec` (transitions + blocage keyring + toggle).
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 4. `mise run test:front:ldap` (ou oidc) — Playwright `api_lifecycle.spec.ts` avec assertions
    réellement actives.
+   - [ ] Fait (dev)
+   - [ ] Relu & OK (Claude)
 5. Manuel (`mise run dev`) : souscrire 2 équipes à une API via un même keyring, bloquer l'API →
    vérifier que la clé Otoroshi partagée perd les droits des souscriptions bloquées mais reste pour
    les autres API du keyring ; débloquer → droits restaurés. Tester le toggle par souscription depuis
    l'UI en tant qu'admin de l'API.
+   - [x] Fait (dev)
+   - [ ] Relu & OK (Claude)

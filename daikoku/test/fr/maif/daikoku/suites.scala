@@ -227,6 +227,7 @@ object testUtils {
         translations: Seq[Translation] = Seq.empty,
         keyrings: Seq[Keyring] = Seq.empty
     ) = {
+//      Await.result(waitForDaikokuSetup(), 5.second)
       Await.result(
         setupEnv(
           tenants,
@@ -668,7 +669,6 @@ object testUtils {
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
-      AppLogger.warn(s"$baseUrl:$port$path")
       body.map(b => builder.withBody(b)).getOrElse(builder).execute()
     }
 

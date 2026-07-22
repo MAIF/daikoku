@@ -22,9 +22,9 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.services.{
   ApiLifeCycleService,
   ApiService,
-  MailService,
   DeletionService,
-  KeyringService
+  KeyringService,
+  MailService
 }
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
@@ -38,6 +38,7 @@ import fr.maif.daikoku.utils.{
   Translator
 }
 import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.ApiSubscriptionState.{Active, Blocked}
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
   ApiSubscriptionDemand
@@ -124,7 +125,7 @@ class ApiController(
               EitherT(Try {
                 env.wsClient
                   .url(finalUrl)
-                  .withHttpHeaders(headers.toSeq*)
+                  .withHttpHeaders(headers.toSeq *)
                   .get()
                   .map { resp =>
                     val contentType =
@@ -389,7 +390,7 @@ class ApiController(
             env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
             NotFound(Json.obj("error" -> "Api not found"))
           )
-          apiPlans <- EitherT.liftF(
+          apiPlans <- EitherT.right[Result](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
@@ -401,7 +402,7 @@ class ApiController(
           )
           pendingRequests <-
             if (api.team == team.id)
-              EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
+              EitherT.right[Result](FastFuture.successful(Seq.empty[Notification]))
             else if (
               !ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams
                 .contains(team.id)
@@ -415,7 +416,7 @@ class ApiController(
                 )
               )
             else
-              EitherT.liftF(
+              EitherT.right[Result](
                 env.dataStore.notificationRepo
                   .forTenant(ctx.tenant.id)
                   .findNotDeleted(
@@ -427,7 +428,7 @@ class ApiController(
                     )
                   )
               )
-          subscriptions <- EitherT.liftF(
+          subscriptions <- EitherT.right[Result](
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(
@@ -1036,108 +1037,6 @@ class ApiController(
         apiService.getApis(ctx)
       }
   }
-
-  case class subscriptionData(
-      apiKey: OtoroshiApiKey,
-      plan: UsagePlanId,
-      team: TeamId,
-      api: ApiId
-  )
-
-  def byteStringToApiSubscription: Flow[ByteString, subscriptionData, NotUsed] =
-    Flow[ByteString]
-      .via(JsonFraming.objectScanner(Int.MaxValue))
-      .map(_.utf8String)
-      .filterNot(_.isEmpty)
-      .map(Json.parse)
-      .map(value =>
-        subscriptionData(
-          apiKey = (value \ "apikey").as(using OtoroshiApiKeyFormat),
-          plan = (value \ "plan").as(using UsagePlanIdFormat),
-          team = (value \ "team").as(using TeamIdFormat),
-          api = (value \ "api").as(using ApiIdFormat)
-        )
-      )
-
-  val sourceApiSubscriptionsDataBodyParser
-      : BodyParser[Source[subscriptionData, ?]] =
-    BodyParser("Streaming BodyParser") { req =>
-      req.contentType match {
-        case Some("application/json") =>
-          Accumulator
-            .source[ByteString]
-            .map(s => Right(s.via(byteStringToApiSubscription)))
-        case _ =>
-          Accumulator.source[ByteString].map(_ => Left(UnsupportedMediaType))
-      }
-    }
-
-  def initSubscriptions() =
-    DaikokuAction.async(sourceApiSubscriptionsDataBodyParser) { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has init an apikey for @{api.name} - @{api.id}"
-        )
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        val subSource = ctx.request.body
-          .map(data =>
-            ApiSubscription(
-              id = ApiSubscriptionId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              apiKey = data.apiKey,
-              plan = data.plan,
-              createdAt = DateTime.now(),
-              validUntil = None,
-              team = data.team,
-              api = data.api,
-              by = ctx.user.id,
-              customName = Some(data.apiKey.clientName),
-              rotation = None,
-              integrationToken = IdGenerator.token(64)
-            )
-          )
-
-        val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] =
-          Flow[ApiSubscription]
-            .mapAsync(10)(sub =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant.id)
-                .save(sub)
-                .map(done => sub -> done)
-            )
-            .filter(_._2)
-            .map(_._1)
-
-        val source = subSource
-          .via(createSubFlow)
-
-        val transformFlow = Flow[ApiSubscription]
-          .map(_.apiKey.clientName)
-          .map(json => ByteString(Json.stringify(JsString(json))))
-          .intersperse(ByteString("["), ByteString(","), ByteString("]"))
-          .watchTermination() { (mt, d) =>
-            d.onComplete {
-              case Success(done) =>
-                AppLogger.debug(
-                  s"init subscirptions for tenant ${tenant.id.value} is $done"
-                )
-              case Failure(exception) =>
-                AppLogger.error("Error processing stream", exception)
-            }
-            mt
-          }
-
-        FastFuture.successful(
-          Created.sendEntity(
-            HttpEntity.Streamed(
-              source.via(transformFlow),
-              None,
-              Some("application/json")
-            )
-          )
-        )
-      }
-    }
 
   def byteStringToApi: Flow[ByteString, Api, NotUsed] =
     Flow[ByteString]
@@ -2282,7 +2181,7 @@ class ApiController(
       tenant.otoroshiSettings.find(_.id == id)
     } match {
       case None =>
-        FastFuture.successful(Left(OtoroshiSettingsNotFound))
+        FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
       case Some(otoroshiSettings) =>
         apiService.makeSubscriptionUnique(subscription, tenant, user)(using
           otoroshiSettings
@@ -2311,7 +2210,7 @@ class ApiController(
               .findByIdOrHrIdNotDeleted(subscriptionId),
             AppError.SubscriptionNotFound
           )
-          _ <- EitherT.fromOptionF[Future, AppError, Api](
+          api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(
@@ -2319,21 +2218,16 @@ class ApiController(
               ),
             AppError.ApiNotFound
           )
+          _ <- EitherT.cond[Future](api.state != ApiState.Blocked, (), AppError.ForbiddenAction)
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .findById(sub.plan),
             AppError.PlanNotFound
           )
-          result <- EitherT(
-            toggleSubscription(
-              plan,
-              sub,
-              ctx.tenant,
-              enabled.getOrElse(false)
-            )
-          )
-        } yield Ok(result))
+          _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(sub, ctx.tenant))
+          delete <- EitherT(apiService.archiveApiKey(ctx.tenant, sub, plan, enabled.getOrElse(false), byOwner = true))
+        } yield Ok(delete))
           .leftMap(_.render())
           .merge
       }
@@ -2481,10 +2375,12 @@ class ApiController(
       tenant: Tenant,
       enabled: Boolean
   ): Future[Either[AppError, JsObject]] = {
-    for {
-      _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
-      delete <- apiService.archiveApiKey(tenant, subscription, plan, enabled)
-    } yield delete
+    (for {
+      _ <- EitherT.cond[Future](subscription.state != Blocked, (), AppError.ForbiddenAction)
+      _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(subscription, tenant))
+      delete <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled))
+    } yield delete)
+      .value
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4078,8 +3974,7 @@ class ApiController(
                 a.exists(c =>
                   c.createdAt.getMillis == comment.createdAt.getMillis
                 )
-              }
-              .exists(comment => comment.by != ctx.user.id)
+              }.exists(comment => comment.by != ctx.user.id)
 
         def commentsHasBeenUpdatedWithoutRights(
             isDaikokuAdmin: Boolean,
@@ -4090,8 +3985,7 @@ class ApiController(
             a.size == b.size &&
             b.filterNot { comment =>
                 a.exists(c => c.content == comment.content)
-              }
-              .exists(comment => comment.by != ctx.user.id)
+              }.exists(comment => comment.by != ctx.user.id)
 
         def notifyUser(api: Api, issue: ApiIssue, user: UserId) = {
           env.dataStore.notificationRepo

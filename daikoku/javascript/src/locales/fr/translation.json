@@ -1446,6 +1446,7 @@
   "subscription.extract.button.label": "Détacher du trousseau",
   "subscription.enable.label": "Activé",
   "subscription.disable.label": "Désactivé",
+  "subscription.blocked.label": "Bloquée",
   "keyring.enable.action.label": "Activer le trousseau",
   "keyring.disable.action.label": "Désactiver le trousseau",
   "subscriptions.hide.link": "Cacher le lien",

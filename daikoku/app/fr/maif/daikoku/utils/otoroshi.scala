@@ -52,9 +52,6 @@ class OtoroshiClient(env: Env) {
   def client(
       path: String
   )(implicit otoroshiSettings: OtoroshiSettings): WSRequest = {
-    println(s"otoroshiSettings.clientSecret:${otoroshiSettings.clientSecret}")
-    println(s"otoroshiSettings.clientId:${otoroshiSettings.clientId}")
-
     ws.url(s"${otoroshiSettings.url}$path")
       .addHttpHeaders(
         "Host" -> otoroshiSettings.host

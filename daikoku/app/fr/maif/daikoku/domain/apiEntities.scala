@@ -601,22 +601,13 @@ case class Testing(
     )
 }
 
-sealed trait ApiSubscriptionState {
-  def name: String
-}
-
-object ApiSubscriptionState {
-  case object Active extends ApiSubscriptionState {
-    override def name: String = "active"
-  }
-  case object Blocked extends ApiSubscriptionState {
-    override def name: String = "blocked"
-  }
+enum ApiSubscriptionState(val name: String) {
+  case Active extends ApiSubscriptionState("active")
+  case Blocked extends ApiSubscriptionState("blocked")
 }
 
 sealed trait ApiState {
   def name: String
-
   def checkPreviousState(previousState: ApiState): Boolean
 }
 

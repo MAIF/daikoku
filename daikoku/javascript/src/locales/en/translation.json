@@ -1424,6 +1424,7 @@
   "subscription.extract.button.label": "Detach from keyring",
   "subscription.enable.label": "Enabled",
   "subscription.disable.label": "Disabled",
+  "subscription.blocked.label": "Blocked",
   "keyring.enable.action.label": "Enable keyring",
   "keyring.disable.action.label": "Disable keyring",
   "subscriptions.hide.link": "Hide link",

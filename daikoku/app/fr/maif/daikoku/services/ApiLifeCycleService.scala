@@ -1,40 +1,43 @@
 package fr.maif.daikoku.services
 
-import fr.maif.daikoku.logger.AppLogger
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.domain.{
-  Api,
-  ApiState,
-  ApiSubscription,
-  ApiSubscriptionState,
-  Notification,
-  NotificationAction,
-  NotificationId,
-  NotificationType,
-  OtoroshiSettings,
-  Team,
-  TeamId,
-  Tenant,
-  TenantId,
-  UsagePlan,
-  UsagePlanId,
-  User
-}
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.ApiSubscriptionState.{Active, Blocked}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient, Translator}
+import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
+import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{JsArray, JsString, JsValue, Json}
+import play.api.libs.json.{JsArray, JsString, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ApiLifeCycleService(
     mailService: MailService,
-    otoroshiClient: OtoroshiClient
+    synchronizerJob: OtoroshiSynchronizerJob
 ) {
+
+  private def patchSubscriptions(
+      api: Api,
+      tenant: Tenant,
+      state: ApiSubscriptionState
+  )(implicit ec: ExecutionContext, env: Env): Future[Seq[ApiSubscription]] = {
+    env.dataStore.apiSubscriptionRepo
+      .forTenant(tenant)
+      .queryTyped(
+        s"""UPDATE api_subscriptions
+       SET content = jsonb_set(content, '{state}', '"${state.name}"')
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       RETURNING content;""",
+        Seq(
+          api.id.value,
+          tenant.id.value
+        )
+      )
+  }
 
   def handleApiLifeCycle(oldApi: Api, newApi: Api, tenant: Tenant, user: User)(
       implicit
@@ -56,71 +59,6 @@ class ApiLifeCycleService(
         handleApiDeblocking(newApi, tenant)
       case _ => EitherT.pure[Future, AppError](())
     }
-  }
-
-  private def handleApiDeblocking(api: Api, tenant: Tenant)(implicit
-      ec: ExecutionContext,
-      env: Env
-  ): EitherT[Future, AppError, Unit] = {
-
-    for {
-      _ <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(api.tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "api" -> api.id.asJson
-            ),
-            Json.obj(
-              "$set" -> Json
-                .obj(
-                  "state" -> ApiSubscriptionState.Active.name,
-                  "enabled" -> api.state.name
-                )
-            )
-          )
-      )
-
-      subscriptions <- EitherT.liftF(getSubscriptionNotDeleted(api = api))
-      plansIds = subscriptions.map(_.plan).distinct
-      plans <- EitherT.liftF(
-        getPlansNotDeleted(plansIds = plansIds, api.tenant)
-      )
-
-      subsWithMaybeOtoSetting: Seq[
-        (ApiSubscription, Option[OtoroshiSettings])
-      ] =
-        getSubsWithMaybeOtoSetting(
-          subscriptions = subscriptions,
-          plans = plans,
-          tenant
-        )
-
-      subOrNotToSub: (
-          Seq[ApiSubscription],
-          Seq[(ApiSubscription, OtoroshiSettings)]
-      ) =
-        subsWithMaybeOtoSetting.partitionMap {
-          case (sub, Some(otoS)) => Right((sub, otoS))
-          case (sub, None)       => Left(sub)
-        }
-
-      _ <- EitherT.right[AppError](
-        Future.sequence(
-          subOrNotToSub._1.map(x =>
-            FastFuture.successful(
-              AppLogger.warn(
-                s"Impossible de débloquer la clé Otoroshi de la souscription ${x.id}"
-              )
-            )
-          )
-        )
-      )
-
-      // todo: fix it ==> enable all ototoshi apikey
-      // _ <- EitherT.liftF(updateApiKey(subOrNotToSub._2))
-
-    } yield ()
   }
 
   private def manageApiDefaultVersion(
@@ -165,71 +103,31 @@ class ApiLifeCycleService(
       env: Env,
       ma: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
-    implicit val mat = env.defaultMaterializer
+    implicit val mat: Materializer = env.defaultMaterializer
 
     for {
       _ <- manageApiDefaultVersion(api)
-      _ <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(api.tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "api" -> api.id.asJson
-            ),
-            Json.obj(
-              "$set" -> Json
-                .obj(
-                  "state" -> ApiSubscriptionState.Blocked.name
-                )
-            )
-          )
+      subscriptions <- EitherT.right[AppError](
+        patchSubscriptions(api = api, tenant = tenant, state = Blocked)
       )
-
-      // todo: c'est ici qu'on devra gerer de sortir les subscritpion des trousseau
-
-      subscriptions <- EitherT.liftF(getSubscriptionNotDeleted(api = api))
-      plansIds = subscriptions.map(_.plan).distinct
-      plans <- EitherT.liftF(
-        getPlansNotDeleted(plansIds = plansIds, api.tenant)
-      )
-
-      subsWithMaybeOtoSetting: Seq[
-        (ApiSubscription, Option[OtoroshiSettings])
-      ] =
-        getSubsWithMaybeOtoSetting(
-          subscriptions = subscriptions,
-          plans = plans,
-          tenant = tenant
-        )
-
-      subOrNotToSub: (
-          Seq[ApiSubscription],
-          Seq[(ApiSubscription, OtoroshiSettings)]
-      ) =
-        subsWithMaybeOtoSetting.partitionMap {
-          case (sub, Some(otoS)) => Right((sub, otoS))
-          case (sub, None)       => Left(sub)
-        }
-
-      _ <-
-        EitherT.right[AppError](
-          Future.sequence(
-            subOrNotToSub._1.map(x =>
-              FastFuture.successful(
-                AppLogger.warn(
-                  s"Impossible de bloquer la clé Otoroshi de la souscription ${x.id}"
-                )
-              )
-            )
-          )
-        )
-      _ <- EitherT.liftF(disableOtoroshiApiKey(subOrNotToSub._2))
+      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
       _ <- notifyBlocking(subscriptions, api, tenant, user)
     } yield ()
   }
 
-  // A voir : Si api bloquée, plus personne ne peux la voir, et il n'est pas possible de s'y connecter. Comment en rcupérer le nom
+  private def handleApiDeblocking(api: Api, tenant: Tenant)(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): EitherT[Future, AppError, Unit] = {
 
+    for {
+      _ <- EitherT.right[AppError](
+        patchSubscriptions(api = api, tenant = tenant, state = Active)
+      )
+      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+    } yield ()
+  }
+  
   private def notifyBlocking(
       subscriptions: Seq[ApiSubscription],
       api: Api,
@@ -306,9 +204,6 @@ class ApiLifeCycleService(
       env: Env,
       ma: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
-
-    AppLogger.info("notifyDepreciation")
-
     for {
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
@@ -363,70 +258,5 @@ class ApiLifeCycleService(
         )
       )
     } yield ()
-  }
-
-  private def getSubscriptionNotDeleted(api: Api)(implicit
-      ec: ExecutionContext,
-      env: Env
-  ) = {
-    env.dataStore.apiSubscriptionRepo
-      .forTenant(api.tenant)
-      .findNotDeleted(Json.obj("api" -> api.id.asJson))
-  }
-
-  private def getPlansNotDeleted(
-      plansIds: Seq[UsagePlanId],
-      tenantId: TenantId
-  )(implicit
-      ec: ExecutionContext,
-      env: Env
-  ) = {
-    env.dataStore.usagePlanRepo
-      .forTenant(tenantId)
-      .findNotDeleted(
-        Json.obj("_id" -> Json.obj("$in" -> JsArray(plansIds.map(_.asJson))))
-      )
-  }
-
-  private def getSubsWithMaybeOtoSetting(
-      subscriptions: Seq[ApiSubscription],
-      plans: Seq[UsagePlan],
-      tenant: Tenant
-  ): Seq[(ApiSubscription, Option[OtoroshiSettings])] = {
-    subscriptions
-      .map(subscription =>
-        (subscription, plans.find(_.id == subscription.plan))
-      )
-      .map { case (sub, maybeUsagePlan) =>
-        val otoroshiSettings: Option[OtoroshiSettings] = maybeUsagePlan
-          .flatMap(_.otoroshiTarget)
-          .map(_.otoroshiSettings)
-          .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-
-        (sub, otoroshiSettings)
-      }
-  }
-
-  private def disableOtoroshiApiKey(
-      subscriptionsAndOtoSettings: Seq[(ApiSubscription, OtoroshiSettings)]
-  )(implicit ec: ExecutionContext, mat: Materializer) = {
-    Future.sequence(
-      subscriptionsAndOtoSettings
-        .groupBy(x => x._2)
-        .map(x => (x._1, x._2.map(_._1)))
-        .map { case (os, subs) =>
-          otoroshiClient.patchApiKeyBulk(
-            subs.map(_.apiKey.clientId),
-            Json.arr(
-              Json.obj(
-                "op" -> "replace",
-                "path" -> "/enabled",
-                "value" -> false
-              )
-            )
-          )(using os, mat)
-        }
-    )
-
   }
 }
