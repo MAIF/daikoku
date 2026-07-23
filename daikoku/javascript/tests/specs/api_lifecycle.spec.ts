@@ -101,7 +101,9 @@ test('full Api LifeCycle', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await passAPIToPublished({ page }, 'Commande')
+  await page.goto(ACCUEIL);
   await passAPIToDeprecated({ page }, 'Commande')
+  await page.goto(ACCUEIL);
   await passAPIToBlocked({ page }, 'Commande')
 });
 

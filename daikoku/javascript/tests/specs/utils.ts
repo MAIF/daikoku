@@ -60,7 +60,7 @@ export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
 
 export const loginAs = async (user: IUser, page: Page, basicUsage: boolean = true) => {
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('link', { name: 'Se connecter' }).click();
   const input = page.locator('input[name="username"]');
   await input.waitFor({ state: 'visible' });
   await input.fill(user.email);
