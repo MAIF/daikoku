@@ -883,6 +883,7 @@ const ToggleFormPartButton = (props: ToggleButtonProps) => {
 export const ApiPricing = (props: ApiPricingProps) => {
   const {
     openLoginOrRegisterModal,
+    openKeyringSelectModal,
     openCustomModal,
     close,
     openFormModal,
@@ -1177,76 +1178,52 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
     const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
-    const otoroshiTargetIsDefined =
-      !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
-    const otoroshiEntitiesIsDefined =
-      otoroshiTargetIsDefined &&
-      (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
-        !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
-        !!plan.otoroshiTarget?.authorizedEntities?.services.length);
+  // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-    const authorizedTeams = props.myTeams
-      .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
-      .filter(
-        (t) =>
-          props.api.visibility === 'Public' ||
-          props.api.authorizedTeams.includes(t._id) ||
-          t._id === props.ownerTeam._id
+  const showKeyringSelectModal = (team: string) => {
+    const { plan } = props;
+
+    const askForApikeys = (
+      team: string,
+      plan: IUsagePlan,
+      apiKey?: ISubscription
+    ) => {
+      const formStep = plan.subscriptionProcess.find((s) =>
+        s.type === 'form'
       );
-    const allPossibleTeams = difference(
-      authorizedTeams.map((t) => t._id),
-      props.subscriptions
-        .filter((_) => !plan.allowMultipleKeys)
-        .filter(s => s.plan === plan._id)
-        .filter((f) => !f._deleted)
-        .map((s) => s.team)
-    );
+      if (formStep) {
+        openFormModal({
+          title: translate('motivations.modal.title'),
+          schema: formStep.schema,
+          onSubmit: (motivation) =>
+            props.askForApikeys({ team, plan, apiKey, motivation }),
+          actionLabel: translate('Send'),
+          value: apiKey?.customMetadata,
+          description: formStep.info ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>
+        });
+      } else {
+        props.askForApikeys({ team, plan: plan, apiKey }).then(() => close());
+      }
+    };
 
-    const showApiKeySelectModal = (team: string) => {
-      const askForApikeys = (
-        team: string,
-        plan: IUsagePlanGQL,
-        apiKey?: ISubscription
-      ) => {
-        const formStep = plan.subscriptionProcess.find((s) =>
-          s.type === 'form'
-        );
-        if (formStep) {
-          openFormModal({
-            title: translate('motivations.modal.title'),
-            schema: formStep.schema,
-            onSubmit: (motivation) =>
-              props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey, motivation })
-                .then((response) => {
-                  if (response?.status === 'waiting') {
-                    toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response.teamName] }));
-                  }
-                  close();
-                }),
-            actionLabel: translate('Send'),
-            value: apiKey?.customMetadata,
-            description: formStep.info
-              ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} />
-              : <></>
-          });
-        } else {
-          props.askForApikeys({ team, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey })
-            .then((response) => {
-              if (response?.status === 'created') {
-                toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, response?.apiTeam?.name] }));
-              }
-              close();
-            });
-        }
+    type IUsagePlanGQL = {
+      _id: string;
+      customName: string;
+      otoroshiTarget: {
+        otoroshiSettings: string;
+        apikeyCustomization?: {
+          readOnly?: boolean;
+        };
       };
-
-      type IApiGQL = {
-        _id: string;
-        _humanReadableId: string;
-        currentVersion: string;
-        name: string;
-        possibleUsagePlans: IUsagePlanGQL[];
-      };
+      aggregationApiKeysSecurity: boolean;
+    };
+    type IApiGQL = {
+      _id: string;
+      _humanReadableId: string;
+      currentVersion: string;
+      name: string;
+      possibleUsagePlans: IUsagePlanGQL[];
+    };
 
       Services.getAllTeamSubscriptions(team)
         .then((subscriptions) =>
@@ -1270,55 +1247,125 @@ export const ApiPricing = (props: ApiPricingProps) => {
               return { subscription, api, plan };
             });
 
-            const filteredApiKeys = int
-              .filter(
-                (infos) =>
-                  infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
-                  (infos.plan?.aggregationApiKeysSecurity)
-              )
-              .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
-              .map((infos) => infos.subscription);
-
-            if (
-              !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-              filteredApiKeys.length <= 0
-            ) {
-              askForApikeys(team, plan);
-            } else {
-              openApiKeySelectModal({
-                plan,
-                apiKeys: filteredApiKeys,
-                onSubscribe: () => askForApikeys(team, plan),
-                extendApiKey: (apiKey: ISubscription) =>
-                  askForApikeys(team, plan, apiKey),
-              });
-            }
+          // group every candidate subscription by its keyring : a keyring can
+          // be joined only if ALL its members are compatible with the joining
+          // plan (mirror of backend controlSubscriptionExtension)
+          const byKeyring = new Map<string, typeof int>();
+          for (const i of int) {
+            const id = i.subscription.keyring?._id;
+            if (!i.plan || !id) continue;
+            if (!byKeyring.has(id)) byKeyring.set(id, []);
+            byKeyring.get(id)!.push(i);
           }
-        );
-    };
 
-    const openTeamSelectorModal = () => {
-      openCustomModal({
-        title: translate('team.selection.title'),
-        content: <TeamSelector
-          teams={authorizedTeams
-            .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-            .filter((team) => plan.visibility === 'Public' ||
-              plan.authorizedTeams.some(at => at._id === team._id) ||
-              team._id === props.ownerTeam._id
+          const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
+          const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+          const envSecurity = tenant.environmentAggregationApiKeysSecurity;
+          const effectiveReadOnly = (i: (typeof int)[number]) =>
+            i.subscription.customReadOnly ??
+            !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+
+          const keyrings = [...byKeyring.entries()]
+            .filter(([, members]) =>
+              members.every(
+                (m) =>
+                  // same Otoroshi instance
+                  m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
+                  // environment aggregation security : same plan name
+                  (!envSecurity || m.subscription.planName === plan.customName) &&
+                  // uniform readOnly across the keyring
+                  effectiveReadOnly(m) === joiningReadOnly
+              )
             )
-            .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-          pendingTeams={props.inProgressDemands.map((s) => s.team)}
-          acceptedTeams={props.subscriptions
-            .filter((f) => !f._deleted)
-            .filter(s => s.plan === plan._id)
-            .map((subs) => subs.team)}
-          allowMultipleDemand={plan.allowMultipleKeys}
-          showApiKeySelectModal={showApiKeySelectModal}
-          plan={plan}
-        />
-      })
-    }
+            .map(([id, members]) => {
+              const rep = members[0].subscription;
+              return {
+                keyringId: id,
+                apiName: rep.apiName,
+                planName: rep.planName,
+                customName: rep.customName,
+                count: members.length,
+                aggregated: members.length > 1,
+                subscription: rep,
+              };
+            });
+
+          if (
+            !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
+            keyrings.length <= 0
+          ) {
+            askForApikeys(team, plan);
+          } else {
+            openKeyringSelectModal({
+              plan,
+              keyrings,
+              onSubscribe: () => askForApikeys(team, plan),
+              onSelectKeyring: (subscription: ISubscription) =>
+                askForApikeys(team, plan, subscription),
+            });
+          }
+        }
+      );
+  };
+
+  const plan = props.plan;
+  const customDescription = plan.customDescription;
+  const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan);
+
+  const authorizedTeams = props.myTeams
+    .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
+    .filter(
+      (t) =>
+        props.api.visibility === 'Public' ||
+        props.api.authorizedTeams.includes(t._id) ||
+        t._id === props.ownerTeam._id
+    )
+    .filter(
+      (t) =>
+        plan.visibility === 'Public' ||
+        plan.authorizedTeams.includes(t._id) ||
+        t._id === props.ownerTeam._id
+    );
+
+  const allPossibleTeams = difference(
+    authorizedTeams.map((t) => t._id),
+    props.subscriptions
+      .filter((_) => !plan.allowMultipleKeys)
+      .filter((f) => !f._deleted)
+      .map((s) => s.team)
+  );
+
+  const isAccepted = !allPossibleTeams.length;
+
+  let pricing = renderPricing(plan, translate);
+
+  const otoroshiTargetIsDefined =
+    !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
+  const otoroshiEntitiesIsDefined =
+    otoroshiTargetIsDefined &&
+    (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
+      !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
+      !!plan.otoroshiTarget?.authorizedEntities?.services.length);
+
+  const openTeamSelectorModal = () => {
+    openCustomModal({
+      title: translate('team.selection.title'),
+      content: <TeamSelector
+        teams={authorizedTeams
+          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.some(at => at._id === team._id))
+          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+        pendingTeams={props.inProgressDemands.map((s) => s.team)}
+        acceptedTeams={props.subscriptions
+          .filter((f) => !f._deleted)
+          .filter(s => s.plan === plan._id)
+          .map((subs) => subs.team)}
+        allowMultipleDemand={plan.allowMultipleKeys}
+        showKeyringSelectModal={showKeyringSelectModal}
+        plan={props.plan}
+      />
+    })
+  }
 
     const isAccepted = !allPossibleTeams.length;
 

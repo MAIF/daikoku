@@ -33,7 +33,9 @@ mise run install
 Below command will run Daikoku in a dev setup.
 
 ```sh
-mise run dev
+mise run dev # Local auth setup, same as mise run dev --mode local
+mise run dev --mode ldap # LDAP auth setup
+mise run dev --mode oidc # OIDC auth setup
 ```
 
 Once everything is started, browser to [http://localhost:5173](http://localhost:5173) to get started.
@@ -72,42 +74,18 @@ Alternatively, below command will start backend test dependencies, this will all
 mise run pg
 ```
 
-### Frontend tests
+#### Frontend tests
 
-#### LDAP
+Frontend test are split into 3 categories, depending on auth mode (ldap, oidc or local).
 
-Below command will run all necessary dependencies and open Playwright UI for LDAP tests
+Below commands will start daikoku with Playwright test UI for associated auth mode.
+
+In this mode, backend and frontend are started in hot reload mode, allowing you to easily debug failing tests.
 
 ```sh
+mise run dev --test # Local auth tests, equivalent to mise run dev --mode local --test
 mise run dev --mode ldap --test
-```
-
-You can browse to [http://localhost:5173](http://localhost:5173) to use frontend.
-
-Moreover, as for previous dev command, source code update will trigger frontend hot reload / backend recompilation.
-
-If you just want to start test setup without playwright UI, you can just run
-
-```sh
-mise run dev --mode ldap
-```
-
-#### OIDC
-
-Below command will run all necessary dependencies and open Playwright UI for OIDC tests
-
-```sh
 mise run dev --mode oidc --test
-```
-
-You can browse to [http://localhost:5173](http://localhost:5173) to use frontend.
-
-Moreover, as for previous dev command, source code update will trigger frontend hot reload / backend recompilation.
-
-As for ldap, you can juste start test setup without playwright UI by running :
-
-```sh
-mise run dev --mode oidc
 ```
 
 ### Documentation
@@ -175,8 +153,11 @@ npm install
 Run a local PostgreSQL dedicated to Daikoku, you should keep this running in a dedicated shell all the time (for dev & tests).
 
 ```bash
-cd
-docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
 :::note Default connection info
@@ -212,7 +193,7 @@ Then in sbt shell start backend with "hot reload":
 if you want demo data already loaded, use below command:
 
 ```bash
-~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_light.ndjson
+~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_local.ndjson
 ```
 
 if you prefer a fresh daikoku instance, use below command:
@@ -249,8 +230,11 @@ If you started your Daikoku instance without demo data, a default password will 
 To tun backend test, you'll first need to run postgres (if not already done) :
 
 ```bash
-cd
-docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
 Then you can run backend test using either your IDE or
@@ -265,8 +249,11 @@ sbt test
 First of all, you'll need a running postgres instance (if not already started):
 
 ```bash
-cd
-docker-compose -f $DAIKOKU_PROJECT_ROOT/dev/docker-compose-pg.yml up
+docker run -e POSTGRES_PASSWORD="postgres" \
+           -e POSTGRES_USER="postgres" \
+           -p 5432:5432 \
+           --volume $DAIKOKU_PROJECT_ROOT/dev/postgres:/docker-entrypoint-initdb.d \
+           --name daikoku-postgres postgres
 ```
 
 #### LDAP
@@ -275,7 +262,7 @@ First start backend
 
 ```sh
 cd $DAIKOKU_PROJECT_ROOT/daikoku
-DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=$DAIKOKU_PROJECT_ROOT/dev/config/daikoku_state_ldap.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
 ```
 
 Finally start frontend
@@ -299,7 +286,7 @@ First start backend
 
 ```sh
 cd $DAIKOKU_PROJECT_ROOT/daikoku
-DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
+DAIKOKU_POSTGRES_DATABASE=daikoku_test DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=$DAIKOKU_PROJECT_ROOT/dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt "~run"
 ```
 
 Finally start frontend

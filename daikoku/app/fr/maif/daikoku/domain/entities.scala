@@ -44,6 +44,9 @@ case class ApiSubscriptionId(value: String)
     with CanJson[ApiSubscriptionId] {
   def asJson: JsValue = JsString(value)
 }
+case class KeyringId(value: String) extends ValueType with CanJson[KeyringId] {
+  def asJson: JsValue = JsString(value)
+}
 case class ApiDocumentationId(value: String)
     extends ValueType
     with CanJson[ApiDocumentationId] {
@@ -176,6 +179,8 @@ enum JobName(val value: String):
   case ApiKeySynchronization extends JobName("ApiKeySynchronization")
   case ApiKeyRotationVerifier extends JobName("ApiKeyRotationVerifier")
   case OtoroshiEntitiesVerifier extends JobName("OtoroshiEntitiesVerifier")
+  case KeyringSubscriptionExpiration
+      extends JobName("KeyringSubscriptionExpiration")
 
 case class JobInformation(
     id: DatastoreId,

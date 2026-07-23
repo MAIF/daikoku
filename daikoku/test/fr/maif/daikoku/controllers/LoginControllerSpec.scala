@@ -64,13 +64,15 @@ class LoginControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user, userAdmin),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
       def getAdminApiHeader(
-          adminApiSubscription: ApiSubscription
+          keyring: Keyring
       ): Map[String, String] = {
         Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}")
       }
 
@@ -82,7 +84,7 @@ class LoginControllerSpec()
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders(
           (Map("Host" -> tenant.domain) ++ _headers ++ getAdminApiHeader(
-            adminApiSubscription
+            adminApiKeyring
           )).toSeq*
         )
         .withFollowRedirects(true)
@@ -138,12 +140,14 @@ class LoginControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, userWithFailures, userAdmin),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader =
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
 
       val path = s"/auth/${AuthProvider.Local}/callback"
@@ -186,12 +190,14 @@ class LoginControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user, userAdmin),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader =
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
 
       val path = s"/auth/${AuthProvider.Local}/callback"
@@ -231,12 +237,14 @@ class LoginControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, userWithoutPassword, userAdmin),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader =
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
 
       val path = s"/auth/${AuthProvider.Local}/callback"
@@ -282,7 +290,6 @@ class LoginControllerSpec()
         name = "Michael Scott",
         email = "michael.scott@dundermifflin.com",
         lastTenant = None,
-        personalToken = Some("001"),
         password = None,
         defaultLanguage = None
       )
@@ -295,12 +302,14 @@ class LoginControllerSpec()
           )
         ),
         users = Seq(daikokuAdmin, user, userLDAP),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader =
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
 
       val path = s"/auth/${AuthProvider.LDAP}/callback"
@@ -366,7 +375,6 @@ class LoginControllerSpec()
         name = "Michael Scott",
         email = "michael.scott@dundermifflin.com",
         lastTenant = None,
-        personalToken = Some("001"),
         password = None,
         defaultLanguage = None,
         failedLoginAttempts = 2,
@@ -381,12 +389,14 @@ class LoginControllerSpec()
           )
         ),
         users = Seq(daikokuAdmin, user, userLDAPWithFailures),
-        teams = Seq(defaultAdminTeam)
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(adminApiKeyring),
+        subscriptions = Seq(adminApiSubscription)
       )
 
       val adminApiHeader =
         "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-            s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
           )}"
 
       val resp = Await.result(

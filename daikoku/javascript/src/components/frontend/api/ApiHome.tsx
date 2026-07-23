@@ -5,12 +5,11 @@ import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
 import { ApiGroupApis, TeamApiSubscriptions, read } from '../..';
-import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { NavContext } from '../../../contexts/navUtils';
 import * as Services from '../../../services';
 import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
@@ -24,7 +23,6 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
 
   const { tenant, customGraphQLClient } = useContext(GlobalContext);
-  const { openRightPanel } = useContext(ModalContext);
   const { setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
@@ -156,28 +154,27 @@ export const ApiHome = ({
     if (api && apiTeam) {
       return (
         apiKey
-          ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)
           : Services.askForApiKey(api._id, team, plan._id, motivation)
-      )
-        .then((result) => {
-          if (isError(result)) {
-            toast.error(result.error);
-            return null
-          } else if (Services.isCheckoutUrl(result)) {
-            window.location.href = result.checkoutUrl
-            return null
-          } else if (Services.isCreationDone(result)) {
-            return { api, plan, apiTeam: teamGQLToSimple(apiTeam), subscription: result.subscription, status: 'created' as const };
-          } else if (result.creation === 'waiting') {
-            const teamName = myTeams.find((t) => t._id === team)!.name;
-            return { plan, teamName, status: 'waiting' as const };
+      ).then((result) => {
+
+        if (isError(result)) {
+          return toast.error(result.error);
+        } else if (Services.isCheckoutUrl(result)) {
+          window.location.href = result.checkoutUrl
+        } else if (Services.isCreationDone(result)) {
+          toast.success(translate('subscription.created.success'));
+          const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
+          if (teamHrId) {
+            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
           }
-        })
-        .then((createdResult) => {
-          queryClient.invalidateQueries({ queryKey: ["mySubscription"] })
-          return createdResult;
+        } else if (result.creation === 'waiting') {
+          const teamName = myTeams.find((t) => t._id === team)!.name;
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
         }
-        );
+
+      })
+        .then(() => queryClient.invalidateQueries({ queryKey: ["mySubscription"] }));
     } else {
       return Promise.reject(false)
     }

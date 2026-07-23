@@ -33,7 +33,6 @@ class TransactionSpec
         name = "Tx-User",
         email = s"tx-user-${userId.value}@test.io",
         lastTenant = None,
-        personalToken = Some(IdGenerator.token(32)),
         password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
         defaultLanguage = None
       )

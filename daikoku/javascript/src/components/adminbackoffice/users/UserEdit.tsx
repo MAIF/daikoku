@@ -1,7 +1,6 @@
 import { constraints, Form, format, FormRef, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { md5 } from 'js-md5';
-import { nanoid } from 'nanoid';
 import React, { JSX, useContext, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -211,26 +210,6 @@ export const UserEdit = () => {
       label: translate('Daikoku admin.'),
     },
 
-    personalToken: {
-      type: type.string,
-      label: translate('Personal Token'),
-      render: ({
-        value,
-        onChange
-      }): JSX.Element => {
-        const reloadToken = () => {
-          onChange!(nanoid(32));
-        };
-        return (
-          <div className="d-flex flex-row">
-            <input className="form-control" disabled={true} value={value} />
-            <button type="button" className="btn --ghost" onClick={reloadToken}>
-              {translate('Reload')}
-            </button>
-          </div>
-        );
-      },
-    },
     metadata: {
       type: type.object,
       label: translate('Metadata'),

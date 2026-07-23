@@ -25,7 +25,6 @@ case class User(
     email: String,
     picture: String = User.DEFAULT_IMAGE,
     pictureFromProvider: Boolean = true,
-    personalToken: Option[String],
     isDaikokuAdmin: Boolean = false,
     password: Option[String] = None,
     hardwareKeyRegistrations: Seq[JsObject] = Seq.empty,
@@ -89,7 +88,6 @@ object GuestUser {
       email = "",
       lastTenant = None,
       defaultLanguage = None,
-      personalToken = None,
       isGuest = true
     )
 }

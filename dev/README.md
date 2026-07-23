@@ -12,8 +12,7 @@ yourself and point it at the containers started here.
 |---|---|---|
 | `docker-compose-ldap.yml` | OpenLDAP, SMTP, Redis, Otoroshi | dev against an LDAP tenant |
 | `docker-compose-oidc.yml` | OIDC mock, SMTP, Redis, Otoroshi, faker | dev against an OAuth2/OIDC tenant |
-| `docker-compose-light.yml` | Otoroshi | simplest daikoku setup |
-| `docker-compose-pg.yml` | Postgres | Postgres with configured database either for dev or tes, you can leave this running all the time |
+| `docker-compose-local.yml` | Otoroshi, SMTP | dev against local auth |
 
 Volumes reference the shared fixtures under
 `daikoku/javascript/tests/config/` via relative paths, so run these from the `dev/`
@@ -31,12 +30,12 @@ Init states (under `config/`) used when running Daikoku locally
 
 | File | Auth provider | Pairs with |
 |---|---|---|
-| `config/daikoku_state_light.ndjson` | Local | `docker-compose-light.yml` |
+| `config/daikoku_state_local.ndjson` | Local | `docker-compose-otoroshi.yml` |
 | `config/daikoku_state_ldap.ndjson` | LDAP | `docker-compose-ldap.yml` |
 | `config/daikoku_state_oidc.ndjson` | OAuth2 | `docker-compose-oidc.yml` |
 
 Example (from the `daikoku/` directory):
 
 ```sbt
-~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_light.ndjson
+~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_local.ndjson
 ```

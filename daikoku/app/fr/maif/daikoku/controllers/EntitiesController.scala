@@ -42,8 +42,7 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
     email = "admin-api@daikoku.io",
     isDaikokuAdmin = true,
     lastTenant = None,
-    defaultLanguage = None,
-    personalToken = Some(IdGenerator.token(32))
+    defaultLanguage = None
   )
 
   private def decodeBase64(encoded: String): String =
@@ -408,7 +407,6 @@ class EntitiesController(
             isDaikokuAdmin = false,
             password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
             lastTenant = Some(ctx.tenant.id),
-            personalToken = Some(IdGenerator.token(32)),
             defaultLanguage = None
             // lastTeams = Map(ctx.tenant.id -> Team.Default)
           ).asJson

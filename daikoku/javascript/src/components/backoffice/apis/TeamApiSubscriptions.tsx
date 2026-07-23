@@ -27,7 +27,7 @@ import {
   Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
-import { Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
+import { Link, Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -40,11 +40,6 @@ type SubscriptionsFilter = {
 };
 export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string;
-  apiKey: {
-    clientName: string;
-    clientId: string;
-    clientSecret: string;
-  };
   plan: IUsagePlan;
   team: {
     _id: string;
@@ -64,19 +59,12 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  parent?: {
+  keyring?: {
     _id: string;
-    adminCustomName: string;
-    enabled: boolean;
-    validUntil: number;
-    api: {
-      _id: string;
-      name: string;
-    };
-    plan: {
-      _id: string;
-      customName: string;
-      type: string;
+    customName: string | null;
+    subscriptionsCount: number;
+    apiKey: {
+      clientName: string;
     };
   };
 }
@@ -124,7 +112,7 @@ export const TeamApiSubscriptions = ({
   const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
   const columns = [
     columnHelper.accessor(
-      (row) => row.adminCustomName || row.apiKey.clientName,
+      (row) => row.adminCustomName || row.keyring?.apiKey.clientName || '',
       {
         id: "subscription",
         header: translate("Name"),
@@ -132,20 +120,20 @@ export const TeamApiSubscriptions = ({
         enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
-          if (sub.parent) {
+          if ((sub.keyring?.subscriptionsCount ?? 0) > 1) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
-              <li>${translate("Api")}: ${sub.parent.api.name}</li>
-              <li>${translate("Plan")}: ${sub.parent.plan.customName}</li>
-              <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
+              <li>${translate("aggregated.apikey.badge.keyring.name")}: ${sub.keyring?.customName ?? sub.keyring?.apiKey.clientName ?? ''}</li>
             </ul>
           </div>`;
             return (
               <div className="d-flex flex-row justify-content-between align-items-center">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge --primary">A</div>
+                  <div className="badge --primary">
+                    <Link />
+                  </div>
                 </BeautifulTitle>
               </div>
             );
@@ -180,7 +168,7 @@ export const TeamApiSubscriptions = ({
         const sub = info.row.original;
         return (
           <SwitchButton
-            disabled={sub.parent && !sub.parent?.enabled}
+            disabled={false}
             ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             onSwitch={(value) => {
               return Services.archiveSubscriptionByOwner(
@@ -316,7 +304,7 @@ export const TeamApiSubscriptions = ({
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.regenerateApiKeySecret(currentTeam._id, sub._id),
+      Services.regenerateApiKeySecret(currentTeam._id, sub.keyring!._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
@@ -352,7 +340,7 @@ export const TeamApiSubscriptions = ({
 
   const deleteApiSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
+      Services.deleteApiSubscription(sub.team._id, sub._id),
     onSuccess: () => {
       tableRef.current?.update();
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });

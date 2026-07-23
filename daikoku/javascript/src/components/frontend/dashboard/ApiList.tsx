@@ -101,7 +101,7 @@ export const ApiList = (props: ApiListProps) => {
         id: 'tags',
         meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags'), size: 15 },
         cell: (info) => (
-          <div className="d-flex gap-1 align-items-center">
+          <div className="d-flex gap-1">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
                     className="tag --primary"

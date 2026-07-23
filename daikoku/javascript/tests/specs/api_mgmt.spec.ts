@@ -178,36 +178,45 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByRole('link', { name: 'Vendeurs' }).click();
   await page.getByText('Clés d\'API').click();
   await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
-  await page.waitForTimeout(1000);
 
   //verifier dans oto que les clé sont plus dispo
-  const MaybeVendeurApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(MaybeVendeurApiKey.status).toBe(200);
-  const vendeurApiKey = await MaybeVendeurApiKey.json()
+  // La suppression est propagée à Otoroshi de façon asynchrone : on poll Otoroshi
+  // jusqu'à l'état attendu au lieu d'attendre un délai fixe (source de flakiness).
+
+  // la clé Vendeurs est conservée mais la route papier doit être retirée des authorizedEntities ;
+  // on capture la clé lors du poll pour asserter dessus sans refaire d'appel.
+  let vendeurApiKey: any;
+  await expect.poll(async () => {
+    const res = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
+      method: 'GET',
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    });
+    if (res.status !== 200) return null;
+    vendeurApiKey = await res.json();
+    return vendeurApiKey.authorizedEntities as string[];
+  }, { timeout: 10000 }).toEqual(expect.not.arrayContaining([otoroshiDevPaperRouteId]));
+
   await expect(vendeurApiKey.enabled).toBe(true)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
-  await expect(vendeurApiKey.authorizedEntities).toEqual(
-    expect.not.arrayContaining([otoroshiDevPaperRouteId])
-  );
   await expect(vendeurApiKey.authorizedEntities).toEqual(
     expect.arrayContaining([otoroshiDevCommandRouteId])
   );
 
 
-  const MaybeDwightApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(MaybeDwightApiKey.status).toBe(404);
+  // la clé Dwight doit finir par être supprimée d'Otoroshi (404)
+  await expect.poll(async () => {
+    const res = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
+      method: 'GET',
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    });
+    return res.status;
+  }, { timeout: 10000 }).toBe(404);
 });
 
 test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {

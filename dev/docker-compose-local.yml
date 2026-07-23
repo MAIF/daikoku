@@ -10,10 +10,18 @@ services:
       - OTOROSHI_INITIAL_ADMIN_PASSWORD=password
       - OTOROSHI_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
       - OTOROSHI_DOMAIN=oto.tools
+      - OTOROSHI_NEXT_STATE_SYNC_INTERVAL=2000
     volumes:
       - "../daikoku/javascript/tests/config/otoroshi:/usr/app/otoroshi/imports"
     ports:
       - 8080:8080
+  smtp:
+    image: reachfive/fake-smtp-server:latest
+    networks:
+      - basicsetup
+    ports:
+      - 1080:1080
+      - 1025:1025
 
 networks:
   basicsetup:

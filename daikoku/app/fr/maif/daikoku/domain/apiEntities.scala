@@ -710,24 +710,6 @@ case class Api(
       "isDefault" -> isDefault,
       "state" -> json.ApiStateFormat.writes(state)
     )
-  def asIntegrationJson(teams: Seq[Team]): JsValue = {
-    val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
-    Json.obj(
-      "id" -> s"${t}/${name.urlPathSegmentSanitized}",
-      "team" -> t,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "currentVersion" -> currentVersion.asJson,
-      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
-      "stars" -> stars,
-      "metadata" -> JsObject(
-        metadata.view.mapValues(JsString.apply).toSeq
-      )
-    )
-  }
   def asPublicWithAuthorizationsJson(): JsValue =
     Json.obj(
       "_id" -> id.value,
@@ -770,6 +752,17 @@ case class AuthorizedEntities(
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
+
+  /** The authorized entities as a flat list of [[OtoroshiEntity]], used to
+    * scope api key restrictions. Legacy `services` have no matching kind and
+    * are ignored.
+    */
+  def asOtoroshiEntities: Seq[OtoroshiEntity] =
+    groups.toSeq.map(g =>
+      OtoroshiEntity(OtoroshiEntityKind.Group, g.value)
+    ) ++ routes.toSeq.map(r =>
+      OtoroshiEntity(OtoroshiEntityKind.Route, r.value)
+    )
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
       a.groups.contains(g)

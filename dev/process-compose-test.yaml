@@ -7,7 +7,6 @@ processes:
       then mise run pg:clean ;
       mise run pg ;
       else echo Database is already running, wont start one ;
-      while true; do sleep 10000; done ;
       fi
     readiness_probe:
       exec:
@@ -23,7 +22,6 @@ processes:
         then echo "killing database..." ;
         mise run pg:clean ;
         else echo "disconnecting from container logs..." ;
-        pkill -f "mise run pg:logs" ;
         fi
   Tests:
     command: sbt --color=true test
