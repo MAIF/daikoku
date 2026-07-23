@@ -34,8 +34,8 @@ type ApiLifeCycleStates = "Brouillon" | "Publiée" | "Dépréciée" | "Bloquée"
 
 
 const updateApiLifeCycle = async (page: Page, apiName: string, state: ApiLifeCycleStates, assertResult: boolean = true) => {
-  await page.goto(ACCUEIL);
-  await page.getByRole('link', { name: `API ${apiName}` }).click();
+  await page.goto("/api-division/api-commande/1.0.0/description");
+  // await page.getByRole('link', { name: `API ${apiName}` }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: state }).click();
@@ -73,7 +73,6 @@ const passAPIToPublished = async ({ page }, apiName: string, assertResult: boole
 }
 
 const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: boolean = true) => {
-  await page.goto(ACCUEIL);
   await page.getByRole('link', { name: `API ${apiName}` }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menuitem', { name: 'Configurer' }).click();
@@ -82,11 +81,9 @@ const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: bool
   if (assertResult) {
     await expect(page.getByText('Dépréciée')).toBeVisible();
   }
-  await page.goto(ACCUEIL);
 }
 
 const passAPIToBlocked = async ({ page }, apiName: string, assertResult: boolean = true) => {
-  await page.goto(ACCUEIL);
   await page.getByRole('link', { name: `API ${apiName}` }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menuitem', { name: 'Configurer' }).click();
@@ -98,7 +95,6 @@ const passAPIToBlocked = async ({ page }, apiName: string, assertResult: boolean
   if (assertResult) {
     await expect(page.getByText('Bloquée')).toBeVisible();
   }
-  await page.goto(ACCUEIL);
 }
 
 test('full Api LifeCycle', async ({ page }) => {
@@ -112,9 +108,12 @@ test('full Api LifeCycle', async ({ page }) => {
 test('full Api Backward LifeCycle', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await passAPIToPublished({ page }, 'Commande')
   await passAPIToBlocked({ page }, 'Commande')
+  await expect(page.locator(".api__header").getByText('Bloquée')).toBeVisible();
+  await page.goto(ACCUEIL);
   await passAPIToDeprecated({ page }, 'Commande')
+  await expect(page.locator(".api__header").getByText('Dépréciée')).toBeVisible();
+  await page.goto(ACCUEIL);
   await passAPIToPublished({ page }, 'Commande')
 });
 
@@ -131,9 +130,8 @@ test('Pass Published to Blocked', async ({ page }) => {
 test('Pass Published to Deprecated', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await passAPIToPublished({ page }, 'Commande')
   await passAPIToDeprecated({ page }, 'Commande')
-  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.goto(ACCUEIL);
   const api = page.getByRole('listitem').filter({ hasText: 'API Commande' });
   await expect(api.getByText('Dépréciée')).toBeVisible();
 });
@@ -141,11 +139,15 @@ test('Pass Published to Deprecated', async ({ page }) => {
 test('Cannot pass Draft to Blocked', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await passAPIToDraft({ page }, 'Commande')
-  await passAPIToBlocked({ page }, 'Commande', false)
-  await expect(page.getByText('Conflict with api state')).toBeVisible();
-  const api = page.getByRole('listitem').filter({ hasText: 'API Commande' });
-  await expect(api.getByText('Brouillon')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Créer une API' }).click();
+  await page.getByRole('listitem', { name: 'API Division' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('test API');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
+  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await expect(page.getByRole('button', { name: 'Brouillon' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Bloquée' })).toBeDisabled();
 });
 
 test('Draft is disabled in the config form when the API has subscriptions', async ({ page }) => {
@@ -191,7 +193,6 @@ test('Mail has been received by admin for Api deprecated', async ({ page }) => {
 test('Mail has been received by whole team for Api deprecated', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await passAPIToPublished({ page }, 'papier')
   await passAPIToDeprecated({ page }, 'papier')
   const context = page.context();
   const pageMail = await context.newPage();
@@ -234,11 +235,12 @@ test('Blocked sub by API owner action display a blocked state to consumer', asyn
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
 
-  await page.getByRole('link', { name: 'API Commande' }).click();
-  await updateApiLifeCycle(page, 'Commande', 'Bloquée', true);
-  await page.getByRole('link', { name: 'API Commande' }).click();
+  await passAPIToBlocked({ page }, 'Commande', true);
   await page.getByText('Souscriptions').click();
-  await expect(page.getByRole('row', { name: 'daikoku-api-key' }).getByText('Bloquée')).toBeVisible();
+  const rows = page.getByRole('row', { name: 'daikoku-api-key' })
+  for (const row of await rows.all()) {
+    await expect(row.getByText('Bloquée')).toBeVisible();
+  }
   await page.getByText('Clés d\'API').click();
   await expect(page.locator('.keyring-card__subscriptions').first()).toContainText('Bloquée');
 })

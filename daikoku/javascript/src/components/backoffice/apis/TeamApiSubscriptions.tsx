@@ -210,14 +210,17 @@ export const TeamApiSubscriptions = ({
 
         return (
           <Can I={manage} a={API} team={currentTeam}>
-            <button className="btn --ghost --small --icon-only dropdown" aria-label={translate('subscription.actions.aria.label')}>
-              <Menu
-                className="cursor-pointer dropdown-menu-button"
-                style={{ fontSize: '18px' }}
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                id={`dropdown-${sub._id}`}
-              />
+            <div className="dropdown">
+              <button
+                className="btn --ghost --small --icon-only"
+                aria-label={translate('subscription.actions.aria.label')}
+                type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                id={`dropdown-${sub._id}`}>
+                <Menu
+                  className="cursor-pointer dropdown-menu-button"
+                  style={{ fontSize: '18px' }}
+                />
+              </button>
               <div
                 className="dropdown-menu dropdown-menu-end"
                 aria-labelledby={`dropdown-${sub._id}`}
@@ -231,18 +234,18 @@ export const TeamApiSubscriptions = ({
                   {translate("Update metadata")}
                 </button>
                 <div className="dropdown-divider" />
-                {api.state !== 'blocked' && <span
+                {api.state !== 'blocked' && <button
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => toggleApiSubscriptionState(sub)}
                 >
                   {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-                </span>}
-                {api.state !== 'blocked' && <span
+                </button>}
+                {api.state !== 'blocked' && <button
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => regenerateSecret(sub)}
                 >
                   {translate("Refresh secret")}
-                </span>}
+                </button>}
                 <button
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => deleteSubscription(sub)}
@@ -250,7 +253,7 @@ export const TeamApiSubscriptions = ({
                   {translate("api.delete.subscription")}
                 </button>
               </div>
-            </button>
+            </div>
           </Can>
         )
       },

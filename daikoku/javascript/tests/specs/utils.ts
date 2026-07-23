@@ -68,7 +68,7 @@ export const loginAs = async (user: IUser, page: Page, basicUsage: boolean = tru
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   if (basicUsage) {
-    await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: 'Mes équipes' }).waitFor({ state: 'visible' });
   }
 }
 
