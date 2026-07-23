@@ -2511,6 +2511,15 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     insertMany(values, Json.obj())
 
+  override def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Of]] = {
+    logger.debug(s"$tableName.queryTyped($sql)")
+
+    reactivePg.querySeq(sql, params)(rowToJson(_, format))
+  }
+
   override def updateMany(query: JsObject, value: JsObject)(implicit
       dbConn: DbConn,
       ec: ExecutionContext

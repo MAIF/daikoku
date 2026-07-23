@@ -202,6 +202,10 @@ case class OAuth2Config(
       "selectedMetadata" -> this.selectedMetadata
         .map(JsString.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "selectedMetadata" -> this.selectedMetadata
+        .map(JsString.apply)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
 }
@@ -357,6 +361,8 @@ object OAuth2Support {
         isDaikokuAdmin: Boolean,
         userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
+      val selectedMetadata =
+        authConfig.selectedMetadata.map(_.split(",").map(_.trim))
       val updatedUser = u.copy(
         name = name,
         email = email,
@@ -510,7 +516,7 @@ object OAuth2Support {
           verifyAndGetUser(accessToken)
         } else
           getUser(accessToken)
-      user <- processUserFromOAuth(userJson)
+      user: User <- processUserFromOAuth(userJson)
     } yield (user, idToken)
   }
 

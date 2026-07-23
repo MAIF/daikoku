@@ -155,13 +155,13 @@ test("Inviter un utilisateur dans une équipe sans caseSensitive", async ({ page
   await page.getByText('Membres').click();
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByRole('textbox', { name: 'Email' }).fill('Andy.BERNARD@dundermifflin.com');
-  await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  await page.getByRole('button', { name: 'Envoyer l\'invitation', exact: true }).click();
   // await page.waitForTimeout(1500);
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await page.waitForTimeout(1000);
   await page.getByRole('button', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Se connecter' }).click();
+  // await page.getByRole('link', { name: 'Se connecter' }).click();
   await page.locator('input[name="username"]').click();
   await page.locator('input[name="username"]').fill('Andy.BERNARD@dundermifflin.com');
   await page.locator('input[name="password"]').fill('password');

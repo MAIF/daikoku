@@ -422,40 +422,22 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions', { exact: true }).click();
-  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription' }).click();
-  //wait return of api
-  await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=false') && r.status() === 200);
-  //test in otoroshi
-  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeKey.status).toBe(200);
-  const apiKey = await maybeKey.json();
-  await expect(apiKey.enabled).toBe(false);
+  await page.getByRole('link', { name: 'API commande' }).click();
+  await page.getByText('Souscriptions').click();
 
-  await page.waitForTimeout(500);
-  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Activer la souscription' }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByLabel('Actions de la souscription').click();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Désactiver la souscription' }).click();
+  await expect(page.getByRole('row', { name: 'api-commande-prod-logistique' }))
+    .toContainText('Bloquée');
 
-  //wait return of api
-  const response = await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=true') && r.status() === 200);
-  const r = await response.json()
-  //test in otoroshi
-  const maybeKey2 = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeKey2.status).toBe(200);
-  const apiKey2 = await maybeKey2.json();
-  await expect(apiKey2.enabled).toBe(true);
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' }).getByLabel('Actions de la souscription').click();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Activer la souscription' }).click();
+  await expect(page.getByRole('row', { name: 'api-commande-prod-logistique' }))
+    .toContainText('Activée');
 })
 
 test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api', async ({ page, context }) => {

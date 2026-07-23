@@ -9,9 +9,6 @@ import fr.maif.daikoku.actions.{
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
@@ -20,13 +17,33 @@ import fr.maif.daikoku.domain.NotificationAction.{
 import fr.maif.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.jobs
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiService, DeletionService, KeyringService}
+import fr.maif.daikoku.services.{
+  ApiLifeCycleService,
+  ApiService,
+  DeletionService,
+  KeyringService,
+  MailService
+}
+import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
-import fr.maif.daikoku.utils.*
+import fr.maif.daikoku.utils.StringImplicits.BetterString
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  OtoroshiClient,
+  RegexUtil,
+  Time,
+  Translator
+}
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.ApiSubscriptionState.{Active, Blocked}
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
+import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestBody
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import org.apache.pekko.NotUsed
@@ -41,8 +58,8 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
-import fr.maif.daikoku.utils.StringImplicits.BetterString
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -58,6 +75,8 @@ class ApiController(
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
     translator: Translator,
     paymentClient: PaymentClient,
+    mailService: MailService,
+    apiLifeCycleService: ApiLifeCycleService,
     deletionService: DeletionService,
     keyringService: KeyringService
 ) extends AbstractController(cc)
@@ -106,7 +125,7 @@ class ApiController(
               EitherT(Try {
                 env.wsClient
                   .url(finalUrl)
-                  .withHttpHeaders(headers.toSeq*)
+                  .withHttpHeaders(headers.toSeq *)
                   .get()
                   .map { resp =>
                     val contentType =
@@ -371,7 +390,7 @@ class ApiController(
             env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
             NotFound(Json.obj("error" -> "Api not found"))
           )
-          apiPlans <- EitherT.liftF(
+          apiPlans <- EitherT.right[Result](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .findNotDeleted(
@@ -383,7 +402,7 @@ class ApiController(
           )
           pendingRequests <-
             if (api.team == team.id)
-              EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
+              EitherT.right[Result](FastFuture.successful(Seq.empty[Notification]))
             else if (
               !ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams
                 .contains(team.id)
@@ -397,7 +416,7 @@ class ApiController(
                 )
               )
             else
-              EitherT.liftF(
+              EitherT.right[Result](
                 env.dataStore.notificationRepo
                   .forTenant(ctx.tenant.id)
                   .findNotDeleted(
@@ -409,7 +428,7 @@ class ApiController(
                     )
                   )
               )
-          subscriptions <- EitherT.liftF(
+          subscriptions <- EitherT.right[Result](
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(
@@ -455,7 +474,7 @@ class ApiController(
       if (
         (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
-          .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))
+          .nonEmpty) && (api.isSubscribable || myTeams.exists(_.id == api.team))
       ) {
         if (ctx.user.isDaikokuAdmin) {
           EitherT.pure[Future, AppError](UserLevel.Admin)
@@ -499,6 +518,17 @@ class ApiController(
             )
           )
       )
+      // Total subscription count (all teams), only computed/exposed to API
+      // editors of the owning team — used to forbid unpublishing to draft.
+      subscriptionCount <- level match {
+        case UserLevel.Admin =>
+          EitherT.liftF[Future, AppError, Long](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant.id)
+              .count(Json.obj("api" -> api.id.value, "_deleted" -> false))
+          )
+        case _ => EitherT.pure[Future, AppError](0L)
+      }
     } yield {
       val jsonApi: JsValue = level match {
         case UserLevel.Guest => api.asGuestJson(ctx.tenant.apiReferenceHideForGuest.getOrElse(true))
@@ -511,6 +541,8 @@ class ApiController(
         )
       ) ++ Json.obj(
         "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+      ) ++ Json.obj(
+        "subscriptionCount" -> subscriptionCount
       )
       ctx.setCtxValue("api.name", api.name)
 
@@ -569,7 +601,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -625,7 +657,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -986,7 +1018,7 @@ class ApiController(
             )
           )
           .map {
-            case None      => AppError.render(ApiNotFound)
+            case None      => AppError.render(AppError.ApiNotFound)
             case Some(api) => Ok(ApiFormat.writes(api))
           }
       }
@@ -2162,7 +2194,7 @@ class ApiController(
       tenant.otoroshiSettings.find(_.id == id)
     } match {
       case None =>
-        FastFuture.successful(Left(OtoroshiSettingsNotFound))
+        FastFuture.successful(Left(AppError.OtoroshiSettingsNotFound))
       case Some(otoroshiSettings) =>
         apiService.makeSubscriptionUnique(subscription, tenant, user)(using
           otoroshiSettings
@@ -2191,7 +2223,7 @@ class ApiController(
               .findByIdOrHrIdNotDeleted(subscriptionId),
             AppError.SubscriptionNotFound
           )
-          _ <- EitherT.fromOptionF[Future, AppError, Api](
+          api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(
@@ -2199,21 +2231,16 @@ class ApiController(
               ),
             AppError.ApiNotFound
           )
+          _ <- EitherT.cond[Future](api.state != ApiState.Blocked, (), AppError.ForbiddenAction)
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .findById(sub.plan),
             AppError.PlanNotFound
           )
-          result <- EitherT(
-            toggleSubscription(
-              plan,
-              sub,
-              ctx.tenant,
-              enabled.getOrElse(false)
-            )
-          )
-        } yield Ok(result))
+          _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(sub, ctx.tenant))
+          delete <- EitherT(apiService.archiveApiKey(ctx.tenant, sub, plan, enabled.getOrElse(false), byOwner = true))
+        } yield Ok(delete))
           .leftMap(_.render())
           .merge
       }
@@ -2361,10 +2388,12 @@ class ApiController(
       tenant: Tenant,
       enabled: Boolean
   ): Future[Either[AppError, JsObject]] = {
-    for {
-      _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
-      delete <- apiService.archiveApiKey(tenant, subscription, plan, enabled)
-    } yield delete
+    (for {
+      _ <- EitherT.cond[Future](subscription.state != Blocked, (), AppError.ForbiddenAction)
+      _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(subscription, tenant))
+      delete <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled))
+    } yield delete)
+      .value
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2958,6 +2987,7 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
+        implicit val c = ctx
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
@@ -2974,6 +3004,18 @@ class ApiController(
             ctx.tenant.id
           ))
           _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
+          _ <- EitherT.cond[Future][AppError, Unit](newApi.state.checkPreviousState(oldApi.state), (), AppError.EntityConflict("api state"))
+          // An API cannot be moved (back) to draft while it still has subscriptions.
+          hasSubscriptions <-
+            if (newApi.state == ApiState.Created && oldApi.state != ApiState.Created)
+              EitherT.liftF[Future, AppError, Boolean](
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant.id)
+                  .count(Json.obj("api" -> newApi.id.value, "_deleted" -> false))
+                  .map(_ > 0)
+              )
+            else EitherT.pure[Future, AppError](false)
+          _ <- EitherT.cond[Future][AppError, Unit](!hasSubscriptions, (), AppError.EntityConflict("api subscriptions"))
           anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .exists(
@@ -2988,6 +3030,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .save(newApi))
+          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi, ctx.tenant, ctx.user)
           _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.run(newApi.id, ctx.tenant))
           _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
           _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))
@@ -3773,7 +3816,7 @@ class ApiController(
                     )
                     .flatMap {
                       case None =>
-                        FastFuture.successful(AppError.render(ApiNotFound))
+                        FastFuture.successful(AppError.render(AppError.ApiNotFound))
                       case Some(api) =>
                         env.dataStore.apiIssueRepo
                           .forTenant(ctx.tenant.id)
@@ -3955,8 +3998,7 @@ class ApiController(
                 a.exists(c =>
                   c.createdAt.getMillis == comment.createdAt.getMillis
                 )
-              }
-              .exists(comment => comment.by != ctx.user.id)
+              }.exists(comment => comment.by != ctx.user.id)
 
         def commentsHasBeenUpdatedWithoutRights(
             isDaikokuAdmin: Boolean,
@@ -3967,8 +4009,7 @@ class ApiController(
             a.size == b.size &&
             b.filterNot { comment =>
                 a.exists(c => c.content == comment.content)
-              }
-              .exists(comment => comment.by != ctx.user.id)
+              }.exists(comment => comment.by != ctx.user.id)
 
         def notifyUser(api: Api, issue: ApiIssue, user: UserId) = {
           env.dataStore.notificationRepo
@@ -4147,7 +4188,7 @@ class ApiController(
                 case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
                   AppError.ForbiddenAction.renderF()
                 case Some(api) if api.currentVersion.value == newVersion =>
-                  ApiVersionConflict.renderF()
+                  AppError.ApiVersionConflict.renderF()
                 case Some(api) =>
                   apiRepo
                     .exists(
@@ -4394,7 +4435,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findByVersion(ctx.tenant, apiId, version)
           .flatMap {
-            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case None => FastFuture.successful(AppError.render(AppError.ApiNotFound))
             case Some(api) =>
               ctx.setCtxValue("api.name", api.name)
 
@@ -4464,13 +4505,13 @@ class ApiController(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
-            AppError.render(TeamNotFound)
+            AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(apiId),
-            AppError.render(ApiNotFound)
+            AppError.render(AppError.ApiNotFound)
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),

@@ -41,7 +41,19 @@ const Image = ({
 };
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) => string, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<ICmsPageGQL>>, apigroup: boolean) => {
+
+// Mirror of ApiState.checkPreviousState (apiEntities.scala) — keep in sync!
+// Allowed target states given the current (persisted) state of the API. Used to
+// disable forbidden lifecycle transitions in the form; the server still enforces
+// the rule (409) and stays the source of truth.
+const ALLOWED_STATE_TRANSITIONS: Record<string, Array<string>> = {
+  created: ['created', 'published'],
+  published: ['created', 'published', 'deprecated', 'blocked'],
+  deprecated: ['published', 'deprecated', 'blocked'],
+  blocked: ['deprecated', 'blocked'],
+};
+
+export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) => string, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<ICmsPageGQL>>, apigroup: boolean, currentState: string = 'created', hasSubscriptions: boolean = false) => {
   const schema: Schema = {
     isDefault: {
       type: type.bool,
@@ -136,7 +148,17 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         { label: translate('api.created'), value: 'created' },
         { label: translate('api.published'), value: 'published' },
         { label: translate('api.deprecated'), value: 'deprecated' },
-        { label: translate('api.blocked'), value: 'blocked' }],
+        { label: translate('api.blocked'), value: 'blocked' },
+      ].map((o) => ({
+        ...o,
+        // Never disable the current state's own button; disable a target when it
+        // is not a valid transition, or when moving to draft (created) while the
+        // API still has subscriptions.
+        disabled:
+          o.value !== currentState &&
+          (!(ALLOWED_STATE_TRANSITIONS[currentState] ?? []).includes(o.value) ||
+            (o.value === 'created' && hasSubscriptions)),
+      })),
       defaultValue: 'created',
     },
     testable: {

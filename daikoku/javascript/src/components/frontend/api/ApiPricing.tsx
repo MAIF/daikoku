@@ -42,6 +42,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import { CmsViewerByPath } from "../CmsViewer";
 
 type Option = {
   type: 'group' | 'route';
@@ -390,10 +391,10 @@ const CustomMetadataInput = (props: {
         <div className="col-sm-10">
           <button
             type="button"
-            className="btn btn-outline-info"
+            className="btn --secondary --small --icon-only"
             onClick={(e) => addFirst(e)}
           >
-            <Plus />{' '}
+            <Plus />
           </button>
         </div>
       )}
@@ -433,10 +434,10 @@ const CustomMetadataInput = (props: {
             {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
-                className="input-group-text btn btn-outline-info"
+                className="btn --secondary --small --icon-only"
                 onClick={addNext}
               >
-                <Plus />{' '}
+                <Plus />
               </button>
             )}
           </div>
@@ -513,7 +514,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan:
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --secondary'
             type='button'
             onClick={() => props.savePlan({ ...props.plan, maxPerDay: undefined, maxPerSecond: undefined, maxPerMonth: undefined })}>
             Save
@@ -727,7 +728,7 @@ type ApiPricingCardProps = {
   plans: Array<IUsagePlan>
 };
 const ApiPricingCard = (props: ApiPricingCardProps) => {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, language } = useContext(I18nContext);
   const {
     openFormModal,
     openLoginOrRegisterModal,
@@ -735,7 +736,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openCustomModal,
     close,
     closeRightPanel,
-    openRightPanel
+    openRightPanel,
+    confirm
   } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
@@ -915,22 +917,47 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
   const openTeamSelectorModal = () => {
-    openCustomModal({
-      title: translate('team.selection.title'),
-      content: <TeamSelector
-        teams={authorizedTeams
-          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
-          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-        pendingTeams={props.inProgressDemands.map((s) => s.team)}
-        acceptedTeams={props.subscriptions
-          .filter((f) => !f._deleted)
-          .map((subs) => subs.team)}
-        allowMultipleDemand={plan.allowMultipleKeys}
-        showKeyringSelectModal={showKeyringSelectModal}
-        plan={props.plan}
-      />
-    })
+    const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
+      title: translate({
+        key: 'team.api.state.information.title',
+        replacements:
+          [props.api.name]
+      }),
+      message:
+        <div>
+          <CmsViewerByPath
+            path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
+            fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
+              fallBack={() => <div>{translate({
+                key: 'team.api.state.information.message',
+                replacements:
+                  [props.api.name,
+                  props.api.state]
+              })}</div>} />} />
+        </div>
+    }) : Promise.resolve(true)
+
+    alertAPIStatus
+      .then(ok => {
+        if (ok) {
+          openCustomModal({
+            title: translate('team.selection.title'),
+            content: <TeamSelector
+              teams={authorizedTeams
+                .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
+                .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+              pendingTeams={props.inProgressDemands.map((s) => s.team)}
+              acceptedTeams={props.subscriptions
+                .filter((f) => !f._deleted)
+                .map((subs) => subs.team)}
+              allowMultipleDemand={plan.allowMultipleKeys}
+              showKeyringSelectModal={showKeyringSelectModal}
+              plan={props.plan}
+            />
+          })
+        }
+      })
   }
 
   const editPlan = () => props.updatePlan(props.plan)
@@ -1281,18 +1308,19 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {customDescription && <span>{customDescription}</span>}
         </p>
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
-            <button
-              type="button"
-              className="usage-plan__card__action-button inactive"
-            >
-              <Translation i18nkey="Get API key" />
-            </button>
-          )}
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api))
+            && props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' && (
+              <button
+                type="button"
+                className="usage-plan__card__action-button inactive"
+              >
+                <Translation i18nkey="Get API key" />
+              </button>
+            )}
           {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
             props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            isPublish(props.api) && (
+            (isPublish(props.api) && props.api.state !== 'blocked') && (
               <Can
                 I={access}
                 a={apikey}
@@ -1319,7 +1347,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   )}
               </Can>
             )}
-          {connectedUser.isGuest && (
+          {connectedUser.isGuest && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button"
@@ -1499,14 +1527,14 @@ type ToggleButtonProps = {
 
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
   return (
-    <div className='form-selector mt-4'>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: props.value })} onClick={() => props.action(true)}>
+    <div className='mt-4 d-flex flex-row gap-2'>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: props.value })} onClick={() => props.action(true)}>
         <div className='label'>{props.trueLabel}</div>
-        <div className='description'>{props.trueDescription}</div>
+        <em className='description'>{props.trueDescription}</em>
       </button>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: !props.value })} onClick={() => props.action(false)}>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: !props.value })} onClick={() => props.action(false)}>
         <div className='label'>{props.falseLabel}</div>
-        <div className='description'>{props.falseDescription}</div>
+        <em className='description'>{props.falseDescription}</em>
       </button>
     </div>
   )
@@ -1720,14 +1748,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <div className='d-flex flex-column'>
           <span>{translate("api.home.create.plan.modal.description")}</span>
           <div className='d-flex flex-rox justify-content-around'>
-            <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan()
+            <button className='btn --secondary' onClick={() => Services.fetchNewPlan()
               .then(p => {
                 close()
                 updatePlan(p, true)
               })}>
               {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
-            <button className='btn btn-outline-info' onClick={() => {
+            <button className='btn --secondary' onClick={() => {
               close()
               openApiSelectModal({
                 api: props.api,

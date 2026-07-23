@@ -129,6 +129,22 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
+          /*
+          * {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.deprecated.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
+          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.blocked.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
+          * */
           return (
             <div className="d-flex gap-1 status">
               {(apiState === 'created') && (

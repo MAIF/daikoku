@@ -66,6 +66,9 @@ export interface IApiWithTeam extends IApiGQL {
 
 export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
+  // Total subscription count, only set by the backend for API editors of the
+  // owning team (see ApiController.getApi).
+  subscriptionCount?: number;
 }
 
 /*export interface IApiWithAuthorization extends IApiWithSimpleTeam {
@@ -171,40 +174,40 @@ export interface ISwagger {
 
 export type IValidationStep =
   | {
-      type: 'email';
-      id: string;
-      emails: Array<string>;
-      message: string;
-      title: string;
-    }
+    type: 'email';
+    id: string;
+    emails: Array<string>;
+    message: string;
+    title: string;
+  }
   | {
-      type: 'httpRequest';
-      id: string;
-      title: string;
-      url: string;
-      headers: object;
-    }
+    type: 'httpRequest';
+    id: string;
+    title: string;
+    url: string;
+    headers: object;
+  }
   | {
-      type: 'form';
-      id: string;
-      schema: Schema;
-      formatter: string;
-      title: string;
-      formKeysToMetadata?: Array<string>;
-      info?: string;
-    }
+    type: 'form';
+    id: string;
+    schema: Schema;
+    formatter: string;
+    title: string;
+    formKeysToMetadata?: Array<string>;
+    info?: string;
+  }
   | {
-      type: 'payment';
-      id: string;
-      thirdPartyPaymentSettingsId: string;
-      title?: string;
-    }
+    type: 'payment';
+    id: string;
+    thirdPartyPaymentSettingsId: string;
+    title?: string;
+  }
   | {
-      type: 'teamAdmin';
-      id: string;
-      title?: string;
-      team: string;
-    };
+    type: 'teamAdmin';
+    id: string;
+    title?: string;
+    team: string;
+  };
 
 export interface IBaseUsagePlan {
   _id: string;
@@ -369,6 +372,7 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
+  state: 'active' | 'blocked';
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;

@@ -347,38 +347,38 @@ case class UsagePlan(
           case Some(authorizedEntities) =>
             for {
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.groups
-                      .subsetOf(authorizedEntities.authorizedEntities.groups)
-                  ),
-                (),
-                AppError.UnauthorizedExplicit(
-                  "at least one of the group provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.groups
+                           .subsetOf(authorizedEntities.authorizedEntities.groups)
+                       ),
+                     (),
+                     AppError.UnauthorizedExplicit(
+                       "at least one of the group provided is unauthorized"
+                     )
+                   )
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.services
-                      .subsetOf(authorizedEntities.authorizedEntities.services)
-                  ),
-                (),
-                AppError.UnauthorizedExplicit(
-                  "at least one of the service provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.services
+                           .subsetOf(authorizedEntities.authorizedEntities.services)
+                       ),
+                     (),
+                     AppError.UnauthorizedExplicit(
+                       "at least one of the service provided is unauthorized"
+                     )
+                   )
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.routes
-                      .subsetOf(authorizedEntities.authorizedEntities.routes)
-                  ),
-                (),
-                AppError.UnauthorizedExplicit(
-                  "at least one of the route provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.routes
+                           .subsetOf(authorizedEntities.authorizedEntities.routes)
+                       ),
+                     (),
+                     AppError.UnauthorizedExplicit(
+                       "at least one of the route provided is unauthorized"
+                     )
+                   )
             } yield ()
           case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)
         }
@@ -601,22 +601,39 @@ case class Testing(
     )
 }
 
+enum ApiSubscriptionState(val name: String) {
+  case Active extends ApiSubscriptionState("active")
+  case Blocked extends ApiSubscriptionState("blocked")
+}
+
 sealed trait ApiState {
   def name: String
+  def checkPreviousState(previousState: ApiState): Boolean
 }
 
 object ApiState {
   case object Created extends ApiState {
     override def name: String = "created"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState == Created || previousState == Published
   }
   case object Published extends ApiState {
     override def name: String = "published"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Blocked
+
   }
   case object Blocked extends ApiState {
     override def name: String = "blocked"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Created
+
   }
   case object Deprecated extends ApiState {
     override def name: String = "deprecated"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Created
+
   }
 
   def publishedJsonFilter: JsObject =
@@ -669,20 +686,20 @@ case class Api(
 
   def asSimpleJson: JsValue =
     Json.obj(
-      "_id" -> id.asJson,
-      "_humanReadableId" -> name.urlPathSegmentSanitized,
-      "_tenant" -> tenant.asJson,
-      "team" -> team.value,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "header" -> header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "image" -> image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "description" -> description,
-      "currentVersion" -> currentVersion.asJson,
-      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
+      "_id"                -> id.asJson,
+      "_humanReadableId"   -> name.urlPathSegmentSanitized,
+      "_tenant"            -> tenant.asJson,
+      "team"               -> team.value,
+      "name"               -> name,
+      "smallDescription"   -> smallDescription,
+      "header"             -> header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "image"              -> image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "description"        -> description,
+      "currentVersion"     -> currentVersion.asJson,
+      "supportedVersions"  -> JsArray(supportedVersions.map(_.asJson).toSeq),
+      "tags"               -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories"         -> JsArray(categories.map(JsString.apply).toSeq),
+      "visibility"         -> visibility.name,
       "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
       "posts" -> SeqPostIdFormat.writes(posts),
       "issues" -> SeqIssueIdFormat.writes(issues),
@@ -710,7 +727,7 @@ case class Api(
       "stars" -> stars,
       "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
     )
-  def isPublished: Boolean =
+  def isSubscribable: Boolean =
     state match {
       case ApiState.Published  => true
       case ApiState.Deprecated => true
