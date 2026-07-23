@@ -825,7 +825,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   })}
                   onClick={() => {
                     return allowed
-                      ? props.showApiKeySelectModal(team._id)
+                      ? props.showKeyringSelectModal(team._id)
                       : () => {
                       };
                   }}
@@ -887,7 +887,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     openCustomModal,
     close,
     openFormModal,
-    openApiKeySelectModal,
     closeRightPanel,
     openRightPanel,
     openApiSelectModal,
@@ -1181,7 +1180,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
   // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
   const showKeyringSelectModal = (team: string) => {
-    const { plan } = props;
 
     const askForApikeys = (
       team: string,
@@ -1308,10 +1306,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
       );
   };
 
-  const plan = props.plan;
-  const customDescription = plan.customDescription;
-  const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan);
-
   const authorizedTeams = props.myTeams
     .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
     .filter(
@@ -1323,7 +1317,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     .filter(
       (t) =>
         plan.visibility === 'Public' ||
-        plan.authorizedTeams.includes(t._id) ||
+        plan.authorizedTeams.map(team => team._id).includes(t._id) ||
         t._id === props.ownerTeam._id
     );
 
@@ -1347,7 +1341,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
       !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
-  const openTeamSelectorModal = () => {
+  const openTeamSelectorModal = (plan: IUsagePlanGQL) => {
     openCustomModal({
       title: translate('team.selection.title'),
       content: <TeamSelector
@@ -1362,12 +1356,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
           .map((subs) => subs.team)}
         allowMultipleDemand={plan.allowMultipleKeys}
         showKeyringSelectModal={showKeyringSelectModal}
-        plan={props.plan}
+        plan={plan}
       />
     })
   }
-
-    const isAccepted = !allPossibleTeams.length;
 
     return ({
       otoroshiTargetIsDefined, otoroshiEntitiesIsDefined,
@@ -1835,7 +1827,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           type="button"
                           className="btn btn-outline-secondary btn-square-sm"
                           aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
-                          onClick={openTeamSelectorModal}
+                          onClick={() => openTeamSelectorModal(plan)}
                         >
                           <KeyRound size={16}/>
                         </button>

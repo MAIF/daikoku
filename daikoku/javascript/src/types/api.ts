@@ -633,7 +633,7 @@ export interface ApiPricingProps {
 }
 
 
-type ApiKeyResult = 
+type ApiKeyResult =
   | { status: 'created'; api: IApi; plan: IUsagePlan; apiTeam: ITeamSimple; subscription: ISubscription }
   | { status: 'waiting'; plan: IUsagePlan; teamName: string };
 
@@ -643,7 +643,7 @@ export interface ITeamSelector {
   pendingTeams: Array<string>;
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
-  showApiKeySelectModal: (teamId: string) => void;
+  showKeyringSelectModal: (teamId: string) => void;
   plan: IUsagePlanGQL;
 }
 export interface OtoroshiEntitiesSelectorProps {
