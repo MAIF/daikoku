@@ -54,7 +54,10 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
         flow={props.api?.visibility === 'AdminOnly' ? informationForm.adminFlow : informationForm.flow(expertMode)}
         onSubmit={(data) => {
           props.handleSubmit(data)
-            .then(() => closeRightPanel())
+            .then((r) => {
+              console.debug({ r })
+              closeRightPanel()
+            })
         }}
         value={props.api || newApiQuery.data}
         options={{

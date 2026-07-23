@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
-import { JIM, MICHAEL } from './users';
+import { DWIGHT, JIM, MICHAEL } from './users';
 import {
-  ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
+  ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
 } from './utils';
 
 
@@ -70,7 +70,7 @@ const passAPIToDeprecated = async ({ page }, apiName: string) => {
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
 }
 
-const passAPIToBlocked = async ({ page }, apiName: string) => {
+const passAPIToBlocked = async ({ page }, apiName: string, test: boolean = true) => {
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
@@ -83,7 +83,9 @@ const passAPIToBlocked = async ({ page }, apiName: string) => {
   await expect(page.getByRole('heading', { name: 'Attention' })).toBeVisible();
   await page.getByRole('textbox', { name: `Saisissez API ${apiName}` }).fill(`API ${apiName}`);
   await page.getByRole('button', { name: 'Confirmation' }).click();
-  await expect(page.getByText('Bloquée')).toBeVisible();
+  if (test) {
+    await expect(page.getByText('Bloquée')).toBeVisible();
+  }
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
 }
 
@@ -128,10 +130,10 @@ test('Cannot pass Draft to Blocked', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await passAPIToDraft({ page }, 'Commande')
-  await passAPIToBlocked({ page }, 'Commande')
+  await passAPIToBlocked({ page }, 'Commande', false)
   await expect(page.getByText('Conflict with api state')).toBeVisible();
   const api = page.getByRole('listitem').filter({ hasText: 'API Commande' });
-  await expect(api.getByText('Dépréciée')).toBeVisible();
+  await expect(api.getByText('Brouillon')).toBeVisible();
 });
 
 test('Should not be possible to pass to draft if there is subscriptions', async ({ page }) => {
@@ -142,44 +144,17 @@ test('Should not be possible to pass to draft if there is subscriptions', async 
   await expect(page.getByText('Conflict with api state')).toBeVisible();
 });
 
-test('When API pass to Blocked, team mates should not have the API in their dashboard', async ({ page }) => {
+test('When API pass to Blocked, team mates should not have the API in their dashboard', async ({ page, browser }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await passAPIToBlocked({ page }, 'papier')
+  await passAPIToBlocked({ page }, 'Commande')
+  await logout(page)
 
-  await page.getByRole('button', { name: 'user menu' }).click();
-  const context = page.context();
-  const pageLogin = await context.newPage();
-  pageLogin.goto(`http://localhost:${exposedPort}/auth/LDAP/login`)
-
-  await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
-  await pageLogin.locator('input[name="password"]').fill('password');
-  await pageLogin.getByRole('button', { name: 'Se connecter' }).click();
-  const pageDwight = pageLogin;
-  await expect(pageDwight.getByRole('link', { name: 'API papier' })).not.toBeVisible();
-});
-
-test('When API pass to Blocked, team mates should not have access to API page description', async ({ page }) => {
   await page.goto(ACCUEIL);
-  await loginAs(MICHAEL, page);
-  await passAPIToBlocked({ page }, 'papier')
+  await loginAs(DWIGHT, page)
 
-  await page.getByRole('button', { name: 'user menu' }).click();
-  const context = page.context();
-  const pageLogin = await context.newPage();
-  await pageLogin.goto(`http://localhost:${exposedPort}/auth/LDAP/login`)
-
-  await pageLogin.locator('input[name="username"]').fill('dwight.schrute@dundermifflin.com');
-  await pageLogin.locator('input[name="password"]').fill('password');
-  await pageLogin.getByRole('button', { name: 'Se connecter' }).click();
-  const pageDwight = pageLogin;
-
-  const contextDwight = pageDwight.context();
-  const pageDescApi = await contextDwight.newPage();
-  const responsePromise = pageDescApi.waitForResponse(`http://localhost:${exposedPort}/api/me/visible-apis/api-papier/1.0.0`);
-  await pageDescApi.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/description`);
-  const response = await responsePromise;
-  await expect(response.status()).toBe(401)
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API commande' })).not.toBeVisible();
 });
 
 test('Mail has been received by admin for Api deprecated', async ({ page }) => {

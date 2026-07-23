@@ -89,20 +89,22 @@ export const ApiHeader = ({
     },
   };
 
-  const saveTeamApi = async (updatedApi) => {
-    const response_1 = await Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion);
-    if (!isError(response_1)) {
-      await queryClient.invalidateQueries({ queryKey: ["api"] });
-      toast.success(translate("update.api.successful.toast.label"));
-      navigate(`/${ownerTeam._humanReadableId}/${response_1._humanReadableId}/${response_1.currentVersion}/description`);
-    }
-    else {
-      toast.error(response_1.error);
-    }
+  const saveTeamApi = (updatedApi) => {
+    return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
+      .then(response => {
+        if (!isError(response)) {
+          queryClient.invalidateQueries({ queryKey: ["api"] });
+          toast.success(translate("update.api.successful.toast.label"));
+          navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`);
+        }
+        else {
+          toast.error(response.error);
+        }
+      })
   }
 
   const confirmApiBlocking = (updatedApi: IApi) => {
-    customGraphQLClient.request<{ apiApiSubscriptions: { total: number } }>(Services.graphql.getApiSubscriptionsTotal, {
+    return customGraphQLClient.request<{ apiApiSubscriptions: { total: number } }>(Services.graphql.getApiSubscriptionsTotal, {
       apiId: api._id,
       teamId: ownerTeam._id,
       version: api.currentVersion,
@@ -112,7 +114,7 @@ export const ApiHeader = ({
       .then(
         response => {
           if (!isError(response)) {
-            openFormModal({
+            return openFormModal({
               title: translate('Confirm'),
               description: <div className="alert alert-danger" role="alert">
                 <h4 className="alert-heading">{translate('Warning')}</h4>
@@ -230,13 +232,15 @@ export const ApiHeader = ({
                 role='menuitem'
                 onClick={() => openRightPanel({
                   title: translate("api.home.config.api.menu.configure"),
-                  content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={async (updatedApi) => {
-                    if (updatedApi.state === `blocked`) {
-                      confirmApiBlocking(updatedApi)
-                    } else {
-                      saveTeamApi(updatedApi)
-                    }
-                  }} />
+                  content: <ApiFormRightPanel
+                    team={ownerTeam} api={api} apigroup={!!api.apis}
+                    handleSubmit={(updatedApi) => {
+                      if (updatedApi.state === `blocked`) {
+                        return confirmApiBlocking(updatedApi)
+                      } else {
+                        return saveTeamApi(updatedApi)
+                      }
+                    }} />
                 })}
                 className="dropdown-item cursor-pointer"
               >
