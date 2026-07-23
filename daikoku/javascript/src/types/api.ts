@@ -66,6 +66,9 @@ export interface IApiWithTeam extends IApiGQL {
 
 export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
+  // Total subscription count, only set by the backend for API editors of the
+  // owning team (see ApiController.getApi).
+  subscriptionCount?: number;
 }
 
 /*export interface IApiWithAuthorization extends IApiWithSimpleTeam {

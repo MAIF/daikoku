@@ -518,6 +518,17 @@ class ApiController(
             )
           )
       )
+      // Total subscription count (all teams), only computed/exposed to API
+      // editors of the owning team — used to forbid unpublishing to draft.
+      subscriptionCount <- level match {
+        case UserLevel.Admin =>
+          EitherT.liftF[Future, AppError, Long](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant.id)
+              .count(Json.obj("api" -> api.id.value, "_deleted" -> false))
+          )
+        case _ => EitherT.pure[Future, AppError](0L)
+      }
     } yield {
       val jsonApi: JsValue = level match {
         case UserLevel.Guest => api.asGuestJson(ctx.tenant.apiReferenceHideForGuest.getOrElse(true))
@@ -530,6 +541,8 @@ class ApiController(
         )
       ) ++ Json.obj(
         "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+      ) ++ Json.obj(
+        "subscriptionCount" -> subscriptionCount
       )
       ctx.setCtxValue("api.name", api.name)
 
@@ -2992,6 +3005,17 @@ class ApiController(
           ))
           _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
           _ <- EitherT.cond[Future][AppError, Unit](newApi.state.checkPreviousState(oldApi.state), (), AppError.EntityConflict("api state"))
+          // An API cannot be moved (back) to draft while it still has subscriptions.
+          hasSubscriptions <-
+            if (newApi.state == ApiState.Created && oldApi.state != ApiState.Created)
+              EitherT.liftF[Future, AppError, Boolean](
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant.id)
+                  .count(Json.obj("api" -> newApi.id.value, "_deleted" -> false))
+                  .map(_ > 0)
+              )
+            else EitherT.pure[Future, AppError](false)
+          _ <- EitherT.cond[Future][AppError, Unit](!hasSubscriptions, (), AppError.EntityConflict("api subscriptions"))
           anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .exists(

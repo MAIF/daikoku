@@ -20,13 +20,15 @@ import { CmsViewer } from '../CmsViewer';
 type ApiHeaderProps = {
   api: IApi
   ownerTeam: ITeamSimple
-  tab: string
+  tab: string,
+  hasSubscriptions: boolean
 }
 
 export const ApiHeader = ({
   api,
   ownerTeam,
-  tab
+  tab,
+  hasSubscriptions
 }: ApiHeaderProps) => {
   const navigate = useNavigate();
   const params = useParams();
@@ -234,6 +236,7 @@ export const ApiHeader = ({
                   title: translate("api.home.config.api.menu.configure"),
                   content: <ApiFormRightPanel
                     team={ownerTeam} api={api} apigroup={!!api.apis}
+                    hasSubscriptions={hasSubscriptions}
                     handleSubmit={(updatedApi) => {
                       if (updatedApi.state === `blocked`) {
                         return confirmApiBlocking(updatedApi)

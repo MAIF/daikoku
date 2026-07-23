@@ -15,6 +15,7 @@ type ApiFormRightPanelProps = {
   api?: IApi
   handleSubmit: (api: IApi) => Promise<any>
   apigroup: boolean
+  hasSubscriptions?: boolean
 }
 export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
   const { translate } = useContext(I18nContext);
@@ -25,7 +26,7 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
     customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
       .then(res => res.pages)
 
-  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages, props.apigroup);
+  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages, props.apigroup, props.api?.state ?? 'created', props.hasSubscriptions ?? false);
 
   const newApiQuery = useQuery({
     queryKey: ['newapi'],

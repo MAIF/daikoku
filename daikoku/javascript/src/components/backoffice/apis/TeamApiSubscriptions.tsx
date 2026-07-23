@@ -161,7 +161,7 @@ export const TeamApiSubscriptions = ({
       enableColumnFilter: true,
     }),
     columnHelper.display({
-      header: translate("Enabled"),
+      header: translate("State"),
       enableColumnFilter: false,
       enableSorting: false,
       meta: { style: { textAlign: "center" } },

@@ -1101,6 +1101,107 @@ class ApiLifeCycleSpec
       )
     }
 
+    "forbid moving an API to draft while it has subscriptions" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("draft-guard"),
+        tenant = tenant.id,
+        customName = "draft-guard",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+
+      val apiWithSub = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(plan.id)
+      )
+      val apiWithoutSub = defaultApi.api.copy(
+        id = ApiId("api-without-sub"),
+        name = "api without sub",
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(plan.id)
+      )
+
+      val keyring = Keyring(
+        id = KeyringId("keyring-draft"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-draft"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("sub-draft"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = apiWithSub.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(apiWithSub, apiWithoutSub),
+        usagePlans = Seq(plan),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(sub)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+
+      // With a subscription: moving (back) to draft is refused.
+      val respRefused = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${apiWithSub.id.value}/${apiWithSub.currentVersion.value}",
+        method = "PUT",
+        body = Some(apiWithSub.copy(state = ApiState.Created).asJson)
+      )(using tenant, adminSession)
+      respRefused.status mustBe 409
+      (respRefused.json \ "error").as[String] mustBe "Conflict with api subscriptions"
+
+      // Without subscription: moving to draft is allowed.
+      val respAllowed = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${apiWithoutSub.id.value}/${apiWithoutSub.currentVersion.value}",
+        method = "PUT",
+        body = Some(apiWithoutSub.copy(state = ApiState.Created).asJson)
+      )(using tenant, adminSession)
+      respAllowed.status mustBe 200
+      (respAllowed.json \ "state").as(using json.ApiStateFormat) mustBe ApiState.Created
+    }
+
     def changingAPIState(
         session: UserSession,
         state: ApiState,

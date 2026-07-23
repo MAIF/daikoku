@@ -42,7 +42,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
-import {CmsViewerByPath} from "../CmsViewer";
+import { CmsViewerByPath } from "../CmsViewer";
 
 type Option = {
   type: 'group' | 'route';
@@ -391,10 +391,10 @@ const CustomMetadataInput = (props: {
         <div className="col-sm-10">
           <button
             type="button"
-            className="btn btn-outline-info"
+            className="btn --secondary --small --icon-only"
             onClick={(e) => addFirst(e)}
           >
-            <Plus />{' '}
+            <Plus />
           </button>
         </div>
       )}
@@ -434,10 +434,10 @@ const CustomMetadataInput = (props: {
             {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
-                className="input-group-text btn btn-outline-info"
+                className="btn --secondary --small --icon-only"
                 onClick={addNext}
               >
-                <Plus />{' '}
+                <Plus />
               </button>
             )}
           </div>
@@ -514,7 +514,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan:
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --secondary'
             type='button'
             onClick={() => props.savePlan({ ...props.plan, maxPerDay: undefined, maxPerSecond: undefined, maxPerMonth: undefined })}>
             Save
@@ -928,12 +928,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           <CmsViewerByPath
             path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
             fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
-                                             fallBack={() => <div>{translate({
-                                               key: 'team.api.state.information.message',
-                                               replacements:
-                                                 [props.api.name,
-                                                   props.api.state]
-                                             })}</div>}/>}/>
+              fallBack={() => <div>{translate({
+                key: 'team.api.state.information.message',
+                replacements:
+                  [props.api.name,
+                  props.api.state]
+              })}</div>} />} />
         </div>
     }) : Promise.resolve(true)
 
@@ -1310,13 +1310,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
           {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api))
             && props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' && (
-            <button
-              type="button"
-              className="usage-plan__card__action-button inactive"
-            >
-              <Translation i18nkey="Get API key" />
-            </button>
-          )}
+              <button
+                type="button"
+                className="usage-plan__card__action-button inactive"
+              >
+                <Translation i18nkey="Get API key" />
+              </button>
+            )}
           {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
             props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
@@ -1527,14 +1527,14 @@ type ToggleButtonProps = {
 
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
   return (
-    <div className='form-selector mt-4'>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: props.value })} onClick={() => props.action(true)}>
+    <div className='mt-4 d-flex flex-row gap-2'>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: props.value })} onClick={() => props.action(true)}>
         <div className='label'>{props.trueLabel}</div>
-        <div className='description'>{props.trueDescription}</div>
+        <em className='description'>{props.trueDescription}</em>
       </button>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: !props.value })} onClick={() => props.action(false)}>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: !props.value })} onClick={() => props.action(false)}>
         <div className='label'>{props.falseLabel}</div>
-        <div className='description'>{props.falseDescription}</div>
+        <em className='description'>{props.falseDescription}</em>
       </button>
     </div>
   )
@@ -1748,14 +1748,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <div className='d-flex flex-column'>
           <span>{translate("api.home.create.plan.modal.description")}</span>
           <div className='d-flex flex-rox justify-content-around'>
-            <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan()
+            <button className='btn --secondary' onClick={() => Services.fetchNewPlan()
               .then(p => {
                 close()
                 updatePlan(p, true)
               })}>
               {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
-            <button className='btn btn-outline-info' onClick={() => {
+            <button className='btn --secondary' onClick={() => {
               close()
               openApiSelectModal({
                 api: props.api,
