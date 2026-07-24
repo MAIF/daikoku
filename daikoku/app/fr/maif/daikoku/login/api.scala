@@ -279,24 +279,7 @@ class LoginFilter(env: Env)(implicit
       theMaybeTeam: Option[Team] <-
         if (maybePersonnalTeam.isDefined)
           FastFuture.successful(maybePersonnalTeam)
-        else
-          // Concurrent first-login requests can all reach this branch before any of them
-          // commits. The uniq_team_personal_user index lets a single INSERT win and rejects
-          // the others (the failure is swallowed by reactivePg). We re-read afterwards so we
-          // always return the team that actually persisted, never a phantom backupTeam.
-          teamRepo
-            .save(backupTeam)
-            .flatMap(_ =>
-              teamRepo
-                .findOne(
-                  Json.obj(
-                    "type" -> TeamType.Personal.name,
-                    "users.userId" -> user.id.value,
-                    "_deleted" -> false
-                  )
-                )
-                .map(_.orElse(Some(backupTeam)))
-            )
+        else teamRepo.save(backupTeam).map(_ => Some(backupTeam))
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)
       // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {

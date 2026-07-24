@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import { JIM, MICHAEL, PAM } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 
 test.beforeEach(async () => {
   await Promise.all([
@@ -60,7 +60,8 @@ test('Se connecter et se deconnecter depuis une page conserve la localisation', 
 test('Se connecter depuis la modale de la page des plan de souscription conserve la localisation', async ({ page }) => {
   await page.goto(`${HOME}api-division/api-papier/1.0.0/pricing`);
 
-  await page.getByLabel('dev').getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
+
+  await page.getByRole('article').filter({ hasText: 'devDev environmentappels' }).getByRole('button').click();
   await page.getByRole('link', { name: 'Se connecter' }).click();
   await page.locator('input[name="username"]').fill(JIM.email);
   await page.locator('input[name="password"]').fill('password');

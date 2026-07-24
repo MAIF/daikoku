@@ -21,7 +21,7 @@ import {
   read,
   teamPermissions,
 } from '../../utils';
-import { ExternalLink, Key, BarChart } from "lucide-react";
+import {ExternalLink, KeyRound, BarChart} from "lucide-react";
 
 export const TeamApiKeys = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -83,7 +83,7 @@ export const TeamApiKeys = () => {
                   title={translate("apikeys.view.apikeys")}
                   aria-label={translate("apikeys.view.apikeys")}
                 >
-                  <Key />
+                  <KeyRound />
                 </Link>
               </div>
             </>

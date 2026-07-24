@@ -4,8 +4,7 @@ import { I18nContext } from '../../contexts';
 import {
   IFastPlan,
   ISubscription,
-  ISubscriptionWithApiInfo,
-  IUsagePlan
+  IUsagePlan, IUsagePlanGQL
 } from '../../types';
 import { IBaseModalProps } from './types';
 import { ArrowRight, Key, Plus } from "lucide-react";
@@ -25,7 +24,7 @@ export interface IKeyringOption {
 
 export interface IKeyringSelectModalProps {
   onSubscribe: () => void;
-  plan: IUsagePlan | IFastPlan;
+  plan: IUsagePlan | IFastPlan  | IUsagePlanGQL;
   keyrings: Array<IKeyringOption>;
   onSelectKeyring: (key: ISubscription) => void;
 }

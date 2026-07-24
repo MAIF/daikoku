@@ -1,7 +1,7 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
-import { ThirdPartyPaymentType } from './tenant';
+import {ITenant, ThirdPartyPaymentType} from './tenant';
 import { INotification } from './types';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
@@ -104,6 +104,12 @@ export type IApiAuthoWithCount = {
   total: number;
   totalFiltered: number;
 };
+
+export type IPlansWithCount = {
+  plans: Array<IUsagePlanGQL>;
+  total: number;
+  totalFiltered: number;
+}
 
 export interface ITesting {
   enabled: boolean;
@@ -236,26 +242,28 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   _id: string;
   _tenant: string;
   _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string;
+  allowMultipleKeys?: boolean;
+  authorizedTeams: string[];
+  autoRotation?: boolean;
+  billingDuration?: IBillingDuration;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
   customDescription?: string;
   customName: string;
-  subscriptionProcess: Array<IValidationStep>;
-  otoroshiTarget?: IOtoroshiTarget;
-  allowMultipleKeys?: boolean;
-  aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
-  autoRotation?: boolean;
-  rotation: boolean;
-  currency?: ICurrency;
-  billingDuration?: IBillingDuration;
-  visibility: UsagePlanVisibility;
-  authorizedTeams: Array<string>;
-  costPerRequest?: number;
-  costPerMonth?: number;
+  maxPerDay?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
-  maxPerDay?: number;
+  otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>;
+  subscriptionProcessChecksum: string;
   trialPeriod?: IBillingDuration;
+  visibility: UsagePlanVisibility;
 }
 
 export interface IAuthorizedEntities {
@@ -380,15 +388,15 @@ export interface IBaseSubscription {
   keyring: string | null;
 }
 
-export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
+export const isPayPerUse = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
-export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan) => {
+export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
-export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan) => {
+export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
@@ -608,4 +616,67 @@ export type Issue = {
   title: string;
   by: IUserSimple;
   tags: Array<IIssuesTag>;
+};
+
+export interface ApiPricingProps {
+  api: IApi;
+  myTeams: Array<ITeamSimple>;
+  ownerTeam: ITeamSimple;
+  subscriptions: Array<ISubscription>;
+  inProgressDemands: Array<ISubscriptionDemand>;
+  askForApikeys: (x: {
+    team: string;
+    plan: IUsagePlan;
+    apiKey?: ISubscription;
+    motivation?: object;
+  }) => Promise<void>;
+}
+
+export interface ITeamSelector {
+  teams: Array<ITeamSimple>;
+  pendingTeams: Array<string>;
+  acceptedTeams: Array<string>;
+  allowMultipleDemand?: boolean;
+  showKeyringSelectModal: (teamId: string) => void;
+  plan: IUsagePlanGQL;
+}
+export interface OtoroshiEntitiesSelectorProps {
+  rawValues: IOtoroshiTarget
+  onChange: (item: any) => void,
+  translate: (x: string) => string
+  ownerTeam: ITeamSimple
+}
+export interface OtoroshiEntity {
+  label: string
+  value: string
+  type: 'route' | 'group' | 'service'
+  enabled: boolean
+}
+
+export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string
+  allowMultipleKeys?: boolean;
+  authorizedTeams: { _id: string; name: string }[];
+  autoRotation?: boolean;
+  billingDuration?: IBillingDuration;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
+  customDescription?: string;
+  customName: string;
+  integrationProcess: "Automatic" | "ApiKey";
+  maxPerDay?: number;
+  maxPerMonth?: number;
+  maxPerSecond?: number;
+  otoroshiTarget?: IOtoroshiTarget;
+  paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>
+  subscriptionProcessChecksum: string;
+  trialPeriod?: IBillingDuration;
+  visibility: UsagePlanVisibility;
 };

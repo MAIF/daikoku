@@ -469,7 +469,6 @@ class EntitiesController(
             customDescription = None,
             otoroshiTarget = None,
             allowMultipleKeys = Some(false),
-            subscriptionProcess = Seq.empty,
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false),
             documentation =

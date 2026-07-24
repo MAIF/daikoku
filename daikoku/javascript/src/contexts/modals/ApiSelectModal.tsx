@@ -5,7 +5,7 @@ import Select from 'react-select';
 import { Spinner } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { IApi, IUsagePlan, isError } from '../../types';
+import {IApi, IUsagePlan, isError} from '../../types';
 import { IBaseModalProps } from './types';
 
 
@@ -28,7 +28,7 @@ type plans = {
 type planOption = { label: string, value: IUsagePlan }
 
 export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) => {
-  const [selectedPlan, setSelectedPlan] = useState<IUsagePlan>()
+  const [ selectedPlan, setSelectedPlan] = useState<IUsagePlan>()
   const { translate } = useContext(I18nContext);
 
   const parentRequest = useQuery({
@@ -41,8 +41,8 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
     enabled: parentRequest.data && !isError(parentRequest.data)
   })
 
-  const plansAsOptions = (plans: Array<IUsagePlan>): Array<plans> => {
-    return plans.reduce<Array<plans>>((a, plan) => {
+  const plansAsOptions = (plans: Array<IUsagePlan>) => {
+    return plans.reduce<Array<{ label: string; options: Array<{ label: string; value: IUsagePlan }> }>>((a, plan) => {
       const groupName = `${props.api._humanReadableId}/${(parentRequest.data as IApi).currentVersion}`;
       const optGroup = a.find((grp) => grp.label === groupName);
       if (!optGroup)

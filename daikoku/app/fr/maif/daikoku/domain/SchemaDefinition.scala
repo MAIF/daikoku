@@ -14,7 +14,12 @@ import fr.maif.daikoku.controllers.authorizations.isTeamApiKeyVisible
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
+import fr.maif.daikoku.utils.{
+  OtoroshiClient,
+  S3Configuration,
+  Time,
+  SubscriptionUtil
+}
 import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.graphql.{
@@ -1133,6 +1138,12 @@ object SchemaDefinition {
         fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlan](
           Field("_id", StringType, resolve = _.value.id.value),
           Field(
+            "_tenant",
+            OptionType(StringType),
+            resolve = ctx => Some(ctx.value.tenant.value)
+          ),
+          Field("_deleted", BooleanType, resolve = _.value.deleted),
+          Field(
             "costPerMonth",
             OptionType(BigDecimalType),
             resolve = _.value.costPerMonth
@@ -1201,7 +1212,7 @@ object SchemaDefinition {
           Field(
             "subscriptionProcess",
             ListType(ValidationStepInterfaceType),
-            resolve = _.value.subscriptionProcess,
+            resolve = _.value.subscriptionProcess.steps,
             possibleTypes = List(
               ValidationStepEmail,
               ValidationStepAdmin,
@@ -1209,6 +1220,11 @@ object SchemaDefinition {
               ValidationStepHttRequest,
               ValidationStepForm
             )
+          ),
+          Field(
+            "subscriptionProcessChecksum",
+            OptionType(StringType),
+            resolve = _.value.subscriptionProcess.checksum
           ),
           Field(
             "integrationProcess",
@@ -3891,6 +3907,11 @@ object SchemaDefinition {
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
+    val API_ID: Argument[String] = Argument(
+      "apiId",
+      StringType,
+      description = "The id of the api  request"
+    )
     val NAME: Argument[Option[String]] = Argument(
       "name",
       OptionInputType(StringType),
@@ -4196,6 +4217,28 @@ object SchemaDefinition {
           }
         )
       )
+
+    def getPlansByApi(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        filterTable: JsArray,
+        sortingTable: JsArray,
+        limit: Int,
+        offset: Int,
+        apiId: String
+    ): Future[(Seq[UsagePlan], Long, Long)] = {
+      CommonServices
+        .getPlansByApi(
+          filterTable,
+          sortingTable,
+          limit,
+          offset,
+          apiId
+        )(using ctx.ctx._2, env, e)
+        .map {
+          case Right(value) => value
+          case Left(r)      => throw NotAuthorizedError(r.toString)
+        }
+    }
 
     def getVisibleApis(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
@@ -4653,6 +4696,52 @@ object SchemaDefinition {
         )
       )
 
+    lazy val PlansByApiListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[UsagePlan], Long, Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[UsagePlan], Long, Long)
+      ](
+        "PlansByApi",
+        "PlansByApi has a list of plan retrieve from an api and the count",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[UsagePlan], Long, Long)
+          ](
+            Field(
+              "plans",
+              ListType(UsagePlanType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2),
+            Field("totalFiltered", LongType, resolve = _.value._3)
+          )
+      )
+
+    def getPlansByApiFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          name = "plansByApi", // nom du champ Graphql
+          fieldType = PlansByApiListType,
+          arguments =
+            API_ID :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getPlansByApi(
+              ctx = ctx,
+              filterTable = ctx.arg(FILTER_TABLE),
+              sortingTable = ctx.arg(SORTING_TABLE),
+              limit = ctx.arg(LIMIT),
+              offset = ctx.arg(OFFSET),
+              apiId = ctx.arg(API_ID)
+            )
+          }
+        )
+      )
+
     def allFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
       val adminOnly = List(RequiresDaikokuAdmin)
@@ -4766,7 +4855,8 @@ object SchemaDefinition {
                 getSubscriptionDetailsFields() ++
                 getAuditTrailQueryFields() ++
                 cmsSinglePageFields() ++
-                cmsPageFields()*
+                cmsPageFields() ++
+                getPlansByApiFields()*
             )
         )
       ),

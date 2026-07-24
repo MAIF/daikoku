@@ -1,5 +1,5 @@
 import test, { expect } from '@playwright/test';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
@@ -148,7 +148,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
-  await page.getByRole('listitem', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
+
+  await page.getByRole('article').filter({ hasText: 'devDev environmentappels' }).getByRole('button').click();
   await expect(page.getByRole('dialog', { name: 'Accédez à l\'API' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Accédez à l\'API' }).getByRole('button', { name: 'Fermer' }).click();
   await page.getByRole('navigation').getByText('Questions').click();
@@ -169,8 +170,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
-  await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
-  await expect(page.getByRole('listitem', { name: 'prod' })).toBeVisible();
+  await expect(page.getByText('dev', { exact: true })).toBeVisible();
+  await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
   await page.getByRole('navigation').getByText('Clés d\'API').click();
@@ -188,8 +189,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
-  await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
-  await expect(page.getByRole('listitem', { name: 'prod' })).toBeVisible();
+  await expect(page.getByText('dev', { exact: true })).toBeVisible();
+  await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
   await page.getByRole('navigation').getByText('Clés d\'API').click();
@@ -425,6 +426,7 @@ test('Voir ses notifications', async ({ page }) => {
 
 
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  
   await expect(page.getByText('58 notifications')).toBeVisible();
   // await expect(page.getByLabel('notifications', { exact: true })).toContainText('58');
   await expect(page.getByRole('article')).toHaveCount(25);

@@ -59,8 +59,8 @@ export const RightPanel = () => {
             })}
           >
             <div className="m-2 p-2">
-              <div className="cursor-pointer right-panel__back d-flex align-items-center justify-content-center companion-link">
-                <X className="" onClick={closeRightPanel} />
+              <div className="cursor-pointer right-panel__back d-flex align-items-center justify-content-center companion-link" onClick={closeRightPanel}>
+                <X/>
               </div>
               {rightPanelContent?.title}
             </div>

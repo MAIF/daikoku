@@ -14,7 +14,7 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  useReactTable,
+  useReactTable, RowSelectionState, OnChangeFn,
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -189,7 +189,7 @@ export type DynamicTableColumnCtx = {
 };
 
 export type DynamicTableProps<T> = {
-  queryKey: unknown[];
+  queryKey: string[];
   columns: ColumnDef<T, any>[] | ((ctx: DynamicTableColumnCtx) => ColumnDef<T, any>[]);
   fetchData: FetchData<T>;
   filters?: FilterDef[];
@@ -207,6 +207,10 @@ export type DynamicTableProps<T> = {
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
+  rowSelection?: RowSelectionState;
+  setRowSelection?: OnChangeFn<RowSelectionState>;
+  onSelectionChange?: (selected: T[]) => void;
+  isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
 };
 
 export function DynamicTable<T>({
@@ -226,6 +230,10 @@ export function DynamicTable<T>({
   dataClassName,
   countLabelKey,
   tableClassName,
+  onSelectionChange,
+  rowSelection: controlledRowSelection,  
+  setRowSelection: controlledSetRowSelection,  
+  isRowSelectable
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -245,6 +253,15 @@ export function DynamicTable<T>({
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const [page, setPage] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
+
+  // Sélection interne utilisée quand le parent ne contrôle pas `rowSelection`.
+  // Permet à isRowSelectable/bulkActions de fonctionner "out of the box"
+  // sans que l'appelant ait à gérer l'état lui-même.
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+  const rowSelection = controlledRowSelection ?? internalRowSelection;
+  const setRowSelection = controlledSetRowSelection ?? setInternalRowSelection;
+
+
   // id->label cache per async multiselect filter, used to render the labels of
   // already-selected values without refetching the whole option list.
   const [asyncLabelCache, setAsyncLabelCache] = useState<Record<string, Record<string, string>>>({});
@@ -262,6 +279,10 @@ export function DynamicTable<T>({
     });
     return vals;
   });
+
+  useEffect(() => {
+    onSelectionChange?.(table.getSelectedRowModel().rows.map(row => row.original));
+  }, [rowSelection]);
 
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -309,7 +330,7 @@ export function DynamicTable<T>({
     columns: resolvedColumns,
     getRowId,
     rowCount: totalFiltered,
-    state: { pagination, columnFilters, sorting },
+    state: { pagination, columnFilters, sorting, rowSelection },
     onPaginationChange: setPagination,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -317,10 +338,18 @@ export function DynamicTable<T>({
     getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     manualSorting: true,
-    enableRowSelection: enableRowSelection === undefined ? false : enableRowSelection,
+    enableRowSelection: isRowSelectable
+      ? (row) => isRowSelectable(row.original, selectedRows)
+      : (enableRowSelection === undefined ? false : enableRowSelection),
     enableSubRowSelection: true,
     enableMultiRowSelection: true,
+    onRowSelectionChange: setRowSelection,
   });
+
+  const selectedRows = useMemo(
+    () => items.filter(item => rowSelection[getRowId ? getRowId(item) : '']),
+    [items, rowSelection, getRowId]
+  );
 
   // Filter helpers
   const handleSelectChange = (data: MultiValue<FilterOption>, id: string) => {
@@ -564,9 +593,9 @@ export function DynamicTable<T>({
             type="checkbox"
             className="form-check-input"
             checked={table.getIsAllPageRowsSelected()}
-            onChange={e => {
+            onChange={() => {
               if (selectAll) setSelectAll(false);
-              table.getToggleAllPageRowsSelectedHandler()(e);
+              handleToggleAllPageRowsSelected();
             }}
           />
         </label>
@@ -609,6 +638,44 @@ export function DynamicTable<T>({
         {!someSelected && renderColumnHeaders(true)}
       </div>
     );
+  };
+
+  // Toggle "select all" custom : contrairement au handler par défaut de
+  // TanStack, on évalue isRowSelectable ligne par ligne en tenant compte des
+  // lignes déjà cochées dans CE MÊME clic (pas seulement de la sélection
+  // préexistante), pour éviter de cocher des lignes mutuellement incompatibles.
+  const handleToggleAllPageRowsSelected = () => {
+    const pageRows = table.getRowModel().rows;
+    const allPageRowsSelected = pageRows.every(row => rowSelection[row.id]);
+
+    if (allPageRowsSelected) {
+      // Décoche les lignes de la page courante
+      const newSelection = { ...rowSelection };
+      pageRows.forEach(row => { delete newSelection[row.id]; });
+      setRowSelection(newSelection);
+      return;
+    }
+
+    const newSelection = { ...rowSelection };
+    let accumulatedSelected = [...selectedRows];
+    let noRowSelectable = true;
+
+    pageRows.forEach(row => {
+      if (newSelection[row.id]) return; // déjà sélectionnée
+      const canSelect = isRowSelectable
+        ? isRowSelectable(row.original, accumulatedSelected)
+        : (typeof enableRowSelection === 'function' ? enableRowSelection(row) : enableRowSelection !== false);
+      if (canSelect) {
+        noRowSelectable = false
+        newSelection[row.id] = true;
+        accumulatedSelected = [...accumulatedSelected, row.original];
+      }
+    });
+    if (noRowSelectable) {
+        setRowSelection({});
+        return
+      }
+    setRowSelection(newSelection);
   };
 
   const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));

@@ -144,11 +144,14 @@ export const ApiHome = ({
   }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
   const askForApikeys = ({ team, plan, apiKey, motivation }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }
+  ) => {
+
     const myTeams = myTeamsQuery.data || []
     const api = apiQuery.data as IApi
+    const apiTeam = myTeams.find((t) => t._id === team);
 
-    if (api) {
+    if (api && apiTeam) {
       return (
         apiKey
           ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)

@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import { JIM } from './users';
 import { adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 
 test.beforeEach(async () => {
   await Promise.all([

@@ -1,18 +1,18 @@
 package fr.maif.daikoku.services
 
 import cats.Monad
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.actions.ApiActionContext
-import fr.maif.daikoku.controllers.PaymentClient
-import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain.UsagePlanVisibility.Admin
+import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -29,8 +29,8 @@ import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc.Result
 import play.api.mvc.Results.Ok
+import play.api.mvc.{AnyContent, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -100,7 +100,7 @@ class ApiService(
       maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
-      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-$createdAtMillis-${api.currentVersion.value}"
 
     val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
@@ -494,6 +494,47 @@ class ApiService(
     }
   }
 
+  case class SyncInformation(
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      team: Team,
+      parentApi: Api,
+      apk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
+
+  case class ComputedInformation(
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      apk: ActualOtoroshiApiKey,
+      computedApk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
+
+  def getListFromMeta(
+      key: String,
+      metadata: Map[String, String]
+  ): Set[String] = {
+    metadata
+      .get(key)
+      .map(_.split('|').toSeq.map(_.trim).toSet)
+      .getOrElse(Set.empty)
+  }
+
+  def mergeMetaValue(
+      key: String,
+      meta1: Map[String, String],
+      meta2: Map[String, String]
+  ): String = {
+    val list1 = getListFromMeta(key, meta1)
+    val list2 = getListFromMeta(key, meta2)
+    (list1 ++ list2).mkString(" | ")
+  }
+
   def updateSubscription(
       tenant: Tenant,
       subscription: ApiSubscription,
@@ -583,23 +624,23 @@ class ApiService(
                   )
               )
             else EitherT.pure[Future, AppError](0)
-//          parentSubscription <- subscription.parent match {
-//            case Some(parentId) =>
-//              EitherT.fromOptionF(
-//                env.dataStore.apiSubscriptionRepo
-//                  .forTenant(tenant)
-//                  .findById(parentId),
-//                AppError.EntityNotFound(
-//                  s"Parent subscription (ID: ${parentId.value})"
-//                )
-//              )
-//            case None => EitherT.pure[Future, AppError](updatedSubscription)
-//          }
+          //          parentSubscription <- subscription.parent match {
+          //            case Some(parentId) =>
+          //              EitherT.fromOptionF(
+          //                env.dataStore.apiSubscriptionRepo
+          //                  .forTenant(tenant)
+          //                  .findById(parentId),
+          //                AppError.EntityNotFound(
+          //                  s"Parent subscription (ID: ${parentId.value})"
+          //                )
+          //              )
+          //            case None => EitherT.pure[Future, AppError](updatedSubscription)
+          //          }
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-//          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
-//          _ <- EitherT(otoroshiClient.updateApiKey(apk))
+          //          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
+          //          _ <- EitherT(otoroshiClient.updateApiKey(apk))
           _ <-
             paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
@@ -1225,8 +1266,9 @@ class ApiService(
         AppError.UserNotFound()
       )
       formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
-        plan.subscriptionProcess.collectFirst { case s: ValidationStep.Form =>
-          s
+        plan.subscriptionProcess.steps.collectFirst {
+          case s: ValidationStep.Form =>
+            s
         },
         AppError.EntityNotFound("form step")
       )
@@ -1854,7 +1896,7 @@ class ApiService(
                 } yield ()
               }
             )
-            _ <- EitherT.liftF(
+            _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
                   .getOrElse(tenant.defaultLanguage.getOrElse("en"))
@@ -2131,7 +2173,7 @@ class ApiService(
             .contains(team.id) && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](PlanUnauthorized)
       case _ =>
-        plan.subscriptionProcess match {
+        plan.subscriptionProcess.steps match {
           case Nil =>
             EitherT(
               subscribeToApi(
@@ -2306,7 +2348,7 @@ class ApiService(
             )
           )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
         Future.sequence((administrators ++ Seq(from)).map(admin => {
           implicit val language: String = admin.defaultLanguage
             .getOrElse(tenant.defaultLanguage.getOrElse("en"))
@@ -2503,7 +2545,7 @@ class ApiService(
       plan: UsagePlan,
       api: Api,
       otoroshiSettings: OtoroshiSettings
-  ) =
+  ) = {
     for {
       result <- EitherT.liftF[Future, AppError, Long](
         env.dataStore.apiSubscriptionRepo
@@ -2567,4 +2609,64 @@ class ApiService(
           )
       )
     } yield result
+  }
+
+  private def getFiltervalue[T](filters: JsArray, key: String)(implicit
+      fjs: Reads[T]
+  ): Option[T] = {
+    filters.value
+      .find(entry => {
+        entry
+          .as[JsObject]
+          .value
+          .exists(p => p._1 == "id" && p._2.as[String] == key)
+      })
+      .flatMap(v =>
+        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
+      )
+  }
+
+  def getAllAvailableEnvs(
+      apiId: String,
+      version: String
+  )(implicit
+      ctx: DaikokuActionContext[AnyContent]
+  ): Future[Either[AppError, JsArray]] = {
+    val query: String =
+      s"""
+         |SELECT coalesce(json_agg(p.content ->> 'customName'), '[]'::json) as result
+         |FROM usage_plans p
+         |    LEFT JOIN apis a ON (a.content -> 'possibleUsagePlans') ? p._id
+         |WHERE a._id = $$1
+         """.stripMargin
+
+    EitherT
+      .fromOptionF(
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            query,
+            "result",
+            Seq(
+              apiId // $$1
+            )
+          ),
+        AppError.InternalServerError(
+          "SQL Request for allAvailableEnvs failed"
+        )
+      )
+      .map(maybeResult => {
+        JsArray(
+          ctx.tenant.environments
+            .diff(
+              maybeResult.value
+                .flatMap(v => v.asOpt[String])
+                .toSet
+            )
+            .map(JsString(_))
+            .toSeq
+        )
+      })
+      .value
+  }
 }
