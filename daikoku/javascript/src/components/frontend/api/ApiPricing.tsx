@@ -2075,9 +2075,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                               defaultValue: "----",
                               options:
                                 [{ label: translate("aggregation.button.subscription.usual.label"), value: "----" },
-                                ...(subscriptions.map((s) =>
-                                  ({ label: `${s.apiKey.clientName} : ${s._id}`, value: s._id })
-                                ))
+                                ...(subscriptions.map((s) => {
+                                  console.log("subscription", s);
+
+                                  return ({ label: `${s.customName} : ${s._id}`, value: s._id })
+                                }))
                                 ]
                             }
                             return acc;
