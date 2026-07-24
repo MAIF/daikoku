@@ -1117,6 +1117,7 @@
   "Quotas & Billing": "Quotas & Facturation",
   "Skip": "Passer",
   "Otoroshi target": "Otoroshi cible",
+  "Edit Otoroshi target": "Éditer le Otoroshi cible",
   "http.method": "Méthode HTTP",
   "http.path": "Chemin",
   "api.configuration.btn.label": "Configurer l'API",

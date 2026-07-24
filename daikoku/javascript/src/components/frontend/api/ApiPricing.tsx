@@ -1861,13 +1861,20 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         <EllipsisVertical size={16} />
                       </button>
                     <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
-                      <span className="dropdown-item cursor-pointer  .ms-1"
+                      <span className="dropdown-item cursor-pointer"
                         onClick={() => actions(plan).editPlan()}>
                         <Pencil size={16} />
                         {tenant.display === 'environment'
                           ? translate('pricing.edit.env.btn.label')
                           : translate('Edit plan')}
                       </span>
+                      <Can I={manage} a={API} team={props.ownerTeam}>
+                        <span className='dropdown-item cursor-pointer'
+                          onClick={() => actions(plan).editOtoroshiTarget()}>
+                        <Pencil size={16}  />
+                          {translate('Edit Otoroshi target')}
+                          </span>
+                      </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <span className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editProcess()}>
