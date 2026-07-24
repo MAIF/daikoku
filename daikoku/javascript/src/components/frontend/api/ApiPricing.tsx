@@ -1787,7 +1787,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           } = otoroshiTargetColumn(plan)
 
           return (
-            <div className="d-flex flex-row align-items-center">
+            <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
               {
@@ -1849,8 +1849,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 )
               }
             </div>
+            <Can I={manage} a={API} team={props.ownerTeam}>
               <div className="p-2">
-                <Can I={manage} a={API} team={props.ownerTeam}>
                     <div>
                       <button
                         className="btn btn-outline-secondary btn-square-sm"
@@ -1904,8 +1904,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       </>}
                     </div>
                   </div>
-                </Can>
-              </div>
+                </div>
+              </Can>
             </div>
           )
         }
