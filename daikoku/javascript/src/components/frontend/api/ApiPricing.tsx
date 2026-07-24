@@ -2077,8 +2077,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 [{ label: translate("aggregation.button.subscription.usual.label"), value: "----" },
                                 ...(subscriptions.map((s) => {
                                   console.log("subscription", s);
+                                  const keyringName = `${s.customName ?? s.planName} (${s.apiName})`
 
-                                  return ({ label: `${s.customName} : ${s._id}`, value: s._id })
+                                  return ({ label: keyringName, value: s._id })
                                 }))
                                 ]
                             }
@@ -2147,7 +2148,6 @@ function findCompatibleSubscriptionForMultiPlanRequest(
           (infos.plan?.aggregationApiKeysSecurity)
       )
       .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
-      .filter(s => !s.subscription.parent)
       .map((infos) => infos.subscription);
 
     return { plan: plan, subscriptions: filteredApiKeys };
