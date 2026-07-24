@@ -629,14 +629,8 @@ export interface ApiPricingProps {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
-  }) => Promise<ApiKeyResult | null | undefined>;
+  }) => Promise<void>;
 }
-
-
-type ApiKeyResult =
-  | { status: 'created'; api: IApi; plan: IUsagePlan; apiTeam: ITeamSimple; subscription: ISubscription }
-  | { status: 'waiting'; plan: IUsagePlan; teamName: string };
-
 
 export interface ITeamSelector {
   teams: Array<ITeamSimple>;

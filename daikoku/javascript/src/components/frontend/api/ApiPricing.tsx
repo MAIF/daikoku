@@ -1292,14 +1292,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
             keyrings.length <= 0
           ) {
-            askForApikeys(team, plan);
+            askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan));
           } else {
             openKeyringSelectModal({
               plan,
               keyrings,
-              onSubscribe: () => askForApikeys(team, plan),
+              onSubscribe: () => askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan)),
               onSelectKeyring: (subscription: ISubscription) =>
-                askForApikeys(team, plan, subscription),
+                askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
             });
           }
         }
