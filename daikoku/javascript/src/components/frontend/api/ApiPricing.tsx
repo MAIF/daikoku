@@ -333,14 +333,13 @@ const CustomMetadataInput = (props: {
   const { alert } = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: string) => {
-    const oldValue = Option(props.value?.find((x) => x.key === key)).getOrElse({
-      key: '',
-      possibleValues: [],
-    });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== key),
-      { ...oldValue, key, possibleValues },
-    ];
+    const newValues = props.value?.map(v => {
+      if(v.key === key) {
+        return {...v, possibleValues}
+      } else {
+        return v;
+      }
+    }) || [];
     props.onChange?.(newValues);
   };
 
@@ -349,14 +348,14 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
+    const newValues = props.value?.map(v => {
+      if(v.key === oldName) {
+        return {...v, key: e.target.value}
+      } else {
+        return v;
+      }
+    }) || [];
 
-    const oldValue = Option(
-      props.value?.find((x) => x.key === oldName)
-    ).getOrElse({ key: '', possibleValues: [] });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== oldName),
-      { ...oldValue, key: e.target.value },
-    ];
     props.onChange?.(newValues);
   };
 
