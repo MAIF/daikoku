@@ -4,7 +4,6 @@ import { I18nContext } from '../../contexts';
 import {
   IFastPlan,
   ISubscription,
-  ISubscriptionWithApiInfo,
   IUsagePlan, IUsagePlanGQL
 } from '../../types';
 import { IBaseModalProps } from './types';
@@ -196,7 +195,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon={<KeyRound />}
+          icon={<Key />}
         />
       )}
     </div>
