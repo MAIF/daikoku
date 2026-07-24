@@ -3,8 +3,8 @@ import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, ge
 import classNames from 'classnames';
 import { subHours } from 'date-fns';
 import { useContext, useMemo, useState } from "react";
-import Pagination from '../../utils/Pagination';
 
+import Pagination from '../../utils/Pagination';
 import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from '../../../services';
@@ -135,7 +135,6 @@ export const AuditTrailList = () => {
     setFrom(from);
     setTo(to);
   };
-
   return (
     <Can I={manage} a={tenant} dispatchError>
       <main>

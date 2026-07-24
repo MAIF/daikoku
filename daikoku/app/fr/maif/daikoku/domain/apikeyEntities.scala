@@ -31,15 +31,22 @@ case class ApiKeyRotation(
     enabled: Boolean = true,
     rotationEvery: Long = 31 * 24,
     gracePeriod: Long = 7 * 24,
-    nextSecret: Option[String] = None
+    nextSecret: Option[String] = None,
+    bearer: Option[String] = None
 )
 
 case class ApiSubscriptionRotation(
     enabled: Boolean = true,
     rotationEvery: Long = 31 * 24,
     gracePeriod: Long = 7 * 24,
-    pendingRotation: Boolean = false
+    pendingRotation: Boolean = false,
+    nextSecret: Option[String] = None,
+    nextBearer: Option[String] = None
 ) {
+
+  /** Otoroshi owns the next credentials: never push them back, or an ongoing
+    * rotation would be reset.
+    */
   def toApiKeyRotation: ApiKeyRotation = {
     ApiKeyRotation(
       enabled = enabled,
@@ -144,14 +151,22 @@ case class Keyring(
 
   /** Keyring JSON safe to expose outside Daikoku (e.g. subscription process
     * HTTP step): keeps only the apiKey clientId/clientName and drops the
-    * clientSecret, integrationToken and bearerToken.
+    * clientSecret, integrationToken, bearerToken and the rotation's next
+    * credentials.
     */
   def asSafeJson: JsValue =
     json.KeyringFormat.writes(this).as[JsObject] ++ Json.obj(
       "apiKey" -> Json.obj(
         "clientName" -> apiKey.clientName,
         "clientId" -> apiKey.clientId
-      )
+      ),
+      "rotation" -> rotation
+        .map(r =>
+          json.ApiSubscriptionyRotationFormat
+            .writes(r.copy(nextSecret = None, nextBearer = None))
+        )
+        .getOrElse(JsNull)
+        .as[JsValue]
     ) - "integrationToken" - "bearerToken"
 }
 

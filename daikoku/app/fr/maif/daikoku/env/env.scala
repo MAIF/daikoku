@@ -953,10 +953,14 @@ class DaikokuEnv(
                       .forTenant(tenant.id)
                       .save(jsPage)
                 } yield {
-                  AppLogger.warn("")
-                  AppLogger.warn(
-                    s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                  )
+                  val passwordEmpty = configuration.getOptional[String]("daikoku.init.admin.password").isEmpty
+
+                  if (passwordEmpty) {
+                    AppLogger.warn("")
+                    AppLogger.warn(
+                      s"You can log in with ${config.init.admin.email} / ${config.init.admin.password}"
+                    )
+                  }
                   AppLogger.warn("")
                   AppLogger.warn(
                     "Please avoid using the default tenant for anything else than configuring Daikoku"
