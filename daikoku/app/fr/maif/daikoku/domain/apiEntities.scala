@@ -846,6 +846,7 @@ object ValidationStep {
           "motivation" -> Json.obj(
             "type" -> "string",
             "format" -> "textarea",
+            "defaultValue" -> "",
             "constraints" -> Json.arr(Json.obj("type" -> "required"))
           )
         )

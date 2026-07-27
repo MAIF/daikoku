@@ -2042,7 +2042,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 title: translate('motivations.modal.title'),
                                 schema: formStep.schema,
                                 actionLabel: translate('Send'),
-                                value: undefined,
                                 description: formStep.info ?
                                   <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
                                 onSubmit: (motivation) => {
@@ -2083,7 +2082,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                               options:
                                 [{ label: translate("aggregation.button.subscription.usual.label"), value: "----" },
                                 ...(subscriptions.map((s) => {
-                                  console.log("subscription", s);
                                   const keyringName = `${s.customName ?? s.planName} (${s.apiName})`
 
                                   return ({ label: keyringName, value: s._id })
