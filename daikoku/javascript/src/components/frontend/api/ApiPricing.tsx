@@ -40,6 +40,7 @@ import {
   apikey,
   Can,
   CanIDoAction,
+  CanIDoActionForOneOfTeams,
   isPublish,
   isSubscriptionProcessIsAutomatic,
   manage,
@@ -1744,34 +1745,29 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'otoroshi-cible',
-        meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7 },
+        meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
-
           return (
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <span className='feature__description'>
-                {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
-                {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
-              </span>
-            </Can>
+            <span className='feature__description'>
+              {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
+              {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
+            </span>
           )
         }
       }),
       columnHelper.display({
         id: 'process',
-        meta: { className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 5 },
+        meta: { className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 5, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <span className='feature__description'>{plan.subscriptionProcess.length ?
-                translate({
-                  key: 'api.pricings.process.value',
-                  replacements: [String(plan.subscriptionProcess.length)]
-                }) :
-                translate('api.pricings.process.value.none')}</span>
-            </Can>
+            <span className='feature__description'>{plan.subscriptionProcess.length ?
+              translate({
+                key: 'api.pricings.process.value',
+                replacements: [String(plan.subscriptionProcess.length)]
+              }) :
+              translate('api.pricings.process.value.none')}</span>
           )
         }
       }),
