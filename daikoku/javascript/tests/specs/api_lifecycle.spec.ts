@@ -30,6 +30,29 @@ test.beforeEach(async () => {
   ])
 })
 
+// The fake-smtp-server UI (port 1080) fetches its message list only on page
+// load and never live-updates. Poll its JSON API until the expected mail has
+// actually been delivered, so the mail UI page — opened afterwards — always
+// renders it on first load (no manual refresh needed).
+const waitForEmailTo = async (page: Page, ...addresses: string[]) => {
+  await expect
+    .poll(
+      async () => {
+        const res = await page.request.get('http://localhost:1080/api/emails');
+        if (!res.ok()) return false;
+        const emails = await res.json();
+        return addresses.every((address) =>
+          emails.some((email: unknown) => JSON.stringify(email).includes(address))
+        );
+      },
+      {
+        timeout: 15000,
+        message: `waiting for email(s) delivered to ${addresses.join(', ')}`
+      }
+    )
+    .toBe(true);
+};
+
 type ApiLifeCycleStates = "Brouillon" | "Publiée" | "Dépréciée" | "Bloquée"
 
 
@@ -183,6 +206,7 @@ test('Mail has been received by admin for Api deprecated', async ({ page }) => {
   await loginAs(MICHAEL, page);
   await passAPIToPublished({ page }, 'Commande')
   await passAPIToDeprecated({ page }, 'Commande')
+  await waitForEmailTo(page, 'jim.halpert@dundermifflin.com')
   const context = page.context();
   const pageMail = await context.newPage();
   await pageMail.goto("http://localhost:1080")
@@ -196,9 +220,11 @@ test('Mail has been received by whole team for Api deprecated', async ({ page })
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await passAPIToDeprecated({ page }, 'papier')
+  await waitForEmailTo(page, 'dwight.schrute@dundermifflin.com', 'jim.halpert@dundermifflin.com')
   const context = page.context();
   const pageMail = await context.newPage();
-  await pageMail.goto("http://localhost:1080")
+  await pageMail.goto("http://localhost:1080");
+
   await pageMail.locator('div').filter({ hasText: /^dwight\.schrute@dundermifflin\.com$/ }).click();
   await expect(pageMail.getByText('Bonjour Dwight Schrute, En')).toBeVisible();
   await pageMail.locator('div').filter({ hasText: /^jim\.halpert@dundermifflin\.com$/ }).click();
@@ -210,6 +236,7 @@ test('Mail has been received by admin for API blocked', async ({ page }) => {
   await loginAs(MICHAEL, page);
   await passAPIToPublished({ page }, 'Commande')
   await passAPIToBlocked({ page }, 'Commande')
+  await waitForEmailTo(page, 'jim.halpert@dundermifflin.com')
   const context = page.context();
   const pageMail = await context.newPage();
   await pageMail.goto("http://localhost:1080")
@@ -224,6 +251,7 @@ test('Mail has been received by whole team API blocked', async ({ page }) => {
   await loginAs(MICHAEL, page);
   await passAPIToPublished({ page }, 'papier')
   await passAPIToBlocked({ page }, 'papier')
+  await waitForEmailTo(page, 'dwight.schrute@dundermifflin.com', 'jim.halpert@dundermifflin.com')
   const context = page.context();
   const pageMail = await context.newPage();
   await pageMail.goto("http://localhost:1080")

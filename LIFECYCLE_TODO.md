@@ -137,14 +137,14 @@ Réutiliser `ApiSubscriptionState` comme levier manuel :
    - `daikoku/test/daikoku/ApiLifeCycleSpec.scala`
    - `daikoku/app/services/ApiLifeCycleService.scala` (le vrai est
      `daikoku/app/fr/maif/daikoku/services/ApiLifeCycleService.scala`)
-   - [ ] Fait (dev)
+   - [x] Fait (dev)
    - [ ] Relu & OK (Claude)
 2. **Playwright cassé** — `daikoku/javascript/tests/specs/api_lifecycle.spec.ts` : ~17 assertions
    écrites `expect(...).toBeVisible;` (accès propriété, `()` manquants) → **no-op, n'assertent rien**
    (l.68, 82, 85, 113, 123, 130, 132, 157, 192-239 ; certaines `;;`). Corriger en `.toBeVisible()`.
    Corriger aussi le titre typo/dupliqué l.252 (« pass vdvto Blocked ») et le vocabulaire « Draft »
    (aucun état `draft` dans `ApiState`).
-   - [ ] Fait (dev)
+   - [x] Fait (dev)
    - [ ] Relu & OK (Claude)
 3. **Tests Scala** : dans `daikoku/test/fr/maif/daikoku/usages/ApiLifeCycleSpec.scala`, décommenter /
    écrire le cas `"when blocking aggregated ApiKey"` (l.293) — **le porter sur le modèle keyring** :

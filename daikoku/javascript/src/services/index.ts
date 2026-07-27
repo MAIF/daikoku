@@ -1806,13 +1806,7 @@ export const graphql = {
               api {
                 _id
                 name
-                currentVersion   
-              }
-              subscription {
-                customName
-                apiKey {
-                  clientId
-                }
+                currentVersion
               }
             }
             ... on ApiAccess {

@@ -410,7 +410,12 @@ test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, 
   await expect(page.locator('tbody')).toContainText('daikoku-api-key-api-commande-prod-logistique-1737463823426-1.0.0');
   await expect(page.locator('tbody')).toContainText(oldName);
 
-  await page.getByRole('row', { name: 'commande-prod' }).getByRole('button', { name: 'Mettre à jour les métadonnées' }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
+
+  await page.getByRole('row', { name: 'commande-prod' })
+    .getByRole('button', { name: 'Mettre à jour les métadonnées' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('logistique-commande-dev');
   await page.getByRole('button', { name: 'Mettre à jour', exact: true }).click();
   await expect(page.locator('tbody')).toContainText('logistique-commande-dev');
@@ -427,7 +432,7 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
 
   await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
   await page.getByRole('row', { name: 'api-commande-prod-logistique' })
-    .getByLabel('Actions de la souscription').click();
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('row', { name: 'api-commande-prod-logistique' })
     .getByRole('button', { name: 'Désactiver la souscription' }).click();
   await expect(page.getByRole('row', { name: 'api-commande-prod-logistique' }))
@@ -447,6 +452,9 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
   await page.getByText('Souscriptions', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('row', { name: 'api-commande-prod' })
     .getByRole('button', { name: 'Supprimer la souscription' })
     .click();

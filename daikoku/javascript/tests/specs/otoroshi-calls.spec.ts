@@ -141,11 +141,13 @@ test("Disabling one key from keyring should prevent keyring to call associated r
     status: 200,
   });
   await page.goto("/logistique/settings/apikeys/api-commande/1.0.0");
+
   await page
-    .getByRole("row", { name: "Activé dev API Commande:1.0.0" })
-    .getByLabel("Actions de la souscription")
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
+    .getByRole("button", { name: "Actions de la souscription" })
     .click();
   await page
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
     .getByRole("button", { name: "Désactiver la souscription" })
     .click();
   await expect(page.getByText("Votre souscription a été dé")).toBeVisible();
@@ -164,10 +166,13 @@ test("Disabling one key from keyring should prevent keyring to call associated r
   });
 
   await page
-    .getByRole("row", { name: "Désactivé dev API Commande:1." })
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
     .getByLabel("Actions de la souscription")
     .click();
-  await page.getByRole("button", { name: "Activer la souscription" }).click();
+  await page
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
+    .getByRole("button", { name: "Activer la souscription" })
+    .click();
   await expect(
     page.getByText("Votre souscription a été activée"),
   ).toBeVisible();
@@ -202,10 +207,13 @@ test("Removing one key from keyring should prevent keyring to call associated ro
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
   await page
-    .getByRole("row", { name: "Activé dev API Commande:1.0.0" })
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
     .getByLabel("Actions de la souscription")
     .click();
-  await page.getByRole("button", { name: "Détacher du trousseau" }).click();
+  await page
+    .getByRole("row", { name: "Commande:1.0.0/dev" })
+    .getByRole('button', { name: "Détacher du trousseau" })
+    .click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .fill("API Commande/dev");
@@ -301,13 +309,12 @@ test("Removing a key from keyring should prevent calling associated route with k
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
   await page
-    .getByRole("row", { name: "Activé dev API Commande:1.0.0" })
+    .getByRole("row", { name: "API Commande:1.0.0/dev" })
     .getByLabel("Actions de la souscription")
     .click();
-  await page.getByRole("button", { name: "Détacher du trousseau" }).click();
   await page
-    .getByRole("textbox", { name: "Pour confirmer la suppression" })
-    .click();
+    .getByRole("row", { name: "API Commande:1.0.0/dev" })
+    .getByRole("button", { name: "Détacher du trousseau" }).click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .fill("API Commande/dev");
@@ -359,10 +366,13 @@ test("Deleting a key from keyring should prevent calling associated route with k
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
   await page
-    .getByRole("row", { name: "Activé dev API Commande:1.0.0" })
+    .getByRole("row", { name: "API Commande:1.0.0/dev" })
     .getByLabel("Actions de la souscription")
     .click();
-  await page.getByRole("button", { name: "Supprimer" }).click();
+  await page
+    .getByRole("row", { name: "API Commande:1.0.0/dev" })
+    .getByRole("button", { name: "Supprimer" })
+    .click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .click();
@@ -454,6 +464,8 @@ async function checkOtoroshiCall({
             Authorization: authHeader,
           },
         });
+
+        console.log(await callResult.json())
         return callResult.status;
       },
       {

@@ -43,27 +43,29 @@ class MailService {
         }
       })
 
-    eventualMaybeAdminsWithTeam.map(maybeAdminsWithTeam =>
-      maybeAdminsWithTeam.foreach {
-        case (Some(admin), team) =>
-          implicit val language: String =
-            admin.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
+    eventualMaybeAdminsWithTeam.flatMap(maybeAdminsWithTeam =>
+      Future
+        .sequence(maybeAdminsWithTeam.map {
+          case (Some(admin), team) =>
+            implicit val language: String =
+              admin.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
 
-          for {
-            title <- translator.translate(
-              s"$mailKey.title",
-              tenant,
-              args(team, admin)
-            )
-            body <- translator.translate(
-              s"$mailKey.body",
-              tenant,
-              args(team, admin)
-            )
-            _ <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
-          } yield ()
-        case _ => ().future
-      }
+            for {
+              title <- translator.translate(
+                s"$mailKey.title",
+                tenant,
+                args(team, admin)
+              )
+              body <- translator.translate(
+                s"$mailKey.body",
+                tenant,
+                args(team, admin)
+              )
+              _ <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
+            } yield ()
+          case _ => ().future
+        })
+        .map(_ => ())
     )
   }
 
