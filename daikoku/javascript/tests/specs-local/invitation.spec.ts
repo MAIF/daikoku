@@ -33,10 +33,6 @@ test("[#1073] Inviter un inconnu dans une équipe d'un tenant local privé", asy
       "Content-Type": "application/json"
     },
     body: JSON.stringify([
-      { "op": "replace",
-        "path": "/isPrivate",
-        "value": true
-      },
       {
         "op": "replace",
         "path": "/isPrivate",
