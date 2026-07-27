@@ -372,7 +372,11 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
+  // `state` is derived from `blockedBy` on the backend: 'blocked' as soon as
+  // there is at least one reason ('owner' set by the API producer and/or
+  // 'lifecycle' set when the whole API is blocked), 'active' otherwise.
   state: 'active' | 'blocked';
+  blockedBy: Array<'owner' | 'lifecycle'>;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;

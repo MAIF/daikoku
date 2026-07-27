@@ -453,6 +453,178 @@ class ApiLifeCycleSpec
       )
     }
 
+    // Decoupling of the per-subscription owner block (`Owner`) from the
+    // API-level lifecycle block (`Lifecycle`): deblocking the API removes only
+    // the `Lifecycle` reason, so a subscription the producer blocked by hand
+    // stays blocked through a full block/deblock cycle.
+    "keep an owner-blocked subscription blocked after an API block/deblock cycle" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      // Two plans of the same API pointing to two distinct Otoroshi routes.
+      val planParent = UsagePlan(
+        id = UsagePlanId("parent"),
+        tenant = tenant.id,
+        customName = "parent",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val planChild = UsagePlan(
+        id = UsagePlanId("child"),
+        tenant = tenant.id,
+        customName = "child",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val api = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(planParent.id, planChild.id)
+      )
+
+      // One consumer keyring aggregating the two subscriptions -> one shared
+      // Otoroshi key whose authorizedEntities are the union of the two routes.
+      val keyring = Keyring(
+        id = KeyringId("keyring-lifecycle"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        integrationToken = "test-lifecycle"
+      )
+      val subParent = ApiSubscription(
+        id = ApiSubscriptionId("sub-parent"),
+        tenant = tenant.id,
+        plan = planParent.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+      val subChild = ApiSubscription(
+        id = ApiSubscriptionId("sub-child"),
+        tenant = tenant.id,
+        plan = planChild.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(planParent, planChild),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(subParent, subChild)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val parentRoute = OtoroshiRouteId(parentRouteId)
+      val childRoute = OtoroshiRouteId(childRouteId)
+
+      // Phase 0 — initial sync: the shared key aggregates both routes and is enabled.
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute, childRoute)
+      )
+
+      // Phase 1 — the producer blocks the child subscription individually
+      // (reason Owner): its route is discarded, the key stays enabled.
+      archiveSubscriptionByOwner(adminSession, subChild.id, enabled = false)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute)
+      )
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        blocked = true,
+        routes = Seq(childRoute)
+      )
+
+      // Phase 2 — full lifecycle block (reason Lifecycle added to every sub):
+      // the shared key is disabled.
+      changingAPIState(adminSession, ApiState.Blocked)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = false,
+        routes = Seq(parentRoute, childRoute)
+      )
+
+      // Phase 3 — lifecycle deblock (Blocked -> Deprecated; Blocked -> Published
+      // is forbidden by checkPreviousState): ONLY the Lifecycle reason is removed.
+      // The parent subscription becomes active again, but subChild keeps its
+      // Owner block -> its route stays discarded. This is the crux: the manual
+      // block must survive the block/deblock cycle.
+      changingAPIState(adminSession, ApiState.Deprecated)
+      triggerSyncJob(adminSession)
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        routes = Seq(parentRoute)
+      )
+      checkOtoroshiKeyEnabling(
+        otoroshiApiKey1,
+        enabled = true,
+        blocked = true,
+        routes = Seq(childRoute)
+      )
+    }
+
 //    "when blocking aggregated ApiKey" in {
 //
 //      // TODO: Ecrire un test pour les aggregates

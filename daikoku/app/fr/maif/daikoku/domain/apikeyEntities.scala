@@ -49,6 +49,11 @@ case class ApiSubscriptionRotation(
   }
 }
 
+enum SubscriptionBlockReason(val name: String) {
+  case Lifecycle extends SubscriptionBlockReason("lifecycle")
+  case Owner extends SubscriptionBlockReason("owner")
+}
+
 case class ApiSubscription(
     id: ApiSubscriptionId,
     tenant: TenantId,
@@ -73,8 +78,15 @@ case class ApiSubscription(
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
     ] = None,
-    state: ApiSubscriptionState = ApiSubscriptionState.Active
+    blockedBy: Set[SubscriptionBlockReason] = Set.empty
 ) extends CanJson[ApiSubscription] {
+  // `blockedBy` is the single source of truth for whether a subscription is
+  // blocked. `state` is derived: a subscription is Blocked as soon as it carries
+  // at least one reason (Owner and/or Lifecycle), Active otherwise. Keeping
+  // `state` as a derived value preserves the UI/GraphQL contract with no drift.
+  def state: ApiSubscriptionState =
+    if (blockedBy.isEmpty) ApiSubscriptionState.Active
+    else ApiSubscriptionState.Blocked
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(
       keyring: Keyring,

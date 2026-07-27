@@ -4,7 +4,6 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.ApiSubscriptionState.{Active, Blocked}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
@@ -20,24 +19,49 @@ class ApiLifeCycleService(
     synchronizerJob: OtoroshiSynchronizerJob
 ) {
 
-  private def patchSubscriptions(
-      api: Api,
-      tenant: Tenant,
-      state: ApiSubscriptionState
-  )(implicit ec: ExecutionContext, env: Env): Future[Seq[ApiSubscription]] = {
+  private val lifecycleReason = SubscriptionBlockReason.Lifecycle.name
+
+  // Adds the `Lifecycle` block reason to every subscription of the API. The
+  // existing `blockedBy` array is de-duplicated first (remove then append) so the
+  // operation is idempotent, and an `Owner` reason set by the producer is kept.
+  private def addLifecycleBlock(api: Api, tenant: Tenant)(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): Future[Seq[ApiSubscription]] =
     env.dataStore.apiSubscriptionRepo
       .forTenant(tenant)
       .queryTyped(
         s"""UPDATE api_subscriptions
-       SET content = jsonb_set(content, '{state}', '"${state.name}"')
+       SET content = jsonb_set(
+         content,
+         '{blockedBy}',
+         (COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason')
+           || '["$lifecycleReason"]'::jsonb
+       )
        WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
        RETURNING content;""",
-        Seq(
-          api.id.value,
-          tenant.id.value
-        )
+        Seq(api.id.value, tenant.id.value)
       )
-  }
+
+  // Removes only the `Lifecycle` reason; a subscription individually blocked by
+  // the producer (`Owner`) stays blocked through the deblock.
+  private def removeLifecycleBlock(api: Api, tenant: Tenant)(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): Future[Seq[ApiSubscription]] =
+    env.dataStore.apiSubscriptionRepo
+      .forTenant(tenant)
+      .queryTyped(
+        s"""UPDATE api_subscriptions
+       SET content = jsonb_set(
+         content,
+         '{blockedBy}',
+         COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason'
+       )
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       RETURNING content;""",
+        Seq(api.id.value, tenant.id.value)
+      )
 
   def handleApiLifeCycle(oldApi: Api, newApi: Api, tenant: Tenant, user: User)(
       implicit
@@ -108,7 +132,7 @@ class ApiLifeCycleService(
     for {
       _ <- manageApiDefaultVersion(api)
       subscriptions <- EitherT.right[AppError](
-        patchSubscriptions(api = api, tenant = tenant, state = Blocked)
+        addLifecycleBlock(api = api, tenant = tenant)
       )
       _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
       _ <- notifyBlocking(subscriptions, api, tenant, user)
@@ -122,7 +146,7 @@ class ApiLifeCycleService(
 
     for {
       _ <- EitherT.right[AppError](
-        patchSubscriptions(api = api, tenant = tenant, state = Active)
+        removeLifecycleBlock(api = api, tenant = tenant)
       )
       _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
     } yield ()

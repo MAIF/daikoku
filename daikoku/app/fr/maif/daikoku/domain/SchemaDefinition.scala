@@ -1791,6 +1791,11 @@ object SchemaDefinition {
             "state",
             StringType,
             resolve = _.value.state.name
+          ),
+          Field(
+            "blockedBy",
+            ListType(StringType),
+            resolve = _.value.blockedBy.map(_.name).toSeq
           )
         )
     )

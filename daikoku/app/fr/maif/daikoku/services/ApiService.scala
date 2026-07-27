@@ -10,6 +10,7 @@ import fr.maif.daikoku.controllers.PaymentClient
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
@@ -17,13 +18,7 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  JsonOperationsHelper,
-  OtoroshiClient,
-  Translator,
-  metadataObjectToMap
-}
+import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -551,7 +546,11 @@ class ApiService(
     import cats.implicits.*
 
     val updatedSubscription = if (byOwner)
-      subscription.copy(state = if (enabled) ApiSubscriptionState.Active else ApiSubscriptionState.Blocked)
+      subscription.copy(
+        blockedBy =
+          if (enabled) subscription.blockedBy - Owner
+          else subscription.blockedBy + Owner
+      )
     else
       subscription.copy(enabled = enabled)
 

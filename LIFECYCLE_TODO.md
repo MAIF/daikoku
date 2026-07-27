@@ -138,21 +138,26 @@ Réutiliser `ApiSubscriptionState` comme levier manuel :
    - `daikoku/app/services/ApiLifeCycleService.scala` (le vrai est
      `daikoku/app/fr/maif/daikoku/services/ApiLifeCycleService.scala`)
    - [x] Fait (dev)
-   - [ ] Relu & OK (Claude)
+   - [x] Relu & OK (Claude) — les 2 fichiers sont bien absents de HEAD.
 2. **Playwright cassé** — `daikoku/javascript/tests/specs/api_lifecycle.spec.ts` : ~17 assertions
    écrites `expect(...).toBeVisible;` (accès propriété, `()` manquants) → **no-op, n'assertent rien**
    (l.68, 82, 85, 113, 123, 130, 132, 157, 192-239 ; certaines `;;`). Corriger en `.toBeVisible()`.
    Corriger aussi le titre typo/dupliqué l.252 (« pass vdvto Blocked ») et le vocabulaire « Draft »
    (aucun état `draft` dans `ApiState`).
    - [x] Fait (dev)
-   - [ ] Relu & OK (Claude)
+   - [x] Relu & OK (Claude) — 0 assertion cassée restante, 17 `toBeVisible()` réels, typo corrigé.
+     Note : « Draft » subsiste comme surnom UI de l'état `Created` (cosmétique, pas un bug).
 3. **Tests Scala** : dans `daikoku/test/fr/maif/daikoku/usages/ApiLifeCycleSpec.scala`, décommenter /
    écrire le cas `"when blocking aggregated ApiKey"` (l.293) — **le porter sur le modèle keyring** :
    vérifier que bloquer une API discard bien la contribution au keyring partagé sans supprimer la
    souscription, et que le déblocage la restaure (rollback). Ajouter un test du toggle par souscription
    (section D) et de son autorisation.
-   - [ ] Fait (dev)
-   - [ ] Relu & OK (Claude)
+   - [x] Fait (dev) — couvert par de NOUVEAUX cas dans `ApiLifeCycleSpec.scala`, plus complets que
+     demandé : « discard blocked subscriptions from a shared keyring key… » (l.286), toggle réservé
+     aux éditeurs producteurs (l.779), consommateur ne peut pas ré-activer une sub bloquée par le
+     producteur (l.868), keyring partagé reste vivant pour les autres API (l.952).
+   - [x] Relu & OK (Claude) — reste juste à **supprimer** le vieux bloc commenté
+     `// "when blocking aggregated ApiKey" in {` (l.456), désormais mort (remplacé par l.286/952).
 4. **`TEST_COVERAGE.md`** : mettre à jour les lignes deprecation/lifecycle (§3, §4, §5) et référencer
    `ApiLifeCycleService` / `ApiLifeCycleSpec`.
    - [ ] Fait (dev)

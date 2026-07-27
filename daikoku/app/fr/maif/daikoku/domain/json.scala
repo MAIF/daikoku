@@ -2388,6 +2388,24 @@ object json {
       )
   }
 
+  val SubscriptionBlockReasonFormat = new Format[SubscriptionBlockReason] {
+    override def reads(json: JsValue): JsResult[SubscriptionBlockReason] =
+      json.asOpt[String] match {
+        case Some("lifecycle") => JsSuccess(SubscriptionBlockReason.Lifecycle)
+        case Some("owner")     => JsSuccess(SubscriptionBlockReason.Owner)
+        case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
+        case None      => JsError("Bad SubscriptionBlockReason value")
+      }
+
+    override def writes(o: SubscriptionBlockReason): JsValue = JsString(o.name)
+  }
+
+  val SetSubscriptionBlockReasonFormat: Format[Set[SubscriptionBlockReason]] =
+    Format(
+      Reads.set(using SubscriptionBlockReasonFormat),
+      Writes.set(using SubscriptionBlockReasonFormat)
+    )
+
   val ApiSubscriptionFormat = new Format[ApiSubscription] {
     override def reads(json: JsValue): JsResult[ApiSubscription] =
       Try {
@@ -2434,9 +2452,9 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            state = (json \ "state")
-              .asOpt(using ApiSubscriptionStateFormat)
-              .getOrElse(Active)
+            blockedBy = (json \ "blockedBy")
+              .asOpt(using SetSubscriptionBlockReasonFormat)
+              .getOrElse(Set.empty)
           )
         )
       } recover { case e =>
@@ -2494,7 +2512,8 @@ object json {
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "state" -> o.state.name
+        "state" -> o.state.name,
+        "blockedBy" -> SetSubscriptionBlockReasonFormat.writes(o.blockedBy)
       )
   }
 

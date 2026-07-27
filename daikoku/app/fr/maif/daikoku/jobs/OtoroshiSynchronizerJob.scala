@@ -8,10 +8,10 @@ import cron4s.lib.joda.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.{
-  ApiSubscriptionStateFormat,
   ApiSubscriptionyRotationFormat,
   OtoroshiApiKeyFormat,
   OtoroshiTargetFormat,
+  SetSubscriptionBlockReasonFormat,
   TeamFormat
 }
 import fr.maif.daikoku.domain.NotificationAction.{
@@ -116,7 +116,7 @@ case class SubscriptionForSync(
     customMetadata: Option[JsObject],
     metadata: Option[JsObject],
     enabled: Boolean,
-    state: ApiSubscriptionState,
+    blockedBy: Set[SubscriptionBlockReason],
     rotation: Option[ApiSubscriptionRotation],
     validUntil: Option[DateTime],
     customMaxPerSecond: Option[Long],
@@ -124,16 +124,16 @@ case class SubscriptionForSync(
     customMaxPerMonth: Option[Long],
     customReadOnly: Option[Boolean]
 ) {
-  def isActive: Boolean = enabled && state == ApiSubscriptionState.Active
+  def isActive: Boolean = enabled && blockedBy.isEmpty
 }
 object SubscriptionForSync {
   def readFromJson(json: JsValue): SubscriptionForSync = SubscriptionForSync(
     customMetadata = (json \ "customMetadata").asOpt[JsObject],
     metadata = (json \ "metadata").asOpt[JsObject],
     enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-    state = (json \ "state")
-      .asOpt(using ApiSubscriptionStateFormat)
-      .getOrElse(ApiSubscriptionState.Active),
+    blockedBy = (json \ "blockedBy")
+      .asOpt(using SetSubscriptionBlockReasonFormat)
+      .getOrElse(Set.empty),
     rotation = (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
     validUntil = (json \ "validUntil").asOpt[Long].map(l => new DateTime(l)),
     customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
@@ -449,7 +449,7 @@ class OtoroshiSynchronizerJob(
        |  'customMetadata', $alias.content -> 'customMetadata',
        |  'metadata', $alias.content -> 'metadata',
        |  'enabled', $alias.content -> 'enabled',
-       |  'state', $alias.content -> 'state',
+       |  'blockedBy', $alias.content -> 'blockedBy',
        |  'rotation', $alias.content -> 'rotation',
        |  'validUntil', $alias.content -> 'validUntil',
        |  'team', $alias.content -> 'team',
