@@ -1524,6 +1524,45 @@ export const graphql = {
               groups
               routes
             }
+            apikeyCustomization {
+              tags
+              metadata
+              readOnly
+              clientIdOnly
+              constrainedServicesOnly
+              customMetadata {
+                key
+                possibleValues
+              }
+              restrictions {
+                enabled
+                allowLast
+                forbidden {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                notFound {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                allowed {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+              }
+            }
           }
           paymentSettings {
             thirdPartyPaymentSettingsId
