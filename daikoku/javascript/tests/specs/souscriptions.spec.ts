@@ -337,11 +337,12 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
   await page.getByText('Vendeurs').click();
   await page.locator('.react-form-select__input-container').click();
-  await page.getByRole('option', { name: 'daikoku-api-key-api-papier-' }).click();
+  await page.getByRole('option', { name: 'dev (API papier)' }).click();
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByText('La demande de clé d\'API au').click();
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.locator('.lucide.lucide-x').click();
 
   await logout(page);
@@ -371,7 +372,7 @@ test('Selection de plans limitée', async ({ page, context }) => {
 
   await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').check();
   await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').check();
-  await expect(page.getByRole('article', { name: 'preprod' }).getByRole('checkbox')).toBeDisabled();
+  await expect(page.getByRole('article', { name: 'dev' }).getByRole('checkbox')).toBeDisabled();
   await expect(page.getByText('2 lignes sélectionnées')).toBeVisible();
 
   await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').uncheck();
@@ -380,7 +381,7 @@ test('Selection de plans limitée', async ({ page, context }) => {
 
   await expect(page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox')).toBeDisabled();
   await expect(page.getByRole('article', { name: 'preprod' }).getByRole('checkbox')).toBeDisabled();
-  await expect(page.getByText('1 lignes sélectionnées')).toBeVisible();
+  await expect(page.getByText('1 ligne sélectionnée')).toBeVisible();
 });
 
 

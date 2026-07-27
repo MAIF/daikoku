@@ -11,7 +11,7 @@ import {
   otoroshiAdminApikeySecret,
 } from "./utils";
 import { MICHAEL } from "./users";
-import otoroshi_data from "../config/otoroshi/otoroshi-state.json";
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 
 test.beforeEach(async ({ context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
