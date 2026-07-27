@@ -1790,5 +1790,6 @@
   "oauth2.form.admin.role.label": "Admin role",
   "oauth2.form.admin.role.help": "Role value that grants Daikoku administrator access.",
   "oauth2.form.user.role.label": "User role (optional)",
-  "oauth2.form.user.role.help": "Role value that grants standard user access. If set, users without admin or user role will not be able to log in."
+  "oauth2.form.user.role.help": "Role value that grants standard user access. If set, users without admin or user role will not be able to log in.",
+  "Creating subscription requests": "Creating subscription requests"
 }

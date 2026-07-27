@@ -45,7 +45,8 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing
+  renderPricing,
+  Spinner
 } from '../../utils';
 import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import { DynamicTable, FetchData, FetchResult } from "../../inputs";
@@ -1913,38 +1914,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     ] as ColumnDef<IUsagePlanGQL, any>[]
   }, [])
 
-  const displayResponseForSavingApikey = (promises) => {
-    Promise.all(promises).then((results) => {
-      const alteredApiKeys = results.filter((r) => r !== undefined && r !== null);
-      openRightPanel({
-        title: translate('api.pricing.created.subscription.panel.title'),
-        content: (
-          <div>
-            {alteredApiKeys.map((alteredApiKey) => {
-              if (alteredApiKey.status === 'waiting') {
-                return (
-                  <div key={alteredApiKey.teamName}>
-                    {translate({ key: 'subscription.plan.waiting', replacements: [alteredApiKey.plan.customName, alteredApiKey.teamName] })}
-                  </div>
-                );
-              } else {
-                return (
-                  <SimpleApiKeyCard
-                    key={alteredApiKey.subscription._id}
-                    api={alteredApiKey.api}
-                    plan={alteredApiKey.plan}
-                    apiTeam={alteredApiKey.apiTeam}
-                    subscription={alteredApiKey.subscription}
-                  />
-                );
-              }
-            })}
-          </div>
-        )
-      });
-    });
-  }
-
   return (
     <>
       <DynamicTable<IUsagePlanGQL>
@@ -2040,6 +2009,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                             if (formStep) {
                               openFormModal({
                                 title: translate('motivations.modal.title'),
+                                noClose: true,
                                 schema: formStep.schema,
                                 actionLabel: translate('Send'),
                                 description: formStep.info ?
@@ -2048,6 +2018,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                   const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
                                     const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                     const sub = subscriptions.find((sub) => sub._id === subscriptionId);
+                                    openCustomModal({
+                                      title: translate("Creating subscription requests"),
+                                      content: <Spinner/>
+                                    })
                                     return props.askForApikeys({
                                       team: teamId,
                                       plan: convertIUsagePlanGQLToIUsagePlan(plan),
@@ -2055,7 +2029,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                       motivation
                                     });
                                   });
-                                  displayResponseForSavingApikey(promises)
+                                  Promise.all(promises).finally(() => close())
                                 }
                               })
                             } else {
@@ -2066,8 +2040,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                   return props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub })
                                 }
                               )
-                              displayResponseForSavingApikey(promises)
-                              close()
+                              openCustomModal({
+                                      title: translate("Creating subscription requests"),
+                                      content: <Spinner/>
+                                    })
+                              Promise.all(promises).finally(() => close())
                             }
                           }
                           ,
