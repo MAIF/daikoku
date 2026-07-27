@@ -25,6 +25,9 @@ type TGlobalContext = IStateContext & {
   customGraphQLClient: GraphQLClient
 };
 const initContext: TGlobalContext = {
+  flags: {
+    multiPlanSubscriptionEnabled: false
+  },
   connectedUser: {
     _id: '',
     _humanReadableId: '',

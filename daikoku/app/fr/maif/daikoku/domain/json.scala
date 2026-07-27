@@ -11,7 +11,7 @@ import fr.maif.daikoku.domain.TeamPermission.*
 import fr.maif.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
-import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.env.{DaikokuFlags, Env}
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.StringImplicits.*
@@ -5178,5 +5178,24 @@ object json {
       Reads.seq(using TeamAuthorizedEntitiesFormat),
       Writes.seq(using TeamAuthorizedEntitiesFormat)
     )
+
+  val FlagsFormat = new Format[DaikokuFlags] {
+    override def reads(json: JsValue): JsResult[DaikokuFlags] =
+      Try {
+        DaikokuFlags(
+          multiPlanSubscriptionEnabled = (json \ "multiPlanSubscriptionEnabled").as[Boolean]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: DaikokuFlags): JsValue =
+      Json.obj(
+        "multiPlanSubscriptionEnabled" -> o.multiPlanSubscriptionEnabled
+      )
+  }
 
 }

@@ -3,16 +3,11 @@ package fr.maif.daikoku.controllers
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import fr.maif.daikoku.BuildInfo
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuUnauthenticatedAction,
-  DaikokuUnauthenticatedActionContext
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction, DaikokuUnauthenticatedActionContext}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.TenantAdminOnly
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.json.CmsRequestRenderingFormat
+import fr.maif.daikoku.domain.json.{CmsRequestRenderingFormat, FlagsFormat}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.{CmsPage, CmsRequestRendering}
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
@@ -232,6 +227,7 @@ class HomeController(
     DaikokuUnauthenticatedAction.async { ctx =>
       Ok(
         Json.obj(
+          "flags" -> Json.toJson(env.config.flags)(using FlagsFormat),
           "connectedUser" -> ctx.user.map(_.toUiPayload()).getOrElse(JsNull),
           "impersonator" -> ctx.session
             .map(_.impersonatorJson())

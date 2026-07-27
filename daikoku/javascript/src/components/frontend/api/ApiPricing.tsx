@@ -890,11 +890,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
     closeRightPanel,
     openRightPanel,
     openApiSelectModal,
-    confirm
+    confirm,
   } = useContext(ModalContext);
-  const { connectedUser, tenant, customGraphQLClient } = useContext(GlobalContext);
+  const { connectedUser, tenant, customGraphQLClient, flags: {
+    multiPlanSubscriptionEnabled
+  } } = useContext(GlobalContext);
 
   const [rowSelection, setRowSelection] = useState<{ [planId: string]: boolean }>({});
+  const hasSelectedRow = Object.values(rowSelection).includes(true)
 
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
     // TODO Vérifier qu'il reste au moins une équipe pour laquelle on a le droit de demander une clé (si le plan n'autorise pas plusieurs souscriptions / équipe)
@@ -1331,8 +1334,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const isAccepted = !allPossibleTeams.length;
 
-  let pricing = renderPricing(plan, translate);
-
   const otoroshiTargetIsDefined =
     !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
   const otoroshiEntitiesIsDefined =
@@ -1663,6 +1664,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
     return [
       columnHelper.display({
+        meta: {
+          hidden: !multiPlanSubscriptionEnabled
+        },
         id: 'select',
         header: ({ table }) => (
           <input
@@ -1957,7 +1961,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         dataClassName="api-table table-rows"
         countLabelKey="Plan"
         isRowSelectable={isPlanSelectable}
-        enableRowSelection={true}
+        enableRowSelection={hasSelectedRow}
         rowSelection={rowSelection}
         setRowSelection={setRowSelection}
         bulkActions={[

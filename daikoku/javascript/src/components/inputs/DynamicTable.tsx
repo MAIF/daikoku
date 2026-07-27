@@ -33,6 +33,7 @@ type DynamicTableColumnMeta = {
   title?: string;
   /** Relative width (in `fr` units) of the column in the CSS grid. Default: 1. */
   size?: number;
+  hidden?: boolean;
 };
 
 type FilterOption = {
@@ -231,8 +232,8 @@ export function DynamicTable<T>({
   countLabelKey,
   tableClassName,
   onSelectionChange,
-  rowSelection: controlledRowSelection,  
-  setRowSelection: controlledSetRowSelection,  
+  rowSelection: controlledRowSelection,
+  setRowSelection: controlledSetRowSelection,
   isRowSelectable
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
@@ -578,7 +579,7 @@ export function DynamicTable<T>({
       .getVisibleLeafColumns()
       .slice(skipFirst ? 1 : 0)
       .map(column => (
-        <div key={column.id} className={column.columnDef.meta?.className}>
+        (column.columnDef.meta?.hidden !== true) && <div key={column.id} className={column.columnDef.meta?.className}>
           {column.columnDef.meta?.title}
         </div>
       ));
@@ -687,6 +688,7 @@ export function DynamicTable<T>({
   // `white-space: nowrap` on rows), so a row with long content gets misaligned.
   const gridTemplateColumns = table
     .getVisibleLeafColumns()
+    .filter(c => c.columnDef.meta?.hidden !== true)
     .map(c => `minmax(0, ${c.columnDef.meta?.size ?? 1}fr)`)
     .join(' ');
 
@@ -732,7 +734,7 @@ export function DynamicTable<T>({
                 <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)}>
                   <article className="table-row" aria-label={getRowAriaLabel?.(row.original)}>
                     {row.getVisibleCells().map(cell => (
-                      <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                      (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </div>
                     ))}
