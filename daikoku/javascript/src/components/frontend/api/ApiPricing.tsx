@@ -883,6 +883,11 @@ const ToggleFormPartButton = (props: ToggleButtonProps) => {
   )
 }
 
+
+function hasProcess(plan: IUsagePlanGQL) {
+  return plan.subscriptionProcess.length > 0
+}
+
 export const ApiPricing = (props: ApiPricingProps) => {
   const {
     openLoginOrRegisterModal,
@@ -909,15 +914,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
     if (selectedPlans.length === 0) return true;
 
 
-    return selectedPlans.some(
+    return !hasProcess(plan) || selectedPlans.every(p => !hasProcess(p)) || selectedPlans.some(
       row => {
         return plan.subscriptionProcessChecksum === row.subscriptionProcessChecksum;
       }
-
     );
   };
 
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
 
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
@@ -1937,13 +1941,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
             onClick: async (plans) => {
               const teamsToDisplay = props.myTeams
                 .map(team => {
-                  // TODO : display impossible team with an explanation
-                  // for instance indicate that a subscription already exist / is pending for a plan
-                  const planWithPayment = plans.filter(plan => {
-                    plan.subscriptionProcess.some(p => p.type === "payment")
-                  });
-                  const isTeamAllowedForPaymentPlan = team.verified;
-
                   const plansNotAllowingMoreSubscriptions = plans.filter(p => {
                     if (p.allowMultipleDemand) {
                       return false;
@@ -1962,10 +1959,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     });
 
                   let disableCauses: Array<string> = []
-
-                  if (planWithPayment.length > 0 && !isTeamAllowedForPaymentPlan) {
-                    disableCauses.push(`Team is not verified, paying plan(s) ${planWithPayment.map((p) => p.customName).join(",")} require verifed team`)
-                  }
 
                   if (props.api.team !== team._id && plansNotAllowingTeam.length > 0) {
                     disableCauses.push(`Plan(s) ${plansNotAllowingTeam.map((p) => p.customName).join(",")} don't allow subscription from team`)
@@ -2005,9 +1998,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         openFormModal({
                           title: translate("apikey_select_modal.title"),
                           onSubmit: (selectedApiKeyByPlanId) => {
-                            const formStep = compatibleSubscriptionsByPlan.at(0)?.plan.subscriptionProcess.find((s) =>
-                              s.type === 'form'
-                            );
+                            const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                             const teamName = props.myTeams.find(t => t._id === teamId)!.name;
                             if (formStep) {
                               openFormModal({
@@ -2021,12 +2012,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                   const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
                                     const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                     const sub = subscriptions.find((sub) => sub._id === subscriptionId);
-
+                                    const hasForm = plan.subscriptionProcess.some(s => s.type === "form")
                                     return {plan, request: props.askForApikeys({
                                       team: teamId,
                                       plan: convertIUsagePlanGQLToIUsagePlan(plan),
                                       apiKey: sub,
-                                      motivation,
+                                      motivation: hasForm ? motivation : undefined,
                                       redirect: false
                                     })};
                                   });
