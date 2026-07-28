@@ -5,10 +5,10 @@ import play.api.libs.json.{JsArray, JsObject, JsValue}
 
 object SubscriptionUtil {
 
-  /** Tri récursif des clés d'objet → deux JSON sémantiquement égaux produisent
-    * la même chaîne, quel que soit l'ordre des clés (important pour Form.schema
-    * qui est un JsObject libre). On NE trie PAS les tableaux : l'ordre des
-    * steps est signifiant.
+  /** Recursive sorting of object keys → two semantically equal JSON values
+    * produce the same string, regardless of key order (important for
+    * Form.schema which is a free-form JsObject). Arrays are NOT sorted: the
+    * order of steps is significant.
     */
   private def canonical(js: JsValue): JsValue = js match {
     case JsObject(fields) =>
@@ -19,10 +19,10 @@ object SubscriptionUtil {
     case other           => other
   }
 
-  /** Champs qui ne changent pas le *sens* d'un step :
-    *   - `id` : token aléatoire
-    *   - `title` : purement cosmétique (à retirer du set si tu veux que deux
-    *     flows au libellé différent soient considérés distincts)
+  /** Fields that don't change the *meaning* of a step:
+    *   - `id`: random token
+    *   - `title`: purely cosmetic (remove it from the set if you want two flows
+    *     with different labels to be considered distinct)
     */
   private val ignoredKeys = Set("id", "title")
 
