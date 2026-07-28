@@ -77,7 +77,6 @@ class RemoteCatalogEngine(
       email = "",
       lastTenant = None,
       defaultLanguage = None,
-      personalToken = None,
       isGuest = true
     )
 
