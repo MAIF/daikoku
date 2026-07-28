@@ -387,6 +387,8 @@ class TeamAdminApiController(
 
   override def entityName: String = "team"
 
+  override def readMetadata(e: Team): Map[String, String] = e.metadata
+
   override def pathRoot: String = s"/admin-api/${entityName}s"
 
   override def entityStore(tenant: Tenant, ds: DataStore): Repo[Team, TeamId] =
@@ -443,6 +445,23 @@ class ApiAdminApiController(
 ) extends AdminApiController[Api, ApiId](daa, env, cc) {
   override def entityClass = classOf[Api]
   override def entityName: String = "api"
+
+  override def readMetadata(e: Api): Map[String, String] = e.metadata
+
+  override def reconcileMerge(existing: Api, incoming: Api): Api =
+    incoming.copy(
+      createdAt = existing.createdAt,
+      lastUpdate = existing.lastUpdate,
+      documentation =
+        if (incoming.documentation.pages.isEmpty) existing.documentation
+        else incoming.documentation,
+      posts = existing.posts,
+      issues = existing.issues,
+      issuesTags = existing.issuesTags,
+      stars = existing.stars
+    )
+
+
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant, ds: DataStore): Repo[Api, ApiId] =
     ds.apiRepo.forTenant(tenant)
@@ -598,6 +617,10 @@ class ApiSubscriptionAdminApiController(
     ) {
   override def entityClass = classOf[ApiSubscription]
   override def entityName: String = "api-subscription"
+
+  override def readMetadata(e: ApiSubscription): Map[String, String] =
+    e.metadata.flatMap(_.asOpt[Map[String, String]]).getOrElse(Map.empty)
+
   override def pathRoot: String = s"/admin-api/subscriptions"
   override def entityStore(
       tenant: Tenant,
@@ -987,6 +1010,9 @@ class CmsPagesAdminApiController(
 ) extends AdminApiController[CmsPage, CmsPageId](daa, env, cc) {
   override def entityClass = classOf[CmsPage]
   override def entityName: String = "cms-page"
+
+  override def readMetadata(e: CmsPage): Map[String, String] = e.metadata
+
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(
       tenant: Tenant,
@@ -1080,6 +1106,9 @@ class UsagePlansAdminApiController(
 ) extends AdminApiController[UsagePlan, UsagePlanId](daa, env, cc) {
   override def entityClass = classOf[UsagePlan]
   override def entityName: String = "usage-plan"
+
+  override def readMetadata(e: UsagePlan): Map[String, String] = e.metadata
+
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(
       tenant: Tenant,

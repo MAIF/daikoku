@@ -1463,8 +1463,9 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
-            lastModificationAt =
-              (json \ "lastModificationAt").as(using DateTimeFormat),
+            lastModificationAt = (json \ "lastModificationAt")
+              .asOpt(using DateTimeFormat)
+              .getOrElse(DateTime.now()),
             content = (json \ "content").asOpt[String].getOrElse(""),
             cmsPage = (json \ "cmsPage").asOpt[String],
             remoteContentEnabled =
@@ -1843,7 +1844,10 @@ object json {
               (json \ "defaultAuthorizedOtoroshiEntities")
                 .asOpt(using SeqTeamAuthorizedEntitiesFormat),
             teamCreationSecurity =
-              (json \ "teamCreationSecurity").asOpt[Boolean]
+              (json \ "teamCreationSecurity").asOpt[Boolean],
+            remoteCatalogs = (json \ "remoteCatalogs")
+              .asOpt(using SeqRemoteCatalogFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover { case e: Throwable =>
@@ -1928,7 +1932,8 @@ object json {
         "teamCreationSecurity" -> o.teamCreationSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
-          .as[JsValue]
+          .as[JsValue],
+        "remoteCatalogs" -> SeqRemoteCatalogFormat.writes(o.remoteCatalogs)
       )
   }
 
@@ -2212,14 +2217,17 @@ object json {
   val ApiFormat = new Format[Api] {
     override def reads(json: JsValue): JsResult[Api] = {
       Try {
+        val tenantId = (json \ "_tenant").as(using TenantIdFormat)
         JsSuccess(
           Api(
             id = (json \ "_id").as(using ApiIdFormat),
-            tenant = (json \ "_tenant").as(using TenantIdFormat),
+            tenant = tenantId,
             team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
-            lastUpdate = (json \ "lastUpdate").as(using DateTimeFormat),
+            lastUpdate = (json \ "lastUpdate")
+              .asOpt(using DateTimeFormat)
+              .getOrElse(DateTime.now()),
             createdAt = (json \ "createdAt")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
@@ -2230,14 +2238,24 @@ object json {
             descriptionCmsPage = (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
             image = (json \ "image").asOpt[String],
-            currentVersion = (json \ "currentVersion").as(using VersionFormat),
+            currentVersion = (json \ "currentVersion")
+              .asOpt(using VersionFormat)
+              .getOrElse(Version("1.0.0")),
             supportedVersions = (json \ "supportedVersions")
               .asOpt(using SeqVersionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
             testing = (json \ "testing").asOpt(using TestingFormat),
             documentation = (json \ "documentation")
-              .as(using ApiDocumentationFormat),
+              .asOpt(using ApiDocumentationFormat)
+              .getOrElse(
+                ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = tenantId,
+                  pages = Seq.empty,
+                  lastModificationAt = DateTime.now()
+                )
+              ),
             swagger = (json \ "swagger").asOpt(using SwaggerAccessFormat),
             tags = (json \ "tags")
               .asOpt[Seq[String]]
@@ -2247,9 +2265,12 @@ object json {
               .asOpt[Seq[String]]
               .map(_.toSet)
               .getOrElse(Set.empty),
-            visibility = (json \ "visibility").as(using ApiVisibilityFormat),
+            visibility = (json \ "visibility")
+              .asOpt(using ApiVisibilityFormat)
+              .getOrElse(ApiVisibility.Public),
             possibleUsagePlans = (json \ "possibleUsagePlans")
-              .as(using SeqUsagePlanIdFormat),
+              .asOpt(using SeqUsagePlanIdFormat)
+              .getOrElse(Seq.empty),
             defaultUsagePlan =
               (json \ "defaultUsagePlan").asOpt(using UsagePlanIdFormat),
             authorizedTeams = (json \ "authorizedTeams")
@@ -2268,7 +2289,9 @@ object json {
             parent = (json \ "parent").asOpt(using ApiIdFormat),
             isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false),
             apis = (json \ "apis").asOpt(using SetApiIdFormat),
-            state = (json \ "state").as(using ApiStateFormat),
+            state = (json \ "state")
+              .asOpt(using ApiStateFormat)
+              .getOrElse(ApiState.Created),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty)
@@ -5251,6 +5274,107 @@ object json {
     Format(
       Reads.seq(using TeamAuthorizedEntitiesFormat),
       Writes.seq(using TeamAuthorizedEntitiesFormat)
+    )
+
+  val RemoteCatalogSourceFormat = new Format[RemoteCatalogSource] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogSource] =
+      Try {
+        JsSuccess(
+          RemoteCatalogSource(
+            kind = (json \ "kind").asOpt[String].getOrElse("http"),
+            config = (json \ "config").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogSource): JsValue =
+      Json.obj(
+        "kind" -> o.kind,
+        "config" -> o.config
+      )
+  }
+
+  val RemoteCatalogSchedulingFormat = new Format[RemoteCatalogScheduling] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogScheduling] =
+      Try {
+        JsSuccess(
+          RemoteCatalogScheduling(
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
+            mode = (json \ "mode")
+              .asOpt[String]
+              .flatMap(SchedulingMode.fromValue)
+              .getOrElse(SchedulingMode.Interval),
+            interval = (json \ "interval")
+              .asOpt[Long]
+              .map(v => FiniteDuration(v, TimeUnit.MILLISECONDS)),
+            cronExpression = (json \ "cronExpression").asOpt[String],
+            deployArgs =
+              (json \ "deployArgs").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogScheduling): JsValue =
+      Json.obj(
+        "enabled" -> o.enabled,
+        "mode" -> o.mode.value,
+        "interval" -> o.interval
+          .map(_.toMillis)
+          .map(v => JsNumber(BigDecimal(v)))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "cronExpression" -> o.cronExpression
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "deployArgs" -> o.deployArgs
+      )
+  }
+
+  val RemoteCatalogFormat = new Format[RemoteCatalog] {
+    override def reads(json: JsValue): JsResult[RemoteCatalog] =
+      Try {
+        JsSuccess(
+          RemoteCatalog(
+            id = (json \ "id").as[String],
+            name = (json \ "name").as[String],
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            source = (json \ "source")
+              .asOpt(using RemoteCatalogSourceFormat)
+              .getOrElse(RemoteCatalogSource()),
+            scheduling = (json \ "scheduling")
+              .asOpt(using RemoteCatalogSchedulingFormat)
+              .getOrElse(RemoteCatalogScheduling()),
+            allowedKinds =
+              (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
+            testDeployArgs =
+              (json \ "testDeployArgs").asOpt[JsObject].getOrElse(Json.obj())
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalog): JsValue =
+      Json.obj(
+        "id" -> o.id,
+        "name" -> o.name,
+        "enabled" -> o.enabled,
+        "source" -> RemoteCatalogSourceFormat.writes(o.source),
+        "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
+        "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
+        "testDeployArgs" -> o.testDeployArgs
+      )
+  }
+
+  val SeqRemoteCatalogFormat =
+    Format(
+      Reads.seq(using RemoteCatalogFormat),
+      Writes.seq(using RemoteCatalogFormat)
     )
 
 }

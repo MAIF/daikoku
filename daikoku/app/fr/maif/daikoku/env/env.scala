@@ -530,6 +530,11 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Cron)
 
+  lazy val remoteCatalogInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.remoteCatalog.interval")
+    .map(v => v.millis)
+    .getOrElse(1.minute)
+
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
     .getOrElse("secret")

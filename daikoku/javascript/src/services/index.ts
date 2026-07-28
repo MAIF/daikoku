@@ -2514,3 +2514,14 @@ export const fetchOAuthConfiguration = (
     body: JSON.stringify({ url, clientId, clientSecret }),
   });
 };
+
+export const getRemoteCatalogConfig = (tenantId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_config`);
+export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
+export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_deploy`, { method: 'POST' });
+export const testRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_test`, { method: 'POST' });
+export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, { method: 'POST' });
