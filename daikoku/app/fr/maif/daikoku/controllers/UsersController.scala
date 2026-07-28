@@ -42,13 +42,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import javax.imageio.ImageIO
 
 class UsersController(
-                       DaikokuAction: DaikokuAction,
-                       DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                       DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
-                       env: Env,
-                       cc: ControllerComponents,
-                       deletionService: DeletionService
-                     ) extends AbstractController(cc) {
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
+    env: Env,
+    cc: ControllerComponents,
+    deletionService: DeletionService
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -540,7 +540,7 @@ class UsersController(
               case _ =>
                 BadRequest(
                   Json.obj(
-                    "error" -> "You're token is invalid, expired or you are already in the team"
+                    "error" -> "Your token is invalid, expired or you are already in the team"
                   )
                 )
             }
@@ -606,7 +606,7 @@ class UsersController(
           (body \ "newPassword").asOpt[String]
         ) match {
           case (Some(oldPassword), Some(newPassword))
-            if BCrypt.checkpw(oldPassword, ctx.user.password.get) =>
+              if BCrypt.checkpw(oldPassword, ctx.user.password.get) =>
             val updatedUser = ctx.user.copy(
               password = Some(BCrypt.hashpw(newPassword, BCrypt.gensalt()))
             )
