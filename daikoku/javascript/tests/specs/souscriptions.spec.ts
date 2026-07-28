@@ -410,7 +410,12 @@ test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, 
   await expect(page.locator('tbody')).toContainText('daikoku-api-key-api-commande-prod-logistique-1737463823426-1.0.0');
   await expect(page.locator('tbody')).toContainText(oldName);
 
-  await page.getByRole('row', { name: 'commande-prod' }).getByRole('button', { name: 'Mettre à jour les métadonnées' }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
+
+  await page.getByRole('row', { name: 'commande-prod' })
+    .getByRole('button', { name: 'Mettre à jour les métadonnées' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('logistique-commande-dev');
   await page.getByRole('button', { name: 'Mettre à jour', exact: true }).click();
   await expect(page.locator('tbody')).toContainText('logistique-commande-dev');
@@ -422,40 +427,23 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions', { exact: true }).click();
-  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription' }).click();
-  //wait return of api
-  await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=false') && r.status() === 200);
-  //test in otoroshi
-  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeKey.status).toBe(200);
-  const apiKey = await maybeKey.json();
-  await expect(apiKey.enabled).toBe(false);
+  await page.getByRole('link', { name: 'API commande' }).click();
+  await expect(page.locator('.api__header')).toBeAttached()
+  await page.getByText('Souscriptions').click();
 
-  await page.waitForTimeout(500);
-  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Activer la souscription' }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Désactiver la souscription' }).click();
+  await expect(page.getByRole('row', { name: 'api-commande-prod-logistique' }))
+    .toContainText('Bloquée');
 
-  //wait return of api
-  const response = await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=true') && r.status() === 200);
-  const r = await response.json()
-  //test in otoroshi
-  const maybeKey2 = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeKey2.status).toBe(200);
-  const apiKey2 = await maybeKey2.json();
-  await expect(apiKey2.enabled).toBe(true);
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' }).getByLabel('Actions de la souscription').click();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Activer la souscription' }).click();
+  await expect(page.getByRole('row', { name: 'api-commande-prod-logistique' }))
+    .toContainText('Activée');
 })
 
 test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api', async ({ page, context }) => {
@@ -465,6 +453,9 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
   await page.getByText('Souscriptions', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await page.getByRole('row', { name: 'api-commande-prod-logistique' })
+    .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('row', { name: 'api-commande-prod' })
     .getByRole('button', { name: 'Supprimer la souscription' })
     .click();

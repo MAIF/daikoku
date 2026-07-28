@@ -62,7 +62,7 @@ export const MessagePanel = () => {
       <div className="mb-3 panel__title">
         <h3>{translate('Discuss with an admin')}</h3>
       </div>
-      <div className="d-flex mb-3">
+      <div className="d-flex mb-3 gap-1">
         <input
           className="form-control"
           disabled={loading ? true : undefined}
@@ -74,7 +74,7 @@ export const MessagePanel = () => {
         />
         <button
           disabled={loading ? true : undefined}
-          className="ms-2 btn btn-outline-info"
+          className="btn --primary --icon-only"
           onClick={sendMessage}
         >
           <Send />

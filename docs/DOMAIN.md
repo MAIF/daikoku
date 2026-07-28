@@ -37,6 +37,18 @@ An API published by a producer team. Versioned (`Version`), has an `ApiState`
 (created/published/blocked/deprecated), a visibility (`ApiVisibility`: Public / PublicWithAuth /
 Private), plus documentation, posts and issues.
 
+The `ApiState` follows a guarded lifecycle (transitions enforced by `ApiState.checkPreviousState`):
+
+- **Created** — draft: not listed in the catalog, not subscribable.
+- **Published** — live: listed and subscribable.
+- **Deprecated** — still listed and **still subscribable**; existing keys keep working. Consumers are
+  simply warned (a confirmation prompt before subscribing, plus an optional deprecation
+  notification/mail from the producer) that the API is on its way out.
+- **Blocked** — hidden from the catalog, `401` on the API page, subscribing is refused, and every key
+  derived from its subscriptions is cut (see *API lifecycle & subscription blocking* below).
+
+Only `published`/`deprecated` APIs are surfaced to consumers (`ApiState.publishedJsonFilter`).
+
 ### UsagePlan
 A subscription plan attached to an API. An API has N plans, and it is a **plan** that gets
 subscribed, not the API directly. A plan carries pricing (`BillingDuration`, `Currency`,
@@ -47,6 +59,13 @@ The link between a consumer team and an `(API, plan)`. Since the keyring change,
 **always points to a `Keyring`** (`keyring: KeyringId`) and only holds the values needed to *compute*
 the API key: custom metadata, custom quotas (`customMaxPerSecond/Day/Month`), `customReadOnly`, tags,
 custom name. The technical Otoroshi values no longer live here — they live on the keyring.
+
+It also carries its blocking status as `blockedBy: Set[SubscriptionBlockReason]`, where a reason is
+`Owner` (the API producer blocked this individual subscription) and/or `Lifecycle` (the whole API is
+blocked). The subscription's `state` (`active` / `blocked`) is **derived** from it — blocked as soon
+as `blockedBy` is non-empty — so `blockedBy` is the single source of truth. A subscription
+contributes its rights to the keyring key only when `enabled && blockedBy.isEmpty`, where `enabled`
+is the consumer-side archive toggle and `blockedBy` is the producer/lifecycle side.
 
 ### Keyring
 The entity that actually carries the technical Otoroshi credentials (introduced to replace the old
@@ -71,6 +90,27 @@ subscription accept/reject, Otoroshi sync errors, API key rotation, new posts/is
 
 ### CMS page
 Editable pages of the public portal (`HomeController`, CMS API), tied to the tenant theming.
+
+## API lifecycle & subscription blocking
+
+Blocking is expressed on subscriptions (via `blockedBy`) and reconciled through keyrings; the
+lifecycle service (`ApiLifeCycleService`) never patches Otoroshi keys directly — it mutates
+`blockedBy` and lets `OtoroshiSynchronizerJob` recompute the keys.
+
+- **Blocking an API** (`published`/`deprecated` → `blocked`) adds the `Lifecycle` reason to every
+  subscription of that API, then runs the synchronizer.
+- **Deblocking** (`blocked` → `published`/`deprecated`) removes **only** the `Lifecycle` reason. A
+  subscription the producer had blocked by hand keeps its `Owner` reason and stays blocked — a
+  block/deblock cycle never silently re-enables it.
+- **Blocking a single subscription** (producer action, `PUT .../_archiveByOwner`) toggles the `Owner`
+  reason on that one subscription. It is reserved to editors of the *producing* team and is refused
+  while the whole API is already blocked.
+
+Because a keyring can aggregate subscriptions from **several** APIs, the synchronizer recomputes each
+keyring key from its still-active members only (`enabled && blockedBy.isEmpty`): a shared keyring
+stays alive for the other APIs, and a key whose members are all blocked is **disabled, not deleted**
+— the subscriptions are kept so the block can be rolled back. `KeyringOtoroshiBinding.Internal`
+keyrings have no Otoroshi key to reconcile and are skipped.
 
 ## Otoroshi integration
 

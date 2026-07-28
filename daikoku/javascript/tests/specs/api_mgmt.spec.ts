@@ -43,7 +43,6 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
   await page.locator('input[name="tags\\.1\\.value"]').fill('important');
   //todo: find a way to fill description by playwright
-
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
@@ -83,7 +82,10 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('textbox', { name: 'Saisissez API Betterave pour' }).fill('API Betterave');
+  await page.getByRole('button', { name: 'Confirmation' }).click();
   await expect(page.getByText("API succesfully updated")).toBeVisible();
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await page.getByLabel('Liste des APIs').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
@@ -216,10 +218,6 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
     });
     return res.status;
   }, { timeout: 10000 }).toBe(404);
-});
-
-test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {
-  //todo: wait #800 (https://github.com/MAIF/daikoku/issues/800)
 });
 
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {

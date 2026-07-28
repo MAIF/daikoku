@@ -216,7 +216,7 @@ export const ApiHome = ({
 
     return (
       <main role="main" className='flex-grow-1'>
-        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
+        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} hasSubscriptions={(api.subscriptionCount ?? 0) > 0} />
         <div className="album p-4" style={{ position: 'relative' }}>
           {params.tab === 'description' && <ApiDescription api={api} ownerTeam={ownerTeam} />}
           {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} />)}

@@ -599,7 +599,7 @@ class NotificationControllerSpec()
 //      )
 //      val session = loginWithBlocking(daikokuAdmin, tenant)
 //
-//      val resp = graphQLNotificationCallBlocking(Json.obj(
+//      val resp    = graphQLNotificationCallBlocking(Json.obj(
 //        "filterTable" -> Json.stringify(
 //          Json.arr(
 //            Json.obj("id" -> "unreadOnly", "value" -> true),
@@ -621,7 +621,7 @@ class NotificationControllerSpec()
 //        notifications = Seq(treatedNotification, untreatedNotification)
 //      )
 //      val session = loginWithBlocking(daikokuAdmin, tenant)
-//      val resp = httpJsonCallBlocking(
+//      val resp    = httpJsonCallBlocking(
 //        s"/api/teams/${teamOwnerId.value}/notifications/all"
 //      )(tenant, session)
 //      resp.status mustBe 200
@@ -636,8 +636,8 @@ class NotificationControllerSpec()
 //        apis = Seq(defaultApi.api),
 //        notifications = Seq(treatedNotification, untreatedNotification)
 //      )
-//      val session = loginWithBlocking(daikokuAdmin, tenant)
-//      val resp = httpJsonCallBlocking(
+//      val session               = loginWithBlocking(daikokuAdmin, tenant)
+//      val resp                  = httpJsonCallBlocking(
 //        s"/api/teams/${teamOwnerId.value}/notifications"
 //      )(tenant, session)
 //      resp.status mustBe 200
@@ -1509,7 +1509,7 @@ class NotificationControllerSpec()
         path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(using tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers =
+      val maybeUsers   =
         fr.maif.daikoku.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
@@ -1561,7 +1561,7 @@ class NotificationControllerSpec()
         path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(using tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers =
+      val maybeUsers   =
         fr.maif.daikoku.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
