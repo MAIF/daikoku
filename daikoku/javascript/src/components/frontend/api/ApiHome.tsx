@@ -14,7 +14,6 @@ import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { ApiSubscriptions } from './ApiSubscriptions';
-import { error } from 'node:console';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -151,9 +150,8 @@ export const ApiHome = ({
     const needRedirection = redirect ?? true;
     const myTeams = myTeamsQuery.data || []
     const api = apiQuery.data as IApi
-    const apiTeam = myTeams.find((t) => t._id === team);
 
-    if (api && apiTeam) {
+    if (api) {
       return (
         apiKey
           ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)
