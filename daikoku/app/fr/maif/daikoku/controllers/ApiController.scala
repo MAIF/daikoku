@@ -4560,21 +4560,24 @@ class ApiController(
               )
             case (false, Some(settings)) =>
               plan
+                .ensureFormStep()
+                .addSubscriptionStep(
+                  ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
+                  1.some
+                )
                 .addSubscriptionStep(
                   ValidationStep.Payment(
                     IdGenerator.token(32),
                     settings.thirdPartyPaymentSettingsId
                   )
                 )
+            case (false, None) =>
+              plan
+                .ensureFormStep()
                 .addSubscriptionStep(
                   ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                  0.some
+                  1.some
                 )
-            case (false, None) =>
-              plan.addSubscriptionStep(
-                ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                0.some
-              )
           }
           EitherT.pure[Future, AppError](updatedPlan)
         }
@@ -4738,10 +4741,12 @@ class ApiController(
                       plan.subscriptionProcess.forall(_.name != "teamAdmin")
                   )
                 ) {
-                  plan.addSubscriptionStep(
-                    ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                    0.some
-                  )
+                  plan
+                    .ensureFormStep()
+                    .addSubscriptionStep(
+                      ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
+                      1.some
+                    )
                 } else {
                   plan
                 }

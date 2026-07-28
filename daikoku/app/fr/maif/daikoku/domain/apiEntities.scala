@@ -273,6 +273,11 @@ case class UsagePlan(
       case (_, _) => 0
     }
 
+  def ensureFormStep(): UsagePlan =
+    if (subscriptionProcess.exists(_.name == "form")) this
+    else addSubscriptionStep(
+      ValidationStep.Form(IdGenerator.token(32), title = "Motivation"), 0.some)
+
   def addAutorizedTeam(teamId: TeamId): UsagePlan =
     this.copy(authorizedTeams = authorizedTeams :+ teamId)
   def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
