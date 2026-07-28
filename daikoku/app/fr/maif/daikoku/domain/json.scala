@@ -4,6 +4,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import fr.maif.daikoku.audit.KafkaConfig
 import fr.maif.daikoku.audit.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.daikoku.domain.ApiSubscriptionState.Active
 import fr.maif.daikoku.domain.ApiVisibility.*
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
@@ -89,7 +90,7 @@ object json {
     override def reads(json: JsValue): JsResult[Long] =
       Try {
         val long: Long =
-          ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
+          (json \ "$long").asOpt[Long].getOrElse(json.as[Long])
         JsSuccess(long)
       } recover { case e =>
         JsError(e.getMessage)
@@ -123,7 +124,8 @@ object json {
             clientSecret = (json \ "clientSecret")
               .asOpt[String]
               .getOrElse("admin-api-apikey-secret"),
-            elasticConfig = (json \ "elasticConfig").asOpt(using
+            elasticConfig =
+              (json \ "elasticConfig").asOpt(using
               ElasticAnalyticsConfig.format
             )
           )
@@ -1391,7 +1393,8 @@ object json {
           OtoroshiTarget(
             otoroshiSettings =
               (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
-            authorizedEntities = (json \ "authorizedEntities").asOpt(using
+            authorizedEntities =
+              (json \ "authorizedEntities").asOpt(using
               AuthorizedEntitiesFormat
             ),
             apikeyCustomization = (json \ "apikeyCustomization")
@@ -1636,7 +1639,8 @@ object json {
             ApiDocumentationDetailPage(
               id = (json \ "id").as(using ApiDocumentationPageIdFormat),
               title = (json \ "title").as[String],
-              children = (json \ "children").as(using
+              children =
+                (json \ "children").as(using
                 SeqApiDocumentationDetailPageFormat
               )
             )
@@ -2077,7 +2081,8 @@ object json {
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
-            starredApis = (json \ "starredApis")
+            starredApis =
+              (json \ "starredApis")
               .asOpt(using SetApiIdFormat)
               .getOrElse(Set.empty),
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
@@ -2211,7 +2216,8 @@ object json {
         Try {
           JsSuccess(
             TeamAuthorizedEntities(
-              otoroshiSettingsId = (json \ "otoroshiSettingsId").as(using
+              otoroshiSettingsId =
+                (json \ "otoroshiSettingsId").as(using
                 OtoroshiSettingsIdFormat
               ),
               authorizedEntities =
@@ -2411,6 +2417,24 @@ object json {
       )
   }
 
+  val SubscriptionBlockReasonFormat = new Format[SubscriptionBlockReason] {
+    override def reads(json: JsValue): JsResult[SubscriptionBlockReason] =
+      json.asOpt[String] match {
+        case Some("lifecycle") => JsSuccess(SubscriptionBlockReason.Lifecycle)
+        case Some("owner")     => JsSuccess(SubscriptionBlockReason.Owner)
+        case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
+        case None      => JsError("Bad SubscriptionBlockReason value")
+      }
+
+    override def writes(o: SubscriptionBlockReason): JsValue = JsString(o.name)
+  }
+
+  val SetSubscriptionBlockReasonFormat: Format[Set[SubscriptionBlockReason]] =
+    Format(
+      Reads.set(using SubscriptionBlockReasonFormat),
+      Writes.set(using SubscriptionBlockReasonFormat)
+    )
+
   val ApiSubscriptionFormat = new Format[ApiSubscription] {
     override def reads(json: JsValue): JsResult[ApiSubscription] =
       Try {
@@ -2456,7 +2480,10 @@ object json {
                         .some
                   }
                 case _: JsUndefined => None
-              }
+              },
+            blockedBy = (json \ "blockedBy")
+              .asOpt(using SetSubscriptionBlockReasonFormat)
+              .getOrElse(Set.empty)
           )
         )
       } recover { case e =>
@@ -2513,7 +2540,9 @@ object json {
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "state" -> o.state.name,
+        "blockedBy" -> SetSubscriptionBlockReasonFormat.writes(o.blockedBy)
       )
   }
 
@@ -2670,6 +2699,18 @@ object json {
     override def writes(o: SubscriptionDemandState): JsValue = JsString(o.name)
   }
 
+  val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
+    override def reads(json: JsValue) =
+      json.asOpt[String] match {
+        case None => JsSuccess(ApiSubscriptionState.Active)
+        case Some("blocked") => JsSuccess(ApiSubscriptionState.Blocked)
+        case Some("active")  => JsSuccess(ApiSubscriptionState.Active)
+        case Some(str)          => JsError(s"Bad ApiSubscriptionState value: $str")
+      }
+
+    override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)
+  }
+
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
     override def writes(o: SubscriptionDemand): JsValue =
       Json.obj(
@@ -2804,7 +2845,8 @@ object json {
             deleted = (json \ "_deleted").as[Boolean],
             token = (json \ "token").as[String],
             step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            subscriptionDemand = (json \ "subscriptionDemand").as(using
+            subscriptionDemand =
+              (json \ "subscriptionDemand").as(using
               SubscriptionDemandIdFormat
             ),
             metadata = (json \ "metadata").as[JsObject]
@@ -3033,7 +3075,10 @@ object json {
             ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
-          case str => JsError(s"Bad notification value: $str")
+          case "ApiDepreciationWarning" =>
+            ApiDepreciationWarningFormat.reads(json)
+          case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
+          case str                  => JsError(s"Bad notification value: $str")
         }
 
       override def writes(o: NotificationAction) =
@@ -3144,6 +3189,14 @@ object json {
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
+          case p: ApiDepreciationWarning =>
+            ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiDepreciationWarning"
+            )
+          case p: ApiBlockingWarning =>
+            ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiBlockingWarning"
+            )
         }
     }
 
@@ -3233,6 +3286,46 @@ object json {
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
         "step" -> o.step.asJson
+      )
+  }
+
+  val ApiDepreciationWarningFormat = new Format[ApiDepreciationWarning] {
+    override def reads(json: JsValue): JsResult[ApiDepreciationWarning] =
+      Try {
+        JsSuccess(
+          ApiDepreciationWarning(
+            api = (json \ "api").as(using ApiIdFormat)
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiDepreciationWarning): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson
+      )
+  }
+
+  val ApiBlockingWarningFormat = new Format[ApiBlockingWarning] {
+    override def reads(json: JsValue): JsResult[ApiBlockingWarning] =
+      Try {
+        JsSuccess(
+          ApiBlockingWarning(
+            api = (json \ "api").as(using ApiIdFormat),
+            subscription = (json \ "sub").as(using ApiSubscriptionIdFormat)
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiBlockingWarning): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "sub" -> o.subscription.asJson
       )
   }
 
@@ -3851,7 +3944,8 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(using TeamIdFormat),
             sender = (json \ "sender").as(using NotificationSenderFormat),
-            date = (json \ "date")
+            date =
+              (json \ "date")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
             status = (json \ "status").as(using NotificationStatusFormat),
@@ -4549,14 +4643,14 @@ object json {
                 (json \ "apiSubscription").as(using ApiSubscriptionFormat),
               keyring = (json \ "keyring").asOpt(using KeyringFormat),
               accessibleResources = (json \ "accessibleResources").as(using
-                SeqApiSubscriptionAccessibleResourceFormat
-              )
+              SeqApiSubscriptionAccessibleResourceFormat
             )
           )
-        } recover { case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-        } get
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
 
       override def writes(o: ApiSubscriptionDetail): JsValue =
         Json.obj(
@@ -5017,7 +5111,8 @@ object json {
           plans = (json \ "plans").as(using SeqUsagePlanFormat),
           authorizations =
             (json \ "authorizations").as(using SeqAuthorizationApiFormat),
-          subscriptionDemands = (json \ "subscriptionDemands").as(using
+          subscriptionDemands =
+            (json \ "subscriptionDemands").as(using
             SeqSubscriptionDemandFormat
           ),
           subscriptionCount = (json \ "subscriptionCount").as[Int],

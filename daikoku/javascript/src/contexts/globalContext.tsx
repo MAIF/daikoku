@@ -38,6 +38,7 @@ const initContext: TGlobalContext = {
     starredApis: [],
     twoFactorAuthentication: null,
     name: 'fifou',
+    metadata: []
   },
   tenant: {
     _humanReadableId: 'string',

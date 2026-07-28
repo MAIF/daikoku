@@ -7,6 +7,7 @@ import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
 import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
@@ -17,13 +18,7 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  JsonOperationsHelper,
-  OtoroshiClient,
-  Translator,
-  metadataObjectToMap
-}
+import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -586,11 +581,19 @@ class ApiService(
       tenant: Tenant,
       subscription: ApiSubscription,
       plan: UsagePlan,
-      enabled: Boolean
+      enabled: Boolean,
+      byOwner: Boolean = false
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits.*
 
-    val updatedSubscription = subscription.copy(enabled = enabled)
+    val updatedSubscription = if (byOwner)
+      subscription.copy(
+        blockedBy =
+          if (enabled) subscription.blockedBy - Owner
+          else subscription.blockedBy + Owner
+      )
+    else
+      subscription.copy(enabled = enabled)
 
     plan.otoroshiTarget
       .map(_.otoroshiSettings)
@@ -607,42 +610,10 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
-          _ <-
-            if (!enabled)
-              EitherT.liftF(
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant.id)
-                  .updateManyByQuery(
-                    Json.obj(
-                      "parent" -> subscription.id.asJson
-                    ),
-                    Json.obj(
-                      "$set" -> Json.obj(
-                        "enabled" -> enabled
-                      )
-                    )
-                  )
-              )
-            else EitherT.pure[Future, AppError](0)
-          //          parentSubscription <- subscription.parent match {
-          //            case Some(parentId) =>
-          //              EitherT.fromOptionF(
-          //                env.dataStore.apiSubscriptionRepo
-          //                  .forTenant(tenant)
-          //                  .findById(parentId),
-          //                AppError.EntityNotFound(
-          //                  s"Parent subscription (ID: ${parentId.value})"
-          //                )
-          //              )
-          //            case None => EitherT.pure[Future, AppError](updatedSubscription)
-          //          }
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-          //          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
-          //          _ <- EitherT(otoroshiClient.updateApiKey(apk))
-          _ <-
-            paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
@@ -1961,7 +1932,7 @@ class ApiService(
     import cats.implicits.*
 
     def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
-      if (!api.isPublished) {
+      if (!api.isSubscribable) {
         EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
       } else if (
         api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin
@@ -2267,7 +2238,7 @@ class ApiService(
           .findByIdNotDeleted(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.withTransaction {
           val newNotification = Notification(
             id = NotificationId(IdGenerator.token(32)),
@@ -2332,7 +2303,7 @@ class ApiService(
           .findByIdNotDeleted(api.team),
         AppError.TeamNotFound
       )
-      administrators <- EitherT.liftF(
+      administrators <- EitherT.right[AppError](
         env.dataStore.userRepo
           .find(
             Json.obj(
@@ -2348,7 +2319,7 @@ class ApiService(
             )
           )
       )
-      _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
+      _ <- EitherT.right[AppError](
         Future.sequence((administrators ++ Seq(from)).map(admin => {
           implicit val language: String = admin.defaultLanguage
             .getOrElse(tenant.defaultLanguage.getOrElse("en"))

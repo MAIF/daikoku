@@ -48,6 +48,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import { CmsViewerByPath } from "../CmsViewer";
 import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import { QUERY_KEYS } from "../../../constants/queryKeys";
@@ -350,14 +351,13 @@ const CustomMetadataInput = (props: {
   const { alert } = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: string) => {
-    const oldValue = Option(props.value?.find((x) => x.key === key)).getOrElse({
-      key: '',
-      possibleValues: [],
-    });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== key),
-      { ...oldValue, key, possibleValues },
-    ];
+    const newValues = props.value?.map(v => {
+      if(v.key === key) {
+        return {...v, possibleValues}
+      } else {
+        return v;
+      }
+    }) || [];
     props.onChange?.(newValues);
   };
 
@@ -366,14 +366,14 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
+    const newValues = props.value?.map(v => {
+      if(v.key === oldName) {
+        return {...v, key: e.target.value}
+      } else {
+        return v;
+      }
+    }) || [];
 
-    const oldValue = Option(
-      props.value?.find((x) => x.key === oldName)
-    ).getOrElse({ key: '', possibleValues: [] });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== oldName),
-      { ...oldValue, key: e.target.value },
-    ];
     props.onChange?.(newValues);
   };
 
@@ -407,10 +407,10 @@ const CustomMetadataInput = (props: {
         <div className="col-sm-10">
           <button
             type="button"
-            className="btn btn-outline-info"
+            className="btn --secondary --small --icon-only"
             onClick={(e) => addFirst(e)}
           >
-            <Plus />{' '}
+            <Plus />
           </button>
         </div>
       )}
@@ -450,10 +450,10 @@ const CustomMetadataInput = (props: {
             {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
-                className="input-group-text btn btn-outline-info"
+                className="btn --secondary --small --icon-only"
                 onClick={addNext}
               >
-                <Plus />{' '}
+                <Plus />
               </button>
             )}
           </div>
@@ -528,7 +528,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --secondary'
             type='button'
             onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
               ...props.plan,
@@ -1350,7 +1350,30 @@ export const ApiPricing = (props: ApiPricingProps) => {
       !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
       !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
-  const openTeamSelectorModal = (plan: IUsagePlanGQL) => {
+  const openTeamSelectorModal = () => {
+    const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
+      title: translate({
+        key: 'team.api.state.information.title',
+        replacements:
+          [props.api.name]
+      }),
+      message:
+        <div>
+          <CmsViewerByPath
+            path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
+            fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
+              fallBack={() => <div>{translate({
+                key: 'team.api.state.information.message',
+                replacements:
+                  [props.api.name,
+                  props.api.state]
+              })}</div>} />} />
+        </div>
+    }) : Promise.resolve(true)
+
+    alertAPIStatus
+      .then(ok => {
+        if (ok) {
     openCustomModal({
       title: translate('team.selection.title'),
       content: <TeamSelector
@@ -1367,6 +1390,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
         showKeyringSelectModal={showKeyringSelectModal}
         plan={plan}
       />
+    })
+    }
     })
   }
 
@@ -1800,7 +1825,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               {
                 !connectedUser.isGuest &&
                 (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                props.api.visibility !== 'AdminOnly' &&
+                props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked'
                 (
                   <button
                     type="button"
@@ -1816,6 +1841,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   props.api.visibility === 'AdminOnly') &&
                 (!isAccepted || props.api.visibility === 'AdminOnly') &&
                 isPublish(props.api) &&
+                props.api.state !== "blocked" &&
                 (
                   <Can
                     I={access}
