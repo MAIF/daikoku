@@ -17,6 +17,7 @@ import './style/main.scss';
 
 import 'bootstrap';
 import { Option, ReactFormsProvider } from "@maif/react-forms";
+import { Plus } from "lucide-react";
 
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;
@@ -45,9 +46,9 @@ const reactfromProviderOption: Option = {
   actions: {
     submit: { className: 'btn --primary' },
     cancel: { className: 'btn --secondary' },
-    reset: { className: 'btn --secondary' },
-    add: { className: 'btn --secondary --small' },
-    remove: { className: 'btn --tertiary --small' },
+    reset: { className: 'btn --secondary' }, //@ts-ignore
+    add: { className: 'btn --secondary --small --icon-only', label: <Plus /> },
+    remove: { className: 'btn --tertiary --small --icon-only' },
     addEntry: { className: 'btn --secondary --small --icon-only' },
     removeEntry: { className: 'btn --secondary --small --icon-only' },
     markdownTab: { className: 'btn --secondary --small' },
