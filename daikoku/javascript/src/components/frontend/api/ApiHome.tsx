@@ -14,6 +14,7 @@ import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { ApiSubscriptions } from './ApiSubscriptions';
+import { error } from 'node:console';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -143,10 +144,11 @@ export const ApiHome = ({
     }
   }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
-  const askForApikeys = ({ team, plan, apiKey, motivation }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }
+  const askForApikeys = ({ team, plan, apiKey, motivation, redirect }:
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, redirect?: boolean }
   ) => {
 
+    const needRedirection = redirect ?? true;
     const myTeams = myTeamsQuery.data || []
     const api = apiQuery.data as IApi
     const apiTeam = myTeams.find((t) => t._id === team);
@@ -157,26 +159,28 @@ export const ApiHome = ({
           ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)
           : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
-
         if (isError(result)) {
-          return toast.error(result.error);
+          toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (Services.isCreationDone(result)) {
           toast.success(translate('subscription.created.success'));
           const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
-          if (teamHrId) {
+          if (teamHrId && needRedirection) {
             navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
           }
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
+          toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
         }
-
+        return result;
       })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["mySubscription"] }));
+      .then(result => {
+        queryClient.invalidateQueries({ queryKey: ["mySubscription"] })
+        return result;
+      }).catch(() => ({error: "API key creation failed"}));
     } else {
-      return Promise.reject(false)
+      return Promise.resolve({error: "API key creation failed"})
     }
   };
 

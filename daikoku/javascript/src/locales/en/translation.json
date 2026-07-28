@@ -136,6 +136,9 @@
   "Done": "Done",
   "subscription.plan.accepted": "API key to plan %s for team %s is available",
   "subscription.plan.waiting": "The API key request for %s plan and the team %s is pending acceptance",
+  "subscription.plan.checkout": "The API key request for %s plan and the team %s is pending payment",
+  "subscription.plan.failed": "The API key request for %s plan and the team %s failed",
+  "subscription.plan.pending": "The API key request for %s plan and the team %s is pending",
   "Description": "Description",
   "Plan": {
     "s": "Plan",

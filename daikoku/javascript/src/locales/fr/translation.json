@@ -136,6 +136,9 @@
   "Done": "Terminé",
   "subscription.plan.accepted": "La clé d'API pour le plan %s et l'équipe %s est disponible",
   "subscription.plan.waiting": "La demande de clé d'API au plan %s pour l'équipe %s est en attente de validation",
+  "subscription.plan.checkout": "La demande de clé d'API au plan %s pour l'équipe %s est en attente de paiement",
+  "subscription.plan.failed": "La demande de clé d'API au plan %s pour l'équipe %s a échoué",
+  "subscription.plan.pending": "La demande de clé d'API au plan %s pour l'équipe %s est en cours",
   "Description": "Description",
   "Plan": {
     "s": "Plan",

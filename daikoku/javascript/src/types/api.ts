@@ -3,6 +3,7 @@ import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import {ITenant, ThirdPartyPaymentType} from './tenant';
 import { INotification } from './types';
+import { SubscriptionReturn } from '../services';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
 
@@ -629,7 +630,8 @@ export interface ApiPricingProps {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
-  }) => Promise<void>;
+    redirect?: boolean;
+  }) => Promise<SubscriptionReturn>;
 }
 
 export interface ITeamSelector {

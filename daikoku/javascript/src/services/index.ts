@@ -179,18 +179,22 @@ type CreationWaiting = { creation: 'waiting' };
 type CheckoutUrl = { checkoutUrl: string };
 
 export function isCheckoutUrl(obj: any): obj is CheckoutUrl {
-  return (<CheckoutUrl>obj).checkoutUrl !== undefined;
+  return (<CheckoutUrl>obj)?.checkoutUrl !== undefined;
 }
 
 export function isCreationDone(obj: any): obj is CreationDone {
-  return (<CreationDone>obj).creation === 'done';
+  return (<CreationDone>obj)?.creation === 'done';
 }
 
 export function isCreationWaiting(obj: any): obj is CreationWaiting {
-  return (<CreationWaiting>obj).creation === 'waiting';
+  return (<CreationWaiting>obj)?.creation === 'waiting';
 }
 
-type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
+export function isResponseError(obj: any): obj is ResponseError {
+  return obj && "error" in obj;
+}
+
+export type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
 
 export const askForApiKey = (
   apiId: string,

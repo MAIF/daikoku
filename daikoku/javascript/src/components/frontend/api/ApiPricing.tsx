@@ -4,9 +4,9 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus, ExternalLink } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
+import { SubscriptionReturn } from '../../../services';
 
 type Option = {
   type: 'group' | 'route';
@@ -902,13 +903,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const hasSelectedRow = Object.values(rowSelection).includes(true)
 
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
-    // TODO Vérifier qu'il reste au moins une équipe pour laquelle on a le droit de demander une clé (si le plan n'autorise pas plusieurs souscriptions / équipe)
+    // We don't allow multi subscrption for paying plans for now, since it would
+    // be too complicated to pay for multiple plans at once
+    if(plan.paymentSettings) return false;
     if (selectedPlans.length === 0) return true;
+
 
     return selectedPlans.some(
       row => {
-        // TODO Si un des plans déjà sélectionné et la ligne en cours n'autorise qu'une clé / équipe
-        // On veut vérifier qu'il existe une équipe pouvant encore souscrire aux deux
         return plan.subscriptionProcessChecksum === row.subscriptionProcessChecksum;
       }
 
@@ -1932,7 +1934,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         bulkActions={[
           {
             label: translate('mail.apikey.demand.title'),
-            onClick: async (plans, selectAll, ctx) => {
+            onClick: async (plans) => {
               const teamsToDisplay = props.myTeams
                 .map(team => {
                   // TODO : display impossible team with an explanation
@@ -2006,6 +2008,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                             const formStep = compatibleSubscriptionsByPlan.at(0)?.plan.subscriptionProcess.find((s) =>
                               s.type === 'form'
                             );
+                            const teamName = props.myTeams.find(t => t._id === teamId)!.name;
                             if (formStep) {
                               openFormModal({
                                 title: translate('motivations.modal.title'),
@@ -2018,18 +2021,21 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                   const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
                                     const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                     const sub = subscriptions.find((sub) => sub._id === subscriptionId);
-                                    openCustomModal({
-                                      title: translate("Creating subscription requests"),
-                                      content: <Spinner/>
-                                    })
-                                    return props.askForApikeys({
+
+                                    return {plan, request: props.askForApikeys({
                                       team: teamId,
                                       plan: convertIUsagePlanGQLToIUsagePlan(plan),
                                       apiKey: sub,
-                                      motivation
-                                    });
+                                      motivation,
+                                      redirect: false
+                                    })};
                                   });
-                                  Promise.all(promises).finally(() => close())
+
+                                  openCustomModal({
+                                    title: translate("Creating subscription requests"),
+                                    content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />,
+                                  })
+
                                 }
                               })
                             } else {
@@ -2037,14 +2043,13 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 ({ plan, subscriptions }) => {
                                   const subscriptionId = selectedApiKeyByPlanId[plan._id];
                                   const sub = subscriptions.find((sub) => sub._id === subscriptionId)
-                                  return props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub })
+                                  return {plan, request: props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub, redirect: false })};
                                 }
                               )
                               openCustomModal({
-                                      title: translate("Creating subscription requests"),
-                                      content: <Spinner/>
-                                    })
-                              Promise.all(promises).finally(() => close())
+                                    title: translate("Creating subscription requests"),
+                                    content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />
+                              })
                             }
                           }
                           ,
@@ -2092,7 +2097,50 @@ export const ApiPricing = (props: ApiPricingProps) => {
       />
     </>
   );
-};
+}
+
+function SubscriptionResultForm(props: {close: () => any; url: string, teamName: string, requests: {plan: IUsagePlanGQL, request: Promise<SubscriptionReturn>}[]}) {
+  const { translate } = useContext(I18nContext);
+  const [state, setState] = useState<{planId: string, status?: SubscriptionReturn}[]>(props.requests.map(r => ({planId: r.plan._id})));
+  useEffect(() => {
+    props.requests.forEach(({plan, request}) => {
+      request.then(response => {
+        const currentState = state.find(({planId}) => planId === plan._id);
+        if(currentState?.status !== response) {
+          setState(oldState => oldState.map(s => {
+            if(s.planId === plan._id) {
+              return {...s, status: response}
+            } else {
+              return s
+            }
+          }))
+        }
+      })
+    })
+  }, []);
+
+  return <ul>{props.requests.map(({plan}) => {
+    const currentStatus = state.find(({planId}) => planId === plan._id)?.status;
+    let statusDisplay: ReactNode = <>{translate({key: "subscription.plan.pending", replacements: [plan.customName, props.teamName]})} ⏳</>;
+    if(Services.isCreationDone(currentStatus)) {
+      const link = <Link
+                  to={props.url}
+                  className="btn --secondary --small --icon-only"
+                  title={translate("apikeys.view.api")}
+                  aria-label={translate("apikeys.view.api")}
+                  onClick={_ => props?.close()}
+                >
+                  <ExternalLink />
+                </Link>
+      statusDisplay = <>{translate({key: "subscription.plan.accepted", replacements: [plan.customName, props.teamName]})} ✅ {link}</>
+    } else if(Services.isCreationWaiting(currentStatus)) {
+      statusDisplay = <>{translate({key: "subscription.plan.waiting", replacements: [plan.customName, props.teamName]})} ✅</>
+    } else if(Services.isResponseError(currentStatus)) {
+      statusDisplay = <>{translate({key: "subscription.plan.failed", replacements: [plan.customName, props.teamName]})} ❌</>
+    }
+    return <li>{statusDisplay}</li>
+  })}</ul>
+}
 
 
 function convertIUsagePlanGQLToIUsagePlan(plan: IUsagePlanGQL): IUsagePlan {
