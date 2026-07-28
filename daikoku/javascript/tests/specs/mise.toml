@@ -132,17 +132,14 @@ run = "docker-compose -f docker-compose-oidc.yml down && docker-compose -f docke
 
 [tasks."test:front:ldap:run"]
 dir="daikoku/javascript"
-depends = ["install:playwright"]
 run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.config.js --ui --project chromium"
 
 [tasks."test:front:oidc:run"]
 dir="daikoku/javascript"
-depends = ["install:playwright"]
 run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.oidc.config.js --ui --project chromium"
 
 [tasks."test:front:local:run"]
 dir="daikoku/javascript"
-depends = ["install:playwright"]
 run="FORCE_COLOR=1 npx playwright test --trace on --workers 1 --config ./tests/playwright.local.config.js --ui --project chromium"
 
 
