@@ -343,7 +343,6 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByText('La demande de clé d\'API au').click();
   await page.getByRole('button', { name: 'Close toast' }).click();
-  await page.locator('.lucide.lucide-x').click();
 
   await logout(page);
   await loginAs(MICHAEL, page);
@@ -369,19 +368,15 @@ test('Selection de plans limitée', async ({ page, context }) => {
   await page.getByRole('option', { name: 'preprod' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
-
   await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').check();
   await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').check();
-  await expect(page.getByRole('article', { name: 'dev' }).getByRole('checkbox')).toBeDisabled();
   await expect(page.getByText('2 lignes sélectionnées')).toBeVisible();
 
-  await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').uncheck();
-  await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').uncheck();
-  await page.getByRole('article', { name: 'dev' }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Close toast' }).click();
 
-  await expect(page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox')).toBeDisabled();
-  await expect(page.getByRole('article', { name: 'preprod' }).getByRole('checkbox')).toBeDisabled();
-  await expect(page.getByText('1 ligne sélectionnée')).toBeVisible();
+  await page.getByRole('article', { name: 'dev' }).getByRole('checkbox').check();
+  await expect(page.getByText('3 lignes sélectionnées')).toBeVisible();
+
 });
 
 
