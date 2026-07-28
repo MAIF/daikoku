@@ -921,7 +921,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     );
   };
 
-  const { translate } = useContext(I18nContext);
+  const { translate, language } = useContext(I18nContext);
   const queryClient = useQueryClient();
 
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
@@ -1825,7 +1825,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               {
                 !connectedUser.isGuest &&
                 (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked'
+                props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
                 (
                   <button
                     type="button"
@@ -1860,7 +1860,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           type="button"
                           className="btn btn-outline-secondary btn-square-sm"
                           aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
-                          onClick={() => openTeamSelectorModal(plan)}
+                          onClick={() => openTeamSelectorModal()}
                         >
                           <KeyRound size={16}/>
                         </button>
