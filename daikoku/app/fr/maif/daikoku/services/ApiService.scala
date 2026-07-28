@@ -489,47 +489,6 @@ class ApiService(
     }
   }
 
-  case class SyncInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      team: Team,
-      parentApi: Api,
-      apk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  case class ComputedInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      apk: ActualOtoroshiApiKey,
-      computedApk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  def getListFromMeta(
-      key: String,
-      metadata: Map[String, String]
-  ): Set[String] = {
-    metadata
-      .get(key)
-      .map(_.split('|').toSeq.map(_.trim).toSet)
-      .getOrElse(Set.empty)
-  }
-
-  def mergeMetaValue(
-      key: String,
-      meta1: Map[String, String],
-      meta2: Map[String, String]
-  ): String = {
-    val list1 = getListFromMeta(key, meta1)
-    val list2 = getListFromMeta(key, meta2)
-    (list1 ++ list2).mkString(" | ")
-  }
-
   def updateSubscription(
       tenant: Tenant,
       subscription: ApiSubscription,
@@ -2580,21 +2539,6 @@ class ApiService(
           )
       )
     } yield result
-  }
-
-  private def getFiltervalue[T](filters: JsArray, key: String)(implicit
-      fjs: Reads[T]
-  ): Option[T] = {
-    filters.value
-      .find(entry => {
-        entry
-          .as[JsObject]
-          .value
-          .exists(p => p._1 == "id" && p._2.as[String] == key)
-      })
-      .flatMap(v =>
-        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
-      )
   }
 
   def getAllAvailableEnvs(
