@@ -428,6 +428,7 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API commande' }).click();
+  await expect(page.locator('.api__header')).toBeAttached()
   await page.getByText('Souscriptions').click();
 
   await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
