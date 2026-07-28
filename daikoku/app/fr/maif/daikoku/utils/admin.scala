@@ -77,7 +77,9 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                     Results.Unauthorized
                   )
                 case Some((clientId, clientSecret)) =>
-                  env.dataStore.apiSubscriptionRepo
+                  // the otoroshi api key now lives on the Keyring entity, not on
+                  // the subscription (see the keyring migration)
+                  env.dataStore.keyringRepo
                     .forTenant(tenant)
                     .findNotDeleted(
                       Json.obj(

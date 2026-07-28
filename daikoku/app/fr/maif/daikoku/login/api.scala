@@ -232,36 +232,6 @@ object LoginFilter {
       case ("get", r"/asset-thumbnails/.*") => Some(pass)
       case (_, r"/admin-api/.*")            => Some(pass)
       case (_, r"/cms-api/.*")              => Some(pass)
-      case (_, r"/integration-api/.*") =>
-        Some(
-          request
-            .getQueryString("token")
-            .orElse(request.headers.get("X-Personal-Token")) match {
-            case None =>
-              AppLogger.info("No personal token found")
-              org.apache.pekko.http.scaladsl.util.FastFuture.successful(
-                Results.Unauthorized(Json.obj("error" -> "not authorized"))
-              )
-            case Some(token) =>
-              env.dataStore.userRepo
-                .findOneNotDeleted(Json.obj("personalToken" -> token))
-                .flatMap {
-                  case None =>
-                    AppLogger.info("No user found")
-                    org.apache.pekko.http.scaladsl.util.FastFuture.successful(
-                      Results
-                        .Unauthorized(Json.obj("error" -> "not authorized"))
-                    )
-                  case Some(_user) =>
-                    val user = _user.copy(tenants = _user.tenants + tenant.id)
-                    nextFilter(
-                      request
-                        .addAttr(IdentityAttrs.TenantKey, tenant)
-                        .addAttr(IdentityAttrs.UserKey, user)
-                    )
-                }
-          }
-        )
       case _ => None
     }
   }

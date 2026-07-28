@@ -22,7 +22,6 @@ object JobUtils {
     picture = "https://www.otoroshi.io/assets/images/svg/otoroshi_logo.svg",
     password = None,
     lastTenant = None,
-    personalToken = Some(IdGenerator.token(32)),
     defaultLanguage = None
     // lastTeams = Map.empty
   )

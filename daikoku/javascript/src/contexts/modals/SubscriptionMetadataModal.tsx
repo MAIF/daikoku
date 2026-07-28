@@ -282,14 +282,14 @@ export const SubscriptionMetadataModal = (
           <div className="modal-footer">
             <button
               type="button"
-              className="btn btn-outline-danger"
+              className="btn --secondary"
               onClick={props.close}
             >
               <Translation i18nkey="Cancel">Cancel</Translation>
             </button>
             <button
               type="button"
-              className="btn btn-outline-success"
+              className="btn --primary"
               onClick={() => formRef.current?.handleSubmit()}
             >
               {props.creationMode ? translate("Accept") : translate("Update")}

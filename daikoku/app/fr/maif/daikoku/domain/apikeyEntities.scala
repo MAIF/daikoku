@@ -31,15 +31,22 @@ case class ApiKeyRotation(
     enabled: Boolean = true,
     rotationEvery: Long = 31 * 24,
     gracePeriod: Long = 7 * 24,
-    nextSecret: Option[String] = None
+    nextSecret: Option[String] = None,
+    bearer: Option[String] = None
 )
 
 case class ApiSubscriptionRotation(
     enabled: Boolean = true,
     rotationEvery: Long = 31 * 24,
     gracePeriod: Long = 7 * 24,
-    pendingRotation: Boolean = false
+    pendingRotation: Boolean = false,
+    nextSecret: Option[String] = None,
+    nextBearer: Option[String] = None
 ) {
+
+  /** Otoroshi owns the next credentials: never push them back, or an ongoing
+    * rotation would be reset.
+    */
   def toApiKeyRotation: ApiKeyRotation = {
     ApiKeyRotation(
       enabled = enabled,
@@ -49,11 +56,15 @@ case class ApiSubscriptionRotation(
   }
 }
 
+enum SubscriptionBlockReason(val name: String) {
+  case Lifecycle extends SubscriptionBlockReason("lifecycle")
+  case Owner extends SubscriptionBlockReason("owner")
+}
+
 case class ApiSubscription(
     id: ApiSubscriptionId,
     tenant: TenantId,
     deleted: Boolean = false,
-    apiKey: OtoroshiApiKey, // TODO: add the actual plan at the time of the subscription
     plan: UsagePlanId,
     createdAt: DateTime,
     validUntil: Option[DateTime] = None,
@@ -63,9 +74,6 @@ case class ApiSubscription(
     customName: Option[String],
     adminCustomName: Option[String] = None,
     enabled: Boolean = true,
-    rotation: Option[ApiSubscriptionRotation],
-    integrationToken: String,
-    bearerToken: Option[String] = None,
     customMetadata: Option[JsObject] = None,
     metadata: Option[JsObject] = None,
     tags: Option[Set[String]] = None,
@@ -73,30 +81,42 @@ case class ApiSubscription(
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
     customReadOnly: Option[Boolean] = None,
-    parent: Option[ApiSubscriptionId] = None,
+    keyring: KeyringId,
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
-    ] = None
+    ] = None,
+    blockedBy: Set[SubscriptionBlockReason] = Set.empty
 ) extends CanJson[ApiSubscription] {
+  // `blockedBy` is the single source of truth for whether a subscription is
+  // blocked. `state` is derived: a subscription is Blocked as soon as it carries
+  // at least one reason (Owner and/or Lifecycle), Active otherwise. Keeping
+  // `state` as a derived value preserves the UI/GraphQL contract with no drift.
+  def state: ApiSubscriptionState =
+    if (blockedBy.isEmpty) ApiSubscriptionState.Active
+    else ApiSubscriptionState.Blocked
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(
+      keyring: Keyring,
       permission: TeamPermission,
       planIntegration: IntegrationProcess,
       isDaikokuAdmin: Boolean
-  ): JsValue =
-    (permission, planIntegration) match {
-      case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
-      case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.ApiKey) =>
-        json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.Automatic) =>
-        json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
-    }
-  def asSafeJson: JsValue =
+  ): JsValue = {
+    val base = json.ApiSubscriptionFormat.writes(this).as[JsObject]
+    val keyringExposed =
+      isDaikokuAdmin ||
+        permission == Administrator ||
+        planIntegration == IntegrationProcess.ApiKey
+    if (keyringExposed) base ++ Json.obj("keyring" -> keyring.asJson)
+    else base
+  }
+  def asSafeJson(keyring: Keyring): JsValue =
     json.ApiSubscriptionFormat
       .writes(this)
-      .as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj(
-      "apiKey" -> Json.obj("clientName" -> apiKey.clientName)
+      .as[JsObject] ++ Json.obj(
+      "keyring" -> Json.obj(
+        "_id" -> json.KeyringIdFormat.writes(keyring.id),
+        "clientName" -> keyring.apiKey.clientName
+      )
     )
   def asSimpleJson: JsValue =
     Json.obj(
@@ -117,6 +137,50 @@ case class ApiSubscription(
         .as[JsValue],
       "enabled" -> JsBoolean(enabled)
     )
+}
+
+enum KeyringOtoroshiBinding:
+  case Otoroshi(id: OtoroshiSettingsId)
+  case Internal
+
+case class Keyring(
+    id: KeyringId,
+    tenant: TenantId,
+    team: TeamId,
+    deleted: Boolean = false,
+    customName: Option[String] = None,
+    apiKey: OtoroshiApiKey,
+    otoroshiSettings: KeyringOtoroshiBinding,
+    createdAt: DateTime,
+    rotation: Option[ApiSubscriptionRotation] = None,
+    integrationToken: String,
+    bearerToken: Option[String] = None,
+    thirdPartySubscriptionInformations: Option[
+      ThirdPartySubscriptionInformations
+    ] = None,
+    enabled: Boolean = true
+) extends CanJson[Keyring] {
+  override def asJson: JsValue = json.KeyringFormat.writes(this)
+
+  /** Keyring JSON safe to expose outside Daikoku (e.g. subscription process
+    * HTTP step): keeps only the apiKey clientId/clientName and drops the
+    * clientSecret, integrationToken, bearerToken and the rotation's next
+    * credentials.
+    */
+  def asSafeJson: JsValue =
+    json.KeyringFormat.writes(this).as[JsObject] ++ Json.obj(
+      "apiKey" -> Json.obj(
+        "clientName" -> apiKey.clientName,
+        "clientId" -> apiKey.clientId
+      ),
+      "rotation" -> rotation
+        .map(r =>
+          json.ApiSubscriptionyRotationFormat
+            .writes(r.copy(nextSecret = None, nextBearer = None))
+        )
+        .getOrElse(JsNull)
+        .as[JsValue]
+    ) - "integrationToken" - "bearerToken"
 }
 
 object RemainingQuotas {
@@ -300,7 +364,7 @@ case class SubscriptionDemand(
     from: UserId,
     date: DateTime = DateTime.now,
     motivation: Option[JsObject] = None,
-    parentSubscriptionId: Option[ApiSubscriptionId] = None,
+    keyring: Option[KeyringId] = None,
     customReadOnly: Option[Boolean] = None,
     customMetadata: Option[JsObject] = None,
     customMaxPerSecond: Option[Long] = None,

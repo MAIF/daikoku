@@ -1,27 +1,27 @@
-import {useContext, useEffect, useState} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import {I18nContext, ModalContext} from '../../contexts';
+import { I18nContext, ModalContext } from '../../contexts';
 import * as Services from '../../services';
-import {isError} from '../../types';
-import {GlobalContext} from '../globalContext';
-import {IBaseModalProps} from './types';
+import { isError } from '../../types';
+import { GlobalContext } from '../globalContext';
+import { IBaseModalProps } from './types';
 
 export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
   const [team, setTeam] = useState<string>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const {translate, Translation} = useContext(I18nContext);
-  const {tenant} = useContext(GlobalContext);
-  const {close} = useContext(ModalContext);
+  const { translate, Translation } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
+  const { close } = useContext(ModalContext);
 
   useEffect(() => {
     Services.validateInvitationToken(searchParams.get('invitation-token'))
       .then((res) => {
         if (isError(res)) {
           close();
-          setSearchParams({error: res.error})
+          setSearchParams({ error: res.error })
         } else {
           setTeam(res.team)
         }
@@ -43,9 +43,9 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
       .then(r => {
         if (isError(r)) {
           close()
-          setSearchParams({error: r.error})
+          setSearchParams({ error: r.error })
         } else {
-          setSearchParams({message: 'team-invitation-decline'})
+          setSearchParams({ message: 'team-invitation-decline' })
         }
       })
   }
@@ -61,17 +61,17 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
         <Translation i18nkey="team_member.invitation" replacements={[team]} />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => decline()}>
+        <button type="button" className="btn --secondary" onClick={() => decline()}>
           {translate('team_member.refuse_invitation')}
         </button>
         {tenant.loginProvider === 'Local' &&
-            <button type="button" className="btn btn-outline-success" onClick={() => signup()}>
-              {translate('team_member.accept_invitation')}
-            </button>}
+          <button type="button" className="btn --primary" onClick={() => signup()}>
+            {translate('team_member.accept_invitation')}
+          </button>}
         {tenant.loginProvider !== 'Local' &&
-            <a className="btn btn-outline-success" href={`/auth/${tenant.loginProvider}/login`}>
-              {translate('team_member.accept_invitation')}
-            </a>}
+          <a className="btn --primary" href={`/auth/${tenant.loginProvider}/login`}>
+            {translate('team_member.accept_invitation')}
+          </a>}
       </div>
     </div>
   );

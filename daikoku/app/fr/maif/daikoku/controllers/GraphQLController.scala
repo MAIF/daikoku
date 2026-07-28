@@ -69,7 +69,6 @@ class GraphQLController(
         isDaikokuAdmin = true,
         password = Some("password"),
         lastTenant = Some(ctx.tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None
       )
       val generatedContext = DaikokuActionContext(

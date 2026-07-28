@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import Move from 'react-feather/dist/icons/move';
+import { Move } from 'lucide-react';
 
 import { Action, Props as ActionProps } from './Action';
 

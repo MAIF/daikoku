@@ -202,6 +202,10 @@ case class OAuth2Config(
       "selectedMetadata" -> this.selectedMetadata
         .map(JsString.apply)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "selectedMetadata" -> this.selectedMetadata
+        .map(JsString.apply)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
 }
@@ -331,7 +335,6 @@ object OAuth2Support {
         pictureFromProvider = picture.isDefined,
         isDaikokuAdmin = isDaikokuAdmin,
         lastTenant = Some(tenant.id),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         metadata = getFilteredMetadataFromOauth(
           authConfig,
@@ -358,6 +361,8 @@ object OAuth2Support {
         isDaikokuAdmin: Boolean,
         userFromOauth: JsValue
     ): EitherT[Future, AppError, User] = {
+      val selectedMetadata =
+        authConfig.selectedMetadata.map(_.split(",").map(_.trim))
       val updatedUser = u.copy(
         name = name,
         email = email,
@@ -394,7 +399,8 @@ object OAuth2Support {
         )
         email <- EitherT.fromOption[Future](
           (userFromOauth \ authConfig.emailField)
-            .asOpt[String].map(_.toLowerCase),
+            .asOpt[String]
+            .map(_.toLowerCase),
           AppError.EntityNotFound("No email found")
         )
         picture <- EitherT.pure[Future, AppError](
@@ -510,7 +516,7 @@ object OAuth2Support {
           verifyAndGetUser(accessToken)
         } else
           getUser(accessToken)
-      user <- processUserFromOAuth(userJson)
+      user: User <- processUserFromOAuth(userJson)
     } yield (user, idToken)
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import Sliders from 'react-feather/dist/icons/sliders';
+import { Sliders, Search } from 'lucide-react';
 
 import { SwitchButton } from './Switch';
 
@@ -12,7 +12,7 @@ export const DefaultColumnFilter = ({
       <div className="input-group input-group-sm mb-2 pe-2">
         <div className="input-group-prepend">
           <div className="input-group-text">
-            <i className="fas fa-search" />
+            <Search />
           </div>
         </div>
         <input

@@ -264,7 +264,6 @@ object LdapSupport {
         .getOrElse(email.gravatar),
       isDaikokuAdmin = isDaikokuAdmin,
       lastTenant = Some(tenantId),
-      personalToken = Some(IdGenerator.token(32)),
       defaultLanguage = None
     )
 
@@ -379,7 +378,6 @@ object LdapSupport {
                             .getOrElse(email.gravatar),
                           isDaikokuAdmin = true,
                           lastTenant = Some(tenant.id),
-                          personalToken = Some(IdGenerator.token(32)),
                           invitation = None
                         )
                         for {

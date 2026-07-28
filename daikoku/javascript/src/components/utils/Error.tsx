@@ -13,7 +13,7 @@ export const Error = () => {
                 {decodedHash}
             </div>
             <div className="d-flex justify-content-end">
-                <Link className='btn btn-outline-success' to="/">{translate('go_back')}</Link>
+                <Link className='btn --primary' to="/">{translate('go_back')}</Link>
             </div>
         </div>
     )

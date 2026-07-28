@@ -7,7 +7,7 @@ export const Prompt = (props: PromptProps) => {
 
   const [text, setText] = useState(props.value || '');
 
-  const  inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const defaultButton = (e: KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -43,10 +43,10 @@ export const Prompt = (props: PromptProps) => {
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
+        <button type="button" className="btn --secondary" onClick={props.cancel}>
           {props.cancelLabel || translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => props.ok(text)}>
+        <button type="button" className="btn --primary" onClick={() => props.ok(text)}>
           {props.okLabel || translate('Ok')}
         </button>
       </div>

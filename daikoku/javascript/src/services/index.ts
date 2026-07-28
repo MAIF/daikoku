@@ -221,17 +221,6 @@ export const apisInit = (apis: any) =>
     body: JSON.stringify(apis),
   });
 
-export const subscriptionsInit = (subscriptions: any) =>
-  customFetch('/api/subscriptions/_init', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify(subscriptions),
-  });
-
 export const archiveApiKey = (
   teamId: string,
   subscriptionId: string,
@@ -263,10 +252,34 @@ export const toggleApiKeyRotation = (
 
 export const regenerateApiKeySecret = (
   teamId: string,
-  subscriptionId: string
+  keyringId: string
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_refresh`, {
     method: 'POST',
+  });
+
+export const updateKeyringCustomName = (
+  teamId: string,
+  keyringId: string,
+  customName: string
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/name`, {
+    method: 'PUT',
+    body: JSON.stringify({ customName }),
+  });
+
+export const deleteKeyring = (teamId: string, keyringId: string): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}`, {
+    method: 'DELETE',
+  });
+
+export const toggleKeyring = (
+  teamId: string,
+  keyringId: string,
+  enabled: boolean
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_enable?enabled=${enabled}`, {
+    method: 'PUT',
   });
 
 export const member = (teamId: string, userId: string) =>
@@ -675,7 +688,7 @@ export const apiSubscriptions = (
 ): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
-export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>
+export const archiveSubscriptionByOwner = (ownerId: string, subscriptionId: string, enabled: boolean) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
     {
@@ -1182,16 +1195,11 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 
 export const deleteApiSubscription = (
   teamId: string,
-  subscriptionId: string,
-  action: string,
-  childId?: string
+  subscriptionId: string
 ): Promise<ResponseError | any> =>
-  customFetch(
-    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}`, {
+    method: 'DELETE',
+  });
 
 export const extendApiKey = (
   apiId: string,
@@ -1380,6 +1388,9 @@ export const graphql = {
             customName
             otoroshiTarget {
               otoroshiSettings
+              apikeyCustomization {
+                readOnly
+              }
             }
             aggregationApiKeysSecurity
           }
@@ -1479,6 +1490,7 @@ export const graphql = {
             tags
             categories
             stars
+            state
             parent {
               _id
               currentVersion
@@ -1671,11 +1683,6 @@ export const graphql = {
         subscriptions {
           _id
           lastUsage
-          apiKey {
-            clientName
-            clientId
-            clientSecret
-          }
           plan {
             _id
             customName
@@ -1693,6 +1700,7 @@ export const graphql = {
           }
           customName
           enabled
+          state
           tags
           metadata
           customMetadata
@@ -1701,21 +1709,69 @@ export const graphql = {
           customMaxPerMonth
           customReadOnly
           adminCustomName
-          parent {
+          keyring {
             _id
-            adminCustomName
-            enabled
-            validUntil
-            api {
-              _id
-              name
-            }
-            plan {
-              _id
-              customName
+            customName
+            subscriptionsCount
+            apiKey {
+              clientName
             }
           }
         }
+        total
+      }
+    }
+    `,
+  getApiKeyrings: `
+    query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        keyrings {
+          _id
+          customName
+          enabled
+          integrationToken
+          bearerToken
+          subscriptionsCount
+          apiKey {
+            clientId
+            clientSecret
+            clientName
+          }
+          rotation {
+            enabled
+            rotationEvery
+            gracePeriod
+            pendingRotation
+          }
+          subscriptions {
+            _id
+            customName
+            adminCustomName
+            enabled
+            state
+            createdAt
+            validUntil
+            tags
+            plan {
+              _id
+              customName
+              autoRotation
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+              currentVersion
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
+  getApiSubscriptionsTotal: `
+    query getApiSubscriptionsTotal ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
         total
       }
     }
@@ -1737,6 +1793,22 @@ export const graphql = {
             name
           }
           action {
+            ... on ApiDepreciationWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion   
+              }
+            }
+            ... on ApiBlockingWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion
+              }
+            }
             ... on ApiAccess {
               __typename
               api {
@@ -1775,8 +1847,9 @@ export const graphql = {
                 _id
                 customName
               }
-              parentSubscriptionId {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId
@@ -1840,31 +1913,43 @@ export const graphql = {
             }
             ... on ApiKeyRefreshV2 {
             __typename
-              subscription {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId
                   clientSecret
                 }
-                createdAt
-                validUntil
-                by {
-                  id
-                  name
-                  email
-                }
-                customName
-                adminCustomName
-                enabled
+                integrationToken
+                bearerToken
                 rotation {
                   enabled
                   rotationEvery
                   gracePeriod
                   pendingRotation
                 }
-                integrationToken
+                subscriptions {
+                  _id
+                  api {
+                    _humanReadableId
+                    currentVersion
+                  }
+                  team {
+                    _humanReadableId
+                  }
+                }
               }
+              message
+            }
+            ... on ApiKeyDeletionInformation {
+            __typename
+              apiName
+              clientId
+            }
+            ... on ApiKeyDeletionInformationV2 {
+            __typename
+              clientId
               api {
                 _id
                 _humanReadableId
@@ -1875,18 +1960,8 @@ export const graphql = {
                   name
                 }
               }
-              plan {
-                _id
-                customName
-              }
-              message
             }
-            ... on ApiKeyDeletionInformation {
-            __typename
-              apiName
-              clientId
-            }
-            ... on ApiKeyDeletionInformationV2 {
+            ... on ApiSubscriptionExpired {
             __typename
               clientId
               api {
@@ -1915,10 +1990,12 @@ export const graphql = {
             __typename
               team {
                 _id
+                _humanReadableId
                 name
               }
               api {
                 _id
+                _humanReadableId
                 name
                 currentVersion
               }
@@ -1966,11 +2043,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -1985,13 +2057,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId
@@ -2012,11 +2091,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -2031,13 +2105,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId

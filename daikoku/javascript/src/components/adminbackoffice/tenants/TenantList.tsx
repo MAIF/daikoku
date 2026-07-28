@@ -6,6 +6,7 @@ import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contex
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types';
 import { AvatarWithAction, Can, daikoku, manage, PaginatedComponent } from '../../utils';
+import { Pen, Trash2, UserCheck, Link, Plus } from "lucide-react";
 
 export const TenantList = () => {
   useDaikokuBackOffice();
@@ -35,8 +36,8 @@ export const TenantList = () => {
   };
 
   const removeTenant = (tenantId: string) => {
-    if (tenants.length === 1 ) {
-      alert({ message: translate('delete.last.tenant.confirm')})
+    if (tenants.length === 1) {
+      alert({ message: translate('delete.last.tenant.confirm') })
     } else {
       (confirm({ message: translate('delete.tenant.confirm') }))
         .then((ok) => {
@@ -59,11 +60,11 @@ export const TenantList = () => {
             <Translation i18nkey="Tenant" isPlural>
               Tenants
             </Translation>
-            <a className="btn btn-sm btn-outline-primary mb-1 ms-1" title={translate('Create a new tenant')} href="#" onClick={(e) => {
+            <a className="btn --secondary --icon-only ms-2" title={translate('Create a new tenant')} href="#" onClick={(e) => {
               e.preventDefault();
               createNewTenant();
             }}>
-              <i className="fas fa-plus-circle" />
+              <Plus />
             </a>
           </h1>
           <div className="col-5">
@@ -78,24 +79,19 @@ export const TenantList = () => {
           </>} actions={[
             {
               action: () => removeTenant(tenant._id),
-              iconClass: 'fas fa-trash delete-icon',
+              icon: <Trash2 className="delete-icon" />,
               tooltip: translate('Remove tenant'),
             },
             {
               link: `/api/tenants/${tenant._id}/_redirect?path=/settings/settings/general`,
-              iconClass: 'fas fa-pen',
+              icon: <Pen />,
               tooltip: translate('Edit tenant'),
             },
             {
               link: `/api/tenants/${tenant._id}/_redirect`,
-              iconClass: 'fas fa-link',
+              icon: <Link />,
               tooltip: translate('Go to tenant'),
-            },
-            {
-              redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
-              iconClass: 'fas fa-user-shield',
-              tooltip: translate('Admins'),
-            },
+            }
           ]} />);
         }} />
       </div>

@@ -9,6 +9,8 @@ import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/As
 import * as Services from '../../../services';
 import { isError, ITeamSimple } from '../../../types';
 import { Can, getInitials, manage, Spinner, team } from '../../utils';
+import { UserCircle } from "lucide-react";
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 
 type AvatarProps = {
@@ -54,25 +56,23 @@ const Avatar = ({
           className="mx-3"
         />
       </div>}
-      <div className="d-flex flex-column flex-grow-1">
-        <div className='d-flex justify-content-end'>
-          <button type="button" className="btn btn-outline-info me-1" onClick={setNoLink} disabled={!rawValues.contact}>
-            <i className="fas fa-user-circle me-1" />
-            <Translation i18nkey="Set no avatar">Set no avatar</Translation>
-          </button>
-          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
-            <i className="fas fa-user-circle me-1" />
-            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
-          </button>
-          <AssetChooserByModal
-            typeFilter={MimeTypeFilter.image}
-            onlyPreview
-            tenantMode={false}
-            team={team}
-            label={translate('Set avatar from asset')}
-            onSelect={(asset) => onChange(asset.link)}
-          />
-        </div>
+      <div className='flex-grow-1 d-flex justify-content-end gap-2'>
+        <button type="button" className="btn --secondary --small" onClick={setNoLink} disabled={!rawValues.contact}>
+          <UserCircle className="me-1" />
+          <Translation i18nkey="Set no avatar">Set no avatar</Translation>
+        </button>
+        <button type="button" className="btn --secondary --small" onClick={setGravatarLink} disabled={!rawValues.contact}>
+          <UserCircle className="me-1" />
+          <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+        </button>
+        <AssetChooserByModal
+          typeFilter={MimeTypeFilter.image}
+          onlyPreview
+          tenantMode={false}
+          team={team}
+          label={translate('Set avatar from asset')}
+          onSelect={(asset) => onChange(asset.link)}
+        />
       </div>
     </div>
   );
@@ -190,9 +190,9 @@ export const TeamEditForm = ({
       onSubmit={(team) => updateTeam(team)}
       footer={({ valid }) => {
         return (
-          <div className='d-flex flex-row align-items-center justify-content-end mt-3'>
-            <button type="button" className='btn btn-outline-danger me-2' onClick={confirmDelete}>{translate('Delete')}</button>
-            <button type="button" className='btn btn-outline-success' onClick={valid}>{translate('Save')}</button>
+          <div className='d-flex flex-row align-items-center justify-content-end mt-3 gap-2'>
+            <button type="button" className='btn --secondary' onClick={confirmDelete}>{translate('Delete')}</button>
+            <button type="button" className='btn --primary' onClick={valid}>{translate('Save')}</button>
           </div>
         )
       }}
@@ -250,17 +250,21 @@ export const TeamEdit = () => {
         {!currentTeam.verified && !alreadyClicked &&
           <div className="alert alert-warning" role="alert">
             {translate('team.email.notVerified.info')}
-            <button className="btn btn-outline-danger d-flex align-items-end" onClick={() => {
-              Services.sendEmailVerification(currentTeam._id)
-                .then((r) => {
-                  if (isError(r)) {
-                    toast.success(r.error)
-                  } else {
-                    setAlreadyClicked(true)
-                    toast.success(translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
-                  }
-                })
-            }}>{translate('team.email.notVerified')}</button>
+            <FeedbackButton
+              className="btn --secondary d-flex align-items-end"
+              onPress={() => {
+                return Services.sendEmailVerification(currentTeam._id)
+                  .then((r) => {
+                    if (isError(r)) {
+                      toast.success(r.error)
+                    } else {
+                      setAlreadyClicked(true)
+                      toast.success(translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
+                    }
+                  })
+              }}>
+              {translate('team.email.notVerified')}
+            </FeedbackButton>
           </div>}
         {!currentTeam.verified && alreadyClicked &&
           <div className="alert alert-success" role="alert">

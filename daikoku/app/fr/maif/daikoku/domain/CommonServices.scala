@@ -11,7 +11,7 @@ import fr.maif.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json.*
-import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
+import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import fr.maif.daikoku.utils.Time
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -94,7 +94,9 @@ object CommonServices {
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] =
           (publicApis ++ almostPublicApis ++ privateApis)
-            .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
+            .filter(api =>
+              api.isSubscribable || myTeams.exists(api.team == _.id)
+            )
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
             .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
               val apiPlans =
@@ -129,28 +131,28 @@ object CommonServices {
             }
 
         val apis: Seq[ApiWithAuthorizations] =
-          (if (user.isDaikokuAdmin)
-             adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) {
-               case (acc, api) =>
-                 acc :+ ApiWithAuthorizations(
-                   api = api,
-                   plans =
-                     plans.filter(p => api.possibleUsagePlans.contains(p.id)),
-                   authorizations = myTeams.foldLeft(
-                     Seq.empty[AuthorizationApi]
-                   ) { case (acc, team) =>
-                     acc :+ AuthorizationApi(
-                       team = team.id.value,
-                       authorized =
-                         user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
-                           .exists(u => u.userId == user.id),
-                       pending = false
-                     )
-                   }
-                 )
-             } ++ sortedApis
-           else
-             sortedApis)
+          if (user.isDaikokuAdmin)
+            adminApis.foldLeft(Seq.empty[ApiWithAuthorizations]) {
+              case (acc, api) =>
+                acc :+ ApiWithAuthorizations(
+                  api = api,
+                  plans =
+                    plans.filter(p => api.possibleUsagePlans.contains(p.id)),
+                  authorizations = myTeams.foldLeft(
+                    Seq.empty[AuthorizationApi]
+                  ) { case (acc, team) =>
+                    acc :+ AuthorizationApi(
+                      team = team.id.value,
+                      authorized =
+                        user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
+                          .exists(u => u.userId == user.id),
+                      pending = false
+                    )
+                  }
+                )
+            } ++ sortedApis
+          else
+            sortedApis
 
         apis
           .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
@@ -387,8 +389,7 @@ object CommonServices {
           |                   WHERE (
           |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
-          |                             (a.content ->> 'state' = 'published' OR
-          |                             a.content ->> 'state' = 'deprecated' OR
+          |                             (a.content ->> 'state' IN ('published','deprecated') OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
           |                             (case
@@ -1004,7 +1005,7 @@ object CommonServices {
       )
     )(teamId, ctx) { _ =>
       val defaultOrderClause =
-        "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
+        "ORDER BY COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ASC"
       val sortClause = sorting.head.asOpt[JsObject] match {
         case Some(value) =>
           val desc = value.value.get("desc") match {
@@ -1014,7 +1015,7 @@ object CommonServices {
 
           value.value.get("id").map(_.as[String]) match {
             case Some(id) if id == "subscription" =>
-              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
+              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') $desc"
             case Some(id) if id == "plan" =>
               s"ORDER BY p.content ->> 'customName' $desc"
             case Some(id) if id == "team" =>
@@ -1029,14 +1030,15 @@ object CommonServices {
                      |from api_subscriptions s
                      |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
                      |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+                     |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
                      |WHERE s.content ->> 'api' = $$1
-                     |  AND COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+                     |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
                      |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
                      |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
                      |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
                      |  AND CASE
                      |          WHEN array_length($$6::text[], 1) IS NULL THEN true
-                     |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+                     |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
                      |    END
                      |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb);
                      |""".stripMargin
@@ -1045,14 +1047,15 @@ object CommonServices {
            |from api_subscriptions s
            |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
            |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
            |WHERE s.content ->> 'api' = $$1
-           |  AND COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+           |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
            |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
            |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
            |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
            |  AND CASE
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
-           |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
            |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
@@ -1115,6 +1118,77 @@ object CommonServices {
     }
   }
 
+  /** The keyrings owned by the consuming team that aggregate at least one
+    * subscription on the given api. Keyring-centric counterpart of
+    * [[getApiSubscriptions]]: the consumer view lists keyrings (each carrying
+    * its api key + referencing subscriptions) rather than subscriptions.
+    */
+  def getApiKeyrings(
+      teamId: String,
+      apiId: String,
+      version: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ) = {
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        s"@{user.name} has accessed team (@{team.id}) keyrings for api @{api.id}"
+      )
+    )(ctx) { team =>
+      ctx.setCtxValue("api.id", apiId)
+      // a keyring is kept when at least one of the team's non-deleted
+      // subscriptions on this api references it ; count(*) OVER() gives the
+      // total before pagination in the same single query
+      val query = s"""
+           |SELECT k.content AS content,
+           |       count(*) OVER() AS total
+           |FROM keyrings k
+           |WHERE k._deleted = false
+           |  AND EXISTS (
+           |    SELECT 1 FROM api_subscriptions s
+           |    WHERE s._deleted = false
+           |      AND s.content ->> 'keyring' = k._id
+           |      AND s.content ->> 'api' = $$1
+           |      AND s.content ->> 'team' = $$2
+           |  )
+           |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
+           |LIMIT $$3 OFFSET $$4;
+           |""".stripMargin
+
+      env.dataStore
+        .asInstanceOf[PostgresDataStore]
+        .queryRawMapped(
+          query,
+          Seq(Col.json("content"), Col.long("total")),
+          Seq(
+            apiId,
+            team.id.value,
+            java.lang.Integer.valueOf(limit),
+            java.lang.Integer.valueOf(offset)
+          )
+        )
+        .map { rows =>
+          val keyrings = rows.flatMap(row =>
+            (row \ "content")
+              .asOpt[JsValue]
+              .flatMap(json.KeyringFormat.reads(_).asOpt)
+          )
+          val total =
+            rows.headOption
+              .flatMap(row => (row \ "total").asOpt[Long])
+              .getOrElse(0L)
+          Right[AppError, (Seq[Keyring], Long)]((keyrings, total))
+        }
+    }
+  }
+
   def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(
       implicit
       ctx: DaikokuActionContext[JsValue],
@@ -1136,7 +1210,7 @@ object CommonServices {
           |      FROM api_subscriptions s
           |               JOIN apis a ON s.content ->> 'api' = a._id
           |               JOIN usage_plans p ON s.content ->> 'plan' = p._id
-          |      WHERE (s._id = $1 OR s.content ->> 'parent' = $1) AND s._id <> $2) _;
+          |      WHERE s.content ->> 'keyring' = $1 AND s._id <> $2) _;
           |""".stripMargin
 
       (for {
@@ -1146,16 +1220,12 @@ object CommonServices {
             .findById(apiSubscriptionId),
           AppError.EntityNotFound("ApiSubscription")
         )
-        maybeParent <-
-          sub.parent
-            .map(p =>
-              EitherT.liftF[Future, AppError, Option[ApiSubscription]](
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant)
-                  .findById(p)
-              )
-            )
-            .getOrElse(EitherT.pure[Future, AppError](None))
+        maybeKeyring <-
+          EitherT.liftF[Future, AppError, Option[Keyring]](
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findById(sub.keyring.value)
+          )
         accessibleResources <-
           EitherT
             .liftF[Future, AppError, Seq[JsValue]](
@@ -1163,7 +1233,7 @@ object CommonServices {
                 sql,
                 "detail",
                 Seq(
-                  maybeParent.map(_.id.value).getOrElse(sub.id.value),
+                  sub.keyring.value,
                   sub.id.value
                 )
               )
@@ -1175,7 +1245,7 @@ object CommonServices {
             )
       } yield ApiSubscriptionDetail(
         apiSubscription = sub,
-        parentSubscription = maybeParent,
+        keyring = maybeKeyring,
         accessibleResources = accessibleResources
       )).value
 

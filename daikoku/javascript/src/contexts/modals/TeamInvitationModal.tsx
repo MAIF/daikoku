@@ -4,6 +4,7 @@ import { useContext, useRef } from 'react';
 import { I18nContext } from '../../contexts';
 import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, ITeamInvitationModalProps } from './types';
+import { Users } from "lucide-react";
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
   const ref = useRef<FormRef>(undefined);
@@ -22,7 +23,7 @@ export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModa
     <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
       <div className="modal-header d-flex flex-column align-items-center">
         <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
-        <i className="fas fa-users fa-2x mb-3" />
+        <Users className="mb-3" size={32} />
         <h5 className="modal-title text-center">
           {translate('team_member.invite_user_to')}
           <span style={{ fontWeight: 'bold', display: 'block' }}>{props.team.name}</span>
@@ -53,10 +54,10 @@ export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModa
         />
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={() => props.close()}>
+        <button type="button" className="btn --secondary" onClick={() => props.close()}>
           {translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
+        <button type="button" className="btn --primary" onClick={() => ref.current?.handleSubmit()}>
           {isLDAPProvider ? translate('Search') : translate('team_member.send_email')}
         </button>
       </div>

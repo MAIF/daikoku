@@ -7,8 +7,8 @@
 }
 
 [data-rich-colors="true"][data-sonner-toast][data-type="error"] {
-  --error-bg: #{variables.$error-color};
-  --error-border: #{variables.$error-color};
+  --error-bg: #{variables.$danger-color};
+  --error-border: #{variables.$danger-color};
   --error-text: #FFF;
 }
 

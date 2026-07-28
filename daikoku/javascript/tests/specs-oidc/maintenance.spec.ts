@@ -18,7 +18,7 @@ const passInModeMaintenance = async ({ page }) => {
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
-  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Catalogue des APIs' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByText('En maintenance').click();
@@ -46,7 +46,7 @@ test('Se connecter en maintenance avec admin', async ({ page }) => {
   await page.getByRole('textbox', { name: 'username' }).fill(MICHAEL.email);
   await page.getByRole('textbox', { name: 'Password' }).fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
-  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Catalogue des APIs' })).toBeVisible();
 
 });
 

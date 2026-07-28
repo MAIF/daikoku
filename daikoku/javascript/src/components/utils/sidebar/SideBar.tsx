@@ -1,8 +1,6 @@
 import classNames from 'classnames';
 import { JSX, useContext, useEffect, useMemo, useState } from 'react';
-import ArrowLeft from 'react-feather/dist/icons/arrow-left';
-import Bell from 'react-feather/dist/icons/bell';
-import MessageSquare from 'react-feather/dist/icons/message-square';
+import { ArrowLeft, Bell, MessageSquare } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { getInitials, userHasAvatar } from '../..';

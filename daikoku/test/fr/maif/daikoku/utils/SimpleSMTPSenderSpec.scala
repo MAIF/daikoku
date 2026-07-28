@@ -42,9 +42,21 @@ class SimpleSMTPSenderSpec
   private val smtpPassword = "testpassword"
 
   private def tlsBinds = Seq(
-    FileSystemBind(s"$pwd/test/resources/smtp/auth.txt", "/auth.txt", BindMode.READ_ONLY),
-    FileSystemBind(s"$pwd/test/resources/smtp/smtp.crt", "/smtp.crt", BindMode.READ_ONLY),
-    FileSystemBind(s"$pwd/test/resources/smtp/smtp.key", "/smtp.key", BindMode.READ_ONLY)
+    FileSystemBind(
+      s"$pwd/test/resources/smtp/auth.txt",
+      "/auth.txt",
+      BindMode.READ_ONLY
+    ),
+    FileSystemBind(
+      s"$pwd/test/resources/smtp/smtp.crt",
+      "/smtp.crt",
+      BindMode.READ_ONLY
+    ),
+    FileSystemBind(
+      s"$pwd/test/resources/smtp/smtp.key",
+      "/smtp.key",
+      BindMode.READ_ONLY
+    )
   )
 
   private def mailpit(requireFlag: String): GenericContainer =
@@ -89,7 +101,10 @@ class SimpleSMTPSenderSpec
   )
 
   private def connect(settings: SimpleSMTPSettings): Boolean =
-    Await.result(new SimpleSMTPSender(settings).testConnection(tenant), 30.seconds)
+    Await.result(
+      new SimpleSMTPSender(settings).testConnection(tenant),
+      30.seconds
+    )
 
   "SimpleSMTPSender.testConnection" should {
     "validate a STARTTLS connection with correct credentials" in withContainers {

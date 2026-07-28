@@ -106,10 +106,6 @@ hr {
   background-color: variables.$sidebar-text-color !important;
 }
 
-.fa-xxs {
-  font-size: 0.5em;
-}
-
 .lead {
   white-space: pre-wrap;
 }
@@ -133,7 +129,8 @@ hr {
   top: 0;
 }
 
-img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
+img:hover+.changePicture,
+.avatar-without-img:hover+.changePicture,
 .changePicture:hover {
   display: block;
   opacity: 0.5;
@@ -142,18 +139,27 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 .bg-success {
   background-color: variables.$success-color;
 }
+
 .bg-info {
   background-color: variables.$info-color;
 }
+
+.bg-warning {
+  background-color: variables.$warning-color;
+}
+
 .bg-danger {
   background-color: variables.$danger-color;
 }
+
 .color-success {
   color: variables.$success-color;
 }
+
 .color-info {
   color: variables.$info-color;
 }
+
 .color-danger {
   color: variables.$danger-color;
 }
@@ -217,7 +223,7 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 }
 
 .wrapper:not(.information-container) {
-  height: calc(100vh - variables.$topbar-height);
+  height: calc(100vh - #{variables.$topbar-height});
   overflow: scroll;
 
   margin-top: 50px;

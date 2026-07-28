@@ -516,6 +516,20 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
 
+  lazy val keyringExpirationJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
+    .getOrElse(false)
+  lazy val keyringExpirationJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.cronExpression")
+  lazy val keyringExpirationJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.keyringExpirationJob.interval")
+    .map(v => v.millis)
+    .getOrElse(24.hours)
+  lazy val keyringExpirationJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Cron)
+
   lazy val remoteCatalogInterval: FiniteDuration = underlying
     .getOptional[Long]("daikoku.remoteCatalog.interval")
     .map(v => v.millis)
@@ -863,7 +877,6 @@ class DaikokuEnv(
                   password = Some(
                     BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
                   ),
-                  personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
 
@@ -945,10 +958,14 @@ class DaikokuEnv(
                       .forTenant(tenant.id)
                       .save(jsPage)
                 } yield {
-                  AppLogger.warn("")
-                  AppLogger.warn(
-                    s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                  )
+                  val passwordEmpty = configuration.getOptional[String]("daikoku.init.admin.password").isEmpty
+
+                  if (passwordEmpty) {
+                    AppLogger.warn("")
+                    AppLogger.warn(
+                      s"You can log in with ${config.init.admin.email} / ${config.init.admin.password}"
+                    )
+                  }
                   AppLogger.warn("")
                   AppLogger.warn(
                     "Please avoid using the default tenant for anything else than configuring Daikoku"

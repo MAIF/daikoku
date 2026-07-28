@@ -4,7 +4,7 @@ import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
 
-export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
+export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
 
 export interface IWithDocumentation {
   _id: string;
@@ -66,6 +66,9 @@ export interface IApiWithTeam extends IApiGQL {
 
 export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
+  // Total subscription count, only set by the backend for API editors of the
+  // owning team (see ApiController.getApi).
+  subscriptionCount?: number;
 }
 
 /*export interface IApiWithAuthorization extends IApiWithSimpleTeam {
@@ -171,40 +174,40 @@ export interface ISwagger {
 
 export type IValidationStep =
   | {
-      type: 'email';
-      id: string;
-      emails: Array<string>;
-      message: string;
-      title: string;
-    }
+    type: 'email';
+    id: string;
+    emails: Array<string>;
+    message: string;
+    title: string;
+  }
   | {
-      type: 'httpRequest';
-      id: string;
-      title: string;
-      url: string;
-      headers: object;
-    }
+    type: 'httpRequest';
+    id: string;
+    title: string;
+    url: string;
+    headers: object;
+  }
   | {
-      type: 'form';
-      id: string;
-      schema: Schema;
-      formatter: string;
-      title: string;
-      formKeysToMetadata?: Array<string>;
-      info?: string;
-    }
+    type: 'form';
+    id: string;
+    schema: Schema;
+    formatter: string;
+    title: string;
+    formKeysToMetadata?: Array<string>;
+    info?: string;
+  }
   | {
-      type: 'payment';
-      id: string;
-      thirdPartyPaymentSettingsId: string;
-      title?: string;
-    }
+    type: 'payment';
+    id: string;
+    thirdPartyPaymentSettingsId: string;
+    title?: string;
+  }
   | {
-      type: 'teamAdmin';
-      id: string;
-      title?: string;
-      team: string;
-    };
+    type: 'teamAdmin';
+    id: string;
+    title?: string;
+    team: string;
+  };
 
 export interface IBaseUsagePlan {
   _id: string;
@@ -278,6 +281,7 @@ export interface IOtoroshiTarget {
   authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization?: {
     clientIdOnly: boolean;
+    readOnly?: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;
     metadata: { [key: string]: string };
@@ -368,7 +372,11 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
-  rotation: IRotation;
+  // `state` is derived from `blockedBy` on the backend: 'blocked' as soon as
+  // there is at least one reason ('owner' set by the API producer and/or
+  // 'lifecycle' set when the whole API is blocked), 'active' otherwise.
+  state: 'active' | 'blocked';
+  blockedBy: Array<'owner' | 'lifecycle'>;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -377,8 +385,7 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent: string | null;
-  parentUp: boolean;
+  keyring: string | null;
 }
 
 export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
@@ -418,10 +425,18 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
   apiKey: { clientName: string };
 }
 
-export interface ISubscription extends IBaseSubscription {
+export interface IKeyring {
+  _id: string;
+  customName: string | null;
   apiKey: IApiKey;
   integrationToken: string;
   bearerToken?: string;
+  rotation?: IRotation;
+  enabled: boolean;
+}
+
+export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
+  keyring: IKeyring | null;
 }
 
 export interface ISubscriptionCustomization {
@@ -435,7 +450,6 @@ export interface ISubscriptionCustomization {
 }
 
 export interface ISubscriptionExtended extends ISubscription {
-  parentUp: boolean;
   planType: string;
   planName: string;
   apiName: string;
@@ -547,7 +561,7 @@ export interface ISubscriptionDemand {
   from: string;
   date: string;
   motivation?: object;
-  parentSubscriptionId?: string;
+  keyring?: string;
   customReadOnly?: boolean;
   customMetadata?: object;
   customMaxPerSecond?: number;

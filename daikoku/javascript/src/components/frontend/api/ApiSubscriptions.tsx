@@ -38,6 +38,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
     <div>
       <Select
         className='col-3'
+        classNamePrefix="reactSelect"
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
         onChange={t => setSelectedTeam(t!.value)}
@@ -54,8 +55,8 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
             return <div className='d-flex align-items-center m-0' style={{
               gap: '.5rem'
             }}>
-              <span className={`badge badge-custom`}>
-                {'TEAM'}
+              <span className={`badge --primary`}>
+                {translate('Team')}
               </span>{props.data.label}
             </div>
           }

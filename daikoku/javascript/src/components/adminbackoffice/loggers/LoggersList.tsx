@@ -7,6 +7,7 @@ import * as Services from '../../../services';
 import { ILogger } from '../../../types';
 import { Table } from '../../inputs';
 import { Can, daikoku, manage } from '../../utils';
+import { Info } from 'lucide-react';
 
 const LEVELS = ['OFF', 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'ALL'];
 
@@ -65,7 +66,7 @@ export const LoggersList = () => {
             <Translation i18nkey="Loggers level">Loggers level</Translation>
           </h1>
           <div className="alert alert-info" role="alert">
-            <i className="fas fa-info-circle me-2" />
+            <Info className='me-2' />
             <Translation i18nkey="loggers.disclaimer">
               Log levels are changed in memory, for this instance only, and are
               not persisted: they reset to their default on restart. This is

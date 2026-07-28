@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
-import Edit2 from 'react-feather/dist/icons/edit-2';
+import { Edit2, Plus, Settings, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -42,8 +42,10 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import { CmsViewerByPath } from "../CmsViewer";
 
 type Option = {
+  type: 'group' | 'route';
   label: string;
   value: string;
   enabled: boolean;
@@ -60,8 +62,8 @@ const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraPro
   return (
     <div ref={innerRef} {...innerProps} className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
       <div className="col-1">
-        {!data.enabled && (
-          <span className="badge badge-custom-danger">
+        {data.type !== 'group' && !data.enabled && (
+          <span className="badge --danger">
             {translate("Disabled")}
           </span>
         )}
@@ -269,7 +271,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
           //todo: chelou, certaine route sont disable on sait pas pourquoi ?
           const enabled = [...groups, ...routes, ...services].find(i => i.value === item)?.enabled
           return enabled
-        }}
+        }} //@ts-ignore
         options={groupedOptions}
         value={value}
         onChange={onValueChange}
@@ -332,14 +334,13 @@ const CustomMetadataInput = (props: {
   const { alert } = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: string) => {
-    const oldValue = Option(props.value?.find((x) => x.key === key)).getOrElse({
-      key: '',
-      possibleValues: [],
-    });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== key),
-      { ...oldValue, key, possibleValues },
-    ];
+    const newValues = props.value?.map(v => {
+      if(v.key === key) {
+        return {...v, possibleValues}
+      } else {
+        return v;
+      }
+    }) || [];
     props.onChange?.(newValues);
   };
 
@@ -348,14 +349,14 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
+    const newValues = props.value?.map(v => {
+      if(v.key === oldName) {
+        return {...v, key: e.target.value}
+      } else {
+        return v;
+      }
+    }) || [];
 
-    const oldValue = Option(
-      props.value?.find((x) => x.key === oldName)
-    ).getOrElse({ key: '', possibleValues: [] });
-    const newValues = [
-      ...(props.value || []).filter((x) => x.key !== oldName),
-      { ...oldValue, key: e.target.value },
-    ];
     props.onChange?.(newValues);
   };
 
@@ -389,10 +390,10 @@ const CustomMetadataInput = (props: {
         <div className="col-sm-10">
           <button
             type="button"
-            className="btn btn-outline-info"
+            className="btn --secondary --small --icon-only"
             onClick={(e) => addFirst(e)}
           >
-            <i className="fas fa-plus" />{' '}
+            <Plus />
           </button>
         </div>
       )}
@@ -427,15 +428,15 @@ const CustomMetadataInput = (props: {
               className="input-group-text btn btn-outline-danger"
               onClick={(e) => remove(e, key)}
             >
-              <i className="fas fa-trash" />
+              <Trash2 />
             </button>
             {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
-                className="input-group-text btn btn-outline-info"
+                className="btn --secondary --small --icon-only"
                 onClick={addNext}
               >
-                <i className="fas fa-plus" />{' '}
+                <Plus />
               </button>
             )}
           </div>
@@ -512,7 +513,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan:
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --secondary'
             type='button'
             onClick={() => props.savePlan({ ...props.plan, maxPerDay: undefined, maxPerSecond: undefined, maxPerMonth: undefined })}>
             Save
@@ -726,15 +727,16 @@ type ApiPricingCardProps = {
   plans: Array<IUsagePlan>
 };
 const ApiPricingCard = (props: ApiPricingCardProps) => {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, language } = useContext(I18nContext);
   const {
     openFormModal,
     openLoginOrRegisterModal,
-    openApiKeySelectModal,
+    openKeyringSelectModal,
     openCustomModal,
     close,
     closeRightPanel,
-    openRightPanel
+    openRightPanel,
+    confirm
   } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
@@ -746,7 +748,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-  const showApiKeySelectModal = (team: string) => {
+  const showKeyringSelectModal = (team: string) => {
     const { plan } = props;
 
     const askForApikeys = (
@@ -774,8 +776,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
     type IUsagePlanGQL = {
       _id: string;
+      customName: string;
       otoroshiTarget: {
         otoroshiSettings: string;
+        apikeyCustomization?: {
+          readOnly?: boolean;
+        };
       };
       aggregationApiKeysSecurity: boolean;
     };
@@ -809,27 +815,61 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             return { subscription, api, plan };
           });
 
-          const filteredApiKeys = int
-            .filter(
-              (infos) =>
-                infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
-                (infos.plan?.aggregationApiKeysSecurity)
+          // group every candidate subscription by its keyring : a keyring can
+          // be joined only if ALL its members are compatible with the joining
+          // plan (mirror of backend controlSubscriptionExtension)
+          const byKeyring = new Map<string, typeof int>();
+          for (const i of int) {
+            const id = i.subscription.keyring?._id;
+            if (!i.plan || !id) continue;
+            if (!byKeyring.has(id)) byKeyring.set(id, []);
+            byKeyring.get(id)!.push(i);
+          }
+
+          const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
+          const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+          const envSecurity = tenant.environmentAggregationApiKeysSecurity;
+          const effectiveReadOnly = (i: (typeof int)[number]) =>
+            i.subscription.customReadOnly ??
+            !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+
+          const keyrings = [...byKeyring.entries()]
+            .filter(([, members]) =>
+              members.every(
+                (m) =>
+                  // same Otoroshi instance
+                  m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
+                  // environment aggregation security : same plan name
+                  (!envSecurity || m.subscription.planName === plan.customName) &&
+                  // uniform readOnly across the keyring
+                  effectiveReadOnly(m) === joiningReadOnly
+              )
             )
-            .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
-            .map((infos) => infos.subscription);
+            .map(([id, members]) => {
+              const rep = members[0].subscription;
+              return {
+                keyringId: id,
+                apiName: rep.apiName,
+                planName: rep.planName,
+                customName: rep.customName,
+                count: members.length,
+                aggregated: members.length > 1,
+                subscription: rep,
+              };
+            });
 
           if (
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-            filteredApiKeys.length <= 0
+            keyrings.length <= 0
           ) {
             askForApikeys(team, plan);
           } else {
-            openApiKeySelectModal({
+            openKeyringSelectModal({
               plan,
-              apiKeys: filteredApiKeys,
+              keyrings,
               onSubscribe: () => askForApikeys(team, plan),
-              extendApiKey: (apiKey: ISubscription) =>
-                askForApikeys(team, plan, apiKey),
+              onSelectKeyring: (subscription: ISubscription) =>
+                askForApikeys(team, plan, subscription),
             });
           }
         }
@@ -876,22 +916,47 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
   const openTeamSelectorModal = () => {
-    openCustomModal({
-      title: translate('team.selection.title'),
-      content: <TeamSelector
-        teams={authorizedTeams
-          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
-          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-        pendingTeams={props.inProgressDemands.map((s) => s.team)}
-        acceptedTeams={props.subscriptions
-          .filter((f) => !f._deleted)
-          .map((subs) => subs.team)}
-        allowMultipleDemand={plan.allowMultipleKeys}
-        showApiKeySelectModal={showApiKeySelectModal}
-        plan={props.plan}
-      />
-    })
+    const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
+      title: translate({
+        key: 'team.api.state.information.title',
+        replacements:
+          [props.api.name]
+      }),
+      message:
+        <div>
+          <CmsViewerByPath
+            path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
+            fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
+              fallBack={() => <div>{translate({
+                key: 'team.api.state.information.message',
+                replacements:
+                  [props.api.name,
+                  props.api.state]
+              })}</div>} />} />
+        </div>
+    }) : Promise.resolve(true)
+
+    alertAPIStatus
+      .then(ok => {
+        if (ok) {
+          openCustomModal({
+            title: translate('team.selection.title'),
+            content: <TeamSelector
+              teams={authorizedTeams
+                .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.includes(team._id))
+                .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+              pendingTeams={props.inProgressDemands.map((s) => s.team)}
+              acceptedTeams={props.subscriptions
+                .filter((f) => !f._deleted)
+                .map((subs) => subs.team)}
+              allowMultipleDemand={plan.allowMultipleKeys}
+              showKeyringSelectModal={showKeyringSelectModal}
+              plan={props.plan}
+            />
+          })
+        }
+      })
   }
 
   const editPlan = () => props.updatePlan(props.plan)
@@ -1012,7 +1077,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           type: type.bool,
           label: () => {
             if (plan.aggregationApiKeysSecurity) {
-              return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
+              return `${translate('Apikey with clientId only')} (${translate('disabled.due.to.aggregation.security')})`;
             } else {
               return translate('Apikey with clientId only');
             }
@@ -1203,11 +1268,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               zIndex: '100',
             }}
           >
-            <i
-              className="fas fa-gear cursor-pointer dropdown-menu-button"
-              style={{ fontSize: '20px', fill: 'tomato' }}
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+            <Settings
+              className="cursor-pointer dropdown-menu-button"
+              style={{ fontSize: '20px' }}
+              data-bs-toggle="dropdown" aria-expanded={false}
               id={`${plan._id}-dropdownMenuButton`}
             />
             <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
@@ -1243,18 +1307,19 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {customDescription && <span>{customDescription}</span>}
         </p>
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
-            <button
-              type="button"
-              className="usage-plan__card__action-button inactive"
-            >
-              <Translation i18nkey="Get API key" />
-            </button>
-          )}
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api))
+            && props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' && (
+              <button
+                type="button"
+                className="usage-plan__card__action-button inactive"
+              >
+                <Translation i18nkey="Get API key" />
+              </button>
+            )}
           {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
             props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            isPublish(props.api) && (
+            (isPublish(props.api) && props.api.state !== 'blocked') && (
               <Can
                 I={access}
                 a={apikey}
@@ -1281,7 +1346,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   )}
               </Can>
             )}
-          {connectedUser.isGuest && (
+          {connectedUser.isGuest && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button"
@@ -1358,7 +1423,7 @@ type ITeamSelector = {
   pendingTeams: Array<string>;
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
-  showApiKeySelectModal: (teamId: string) => void;
+  showKeyringSelectModal: (teamId: string) => void;
   plan: IUsagePlan;
 };
 
@@ -1401,7 +1466,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   })}
                   onClick={() => {
                     return allowed
-                      ? props.showApiKeySelectModal(team._id)
+                      ? props.showKeyringSelectModal(team._id)
                       : () => { };
                   }}
                 >
@@ -1461,14 +1526,14 @@ type ToggleButtonProps = {
 
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
   return (
-    <div className='form-selector mt-4'>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: props.value })} onClick={() => props.action(true)}>
+    <div className='mt-4 d-flex flex-row gap-2'>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: props.value })} onClick={() => props.action(true)}>
         <div className='label'>{props.trueLabel}</div>
-        <div className='description'>{props.trueDescription}</div>
+        <em className='description'>{props.trueDescription}</em>
       </button>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: !props.value })} onClick={() => props.action(false)}>
+      <button type='button' className={classNames('btn --secondary w-50 d-flex flex-column', { active: !props.value })} onClick={() => props.action(false)}>
         <div className='label'>{props.falseLabel}</div>
-        <div className='description'>{props.falseDescription}</div>
+        <em className='description'>{props.falseDescription}</em>
       </button>
     </div>
   )
@@ -1682,14 +1747,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <div className='d-flex flex-column'>
           <span>{translate("api.home.create.plan.modal.description")}</span>
           <div className='d-flex flex-rox justify-content-around'>
-            <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan()
+            <button className='btn --secondary' onClick={() => Services.fetchNewPlan()
               .then(p => {
                 close()
                 updatePlan(p, true)
               })}>
               {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
-            <button className='btn btn-outline-info' onClick={() => {
+            <button className='btn --secondary' onClick={() => {
               close()
               openApiSelectModal({
                 api: props.api,

@@ -109,6 +109,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         return (
           <FeedbackButton
             type='info'
+            className='btn --secondary'
             onPress={() => testAuthProviderConfiguration('ldap', rawValues)
               .then(r => isError(r) ? Promise.reject(r) : r)
             }
@@ -135,6 +136,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         return (
           <FeedbackButton
             type='info'
+            className='btn --secondary'
             onPress={() => fetchOAuthConfiguration(rawValues.configUrl, rawValues.clientId, rawValues.clientSecret)
               .then(r => isError(r) ? Promise.reject(r) : r)
               .then(config => {
@@ -393,6 +395,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         return (
           <FeedbackButton
             type='info'
+            className='btn --secondary'
             onPress={() => testAuthProviderConfiguration('oauth', rawValues)
               .then(r => isError(r) ? Promise.reject(r) : r)
             }

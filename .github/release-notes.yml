@@ -1,14 +1,14 @@
 changelog:
   sections:
-  - title: "Enhancements"
-    emoji: ":star:"
-    labels: ["new", "enhancements"]
-  - title: "Bugs"
-    emoji: ":bug:"
-    labels: ["fix", "bug"]
-  - title: "technical"
-    emoji: ":wrench:"
-    labels: ["technical"]
+    - title: "Enhancements"
+      emoji: "⭐️"
+      labels: ["new", "enhancements"]
+    - title: "bug"
+      emoji: "🐛"
+      labels: ["fix", "bug"]
+    - title: "technical"
+      emoji: "🔧"
+      labels: ["technical"]
 
   issues:
     exclude:

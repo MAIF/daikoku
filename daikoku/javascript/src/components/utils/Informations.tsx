@@ -1,6 +1,5 @@
 import { useContext, useEffect } from 'react';
-import CheckCircle from 'react-feather/dist/icons/check-circle';
-import XOctagon from 'react-feather/dist/icons/x-octagon';
+import { CheckCircle, XOctagon } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { I18nContext, ModalContext } from '../../contexts';
@@ -57,7 +56,7 @@ export const Informations = () => {
             )}
         </div>
         <div className="inforamtion-footer d-flex justify-content-end mt-5">
-          <div className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/apis")}>
+          <div className="btn --primary --small" onClick={() => navigate("/apis")}>
             {translate('informations.page.go.back.button.label')}
           </div>
         </div>

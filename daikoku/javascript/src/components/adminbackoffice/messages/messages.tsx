@@ -5,8 +5,7 @@ import orderBy from 'lodash/orderBy';
 import sortBy from 'lodash/sortBy';
 import values from 'lodash/values';
 import { useContext, useEffect, useState } from 'react';
-import Send from 'react-feather/dist/icons/send';
-import ChevronLeft from 'react-feather/dist/icons/chevron-left';
+import {Send, ChevronLeft, Trash2} from 'lucide-react';
 import Select from 'react-select';
 import { differenceInDays, format, formatDistanceToNow } from 'date-fns';
 
@@ -29,7 +28,8 @@ const unknownUser = (id: string): IUserSimple => ({
   isGuest: true,
   starredApis: [],
   name: 'unknown user',
-  twoFactorAuthentication: null
+  twoFactorAuthentication: null,
+  metadata: []
 })
 
 export const AdminMessages = () => {
@@ -216,7 +216,7 @@ export const AdminMessages = () => {
                     e.stopPropagation();
                     closeSelectedChat(chat);
                   }}>
-                    <i className="fas fa-trash" />
+                    <Trash2 />
                   </a>
                 </div>
                 <div className="d-flex justify-content-end">

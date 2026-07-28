@@ -59,6 +59,14 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     syncAll()
   }
 
+  private def loadSubKeyring(
+      subscription: ApiSubscription,
+      tenant: Tenant
+  ): Future[Option[Keyring]] =
+    env.dataStore.keyringRepo
+      .forTenant(tenant.id)
+      .findById(subscription.keyring)
+
   def syncConsumptionAsFlow(
       api: Api,
       tenant: Tenant,
@@ -66,12 +74,16 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   ): Flow[ApiSubscription, Seq[ApiKeyConsumption], NotUsed] =
     Flow[ApiSubscription]
       .mapAsync(2) { subscription =>
-        syncConsumptionStatsForSubscription(
-          subscription,
-          tenant,
-          Some(api),
-          lastConsumptions.find(c => c.clientId == subscription.apiKey.clientId)
-        )
+        loadSubKeyring(subscription, tenant).flatMap { maybeKeyring =>
+          syncConsumptionStatsForSubscription(
+            subscription,
+            tenant,
+            Some(api),
+            maybeKeyring.flatMap(k =>
+              lastConsumptions.find(c => c.clientId == k.apiKey.clientId)
+            )
+          )
+        }
       }
 
   def syncConsumptionAsFlow(
@@ -81,12 +93,16 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   ): Flow[ApiSubscription, Seq[ApiKeyConsumption], NotUsed] =
     Flow[ApiSubscription]
       .mapAsync(2) { subscription =>
-        syncConsumptionStatsForSubscription(
-          subscription,
-          tenant,
-          apis.find(api => api.id == subscription.api),
-          lastConsumptions.find(c => c.clientId == subscription.apiKey.clientId)
-        )
+        loadSubKeyring(subscription, tenant).flatMap { maybeKeyring =>
+          syncConsumptionStatsForSubscription(
+            subscription,
+            tenant,
+            apis.find(api => api.id == subscription.api),
+            maybeKeyring.flatMap(k =>
+              lastConsumptions.find(c => c.clientId == k.apiKey.clientId)
+            )
+          )
+        }
       }
 
   def syncForSubscription(
@@ -95,12 +111,16 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       completed: Boolean = false
   ): Future[Seq[ApiKeyConsumption]] = {
     (for {
-      lastConsumption <-
-        env.dataStore.consumptionRepo
-          .getLastConsumption(
-            tenant,
-            Json.obj("clientId" -> subscription.apiKey.clientId)
-          )
+      maybeKeyring <- loadSubKeyring(subscription, tenant)
+      lastConsumption <- maybeKeyring match {
+        case Some(keyring) =>
+          env.dataStore.consumptionRepo
+            .getLastConsumption(
+              tenant,
+              Json.obj("clientId" -> keyring.apiKey.clientId)
+            )
+        case None => FastFuture.successful(None)
+      }
       api <-
         env.dataStore.apiRepo
           .forTenant(tenant.id)
@@ -180,10 +200,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .findAllNotDeleted()
+      keyrings <-
+        env.dataStore.keyringRepo.forAllTenant().findAllNotDeleted()
       lastConsumptions <-
         env.dataStore.consumptionRepo
           .getLastConsumptionsforAllTenant(Json.obj())
     } yield {
+      val keyringById = keyrings.map(k => k.id -> k).toMap
       val nbInterval = Math.ceil(
         env.config.apikeysStatsSyncInterval / env.config.apikeysStatsCallInterval
       )
@@ -197,10 +220,14 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         .flatMapConcat(tenant =>
           Source(subscriptions.filter(_.tenant == tenant.id).toList)
             .filterNot(sub =>
-              lastConsumptions.exists(cons =>
-                cons.clientId == sub.apiKey.clientId && cons.from
-                  .isEqual(DateTime.now().withTimeAtStartOfDay())
-              )
+              keyringById
+                .get(sub.keyring)
+                .exists(k =>
+                  lastConsumptions.exists(cons =>
+                    cons.clientId == k.apiKey.clientId && cons.from
+                      .isEqual(DateTime.now().withTimeAtStartOfDay())
+                  )
+                )
             )
             .via(syncConsumptionAsFlow(apis, tenant, lastConsumptions))
         )
@@ -261,6 +288,11 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
           .forTenant(tenant)
           .findById(subscription.plan)
       )
+      keyring <- OptionT(
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findById(subscription.keyring)
+      )
       otoroshiTarget <- OptionT.fromOption[Future](plan.otoroshiTarget)
       otoSettings <- OptionT.fromOption[Future](
         tenant.otoroshiSettings.find(_.id == otoroshiTarget.otoroshiSettings)
@@ -312,16 +344,16 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
             for {
               consumption <- otoroshiClient.getApiKeyConsumption(
-                clientId = subscription.apiKey.clientId,
+                clientId = keyring.apiKey.clientId,
                 from  =from.getMillis.toString,
                 to = to.toDateTime.getMillis.toString,
                 failOnError = plan.costPerMonth.isDefined
               )
               quotas <- //todo: do not call apiquoats if not today
-                otoroshiClient.getApiKeyQuotas(subscription.apiKey.clientId)
+                otoroshiClient.getApiKeyQuotas(keyring.apiKey.clientId)
               billing <- computeBilling(
                 tenant.id,
-                subscription.apiKey.clientId,
+                keyring.apiKey.clientId,
                 plan,
                 (consumption \ "hits" \ "count").as[Long],
                 from,
@@ -333,7 +365,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                 team = subscription.team,
                 api = api.id,
                 plan = plan.id,
-                clientId = subscription.apiKey.clientId,
+                clientId = keyring.apiKey.clientId,
                 hits = (consumption \ "hits" \ "count").as[Long],
                 quotas = json.ApiKeyQuotasFormat.reads(quotas).get,
                 globalInformations = ApiKeyGlobalConsumptionInformations(

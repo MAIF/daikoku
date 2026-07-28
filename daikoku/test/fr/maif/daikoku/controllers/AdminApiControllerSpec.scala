@@ -30,11 +30,9 @@ class AdminApiControllerSpec
 
   def getMsg(resp: WSResponse): String = (resp.json \ "msg").as[String]
 
-  def getAdminApiHeader(
-      adminApiSubscription: ApiSubscription
-  ): Map[String, String] = {
+  def getAdminApiHeader(keyring: Keyring): Map[String, String] = {
     Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-        s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+        s"${keyring.apiKey.clientId}:${keyring.apiKey.clientSecret}".getBytes()
       )}")
   }
 
@@ -44,13 +42,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(id = TenantId("test")).asJson.some
         )(using tenant)
 
@@ -60,13 +59,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(id = TenantId("test")).asJson.some
         )(using tenant)
 
@@ -80,13 +80,14 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(domain = "https://daikoku.io").asJson.some
         )(using tenant)
 
@@ -100,13 +101,14 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(domain = "https://daikoku.io").asJson.some
         )(using tenant)
 
@@ -120,13 +122,14 @@ class AdminApiControllerSpec
             tenant.copy(id = TenantId("test"), domain = "https://daikoku.io")
           ),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -146,12 +149,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -161,12 +165,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -177,14 +182,15 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val domain = "https://daikoku.io"
         val id = TenantId("creation")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(id = id, domain = domain).asJson.some
         )(using tenant)
 
@@ -192,7 +198,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -202,13 +208,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "Evil corp."
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = tenant.copy(name = name).asJson.some
         )(using tenant)
 
@@ -216,7 +223,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -226,13 +233,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "Evil corp."
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> name)
@@ -244,7 +252,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${tenant.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -256,19 +264,20 @@ class AdminApiControllerSpec
           tenants =
             Seq(tenant, tenant.copy(id = id, domain = "http://daikoku.io")),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -281,13 +290,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(id = UserId("test")).asJson.some
         )(using tenant)
 
@@ -298,13 +308,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -316,13 +327,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(email = userAdmin.email).asJson.some
         )(using tenant)
 
@@ -334,13 +346,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -352,13 +365,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -378,12 +392,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -394,12 +409,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -411,12 +427,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.asJson.some
         )(using tenant)
 
@@ -424,7 +441,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -435,13 +452,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(name = name).asJson.some
         )(using tenant)
 
@@ -449,7 +467,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -460,13 +478,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> name)
@@ -478,7 +497,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -489,19 +508,20 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, tenantAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -515,13 +535,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -533,13 +554,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(tenant = TenantId("test")).asJson.some
         )(using tenant)
 
@@ -551,13 +573,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner
             .copy(users =
               Set(
@@ -576,13 +599,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(tenant = TenantId("Not Found")).asJson.some
         )(using tenant)
 
@@ -594,13 +618,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner
             .copy(users =
               Set(
@@ -619,13 +644,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -637,7 +663,8 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val newUsers = json.SetUserWithPermissionFormat.writes(
@@ -649,7 +676,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json
@@ -667,12 +694,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -683,12 +711,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -700,12 +729,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.asJson.some
         )(using tenant)
 
@@ -713,7 +743,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -724,13 +754,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = name).asJson.some
         )(using tenant)
 
@@ -738,7 +769,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -749,13 +780,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userApiEditor, userAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> name)
@@ -767,7 +799,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -778,19 +810,20 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, tenantAdmin),
           teams = Seq(defaultAdminTeam, teamOwner),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwner.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -804,6 +837,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -811,7 +845,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.asJson.some
         )(using tenant)
 
@@ -822,6 +856,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(
             defaultApi.api.copy(id = ApiId(IdGenerator.token(10)), name = "foo")
           ),
@@ -832,7 +867,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -842,7 +877,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api
             .copy(possibleUsagePlans = Seq(UsagePlanId("unknown")))
             .asJson
@@ -855,7 +890,7 @@ class AdminApiControllerSpec
         val respDoc = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api
             .copy(documentation =
               ApiDocumentation(
@@ -881,7 +916,7 @@ class AdminApiControllerSpec
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.copy(team = TeamId("unknown")).asJson.some
         )(using tenant)
 
@@ -891,7 +926,7 @@ class AdminApiControllerSpec
         val respName = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body =
             defaultApi.api.copy(id = ApiId("foo"), name = "foo").asJson.some
         )(using tenant)
@@ -902,7 +937,7 @@ class AdminApiControllerSpec
         val respDefaultPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api
             .copy(defaultUsagePlan = UsagePlanId("unknown").some)
             .asJson
@@ -915,7 +950,7 @@ class AdminApiControllerSpec
         val respParent = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.copy(parent = ApiId("unknown").some).asJson.some
         )(using tenant)
 
@@ -925,7 +960,7 @@ class AdminApiControllerSpec
         val respChildren = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body =
             defaultApi.api.copy(apis = Set(ApiId("unknown")).some).asJson.some
         )(using tenant)
@@ -939,6 +974,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           teams = Seq(teamConsumer),
           usagePlans = defaultApi.plans
@@ -947,7 +983,7 @@ class AdminApiControllerSpec
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.asJson.some
         )(using tenant)
 
@@ -958,13 +994,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           usagePlans = defaultApi.plans
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -974,13 +1011,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -991,6 +1029,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer, teamOwner)
@@ -999,7 +1038,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.asJson.some
         )(using tenant)
 
@@ -1007,7 +1046,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1018,6 +1057,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamOwner),
@@ -1028,7 +1068,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -1036,7 +1076,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1046,6 +1086,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamOwner),
@@ -1055,7 +1096,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> "foo")
@@ -1067,7 +1108,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1079,20 +1120,21 @@ class AdminApiControllerSpec
           users = Seq(tenantAdmin),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1113,6 +1155,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(
             defaultApi.api,
             childApi,
@@ -1126,7 +1169,7 @@ class AdminApiControllerSpec
         val respChildPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1144,7 +1187,7 @@ class AdminApiControllerSpec
         val respChildPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = childApi.copy(description = "foofoo").asJson.some
         )(using tenant)
 
@@ -1154,7 +1197,7 @@ class AdminApiControllerSpec
         val respParentPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1171,7 +1214,7 @@ class AdminApiControllerSpec
         val respParentPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api.copy(description = "foofoo").asJson.some
         )(using tenant)
         respParentPut.status mustBe 204
@@ -1180,7 +1223,7 @@ class AdminApiControllerSpec
         val respOtherPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1198,7 +1241,7 @@ class AdminApiControllerSpec
         val respOtherPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = otherApi.copy(name = defaultApi.api.name).asJson.some
         )(using tenant)
 
@@ -1208,7 +1251,7 @@ class AdminApiControllerSpec
         val respOtherOkPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1226,7 +1269,7 @@ class AdminApiControllerSpec
         val respOtherOkPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = otherApi.copy(name = "test-test-test-test").asJson.some
         )(using tenant)
 
@@ -1236,7 +1279,7 @@ class AdminApiControllerSpec
         val respCreateKo = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api
             .copy(id = ApiId(IdGenerator.token), parent = None)
             .asJson
@@ -1258,7 +1301,7 @@ class AdminApiControllerSpec
         val respCreateVersionOK = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = some
         )(using tenant)
 
@@ -1268,7 +1311,7 @@ class AdminApiControllerSpec
         val respCreateOk = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.api
             .copy(id = ApiId(IdGenerator.token), name = "final_api_test")
             .asJson
@@ -1282,18 +1325,26 @@ class AdminApiControllerSpec
     "A call to ApiSubscription admin API" must {
       "POST :: Conflict :: Id already exists" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
 
         setupEnvBlocking(
@@ -1302,13 +1353,14 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(by = user.id).asJson.some
         )(using tenant)
 
@@ -1317,18 +1369,26 @@ class AdminApiControllerSpec
 
       "POST :: BadRequest" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1336,14 +1396,15 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(tenant = TenantId("notFound")).asJson.some
         )(using tenant)
 
@@ -1354,7 +1415,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(plan = UsagePlanId("notFound")).asJson.some
         )(using tenant)
         respPlan.status mustBe 400
@@ -1364,7 +1425,7 @@ class AdminApiControllerSpec
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(team = TeamId("notFound")).asJson.some
         )(using tenant)
         respTeam.status mustBe 400
@@ -1374,38 +1435,45 @@ class AdminApiControllerSpec
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(by = UserId("notFound")).asJson.some
         )(using tenant)
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        // parent not found
-        val respParent = httpJsonCallWithoutSessionBlocking(
+        // keyring not found
+        val respKeyring = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
-          body =
-            sub.copy(parent = ApiSubscriptionId("notFound").some).asJson.some
+          headers = getAdminApiHeader(adminApiKeyring),
+          body = sub.copy(keyring = KeyringId("notFound")).asJson.some
         )(using tenant)
-        respParent.status mustBe 400
-        getMsg(respParent) mustBe "Parent subscription not found"
+        respKeyring.status mustBe 400
+        getMsg(respKeyring) mustBe "Keyring not found"
       }
 
       "PUT :: BadRequest :: Tenant NotFound" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1413,13 +1481,14 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(tenant = TenantId("notFound")).asJson.some
         )(using tenant)
 
@@ -1430,7 +1499,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(plan = UsagePlanId("notFound")).asJson.some
         )(using tenant)
         respPlan.status mustBe 400
@@ -1440,7 +1509,7 @@ class AdminApiControllerSpec
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(team = TeamId("notFound")).asJson.some
         )(using tenant)
         respTeam.status mustBe 400
@@ -1450,22 +1519,21 @@ class AdminApiControllerSpec
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(by = UserId("notFound")).asJson.some
         )(using tenant)
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        // parent not found
-        val respParent = httpJsonCallWithoutSessionBlocking(
+        // keyring not found
+        val respKeyring = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
-          body =
-            sub.copy(parent = ApiSubscriptionId("notFound").some).asJson.some
+          headers = getAdminApiHeader(adminApiKeyring),
+          body = sub.copy(keyring = KeyringId("notFound")).asJson.some
         )(using tenant)
-        respParent.status mustBe 400
-        getMsg(respParent) mustBe "Parent subscription not found"
+        respKeyring.status mustBe 400
+        getMsg(respKeyring) mustBe "Keyring not found"
       }
 
       "PUT :: Not Found" in {
@@ -1473,13 +1541,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -1488,18 +1557,26 @@ class AdminApiControllerSpec
 
       "PATCH :: BadRequest" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1507,13 +1584,14 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1532,7 +1610,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1550,7 +1628,7 @@ class AdminApiControllerSpec
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1568,7 +1646,7 @@ class AdminApiControllerSpec
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json
@@ -1579,52 +1657,39 @@ class AdminApiControllerSpec
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        // parent not found
-        val respParent = httpJsonCallWithoutSessionBlocking(
+        // keyring not found
+        val respKeyring = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
                 "op" -> "replace",
-                "path" -> "/parent",
+                "path" -> "/keyring",
                 "value" -> "notFound"
               )
             )
             .some
         )(using tenant)
-        respParent.status mustBe 400
-        getMsg(respParent) mustBe "Parent subscription not found"
+        respKeyring.status mustBe 400
+        getMsg(respKeyring) mustBe "Keyring not found"
       }
 
       "GET :: Not Found" in {
-        val payPerUsePlanId = UsagePlanId("5")
-        val sub = ApiSubscription(
-          id = ApiSubscriptionId(IdGenerator.token(12)),
-          tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
-          plan = payPerUsePlanId,
-          createdAt = DateTime.now(),
-          team = teamConsumerId,
-          api = defaultApi.api.id,
-          by = userTeamAdminId,
-          customName = None,
-          rotation = None,
-          integrationToken = "token"
-        )
         setupEnvBlocking(
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -1632,18 +1697,26 @@ class AdminApiControllerSpec
 
       "GET :: Ok" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1651,12 +1724,13 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -1665,18 +1739,26 @@ class AdminApiControllerSpec
 
       "POST :: Created" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1684,12 +1766,13 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.asJson.some
         )(using tenant)
 
@@ -1697,7 +1780,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1705,18 +1788,26 @@ class AdminApiControllerSpec
       }
       "PUT :: No Content" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1724,13 +1815,14 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = sub.copy(adminCustomName = name.some).asJson.some
         )(using tenant)
 
@@ -1738,7 +1830,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1746,18 +1838,26 @@ class AdminApiControllerSpec
       }
       "PATCH :: No Content" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1765,13 +1865,14 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -1787,7 +1888,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1795,18 +1896,26 @@ class AdminApiControllerSpec
       }
       "DELETE :: Ok" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(12)),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         setupEnvBlocking(
           tenants = Seq(tenant),
@@ -1814,19 +1923,20 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -1850,13 +1960,14 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.copy(content = "test").asJson.some
         )(using tenant)
 
@@ -1879,12 +1990,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -1907,12 +2019,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.asJson.some
         )(using tenant)
 
@@ -1920,7 +2033,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1942,13 +2055,14 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.copy(content = name).asJson.some
         )(using tenant)
 
@@ -1956,7 +2070,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -1978,13 +2092,14 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val content = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2000,7 +2115,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2022,19 +2137,20 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           pages = Seq(page),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -2058,13 +2174,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = notif.copy(sender = userAdmin.asNotificationSender).asJson.some
         )(using tenant)
 
@@ -2086,14 +2203,15 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         // tenant not found
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = notif.copy(tenant = TenantId("test")).asJson.some
         )(using tenant)
 
@@ -2116,13 +2234,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = notif.copy(tenant = tenant2.id).asJson.some
         )(using tenant)
 
@@ -2145,13 +2264,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = notif.copy(sender = user.asNotificationSender).asJson.some
         )(using tenant)
 
@@ -2174,13 +2294,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2212,12 +2333,13 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -2239,12 +2361,13 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -2267,13 +2390,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = notif.asJson.some
         )(using tenant)
 
@@ -2281,7 +2405,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2303,14 +2427,15 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val updatedNotif = notif.copy(sender = user.asNotificationSender)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updatedNotif.asJson.some
         )(using tenant)
 
@@ -2318,7 +2443,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2340,13 +2465,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(notif),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2362,7 +2488,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2386,19 +2512,20 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
           notifications = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications/${notif.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -2428,13 +2555,14 @@ class AdminApiControllerSpec
           users = Seq(),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           sessions = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/sessions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = session.copy(ttl = 1.hour).asJson.some
         )(using tenant)
 
@@ -2470,7 +2598,7 @@ class AdminApiControllerSpec
 //        val resp = httpJsonCallWithoutSessionBlocking(
 //          path = s"/admin-api/sessions",
 //          method = "POST",
-//          headers = getAdminApiHeader(adminApiSubscription),
+//          headers = getAdminApiHeader(adminApiKeyring),
 //          body = session.copy(ttl = 1.hour).asJson.some
 //        )(tenant)
 //
@@ -2498,13 +2626,14 @@ class AdminApiControllerSpec
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           sessions = Seq(session)
         )
 
         val respConflict = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/sessions/${session.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(email = userAdmin.email).asJson.some
         )(using tenant)
 
@@ -2516,13 +2645,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -2534,13 +2664,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2560,14 +2691,15 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2586,13 +2718,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -2611,13 +2744,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .obj(
               "personalEmail" -> userAdminEmail
@@ -2632,13 +2766,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .obj(
               "tenants" -> Json.arr(Json.obj("email" -> userAdminEmail))
@@ -2653,13 +2788,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user, userAdmin),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val userAdminEmail = "newUserAdminEmail@gmail.com"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .obj(
               "email" -> userAdminEmail
@@ -2674,12 +2810,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -2690,12 +2827,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -2707,12 +2845,13 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.asJson.some
         )(using tenant)
 
@@ -2720,7 +2859,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2731,13 +2870,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = user.copy(name = name).asJson.some
         )(using tenant)
 
@@ -2745,7 +2885,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2756,13 +2896,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
         val name = "fifou"
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> name)
@@ -2774,7 +2915,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${user.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -2785,21 +2926,22 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val session = loginWithBlocking(user, tenant)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/sessions/${session.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/sessions/${session.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -2809,18 +2951,26 @@ class AdminApiControllerSpec
     "A call to ApiKey Consumption admin API" must {
       "POST :: Conflict :: Id already exists" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -2828,7 +2978,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -2864,13 +3014,14 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption
             .copy(from = DateTime.now().minusDays(1).withTimeAtStartOfDay())
             .asJson
@@ -2882,18 +3033,26 @@ class AdminApiControllerSpec
 
       "POST :: BadRequest" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -2901,7 +3060,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -2937,14 +3096,15 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(tenant = TenantId("unknown")).asJson.some
         )(using tenant)
 
@@ -2955,7 +3115,7 @@ class AdminApiControllerSpec
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(api = ApiId("unknown")).asJson.some
         )(using tenant)
 
@@ -2966,7 +3126,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(plan = UsagePlanId("unknown")).asJson.some
         )(using tenant)
 
@@ -2977,7 +3137,7 @@ class AdminApiControllerSpec
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(from = DateTime.now().plusDays(2)).asJson.some
         )(using tenant)
 
@@ -2987,18 +3147,26 @@ class AdminApiControllerSpec
 
       "PUT :: BadRequest" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3006,7 +3174,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3042,14 +3210,15 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(tenant = TenantId("unknown")).asJson.some
         )(using tenant)
 
@@ -3060,7 +3229,7 @@ class AdminApiControllerSpec
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(api = ApiId("unknown")).asJson.some
         )(using tenant)
 
@@ -3071,7 +3240,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(plan = UsagePlanId("unknown")).asJson.some
         )(using tenant)
 
@@ -3082,7 +3251,7 @@ class AdminApiControllerSpec
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = consumption.copy(from = DateTime.now().plusDays(2)).asJson.some
         )(using tenant)
 
@@ -3092,18 +3261,26 @@ class AdminApiControllerSpec
 
       "PATCH :: BadRequest" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3111,7 +3288,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3147,14 +3324,15 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3173,7 +3351,7 @@ class AdminApiControllerSpec
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3192,7 +3370,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3211,7 +3389,7 @@ class AdminApiControllerSpec
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3230,18 +3408,26 @@ class AdminApiControllerSpec
 
       "GET :: Ok" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3249,7 +3435,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3285,12 +3471,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -3299,18 +3486,26 @@ class AdminApiControllerSpec
 
       "POST :: Created" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3318,7 +3513,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3354,12 +3549,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           method = "POST",
           body = consumption.asJson.some
         )(using tenant)
@@ -3369,18 +3565,26 @@ class AdminApiControllerSpec
       }
       "PUT :: No Content" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3388,7 +3592,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3424,12 +3628,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           method = "PUT",
           body = consumption.copy(hits = 100).asJson.some
         )(using tenant)
@@ -3438,7 +3643,7 @@ class AdminApiControllerSpec
 
         val respVerif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         respVerif.status mustBe 200
@@ -3446,18 +3651,26 @@ class AdminApiControllerSpec
       }
       "PATCH :: No Content" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3465,7 +3678,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3501,12 +3714,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           method = "PATCH",
           body = Json
             .arr(Json.obj("op" -> "replace", "path" -> "/hits", "value" -> 100))
@@ -3517,7 +3731,7 @@ class AdminApiControllerSpec
 
         val respVerif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         respVerif.status mustBe 200
@@ -3525,18 +3739,26 @@ class AdminApiControllerSpec
       }
       "DELETE :: Ok" in {
         val payPerUsePlanId = UsagePlanId("5")
+        val keyring = Keyring(
+          id = KeyringId("test-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", "id", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("test"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = payPerUsePlanId,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = defaultApi.api.id,
           by = userTeamAdminId,
           customName = None,
-          rotation = None,
-          integrationToken = "token"
+          keyring = keyring.id
         )
         val consumption = ApiKeyConsumption(
           id = DatastoreId(IdGenerator.token(10)),
@@ -3544,7 +3766,7 @@ class AdminApiControllerSpec
           team = teamOwner.id,
           api = defaultApi.api.id,
           plan = payPerUsePlanId,
-          clientId = sub.apiKey.clientId,
+          clientId = keyring.apiKey.clientId,
           hits = 42,
           globalInformations = ApiKeyGlobalConsumptionInformations(
             hits = 42,
@@ -3580,12 +3802,13 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           consumptions = Seq(consumption),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           method = "DELETE"
         )(using tenant)
 
@@ -3624,7 +3847,7 @@ class AdminApiControllerSpec
 //        val resp = httpJsonCallWithoutSessionBlocking(
 //          path = s"/admin-api/messages",
 //          method = "POST",
-//          headers = getAdminApiHeader(adminApiSubscription),
+//          headers = getAdminApiHeader(adminApiKeyring),
 //          body = message.asJson.some
 //        )(tenant)
 //
@@ -3650,6 +3873,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq()
         )
 
@@ -3657,7 +3881,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(tenant = TenantId("unknown")).asJson.some
         )(using tenant)
 
@@ -3668,7 +3892,7 @@ class AdminApiControllerSpec
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(sender = UserId("unknown")).asJson.some
         )(using tenant)
 
@@ -3679,7 +3903,7 @@ class AdminApiControllerSpec
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message
             .copy(participants = Set(user.id, UserId("unknown")))
             .asJson
@@ -3693,7 +3917,7 @@ class AdminApiControllerSpec
         val respNotIn = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(sender = userApiEditor.id).asJson.some
         )(using tenant)
 
@@ -3720,6 +3944,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -3727,7 +3952,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(tenant = TenantId("unknown")).asJson.some
         )(using tenant)
 
@@ -3738,7 +3963,7 @@ class AdminApiControllerSpec
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(sender = UserId("unknown")).asJson.some
         )(using tenant)
 
@@ -3749,7 +3974,7 @@ class AdminApiControllerSpec
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message
             .copy(participants =
               message.participants.union(Set(UserId("unknown")))
@@ -3765,7 +3990,7 @@ class AdminApiControllerSpec
         val respNotIn = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.copy(sender = userApiEditor.id).asJson.some
         )(using tenant)
 
@@ -3778,13 +4003,14 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(user),
           teams = Seq(defaultAdminTeam),
-          subscriptions = Seq(adminApiSubscription)
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring)
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -3810,6 +4036,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
@@ -3817,7 +4044,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3836,7 +4063,7 @@ class AdminApiControllerSpec
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3855,7 +4082,7 @@ class AdminApiControllerSpec
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -3891,12 +4118,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -3921,12 +4149,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -3952,12 +4181,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = message.asJson.some
         )(using tenant)
 
@@ -3965,7 +4195,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -3990,6 +4220,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val updated = message.copy(
@@ -3999,7 +4230,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -4007,7 +4238,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4032,6 +4263,7 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val updated = message.copy(
@@ -4041,7 +4273,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -4063,7 +4295,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4088,19 +4320,20 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin, userApiEditor),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -4135,13 +4368,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = issue.asJson.some
         )(using tenant)
 
@@ -4175,13 +4409,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = issue.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -4191,7 +4426,7 @@ class AdminApiControllerSpec
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = issue.copy(by = UserId("unkown")).asJson.some
         )(using tenant)
 
@@ -4205,13 +4440,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -4237,12 +4473,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           messages = Seq(message)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -4275,12 +4512,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -4314,12 +4552,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = issue.asJson.some
         )(using tenant)
 
@@ -4327,7 +4566,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4360,13 +4599,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val updated = issue.copy(title = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${updated.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -4374,7 +4614,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4407,13 +4647,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val updated = issue.copy(title = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/title", "value" -> "foo")
@@ -4425,7 +4666,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4458,19 +4699,20 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           issues = Seq(issue)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/issues/${issue.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -4492,13 +4734,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = post.asJson.some
         )(using tenant)
 
@@ -4519,13 +4762,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = post.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -4547,13 +4791,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = teamOwner.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -4574,12 +4819,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -4599,12 +4845,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -4625,12 +4872,13 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = post.asJson.some
         )(using tenant)
 
@@ -4638,7 +4886,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4658,13 +4906,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val updated = post.copy(title = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -4672,7 +4921,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4692,13 +4941,14 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val updated = post.copy(title = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/title", "value" -> "foo")
@@ -4710,7 +4960,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4730,19 +4980,20 @@ class AdminApiControllerSpec
           users = Seq(user, userAdmin),
           teams = Seq(teamOwner),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           posts = Seq(post)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/posts/${post.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -4769,13 +5020,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.asJson.some
         )(using tenant)
 
@@ -4801,13 +5053,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -4834,13 +5087,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.copy(name = "test").asJson.some
         )(using tenant)
 
@@ -4866,12 +5120,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -4896,12 +5151,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -4927,12 +5183,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = page.asJson.some
         )(using tenant)
 
@@ -4940,7 +5197,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -4965,13 +5222,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val updated = page.copy(name = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -4979,7 +5237,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5004,13 +5262,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val updated = page.copy(name = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/name", "value" -> "foo")
@@ -5022,7 +5281,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5047,19 +5306,20 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           cmsPages = Seq(page)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/cms-pages/${page.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -5084,7 +5344,7 @@ class AdminApiControllerSpec
 //        val resp = httpJsonCallWithoutSessionBlocking(
 //          path = s"/admin-api/translations",
 //          method = "POST",
-//          headers = getAdminApiHeader(adminApiSubscription),
+//          headers = getAdminApiHeader(adminApiKeyring),
 //          body = translation.asJson.some
 //        )(tenant)
 //
@@ -5104,13 +5364,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = translation.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -5131,13 +5392,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = translation.asJson.some
         )(using tenant)
 
@@ -5148,12 +5410,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -5172,12 +5435,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -5197,12 +5461,13 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq()
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = translation.asJson.some
         )(using tenant)
 
@@ -5210,7 +5475,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5229,13 +5494,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val updated = translation.copy(value = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -5243,7 +5509,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5262,13 +5528,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val updated = translation.copy(value = "foo")
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj("op" -> "replace", "path" -> "/value", "value" -> "foo")
@@ -5280,7 +5547,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5299,19 +5566,20 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           translations = Seq(translation)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/translations/${translation.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -5324,6 +5592,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
@@ -5331,7 +5600,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = defaultApi.plans.head.asJson.some
         )(using tenant)
 
@@ -5368,6 +5637,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5375,7 +5645,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = plan.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -5385,7 +5655,7 @@ class AdminApiControllerSpec
         val respOto = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = plan
             .copy(otoroshiTarget =
               Some(
@@ -5409,7 +5679,7 @@ class AdminApiControllerSpec
         val respPayment = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = plan
             .copy(paymentSettings =
               PaymentSettings
@@ -5462,6 +5732,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5469,7 +5740,7 @@ class AdminApiControllerSpec
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = plan.asJson.some
         )(using tenant)
 
@@ -5480,13 +5751,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -5522,13 +5794,14 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -5566,6 +5839,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq()
         )
@@ -5573,7 +5847,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = plan.asJson.some
         )(using tenant)
 
@@ -5581,7 +5855,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5618,6 +5892,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
@@ -5625,7 +5900,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -5633,7 +5908,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5670,6 +5945,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
@@ -5677,7 +5953,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -5693,7 +5969,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5708,20 +5984,21 @@ class AdminApiControllerSpec
           users = Seq(tenantAdmin),
           teams = Seq(defaultAdminTeam),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans
         )
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -5756,6 +6033,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -5764,7 +6042,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.asJson.some
         )(using tenant)
 
@@ -5796,6 +6074,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           teams = Seq(teamConsumer),
           usagePlans = defaultApi.plans,
@@ -5805,7 +6084,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.copy(tenant = TenantId("unkown")).asJson.some
         )(using tenant)
 
@@ -5815,7 +6094,7 @@ class AdminApiControllerSpec
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.copy(api = ApiId("unkown")).asJson.some
         )(using tenant)
 
@@ -5825,7 +6104,7 @@ class AdminApiControllerSpec
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.copy(plan = UsagePlanId("unkown")).asJson.some
         )(using tenant)
 
@@ -5835,7 +6114,7 @@ class AdminApiControllerSpec
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.copy(team = TeamId("unkown")).asJson.some
         )(using tenant)
 
@@ -5845,7 +6124,7 @@ class AdminApiControllerSpec
         val respFrom = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.copy(from = UserId("unkown")).asJson.some
         )(using tenant)
 
@@ -5878,6 +6157,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -5886,7 +6166,7 @@ class AdminApiControllerSpec
         val respNotFound = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions-demands/unknown",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.asJson.some
         )(using tenant)
 
@@ -5897,6 +6177,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq()
@@ -5904,7 +6185,7 @@ class AdminApiControllerSpec
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/unknown",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 404
@@ -5935,6 +6216,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -5942,7 +6224,7 @@ class AdminApiControllerSpec
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
@@ -5974,6 +6256,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -5984,7 +6267,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands",
           method = "POST",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = demand.asJson.some
         )(using tenant)
 
@@ -5992,7 +6275,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -6023,6 +6306,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -6034,7 +6318,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
           method = "PUT",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = updated.asJson.some
         )(using tenant)
 
@@ -6042,7 +6326,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -6073,6 +6357,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           teams = Seq(teamConsumer),
@@ -6083,7 +6368,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
           method = "PATCH",
-          headers = getAdminApiHeader(adminApiSubscription),
+          headers = getAdminApiHeader(adminApiKeyring),
           body = Json
             .arr(
               Json.obj(
@@ -6099,7 +6384,7 @@ class AdminApiControllerSpec
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 200
@@ -6130,6 +6415,7 @@ class AdminApiControllerSpec
         setupEnvBlocking(
           tenants = Seq(tenant),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand)
@@ -6137,14 +6423,14 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
@@ -6197,6 +6483,7 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           users = Seq(userAdmin),
           subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptionDemands = Seq(demand),
@@ -6212,7 +6499,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demandId.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
 
@@ -6274,18 +6561,27 @@ class AdminApiControllerSpec
           users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
         )
 
+        val personalKeyring = Keyring(
+          id = KeyringId("personal-keyring"),
+          tenant = tenant.id,
+          team = userPersonalTeam.id,
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "test"
+        )
         val personalSubscription = ApiSubscription(
           id = ApiSubscriptionId("1"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = defaultApi.plans.head.id,
           createdAt = DateTime.now(),
           team = userPersonalTeam.id,
           api = defaultApi.api.id,
           by = user.id,
           customName = Some("custom name"),
-          rotation = None,
-          integrationToken = "test"
+          keyring = personalKeyring.id
         )
 
         val subscribedPlan = defaultApi.plans.reverse.head.id
@@ -6378,6 +6674,7 @@ class AdminApiControllerSpec
           posts = Seq(post),
           issues = Seq(issue),
           subscriptions = Seq(adminApiSubscription, personalSubscription),
+          keyrings = Seq(adminApiKeyring, personalKeyring),
           subscriptionDemands = Seq(subscriptionDemand),
           notifications = Seq(subDemandNotif)
         )
@@ -6385,7 +6682,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/teams/${teamOwnerId.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true
@@ -6468,18 +6765,27 @@ class AdminApiControllerSpec
           users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
         )
 
+        val personalKeyring = Keyring(
+          id = KeyringId("personal-keyring"),
+          tenant = tenant.id,
+          team = userPersonalTeam.id,
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "test"
+        )
         val personalSubscription = ApiSubscription(
           id = ApiSubscriptionId("1"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = defaultApi.plans.head.id,
           createdAt = DateTime.now(),
           team = userPersonalTeam.id,
           api = defaultApi.api.id,
           by = user.id,
           customName = Some("custom name"),
-          rotation = None,
-          integrationToken = "test"
+          keyring = personalKeyring.id
         )
 
         val teamInvitationNotif = Notification(
@@ -6535,6 +6841,7 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
           subscriptions = Seq(adminApiSubscription, personalSubscription),
+          keyrings = Seq(adminApiKeyring, personalKeyring),
           subscriptionDemands = Seq(subscriptionDemand),
           notifications = Seq(subDemandNotif, teamInvitationNotif),
           teams = Seq(
@@ -6550,14 +6857,14 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${userTeamUserId.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true
 
         val verifUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/users/${userTeamUserId.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         verifUser.status mustBe 200
         (verifUser.json \ "_deleted").as[Boolean] mustBe true
@@ -6606,18 +6913,27 @@ class AdminApiControllerSpec
           users = Set(UserWithPermission(user.id, TeamPermission.Administrator))
         )
 
+        val personalKeyring = Keyring(
+          id = KeyringId("personal-keyring"),
+          tenant = tenant.id,
+          team = userPersonalTeam.id,
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "test"
+        )
         val personalSubscription = ApiSubscription(
           id = ApiSubscriptionId("1"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = defaultApi.plans.head.id,
           createdAt = DateTime.now(),
           team = userPersonalTeam.id,
           api = defaultApi.api.id,
           by = user.id,
           customName = Some("custom name"),
-          rotation = None,
-          integrationToken = "test"
+          keyring = personalKeyring.id
         )
 
         val subscriptionDemand = SubscriptionDemand(
@@ -6709,6 +7025,7 @@ class AdminApiControllerSpec
           posts = Seq(post),
           issues = Seq(issue),
           subscriptions = Seq(adminApiSubscription, personalSubscription),
+          keyrings = Seq(adminApiKeyring, personalKeyring),
           subscriptionDemands = Seq(subscriptionDemand),
           notifications = Seq(subDemandNotif)
         )
@@ -6716,20 +7033,25 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
-          val verifApi = httpJsonCallWithoutSessionBlocking(
-            path = s"/admin-api/apis/${defaultApi.api.id.value}",
-            headers = getAdminApiHeader(adminApiSubscription)
-          )(using tenant)
-
-          verifApi.status mustBe 200
-          (verifApi.json \ "_deleted").as[Boolean]
+          operationsPending().nonEmpty
         }
+        org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
+          operationsPending().isEmpty
+        }
+
+        // once the deletion operations have drained, the api is physically
+        // removed (its subscriptions and plans are asserted gone below)
+        val verifApi = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiKeyring)
+        )(using tenant)
+        verifApi.status mustBe 404
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           operationsPending().isEmpty
@@ -6812,18 +7134,27 @@ class AdminApiControllerSpec
         )
 
         val subscribedPlan = defaultApi.plans.head
+        val personalKeyring = Keyring(
+          id = KeyringId("personal-keyring"),
+          tenant = tenant.id,
+          team = userPersonalTeam.id,
+          apiKey =
+            OtoroshiApiKey("personal-name", "personal-id", "personal-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "test"
+        )
         val personalSubscription = ApiSubscription(
           id = ApiSubscriptionId("1"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = subscribedPlan.id,
           createdAt = DateTime.now(),
           team = userPersonalTeam.id,
           api = defaultApi.api.id,
           by = user.id,
           customName = Some("custom name"),
-          rotation = None,
-          integrationToken = "test"
+          keyring = personalKeyring.id
         )
 
         val subscriptionDemand = SubscriptionDemand(
@@ -6888,6 +7219,7 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           pages = Seq(page),
           subscriptions = Seq(adminApiSubscription, personalSubscription),
+          keyrings = Seq(adminApiKeyring, personalKeyring),
           subscriptionDemands = Seq(subscriptionDemand),
           notifications = Seq(subDemandNotif)
         )
@@ -6895,14 +7227,14 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${subscribedPlan.id.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true
 
         val verifPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${subscribedPlan.id.value}",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         verifPlan.status mustBe 200
         (verifPlan.json \ "_deleted").as[Boolean] mustBe true
@@ -6976,18 +7308,30 @@ class AdminApiControllerSpec
           possibleUsagePlans = Seq(plan.id),
           defaultUsagePlan = plan.id.some
         )
+        val keyring = Keyring(
+          id = KeyringId("standalone-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey(
+            "standalone-name",
+            "standalone-id",
+            "standalone-secret"
+          ),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "standalone-token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("standalone-sub"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = plan.id,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = api.id,
           by = user.id,
           customName = None,
-          rotation = None,
-          integrationToken = "standalone-token"
+          keyring = keyring.id
         )
 
         setupEnvBlocking(
@@ -6996,13 +7340,14 @@ class AdminApiControllerSpec
           teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
           usagePlans = Seq(plan),
           apis = Seq(api),
-          subscriptions = Seq(adminApiSubscription, sub)
+          subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring)
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}?logically=true",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true
@@ -7023,18 +7368,26 @@ class AdminApiControllerSpec
           possibleUsagePlans = Seq(plan.id),
           defaultUsagePlan = plan.id.some
         )
+        val keyring = Keyring(
+          id = KeyringId("notif-keyring"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("notif-name", "notif-id", "notif-secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          integrationToken = "notif-token"
+        )
         val sub = ApiSubscription(
           id = ApiSubscriptionId("notif-sub"),
           tenant = tenant.id,
-          apiKey = OtoroshiApiKey("name", "id", "secret"),
           plan = plan.id,
           createdAt = DateTime.now(),
           team = teamConsumerId,
           api = api.id,
           by = user.id,
           customName = None,
-          rotation = None,
-          integrationToken = "notif-token"
+          keyring = keyring.id
         )
         val demandId = DemandId("notif-demand")
         val stepId = SubscriptionDemandStepId("notif-step")
@@ -7116,12 +7469,12 @@ class AdminApiControllerSpec
           notif(
             "n-key-deletion",
             NotificationAction
-              .ApiKeyDeletionInformation(api.id.value, sub.apiKey.clientId)
+              .ApiKeyDeletionInformation(api.id.value, keyring.apiKey.clientId)
           ),
           notif(
             "n-key-rotation-in-progress",
             NotificationAction.ApiKeyRotationInProgress(
-              sub.apiKey.clientId,
+              keyring.apiKey.clientId,
               api.id.value,
               plan.id.value
             )
@@ -7129,7 +7482,7 @@ class AdminApiControllerSpec
           notif(
             "n-key-rotation-ended",
             NotificationAction.ApiKeyRotationEnded(
-              sub.apiKey.clientId,
+              keyring.apiKey.clientId,
               api.id.value,
               plan.id.value
             )
@@ -7162,7 +7515,11 @@ class AdminApiControllerSpec
           notif(
             "n-key-deletion-v2",
             NotificationAction
-              .ApiKeyDeletionInformationV2(api.id, sub.apiKey.clientId, sub.id)
+              .ApiKeyDeletionInformationV2(
+                api.id,
+                keyring.apiKey.clientId,
+                sub.id
+              )
           ),
           notif(
             "n-key-rotation-in-progress-v2",
@@ -7175,7 +7532,7 @@ class AdminApiControllerSpec
           ),
           notif(
             "n-key-refresh-v2",
-            NotificationAction.ApiKeyRefreshV2(sub.id, api.id, plan.id)
+            NotificationAction.ApiKeyRefreshV2(keyring = keyring.id)
           ),
           notif(
             "n-new-post-v2",
@@ -7213,6 +7570,7 @@ class AdminApiControllerSpec
           usagePlans = Seq(plan),
           apis = Seq(api),
           subscriptions = Seq(adminApiSubscription, sub),
+          keyrings = Seq(adminApiKeyring, keyring),
           subscriptionDemands = Seq(demand),
           notifications = allNotifs
         )
@@ -7220,7 +7578,7 @@ class AdminApiControllerSpec
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demandId.value}",
           method = "DELETE",
-          headers = getAdminApiHeader(adminApiSubscription)
+          headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
         resp.status mustBe 200
         (resp.json \ "done").as[Boolean] mustBe true

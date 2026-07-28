@@ -7,6 +7,7 @@ import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services/index';
 import { ApiFilter } from './ApiFilter';
 import { isError, Issue } from '../../../../types';
+import { AlertCircle } from "lucide-react";
 
 export function ApiIssues({
   filter,
@@ -53,7 +54,7 @@ export function ApiIssues({
           <Link to={`${_id}`} className="me-2">
             <div className="border-bottom py-3 d-flex align-items-center justify-content-between" key={`issue-${seqId}`} style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color: '#{"var(--level2_text-color, #6c757d)"}' }}>
               <div className="d-flex align-items-center">
-                <i className="fa fa-exclamation-circle mx-3" style={{ color: open ? 'green' : 'red' }}></i>
+                <AlertCircle className="mx-3" style={{ color: open ? 'var(--success-color, green)' : 'var(--danger-color, green)' }} />
                 <div>
                   <div>
                     {title}
@@ -77,7 +78,7 @@ export function ApiIssues({
               </div>
               <div className="py-2 px-3">
                 <BeautifulTitle title={translate('issues.apiVersion')}>
-                  <span className="badge bg-info">{apiVersion}</span>
+                  <span className="badge --info">{apiVersion}</span>
                 </BeautifulTitle>
               </div>
             </div>

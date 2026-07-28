@@ -1,59 +1,87 @@
 :root {
   --level1_bg-color: pink;
   --level1_text-color: green;
-  --level1_link-color:red;
-  --level1_link-hover-color:yellow;
-  
+  --level1_link-color: red;
+  --level1_link-hover-color: yellow;
+
   --level2_bg-color: orange;
   --level2_text-color: blue;
   --level2_link-color: red;
   --level2_link-hover-color: brown;
 
-  --level3_bg-color : #bbd700;
-  --level3_text-color : #222;
+  --level3_bg-color: #bbd700;
+  --level3_text-color: #222;
   --level3_link-color: #4c4c4d;
-  --level3_link-hover-color : #000;
-  --level3_link-hover-bg-color :grey;
+  --level3_link-hover-color: #000;
+  --level3_link-hover-bg-color: grey;
 
   --sidebar-bg-color: beige;
   --sidebar-text-color: brown;
-  --sidebar-text-hover-color:orange;      
+  --sidebar-text-hover-color: orange;
 
   --menu-bg-color: #fba979;
   --menu-text-color: #ac6407;
   --menu-text-hover-bg-color: cadetblue;
   --menu-text-hover-color: yellow;
-  --menu-divider-color: grey;     
+  --menu-link-color: saddlebrown;
 
-  --card_header-bg-color : indigo;
+  --card_header-bg-color: indigo;
   --card_header-text-color: gold;
   --card_bg-color: lavender;
   --card_text-color: black;
   --card_link-color: lightseagreen;
-  --card_link-hover-color : lime;
-  
-  --btn-bg-color: #fff;
-  --btn-text-color: #495057;
-  --btn-border-color: #97b0c7;
+  --card_link-hover-color: lime;
 
-  --badge-tags-bg-color: #ffc107;
-  --badge-tags-bg-hover-color: #ffe1a7;
-  --badge-tags-text-color: #212529;
+  --btn-bg-color: hotpink;
+  --btn-text-color: #fff;
+  --btn-border-color: rebeccapurple;
+
+  --badge-tags-bg-color: lime;
+  --badge-tags-bg-hover-color: #ccff00;
+  --badge-tags-text-color: #000;
 
   --form-text-color: #000;
-  --form-border-color: #586069;
+  --form-border-color: rebeccapurple;
   --form-bg-color: #ff5e8c;
 
-  --form-select-focused-color: lightgrey;
-  --form-select-focused-text-color: white;
-  --form-select-heading-color: yellow;
-  --form-select-hover-color: lightgrey;
-  --form-select-hover-text-color: white;
+  --form-select-focused-color: rebeccapurple;
+  --form-select-focused-text-color: gold;
+  --form-select-heading-color: lime;
+  --form-select-hover-color: hotpink;
+  --form-select-hover-text-color: #fff;
 
-  --error-color:#dc3545;
-  --info-color: #17a2b8;
-  --success-color: #65B741;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --primary-color: rebeccaPurple;  
+  --info-color: #00aaff;
+  --info-color-bg: #c0f0ff;
+  --info-color-800: #003366;
+
+  --success-color: #00cc44;
+  --success-color-bg: #c8ffd4;
+  --success-color-800: #003311;
+
+  --warning-color: #ff8c00;
+  --warning-color-bg: #fff0cc;
+  --warning-color-800: #663300;
+
+  --danger-color: #ff0033;
+  --danger-color-bg: #ffccdd;
+  --danger-color-800: #660011;
+
+  --neutral-color: deeppink;
+  --neutral-color-bg: lemonchiffon;
+  --neutral-color-900: #330011;
+  --neutral-color-800: #660033;
+  --neutral-color-700: #990055;
+  --neutral-color-600: #cc0077;
+  --neutral-color-400: #ff4da6;
+  --neutral-color-300: #ff80c0;
+  --neutral-color-200: #ffb3d9;
+  --neutral-color-100: #ffe4f0;
+  --neutral-color-050: #fff0f8;
+  --neutral-color-000: #fff;
+
+  --primary-color: rebeccapurple;
+  --primary-color-bg: #f0e8ff;
+  --primary-color-050: #faf5ff;
+  --primary-color-400: #7b52ab;
+  --primary-color-800: #3d1f5c;
 }

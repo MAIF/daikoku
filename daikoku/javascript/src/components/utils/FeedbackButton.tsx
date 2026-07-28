@@ -1,46 +1,39 @@
-import classNames from 'classnames';
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState, useMemo, PropsWithChildren } from 'react';
+import { useEffect, useState, useMemo, PropsWithChildren } from 'react';
+import { Check, Loader } from "lucide-react";
+import classNames from 'classnames';
+import { isError } from '../../types';
 
 type ButtonType = 'success' | 'warning' | 'info' | 'danger' | 'primary' | 'secondary'
 type Props = {
-  type: ButtonType,
+  title?: string
+  type?: ButtonType,
   onPress: () => Promise<any>,
   beforePress?: () => Promise<boolean>,
   onSuccess?: () => void,
   feedbackTimeout?: number,
   feedbackMessages?: { success?: string, fail?: string },
+  error?: string,
   className?: string,
-  disabled: boolean,
+  disabled?: boolean,
   style?: { [key: string]: string },
 }
 export function FeedbackButton(props: PropsWithChildren<Props>) {
   const [uploading, setUploading] = useState(false);
   const [result, onResult] = useState('waiting');
-  const [color, setColor] = useState<ButtonType>(props.type);
+  const [caughtError, setCaughtError] = useState<string | undefined>(undefined);
+  // const [color, setColor] = useState<ButtonType>(props.type);
   const id = useMemo(() => nanoid(), [])
-
-  // useEffect(() => {
-  //   let timeout;
-
-  //   if (result !== 'waiting') {
-  //     setUploading(false);
-  //     timeout = setTimeout(() => {
-  //       onResult('waiting');
-  //     }, props.feedbackTimeout);
-  //   }
-
-  //   return () => {
-  //     if (timeout) clearTimeout(timeout);
-  //   };
-  // }, [result]);
 
   useEffect(() => {
     let timeout;
 
-    if (result === "success" || result === "failed") {
+    if (result === "success") {
       setUploading(false)
       timeout = setTimeout(() => onResult("waiting"), props.feedbackTimeout)
+    }
+    if (result === "failed") {
+      setUploading(false)
     }
     return () => {
       if (timeout) clearTimeout(timeout);
@@ -53,19 +46,6 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
   const waiting = result === 'waiting';
   const loading = waiting && uploading;
 
-  const getColor = (): ButtonType => {
-    if (successed) return 'success';
-    else if (failed) return 'danger';
-    else if (loading) return 'secondary';
-
-    return props.type;
-  };
-
-  useEffect(() => {
-    setColor(getColor());
-  }, [result, uploading]);
-
-
 
   const setStyle = () => {
     if (failed) {
@@ -77,72 +57,63 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
   };
 
   return (
-    <button
-      id={id}
-      type="button"
-      disabled={props.disabled || loading}
-      className={classNames(`btn btn-outline-${color}`, props.className)}
-      style={setStyle()}
-      onClick={() => {
-        if (!uploading && waiting) {
-          setUploading(true);
-          const timer = Date.now();
-          props.onPress()
-            .then(() => {
-              const diff = Date.now() - timer;
-              if (diff > 150) {
-                if (props.onSuccess) setTimeout(props.onSuccess, 250);
-                onResult('success');
-              } else {
-                setTimeout(() => {
-                  onResult('success');
+    <div className="feedback-button-wrapper">
+      <button
+        id={id}
+        title={props.title}
+        type="button"
+        disabled={props.disabled ?? loading}
+        className={classNames(props.className, { '--icon-only': loading })}
+        style={setStyle()}
+        onClick={() => {
+          if (!uploading) {
+            onResult('waiting');
+            setCaughtError(undefined);
+            setUploading(true);
+            const timer = Date.now();
+            props.onPress()
+              .then(() => {
+                const diff = Date.now() - timer;
+                if (diff > 150) {
                   if (props.onSuccess) setTimeout(props.onSuccess, 250);
-                }, 150 - diff);
-              }
-            })
-            .catch((err) => {
-              onResult('failed');
-              throw err;
-            });
-        }
-      }}>
-      {loading && (
-        <>
-          <i
-            className="fas fa-spinner fa-spin fa-sm"
-            style={{
-              opacity: loading ? 1 : 0,
-              transition: 'opacity 2s',
-            }}
-          />
-          {props.children}
-        </>
+                  onResult('success');
+                } else {
+                  setTimeout(() => {
+                    onResult('success');
+                    if (props.onSuccess) setTimeout(props.onSuccess, 250);
+                  }, 150 - diff);
+                }
+              })
+              .catch((err) => {
+                onResult('failed');
+                setCaughtError(props.feedbackMessages?.fail ?? (isError(err) ? err.error : undefined));
+                throw err;
+              });
+          }
+        }}>
+        {loading && (
+          <>
+            <Loader className='--rotate' style={{ opacity: loading ? 1 : 0 }} />
+          </>
+        )}
+        {successed && (
+          <>
+            <Check
+              style={{
+                opacity: successed ? 1 : 0,
+                transition: 'opacity 2s',
+              }}
+            />
+            {props.feedbackMessages?.success}
+          </>
+        )}
+        {!loading && !successed && props.children}
+      </button>
+      {failed && (caughtError ?? props.error ?? props.feedbackMessages?.fail) && (
+        <div className="feedback-button-error">
+          {caughtError ?? props.error ?? props.feedbackMessages?.fail}
+        </div>
       )}
-      {successed && (
-        <>
-          <i
-            className="fas fa-check"
-            style={{
-              opacity: successed ? 1 : 0,
-              transition: 'opacity 2s',
-            }}
-          />
-          {props.feedbackMessages?.success}
-        </>
-      )}
-      {failed && (
-        <>
-          <i
-            className="fas fa-times"
-            style={{
-              opacity: failed ? 1 : 0,
-              transition: 'opacity 2s',
-            }}
-          />
-          {props.feedbackMessages?.fail}
-        </>
-      )}
-      {!loading && !successed && !failed && props.children}
-    </button>
+    </div>
   );
 }

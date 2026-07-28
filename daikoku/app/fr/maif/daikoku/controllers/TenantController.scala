@@ -26,7 +26,7 @@ import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Try, Using}
 
 class TenantController(
     DaikokuAction: DaikokuAction,
@@ -260,6 +260,31 @@ class TenantController(
                 env.dataStore.usagePlanRepo
                   .forTenant(tenantForCreation)
                   .save(adminApiPlan)
+
+              defaultThemeBody = env.environment
+                .resourceAsStream("public/themes/default.css")
+                .map(stream =>
+                  Using.resource(stream)(s =>
+                    scala.io.Source.fromInputStream(s).mkString
+                  )
+                )
+                .getOrElse {
+                  AppLogger.warn(
+                    "public/themes/default.css not found, using empty default color theme"
+                  )
+                  ""
+                }
+
+              colorThemePage = Tenant.getCustomizationCmsPage(
+                tenantId = tenant.id,
+                pageId = "color-theme",
+                contentType = "text/css",
+                body = defaultThemeBody
+              )
+
+              _ <- env.dataStore.cmsRepo
+                .forTenant(tenant.id)
+                .save(colorThemePage)
             } yield {
               Created(tenantForCreation.asJsonWithJwt)
             }

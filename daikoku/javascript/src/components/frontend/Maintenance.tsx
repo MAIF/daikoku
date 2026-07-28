@@ -44,10 +44,6 @@ export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
             loginError: true,
           });
           setLoading(false);
-          buttonRef.current?.classList.add('active', 'btn-outline-danger')
-          setTimeout(() => {
-            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
-          }, 800);
         }
         else if (res.redirected) {
           window.location.href = res.url;
@@ -65,7 +61,7 @@ export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
           <div className={"flex-column d-flex"} >
             <button
               type="button"
-              className="btn btn-outline-primary shake gap-1 mb-2 "
+              className="btn --primary shake gap-1 mb-2 "
               onClick={() => {
                 location.href = `/auth/${provider}/login`
               }
@@ -74,7 +70,7 @@ export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
             </button>
             <button
               type="button"
-              className="btn btn-outline-primary shake gap-1 mb-2"
+              className="btn --secondary shake gap-1 mb-2"
               onClick={() => { setToggleLogin(!toggleLogin) }}>
               Connexion Locale
             </button>
@@ -120,7 +116,7 @@ export const MaintenancePage = ({ provider }: { provider: AuthProvider }) => {
               />
             </div>
             <div className="mb-3 d-grid gap-1">
-              <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
+              <button type="submit" ref={buttonRef} className="btn --primary shake" disabled={loading}>
                 <Translation i18nkey="login.btn.label">Login</Translation>
               </button>
             </div>

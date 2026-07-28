@@ -88,7 +88,6 @@ class AccountCreationService {
         picture = accountCreation.avatar,
         lastTenant = Some(tenant.id),
         password = Some(accountCreation.password),
-        personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
         metadata =
           metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
@@ -336,7 +335,7 @@ class AccountCreationService {
           .liftF(
             env.wsClient
               .url(step.url)
-              .withHttpHeaders(step.headers.toSeq *)
+              .withHttpHeaders(step.headers.toSeq*)
               .post(Json.obj("demand" -> demand.asJson))
           )
           .map(_.json)

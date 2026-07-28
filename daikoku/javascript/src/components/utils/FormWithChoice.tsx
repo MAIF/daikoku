@@ -1,8 +1,7 @@
 import { Form, Schema, format, type } from "@maif/react-forms"
 import { PropsWithChildren, useState } from "react"
 import classNames from 'classnames';
-import EyeOff from 'react-feather/dist/icons/eye-off.js';
-import Eye from 'react-feather/dist/icons/eye.js';
+import { EyeOff, Eye } from 'lucide-react';
 
 type Props = {
   selectorName: string,

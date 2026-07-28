@@ -24,19 +24,19 @@ export const SaveOrCancelModal = (props: ISaverOrCancelModalProps & IBaseModalPr
         <div className="modal-description">{props.message}</div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+        <button type="button" className="btn --secondary" onClick={props.close}>
           {translate('Cancel')}
         </button>
         <button
           type="button"
-          className="btn btn-outline-danger"
+          className="btn --tertiary"
           onClick={() => actionAndClose(props.dontsave)}
         >
           {translate("Don't save")}
         </button>
         <button
           type="button"
-          className="btn btn-outline-success"
+          className="btn --primary"
           onClick={() => actionAndClose(props.save)}
         >
           {translate('Save')}

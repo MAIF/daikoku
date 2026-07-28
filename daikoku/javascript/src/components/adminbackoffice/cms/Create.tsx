@@ -47,7 +47,7 @@ export const Create = () => {
   const flow = ['content']
 
   return <>
-    <button className="btn btn-sm btn-outline-info my-3" style={{ flex: 1 }} type="button"
+    <button className="btn --secondary mt-2" type="button"
       onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
       {translate('cms.create.back_to_pages')}
     </button>

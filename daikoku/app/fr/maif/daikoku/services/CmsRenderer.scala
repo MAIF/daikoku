@@ -307,7 +307,6 @@ case class CmsPage(
           origins = Set.empty,
           name = "Unauthenticated user",
           email = "unauthenticated@foo.bar",
-          personalToken = None,
           lastTenant = None,
           defaultLanguage = None
         )

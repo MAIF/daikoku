@@ -147,7 +147,7 @@ test("[ASOAPI-10365/10367] - Modifier les droits d'un utilisateur", async ({ pag
     .click();
 
   await getDwightAvatar().isVisible();
-  await expect(getDwightAvatar().locator("i.fa-shield-alt")).toBeVisible();
+  await expect(getDwightAvatar().locator(".lucide.lucide-shield")).toBeVisible();
 
   //todo: tester avec l'api d'admin ?
 
@@ -751,5 +751,5 @@ test('[Local] - Valider la creation d\'un compte avec un process de souscription
   await expect(page2.getByRole('heading', { name: 'Création de compte approuvée' })).toBeVisible();
 
   await loginLocalAs(ROBERT, page2)
-  await expect(page2.getByRole('listitem', {name: 'API papier'})).toBeVisible();
+  await expect(page2.getByRole('listitem', { name: 'API papier' })).toBeVisible();
 })

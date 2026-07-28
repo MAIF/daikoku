@@ -2,10 +2,10 @@ import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from 'react';
-import Pagination from "react-paginate";
+import Pagination from "../../utils/Pagination";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import Plus from 'react-feather/dist/icons/plus'
+import {Pen, Plus, Trash2, Users} from 'lucide-react';
 
 import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
@@ -219,7 +219,7 @@ export const TeamList = () => {
       {
         action: () => deleteTeam(team),
         variant: 'error',
-        iconClass: 'fas fa-trash delete-icon',
+        icon: <Trash2 className="delete-icon" />,
         tooltip: translate('Delete team'),
         ariaLabel: translate('Delete team'),
       },
@@ -258,7 +258,7 @@ export const TeamList = () => {
             })
           })
           .catch((error: ResponseError) => alert({ title: translate('Error'), message: error.error })),
-        iconClass: 'fas fa-pen',
+        icon: <Pen />,
         tooltip: translate('Edit team'),
         ariaLabel: translate('Edit team'),
         actionLabel: translate('Create')
@@ -273,7 +273,7 @@ export const TeamList = () => {
       ...basicActions,
       {
         action: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
-        iconClass: 'fas fa-users',
+        icon: <Users />,
         tooltip: translate({ key: "Member", plural: true }),
       },
     ];

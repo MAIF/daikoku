@@ -1,6 +1,6 @@
 # Daikoku
 
-[![Build](https://github.com/MAIF/daikoku/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/MAIF/daikoku/actions/workflows/test.yml) [![Playwright Tests](https://github.com/MAIF/daikoku/actions/workflows/playwright.yml/badge.svg)](https://github.com/MAIF/daikoku/actions/workflows/playwright.yml) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
+[![Build](https://github.com/MAIF/daikoku/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/MAIF/daikoku/actions/workflows/test.yml) [![Playwright Tests](https://github.com/MAIF/daikoku/actions/workflows/playwright.yml/badge.svg?branch=master)](https://github.com/MAIF/daikoku/actions/workflows/playwright.yml) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
 
 **Daikoku** is the missing developer portal for <a href="https://maif.github.io/otoroshi">Otoroshi</a> written in Scala and developed by the <a href="https://maif.github.io" target="_blank">MAIF</a> team .
 
@@ -9,6 +9,7 @@
 The reference documentation is available at [https://maif.github.io/daikoku/](https://maif.github.io/daikoku/)
 
 ## Community
+
 You can join these groups and chats to discuss and ask daikoku related questions:
 
 - Issue tracker: [![github: MAIF/daikoku/issues](https://img.shields.io/github/issues/MAIF/daikoku.svg)](https://github.com/MAIF/daikoku/issues)
@@ -17,7 +18,7 @@ You can join these groups and chats to discuss and ask daikoku related questions
 
 ## Contributing
 
-Contributions are *very* welcome!
+Contributions are _very_ welcome!
 
 If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request implementing it.
 

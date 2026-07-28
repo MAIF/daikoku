@@ -64,11 +64,11 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
     </div>
 
     <div className="modal-footer">
-      <button type="button" className="btn btn-outline-danger" onClick={() => props.close()}>
+      <button type="button" className="btn --secondary" onClick={() => props.close()}>
         <Translation i18nkey="Cancel">Cancel</Translation>
       </button>
 
-      <button type="button" className="btn btn-outline-success" disabled={!validity} onClick={() => sendEmail()}>
+      <button type="button" className="btn --primary" disabled={!validity} onClick={() => sendEmail()}>
         <Translation i18nkey="Send">Send</Translation>
       </button>
     </div>

@@ -48,7 +48,7 @@ const TeamBackOfficeHome = () => {
         <div className="col">
           <div className="d-flex flex-row justify-content-center gap-1">
             <button
-              className={classNames("btn btn-outline-primary", {
+              className={classNames("btn --secondary", {
                 active: mode === "producer",
               })}
               onClick={() => setMode("producer")}
@@ -56,7 +56,7 @@ const TeamBackOfficeHome = () => {
               {translate('team.dashboard.label.producer')}
             </button>
             <button
-              className={classNames("btn btn-outline-primary", {
+              className={classNames("btn --secondary", {
                 active: mode === "consumer",
               })}
               onClick={() => setMode("consumer")}
