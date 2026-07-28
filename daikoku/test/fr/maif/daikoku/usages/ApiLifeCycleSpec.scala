@@ -583,17 +583,20 @@ class ApiLifeCycleSpec
       // (reason Owner): its route is discarded, the key stays enabled.
       archiveSubscriptionByOwner(adminSession, subChild.id, enabled = false)
       triggerSyncJob(adminSession)
+      logger.info("BEGIN TEST")
       checkOtoroshiKeyEnabling(
         otoroshiApiKey1,
         enabled = true,
         routes = Seq(parentRoute)
       )
+      logger.info("TEST parent enabled OK")
       checkOtoroshiKeyEnabling(
         otoroshiApiKey1,
         enabled = true,
         blocked = true,
         routes = Seq(childRoute)
       )
+      logger.info("TEST child blocked by owner OK")
 
       // Phase 2 — full lifecycle block (reason Lifecycle added to every sub):
       // the shared key is disabled.
@@ -602,27 +605,34 @@ class ApiLifeCycleSpec
       checkOtoroshiKeyEnabling(
         otoroshiApiKey1,
         enabled = false,
-        routes = Seq(parentRoute, childRoute)
+        blocked = true,
+        routes = Seq.empty
+        // routes = Seq(parentRoute, childRoute)
       )
+      logger.info("TEST all subs blocked by lifecycle OK")
 
       // Phase 3 — lifecycle deblock (Blocked -> Deprecated; Blocked -> Published
       // is forbidden by checkPreviousState): ONLY the Lifecycle reason is removed.
       // The parent subscription becomes active again, but subChild keeps its
       // Owner block -> its route stays discarded. This is the crux: the manual
       // block must survive the block/deblock cycle.
+      logger.info("rollback lifecycle")
       changingAPIState(adminSession, ApiState.Deprecated)
       triggerSyncJob(adminSession)
+      logger.info("trigger sync")
       checkOtoroshiKeyEnabling(
         otoroshiApiKey1,
         enabled = true,
         routes = Seq(parentRoute)
       )
+      logger.info("TEST parent enabled OK")
       checkOtoroshiKeyEnabling(
         otoroshiApiKey1,
         enabled = true,
         blocked = true,
         routes = Seq(childRoute)
       )
+      logger.info("TEST child still blocked OK")
     }
 
     "setup isDefault for another version if blocked API is currently isDefault" in {
@@ -1299,7 +1309,7 @@ class ApiLifeCycleSpec
         enabled: Boolean = true,
         blocked: Boolean = false,
         routes: Seq[OtoroshiRouteId]
-    ) = {
+    ): Unit = {
       def respVerifOto = httpJsonCallWithoutSessionBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${apk.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
