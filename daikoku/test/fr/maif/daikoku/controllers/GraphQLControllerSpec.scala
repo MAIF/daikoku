@@ -47,7 +47,7 @@ class GraphQLControllerSpec()
               )
             ),
             allowMultipleKeys = Some(false),
-            subscriptionProcess = Seq.empty,
+            subscriptionProcess = SubscriptionProcess(),
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false)
           )
@@ -93,7 +93,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -136,7 +136,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -181,7 +181,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -226,7 +226,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -270,7 +270,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -316,7 +316,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -760,7 +760,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -805,7 +805,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -850,7 +850,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -896,7 +896,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -941,7 +941,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -986,7 +986,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1033,7 +1033,7 @@ class GraphQLControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1868,7 +1868,7 @@ class GraphQLControllerSpec()
         customName = "guest-email-test-plan",
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1951,7 +1951,7 @@ class GraphQLControllerSpec()
         customName = "sec-test-plan",
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )

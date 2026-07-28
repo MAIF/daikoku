@@ -285,7 +285,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -409,7 +409,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -941,7 +941,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         visibility = UsagePlanVisibility.Private
@@ -1029,7 +1029,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1102,7 +1102,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1234,7 +1234,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1330,11 +1330,13 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.TeamAdmin(
-            id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "team.name"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin(
+              id = IdGenerator.token,
+              team = defaultApi.api.team,
+              title = "team.name"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
@@ -1556,7 +1558,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1680,7 +1682,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1701,7 +1703,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1805,7 +1807,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1826,7 +1828,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1966,7 +1968,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1987,7 +1989,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2128,7 +2130,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(true),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2149,7 +2151,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(true),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2289,7 +2291,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(true),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2310,7 +2312,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(true),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2452,7 +2454,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2473,7 +2475,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2581,7 +2583,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true),
@@ -2604,7 +2606,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2711,7 +2713,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2732,7 +2734,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2840,7 +2842,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2861,7 +2863,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true),
@@ -2970,7 +2972,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -3210,7 +3212,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )

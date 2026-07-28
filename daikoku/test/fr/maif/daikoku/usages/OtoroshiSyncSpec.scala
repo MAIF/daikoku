@@ -117,7 +117,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -213,7 +213,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -322,7 +322,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -416,7 +416,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -447,7 +447,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -569,7 +569,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -692,7 +692,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -811,7 +811,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -919,7 +919,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1009,7 +1009,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1133,7 +1133,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1163,7 +1163,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1288,7 +1288,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1318,7 +1318,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1444,7 +1444,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1474,7 +1474,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1602,7 +1602,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -1703,7 +1703,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1734,7 +1734,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1863,7 +1863,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1894,7 +1894,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2046,7 +2046,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2077,7 +2077,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2203,7 +2203,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2234,7 +2234,7 @@ class OtoroshiSyncSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2383,12 +2383,14 @@ class OtoroshiSyncSpec()
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true),
-        subscriptionProcess = Seq(
-          HttpRequest(
-            id = "request",
-            title = "request",
-            url =
-              s"http://request-accepted.oto.tools:${container.mappedPort(8080)}"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            HttpRequest(
+              id = "request",
+              title = "request",
+              url =
+                s"http://request-accepted.oto.tools:${container.mappedPort(8080)}"
+            )
           )
         )
       )
@@ -2480,7 +2482,7 @@ class OtoroshiSyncSpec()
 //        integrationProcess = IntegrationProcess.ApiKey,
 //        autoRotation = Some(false),
 //        aggregationApiKeysSecurity = Some(true),
-//        subscriptionProcess = Seq.empty
+//        subscriptionProcess = SubscriptionProcess()
 //      )
 //
 //      val childPlan = UsagePlan(

@@ -56,15 +56,14 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.Form(
-            id = IdGenerator.token,
-            title = "Form"
-          ),
-          ValidationStep.TeamAdmin(
-            id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "Admin"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.Form(id = IdGenerator.token, title = "form"),
+            ValidationStep.TeamAdmin(
+              id = IdGenerator.token,
+              team = defaultApi.api.team,
+              title = "Admin"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
@@ -470,7 +469,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -712,7 +711,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         allowMultipleKeys = Some(false),
         visibility = Private,
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       setupEnvBlocking(
@@ -767,7 +766,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         visibility = Private,
         authorizedTeams = Seq(teamConsumerId),
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       setupEnvBlocking(
@@ -822,7 +821,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         visibility = Private,
         authorizedTeams = Seq.empty,
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       setupEnvBlocking(
@@ -876,7 +875,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         allowMultipleKeys = Some(false),
         visibility = Private,
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       setupEnvBlocking(
@@ -927,7 +926,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         visibility = Public,
         authorizedTeams = Seq.empty,
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       val keyring = Keyring(

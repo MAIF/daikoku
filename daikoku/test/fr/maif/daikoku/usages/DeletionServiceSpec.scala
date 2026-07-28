@@ -1104,7 +1104,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1490,7 +1490,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1508,7 +1508,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1671,7 +1671,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1777,7 +1777,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1795,7 +1795,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1962,7 +1962,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1980,7 +1980,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -1998,7 +1998,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2200,7 +2200,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2218,7 +2218,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2372,7 +2372,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2390,7 +2390,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2545,7 +2545,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2563,7 +2563,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2736,7 +2736,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -2754,7 +2754,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -3030,7 +3030,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
@@ -3129,7 +3129,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -3147,7 +3147,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -3275,7 +3275,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -3293,7 +3293,7 @@ class DeletionServiceSpec
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)

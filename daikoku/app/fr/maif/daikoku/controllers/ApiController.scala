@@ -1342,9 +1342,9 @@ class ApiController(
       }
     }
 
-  def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String): Action[JsValue] =
+  def  updateApiSubscriptionCustomName(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has update custom name for subscription @{subscription._id}"
         )
@@ -1808,7 +1808,7 @@ class ApiController(
       enabled: Option[Boolean]
   ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has @{action} api subscription @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2010,7 +2010,7 @@ class ApiController(
 
   def toggleApiKeyRotation(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}"
         )
@@ -2043,7 +2043,7 @@ class ApiController(
 
   def regenerateKeyringSecret(teamId: String, keyringId: String) =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has regenerate keyring secret @{keyring.id} of @{team.name} - @{team.id}"
         )

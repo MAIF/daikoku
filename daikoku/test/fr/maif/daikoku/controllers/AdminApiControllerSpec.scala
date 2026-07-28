@@ -5629,7 +5629,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -5724,7 +5724,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -5786,7 +5786,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -5831,7 +5831,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -5884,7 +5884,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -5937,7 +5937,7 @@ class AdminApiControllerSpec
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )
@@ -7298,7 +7298,7 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           customName = "standalone plan",
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )

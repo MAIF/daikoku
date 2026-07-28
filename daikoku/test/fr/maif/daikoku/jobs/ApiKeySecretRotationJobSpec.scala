@@ -231,7 +231,7 @@ class ApiKeySecretRotationJobSpec()
       )
     ),
     allowMultipleKeys = Some(false),
-    subscriptionProcess = Seq.empty,
+    subscriptionProcess = SubscriptionProcess(),
     integrationProcess = IntegrationProcess.ApiKey,
     autoRotation = Some(true)
   )

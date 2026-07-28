@@ -421,11 +421,13 @@ class NotificationControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.TeamAdmin(
-            id = "step_1",
-            team = defaultApi.api.team,
-            title = "Admin"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin(
+              id = "step_1",
+              team = defaultApi.api.team,
+              title = "Admin"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
@@ -498,11 +500,13 @@ class NotificationControllerSpec()
       respVerif.json.as[JsArray].value.size mustBe 1
     }
     "reject notification - api subscription" in {
-      val process = Seq(
-        ValidationStep.TeamAdmin(
-          id = IdGenerator.token,
-          team = defaultApi.api.team,
-          title = "Admin"
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.TeamAdmin(
+            id = IdGenerator.token,
+            team = defaultApi.api.team,
+            title = "Admin"
+          )
         )
       )
       val plan = UsagePlan(
@@ -536,7 +540,7 @@ class NotificationControllerSpec()
         tenant = tenant.id,
         api = defaultApi.api.id,
         plan = plan.id,
-        steps = process.map(s =>
+        steps = process.steps.map(s =>
           SubscriptionDemandStep(
             SubscriptionDemandStepId(s.id),
             SubscriptionDemandState.InProgress,
@@ -715,11 +719,13 @@ class NotificationControllerSpec()
       eventualApi.get.authorizedTeams.contains(teamConsumerId) mustBe false
     }
     "accept notification - api subscription" in {
-      val process = Seq(
-        ValidationStep.TeamAdmin(
-          id = IdGenerator.token,
-          team = defaultApi.api.team,
-          title = "Admin"
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.TeamAdmin(
+            id = IdGenerator.token,
+            team = defaultApi.api.team,
+            title = "Admin"
+          )
         )
       )
       val plan = UsagePlan(
@@ -752,7 +758,7 @@ class NotificationControllerSpec()
         tenant = tenant.id,
         api = defaultApi.api.id,
         plan = plan.id,
-        steps = process.map(s =>
+        steps = process.steps.map(s =>
           SubscriptionDemandStep(
             SubscriptionDemandStepId(s.id),
             SubscriptionDemandState.InProgress,
@@ -831,11 +837,13 @@ class NotificationControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.TeamAdmin(
-            id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "Admin"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin(
+              id = IdGenerator.token,
+              team = defaultApi.api.team,
+              title = "Admin"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
