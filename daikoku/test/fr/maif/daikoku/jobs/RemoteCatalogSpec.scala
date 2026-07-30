@@ -455,6 +455,39 @@ class RemoteCatalogSpec
       reload().value.status mustBe JobStatus.PartiallyCompleted
     }
 
+    "run on manual trigger (POST /api/jobs/remote-catalog/_sync) with a valid key" in {
+      val path = writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val t    = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
+      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = "/api/jobs/remote-catalog/_sync?key=secret",
+        method = "POST",
+        body = Json.obj().some
+      )(using t)
+
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+      loadTeam("team-weather") mustBe defined
+      reload().value.status mustBe JobStatus.Completed
+    }
+
+    "reject a manual trigger with a wrong key" in {
+      val path = writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val t    = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
+      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = "/api/jobs/remote-catalog/_sync?key=sec",
+        method = "POST",
+        body = Json.obj().some
+      )(using t)
+
+      resp.status mustBe 401
+      loadTeam("team-weather") mustBe None
+      reload() mustBe None
+    }
+
     "skip when another instance holds a valid lock" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))

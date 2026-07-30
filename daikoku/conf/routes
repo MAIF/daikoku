@@ -325,6 +325,7 @@ GET     /api/entities/plan                              fr.maif.daikoku.controll
 POST    /api/jobs/otoroshi/_sync                        fr.maif.daikoku.controllers.JobsController.otoroshiSyncJob(parallelism: Int ?= 25)
 POST    /api/jobs/rotation/_sync                        fr.maif.daikoku.controllers.JobsController.rotationSyncJob(parallelism: Int ?= 25)
 POST    /api/jobs/verifier/_sync                        fr.maif.daikoku.controllers.JobsController.verifierSyncJob(parallelism: Int ?= 25)
+POST    /api/jobs/remote-catalog/_sync                  fr.maif.daikoku.controllers.JobsController.remoteCatalogRunJob(parallelism: Int ?= 25)
 POST    /api/jobs/stats/_sync                           fr.maif.daikoku.controllers.JobsController.apikeysStatsSyncJob()
 POST    /api/jobs/purge/_sync                           fr.maif.daikoku.controllers.JobsController.auditTrailPurgeRunJob()
 
