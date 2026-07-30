@@ -463,27 +463,27 @@ export const NotificationList = () => {
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <FeedbackButton
-                  className="btn --tertiary --small --icon-only"
-                  title={translate('Accept')}
-                  aria-label={translate('Accept')}
-                  onPress={() => accept(notification._id)}
-                >
-                  <Check />
-                </FeedbackButton>
-              )}
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <FeedbackButton
-                  className="btn --tertiary --small --icon-only"
-                  onPress={() => reject(notification._id)}
-                  onSuccess={() => { }} feedbackTimeout={100} disabled={false}
-                  // title={translate('Reject')}
-                  aria-label={translate('Reject')}
-                  title={translate('Reject')}
-                // onClick={() => reject(notification._id)}
-                >
-                  <Ban />
-                </FeedbackButton>
+                <>
+                  <FeedbackButton
+                    className="btn --tertiary --small --icon-only"
+                    title={translate('Accept')}
+                    aria-label={translate('Accept')}
+                    onPress={() => accept(notification._id)}
+                  >
+                    <Check />
+                  </FeedbackButton>
+                  <FeedbackButton
+                    className="btn --tertiary --small --icon-only"
+                    onPress={() => reject(notification._id)}
+                    onSuccess={() => { }} feedbackTimeout={100} disabled={false}
+                    // title={translate('Reject')}
+                    aria-label={translate('Reject')}
+                    title={translate('Reject')}
+                    // onClick={() => reject(notification._id)}
+                  >
+                    <Ban />
+                  </FeedbackButton>
+                </>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
             </div>
