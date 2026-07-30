@@ -75,7 +75,15 @@ class NotificationController(
                 )
               )
             )
-          } yield Ok(Json.obj("count" -> youHaveUnreadNotifications.size))
+            toValidateNotifications = youHaveUnreadNotifications.filter(notif =>
+              notif.notificationType == NotificationType.AcceptOrReject
+            )
+          } yield Ok(
+            Json.obj(
+              "count" -> youHaveUnreadNotifications.size,
+              "toValidateCount" -> toValidateNotifications.size
+            )
+          )
       }
     }
 
