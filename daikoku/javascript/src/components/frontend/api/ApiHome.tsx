@@ -131,6 +131,7 @@ export const ApiHome = ({
         <Can I={read} a={apikey} teams={subscribingTeams}>
           <span
             className={classNames('block__entry__link', { active: currentTab === 'apikeys' })}
+            role= 'listitem'
             onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
             <Translation i18nkey="API keys">{translate({ key: 'API key', plural: true })}</Translation>
           </span>
