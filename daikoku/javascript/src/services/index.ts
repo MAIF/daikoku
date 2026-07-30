@@ -1587,6 +1587,7 @@ export const graphql = {
               schema
               formatter
               type
+              formKeysToMetadata
             }
             ... on Email {
               id
