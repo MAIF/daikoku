@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import classNames from 'classnames';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
 import { ApiGroupApis, TeamApiSubscriptions, read } from '../..';
@@ -125,10 +126,11 @@ export const ApiHome = ({
         .filter((team) => subscriptions.some((sub) => sub.team === team._id))
         .map(teamGQLToSimple);
 
+      const currentTab = params.tab;
       const viewApiKeyLink = (
         <Can I={read} a={apikey} teams={subscribingTeams}>
           <span
-            className="block__entry__link"
+            className={classNames('block__entry__link', { active: currentTab === 'apikeys' })}
             onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
             <Translation i18nkey="API keys">{translate({ key: 'API key', plural: true })}</Translation>
           </span>
@@ -141,7 +143,7 @@ export const ApiHome = ({
         },
       });
     }
-  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
+  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data, params.tab]);
 
   const askForApikeys = ({ team, plan, apiKey, motivation, redirect }:
     { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, redirect?: boolean }
