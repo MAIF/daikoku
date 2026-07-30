@@ -62,7 +62,7 @@ class NotificationControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification) ++ untreatedNotifications
+        notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = getOwnNotificationsCallBlocking(
