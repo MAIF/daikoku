@@ -99,7 +99,7 @@ export const ApiHome = () => {
   });
 
 
-  useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple), (environmentsQuery.data || []));
+  useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple), (environmentsQuery.data || []), (myTeamsQuery.data || []));
 
   useEffect(() => {
     return () => {
