@@ -36,7 +36,7 @@ class CatalogSourceGitlab extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch)
-      .withHttpHeaders(gitlabHeaders(token): _*)
+      .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -62,7 +62,7 @@ class CatalogSourceGitlab extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch, "recursive" -> "true", "per_page" -> "100")
-      .withHttpHeaders(gitlabHeaders(token): _*)
+      .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -105,7 +105,7 @@ class CatalogSourceGitlab extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch, "path" -> dirPath, "per_page" -> "100")
-      .withHttpHeaders(gitlabHeaders(token): _*)
+      .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -170,7 +170,7 @@ class CatalogSourceGitlab extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("per_page" -> "100", "include_subgroups" -> "true")
-      .withHttpHeaders(gitlabHeaders(token): _*)
+      .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>

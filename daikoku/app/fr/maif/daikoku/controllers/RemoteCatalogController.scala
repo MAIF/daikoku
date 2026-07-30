@@ -37,7 +37,10 @@ class RemoteCatalogController(
         Future.successful(
           Ok(
             Json.obj(
-              "defaultInterval" -> env.config.remoteCatalogInterval.toMillis
+              "enabled" -> env.config.remoteCatalogJobEnabled,
+              "schedulingMode" -> env.config.remoteCatalogJobSchedulingMode.value,
+              "defaultInterval" -> env.config.remoteCatalogJobInterval.toMillis,
+              "cronExpression" -> env.config.remoteCatalogJobCronExpr
             )
           )
         )

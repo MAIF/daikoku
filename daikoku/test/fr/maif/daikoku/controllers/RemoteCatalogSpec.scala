@@ -21,9 +21,9 @@ class RemoteCatalogSpec
     with BeforeAndAfterEach
     with BeforeAndAfter {
 
-  def getAdminApiHeader(adminApiSubscription: ApiSubscription): Map[String, String] =
+  def getAdminApiHeader(adminApiKeyring: Keyring): Map[String, String] =
     Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-        s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+        s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
       )}")
 
   private def aTeam(id: String, name: String): Team =
@@ -59,7 +59,7 @@ class RemoteCatalogSpec
     httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/remote-catalogs/$catalogId/$action",
       method = "POST",
-      headers = getAdminApiHeader(adminApiSubscription),
+      headers = getAdminApiHeader(adminApiKeyring),
       body = Json.obj().some
     )(using tenant)
 
@@ -67,14 +67,14 @@ class RemoteCatalogSpec
     httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/teams/$id",
       method = "GET",
-      headers = getAdminApiHeader(adminApiSubscription)
+      headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)
 
   private def getApi(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/apis/$id",
       method = "GET",
-      headers = getAdminApiHeader(adminApiSubscription)
+      headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)
 
   private def kindResult(resp: WSResponse, kind: String): JsObject =

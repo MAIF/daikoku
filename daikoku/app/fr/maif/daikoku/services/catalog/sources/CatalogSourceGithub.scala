@@ -4,11 +4,12 @@ import fr.maif.daikoku.domain.RemoteCatalog
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
 import play.api.Logger
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
 
 class CatalogSourceGithub extends CatalogSource {
 
@@ -56,7 +57,7 @@ class CatalogSourceGithub extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch)
-      .withHttpHeaders(githubRawHeaders(token): _*)
+      .withHttpHeaders(githubRawHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -83,7 +84,7 @@ class CatalogSourceGithub extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("recursive" -> "1")
-      .withHttpHeaders(githubHeaders(token): _*)
+      .withHttpHeaders(githubHeaders(token)*)
       .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -122,7 +123,7 @@ class CatalogSourceGithub extends CatalogSource {
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch)
-      .withHttpHeaders(githubHeaders(token): _*)
+      .withHttpHeaders(githubHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
@@ -193,7 +194,7 @@ class CatalogSourceGithub extends CatalogSource {
     env.wsClient
       .url(orgUrl)
       .withQueryStringParameters("per_page" -> "100", "type" -> "all")
-      .withHttpHeaders(githubHeaders(token): _*)
+      .withHttpHeaders(githubHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
       .flatMap { resp =>
@@ -206,7 +207,7 @@ class CatalogSourceGithub extends CatalogSource {
           env.wsClient
             .url(userUrl)
             .withQueryStringParameters("per_page" -> "100", "type" -> "all")
-            .withHttpHeaders(githubHeaders(token): _*)
+            .withHttpHeaders(githubHeaders(token)*)
             .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
             .get()
             .map { resp2 =>

@@ -92,7 +92,7 @@ class RemoteCatalogEngine(
           "updated"    -> report.results.flatMap(_.updated),
           "deleted"    -> report.results.flatMap(_.deleted)
         )
-      )(env)
+      )(using env)
     pruneAudit(tenant, catalog)
   }
 
@@ -148,7 +148,7 @@ class RemoteCatalogEngine(
       case None         =>
         Future.successful(Left(Json.obj("error" -> s"Unknown source kind: ${catalog.source.kind}")))
       case Some(source) =>
-        source.fetch(catalog, args)(ec, env).flatMap {
+        source.fetch(catalog, args)(using ec, env).flatMap {
           case Left(err)       => Future.successful(Left(err))
           case Right(entities) => reconcile(tenant, catalog, entities, dryRun).map(Right(_))
         }

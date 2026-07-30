@@ -55,7 +55,7 @@ class CatalogSourceHttp extends CatalogSource {
     env.wsClient
       .url(url)
       .withRequestTimeout(Duration(timeout, TimeUnit.MILLISECONDS))
-      .withHttpHeaders(headers.toSeq: _*)
+      .withHttpHeaders(headers.toSeq*)
       .get()
       .map { resp =>
         val body: String = resp.body
