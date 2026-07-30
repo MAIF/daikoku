@@ -286,7 +286,7 @@ case class UsagePlan(
     }
 
   def ensureFormStep(): UsagePlan =
-    if (subscriptionProcess.exists(_.name == "form")) this
+    if (subscriptionProcess.steps.exists(_.name == "form")) this
     else addSubscriptionStep(
       ValidationStep.Form(IdGenerator.token(32), title = "Motivation"), 0.some)
 
