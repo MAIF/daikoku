@@ -3,7 +3,7 @@ import merge from 'lodash/merge';
 import { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { api, CanIDoAction, manage, teamPermissions, team as TeamRightScope } from '../components/utils';
+import { api, apikey, CanIDoAction, CanIDoActionForOneOfTeams, manage, read, teamPermissions, team as TeamRightScope } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
 import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
@@ -101,6 +101,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
     !connectedUser.isGuest && !!api?.posts.length
   )
 
+  const canReadApiKey = CanIDoActionForOneOfTeams(connectedUser, read, apikey, team ? [team] : [])
+
   const schema = (currentTab: string): INavMenu => ({
     title: api?.name,
 
@@ -167,6 +169,13 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
               active: currentTab === 'subscriptions',
             },
           },
+          viewApiKey: canReadApiKey && {
+            label: translate({ key: 'API key', plural: true }),
+            action: () => navigateTo('apikeys'),
+            className: {
+              active: currentTab === 'apikeys',
+            },
+          }
         },
       },
       actions: {

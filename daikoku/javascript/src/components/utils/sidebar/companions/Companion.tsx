@@ -98,8 +98,9 @@ export const Companion = () => {
                                       </Link>
                                     );
                                   } else if (entry.component) {
-                                    link = React.cloneElement(entry.component, {
-                                      key: `${nanoid()}-link-${idx}-${linkidx}`
+                                    return React.cloneElement(entry.component, {
+                                      key: `${nanoid()}-child-${idx}`,
+                                      role: 'listitem'
                                     });
                                   }
                                 })}
