@@ -101,13 +101,13 @@ export const getTeamVisibleApi = (
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
 
-export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
+export const myUnreadNotificationsCount = (): Promise<{ toValidateCount: number, count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(
-      (r) => (r.status === 200 ? r.json() : { count: 0 }),
-      () => ({ count: 0 })
+      (r) => (r.status === 200 ? r.json() : { toValidateCount: 0 }),
+      () => ({ toValidateCount: 0 })
     )
-    .catch(() => ({ count: 0 }));
+    .catch(() => ({ toValidateCount: 0 }));
 
 export const myDashboard = (): PromiseWithError<TDashboardData> => customFetch('/api/me/dashboard');
 
@@ -1950,7 +1950,7 @@ export const graphql = {
               api {
                 _id
                 name
-                currentVersion   
+                currentVersion
               }
             }
             ... on ApiBlockingWarning {
