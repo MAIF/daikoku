@@ -4,23 +4,18 @@ import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
-import { ApiGroupApis, TeamApiSubscriptions, read } from '../..';
+import { ApiGroupApis, TeamApiSubscriptions } from '../..';
 import { I18nContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { NavContext } from '../../../contexts/navUtils';
 import * as Services from '../../../services';
 import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
+import { Option, Spinner, teamGQLToSimple } from '../../utils';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { ApiSubscriptions } from './ApiSubscriptions';
 
-type ApiHomeProps = {
-  groupView?: boolean
-}
-export const ApiHome = ({
-  groupView
-}: ApiHomeProps) => {
+export const ApiHome = () => {
 
   const { tenant, customGraphQLClient } = useContext(GlobalContext);
   const { setApiGroup } = useContext(NavContext);
@@ -34,7 +29,7 @@ export const ApiHome = ({
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
 
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const queryClient = useQueryClient();
   //todo: ???
@@ -104,44 +99,13 @@ export const ApiHome = ({
   });
 
 
-  const { addMenu } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
-    { addMenu: () => { } } :
-    useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple), (environmentsQuery.data || []));
+  useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple), (environmentsQuery.data || []), (myTeamsQuery.data || []));
 
   useEffect(() => {
     return () => {
       setApiGroup(undefined)
     }
   }, [])
-
-  useEffect(() => {
-    if (apiQuery.data && !isError(apiQuery.data) && myTeamsQuery.data && mySubscriptionQuery.data && ownerTeamQuery.data && !isError(ownerTeamQuery.data) && !groupView) {
-      const subscriptions = mySubscriptionQuery.data.subscriptions;
-      const myTeams = myTeamsQuery.data;
-      const api = apiQuery.data;
-      const ownerTeam = ownerTeamQuery.data
-
-      const subscribingTeams = myTeams
-        .filter((team) => subscriptions.some((sub) => sub.team === team._id))
-        .map(teamGQLToSimple);
-
-      const viewApiKeyLink = (
-        <Can I={read} a={apikey} teams={subscribingTeams}>
-          <span
-            className="block__entry__link"
-            onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
-            <Translation i18nkey="API keys">{translate({ key: 'API key', plural: true })}</Translation>
-          </span>
-        </Can>
-      );
-
-      addMenu({
-        blocks: {
-          links: { links: { viewApiKey: { component: viewApiKeyLink } } },
-        },
-      });
-    }
-  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
   const askForApikeys = ({ team, plan, apiKey, motivation, redirect }:
     { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, redirect?: boolean }
