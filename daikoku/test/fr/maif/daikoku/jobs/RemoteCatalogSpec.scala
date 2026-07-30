@@ -2,7 +2,6 @@ package fr.maif.daikoku.jobs
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.services.catalog.RemoteContentParser
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.joda.time.DateTime
@@ -156,35 +155,8 @@ class RemoteCatalogSpec
       .find(r => (r \ "kind").as[String] == kind)
       .get
 
-  "RemoteContentParser" should {
-    "parse a multi-doc YAML mixing flat and kube styles" in {
-      val yaml =
-        """kind: team
-          |_id: team-weather
-          |name: Weather
-          |---
-          |kind: usage-plan
-          |_id: plan-free
-          |---
-          |apiVersion: daikoku.io/v1
-          |kind: cms-page
-          |spec:
-          |  _id: page-home
-          |  name: Home
-          |""".stripMargin
-
-      val entities = RemoteContentParser.parseRawContent(yaml, "test")
-      entities.map(_.kind) mustBe Seq("team", "usage-plan", "cms-page")
-      entities.map(_.id) mustBe Seq("team-weather", "plan-free", "page-home")
-    }
-
-    "ignore content that is neither a JSON nor a YAML entity" in {
-      RemoteContentParser.parseRawContent(
-        "just a plain scalar",
-        "test"
-      ) mustBe empty
-    }
-  }
+  // RemoteContentParser coverage lives in the pure unit spec
+  // fr.maif.daikoku.services.catalog.RemoteContentParserSpec (no DB needed).
 
   "Remote catalog (file source)" should {
     "deploy a team and tag it with created_by" in {
@@ -456,8 +428,9 @@ class RemoteCatalogSpec
     }
 
     "run on manual trigger (POST /api/jobs/remote-catalog/_sync) with a valid key" in {
-      val path = writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t    = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
       setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
 
       val resp = httpJsonCallWithoutSessionBlocking(
@@ -473,8 +446,9 @@ class RemoteCatalogSpec
     }
 
     "reject a manual trigger with a wrong key" in {
-      val path = writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t    = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
       setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
 
       val resp = httpJsonCallWithoutSessionBlocking(
