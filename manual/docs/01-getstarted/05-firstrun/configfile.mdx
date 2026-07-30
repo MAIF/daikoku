@@ -70,6 +70,11 @@ or
 | `daikoku.verifierJob.key`<br />(`DAIKOKU_VERIFIER_JOB_ACCESS_KEY`) | string | "secret" | Access key to run otoroshi entities verifier job |
 | `daikoku.verifierJob.cronExpression`<br />(`DAIKOKU_VERIFIER_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
 | `daikoku.verifierJob.interval`<br />(`DAIKOKU_VERIFIER_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
+| `daikoku.remoteCatalogJob.enabled`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_ENABLED`) | boolean | false | Value to define if the job that synchronizes remote catalogs is enabled |
+| `daikoku.remoteCatalogJob.mode`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_MODE`) | string | "interval" | scheduling strategy: `interval` (fixed delay loop) or `cron` (cron expression) |
+| `daikoku.remoteCatalogJob.key`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_KEY`) | string | "secret" | Access key to run the remote catalog job |
+| `daikoku.remoteCatalogJob.cronExpression`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
+| `daikoku.remoteCatalogJob.interval`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_INTERVAL`) | duration | 1min | **Only used when `mode = interval`**. Delay in milliseconds between each run |
 
 ## Daikoku init
 

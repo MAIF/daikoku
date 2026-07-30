@@ -214,9 +214,6 @@ export interface IRemoteCatalogSource {
 }
 export interface IRemoteCatalogScheduling {
   enabled: boolean;
-  mode: 'interval' | 'cron';
-  interval?: number;
-  cronExpression?: string;
   deployArgs?: any;
 }
 export interface IRemoteCatalog {
@@ -227,9 +224,6 @@ export interface IRemoteCatalog {
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
   testDeployArgs?: any;
-}
-export interface IRemoteCatalogConfig {
-  defaultInterval: number;
 }
 
 export type TranslationItem = string | { s: string; p: string };

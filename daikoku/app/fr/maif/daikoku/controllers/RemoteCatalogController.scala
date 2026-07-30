@@ -3,7 +3,6 @@ package fr.maif.daikoku.controllers
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async._
-import fr.maif.daikoku.domain.json.SeqRemoteCatalogFormat
 import fr.maif.daikoku.domain.{RemoteCatalog, Tenant}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{DeployReport, RemoteCatalogEngine}
@@ -23,29 +22,6 @@ class RemoteCatalogController(
   implicit val ev: Env              = env
 
   private val auditUserId = "remote-catalog-job"
-
-  def list(tenantId: String) =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(AuditTrailEvent("@{user.name} has accessed remote catalogs"))(tenantId, ctx) { (tenant, _) =>
-        Future.successful(Ok(SeqRemoteCatalogFormat.writes(tenant.remoteCatalogs)))
-      }
-    }
-
-  def config(tenantId: String) =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(AuditTrailEvent("@{user.name} has accessed remote catalog config"))(tenantId, ctx) { (_, _) =>
-        Future.successful(
-          Ok(
-            Json.obj(
-              "enabled" -> env.config.remoteCatalogJobEnabled,
-              "schedulingMode" -> env.config.remoteCatalogJobSchedulingMode.value,
-              "defaultInterval" -> env.config.remoteCatalogJobInterval.toMillis,
-              "cronExpression" -> env.config.remoteCatalogJobCronExpr
-            )
-          )
-        )
-      }
-    }
 
   def deploy(tenantId: String, catalogId: String) =
     DaikokuAction.async { ctx =>

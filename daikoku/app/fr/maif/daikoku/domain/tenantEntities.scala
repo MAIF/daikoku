@@ -762,9 +762,6 @@ object SchedulingMode {
 
 case class RemoteCatalogScheduling(
     enabled: Boolean = false,
-    mode: SchedulingMode = SchedulingMode.Interval,
-    interval: Option[FiniteDuration] = None,
-    cronExpression: Option[String] = None,
     deployArgs: JsObject = Json.obj()
 )
 

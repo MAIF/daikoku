@@ -5302,14 +5302,6 @@ object json {
         JsSuccess(
           RemoteCatalogScheduling(
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-            mode = (json \ "mode")
-              .asOpt[String]
-              .flatMap(SchedulingMode.fromValue)
-              .getOrElse(SchedulingMode.Interval),
-            interval = (json \ "interval")
-              .asOpt[Long]
-              .map(v => FiniteDuration(v, TimeUnit.MILLISECONDS)),
-            cronExpression = (json \ "cronExpression").asOpt[String],
             deployArgs =
               (json \ "deployArgs").asOpt[JsObject].getOrElse(Json.obj())
           )
@@ -5321,16 +5313,6 @@ object json {
     override def writes(o: RemoteCatalogScheduling): JsValue =
       Json.obj(
         "enabled" -> o.enabled,
-        "mode" -> o.mode.value,
-        "interval" -> o.interval
-          .map(_.toMillis)
-          .map(v => JsNumber(BigDecimal(v)))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "cronExpression" -> o.cronExpression
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
         "deployArgs" -> o.deployArgs
       )
   }

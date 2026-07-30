@@ -1,5 +1,5 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef } from 'react';
@@ -9,7 +9,6 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import {
   IRemoteCatalog,
-  IRemoteCatalogConfig,
   ITenantFull,
   RemoteCatalogSourceKind,
 } from '../../../../types';
@@ -24,7 +23,7 @@ const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   name: '',
   enabled: true,
   source: { kind: 'http', config: {} as any },
-  scheduling: { enabled: false, mode: 'interval' },
+  scheduling: { enabled: false },
   allowedKinds: [],
 });
 
@@ -37,12 +36,6 @@ export const RemoteCatalogsForm = (props: {
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm, alert } = useContext(ModalContext);
   const queryClient = useQueryClient();
-
-  const configQuery = useQuery({
-    queryKey: ['remote-catalog-config', props.tenant._id],
-    queryFn: () => Services.getRemoteCatalogConfig(props.tenant._id) as Promise<IRemoteCatalogConfig>,
-  });
-  const defaultInterval = configQuery.data?.defaultInterval ?? 60000;
 
   useEffect(() => {
     table.current?.update();
@@ -262,41 +255,8 @@ export const RemoteCatalogsForm = (props: {
         enabled: {
           type: type.bool,
           label: translate('remote-catalog.label.enableScheduling'),
+          help: translate('remote-catalog.help.enableScheduling'),
           defaultValue: false,
-        },
-        mode: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: translate('remote-catalog.label.mode'),
-          defaultValue: 'interval',
-          options: ['interval', 'cron'],
-          visible: ({ rawValues }) => rawValues.scheduling.enabled,
-        },
-        interval: {
-          type: type.number,
-          label: translate('remote-catalog.label.interval'),
-          placeholder: `${defaultInterval}`,
-          visible: ({ rawValues }) =>
-            rawValues.scheduling.enabled && rawValues.scheduling.mode === 'interval',
-        },
-        cronExpression: {
-          type: type.string,
-          label: translate('remote-catalog.label.cron'),
-          visible: ({ rawValues }) =>
-            rawValues.scheduling.enabled && rawValues.scheduling.mode === 'cron',
-          render: ({ value, onChange }: any) => (
-            <div className="flex-grow-1">
-              <input
-                className="mrf-input"
-                value={value ?? ''}
-                placeholder="*/5 * * * * ?"
-                onChange={onChange}
-              />
-              <div className="text-muted small mt-1" style={{ whiteSpace: 'pre-line' }}>
-                {translate('remote-catalog.help.cron')}
-              </div>
-            </div>
-          ),
         },
       },
     },
@@ -359,7 +319,7 @@ export const RemoteCatalogsForm = (props: {
       cell: (info) => {
         const sched = info.row.original.scheduling;
         if (!sched?.enabled) return <span className="text-muted">—</span>;
-        return <span className="badge bg-info">{sched.mode}</span>;
+        return <i className="fas fa-check text-success" />;
       },
     }),
     columnHelper.display({

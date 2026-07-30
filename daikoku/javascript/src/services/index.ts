@@ -2515,8 +2515,6 @@ export const fetchOAuthConfiguration = (
   });
 };
 
-export const getRemoteCatalogConfig = (tenantId: string) =>
-  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_config`);
 export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
 export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
