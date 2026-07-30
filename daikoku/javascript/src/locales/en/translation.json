@@ -138,6 +138,9 @@
   "Done": "Done",
   "subscription.plan.accepted": "API key to plan %s for team %s is available",
   "subscription.plan.waiting": "The API key request for %s plan and the team %s is pending acceptance",
+  "subscription.plan.checkout": "The API key request for %s plan and the team %s is pending payment",
+  "subscription.plan.failed": "The API key request for %s plan and the team %s failed",
+  "subscription.plan.pending": "The API key request for %s plan and the team %s is pending",
   "Description": "Description",
   "Plan": {
     "s": "Plan",
@@ -1117,6 +1120,7 @@
   "Quotas & Billing": "Quotas & Billing",
   "Skip": "Skip",
   "Otoroshi target": "Otoroshi target",
+  "Edit Otoroshi target": "Edit Otoroshi target",
   "http.method": "HTTP method",
   "http.path": "Path",
   "api.configuration.btn.label": "Configure API",
@@ -1793,5 +1797,6 @@
   "oauth2.form.admin.role.label": "Admin role",
   "oauth2.form.admin.role.help": "Role value that grants Daikoku administrator access.",
   "oauth2.form.user.role.label": "User role (optional)",
-  "oauth2.form.user.role.help": "Role value that grants standard user access. If set, users without admin or user role will not be able to log in."
+  "oauth2.form.user.role.help": "Role value that grants standard user access. If set, users without admin or user role will not be able to log in.",
+  "Creating subscription requests": "Creating subscription requests"
 }

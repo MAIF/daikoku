@@ -1514,7 +1514,7 @@ object testUtils {
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -1539,7 +1539,7 @@ object testUtils {
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -1566,7 +1566,7 @@ object testUtils {
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -1594,7 +1594,7 @@ object testUtils {
             )
           ),
           allowMultipleKeys = Some(true),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
@@ -1619,7 +1619,7 @@ object testUtils {
             )
           ),
           allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
+          subscriptionProcess = SubscriptionProcess(),
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         )

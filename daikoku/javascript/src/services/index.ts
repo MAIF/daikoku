@@ -20,7 +20,7 @@ import {
   ITenant,
   ITenantAdministration,
   ITenantFull,
-  ITranslation,
+  ITranslation, IUsagePlanGQL,
   IUser,
   IUserSimple,
   OAuthSettings,
@@ -179,18 +179,22 @@ type CreationWaiting = { creation: 'waiting' };
 type CheckoutUrl = { checkoutUrl: string };
 
 export function isCheckoutUrl(obj: any): obj is CheckoutUrl {
-  return (<CheckoutUrl>obj).checkoutUrl !== undefined;
+  return (<CheckoutUrl>obj)?.checkoutUrl !== undefined;
 }
 
 export function isCreationDone(obj: any): obj is CreationDone {
-  return (<CreationDone>obj).creation === 'done';
+  return (<CreationDone>obj)?.creation === 'done';
 }
 
 export function isCreationWaiting(obj: any): obj is CreationWaiting {
-  return (<CreationWaiting>obj).creation === 'waiting';
+  return (<CreationWaiting>obj)?.creation === 'waiting';
 }
 
-type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
+export function isResponseError(obj: any): obj is ResponseError {
+  return obj && "error" in obj;
+}
+
+export type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
 
 export const askForApiKey = (
   apiId: string,
@@ -583,7 +587,7 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (): Promise<IUsagePlan> => customFetch('/api/entities/plan');
+export const fetchNewPlan = (): Promise<IUsagePlanGQL> => customFetch('/api/entities/plan');
 
 export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
@@ -1320,6 +1324,14 @@ export const removeCmsPage = (id: any) =>
     method: 'DELETE',
   });
 
+export const getAllAvailableEnvs = (teamId: string, apiId: string, version: string) => {
+  return customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/available_envs`, {
+    method: 'GET',
+  }).then((r) => (r.ok ?
+    r.json()
+     :  r));
+}
+
 export const graphql = {
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
@@ -1479,6 +1491,146 @@ export const graphql = {
         }
       }
     `,
+
+  plansByApi:`
+    query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
+      plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
+        plans {
+          _deleted
+          _id
+          _tenant
+          aggregationApiKeysSecurity
+          allowMultipleKeys
+          authorizedTeams {
+            _id
+            name
+          }
+          autoRotation
+          billingDuration {
+            ... on BillingDuration {
+              value
+            }
+          }
+          costPerMonth
+          currency {
+            code
+          }
+          customDescription
+          customName
+          integrationProcess
+          maxPerDay
+          maxPerMonth
+          maxPerSecond
+          otoroshiTarget {
+            otoroshiSettings
+            authorizedEntities {
+              services
+              groups
+              routes
+            }
+            apikeyCustomization {
+              tags
+              metadata
+              readOnly
+              clientIdOnly
+              constrainedServicesOnly
+              customMetadata {
+                key
+                possibleValues
+              }
+              restrictions {
+                enabled
+                allowLast
+                forbidden {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                notFound {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                allowed {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+              }
+            }
+          }
+          paymentSettings {
+            thirdPartyPaymentSettingsId
+            ... on Stripe {
+              thirdPartyPaymentSettingsId
+              productId
+              priceIds {
+                basePriceId
+                additionalPriceId
+              }
+            }
+          }
+          subscriptionProcess {
+            name
+            ... on Form {
+              id
+              title
+              schema
+              formatter
+              type
+            }
+            ... on Email {
+              id
+              title
+              emails
+              type
+            }
+            ... on TeamAdmin {
+              id
+              title
+              team
+              type
+            }
+            ... on Payment {
+              id
+              title
+              thirdPartyPaymentSettingsId
+              type
+            }
+            ... on HttpRequest {
+              id
+              title
+              url
+              headers
+              type
+            }
+          }
+          subscriptionProcessChecksum
+          trialPeriod {
+            ... on BillingDuration {
+              value
+              unit {
+                name
+              }
+            }
+          }
+          visibility
+        }
+        total
+        totalFiltered
+      }
+    }
+  `,
+
   myVisibleApis: `
     query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, groupId: $groupId) {

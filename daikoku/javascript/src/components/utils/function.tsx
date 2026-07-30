@@ -1,6 +1,6 @@
 import hash from 'object-hash';
 import { useContext } from "react";
-import { IApi, IFastPlan, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptions } from "../../types";
+import {IApi, IFastPlan, ITeamFullGql, ITeamSimple, IUsagePlan, IUsagePlanGQL, TOption, TOptions} from "../../types";
 
 import { I18nContext } from "../../contexts/i18n-context";
 import { CircleX } from 'lucide-react';
@@ -112,7 +112,7 @@ export const FilterPreview = (props: FilterType) => {
   );
 }
 
-export const isSubscriptionProcessIsAutomatic = (plan: IUsagePlan | IFastPlan) => {
+export const isSubscriptionProcessIsAutomatic = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !plan.subscriptionProcess.length
 }
 

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
-import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, FileKey, Key, Link as LucideLink, Menu, Terminal } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleQuestionMark, Copy, FileKey, Key, KeyRound, Link as LucideLink, Menu, Terminal } from "lucide-react";
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -626,7 +626,7 @@ export const KeyringCard = ({
       {/* Keyring header : credentials are shared by every subscription below */}
       <div className="d-flex align-items-center gap-3 flex-wrap">
         <div className="api-subscription__icon">
-          {!aggregated && <Key />}
+          {!aggregated && <KeyRound />}
           {aggregated && <FileKey />}
         </div>
         <span className={classNames("badge --state d-flex align-items-center gap-2", {

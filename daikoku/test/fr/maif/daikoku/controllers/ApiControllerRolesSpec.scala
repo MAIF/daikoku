@@ -160,7 +160,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -411,7 +411,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
@@ -756,17 +756,17 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
     //    }
 
     "transfer API ownership to another team with in progress demand" in {
-      val process = Seq(
-        ValidationStep.Form(
-          id = IdGenerator.token,
-          title = "Form"
-        ),
-        ValidationStep.TeamAdmin(
-          id = IdGenerator.token,
-          team = defaultApi.api.team,
-          title = "Admin"
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.Form(id = IdGenerator.token, title = "form"),
+          ValidationStep.TeamAdmin(
+            id = IdGenerator.token,
+            team = defaultApi.api.team,
+            title = "Admin"
+          )
         )
       )
+
       val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
@@ -964,9 +964,11 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.Form(id = IdGenerator.token, title = "form"),
-          process
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.Form(id = IdGenerator.token, title = "form"),
+            process
+          )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
@@ -974,9 +976,11 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       val plan2 = plan.copy(
         id = UsagePlanId(IdGenerator.token),
         customName = "plan 2",
-        subscriptionProcess = Seq(
-          ValidationStep.Form(id = IdGenerator.token, title = "form"),
-          processV2
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.Form(id = IdGenerator.token, title = "form"),
+            processV2
+          )
         )
       )
       val defaultApiV2 =
@@ -1302,7 +1306,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
