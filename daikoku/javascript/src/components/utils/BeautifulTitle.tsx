@@ -21,11 +21,11 @@ export const BeautifulTitle = ({
   const id: string = nanoid(4);
   return (
     <>
-      <ReactToolTip className='bf-tooltip' data-tooltip-id={`tooltip-${id}`} place={place || 'bottom'} variant={variant || 'dark'} />
-      {!html && <span id={`tooltip-${id}`} {...props} data-tooltip-content={title} >
+      <ReactToolTip className='bf-tooltip' id={`tooltip-${id}`} place={place || 'bottom'} variant={variant || 'dark'} />
+      {!html && <span data-tooltip-id={`tooltip-${id}`} {...props} data-tooltip-content={title} style={{zIndex: 1000}}>
         {props.children}
       </span>}
-      {html && <span id={`tooltip-${id}`} {...props} data-tooltip-html={title} >
+      {html && <span data-tooltip-id={`tooltip-${id}`} {...props} data-tooltip-html={title} style={{zIndex: 1000}}>
         {props.children}
       </span>}
     </>
