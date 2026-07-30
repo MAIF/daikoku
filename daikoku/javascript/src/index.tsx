@@ -47,7 +47,6 @@ const reactfromProviderOption: Option = {
     submit: { className: 'btn --primary' },
     cancel: { className: 'btn --secondary' },
     reset: { className: 'btn --secondary' }, //@ts-ignore
-    add: { className: 'btn --secondary --small --icon-only', label: <Plus /> },
     remove: { className: 'btn --tertiary --small --icon-only' },
     addEntry: { className: 'btn --secondary --small --icon-only' },
     removeEntry: { className: 'btn --secondary --small --icon-only' },

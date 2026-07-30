@@ -706,7 +706,7 @@ class ApiController(
             case UserLevel.Admin => json.SeqUsagePlanFormat.writes(filteredPlans)
             case UserLevel.User => JsArray(filteredPlans.map(p => p.asJson.as[JsObject] - "subscriptionProcess" - "testing" +
               ("testing" -> p.testing.map(_.asSafeJson).getOrElse(Json.obj())) +
-              ("subscriptionProcess" -> JsArray(p.subscriptionProcess.map {
+              ("subscriptionProcess" -> JsArray(p.subscriptionProcess.steps.map {
                 case process@ValidationStep.Form(_,_,_,_,_,_) => process.asJson
                 case process => Json.obj("name" -> process.name)
               }))))
@@ -4738,7 +4738,7 @@ class ApiController(
                   ) &&
                   plan.otoroshiTarget.exists(
                     _.apikeyCustomization.customMetadata.nonEmpty &&
-                      plan.subscriptionProcess.forall(_.name != "teamAdmin")
+                      plan.subscriptionProcess.steps.forall(_.name != "teamAdmin")
                   )
                 ) {
                   plan
@@ -4787,7 +4787,7 @@ class ApiController(
               .mapAsync(1)(demand => {
 
                 val newSteps =
-                  updatedPlan.subscriptionProcess.map(validationStep => {
+                  updatedPlan.subscriptionProcess.steps.map(validationStep => {
                     val demandStep =
                       demand.steps.find(_.step.id == validationStep.id)
 
@@ -4812,8 +4812,8 @@ class ApiController(
               })
               .runWith(Sink.ignore)
               .map(_ => {
-                updatedPlan.subscriptionProcess.foreach(step => {
-                  if (!oldPlan.subscriptionProcess.exists(_.id == step.id)) {
+                updatedPlan.subscriptionProcess.steps.foreach(step => {
+                  if (!oldPlan.subscriptionProcess.steps.exists(_.id == step.id)) {
                     for {
                       demands <-
                         env.dataStore.subscriptionDemandRepo
@@ -4853,6 +4853,7 @@ class ApiController(
                     } yield ()
                   } else if (
                     !oldPlan.subscriptionProcess
+                      .steps
                       .find(_.id == step.id)
                       .contains(step)
                   ) {
@@ -5279,6 +5280,23 @@ class ApiController(
             "waiting" -> (row \ "waiting_count").asOpt[Int].getOrElse(0),
           )
         ))
+      }
+    }
+  }
+
+  def getAvailableEnvs(teamId: String, apiId: String, version: String): Action[AnyContent] = {
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has fetch available envs from @{plan.id} for api @{api.name} to @{newTeam.name}"
+        )
+      )(teamId, ctx) { _ =>
+        EitherT(apiService.getAllAvailableEnvs(apiId, version)(using ctx))
+          .map(r => {
+            Ok(r: JsValue)
+          })
+          .leftMap(_.render())
+          .merge
       }
     }
   }

@@ -1,19 +1,19 @@
 package fr.maif.daikoku.services
 
 import cats.Monad
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.actions.ApiActionContext
-import fr.maif.daikoku.controllers.PaymentClient
-import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain.UsagePlanVisibility.Admin
+import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
+import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -24,8 +24,8 @@ import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc.Result
 import play.api.mvc.Results.Ok
+import play.api.mvc.{AnyContent, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -95,7 +95,7 @@ class ApiService(
       maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
-      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-$createdAtMillis-${api.currentVersion.value}"
 
     val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
@@ -1196,8 +1196,9 @@ class ApiService(
         AppError.UserNotFound()
       )
       formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
-        plan.subscriptionProcess.collectFirst { case s: ValidationStep.Form =>
-          s
+        plan.subscriptionProcess.steps.collectFirst {
+          case s: ValidationStep.Form =>
+            s
         },
         AppError.EntityNotFound("form step")
       )
@@ -1825,7 +1826,7 @@ class ApiService(
                 } yield ()
               }
             )
-            _ <- EitherT.liftF(
+            _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
                   .getOrElse(tenant.defaultLanguage.getOrElse("en"))
@@ -2102,7 +2103,7 @@ class ApiService(
             .contains(team.id) && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](PlanUnauthorized)
       case _ =>
-        plan.subscriptionProcess match {
+        plan.subscriptionProcess.steps match {
           case Nil =>
             EitherT(
               subscribeToApi(
@@ -2474,7 +2475,7 @@ class ApiService(
       plan: UsagePlan,
       api: Api,
       otoroshiSettings: OtoroshiSettings
-  ) =
+  ) = {
     for {
       result <- EitherT.liftF[Future, AppError, Long](
         env.dataStore.apiSubscriptionRepo
@@ -2538,4 +2539,49 @@ class ApiService(
           )
       )
     } yield result
+  }
+
+  def getAllAvailableEnvs(
+      apiId: String,
+      version: String
+  )(implicit
+      ctx: DaikokuActionContext[AnyContent]
+  ): Future[Either[AppError, JsArray]] = {
+    val query: String =
+      s"""
+         |SELECT coalesce(json_agg(p.content ->> 'customName'), '[]'::json) as result
+         |FROM usage_plans p
+         |    LEFT JOIN apis a ON (a.content -> 'possibleUsagePlans') ? p._id
+         |WHERE a._id = $$1
+         """.stripMargin
+
+    EitherT
+      .fromOptionF(
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            query,
+            "result",
+            Seq(
+              apiId // $$1
+            )
+          ),
+        AppError.InternalServerError(
+          "SQL Request for allAvailableEnvs failed"
+        )
+      )
+      .map(maybeResult => {
+        JsArray(
+          ctx.tenant.environments
+            .diff(
+              maybeResult.value
+                .flatMap(v => v.asOpt[String])
+                .toSet
+            )
+            .map(JsString(_))
+            .toSeq
+        )
+      })
+      .value
+  }
 }
