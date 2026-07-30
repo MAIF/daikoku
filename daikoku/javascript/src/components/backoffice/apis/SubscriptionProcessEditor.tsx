@@ -32,7 +32,7 @@ const MotivationForm = (props: MotivationFormProps) => {
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
 
-  const childRef = useRef(null);
+  const childRef = useRef<WrapperError | null>(null);
   const codeInputRef = useRef(null);
 
   useEffect(() => {
@@ -42,8 +42,8 @@ const MotivationForm = (props: MotivationFormProps) => {
       try {
         maybeFormattedSchema =
           typeof schema === 'object' ? schema : JSON.parse(schema);
+        childRef?.current?.reset();
       } catch { }
-
       setRealSchema(maybeFormattedSchema || {});
     }
   }, [schema]);
