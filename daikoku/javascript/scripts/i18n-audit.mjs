@@ -62,43 +62,139 @@ function collectSources(dir) {
 // ---------------------------------------------------------------------------
 // 2. Extract used keys + dynamic prefixes from source
 // ---------------------------------------------------------------------------
-// A "static" key = a plain string/backtick literal with no ${...}.
-// A "dynamic prefix" = the literal head of a template literal before the first ${.
-const STATIC_PATTERNS = [
-  // translate('x'), translate("x"), translate(`x`)
-  /\btranslate\(\s*(['"`])([^'"`$\\]*?)\1/g,
-  // translate({ key: 'x' | "x" | `x` , ... })
-  /\btranslate\(\s*\{\s*key:\s*(['"`])([^'"`$\\]*?)\1/g,
-  // i18nkey="x" | i18nkey={'x'} | i18nkey={`x`}
-  /\bi18nkey=\{?\s*(['"`])([^'"`$\\]*?)\1/g,
-];
-const DYNAMIC_PATTERNS = [
-  /\btranslate\(\s*`([^`]*?)\$\{/g,
-  /\btranslate\(\s*\{\s*key:\s*`([^`]*?)\$\{/g,
-  /\bi18nkey=\{?\s*`([^`]*?)\$\{/g,
-];
-// Fully dynamic (key is a variable/expression we cannot resolve at all).
-const UNRESOLVABLE_PATTERN = /\btranslate\(\s*([A-Za-z_$][\w$.?]*)[\s,)]/g;
+// `translate(...)` takes a single argument that resolves to the key: either a
+// string/backtick literal, an object `{ key: 'x', ... }`, or an arbitrary
+// expression. A plain regex only sees a literal glued to `translate(` and so
+// misses shapes like:
+//   translate(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')
+//   translate(cond && 'Some key')
+//   translate(x, `${a}`, 'Default')          // extra args are not keys, but…
+// So instead we capture the whole (bracket-balanced) argument expression and
+// pull *every* string literal out of it:
+//   - a "static" key  = a plain string / backtick literal with no ${...}
+//   - a "dynamic prefix" = the literal head of a template literal before ${
+//   - object form ({...}) -> only the `key:` literal(s) count as keys, so a
+//     `defaultResponse`/`replacements` value is never mistaken for a key.
+// This over-approximates on the safe side: a non-key literal may be flagged
+// "used", but a real key is never missed (which would risk a wrong deletion).
+
+// Skip a string literal starting at index i (code[i] is a quote); returns the
+// index just past the closing quote. Handles escapes and, for backticks,
+// nested ${...} interpolation (which may itself contain strings and braces).
+function skipString(code, i) {
+  const quote = code[i++];
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '\\') { i += 2; continue; }
+    if (quote === '`' && c === '$' && code[i + 1] === '{') {
+      i = skipInterpolation(code, i + 2);
+      continue;
+    }
+    if (c === quote) return i + 1;
+    i++;
+  }
+  return i;
+}
+
+// i points just past `${`; return the index just past the matching `}`.
+function skipInterpolation(code, i) {
+  let depth = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '"' || c === "'" || c === '`') { i = skipString(code, i); continue; }
+    if (c === '{') { depth++; i++; continue; }
+    if (c === '}') { if (depth === 0) return i + 1; depth--; i++; continue; }
+    i++;
+  }
+  return i;
+}
+
+// Read a bracket-balanced expression starting at `start` up to the matching
+// closing `close` char (accounting for nested (), [], {} and strings).
+function readBalanced(code, start, close) {
+  let i = start, depth = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '"' || c === "'" || c === '`') { i = skipString(code, i); continue; }
+    if (c === '(' || c === '[' || c === '{') { depth++; i++; continue; }
+    if (c === ')' || c === ']' || c === '}') {
+      if (depth === 0 && c === close) return { text: code.slice(start, i), end: i };
+      depth--; i++; continue;
+    }
+    i++;
+  }
+  return { text: code.slice(start), end: code.length };
+}
+
+// Pull every string literal out of an expression. Returns keys + dynamic
+// prefixes. A backtick literal with ${ contributes its head as a prefix.
+function literalsFrom(expr) {
+  const keys = [], prefixes = [];
+  let i = 0;
+  while (i < expr.length) {
+    const c = expr[i];
+    if (c === '"' || c === "'") {
+      const end = skipString(expr, i);
+      keys.push(expr.slice(i + 1, end - 1));
+      i = end;
+    } else if (c === '`') {
+      const end = skipString(expr, i);
+      const raw = expr.slice(i + 1, end - 1);
+      const dollar = raw.indexOf('${');
+      if (dollar === -1) keys.push(raw);
+      else prefixes.push(raw.slice(0, dollar));
+      i = end;
+    } else {
+      i++;
+    }
+  }
+  return { keys, prefixes };
+}
 
 const usedKeys = new Set();
 const dynamicPrefixes = new Set();
 let unresolvableCount = 0;
 
+const addKeys = (keys, prefixes) => {
+  for (const k of keys) usedKeys.add(k);
+  for (const p of prefixes) if (p) dynamicPrefixes.add(p);
+};
+
+// Object form `{ ... key: <literal> ... }`: only the `key:` literal is a key.
+const OBJ_KEY_RE = /\bkey:\s*(?:(['"])((?:\\.|(?!\1).)*?)\1|`([^`]*?)(?:\$\{|`))/g;
+
+const TRANSLATE_CALL_RE = /\btranslate\s*\(/g;
+const I18NKEY_ATTR_RE = /\bi18nkey\s*=\s*/g;
+
 for (const file of collectSources(SRC_DIR)) {
   const code = readFileSync(file, 'utf8');
-  for (const re of STATIC_PATTERNS) {
-    for (const m of code.matchAll(re)) usedKeys.add(m[2]);
-  }
-  for (const re of DYNAMIC_PATTERNS) {
-    for (const m of code.matchAll(re)) {
-      const prefix = m[1];
-      if (prefix) dynamicPrefixes.add(prefix);
+
+  for (const m of code.matchAll(TRANSLATE_CALL_RE)) {
+    const { text } = readBalanced(code, m.index + m[0].length, ')');
+    if (/^\s*\{/.test(text)) {
+      // { key: 'x', defaultResponse: 'y', ... } — only key: counts
+      let matched = false;
+      for (const km of text.matchAll(OBJ_KEY_RE)) {
+        matched = true;
+        if (km[2] !== undefined) usedKeys.add(km[2]);
+        else if (km[3] !== undefined) dynamicPrefixes.add(km[3]);
+      }
+      if (!matched) unresolvableCount++;
+    } else {
+      const { keys, prefixes } = literalsFrom(text);
+      if (keys.length === 0 && prefixes.length === 0) unresolvableCount++;
+      else addKeys(keys, prefixes);
     }
   }
-  for (const m of code.matchAll(UNRESOLVABLE_PATTERN)) {
-    // ignore the known object/keyword forms already covered
-    if (['key', 'translate'].includes(m[1])) continue;
-    unresolvableCount++;
+
+  for (const m of code.matchAll(I18NKEY_ATTR_RE)) {
+    let expr;
+    const at = m.index + m[0].length;
+    if (code[at] === '{') expr = readBalanced(code, at + 1, '}').text;
+    else if (code[at] === '"' || code[at] === "'") expr = code.slice(at, skipString(code, at));
+    else continue;
+    const { keys, prefixes } = literalsFrom(expr);
+    addKeys(keys, prefixes);
   }
 }
 
