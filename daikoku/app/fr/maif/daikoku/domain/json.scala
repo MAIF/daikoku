@@ -12,7 +12,7 @@ import fr.maif.daikoku.domain.TeamPermission.*
 import fr.maif.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
-import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.env.{DaikokuFlags, Env}
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.StringImplicits.*
@@ -63,6 +63,27 @@ object json {
         "value" -> o.value,
         "unit" -> o.unit.asJson
       )
+  }
+
+  val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
+    override def reads(json: JsValue): JsResult[SubscriptionProcess] =
+      json match {
+        case JsArray(_) =>
+          SeqValidationStepFormat
+            .reads(json)
+            .map(steps => SubscriptionProcess(steps = steps))
+        case obj: JsObject =>
+          (obj \ "steps")
+            .validate(using SeqValidationStepFormat)
+            .map(steps => SubscriptionProcess(steps = steps))
+        case _ =>
+          JsError("subscriptionProcess is neither an array nor an object")
+      }
+
+    override def writes(o: SubscriptionProcess): JsValue = Json.obj(
+      "steps" -> Json.toJson(o.steps)(using SeqValidationStepFormat),
+      "checkSum" -> o.checksum
+    )
   }
 
   val LongFormat = new Format[Long] {
@@ -709,6 +730,7 @@ object json {
                       "motivation" -> Json.obj(
                         "type" -> "string",
                         "format" -> "textarea",
+                        "defaultValue" -> "",
                         "constraints" -> Json.arr(
                           Json
                             .obj("type" -> "required")
@@ -822,8 +844,9 @@ object json {
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(using SeqValidationStepFormat),
+            subscriptionProcess = (json \ "subscriptionProcess").as(using
+              SubscriptionProcessFormat
+            ),
             integrationProcess = (json \ "integrationProcess")
               .asOpt(using IntegrationProcessFormat)
               .getOrElse(IntegrationProcess.ApiKey),
@@ -893,9 +916,8 @@ object json {
           .map(JsBoolean.apply)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
+        "subscriptionProcess" ->
+          o.subscriptionProcess.asJson,
         "integrationProcess" -> IntegrationProcessFormat.writes(
           o.integrationProcess
         ),
@@ -5358,5 +5380,24 @@ object json {
       Reads.seq(using RemoteCatalogFormat),
       Writes.seq(using RemoteCatalogFormat)
     )
+
+  val FlagsFormat = new Format[DaikokuFlags] {
+    override def reads(json: JsValue): JsResult[DaikokuFlags] =
+      Try {
+        DaikokuFlags(
+          multiPlanSubscriptionEnabled = (json \ "multiPlanSubscriptionEnabled").as[Boolean]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: DaikokuFlags): JsValue =
+      Json.obj(
+        "multiPlanSubscriptionEnabled" -> o.multiPlanSubscriptionEnabled
+      )
+  }
 
 }

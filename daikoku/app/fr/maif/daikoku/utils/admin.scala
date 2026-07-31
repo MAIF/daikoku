@@ -3,6 +3,7 @@ package fr.maif.daikoku.utils
 import cats.data.EitherT
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
+import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.{TeamType, Tenant, User, ValueType}
 import fr.maif.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
@@ -21,7 +22,11 @@ import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
-case class DaikokuApiActionContext[A](request: Request[A], tenant: Tenant)
+case class DaikokuApiActionContext[A](
+    request: Request[A],
+    tenant: Tenant,
+    clientId: Option[String] = None
+)
 
 class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
     extends ActionBuilder[DaikokuApiActionContext, AnyContent]
@@ -54,7 +59,13 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
             case Some(value) =>
               Try(JWT.require(algo).build().verify(value)) match {
                 case Success(decoded) if !decoded.getClaim("apikey").isNull =>
-                  block(DaikokuApiActionContext[A](request, tenant))
+                  block(
+                    DaikokuApiActionContext[A](
+                      request,
+                      tenant,
+                      Option(decoded.getClaim("apikey").asString())
+                    )
+                  )
                 case _ =>
                   Errors.craftResponseResultF(
                     "No api key provided",
@@ -90,7 +101,13 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>
-                        block(DaikokuApiActionContext[A](request, tenant))
+                        block(
+                          DaikokuApiActionContext[A](
+                            request,
+                            tenant,
+                            Some(clientId)
+                          )
+                        )
                       case _ =>
                         Errors.craftResponseResultF(
                           "No api key provided",
@@ -195,6 +212,58 @@ abstract class AdminApiController[Of, Id <: ValueType](
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, Of]
   def getId(entity: Of): Id
+
+  def doCreate(tenant: Tenant, entity: Of): EitherT[Future, AppError, Of] =
+    EitherT.liftF[Future, AppError, Of](
+      entityStore(tenant, env.dataStore)
+        .save(entity)
+        .map(_ => entity)
+    )
+
+  def doUpdate(
+      tenant: Tenant,
+      oldEntity: Of,
+      newEntity: Of
+  ): EitherT[Future, AppError, Of] =
+    EitherT.liftF[Future, AppError, Of](
+      entityStore(tenant, env.dataStore)
+        .save(newEntity)
+        .map(_ => newEntity)
+    )
+
+  def doDelete(
+      tenant: Tenant,
+      entity: Of,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    EitherT.liftF[Future, AppError, Unit] {
+      val store = entityStore(tenant, env.dataStore)
+      val deletion =
+        if (logically) store.deleteByIdLogically(getId(entity).value)
+        else store.deleteById(getId(entity).value)
+      deletion.map(_ => ())
+    }
+
+  protected def auditAdminApiWrite(
+      ctx: DaikokuApiActionContext[?],
+      action: String,
+      id: String
+  ): Unit =
+    AuditTrailEvent(
+      s"Admin API ($action $entityName $id) by keyring ${ctx.clientId.getOrElse("unknown")}"
+    ).logAdminApiAuditEvent(
+      ctx.tenant,
+      User.system,
+      ctx.request,
+      Json.obj(
+        "adminApi" -> Json.obj(
+          "action" -> action,
+          "entity" -> entityName,
+          "entityId" -> id,
+          "clientId" -> ctx.clientId
+        )
+      )
+    )(using env)
 
   def readMetadata(e: Of): Map[String, String] = Map.empty
 
@@ -326,14 +395,13 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   .renderF()
               case None =>
                 validate(newEntity, UpdateOrCreate.Create)
-                  .map(entity =>
-                    entityStore(ctx.tenant, env.dataStore)
-                      .save(entity)
-                      .map(_ => Created(toJson(entity)))
-                  )
-                  .leftMap(_.renderF())
+                  .flatMap(entity => doCreate(ctx.tenant, entity))
+                  .map { entity =>
+                    auditAdminApiWrite(ctx, "create", getId(entity).value)
+                    Created(toJson(entity))
+                  }
+                  .leftMap(_.render())
                   .merge
-                  .flatten
             }
 
       }
@@ -347,7 +415,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             s"Entity $entityName not found",
             Results.NotFound
           )
-        case Some(_) =>
+        case Some(oldEntity) =>
           fromJson(ctx.request.body) match {
             case Left(e) =>
               logger.error(s"Bad $entityName format", new RuntimeException(e))
@@ -357,14 +425,13 @@ abstract class AdminApiController[Of, Id <: ValueType](
               )
             case Right(newEntity) =>
               validate(newEntity, UpdateOrCreate.Update)
-                .map(entity =>
-                  entityStore(ctx.tenant, env.dataStore)
-                    .save(entity)
-                    .map(_ => NoContent)
-                )
-                .leftMap(_.renderF())
+                .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
+                .map { _ =>
+                  auditAdminApiWrite(ctx, "update", id)
+                  NoContent
+                }
+                .leftMap(_.render())
                 .merge
-                .flatten
           }
       }
     }
@@ -425,7 +492,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
           entityStore(ctx.tenant, env.dataStore).findById(id)
         }
 
-      def finalizePatch(patchedJson: JsValue): Future[Result] = {
+      def finalizePatch(
+          oldEntity: Of,
+          patchedJson: JsValue
+      ): Future[Result] = {
         fromJson(patchedJson) match {
           case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
@@ -435,14 +505,13 @@ abstract class AdminApiController[Of, Id <: ValueType](
             )
           case Right(patchedEntity) =>
             validate(patchedEntity, UpdateOrCreate.Update)
-              .map(entity =>
-                entityStore(ctx.tenant, env.dataStore)
-                  .save(entity)
-                  .map(_ => NoContent)
-              )
-              .leftMap(_.renderF())
+              .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
+              .map { _ =>
+                auditAdminApiWrite(ctx, "patch", id)
+                NoContent
+              }
+              .leftMap(_.render())
               .merge
-              .flatten
         }
       }
 
@@ -460,7 +529,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                 JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
               patchedJson.fold(
                 error => error.renderF(),
-                json => finalizePatch(json)
+                json => finalizePatch(entity, json)
               )
             case JsObject(_) =>
               val newJson =
@@ -482,7 +551,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                     JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
                   patchedJson.fold(
                     error => error.renderF(),
-                    json => finalizePatch(json)
+                    json => finalizePatch(entity, json)
                   )
 
               }
@@ -501,14 +570,22 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def deleteEntity(id: String): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
-      if (ctx.request.queryString.get("logically").exists(_.contains("true"))) {
-        entityStore(ctx.tenant, env.dataStore)
-          .deleteByIdLogically(id)
-          .map(_ => Ok(Json.obj("done" -> true)))
-      } else {
-        entityStore(ctx.tenant, env.dataStore)
-          .deleteById(id)
-          .map(_ => Ok(Json.obj("done" -> true)))
+      val logically =
+        ctx.request.queryString.get("logically").exists(_.contains("true"))
+      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+        case None =>
+          Errors.craftResponseResultF(
+            s"$entityName not found",
+            Results.NotFound
+          )
+        case Some(entity) =>
+          doDelete(ctx.tenant, entity, logically)
+            .map { _ =>
+              auditAdminApiWrite(ctx, "delete", id)
+              Ok(Json.obj("done" -> true))
+            }
+            .leftMap(_.render())
+            .merge
       }
     }
 

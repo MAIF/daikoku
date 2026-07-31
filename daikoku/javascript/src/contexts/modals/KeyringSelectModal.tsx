@@ -4,11 +4,10 @@ import { I18nContext } from '../../contexts';
 import {
   IFastPlan,
   ISubscription,
-  ISubscriptionWithApiInfo,
-  IUsagePlan
+  IUsagePlan, IUsagePlanGQL
 } from '../../types';
 import { IBaseModalProps } from './types';
-import { ArrowRight, Key, Plus } from "lucide-react";
+import { ArrowRight, Key, KeyRound, Plus } from "lucide-react";
 
 /** A keyring (trousseau) the user may pick to add the new subscription into.
  * `subscription` is the representative subscription carrying that keyring ;
@@ -25,7 +24,7 @@ export interface IKeyringOption {
 
 export interface IKeyringSelectModalProps {
   onSubscribe: () => void;
-  plan: IUsagePlan | IFastPlan;
+  plan: IUsagePlan | IFastPlan  | IUsagePlanGQL;
   keyrings: Array<IKeyringOption>;
   onSelectKeyring: (key: ISubscription) => void;
 }
@@ -116,7 +115,7 @@ const KeyringsView = (props: KeyringsViewProps) => {
             onClick={() => props.onSelectKeyring(keyring.subscription)}
           >
             <div className="d-flex align-items-center gap-3">
-              <Key />
+              <KeyRound />
               <div className="d-flex flex-column">
                 <strong>{keyring.customName ?? keyring.planName}</strong>
                 <small className="text-muted">
@@ -196,7 +195,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
               ? translate('aggregation.button.subscription.disable.label')
               : translate('aggregation.button.subscription.enable.label')
           }
-          icon={<Key />}
+          icon={<KeyRound />}
         />
       )}
     </div>

@@ -18,7 +18,12 @@ export interface IAuthContext {
   action: string;
 }
 
+export interface IFlags {
+  multiPlanSubscriptionEnabled: boolean;
+}
+
 export interface IStateContext {
+  flags: IFlags;
   impersonator?: IUserSimple;
   connectedUser: IUserSimple;
   tenant: ITenant;

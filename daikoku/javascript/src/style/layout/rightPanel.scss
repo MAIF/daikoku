@@ -31,17 +31,9 @@
   transition: width .2s ease-in-out;
 
   .right-panel__back {
-    height: 40px;
-    width: 40px;
     position: absolute;
     top: .5rem;
     right: .5rem;
-
-    &:hover {
-      border-radius: 50%;
-      background-color: variables.$companion_text-hover-bg-color;
-      color: var(--companion-link-hover-text-color);
-    }
   }
 }
 

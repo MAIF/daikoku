@@ -97,6 +97,10 @@ object AuthorizationLevel {
   case object AuthorizedJob extends AuthorizationLevel {
     override def value: String = "AuthorizedJob"
   }
+
+  case object AuthorizedAdminApi extends AuthorizationLevel {
+    override def value: String = "AuthorizedAdminApi"
+  }
 }
 
 sealed trait AuditEvent {
@@ -143,6 +147,25 @@ sealed trait AuditEvent {
       None,
       new TrieMap[String, String](),
       AuthorizationLevel.AuthorizedJob,
+      details
+    )
+  }
+
+  def logAdminApiAuditEvent(
+      tenant: Tenant,
+      user: User,
+      req: RequestHeader,
+      details: JsObject = Json.obj()
+  )(implicit env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(
+      this,
+      tenant,
+      user,
+      None,
+      Some(req.relativeUri),
+      Some(req.method),
+      new TrieMap[String, String](),
+      AuthorizationLevel.AuthorizedAdminApi,
       details
     )
   }

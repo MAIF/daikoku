@@ -57,7 +57,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         visibility = Private,
         authorizedTeams = Seq(teamConsumerId),
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       val keyring = Keyring(
@@ -153,7 +153,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         visibility = Private,
         authorizedTeams = Seq(teamConsumerId),
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       val keyring = Keyring(
@@ -440,7 +440,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         visibility = Private,
         authorizedTeams = Seq(teamConsumerId),
         autoRotation = Some(false),
-        subscriptionProcess = Seq.empty,
+        subscriptionProcess = SubscriptionProcess(),
         integrationProcess = IntegrationProcess.ApiKey
       )
       val keyring = Keyring(

@@ -142,10 +142,6 @@
             "type": "boolean",
             "nullable": true
           },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": true
-          },
           "robotTxt": {
             "type": "string",
             "nullable": true
@@ -203,6 +199,25 @@
             "type": "string"
           }
         }
+      },
+      "GraphQLQuery": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "GraphQLResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "GraphQLSchema": {
+        "type": "object"
       },
       "patch": {
         "description": "A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)",
@@ -836,11 +851,18 @@
               "$ref": "#/components/schemas/UserWithPermission"
             }
           },
-          "authorizedOtoroshiGroups": {
+          "authorizedEntities": {
             "type": "array",
             "nullable": true,
             "items": {
-              "type": "string"
+              "properties": {
+                "otoroshiSettingsId": {
+                  "type": "string"
+                },
+                "authorizedEntities": {
+                  "$ref": "#/components/schemas/AuthorizedEntities"
+                }
+              }
             }
           },
           "apiKeyVisibility": {
@@ -984,7 +1006,8 @@
             }
           },
           "defaultUsagePlan": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "authorizedTeams": {
             "type": "array",
@@ -1047,7 +1070,6 @@
           "documentation",
           "visibility",
           "possibleUsagePlans",
-          "defaultUsagePlan",
           "state"
         ]
       },
@@ -2450,91 +2472,50 @@
           "language"
         ]
       },
-      "UsagePlan.Admin": {
+      "UsagePlan": {
         "description": "UsagePlan",
         "properties": {
-          "type": {
+          "_id": {
+            "type": "string"
+          },
+          "_tenant": {
+            "type": "string"
+          },
+          "_deleted": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency",
+            "nullable": true
+          },
+          "customName": {
+            "type": "string"
+          },
+          "customDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "otoroshiTarget": {
+            "$ref": "#/components/schemas/OtoroshiTarget",
+            "nullable": true
+          },
+          "billingDuration": {
+            "$ref": "#/components/schemas/BillingDuration",
+            "nullable": true
+          },
+          "allowMultipleKeys": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "visibility": {
             "type": "string",
             "enum": [
+              "Public",
+              "Private",
               "Admin"
             ]
           },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant"
-        ]
-      },
-      "UsagePlan.FreeWithoutQuotas": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
           "authorizedTeams": {
             "type": "array",
             "items": {
@@ -2575,10 +2556,6 @@
             "type": "boolean",
             "nullable": true
           },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": true
-          },
           "swagger": {
             "nullable": true,
             "$ref": "#/components/schemas/SwaggerAccess"
@@ -2590,549 +2567,35 @@
           "documentation": {
             "nullable": true,
             "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.FreeWithQuotas": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
           },
           "maxPerSecond": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "nullable": true
           },
           "maxPerDay": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "nullable": true
           },
           "maxPerMonth": {
             "type": "integer",
-            "format": "int64"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.QuotasWithLimits": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "maxPerSecond": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerDay": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerMonth": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "costPerMonth": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "costPerMonth",
-          "trialPeriod",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.QuotasWithoutLimits": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "maxPerSecond": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerDay": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerMonth": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "costPerMonth": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "costPerAdditionalRequest": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          },
-          "paymentSettings": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PaymentSettings.Stripe"
-              }
-            ]
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "costPerMonth",
-          "trialPeriod",
-          "costPerAdditionalRequest",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.PayPerUse": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
+            "format": "int64",
             "nullable": true
           },
           "costPerMonth": {
             "type": "integer",
-            "format": "float64"
+            "format": "float64",
+            "nullable": true
           },
           "costPerRequest": {
             "type": "integer",
-            "format": "float64"
+            "format": "float64",
+            "nullable": true
           },
           "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
+            "$ref": "#/components/schemas/BillingDuration",
             "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "environmentAggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
           },
           "paymentSettings": {
             "nullable": true,
@@ -3146,11 +2609,7 @@
         "required": [
           "_id",
           "_tenant",
-          "costPerMonth",
-          "trialPeriod",
-          "costPerRequest",
-          "currency",
-          "billingDuration",
+          "customName",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -3650,18 +3109,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Tenant"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -3714,18 +3163,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Tenant"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -3973,18 +3412,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/User"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4036,18 +3465,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/User"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4293,18 +3712,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Team"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4356,18 +3765,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Team"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4613,18 +4012,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Api"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4676,18 +4065,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Api"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4933,18 +4312,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiSubscription"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -4996,18 +4365,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiSubscription"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -5253,18 +4612,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiDocumentationPage"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -5316,18 +4665,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiDocumentationPage"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -5551,139 +4890,6 @@
           "notification"
         ]
       },
-      "patch": {
-        "summary": "update a notification with JSON patch or by  merging JSON object",
-        "operationId": "notifications.patch",
-        "requestBody": {
-          "description": "the patch to update the notification or a JSON object",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/patch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/Notification"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Notification"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "notification"
-        ]
-      },
-      "put": {
-        "summary": "update a notification",
-        "operationId": "notifications.update",
-        "requestBody": {
-          "description": "the notification to update",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Notification"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Notification"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "notification"
-        ]
-      },
       "get": {
         "summary": "read a notification",
         "operationId": "notifications.findById",
@@ -5769,56 +4975,6 @@
         "tags": [
           "notification"
         ]
-      },
-      "post": {
-        "summary": "creates a notification",
-        "requestBody": {
-          "description": "the notification to create",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Notification"
-              }
-            }
-          }
-        },
-        "operationId": "notifications.create",
-        "responses": {
-          "201": {
-            "description": "entity created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Notification"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "bad entity format",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notification"
-        ]
       }
     },
     "/admin-api/sessions/{id}": {
@@ -5832,139 +4988,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/done"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "user-session"
-        ]
-      },
-      "patch": {
-        "summary": "update a user-session with JSON patch or by  merging JSON object",
-        "operationId": "user-sessions.patch",
-        "requestBody": {
-          "description": "the patch to update the user-session or a JSON object",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/patch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UserSession"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/UserSession"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "user-session"
-        ]
-      },
-      "put": {
-        "summary": "update a user-session",
-        "operationId": "user-sessions.update",
-        "requestBody": {
-          "description": "the user-session to update",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserSession"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/UserSession"
-                  }
                 }
               }
             }
@@ -6089,56 +5112,6 @@
         "tags": [
           "user-session"
         ]
-      },
-      "post": {
-        "summary": "creates a user-session",
-        "requestBody": {
-          "description": "the user-session to create",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserSession"
-              }
-            }
-          }
-        },
-        "operationId": "user-sessions.create",
-        "responses": {
-          "201": {
-            "description": "entity created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserSession"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "bad entity format",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "user-session"
-        ]
       }
     },
     "/admin-api/consumptions/{id}": {
@@ -6152,139 +5125,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/done"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "api-key-consumption"
-        ]
-      },
-      "patch": {
-        "summary": "update a api-key-consumption with JSON patch or by  merging JSON object",
-        "operationId": "api-key-consumptions.patch",
-        "requestBody": {
-          "description": "the patch to update the api-key-consumption or a JSON object",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/patch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ApiKeyConsumption"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiKeyConsumption"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "api-key-consumption"
-        ]
-      },
-      "put": {
-        "summary": "update a api-key-consumption",
-        "operationId": "api-key-consumptions.update",
-        "requestBody": {
-          "description": "the api-key-consumption to update",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApiKeyConsumption"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiKeyConsumption"
-                  }
                 }
               }
             }
@@ -6409,56 +5249,6 @@
         "tags": [
           "api-key-consumption"
         ]
-      },
-      "post": {
-        "summary": "creates a api-key-consumption",
-        "requestBody": {
-          "description": "the api-key-consumption to create",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApiKeyConsumption"
-              }
-            }
-          }
-        },
-        "operationId": "api-key-consumptions.create",
-        "responses": {
-          "201": {
-            "description": "entity created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiKeyConsumption"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "bad entity format",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "api-key-consumption"
-        ]
       }
     },
     "/admin-api/audit-events/{id}": {
@@ -6472,139 +5262,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/done"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "audit-event"
-        ]
-      },
-      "patch": {
-        "summary": "update a audit-event with JSON patch or by  merging JSON object",
-        "operationId": "audit-events.patch",
-        "requestBody": {
-          "description": "the patch to update the audit-event or a JSON object",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/patch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/object"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/object"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "audit-event"
-        ]
-      },
-      "put": {
-        "summary": "update a audit-event",
-        "operationId": "audit-events.update",
-        "requestBody": {
-          "description": "the audit-event to update",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/object"
-                  }
                 }
               }
             }
@@ -6729,56 +5386,6 @@
         "tags": [
           "audit-event"
         ]
-      },
-      "post": {
-        "summary": "creates a audit-event",
-        "requestBody": {
-          "description": "the audit-event to create",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/object"
-              }
-            }
-          }
-        },
-        "operationId": "audit-events.create",
-        "responses": {
-          "201": {
-            "description": "entity created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "bad entity format",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "audit-event"
-        ]
       }
     },
     "/admin-api/messages/{id}": {
@@ -6792,139 +5399,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/done"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "message"
-        ]
-      },
-      "patch": {
-        "summary": "update a message with JSON patch or by  merging JSON object",
-        "operationId": "messages.patch",
-        "requestBody": {
-          "description": "the patch to update the message or a JSON object",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/patch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/Message"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Message"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "tags": [
-          "message"
-        ]
-      },
-      "put": {
-        "summary": "update a message",
-        "operationId": "messages.update",
-        "requestBody": {
-          "description": "the message to update",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Message"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Message"
-                  }
                 }
               }
             }
@@ -7049,56 +5523,6 @@
         "tags": [
           "message"
         ]
-      },
-      "post": {
-        "summary": "creates a message",
-        "requestBody": {
-          "description": "the message to create",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Message"
-              }
-            }
-          }
-        },
-        "operationId": "messages.create",
-        "responses": {
-          "201": {
-            "description": "entity created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Message"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "bad entity format",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "message"
-        ]
       }
     },
     "/admin-api/issues/{id}": {
@@ -7173,18 +5597,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiIssue"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -7236,18 +5650,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiIssue"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -7493,18 +5897,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiPost"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -7556,18 +5950,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/ApiPost"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -7813,18 +6197,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Translation"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -7876,18 +6250,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/Translation"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -8125,22 +6489,7 @@
                     "$ref": "#/components/schemas/patch"
                   },
                   {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
+                    "$ref": "#/components/schemas/UsagePlan"
                   }
                 ]
               }
@@ -8148,37 +6497,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -8224,62 +6544,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                  }
-                ]
+                "$ref": "#/components/schemas/UsagePlan"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -8325,29 +6597,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
-                  }
+                  "$ref": "#/components/schemas/UsagePlan"
                 }
               }
             }
@@ -8400,26 +6650,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
+                    "$ref": "#/components/schemas/UsagePlan"
                   }
                 }
               }
@@ -8448,26 +6679,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                  }
-                ]
+                "$ref": "#/components/schemas/UsagePlan"
               }
             }
           }
@@ -8479,26 +6691,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.Admin"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/UsagePlan"
                 }
               }
             }
@@ -8601,18 +6794,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/SubscriptionDemand"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -8664,18 +6847,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "updated entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "items": {
-                    "$ref": "#/components/schemas/SubscriptionDemand"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "401": {
             "description": "unauthorized",
@@ -8847,6 +7020,109 @@
         "tags": [
           "subscription-demand"
         ]
+      }
+    },
+    "/admin-api/search": {
+      "post": {
+        "summary": "search with GraphQL",
+        "operationId": "GraphQL.search",
+        "requestBody": {
+          "description": "GraphQL query",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GraphQLQuery"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphQLResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "GraphQL"
+        ]
+      }
+    },
+    "/admin-api/schema": {
+      "post": {
+        "summary": "search with GraphQL",
+        "operationId": "GraphQL.schema",
+        "requestBody": {
+          "description": "get GraphQL schema",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GraphQLQuery"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphQLSchema"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "GraphQL"
+        ]
+      }
+    },
+    "/admin-api/credentials/{token}/plans": {
+      "get": {
+        "summary": "get apikey from integration token",
+        "tags": [
+          "Integration ApiKey"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "integration token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtoroshiApiKey"
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

@@ -1,20 +1,14 @@
 package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain.{
-  IntegrationProcess,
-  Tenant,
-  TenantDisplay,
-  UsagePlan,
-  UsagePlanId
-}
+import fr.maif.daikoku.domain.{IntegrationProcess, SubscriptionProcess, Tenant, TenantDisplay, UsagePlan, UsagePlanId}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{FiniteDuration, *}
 
 class EnvironmentDisplayMode()
     extends PlaySpec
@@ -29,7 +23,7 @@ class EnvironmentDisplayMode()
       customDescription = None,
       otoroshiTarget = None,
       allowMultipleKeys = Some(false),
-      subscriptionProcess = Seq.empty,
+      subscriptionProcess = SubscriptionProcess(),
       integrationProcess = IntegrationProcess.ApiKey,
       autoRotation = Some(false)
     )

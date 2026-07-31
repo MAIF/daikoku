@@ -412,8 +412,12 @@ object CmsApiConfig {
   }
 }
 
-class Config(val underlying: Configuration) {
+case class DaikokuFlags(multiPlanSubscriptionEnabled: Boolean)
 
+class Config(val underlying: Configuration) {
+  lazy val flags: DaikokuFlags = {
+    DaikokuFlags(multiPlanSubscriptionEnabled = underlying.get[Boolean]("daikoku.flags.multiPlanSubscriptionEnabled"))
+  }
   lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
     .orElse(underlying.getOptional[Int]("http.port"))

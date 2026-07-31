@@ -55,7 +55,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     connectTimeout: {
       type: type.number,
-      label: translate('Connect timeout (s)'),
+      label: translate('Connect timeout'),
       defaultValue: 2000,
       constraints: [
         constraints.required(translate("constraints.required.value"))
