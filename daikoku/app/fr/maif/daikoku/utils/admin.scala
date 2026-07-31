@@ -196,6 +196,37 @@ abstract class AdminApiController[Of, Id <: ValueType](
   ): EitherT[Future, AppError, Of]
   def getId(entity: Of): Id
 
+  def doCreate(tenant: Tenant, entity: Of): EitherT[Future, AppError, Of] =
+    EitherT.liftF[Future, AppError, Of](
+      entityStore(tenant, env.dataStore)
+        .save(entity)
+        .map(_ => entity)
+    )
+
+  def doUpdate(
+      tenant: Tenant,
+      oldEntity: Of,
+      newEntity: Of
+  ): EitherT[Future, AppError, Of] =
+    EitherT.liftF[Future, AppError, Of](
+      entityStore(tenant, env.dataStore)
+        .save(newEntity)
+        .map(_ => newEntity)
+    )
+
+  def doDelete(
+      tenant: Tenant,
+      entity: Of,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    EitherT.liftF[Future, AppError, Unit] {
+      val store = entityStore(tenant, env.dataStore)
+      val deletion =
+        if (logically) store.deleteByIdLogically(getId(entity).value)
+        else store.deleteById(getId(entity).value)
+      deletion.map(_ => ())
+    }
+
   def findAll(): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
       val paginationPage: Int = ctx.request.queryString
@@ -285,14 +316,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   .renderF()
               case None =>
                 validate(newEntity, UpdateOrCreate.Create)
-                  .map(entity =>
-                    entityStore(ctx.tenant, env.dataStore)
-                      .save(entity)
-                      .map(_ => Created(toJson(entity)))
-                  )
-                  .leftMap(_.renderF())
+                  .flatMap(entity => doCreate(ctx.tenant, entity))
+                  .map(entity => Created(toJson(entity)))
+                  .leftMap(_.render())
                   .merge
-                  .flatten
             }
 
       }
@@ -306,7 +333,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             s"Entity $entityName not found",
             Results.NotFound
           )
-        case Some(_) =>
+        case Some(oldEntity) =>
           fromJson(ctx.request.body) match {
             case Left(e) =>
               logger.error(s"Bad $entityName format", new RuntimeException(e))
@@ -316,14 +343,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
               )
             case Right(newEntity) =>
               validate(newEntity, UpdateOrCreate.Update)
-                .map(entity =>
-                  entityStore(ctx.tenant, env.dataStore)
-                    .save(entity)
-                    .map(_ => NoContent)
-                )
-                .leftMap(_.renderF())
+                .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
+                .map(_ => NoContent)
+                .leftMap(_.render())
                 .merge
-                .flatten
           }
       }
     }
@@ -384,7 +407,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
           entityStore(ctx.tenant, env.dataStore).findById(id)
         }
 
-      def finalizePatch(patchedJson: JsValue): Future[Result] = {
+      def finalizePatch(
+          oldEntity: Of,
+          patchedJson: JsValue
+      ): Future[Result] = {
         fromJson(patchedJson) match {
           case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
@@ -394,14 +420,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
             )
           case Right(patchedEntity) =>
             validate(patchedEntity, UpdateOrCreate.Update)
-              .map(entity =>
-                entityStore(ctx.tenant, env.dataStore)
-                  .save(entity)
-                  .map(_ => NoContent)
-              )
-              .leftMap(_.renderF())
+              .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
+              .map(_ => NoContent)
+              .leftMap(_.render())
               .merge
-              .flatten
         }
       }
 
@@ -419,7 +441,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                 JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
               patchedJson.fold(
                 error => error.renderF(),
-                json => finalizePatch(json)
+                json => finalizePatch(entity, json)
               )
             case JsObject(_) =>
               val newJson =
@@ -441,7 +463,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                     JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
                   patchedJson.fold(
                     error => error.renderF(),
-                    json => finalizePatch(json)
+                    json => finalizePatch(entity, json)
                   )
 
               }
@@ -460,14 +482,19 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def deleteEntity(id: String): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
-      if (ctx.request.queryString.get("logically").exists(_.contains("true"))) {
-        entityStore(ctx.tenant, env.dataStore)
-          .deleteByIdLogically(id)
-          .map(_ => Ok(Json.obj("done" -> true)))
-      } else {
-        entityStore(ctx.tenant, env.dataStore)
-          .deleteById(id)
-          .map(_ => Ok(Json.obj("done" -> true)))
+      val logically =
+        ctx.request.queryString.get("logically").exists(_.contains("true"))
+      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+        case None =>
+          Errors.craftResponseResultF(
+            s"$entityName not found",
+            Results.NotFound
+          )
+        case Some(entity) =>
+          doDelete(ctx.tenant, entity, logically)
+            .map(_ => Ok(Json.obj("done" -> true)))
+            .leftMap(_.render())
+            .merge
       }
     }
 

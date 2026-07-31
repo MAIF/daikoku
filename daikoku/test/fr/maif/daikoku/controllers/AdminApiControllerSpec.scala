@@ -1923,7 +1923,7 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner, teamConsumer),
           apis = Seq(defaultApi.api),
           usagePlans = defaultApi.plans,
-          subscriptions = Seq(adminApiSubscription),
+          subscriptions = Seq(adminApiSubscription, sub),
           keyrings = Seq(adminApiKeyring, keyring)
         )
         val resp = httpJsonCallWithoutSessionBlocking(
@@ -2511,7 +2511,7 @@ class AdminApiControllerSpec
           tenants = Seq(tenant),
           teams = Seq(defaultAdminTeam, teamOwner),
           users = Seq(userAdmin, user),
-          notifications = Seq(),
+          notifications = Seq(notif),
           subscriptions = Seq(adminApiSubscription),
           keyrings = Seq(adminApiKeyring)
         )
