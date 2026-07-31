@@ -77,6 +77,7 @@
   "notif.api.transfer": "A request to transfer ownership of API %s has been sent to you.",
   "notif.apikey.deletion": "Your API key has been deleted.",
   "notif.subscription.expired": "Your subscription has expired and has been removed.",
+  "notif.subscription.accepted": "The subscription for plan %s of api %s for team %s has been accepted.",
   "notif.apikey.rotation.inprogress": "Your API key rotation has started.",
   "notif.apikey.rotation.ended": "Your API key rotation was completed successfully.",
   "notif.apikey.refresh": "The API key of the keyring %s has been regenerated.",
