@@ -1384,7 +1384,10 @@ class UsagePlansAdminApiController(
                         )
                       } yield result._2
                   }
-                } yield Created(toJson(created)))
+                } yield {
+                  auditAdminApiWrite(ctx, "create", created.id.value)
+                  Created(toJson(created))
+                })
                   .leftMap(_.render())
                   .merge
             }
@@ -1492,14 +1495,14 @@ class SubscriptionDemandsAdminApiController(
   override def getId(entity: SubscriptionDemand): DemandId =
     entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      deletionService
-        .cancelSubscriptionDemand(id, ctx.tenant)
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
-    }
+  override def doDelete(
+      tenant: Tenant,
+      entity: SubscriptionDemand,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    deletionService
+      .cancelSubscriptionDemand(entity.id.value, tenant)
+      .map(_ => ())
 }
 
 class AdminApiSwaggerController(

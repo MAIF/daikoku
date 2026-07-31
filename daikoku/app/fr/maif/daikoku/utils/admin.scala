@@ -3,6 +3,7 @@ package fr.maif.daikoku.utils
 import cats.data.EitherT
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
+import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.{TeamType, Tenant, User, ValueType}
 import fr.maif.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
@@ -21,7 +22,11 @@ import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
-case class DaikokuApiActionContext[A](request: Request[A], tenant: Tenant)
+case class DaikokuApiActionContext[A](
+    request: Request[A],
+    tenant: Tenant,
+    clientId: Option[String] = None
+)
 
 class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
     extends ActionBuilder[DaikokuApiActionContext, AnyContent]
@@ -54,7 +59,13 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
             case Some(value) =>
               Try(JWT.require(algo).build().verify(value)) match {
                 case Success(decoded) if !decoded.getClaim("apikey").isNull =>
-                  block(DaikokuApiActionContext[A](request, tenant))
+                  block(
+                    DaikokuApiActionContext[A](
+                      request,
+                      tenant,
+                      Option(decoded.getClaim("apikey").asString())
+                    )
+                  )
                 case _ =>
                   Errors.craftResponseResultF(
                     "No api key provided",
@@ -90,7 +101,13 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>
-                        block(DaikokuApiActionContext[A](request, tenant))
+                        block(
+                          DaikokuApiActionContext[A](
+                            request,
+                            tenant,
+                            Some(clientId)
+                          )
+                        )
                       case _ =>
                         Errors.craftResponseResultF(
                           "No api key provided",
@@ -227,6 +244,27 @@ abstract class AdminApiController[Of, Id <: ValueType](
       deletion.map(_ => ())
     }
 
+  protected def auditAdminApiWrite(
+      ctx: DaikokuApiActionContext[?],
+      action: String,
+      id: String
+  ): Unit =
+    AuditTrailEvent(
+      s"Admin API ($action $entityName $id) by keyring ${ctx.clientId.getOrElse("unknown")}"
+    ).logAdminApiAuditEvent(
+      ctx.tenant,
+      User.system,
+      ctx.request,
+      Json.obj(
+        "adminApi" -> Json.obj(
+          "action" -> action,
+          "entity" -> entityName,
+          "entityId" -> id,
+          "clientId" -> ctx.clientId
+        )
+      )
+    )(using env)
+
   def findAll(): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
       val paginationPage: Int = ctx.request.queryString
@@ -317,7 +355,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
               case None =>
                 validate(newEntity, UpdateOrCreate.Create)
                   .flatMap(entity => doCreate(ctx.tenant, entity))
-                  .map(entity => Created(toJson(entity)))
+                  .map { entity =>
+                    auditAdminApiWrite(ctx, "create", getId(entity).value)
+                    Created(toJson(entity))
+                  }
                   .leftMap(_.render())
                   .merge
             }
@@ -344,7 +385,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
             case Right(newEntity) =>
               validate(newEntity, UpdateOrCreate.Update)
                 .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
-                .map(_ => NoContent)
+                .map { _ =>
+                  auditAdminApiWrite(ctx, "update", id)
+                  NoContent
+                }
                 .leftMap(_.render())
                 .merge
           }
@@ -421,7 +465,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
           case Right(patchedEntity) =>
             validate(patchedEntity, UpdateOrCreate.Update)
               .flatMap(entity => doUpdate(ctx.tenant, oldEntity, entity))
-              .map(_ => NoContent)
+              .map { _ =>
+                auditAdminApiWrite(ctx, "patch", id)
+                NoContent
+              }
               .leftMap(_.render())
               .merge
         }
@@ -492,7 +539,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
           )
         case Some(entity) =>
           doDelete(ctx.tenant, entity, logically)
-            .map(_ => Ok(Json.obj("done" -> true)))
+            .map { _ =>
+              auditAdminApiWrite(ctx, "delete", id)
+              Ok(Json.obj("done" -> true))
+            }
             .leftMap(_.render())
             .merge
       }

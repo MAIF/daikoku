@@ -11,7 +11,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, JsObject, JsString, Json}
+import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
 import play.api.libs.ws.WSResponse
 
 import java.util.Base64
@@ -3651,6 +3651,55 @@ class AdminApiControllerSpec
         )(using tenant)
 
         verif.status mustBe 404
+      }
+    }
+
+    "A call to admin API audit trail" must {
+      "record an audit event with AuthorizedAdminApi level and caller keyring on a write" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
+          apis = Seq(),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamConsumer, teamOwner)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiKeyring),
+          body = defaultApi.api.asJson.some
+        )(using tenant)
+        resp.status mustBe 201
+
+        def auditEvents(): Seq[JsValue] =
+          Await.result(
+            daikokuComponents.env.dataStore.auditTrailRepo
+              .forTenant(tenant.id)
+              .findRaw(Json.obj()),
+            10.seconds
+          )
+
+        def isOurEvent(e: JsValue): Boolean =
+          (e \ "authorized").asOpt[String].contains("AuthorizedAdminApi") &&
+            (e \ "details" \ "adminApi" \ "action")
+              .asOpt[String]
+              .contains("create") &&
+            (e \ "details" \ "adminApi" \ "entityId")
+              .asOpt[String]
+              .contains(defaultApi.api.id.value)
+
+        org.awaitility.Awaitility.await.atMost(20.seconds.toJava) until { () =>
+          auditEvents().exists(isOurEvent)
+        }
+
+        val evt = auditEvents().find(isOurEvent).get
+        (evt \ "@userId").as[String] mustBe "daikoku-system"
+        (evt \ "verb").as[String] mustBe "POST"
+        (evt \ "details" \ "adminApi" \ "entity").as[String] mustBe "api"
+        (evt \ "details" \ "adminApi" \ "clientId")
+          .as[String] mustBe adminApiKeyring.apiKey.clientId
       }
     }
 
