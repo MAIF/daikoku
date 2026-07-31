@@ -858,7 +858,27 @@ class ApiDocumentationPageAdminApiController(
       entity: ApiDocumentationPage,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiDocumentationPage] =
-    EitherT.pure[Future, AppError](entity)
+    for {
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
+        env.dataStore.tenantRepo.findById(entity.tenant),
+        AppError.ParsingPayloadError("Tenant not found")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.title.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page title is empty")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.remoteContentEnabled || entity.content.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page content is empty")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.contentType.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page contentType is empty")
+      )
+    } yield entity
 
   override def getId(entity: ApiDocumentationPage): ApiDocumentationPageId =
     entity.id
