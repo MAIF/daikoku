@@ -2,12 +2,12 @@ package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.daikoku.domain.NotificationAction._
+import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationStatus.{Accepted, Pending}
-import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
+import fr.maif.daikoku.domain.NotificationType.{AcceptOnly, AcceptOrReject}
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain._
-import fr.maif.daikoku.domain.json._
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
@@ -16,7 +16,7 @@ import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -47,6 +47,14 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId)
   )
 
+  val untreatedNotifications: Seq[Notification] = Seq(
+    untreatedNotification,
+    untreatedNotification.copy(
+      id = NotificationId("second-untreated-notification"),
+      notificationType = AcceptOnly
+    )
+  )
+
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
       setupEnvBlocking(
@@ -69,7 +77,7 @@ class NotificationControllerSpec()
       )(using tenant, session)
       resp.status mustBe 200
       (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
-        .as[Long] mustBe 1
+        .as[Long] mustBe 2
     }
     "read notifications of his team" in {
       setupEnvBlocking(
@@ -130,7 +138,7 @@ class NotificationControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
+        notifications = Seq(treatedNotification) ++ untreatedNotifications
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp =
@@ -139,8 +147,10 @@ class NotificationControllerSpec()
           session
         )
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      (resp.json \ "count").as[Long] mustBe 2
+      (resp.json \ "toValidateCount").as[Long] mustBe 1
     }
+
     "read his notifications" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1517,7 +1527,7 @@ class NotificationControllerSpec()
         path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(using tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers   =
+      val maybeUsers =
         fr.maif.daikoku.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
@@ -1569,7 +1579,7 @@ class NotificationControllerSpec()
         path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(using tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers   =
+      val maybeUsers =
         fr.maif.daikoku.domain.json.SetUserWithPermissionFormat
           .reads((getTeam.json \ "users").as[JsArray])
 
