@@ -287,17 +287,32 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   val toSave = reconcileMerge(old, validated)
                   if (toJson(old) == toJson(toSave)) Future.successful(Right("unchanged"))
                   else if (dryRun) Future.successful(Right("updated"))
-                  else entityStore(tenant, env.dataStore).save(toSave).map(_ => Right("updated"))
+                  else
+                    doUpdate(tenant, old, toSave).value.map {
+                      case Left(error) => Left(error.getErrorMessage())
+                      case Right(_)    => Right("updated")
+                    }
                 case None =>
                   if (dryRun) Future.successful(Right("created"))
-                  else entityStore(tenant, env.dataStore).save(validated).map(_ => Right("created"))
+                  else
+                    doCreate(tenant, validated).value.map {
+                      case Left(error) => Left(error.getErrorMessage())
+                      case Right(_)    => Right("created")
+                    }
               }
           }
         }
     }
 
   def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
-    entityStore(tenant, env.dataStore).deleteById(id)
+    entityStore(tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+      case None => Future.successful(false)
+      case Some(entity) =>
+        doDelete(tenant, entity, logically = false).value.map {
+          case Left(_)  => false
+          case Right(_) => true
+        }
+    }
 
   def reconcileListManaged(
       tenant: Tenant
