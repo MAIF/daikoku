@@ -43,8 +43,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByLabel('Accès aux notifications').click();
-
   await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
@@ -58,6 +58,10 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
+  
+  expect(page.getByRole('region', { name: 'notifications alt+T' }).getByRole('listitem')).toHaveText("La souscription pour le plan prod de l'api API papier pour l'équipe Vendeurs à bien été acceptée.")
+  await page.getByRole('button', { name: 'Close toast' }).click();
+
   await expect(page.getByText('0 notification')).toBeVisible();;
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
@@ -86,6 +90,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
 
   await expect(otoroshiKey.clientId).toBe(clientId)
   await expect(otoroshiKey.clientSecret).toBe(clientSecret)
+  await page.getByRole('button', { name: 'Close toast' }).click();
+
 });
 
 test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context }) => {
