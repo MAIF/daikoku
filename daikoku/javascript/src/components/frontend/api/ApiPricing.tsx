@@ -1093,7 +1093,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   ]
 
-  const savePlan = (plan: IUsagePlan, creation: boolean = false) => {
+  const savePlan = (plan: IUsagePlan, creation: boolean = false): Promise<void>  => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
@@ -1102,21 +1102,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
             replacements: [plan.customName]
           })))
           .then(closeRightPanel)
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
+          .then(() => Promise.all([
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+          ]))
+          .then(() => undefined)
       )
     } else {
       return (
         Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
           .then(() => toast.success(translate('update.plan.successful.toast.label')))
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
+          .then(() => Promise.all([
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+          ]))
           .then(closeRightPanel)
+          .then(() => undefined)
       )
     }
   }
 
   const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
-
-    // Convertier IUsagePlanGQL en IUsagePlan
+    // Convertire IUsagePlanGQL en IUsagePlan
     const planToUse = plan
     availableEnvQuery.refetch().then(({ data: availableEnvs = [] }) => {
       openRightPanel({
@@ -1608,7 +1615,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         const clone: IUsagePlanGQL = {
           ...cloneDeep(plan),
           _id: nanoid(32),
-          customName: `${plan.customName} (copy)`,
+          customName: ``,
           paymentSettings: undefined,
         };
         updatePlan(convertIUsagePlanGQLToIUsagePlan(clone), true)
@@ -1637,7 +1644,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
           onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(plan))
-            .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
+            .then(() => Promise.all([
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+              queryClient.invalidateQueries({ queryKey: ['plans'] }),
+            ]))
             .then(() => toast.success(translate({
               key: `delete.${displayType}.successful.toast.label`,
               replacements: [plan.customName]
@@ -1694,7 +1704,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const columnHelper = createColumnHelper<IUsagePlanGQL>();
   const columns: ((ColumnDef<IUsagePlanGQL, any>))[] = useMemo((): ((ColumnDef<IUsagePlanGQL, any>))[] => {
-
     return [
       columnHelper.display({
         meta: {
@@ -1889,7 +1898,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         className="btn btn-outline-secondary btn-square-sm"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
-                        id={`${plan._id}-dropdownMenuButton`}
+                        id={`${plan.customName}-dropdownMenuButton`}
                       >
                         <EllipsisVertical size={16} />
                       </button>
@@ -1916,14 +1925,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           </span>
                       </Can>
                       {props.api.visibility !== 'AdminOnly' && <>
-                        <span
+                        {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 &&  <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).duplicatePlan()}>
-                          <CopyPlus size={16}  />
+                          <CopyPlus size={16}/>
                           {tenant.display === 'environment'
                             ? translate('pricing.clone.env.btn.label')
                             : translate('Duplicate plan')}
-                        </span>
+                        </span>}
                         <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).deleteWithConfirm()}
@@ -1944,7 +1953,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       })
     ] as ColumnDef<IUsagePlanGQL, any>[]
-  }, [])
+  }, [availableEnvQuery])
 
   return (
     <>
