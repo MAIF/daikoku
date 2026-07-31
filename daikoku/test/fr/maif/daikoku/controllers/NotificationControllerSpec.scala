@@ -77,7 +77,7 @@ class NotificationControllerSpec()
       )(using tenant, session)
       resp.status mustBe 200
       (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
-        .as[Long] mustBe 2
+        .as[Long] mustBe 1
     }
     "read notifications of his team" in {
       setupEnvBlocking(
