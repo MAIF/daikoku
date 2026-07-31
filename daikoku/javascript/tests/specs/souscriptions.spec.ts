@@ -320,7 +320,7 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
 
-  await page.locator('#D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o-dropdownMenuButton').click();
+  await page.locator('#prod-dropdownMenuButton').click();
   await page.getByText('Dupliquer').nth(2).click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByRole('option', { name: 'preprod' }).click();
@@ -362,7 +362,7 @@ test('Selection de plans limitée', async ({ page, context }) => {
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
 
-  await page.locator('#D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o-dropdownMenuButton').click();
+  await page.locator('#prod-dropdownMenuButton').click();
   await page.getByText('Dupliquer').nth(2).click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByRole('option', { name: 'preprod' }).click();
@@ -1045,4 +1045,28 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
   });
   await expect(enabledKey.status).toBe(200);
   await expect((await enabledKey.json()).enabled).toBe(true);
+})
+
+
+test("Ne peux plus dupliquer un environnement si plus d'environnements disponibles", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.locator('body').press('Escape');
+  await page.getByRole('link', { name: 'API Commande' }).click();
+  await page.getByText('Environnements').click();
+  await page.locator('[id="prod-dropdownMenuButton"]').click();
+  await page.getByText('Dupliquer').nth(2).click();
+  expect(page.locator('.react-form-select__input-container')).toContainText("")
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByRole('option', { name: 'preprod' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.locator('#preprod-dropdownMenuButton').click();
+  expect (page.getByText('Dupliquer').nth(2)).not.toBeVisible;
+  await page.getByText('Supprimer').nth(3).click();
+  await page.getByRole('textbox', { name: 'Saisissez preprod pour' }).fill('preprod');
+  await page.getByRole('button', { name: 'Confirmation' }).click();
+  await page.locator('[id="prod-dropdownMenuButton"]').click();
+  expect (page.getByText('Dupliquer').nth(2)).toBeVisible;
+  
 })
