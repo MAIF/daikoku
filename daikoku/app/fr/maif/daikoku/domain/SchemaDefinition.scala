@@ -3970,9 +3970,9 @@ object SchemaDefinition {
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
 
-    val TO                                                                               = Argument("to", OptionInputType(LongType), description = "Date to")
-    val VERSION                                                                          = Argument("version", StringType, description = "a version")
-    val API_IDS                                                                          = Argument(
+    val TO = Argument("to", OptionInputType(LongType), description = "Date to")
+    val VERSION = Argument("version", StringType, description = "a version")
+    val API_IDS = Argument(
       "apiIds",
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
@@ -3992,7 +3992,8 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A cms filter about path of page"
     )
-    def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "myTeams",
@@ -4666,7 +4667,7 @@ object SchemaDefinition {
               "$or" -> Json.arr(
                 Json
                   .obj(
-                    "_id"         -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                    "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                   ),
                 Json.obj(
                   "_humanReadableId" -> Json
@@ -4679,7 +4680,7 @@ object SchemaDefinition {
             Json.obj(
               "$or" -> Json.arr(
                 Json.obj(
-                  "_id"              -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                 ),
                 Json.obj(
                   "_humanReadableId" -> Json

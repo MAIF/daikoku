@@ -72,7 +72,11 @@ class RotationStateMachineSpec extends PlaySpec {
       bearer: Option[String] = None
   ): Option[ApiKeyRotation] =
     Some(
-      ApiKeyRotation(enabled = enabled, nextSecret = nextSecret, bearer = bearer)
+      ApiKeyRotation(
+        enabled = enabled,
+        nextSecret = nextSecret,
+        bearer = bearer
+      )
     )
 
   "RotationStateMachine" should {

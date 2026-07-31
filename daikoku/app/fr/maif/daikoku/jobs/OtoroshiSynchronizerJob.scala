@@ -601,7 +601,7 @@ class OtoroshiSynchronizerJob(
     // is enabled; only enabled and active members take part in the merge. No enabled
     // member (or none at all) or blocked -> None -> the key is disabled / deleted.
     subscriptions.filter(_.subscription.isActive).toList match {
-      case Nil          => None
+      case Nil => None
       case head :: tail =>
         val merged = tail.foldLeft(
           head.asOtoroshiApikey(team, tenant, keyring.apiKey)

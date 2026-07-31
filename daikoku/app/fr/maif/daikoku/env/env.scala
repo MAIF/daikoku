@@ -416,7 +416,9 @@ case class DaikokuFlags(multiPlanSubscriptionEnabled: Boolean)
 
 class Config(val underlying: Configuration) {
   lazy val flags: DaikokuFlags = {
-    DaikokuFlags(multiPlanSubscriptionEnabled = underlying.get[Boolean]("daikoku.flags.multiPlanSubscriptionEnabled"))
+    DaikokuFlags(multiPlanSubscriptionEnabled =
+      underlying.get[Boolean]("daikoku.flags.multiPlanSubscriptionEnabled")
+    )
   }
   lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
@@ -957,7 +959,9 @@ class DaikokuEnv(
                       .forTenant(tenant.id)
                       .save(jsPage)
                 } yield {
-                  val passwordEmpty = configuration.getOptional[String]("daikoku.init.admin.password").isEmpty
+                  val passwordEmpty = configuration
+                    .getOptional[String]("daikoku.init.admin.password")
+                    .isEmpty
 
                   if (passwordEmpty) {
                     AppLogger.warn("")

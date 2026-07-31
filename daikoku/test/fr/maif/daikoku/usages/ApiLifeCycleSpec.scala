@@ -1206,7 +1206,8 @@ class ApiLifeCycleSpec
         body = Some(apiWithSub.copy(state = ApiState.Created).asJson)
       )(using tenant, adminSession)
       respRefused.status mustBe 409
-      (respRefused.json \ "error").as[String] mustBe "Conflict with api subscriptions"
+      (respRefused.json \ "error")
+        .as[String] mustBe "Conflict with api subscriptions"
 
       // Without subscription: moving to draft is allowed.
       val respAllowed = httpJsonCallBlocking(
@@ -1216,7 +1217,9 @@ class ApiLifeCycleSpec
         body = Some(apiWithoutSub.copy(state = ApiState.Created).asJson)
       )(using tenant, adminSession)
       respAllowed.status mustBe 200
-      (respAllowed.json \ "state").as(using json.ApiStateFormat) mustBe ApiState.Created
+      (respAllowed.json \ "state").as(using
+        json.ApiStateFormat
+      ) mustBe ApiState.Created
     }
 
     def changingAPIState(

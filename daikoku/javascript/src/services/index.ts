@@ -20,7 +20,8 @@ import {
   ITenant,
   ITenantAdministration,
   ITenantFull,
-  ITranslation, IUsagePlanGQL,
+  ITranslation,
+  IUsagePlanGQL,
   IUser,
   IUserSimple,
   OAuthSettings,
@@ -101,7 +102,7 @@ export const getTeamVisibleApi = (
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
 
-export const myUnreadNotificationsCount = (): Promise<{ toValidateCount: number, count: number }> =>
+export const myUnreadNotificationsCount = (): Promise<{ toValidateCount: number; count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(
       (r) => (r.status === 200 ? r.json() : { toValidateCount: 0, count: 0 }),
@@ -191,7 +192,7 @@ export function isCreationWaiting(obj: any): obj is CreationWaiting {
 }
 
 export function isResponseError(obj: any): obj is ResponseError {
-  return obj && "error" in obj;
+  return obj && 'error' in obj;
 }
 
 export type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
@@ -692,7 +693,11 @@ export const apiSubscriptions = (
 ): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
-export const archiveSubscriptionByOwner = (ownerId: string, subscriptionId: string, enabled: boolean) =>
+export const archiveSubscriptionByOwner = (
+  ownerId: string,
+  subscriptionId: string,
+  enabled: boolean
+) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
     {
@@ -1327,10 +1332,8 @@ export const removeCmsPage = (id: any) =>
 export const getAllAvailableEnvs = (teamId: string, apiId: string, version: string) => {
   return customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/available_envs`, {
     method: 'GET',
-  }).then((r) => (r.ok ?
-    r.json()
-     :  r));
-}
+  }).then((r) => (r.ok ? r.json() : r));
+};
 
 export const graphql = {
   getCmsPageByName: `
@@ -1492,7 +1495,7 @@ export const graphql = {
       }
     `,
 
-  plansByApi:`
+  plansByApi: `
     query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
       plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
         plans {

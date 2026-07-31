@@ -48,7 +48,9 @@ class MailService {
         .sequence(maybeAdminsWithTeam.map {
           case (Some(admin), team) =>
             implicit val language: String =
-              admin.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
+              admin.defaultLanguage
+                .orElse(tenant.defaultLanguage)
+                .getOrElse("en")
 
             for {
               title <- translator.translate(

@@ -61,9 +61,9 @@ final case class JobConfig(
   *
   * `Input` is what a run operates on. The scheduled loop uses `defaultInput`
   * (typically "everything"); on-demand callers may pass a narrower value — this
-  * is how `OtoroshiSynchronizerJob`'s `entryPoint` fits (`Input =
-  * ApiId | UsagePlanId | ApiSubscriptionId | KeyringId | SyncAllSubscription`).
-  * Jobs with nothing to target use `AbstractJob[Unit]`.
+  * is how `OtoroshiSynchronizerJob`'s `entryPoint` fits (`Input = ApiId |
+  * UsagePlanId | ApiSubscriptionId | KeyringId | SyncAllSubscription`). Jobs
+  * with nothing to target use `AbstractJob[Unit]`.
   *
   * A concrete job only supplies its identity/config and the actual work
   * (`process`), and may override `onOutcome` to react (e.g. notify) once a run

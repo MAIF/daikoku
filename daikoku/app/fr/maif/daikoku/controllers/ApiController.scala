@@ -125,7 +125,7 @@ class ApiController(
               EitherT(Try {
                 env.wsClient
                   .url(finalUrl)
-                  .withHttpHeaders(headers.toSeq *)
+                  .withHttpHeaders(headers.toSeq*)
                   .get()
                   .map { resp =>
                     val contentType =

@@ -232,7 +232,7 @@ object LoginFilter {
       case ("get", r"/asset-thumbnails/.*") => Some(pass)
       case (_, r"/admin-api/.*")            => Some(pass)
       case (_, r"/cms-api/.*")              => Some(pass)
-      case _ => None
+      case _                                => None
     }
   }
 }

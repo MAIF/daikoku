@@ -18,7 +18,13 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  JsonOperationsHelper,
+  OtoroshiClient,
+  Translator,
+  metadataObjectToMap
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -545,14 +551,15 @@ class ApiService(
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits.*
 
-    val updatedSubscription = if (byOwner)
-      subscription.copy(
-        blockedBy =
-          if (enabled) subscription.blockedBy - Owner
-          else subscription.blockedBy + Owner
-      )
-    else
-      subscription.copy(enabled = enabled)
+    val updatedSubscription =
+      if (byOwner)
+        subscription.copy(
+          blockedBy =
+            if (enabled) subscription.blockedBy - Owner
+            else subscription.blockedBy + Owner
+        )
+      else
+        subscription.copy(enabled = enabled)
 
     plan.otoroshiTarget
       .map(_.otoroshiSettings)
@@ -572,7 +579,9 @@ class ApiService(
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <- paymentClient.toggleStateThirdPartySubscription(
+            updatedSubscription
+          )
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
