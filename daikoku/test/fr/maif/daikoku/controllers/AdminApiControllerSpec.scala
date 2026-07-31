@@ -276,11 +276,19 @@ class AdminApiControllerSpec
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/tenants/${id.value}",
+          path = s"/admin-api/tenants/${id.value}?notDeleted=true",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
         verif.status mustBe 404
+
+        val verifDeleted = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/tenants/${id.value}",
+          headers = getAdminApiHeader(adminApiKeyring)
+        )(using tenant)
+
+        verifDeleted.status mustBe 200
+        (verifDeleted.json.as[JsObject] \ "_deleted").as[Boolean] mustBe true
       }
     }
 
@@ -7358,8 +7366,7 @@ class AdminApiControllerSpec
             .findById(sub.id),
           5.seconds
         )
-        maybeSub.isDefined mustBe true
-        maybeSub.forall(_.deleted) mustBe true
+        maybeSub.isDefined mustBe false
       }
 
       "clean up action.demand notifications when a subscription demand is cancelled" in {

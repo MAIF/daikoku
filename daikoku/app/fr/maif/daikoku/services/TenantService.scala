@@ -122,6 +122,7 @@ class TenantService(
     }
 
     for {
+      _ <- checkRemovedSettingsAreUnused(oldTenant, updatedTenant)
       adminTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(updatedTenant)
@@ -168,6 +169,72 @@ class TenantService(
         Json.obj("lastTenant" -> JsNull)
       )
     } yield tenant.copy(deleted = true))
+  }
+
+  private def checkRemovedSettingsAreUnused(
+      oldTenant: Tenant,
+      updatedTenant: Tenant
+  ): EitherT[Future, AppError, Unit] = {
+    val removedOtoroshiSettings = oldTenant.otoroshiSettings
+      .map(_.id)
+      .diff(updatedTenant.otoroshiSettings.map(_.id))
+    val removedPaymentSettings = oldTenant.thirdPartyPaymentSettings
+      .map(_.id)
+      .diff(updatedTenant.thirdPartyPaymentSettings.map(_.id))
+
+    def referencingPlans(query: JsObject): Future[Seq[UsagePlan]] =
+      env.dataStore.usagePlanRepo
+        .forTenant(updatedTenant)
+        .findNotDeleted(query)
+
+    for {
+      _ <-
+        if (removedOtoroshiSettings.isEmpty)
+          EitherT.pure[Future, AppError](())
+        else
+          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
+            referencingPlans(
+              Json.obj(
+                "otoroshiTarget.otoroshiSettings" -> Json.obj(
+                  "$in" -> JsArray(
+                    removedOtoroshiSettings.map(_.asJson).toSeq
+                  )
+                )
+              )
+            )
+          ).flatMap(plans =>
+            EitherT.cond[Future][AppError, Unit](
+              plans.isEmpty,
+              (),
+              AppError.EntityConflict(
+                s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+              )
+            )
+          )
+      _ <-
+        if (removedPaymentSettings.isEmpty)
+          EitherT.pure[Future, AppError](())
+        else
+          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
+            referencingPlans(
+              Json.obj(
+                "paymentSettings.thirdPartyPaymentSettingsId" -> Json.obj(
+                  "$in" -> JsArray(
+                    removedPaymentSettings.map(_.asJson).toSeq
+                  )
+                )
+              )
+            )
+          ).flatMap(plans =>
+            EitherT.cond[Future][AppError, Unit](
+              plans.isEmpty,
+              (),
+              AppError.EntityConflict(
+                s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+              )
+            )
+          )
+    } yield ()
   }
 
   private def deleteUnusedEnvironments(
