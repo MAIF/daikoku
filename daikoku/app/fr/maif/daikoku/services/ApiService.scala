@@ -536,6 +536,32 @@ class ApiService(
     r.value
   }
 
+  def updateSubscriptionCustomization(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      updated: ApiSubscription
+  ): EitherT[Future, AppError, ApiSubscription] = {
+    val subToSave = subscription.copy(
+      customMetadata = updated.customMetadata,
+      customMaxPerSecond = updated.customMaxPerSecond,
+      customMaxPerDay = updated.customMaxPerDay,
+      customMaxPerMonth = updated.customMaxPerMonth,
+      customReadOnly = updated.customReadOnly,
+      adminCustomName = updated.adminCustomName,
+      validUntil = updated.validUntil
+    )
+    for {
+      _ <- EitherT.right[AppError](
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant.id)
+          .save(subToSave)
+      )
+      _ <- EitherT.right[AppError](
+        otoroshiSynchronisator.run(subscription.id, tenant)
+      )
+    } yield subToSave
+  }
+
   def archiveApiKey(
       tenant: Tenant,
       subscription: ApiSubscription,

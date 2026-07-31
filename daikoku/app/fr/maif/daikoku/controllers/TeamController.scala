@@ -14,7 +14,7 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.TeamFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.login.{LdapConfig, LdapSupport}
-import fr.maif.daikoku.services.DeletionService
+import fr.maif.daikoku.services.{DeletionService, TeamService}
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -36,7 +36,8 @@ class TeamController(
     env: Env,
     cc: ControllerComponents,
     translator: Translator,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    teamService: TeamService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -141,101 +142,14 @@ class TeamController(
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
 
-            val teamToSave = team.copy(
-              users = Set(
-                UserWithPermission(ctx.user.id, TeamPermission.Administrator)
-              ),
-              authorizedOtoroshiEntities =
-                ctx.tenant.defaultAuthorizedOtoroshiEntities
-            )
-
             implicit val language: String = ctx.user.defaultLanguage
               .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
-            val res: EitherT[Future, AppError, Result] = for {
-              adminTeam <- EitherT.fromOptionF(
-                env.dataStore.teamRepo
-                  .forTenant(ctx.tenant)
-                  .findOneNotDeleted(
-                    Json.obj("type" -> TeamType.Admin.name)
-                  ),
-                AppError.EntityNotFound("admin team")
-              )
-              _ <- EitherT.cond[Future][AppError, Unit](
-                !ctx.tenant.teamCreationSecurity
-                  .getOrElse(false) || adminTeam.users.exists(
-                  _.userId == ctx.user.id
-                ) || ctx.user.isDaikokuAdmin,
-                (),
-                AppError.ForbiddenAction
-              )
-              _ <- EitherT.fromOptionF(
-                env.dataStore.teamRepo
-                  .forTenant(ctx.tenant)
-                  .findOneNotDeleted(
-                    Json.obj(
-                      "$or" -> Json.arr(
-                        Json.obj("_id" -> team.id.asJson),
-                        Json.obj("_humanReadableId" -> team.humanReadableId)
-                      )
-                    )
-                  )
-                  .map(r => r.fold(().some)(_ => None)),
-                AppError.TeamNameAlreadyExists
-              )
-              emailVerif = EmailVerification(
-                id = DatastoreId(IdGenerator.token(32)),
-                randomId = IdGenerator.token,
-                tenant = ctx.tenant.id,
-                team = teamToSave.id,
-                creationDate = DateTime.now(),
-                validUntil = DateTime.now().plusMinutes(15)
-              )
-              _ <- EitherT.liftF(
-                env.dataStore.teamRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(teamToSave)
-              )
 
-              _ <- EitherT.liftF(
-                env.dataStore.emailVerificationRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(emailVerif)
-              )
-              cipheredValidationToken = encrypt(
-                env.config.cypherSecret,
-                emailVerif.randomId,
-                ctx.tenant
-              )
-              title <- EitherT.liftF(
-                translator.translate("mail.create.team.token.title", ctx.tenant)
-              )
-              value <- EitherT.liftF(
-                translator.translate(
-                  "mail.create.team.token.body",
-                  ctx.tenant,
-                  Map(
-                    "objTeam" -> team.asJson,
-                    "team" -> JsString(team.name),
-                    "link" -> JsString(
-                      env.getDaikokuUrl(
-                        ctx.tenant,
-                        s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                      )
-                    ),
-                    "team_data" -> team.asJson,
-                    "recipient_data" -> ctx.user.asJson,
-                    "tenant_data" -> ctx.tenant.asJson
-                  )
-                )
-              )
-              _ <- EitherT.liftF(
-                ctx.tenant.mailer
-                  .send(title, Seq(team.contact), value, ctx.tenant)
-              )
-            } yield {
-              Created(teamToSave.asJson)
-            }
-            res.leftMap(AppError.render).merge
+            teamService
+              .createTeam(ctx.tenant, team, Some(ctx.user))
+              .map(teamToSave => Created(teamToSave.asJson))
+              .leftMap(AppError.render)
+              .merge
         }
       }
     }
@@ -414,119 +328,25 @@ class TeamController(
           "@{user.name} has updated team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        def personalTeamIsKO(_team: Team): Boolean = {
-          team.name != _team.name ||
-          team.description != _team.description ||
-          team.contact != _team.contact ||
-          team.apiKeyVisibility != _team.apiKeyVisibility
-        }
-
         json.TeamFormat.reads(ctx.request.body) match {
-          case JsSuccess(_, _) if team.`type` == TeamType.Admin =>
-            AppError.ForbiddenAction.renderF()
           case JsSuccess(newTeam, _) =>
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(teamId)
-              .flatMap {
-                case Some(t)
-                    if t.`type` == TeamType.Personal && personalTeamIsKO(
-                      newTeam
-                    ) =>
-                  Forbidden(
-                    Json.obj(
-                      "error" -> "You're not authorized to update this team"
-                    )
-                  ).future
-                case Some(team) =>
-                  ctx.setCtxValue("team.id", team.id)
-                  ctx.setCtxValue("team.name", team.name)
-                  val teamWithEdits =
-                    if (ctx.user.isDaikokuAdmin || ctx.isTenantAdmin) newTeam
-                    else
-                      newTeam.copy(
-                        metadata = team.metadata,
-                        apisCreationPermission = team.apisCreationPermission
-                      )
+            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.name", team.name)
 
-                  val isTeamContactChanged =
-                    team.contact != teamWithEdits.contact
-                  val teamToSave = teamWithEdits.copy(verified =
-                    teamWithEdits.verified && !isTeamContactChanged
-                  )
-                  if (isTeamContactChanged) {
-                    implicit val language: String = ctx.user.defaultLanguage
-                      .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
-                    for {
-                      title <- translator.translate(
-                        "mail.create.team.token.title",
-                        ctx.tenant
-                      )
-                      emailVerif = EmailVerification(
-                        id = DatastoreId(IdGenerator.token(32)),
-                        randomId = IdGenerator.token,
-                        tenant = ctx.tenant.id,
-                        team = teamToSave.id,
-                        creationDate = DateTime.now(),
-                        validUntil = DateTime.now().plusMinutes(15)
-                      )
-                      cipheredValidationToken = encrypt(
-                        env.config.cypherSecret,
-                        emailVerif.randomId,
-                        ctx.tenant
-                      )
-                      value <- translator.translate(
-                        "mail.create.team.token.body",
-                        ctx.tenant,
-                        Map(
-                          "objTeam" -> team.asJson,
-                          "team" -> JsString(team.name),
-                          "link" -> JsString(
-                            env.getDaikokuUrl(
-                              ctx.tenant,
-                              s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                            )
-                          ),
-                          "team_data" -> team.asJson,
-                          "recipient_data" -> ctx.user.asJson,
-                          "tenant_data" -> ctx.tenant.asJson
-                        )
-                      )
-                      _ <- ctx.tenant.mailer.send(
-                        title,
-                        Seq(teamToSave.contact),
-                        value,
-                        ctx.tenant
-                      )
-                      _ <-
-                        env.dataStore.emailVerificationRepo
-                          .forTenant(ctx.tenant)
-                          .delete(Json.obj("teamId" -> team.id.value))
-                      _ <-
-                        env.dataStore.emailVerificationRepo
-                          .forTenant(ctx.tenant)
-                          .save(emailVerif)
-                      _ <-
-                        env.dataStore.teamRepo
-                          .forTenant(ctx.tenant.id)
-                          .save(teamToSave)
+            implicit val language: String = ctx.user.defaultLanguage
+              .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
 
-                    } yield {
-                      Ok(teamToSave.asJson)
-                    }
-                  } else {
-                    env.dataStore.teamRepo
-                      .forTenant(ctx.tenant.id)
-                      .save(teamToSave)
-                      .map { _ =>
-                        Ok(teamToSave.asJson)
-                      }
-                  }
-                case None =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "team not found"))
-                  )
-              }
+            teamService
+              .updateTeam(
+                ctx.tenant,
+                ctx.user,
+                team,
+                newTeam,
+                elevatedRights = ctx.user.isDaikokuAdmin || ctx.isTenantAdmin
+              )
+              .map(teamToSave => Ok(teamToSave.asJson))
+              .leftMap(_.render())
+              .merge
           case e: JsError =>
             FastFuture.successful(BadRequest(JsError.toJson(e)))
         }
@@ -540,15 +360,8 @@ class TeamController(
           s"@{user.name} has deleted team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        implicit val ec: ExecutionContext = env.defaultExecutionContext
-
-        val value: EitherT[Future, AppError, Unit] = team.`type` match {
-          case TeamType.Admin => EitherT.leftT(AppError.ForbiddenAction)
-          case _ =>
-            deletionService.deleteTeamByQueue(team.id, ctx.tenant.id)
-        }
-
-        value
+        teamService
+          .deleteTeam(ctx.tenant, team)
           .leftMap(_.render())
           .map(_ => Ok(Json.obj("done" -> true)))
           .merge

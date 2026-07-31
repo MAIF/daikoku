@@ -1637,7 +1637,7 @@ class ApiController(
               .findById(subscription.plan),
             AppError.PlanNotFound
           )
-          subToSave = subscription.copy(
+          updated = subscription.copy(
             customMetadata = (body \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (body \ "customMaxPerSecond").asOpt[Long],
             customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
@@ -1646,12 +1646,11 @@ class ApiController(
             adminCustomName = (body \ "adminCustomName").asOpt[String],
             validUntil = (body \ "validUntil").asOpt(using DateTimeFormat),
           )
-          _ <- EitherT.right[AppError](
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .save(subToSave))
-
-          _ <- EitherT.right[AppError](otoroshiSynchronisator.run(subscription.id, ctx.tenant))
+          subToSave <- apiService.updateSubscriptionCustomization(
+            ctx.tenant,
+            subscription,
+            updated
+          )
         } yield Ok(subToSave.asJson))
           .leftMap(_.render())
           .merge
