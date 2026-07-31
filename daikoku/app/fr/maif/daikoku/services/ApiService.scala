@@ -1466,6 +1466,115 @@ class ApiService(
     } yield r
   }
 
+  def validateProcessWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant,
+      maybeSessionId: Option[String] = None
+  )(implicit
+      language: String,
+      currentUser: User
+  ): EitherT[Future, AppError, Result] = {
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(demand.team),
+        AppError.TeamNotFound
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        AppError.ApiNotFound
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- step.check()
+      updatedDemand = demand.copy(steps =
+        demand.steps.map(s =>
+          if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted)
+          else s
+        )
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .save(updatedDemand)
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .updateManyByQuery(
+            Json.obj(
+              "action.type" -> "CheckoutForSubscription",
+              "action.demand" -> demand.id.asJson,
+              "action.step" -> step.id.asJson
+            ),
+            Json.obj(
+              "$set" -> Json.obj(
+                "status" -> json.NotificationStatusFormat
+                  .writes(NotificationStatus.Accepted())
+              )
+            )
+          )
+      )
+      result <- runSubscriptionProcess(
+        demand.id,
+        tenant,
+        maybeSessionId = maybeSessionId
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .delete(Json.obj("step" -> validator.step.value))
+      )
+    } yield result
+  }
+
+  def declineProcessWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant
+  ): EitherT[Future, AppError, Unit] = {
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        AppError.ApiNotFound
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- step.check()
+      _ <- declineSubscriptionDemand(
+        tenant,
+        demand.id,
+        step.id,
+        NotificationSender(
+          (validator.metadata \ "email").as[String],
+          (validator.metadata \ "email").as[String],
+          None
+        )
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .delete(Json.obj("step" -> validator.step.value))
+      )
+    } yield ()
+  }
+
   def runSubscriptionProcess(
       demandId: DemandId,
       tenant: Tenant,

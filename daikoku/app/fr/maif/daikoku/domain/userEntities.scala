@@ -14,6 +14,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
+
+  val system: User = User(
+    id = UserId("daikoku-system"),
+    tenants = Set.empty,
+    origins = Set.empty,
+    name = "Daikoku",
+    email = "system@daikoku.io",
+    isDaikokuAdmin = true,
+    lastTenant = None,
+    defaultLanguage = None
+  )
 }
 
 case class User(

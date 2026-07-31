@@ -34,16 +34,7 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
   private val logger = Logger("daikoku-action-or-apikey")
 
-  private val systemUser = User(
-    id = UserId("admin-api-user"),
-    tenants = Set.empty,
-    origins = Set(AuthProvider.Local),
-    name = "Admin API User",
-    email = "admin-api@daikoku.io",
-    isDaikokuAdmin = true,
-    lastTenant = None,
-    defaultLanguage = None
-  )
+  private val systemUser = User.system
 
   private def decodeBase64(encoded: String): String =
     new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
