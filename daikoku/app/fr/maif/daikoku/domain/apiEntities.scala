@@ -241,9 +241,9 @@ case object PaymentSettings {
 }
 
 case class BasePaymentInformation(
-    costPerMonth: BigDecimal,
-    billingDuration: BillingDuration,
-    currency: Currency,
+    costPerMonth: Option[BigDecimal],
+    billingDuration: Option[BillingDuration],
+    currency: Option[Currency],
     trialPeriod: Option[BillingDuration]
 ) extends CanJson[BasePaymentInformation] {
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
@@ -304,10 +304,10 @@ case class UsagePlan(
 
   def mergeBase(a: BasePaymentInformation): UsagePlan =
     this.copy(
-      costPerMonth = a.costPerMonth.some,
-      currency = a.currency.some,
+      costPerMonth = a.costPerMonth,
+      currency = a.currency,
       trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration.some
+      billingDuration = a.billingDuration
     )
 
   def addSubscriptionStep(

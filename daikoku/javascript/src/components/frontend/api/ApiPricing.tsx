@@ -717,6 +717,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
           <button className='mrf-btn mrf-btn_green mrf-ml_10'
             type='button'
+            disabled={!props.plan.costPerMonth || !props.plan.billingDuration || !props.plan.currency}
             onClick={() => props.savePlan({
               ...props.plan,
               costPerMonth: undefined,
@@ -1924,6 +1925,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           {translate('pricing.edit.process.btn.label')}
                           </span>
                       </Can>
+                        <Can I={manage} a={API} team={props.ownerTeam}>
+                      <span className='dropdown-item cursor-pointer'
+                        onClick={() => actions(plan).editPricing()}>
+                        <span className='feature__description'>
+                          <Pencil size={16}  />
+                          {'Modifier pricing'}
+                        </span>
+                      </span>
+                        </Can>
+
                       {props.api.visibility !== 'AdminOnly' && <>
                         {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 &&  <span
                           className="dropdown-item cursor-pointer"
@@ -2116,8 +2127,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
                   <p className="m-0">{
-                  tenant.display === 'environment' ? 
-                  translate('api.pricings.creation.environment.button.label') : 
+                  tenant.display === 'environment' ?
+                  translate('api.pricings.creation.environment.button.label') :
                   translate('api.pricings.creation.plan.button.label'
                   )}</p>
                 </button>
