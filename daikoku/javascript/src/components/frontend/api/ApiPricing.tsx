@@ -2115,7 +2115,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   onClick={() => createNewPlan()}
                   className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
-                  <p className="m-0">{translate('api.pricings.creation.button.label')}</p>
+                  <p className="m-0">{
+                  tenant.display === 'environment' ? 
+                  translate('api.pricings.creation.environment.button.label') : 
+                  translate('api.pricings.creation.plan.button.label'
+                  )}</p>
                 </button>
 
           </>
