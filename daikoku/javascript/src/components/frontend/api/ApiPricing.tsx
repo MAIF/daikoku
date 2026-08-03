@@ -366,9 +366,10 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
+    const sanitizedValue = e.target.value.replace(/\./g, '');
     const newValues = props.value?.map(v => {
       if(v.key === oldName) {
-        return {...v, key: e.target.value}
+        return {...v, key: sanitizedValue}
       } else {
         return v;
       }
@@ -2116,8 +2117,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   className="btn btn-outline-primary d-flex align-items-center gap-2">
                   <Plus />
                   <p className="m-0">{
-                  tenant.display === 'environment' ? 
-                  translate('api.pricings.creation.environment.button.label') : 
+                  tenant.display === 'environment' ?
+                  translate('api.pricings.creation.environment.button.label') :
                   translate('api.pricings.creation.plan.button.label'
                   )}</p>
                 </button>
