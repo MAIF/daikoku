@@ -3,12 +3,12 @@ import { JSX, ReactNode } from 'react';
 import {
   IAsset,
   IImportingDocumentation,
-  IOtoroshiApiKey,
+  IOtoroshiApiKey, ISubscription,
   ISubscriptionCustomization,
-  ISubscriptionDemand,
+  ISubscriptionDemand, ISubscriptionWithApiInfo,
   ITeamSimple,
   ITenant,
-  ITestingConfig,
+  ITestingConfig, IUsagePlanGQL,
   IUserSimple,
   IWithTesting,
   ResponseDone,
@@ -43,7 +43,21 @@ export type TModalContext = {
   openJoinTeamModal: () => void;
   openContactModal: (p: IContactModalComponentProps) => void;
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
-  openKeyringSelectModal: (p: IKeyringSelectModalProps) => void;
+  openKeyringSelectModal: (p: {
+    plan: IUsagePlanGQL;
+    keyrings: {
+      keyringId: string;
+      apiName: string;
+      planName: string;
+      customName: string | null;
+      keyringCustomName: string | null | undefined;
+      count: number;
+      aggregated: boolean;
+      subscription: ISubscriptionWithApiInfo
+    }[];
+    onSubscribe: () => void;
+    onSelectKeyring: (subscription: ISubscription, keyringCustomName: (string | null)) => void
+  }) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;

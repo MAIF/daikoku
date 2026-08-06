@@ -638,6 +638,7 @@ export interface ApiPricingProps {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
+    keyringCustomName: string;
     redirect?: boolean;
   }) => Promise<SubscriptionReturn>;
 }
@@ -647,7 +648,7 @@ export interface ITeamSelector {
   pendingTeams: Array<string>;
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
-  showKeyringSelectModal: (teamId: string) => void;
+  showKeyringSelectModal: (teamId: string, teamName: string) => void;
   plan: IUsagePlanGQL;
 }
 export interface OtoroshiEntitiesSelectorProps {

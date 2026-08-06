@@ -107,8 +107,8 @@ export const ApiHome = () => {
     }
   }, [])
 
-  const askForApikeys = ({ team, plan, apiKey, motivation, redirect }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, redirect?: boolean }
+  const askForApikeys = ({ team, plan, apiKey, motivation, keyringCustomName, redirect }:
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, keyringCustomName: string, redirect?: boolean }
   ) => {
 
     const needRedirection = redirect ?? true;
@@ -118,8 +118,8 @@ export const ApiHome = () => {
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, motivation)
-          : Services.askForApiKey(api._id, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey.keyring!._id, team, plan._id, keyringCustomName, motivation)
+          : Services.askForApiKey(api._id, team, plan._id, keyringCustomName, motivation)
       ).then((result) => {
         if (isError(result)) {
           toast.error(result.error);

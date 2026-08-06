@@ -16,7 +16,7 @@ export interface IKeyringOption {
   keyringId: string;
   apiName: string;
   planName: string;
-  customName?: string | null;
+  keyringCustomName?: string | null;
   count: number;
   aggregated: boolean;
   subscription: ISubscription;
@@ -26,7 +26,7 @@ export interface IKeyringSelectModalProps {
   onSubscribe: () => void;
   plan: IUsagePlan | IFastPlan  | IUsagePlanGQL;
   keyrings: Array<IKeyringOption>;
-  onSelectKeyring: (key: ISubscription) => void;
+  onSelectKeyring: (key: ISubscription, keyringCustomName: (string | null)) => void;
 }
 
 export const KeyringSelectModal = (
@@ -42,9 +42,9 @@ export const KeyringSelectModal = (
     props.onSubscribe();
   };
 
-  const selectKeyring = (subscription: ISubscription) => {
+  const selectKeyring = (subscription: ISubscription, keyringCustomName: (string | null)) => {
     props.close();
-    props.onSelectKeyring(subscription);
+    props.onSelectKeyring(subscription, keyringCustomName);
   };
 
   return (
@@ -93,13 +93,13 @@ export const KeyringSelectModal = (
 
 type KeyringsViewProps = {
   keyrings: Array<IKeyringOption>;
-  onSelectKeyring: (key: ISubscription) => void;
+  onSelectKeyring: (key: ISubscription, keyringCustomName: (string | null)) => void;
 };
 
 const KeyringsView = (props: KeyringsViewProps) => {
   const { translate } = useContext(I18nContext);
   const keyrings = [...props.keyrings].sort((a, b) =>
-    (a.customName ?? a.planName).localeCompare(b.customName ?? b.planName)
+    (a.keyringCustomName ?? a.planName).localeCompare(b.keyringCustomName ?? b.planName)
   );
   return (
     <div>
@@ -112,14 +112,14 @@ const KeyringsView = (props: KeyringsViewProps) => {
             key={keyring.keyringId}
             className="keyring-option selectable d-flex align-items-center justify-content-between p-3"
             role="button"
-            onClick={() => props.onSelectKeyring(keyring.subscription)}
+            onClick={() => props.onSelectKeyring(keyring.subscription, keyring.keyringCustomName ?? "")}
           >
             <div className="d-flex align-items-center gap-3">
               <KeyRound />
               <div className="d-flex flex-column">
-                <strong>{keyring.customName ?? keyring.planName}</strong>
+                <strong>{keyring.keyringCustomName ?? keyring.planName}</strong>
                 <small className="text-muted">
-                  {keyring.apiName}{keyring.customName ? '' : ` · ${keyring.planName}`}
+                  {keyring.apiName}{keyring.keyringCustomName ? '' : ` · ${keyring.planName}`}
                 </small>
                 {keyring.aggregated && (
                   <span className="badge --primary align-self-start mt-1">
