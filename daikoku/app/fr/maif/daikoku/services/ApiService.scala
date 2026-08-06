@@ -233,6 +233,7 @@ class ApiService(
         ThirdPartySubscriptionInformations
       ],
       customName: Option[String] = None,
+      keyringCustomName: String,
       tags: Option[Set[String]] = None
   ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
@@ -293,7 +294,7 @@ class ApiService(
             id = KeyringId(IdGenerator.token(32)),
             tenant = tenant.id,
             team = team.id,
-            customName = customName,
+            customName = keyringCustomName,
             apiKey = tunedApiKey.asOtoroshiApiKey,
             otoroshiSettings =
               KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
@@ -384,7 +385,12 @@ class ApiService(
                 _ <- EitherT.liftF[Future, AppError, Boolean](
                   env.dataStore.keyringRepo
                     .forTenant(tenant.id)
-                    .save(keyring.copy(bearerToken = created.bearer))
+                    .save(
+                      keyring.copy(
+                        bearerToken = created.bearer,
+                        customName = keyringCustomName
+                      )
+                    )
                 )
               } yield created
           }
@@ -416,6 +422,7 @@ class ApiService(
         tenant = tenant.id,
         team = team.id,
         apiKey = adminApiKey,
+        customName = keyringCustomName,
         otoroshiSettings = KeyringOtoroshiBinding.Internal,
         createdAt = DateTime.now(),
         rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
@@ -754,7 +761,7 @@ class ApiService(
                 tenant,
                 Map(
                   "keyring_name" -> JsString(
-                    keyring.customName.getOrElse(keyring.apiKey.clientName)
+                    keyring.customName
                   ),
                   "apikey_client_name" -> JsString(keyring.apiKey.clientName),
                   "consumer_team_data" -> consumerTeam.asJson,
@@ -965,7 +972,7 @@ class ApiService(
         id = KeyringId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = team.id,
-        customName = subscription.customName,
+        customName = oldKeyring.customName,
         apiKey = created.asOtoroshiApiKey,
         otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(o.id),
         createdAt = DateTime.now(),
@@ -1795,6 +1802,7 @@ class ApiService(
                 thirdPartySubscriptionInformations =
                   maybeSubscriptionInformations,
                 customName = demand.customName,
+                keyringCustomName = demand.keyringCustomName.getOrElse(""),
                 tags = demand.tags
               )
             )
@@ -1807,7 +1815,7 @@ class ApiService(
                       "$in" -> JsArray(
                         team.users
                           .filter(_.teamPermission == Administrator)
-                          .map(_.asJson)
+                          .map(u => JsString(u.userId.value))
                           .toSeq
                       )
                     )
@@ -1895,6 +1903,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: Option[String],
       adminCustomName: Option[String]
   )(implicit language: String, currentUser: User) = {
     import cats.implicits.*
@@ -1942,7 +1951,8 @@ class ApiService(
 
     def controlSubscriptionExtension(
         plan: UsagePlan,
-        team: Team
+        team: Team,
+        keyringCustomNameValid: String
     ): EitherT[Future, AppError, Unit] = {
       keyringId match {
         case None      => EitherT.pure[Future, AppError](())
@@ -1957,6 +1967,15 @@ class ApiService(
                 .forTenant(tenant)
                 .findByIdNotDeleted(kid.value),
               AppError.EntityNotFound(s"Keyring ${kid.value}")
+            )
+            _ <- EitherT.liftF(
+              env.dataStore.keyringRepo
+                .forTenant(tenant.id)
+                .save(
+                  keyring.copy(
+                    customName = keyringCustomNameValid
+                  )
+                )
             )
             members <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
@@ -2059,24 +2078,34 @@ class ApiService(
         env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound
       )
+      keyringCustomNameValid =
+        keyringCustomName
+          .filter(_.trim.nonEmpty)
+          .getOrElse(
+            s"${team.name}-${api.name}-${plan.customName}-firstKeyring"
+              .replaceAll(" ", "-")
+          )
       _ <- controlTeam(team, api, plan)
       _ <- controlDemand(team, api, plan)
-      _ <- controlSubscriptionExtension(plan, team)
-      result <- applyProcessForApiSubscription(
-        tenant,
-        currentUser,
-        api,
-        plan,
-        team,
-        keyringId,
-        motivation,
-        customMetadata,
-        customMaxPerSecond,
-        customMaxPerDay,
-        customMaxPerMonth,
-        customReadOnly,
-        adminCustomName
-      )
+      _ <- controlSubscriptionExtension(plan, team, keyringCustomNameValid)
+      result <- {
+        applyProcessForApiSubscription(
+          tenant,
+          currentUser,
+          api,
+          plan,
+          team,
+          keyringId,
+          motivation,
+          customMetadata,
+          customMaxPerSecond,
+          customMaxPerDay,
+          customMaxPerMonth,
+          customReadOnly,
+          keyringCustomNameValid,
+          adminCustomName
+        )
+      }
     } yield result
 
     value.leftMap(_.render()).merge
@@ -2095,6 +2124,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: String,
       adminCustomName: Option[String]
   )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2116,19 +2146,20 @@ class ApiService(
           case Nil =>
             EitherT(
               subscribeToApi(
-                tenant,
-                user,
-                api,
-                plan,
-                team,
-                keyringId,
+                tenant = tenant,
+                user = user,
+                api = api,
+                plan = plan,
+                team = team,
+                keyringId = keyringId,
+                keyringCustomName = keyringCustomName,
                 thirdPartySubscriptionInformations = None
               )
-            ).map(s =>
+            ).map(s => {
               Ok(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
-            )
+            })
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
 
@@ -2172,6 +2203,7 @@ class ApiService(
                       from = user.id,
                       motivation = motivation,
                       keyring = keyringId,
+                      keyringCustomName = Some(keyringCustomName),
                       customMetadata = JsonOperationsHelper
                         .mergeOptJson(customMetadata, metadataFromMotivation),
                       customMaxPerSecond = customMaxPerSecond,
@@ -2186,7 +2218,9 @@ class ApiService(
                 language,
                 user
               )
-            } yield result
+            } yield {
+              result
+            }
         }
     }
   }

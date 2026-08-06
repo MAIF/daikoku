@@ -2574,7 +2574,11 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            customName = (json \ "customName").asOpt[String],
+            customName = (json \ "customName")
+              .asOpt[String]
+              .getOrElse(
+                ""
+              ),
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
             otoroshiSettings = (json \ "otoroshiSettings").as(using
               KeyringOtoroshiBindingFormat
@@ -2612,10 +2616,7 @@ object json {
         "_tenant" -> o.tenant.asJson,
         "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "customName" -> o.customName,
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(
           o.otoroshiSettings
@@ -2749,6 +2750,10 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
+        "keyringCustomName" -> o.keyringCustomName
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "customName" -> o.customName
           .map(JsString.apply)
           .getOrElse(JsNull)
@@ -2777,6 +2782,7 @@ object json {
               .asOpt[String]
               .map(m => Json.obj("motivation" -> m))
               .orElse((json \ "motivation").asOpt[JsObject]),
+            keyringCustomName = (json \ "keyringCustomName").asOpt[String],
             keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
