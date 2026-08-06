@@ -2574,7 +2574,7 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            customName = (json \ "customName").asOpt[String],
+            customName = (json \ "customName").as[String],
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
             otoroshiSettings = (json \ "otoroshiSettings").as(using
               KeyringOtoroshiBindingFormat
@@ -2612,10 +2612,7 @@ object json {
         "_tenant" -> o.tenant.asJson,
         "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "customName" -> o.customName,
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(
           o.otoroshiSettings

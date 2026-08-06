@@ -1149,6 +1149,8 @@ class ApiController(
           ctx.request.body.getBodyField[JsObject]("customMetadata")
         val adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName")
+        val customName =
+          (ctx.request.body \ "customName").as[String]
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -1161,6 +1163,7 @@ class ApiController(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
+          customName = customName,
           motivation = motivation,
           keyringId = Some(KeyringId(apiKeyId))
         )
@@ -1192,6 +1195,8 @@ class ApiController(
           ctx.request.body.getBodyField[JsObject]("customMetadata")
         val adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName")
+        val customName =
+          (ctx.request.body \ "customName").as[String]
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -1204,6 +1209,7 @@ class ApiController(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
+          customName = customName,
           motivation = motivation
         )
       }
@@ -1643,7 +1649,7 @@ class ApiController(
                 NotFound(Json.obj("error" -> "keyring not found"))
               )
             case Some(keyring) =>
-              val updated = keyring.copy(customName = Some(customName))
+              val updated = keyring.copy(customName = customName)
               env.dataStore.keyringRepo
                 .forTenant(ctx.tenant)
                 .save(updated)
@@ -4951,12 +4957,12 @@ class ApiController(
           _ <- EitherT.liftF(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
           )
-          _ <- EitherT.liftF(
+          _ <- EitherT.liftF[Future, AppError, Unit](
             otoroshiSynchronisator.run(updatedPlan.id, ctx.tenant)
           )
           _ <- runDemandUpdate(oldPlan, updatedPlan, api)
           //FIXME: attention, peut etre il y en a qui sont blocked de base
-          _ <- EitherT.liftF(
+          _ <- EitherT.liftF[Future, AppError, Long](
             env.dataStore.subscriptionDemandRepo
               .forTenant(ctx.tenant)
               .updateManyByQuery(
@@ -5099,7 +5105,7 @@ class ApiController(
             case false => ratedPlan
           }
 
-          _ <- EitherT.liftF(
+          _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
               .save(ratedPlanwithSettings)

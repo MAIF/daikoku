@@ -232,7 +232,7 @@ class ApiService(
       thirdPartySubscriptionInformations: Option[
         ThirdPartySubscriptionInformations
       ],
-      customName: Option[String] = None,
+      customName: String,
       tags: Option[Set[String]] = None
   ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
@@ -315,7 +315,7 @@ class ApiService(
           team = team.id,
           api = api.id,
           by = user.id,
-          customName = customName,
+          customName = Some(customName),
           metadata = Some(
             JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)
           ),
@@ -384,7 +384,12 @@ class ApiService(
                 _ <- EitherT.liftF[Future, AppError, Boolean](
                   env.dataStore.keyringRepo
                     .forTenant(tenant.id)
-                    .save(keyring.copy(bearerToken = created.bearer))
+                    .save(
+                      keyring.copy(
+                        bearerToken = created.bearer,
+                        customName = customName
+                      )
+                    )
                 )
               } yield created
           }
@@ -416,6 +421,7 @@ class ApiService(
         tenant = tenant.id,
         team = team.id,
         apiKey = adminApiKey,
+        customName = customName,
         otoroshiSettings = KeyringOtoroshiBinding.Internal,
         createdAt = DateTime.now(),
         rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
@@ -754,7 +760,7 @@ class ApiService(
                 tenant,
                 Map(
                   "keyring_name" -> JsString(
-                    keyring.customName.getOrElse(keyring.apiKey.clientName)
+                    keyring.customName
                   ),
                   "apikey_client_name" -> JsString(keyring.apiKey.clientName),
                   "consumer_team_data" -> consumerTeam.asJson,
@@ -961,11 +967,12 @@ class ApiService(
         customMetadata = subscription.customMetadata
       )
       created <- EitherT(otoroshiClient.createApiKey(apikey))
+      keyringId = KeyringId(IdGenerator.token(32))
       newKeyring = Keyring(
-        id = KeyringId(IdGenerator.token(32)),
+        id = keyringId,
         tenant = tenant.id,
         team = team.id,
-        customName = subscription.customName,
+        customName = s"${team.name}-${plan.customName}-${keyringId.toString}",
         apiKey = created.asOtoroshiApiKey,
         otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(o.id),
         createdAt = DateTime.now(),
@@ -1794,7 +1801,9 @@ class ApiService(
                 adminCustomName = demand.adminCustomName,
                 thirdPartySubscriptionInformations =
                   maybeSubscriptionInformations,
-                customName = demand.customName,
+                customName = demand.customName.getOrElse(
+                  s"${team.name}-${plan.customName}-${demand.keyring}"
+                ),
                 tags = demand.tags
               )
             )
@@ -1895,6 +1904,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      customName: String,
       adminCustomName: Option[String]
   )(implicit language: String, currentUser: User) = {
     import cats.implicits.*
@@ -1957,6 +1967,15 @@ class ApiService(
                 .forTenant(tenant)
                 .findByIdNotDeleted(kid.value),
               AppError.EntityNotFound(s"Keyring ${kid.value}")
+            )
+            _ <- EitherT.liftF(
+              env.dataStore.keyringRepo
+                .forTenant(tenant.id)
+                .save(
+                  keyring.copy(
+                    customName = customName
+                  )
+                )
             )
             members <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
@@ -2059,24 +2078,33 @@ class ApiService(
         env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound
       )
+      customNameValid =
+        if (customName.isEmpty) {
+          s"${team.name.replaceAll(" ", "-")}-${plan.customName}"
+        } else {
+          customName
+        }
       _ <- controlTeam(team, api, plan)
       _ <- controlDemand(team, api, plan)
       _ <- controlSubscriptionExtension(plan, team)
-      result <- applyProcessForApiSubscription(
-        tenant,
-        currentUser,
-        api,
-        plan,
-        team,
-        keyringId,
-        motivation,
-        customMetadata,
-        customMaxPerSecond,
-        customMaxPerDay,
-        customMaxPerMonth,
-        customReadOnly,
-        adminCustomName
-      )
+      result <- {
+        applyProcessForApiSubscription(
+          tenant,
+          currentUser,
+          api,
+          plan,
+          team,
+          keyringId,
+          motivation,
+          customMetadata,
+          customMaxPerSecond,
+          customMaxPerDay,
+          customMaxPerMonth,
+          customReadOnly,
+          customNameValid,
+          adminCustomName
+        )
+      }
     } yield result
 
     value.leftMap(_.render()).merge
@@ -2095,6 +2123,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      customName: String,
       adminCustomName: Option[String]
   )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2116,19 +2145,20 @@ class ApiService(
           case Nil =>
             EitherT(
               subscribeToApi(
-                tenant,
-                user,
-                api,
-                plan,
-                team,
-                keyringId,
+                tenant = tenant,
+                user = user,
+                api = api,
+                plan = plan,
+                team = team,
+                keyringId = keyringId,
+                customName = customName,
                 thirdPartySubscriptionInformations = None
               )
-            ).map(s =>
+            ).map(s => {
               Ok(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
-            )
+            })
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
 
@@ -2178,6 +2208,7 @@ class ApiService(
                       customMaxPerDay = customMaxPerDay,
                       customMaxPerMonth = customMaxPerMonth,
                       customReadOnly = customReadOnly,
+                      customName = Some(customName),
                       adminCustomName = adminCustomName
                     )
                   )
@@ -2186,7 +2217,9 @@ class ApiService(
                 language,
                 user
               )
-            } yield result
+            } yield {
+              result
+            }
         }
     }
   }

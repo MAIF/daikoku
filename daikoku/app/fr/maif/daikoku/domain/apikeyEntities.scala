@@ -131,10 +131,7 @@ case class ApiSubscription(
         .map(json.DateTimeFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue],
-      "customName" -> customName
-        .map(id => JsString(id))
-        .getOrElse(JsNull)
-        .as[JsValue],
+      "customName" -> customName,
       "enabled" -> JsBoolean(enabled)
     )
 }
@@ -148,7 +145,7 @@ case class Keyring(
     tenant: TenantId,
     team: TeamId,
     deleted: Boolean = false,
-    customName: Option[String] = None,
+    customName: String,
     apiKey: OtoroshiApiKey,
     otoroshiSettings: KeyringOtoroshiBinding,
     createdAt: DateTime,
