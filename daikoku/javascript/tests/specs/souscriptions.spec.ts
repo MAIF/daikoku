@@ -39,6 +39,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
@@ -106,6 +107,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click(); //todo: ??? region ???
@@ -163,7 +165,9 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process automatique', 
   page.getByRole('article', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
-  await page.locator('.keyring-option', { hasText: 'dev' }).click();
+  await page.getByRole('button', { name: 'logistique-api-commande-dev-firstKeyring' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+
 
   await page.goto(ACCUEIL);
   await findAndGoToTeam('Logistique', page);
@@ -212,6 +216,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
   await page.locator('.keyring-option', { hasText: 'prod' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await logout(page)
@@ -345,8 +350,10 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.locator('.react-form-select__input-container').click();
   await page.getByRole('option', { name: 'dev (API papier)' }).click();
   await page.getByRole('button', { name: 'Confirmation' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await page.getByRole('button', { name: 'Envoyer' }).click();
+
   await page.getByText('La demande de clé d\'API au').click();
   await page.getByRole('button', { name: 'Close toast' }).click();
 
@@ -399,8 +406,10 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
   await page.locator('.keyring-option', { hasText: 'prod' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
+
   await logout(page);
 
   await loginAs(MICHAEL, page);
@@ -806,7 +815,9 @@ test('[ASOAPI-10605] - [Consommateur] - supprimer un trousseau complet en une ac
   const keyringName = (await card.locator('.api-subscription__infos__name').textContent())?.trim() ?? '';
   await card.getByLabel('Actions du trousseau').click();
   await card.getByText('Supprimer le trousseau').click();
+  console.log(keyringName)
   await page.getByLabel('Pour confirmer la suppression').fill(keyringName);
+  await page.getByRole('textbox', { name: 'Pour confirmer la suppression' }).fill(keyringName)
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
 

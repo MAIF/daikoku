@@ -68,6 +68,7 @@ test('User producer can access to the dashboard', async ({ page }) => {
   page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('I want it !!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
@@ -115,6 +116,7 @@ test('api list status', async ({ page }) => {
   await page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Dwight Schrute').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('i want it !!!!!!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();

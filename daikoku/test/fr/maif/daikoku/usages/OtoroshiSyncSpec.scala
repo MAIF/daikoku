@@ -139,6 +139,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -235,6 +236,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -344,6 +346,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -477,6 +480,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -602,6 +606,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -714,6 +719,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -833,6 +839,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -941,6 +948,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -1030,6 +1038,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -1193,6 +1202,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -1348,6 +1358,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -1504,6 +1515,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -1623,6 +1635,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerSubscription = ApiSubscription(
@@ -1764,6 +1777,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -1924,6 +1938,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -2107,6 +2122,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(
@@ -2264,6 +2280,7 @@ class OtoroshiSyncSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val consumerParentDevSubscription = ApiSubscription(

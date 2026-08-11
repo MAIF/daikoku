@@ -223,6 +223,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -497,6 +498,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -667,6 +669,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -835,6 +838,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -1124,6 +1128,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "purge-token"
       )
       val sub = ApiSubscription(
@@ -1234,6 +1239,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -1537,6 +1543,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -1691,6 +1698,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "expiring-token"
       )
       val expiredSub = ApiSubscription(
@@ -1824,6 +1832,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2037,6 +2046,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2239,6 +2249,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2411,6 +2422,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2591,6 +2603,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2781,6 +2794,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent-token"
       )
       val parentSub = ApiSubscription(
@@ -2909,6 +2923,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "consumer-token"
       )
       val consumerSub = ApiSubscription(
@@ -3048,6 +3063,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "standalone-token"
       )
       val sub = ApiSubscription(
@@ -3166,6 +3182,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "promote-parent-token"
       )
       val parentSub = ApiSubscription(
@@ -3312,6 +3329,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "child-del-parent-token"
       )
       val parentSub = ApiSubscription(
@@ -3434,6 +3452,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(
@@ -3540,6 +3559,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(
@@ -3669,6 +3689,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(
@@ -3797,6 +3818,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(
@@ -3924,6 +3946,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(
@@ -4046,6 +4069,7 @@ class DeletionServiceSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "notif-token"
       )
       val sub = ApiSubscription(

@@ -73,7 +73,8 @@ async function extendCommandDevKeyringToPapierDev(page: Page) {
   await page
     .getByRole("button", { name: "Souscrire en l'ajoutant à un" })
     .click();
-  await page.getByRole("button", { name: "dev API Commande · dev" }).click();
+  await page.getByRole("button", { name: "logistique-api-commande-dev" }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(
     page.getByText("Votre souscription a été créée avec succès"),
   ).toBeVisible();
@@ -252,13 +253,9 @@ test("Disabling keyring should prevent calling all associated routes", async ({
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
-  await page
-    .locator("button")
-    .filter({
-      hasText:
-        "Renommer le trousseauDésactiver le trousseauRéinit. le secretSupprimer le",
-    })
-    .click();
+
+  await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
+
   await page.getByRole("button", { name: "Désactiver le trousseau" }).click();
   await expect(page.getByText("Trousseau désactivé")).toBeVisible();
   await checkOtoroshiCall({
@@ -273,10 +270,8 @@ test("Disabling keyring should prevent calling all associated routes", async ({
     authHeader,
     status: 401,
   });
-  await page
-    .locator("button")
-    .filter({ hasText: "Renommer le trousseauActiver" })
-    .click();
+    await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
+
   await page.getByRole("button", { name: "Activer le trousseau" }).click();
   await expect(page.getByText("Trousseau activé")).toBeVisible();
   await checkOtoroshiCall({
@@ -334,13 +329,11 @@ test("Removing a key from keyring should prevent calling associated route with k
     status: 200,
   });
 
-  await page
-    .getByRole("button", { name: "Copier les secrets encodés en" })
-    .first()
-    .click();
+  await page.getByRole('button', { name: 'Copier les secrets encodés en' }).nth(1).click();
   const handle = await page.evaluateHandle(() =>
     navigator.clipboard.readText(),
   );
+
   const detachedKeyAuthHeader = await handle.jsonValue();
   await checkOtoroshiCall({
     api: "command",
@@ -412,17 +405,13 @@ test("Deleting a keyring should prevent all call using its key", async ({
     status: 200,
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
-  await page
-    .locator("button")
-    .filter({
-      hasText:
-        "Renommer le trousseauDésactiver le trousseauRéinit. le secretSupprimer le",
-    })
-    .click();
+  
+  await page.locator('#keyring-dropdown-iXaRzJPRKsP0XTYUCRmYeltG3sifYdfF').click();
+  await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
   await page.getByRole("button", { name: "Supprimer le trousseau" }).click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
-    .fill("daikoku-api-key-api-commande-dev-logistique-1737452599960-1.0.0");
+    .fill("Logistique-API-papier-dev-firstKeyring");
   await page.getByRole("button", { name: "Confirmation" }).click();
   await expect(page.getByText("Le trousseau a été supprimé")).toBeVisible();
   await checkOtoroshiCall({

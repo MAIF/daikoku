@@ -38,6 +38,7 @@ class ConsumptionControllerSpec()
     apiKey = OtoroshiApiKey("name", "id", "secret"),
     otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
     createdAt = DateTime.now(),
+    customName = "teamConsumer-apiName-planName-firstKeyring",
     integrationToken = "token"
   )
   val payperUserSub: ApiSubscription = ApiSubscription(
