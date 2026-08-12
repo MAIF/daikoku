@@ -2250,6 +2250,60 @@ object evolution_18110_b extends EvolutionScript {
     }
 }
 
+object evolution_1910 extends EvolutionScript {
+  override def version: String = "19.1.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] = {
+
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      _: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) =>
+    {
+      logger.info(
+        s"Begin evolution $version - backfill missing keyring customName"
+      )
+
+      given ExecutionContext = ec
+
+      // customName was optional before this migration; only backfills keyrings
+      // where it is null or empty, leaving already-set values untouched.
+      // A keyring reuses its root subscription's id, so we join back through
+      // api_subscriptions to resolve team/api/plan names.
+      for {
+        _ <- dataStore.keyringRepo
+          .forAllTenant()
+          .execute(
+            query = """
+                      |UPDATE keyrings k
+                      |SET content = jsonb_set(
+                      |  k.content,
+                      |  '{customName}',
+                      |  to_jsonb(t.content->>'name' || '-' || a.content->>'name' || '-' || p.content->>'customName' || '-firstKeyring')
+                      |)
+                      |FROM api_subscriptions s
+                      |JOIN apis a ON a.content->>'_id' = s.content->>'api'
+                      |JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
+                      |JOIN teams t ON t.content->>'_id' = s.content->>'team'
+                      |WHERE k._id = s._id
+                      |  AND k._deleted = false
+                      |  AND (k.content->>'customName' IS NULL OR k.content->>'customName' = '');
+                      |""".stripMargin
+          )
+      } yield Done
+    }
+  }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
