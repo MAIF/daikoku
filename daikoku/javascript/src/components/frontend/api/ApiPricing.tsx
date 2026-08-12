@@ -1840,7 +1840,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   <button
                     type="button"
                     aria-label={translate("Get API key")}
-                    className="btn btn-outline-secondary btn-square-sm"
+                    className="btn --tertiary --small --icon-only"
                   >
                     <KeyRound size={16}/>
                   </button>
@@ -1868,7 +1868,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         (plan.otoroshiTarget && !isAccepted)) && (
                         <button
                           type="button"
-                          className="btn btn-outline-secondary btn-square-sm"
+                          className="btn --tertiary --small --icon-only"
                           aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
                           onClick={() => openTeamSelectorModal()}
                         >
@@ -1883,7 +1883,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 connectedUser.isGuest && (
                   <button
                     type="button"
-                    className="btn btn-outline-secondary btn-square-sm"
+                    className="btn --tertiary --small --icon-only"
                     aria-label={translate("Get API key")}
                     onClick={() => openLoginOrRegisterModal({ tenant })}
                   >
@@ -1896,7 +1896,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <div className="p-2">
                     <div>
                       <button
-                        className="btn btn-outline-secondary btn-square-sm"
+                        className="btn --tertiary --small --icon-only"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                         id={`${plan.customName}-dropdownMenuButton`}
