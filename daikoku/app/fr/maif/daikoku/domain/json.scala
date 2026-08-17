@@ -787,12 +787,12 @@ object json {
       Try {
         JsSuccess(
           BasePaymentInformation(
-            costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
+            costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             trialPeriod =
               (json \ "trialPeriod").asOpt(using BillingDurationFormat),
             billingDuration =
-              (json \ "billingDuration").asOpt(using BillingDurationFormat),
-            currency = (json \ "currency").asOpt(using CurrencyFormat)
+              (json \ "billingDuration").as(using BillingDurationFormat),
+            currency = (json \ "currency").as(using CurrencyFormat)
           )
         )
       } recover { case e =>
@@ -802,22 +802,13 @@ object json {
 
     override def writes(o: BasePaymentInformation): JsValue =
       Json.obj(
-        "costPerMonth" -> o.costPerMonth
-          .map(Json.toJson(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "costPerMonth" -> o.costPerMonth,
         "trialPeriod" -> o.trialPeriod
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "billingDuration" -> o.billingDuration
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "currency" -> o.currency
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue]
+        "billingDuration" -> o.billingDuration.asJson,
+        "currency" -> o.currency.asJson
       )
   }
 

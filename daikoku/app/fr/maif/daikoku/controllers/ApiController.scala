@@ -5014,33 +5014,48 @@ class ApiController(
           s"@{user.name} has setup payment for plan @{plan.id} of api @{api.name}"
         )
       )(teamId, ctx) { team =>
+        val body = ctx.request.body
+
         val paymentSettingsId =
-          (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId")
+          (body \ "paymentSettings" \ "thirdPartyPaymentSettingsId")
             .asOpt(using ThirdPartyPaymentSettingsIdFormat)
-        val base = ctx.request.body.as(using BasePaymentInformationFormat)
 
-        def getRatedPlan(
-                          plan: UsagePlan,
-                          base: Option[BasePaymentInformation]
-                        ): EitherT[Future, AppError, UsagePlan] = {
+        // The pricing payload is all or nothing: either it holds a complete
+        // payment information, or it holds none at all - which means the plan
+        // goes back to being free. Note that costPerRequest is a surcharge on
+        // top of costPerMonth (see ApiKeyStatsJob and createStripePrice), never
+        // a pricing on its own, so it does not make a payload complete.
+        val pricingFields =
+          Seq("costPerMonth", "costPerRequest", "currency", "billingDuration")
+        val hasNoPricing =
+          pricingFields.forall(field => (body \ field).toOption.forall(_ == JsNull))
 
-          (plan.costPerMonth, plan.costPerRequest, base) match {
-            case (Some(_), None, Some(b)) =>
-              EitherT.pure(plan.mergeBase(b))
-            case (Some(_), Some(_), Some(b)) =>
-              val costPerRequest =
-                (ctx.request.body \ "costPerRequest").as[BigDecimal]
-              val ratedPlan = plan
+        val maybeBase: Either[AppError, Option[BasePaymentInformation]] =
+          if (hasNoPricing) Right(None)
+          else
+            BasePaymentInformationFormat.reads(body) match {
+              case JsSuccess(base, _) => Right(base.some)
+              case JsError(_) =>
+                Left(
+                  AppError.ParsingPayloadError(
+                    "a priced plan requires costPerMonth, currency and billingDuration"
+                  )
+                )
+            }
+
+        def applyPayment(
+            plan: UsagePlan,
+            base: Option[BasePaymentInformation]
+        ): UsagePlan =
+          base match {
+            case None => plan.clearPayment
+            case Some(b) =>
+              plan
                 .mergeBase(b)
-                .copy(costPerRequest = costPerRequest.some)
-              EitherT.pure(ratedPlan)
-            case (None, None, _) =>
-              // plan gratuit : rien à fusionner, on retourne le plan tel quel
-              EitherT.pure(plan)
-            case _ =>
-              EitherT.leftT[Future, UsagePlan](AppError.PlanUnauthorized)
+                .copy(costPerRequest =
+                  (body \ "costPerRequest").asOpt[BigDecimal]
+                )
           }
-        }
 
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(
@@ -5059,37 +5074,57 @@ class ApiController(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
             AppError.PlanNotFound
           )
-          _ <- plan.paymentSettings match {
-            case Some(_) =>
+          base <- EitherT.fromEither[Future](maybeBase)
+          // Setting up a new pricing on a plan already backed by a third party
+          // product would leave that product orphaned, so it is rejected.
+          // Going back to a free plan is allowed: the product is archived
+          // asynchronously by the queue job.
+          _ <- (plan.paymentSettings, base) match {
+            case (Some(_), Some(_)) =>
               EitherT.leftT[Future, Unit](
-                AppError.EntityConflict("Payment,  already setup")
+                AppError.EntityConflict("payment, already setup")
               )
-            case None => EitherT.pure[Future, AppError](())
+            case (Some(paymentSettings), None) =>
+              EitherT.liftF[Future, AppError, Unit](
+                env.dataStore.operationRepo
+                  .forTenant(ctx.tenant)
+                  .save(
+                    Operation(
+                      DatastoreId(IdGenerator.token(24)),
+                      tenant = ctx.tenant.id,
+                      itemId = plan.id.value,
+                      itemType = ItemType.ThirdPartyProduct,
+                      action = OperationAction.Delete,
+                      payload = Json
+                        .obj("paymentSettings" -> paymentSettings.asJson)
+                        .some
+                    )
+                  )
+                  .map(_ => ())
+              )
+            case (None, _) => EitherT.pure[Future, AppError](())
           }
-          ratedPlan <- getRatedPlan(plan, Some(base))
+          ratedPlan = applyPayment(plan, base)
 
-          ratedPlanwithSettings <- if (ratedPlan.isPaymentDefined) {
-            paymentSettingsId match {
-              case Some(id) =>
-                paymentClient
-                  .createProduct(ctx.tenant, api, ratedPlan, id)
-                  .map { settings =>
-                    ratedPlan
-                      .copy(paymentSettings = settings.some)
-                      .addSubscriptionStep(
-                        ValidationStep.Payment(
-                          id = IdGenerator.token(32),
-                          thirdPartyPaymentSettingsId = settings.thirdPartyPaymentSettingsId
-                        )
+          ratedPlanwithSettings <- (ratedPlan.isPaymentDefined, paymentSettingsId) match {
+            // a third party provider bills the plan: create the product and add
+            // the matching step to the subscription process
+            case (true, Some(id)) =>
+              paymentClient
+                .createProduct(ctx.tenant, api, ratedPlan, id)
+                .map { settings =>
+                  ratedPlan
+                    .copy(paymentSettings = settings.some)
+                    .addSubscriptionStep(
+                      ValidationStep.Payment(
+                        id = IdGenerator.token(32),
+                        thirdPartyPaymentSettingsId = settings.thirdPartyPaymentSettingsId
                       )
-                  }
-              case None =>
-                EitherT.leftT[Future, UsagePlan](
-                  AppError.EntityConflict("paymentSettings required for a paid plan")
-                )
-            }
-          } else {
-            EitherT.pure[Future, AppError](ratedPlan)
+                    )
+                }
+            // no provider: Daikoku computes the billing itself from the plan
+            // pricing (see ApiKeyStatsJob), there is nothing to set up
+            case _ => EitherT.pure[Future, AppError](ratedPlan)
           }
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.usagePlanRepo

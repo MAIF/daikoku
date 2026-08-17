@@ -241,9 +241,9 @@ case object PaymentSettings {
 }
 
 case class BasePaymentInformation(
-    costPerMonth: Option[BigDecimal],
-    billingDuration: Option[BillingDuration],
-    currency: Option[Currency],
+    costPerMonth: BigDecimal,
+    billingDuration: BillingDuration,
+    currency: Currency,
     trialPeriod: Option[BillingDuration]
 ) extends CanJson[BasePaymentInformation] {
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
@@ -304,10 +304,27 @@ case class UsagePlan(
 
   def mergeBase(a: BasePaymentInformation): UsagePlan =
     this.copy(
-      costPerMonth = a.costPerMonth,
-      currency = a.currency,
+      costPerMonth = a.costPerMonth.some,
+      currency = a.currency.some,
       trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration
+      billingDuration = a.billingDuration.some
+    )
+
+  /** Drop every pricing information, turning the plan back into a free one. The
+    * payment validation step is removed as well, as it would otherwise refer to
+    * a product that is no longer billed.
+    */
+  def clearPayment: UsagePlan =
+    this.copy(
+      costPerMonth = None,
+      costPerRequest = None,
+      currency = None,
+      trialPeriod = None,
+      billingDuration = None,
+      paymentSettings = None,
+      subscriptionProcess = SubscriptionProcess(steps =
+        subscriptionProcess.steps.filterNot(_.name == "payment")
+      )
     )
 
   def addSubscriptionStep(
