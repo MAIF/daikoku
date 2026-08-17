@@ -654,7 +654,7 @@ class QueueJob(
       alreadyRunning <- EitherT.liftF(
         env.dataStore.operationRepo
           .forAllTenant()
-          .exists(Json.obj("Status" -> OperationStatus.InProgress.name))
+          .exists(Json.obj("status" -> OperationStatus.InProgress.name))
       )
       _ <- EitherT.cond[Future][Unit, Unit](!alreadyRunning, (), ())
       firstOperation <- EitherT.fromOptionF[Future, Unit, Operation](
