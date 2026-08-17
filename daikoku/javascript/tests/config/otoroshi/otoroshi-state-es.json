@@ -42,7 +42,29 @@
     "analyticsWebhooks": [],
     "alertsWebhooks": [],
     "elasticWritesConfigs": [],
-    "elasticReadsConfig": null,
+    "elasticReadsConfig": {
+      "clusterUri": "http://elastic:9200",
+      "index": "otoroshi-events",
+      "type": null,
+      "user": null,
+      "password": null,
+      "headers": {},
+      "indexSettings": {
+        "clientSide": true,
+        "interval": "Day",
+        "numberOfShards": 1,
+        "numberOfReplicas": 0
+      },
+      "mtlsConfig": {
+        "certs": [],
+        "trustedCerts": [],
+        "mtls": false,
+        "loose": false,
+        "trustAll": false
+      },
+      "applyTemplate": true,
+      "version": "8"
+    },
     "alertsEmails": [],
     "logAnalyticsOnServer": false,
     "useAkkaHttpClient": false,
@@ -734,7 +756,67 @@
   "clientValidators": [],
   "scripts": [],
   "tcpServices": [],
-  "dataExporters": [],
+  "dataExporters": [
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "type": "elastic",
+      "enabled": true,
+      "id": "data_exporter_daikoku_test_es",
+      "name": "daikoku test es exporter",
+      "desc": "writes gateway events to ES for consumption tests",
+      "metadata": {},
+      "tags": [],
+      "bufferSize": 1000,
+      "jsonWorkers": 1,
+      "sendWorkers": 5,
+      "groupSize": 2,
+      "groupDuration": 1000,
+      "projection": {},
+      "filtering": {
+        "include": [
+          {
+            "@type": "GatewayEvent"
+          }
+        ],
+        "exclude": []
+      },
+      "customFilter": null,
+      "customTransform": null,
+      "config": {
+        "index": "otoroshi-events",
+        "type": null,
+        "user": null,
+        "password": null,
+        "headers": {},
+        "indexSettings": {
+          "clientSide": true,
+          "interval": "Day",
+          "numberOfShards": 1,
+          "numberOfReplicas": 0
+        },
+        "mtlsConfig": {
+          "certs": [],
+          "trustedCerts": [],
+          "mtls": false,
+          "loose": false,
+          "trustAll": false
+        },
+        "applyTemplate": true,
+        "version": "8",
+        "uris": [
+          "http://elastic:9200"
+        ],
+        "maxBulkSize": 100,
+        "sendWorkers": 4
+      },
+      "kind": "events.otoroshi.io/DataExporter"
+    }
+  ],
   "tenants": [
     {
       "id": "default",

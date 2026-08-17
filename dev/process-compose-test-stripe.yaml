@@ -1,0 +1,62 @@
+version: "0.5"
+
+log_level: debug
+
+# Same local stack as the front tests (local Daikoku from source + containers), but runs
+# only stripe_billing.spec.ts. Dev-only: needs a sourced ../daikoku/.env.stripe with your
+# Stripe test keys. See mise task test:stripe.
+processes:
+  Containers:
+    command: "mise run test:es:containers"
+    readiness_probe:
+      # Wait for BOTH postgres and Otoroshi to be up. Otoroshi now waits for ES to be
+      # healthy (so its ES index template gets applied) and therefore starts late, so
+      # gating only on postgres would let the tests hit a not-yet-started Otoroshi.
+      exec:
+        command: "docker inspect daikoku-ldap-test-postgres 2>/dev/null | grep -q '\"Running\": true' && curl -sf -o /dev/null http://otoroshi-api.oto.tools:8080/api/routes -H 'Otoroshi-Client-Id: admin-api-apikey-id' -H 'Otoroshi-Client-Secret: admin-api-apikey-secret'"
+      initial_delay_seconds: 5
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 60
+    shutdown:
+      command: "mise run test:es:clean"
+  Backend:
+    command: "mise run test:stack:backend"
+    is_tty: true
+    readiness_probe:
+      http_get:
+        host: localhost
+        scheme: http
+        path: "/health"
+        port: 9000
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 100
+    depends_on:
+      Containers:
+        condition: process_healthy
+  Frontend:
+    command: "mise run dev:front"
+    depends_on:
+      Containers:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: localhost
+        scheme: http
+        path: "/health"
+        port: 5173
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 20
+  Tests:
+    command: "mise run test:stripe:run"
+    depends_on:
+      Frontend:
+        condition: process_healthy
+    exit_on_end: true

@@ -77,6 +77,13 @@ run = "docker-compose -f docker-compose-oidc-pg.yml rm -f && docker-compose --an
 dir="daikoku"
 run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
 
+# Same as the ldap backend but with the sync/stats cron ON (DAIKOKU_OTOROSHI_SYNC_CRON
+# drives both otoroshi.sync.cron and stats.sync.cron) — needed by the consumption/stripe
+# stacks so the stats sync job is active.
+[tasks."test:stack:backend"]
+dir="daikoku"
+run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=true DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
+
 [tasks."test:front:oidc:backend"]
 dir="daikoku"
 run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAIKOKU_TENANT_PROVIDER=hostname DAIKOKU_EXPOSED_ON=5173 DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson DAIKOKU_MODE=dev DAIKOKU_HEALTH_ACCESS_KEY=secret sbt \"~run\" --color=true"
@@ -84,6 +91,16 @@ run = "DAIKOKU_INIT_ADMIN_PASSWORD=password DAIKOKU_OTOROSHI_SYNC_CRON=false DAI
 [tasks."test:front:ldap:clean"]
 dir="daikoku/javascript/tests"
 run = "docker-compose -f docker-compose-local-pg.yml down && docker-compose -f docker-compose-local-pg.yml rm -f"
+
+# ES overlay for the consumption/stripe stacks: same containers as the front tests plus
+# Elasticsearch (see docker-compose-es.yml). The base front stack stays ES-free.
+[tasks."test:es:containers"]
+dir = "daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-local-pg.yml -f docker-compose-es.yml rm -f && docker-compose --ansi=always -f docker-compose-local-pg.yml -f docker-compose-es.yml up"
+
+[tasks."test:es:clean"]
+dir = "daikoku/javascript/tests"
+run = "docker-compose -f docker-compose-local-pg.yml -f docker-compose-es.yml down && docker-compose -f docker-compose-local-pg.yml -f docker-compose-es.yml rm -f"
 
 [tasks."test:front:oidc:clean"]
 dir="dev"
@@ -122,3 +139,26 @@ run = "process-compose -f ./dev/process-compose-test.yaml -p 9999"
 
 [tasks.tests]
 run = [{task = "test:front"}, {task = "test:back"}]
+
+# --- Stripe metered-billing e2e (dev only, real Stripe test mode) ---
+# Needs daikoku/.env.stripe (gitignored) with your Stripe test keys. Node pinned to 22
+# for this run only (Playwright's JSON imports break on Node 23+).
+
+[tasks."test:stripe:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = "[ -f ../.env.stripe ] && . ../.env.stripe; FORCE_COLOR=1 npx playwright test stripe_billing --trace on --workers 1 --config ./tests/playwright.config.js"
+
+# One-shot: brings up the local stack (Daikoku from source + Otoroshi/mailhog/pg) and runs
+# the Stripe spec against it.
+[tasks."test:stripe"]
+run = "process-compose -f ./dev/process-compose-test-stripe.yaml -p 9999"
+
+# --- Consumption pipeline (Otoroshi -> ES -> Daikoku), no Stripe ---
+[tasks."test:consumption:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = "FORCE_COLOR=1 npx playwright test consumption_sync --trace on --workers 1 --config ./tests/playwright.config.js"
+
+[tasks."test:consumption"]
+run = "process-compose -f ./dev/process-compose-test-consumption.yaml -p 9999"

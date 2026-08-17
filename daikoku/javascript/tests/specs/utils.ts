@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 import { IUser } from "./users";
 
 export const adminApikeyId = 'admin_key_client_id';
@@ -118,3 +118,29 @@ export const updateUserRightForTeam = async (params: {userId: string, teamId: st
     });
 
 }
+
+export const adminApi = (path: string, init: RequestInit = {}) =>
+  fetch(`http://localhost:${exposedPort}/admin-api${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+      'Content-Type': 'application/json',
+      ...(init.headers ?? {}),
+    },
+  });
+
+export const paperApiCall = (page: Page, clientId: string, clientSecret: string) =>
+  page.request.get('http://paper.oto.tools:8080/', {
+    headers: {
+      'Otoroshi-Client-Id': clientId,
+      'Otoroshi-Client-Secret': clientSecret,
+    },
+  });
+
+export const triggerTeamBillingSync = async (page: Page, teamId: string) => {
+  const res = await page.request.post(
+    `http://localhost:${exposedPort}/api/teams/${teamId}/billing/_sync`,
+    { timeout: 60_000 }
+  );
+  expect(res.ok(), `billing sync failed: ${await res.text()}`).toBeTruthy();
+};
