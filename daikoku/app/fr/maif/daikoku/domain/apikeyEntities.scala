@@ -178,7 +178,8 @@ case class ApiKeyConsumption(
     billing: ApiKeyBilling,
     from: DateTime,
     to: DateTime,
-    state: ApiKeyConsumptionState
+    state: ApiKeyConsumptionState,
+    lastReportedHits: Long = 0
 ) extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
   def isComplete = state == ApiKeyConsumptionState.Completed
@@ -222,8 +223,7 @@ sealed trait ThirdPartySubscriptionInformations {
 object ThirdPartySubscriptionInformations {
   case class StripeSubscriptionInformations(
       subscriptionId: String,
-      primaryElementId: Option[String],
-      meteredElementId: Option[String]
+      customerId: Option[String] = None
   ) extends ThirdPartySubscriptionInformations {}
 }
 

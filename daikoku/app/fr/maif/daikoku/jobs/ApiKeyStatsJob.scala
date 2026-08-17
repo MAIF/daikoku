@@ -2,6 +2,7 @@ package fr.maif.daikoku.jobs
 
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.controllers.PaymentClient
 import fr.maif.daikoku.domain.BillingTimeUnit.{Day, Hour, Year}
 import fr.maif.daikoku.domain._
 import fr.maif.daikoku.env.Env
@@ -21,7 +22,11 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.Implicits.infixOrderingOps
 
-class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
+class ApiKeyStatsJob(
+    otoroshiClient: OtoroshiClient,
+    paymentClient: PaymentClient,
+    env: Env
+) {
 
   private val logger = Logger("ApiKeyStatsJob")
 
@@ -309,6 +314,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                 case _ => DatastoreId(IdGenerator.token(24))
               }
               .getOrElse(DatastoreId(IdGenerator.token(24)))
+            val lastReportedHits = maybeLastConsumption
+              .collect {
+                case c
+                    if !c.isComplete && c.from.withTimeAtStartOfDay() == from =>
+                  c.lastReportedHits
+              }
+              .getOrElse(0L)
 
             for {
               consumption <- otoroshiClient.getApiKeyConsumption(
@@ -355,41 +367,43 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                 to = to,
                 state =
                   if (isCompleteConsumption) ApiKeyConsumptionState.Completed
-                  else ApiKeyConsumptionState.InProgress
+                  else ApiKeyConsumptionState.InProgress,
+                lastReportedHits = lastReportedHits
               )
               _ <-
                 env.dataStore.consumptionRepo
                   .forTenant(tenant)
                   .save(apiKeyConsumption)
-              _ <- apiKeyConsumption.state match {
-                case ApiKeyConsumptionState.Completed
-                    if subscription.thirdPartySubscriptionInformations.isDefined =>
-                  env.dataStore.operationRepo
-                    .forTenant(tenant)
-                    .save(
-                      Operation(
-                        DatastoreId(IdGenerator.token(24)),
-                        tenant = tenant.id,
-                        itemId = id.value,
-                        itemType = ItemType.ApiKeyConsumption,
-                        action = OperationAction.Sync,
-                        payload = Json
-                          .obj(
-                            "paymentSettings" -> plan.paymentSettings
-                              .map(_.asJson)
-                              .getOrElse(JsNull)
-                              .as[JsValue],
-                            "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations
-                              .map(_.asJson)
-                              .getOrElse(JsNull)
-                              .as[JsValue]
-                          )
-                          .some
-                      )
+              _ <-
+                if (
+                  subscription.thirdPartySubscriptionInformations.isDefined &&
+                  apiKeyConsumption.hits > lastReportedHits
+                ) {
+                  paymentClient
+                    .syncWithThirdParty(
+                      apiKeyConsumption,
+                      plan.paymentSettings,
+                      subscription.thirdPartySubscriptionInformations
                     )
-                case _ =>
+                    .flatMap {
+                      case Right(_) =>
+                        env.dataStore.consumptionRepo
+                          .forTenant(tenant)
+                          .save(
+                            apiKeyConsumption
+                              .copy(lastReportedHits = apiKeyConsumption.hits)
+                          )
+                          .map(_ => ())
+                      case Left(error) =>
+                        AppLogger.error(
+                          s"[stripe sync] ${subscription.id.value} :: ${error.getErrorMessage()}"
+                        )
+                        FastFuture.successful(())
+                    }
+                } else {
                   FastFuture.successful(())
-              }
+                }
+
             } yield {
               apiKeyConsumption
             }

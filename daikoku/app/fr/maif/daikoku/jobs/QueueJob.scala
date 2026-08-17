@@ -496,43 +496,6 @@ class QueueJob(
   // *** THIRD PARTY PAYMENT ***
   // ***************************
 
-  // TODO(transactions): syncWithThirdParty (Stripe usage records) est additif.
-  // Si deleteById échoue, l'opération est rejouée et Stripe reçoit un deuxième enregistrement de consommation.
-  // Fix complet nécessite un flag "synced" sur ApiKeyConsumption (modification de schéma).
-  private def syncConsumption(o: Operation): Future[Unit] = {
-    logger.debug("*** SYNC CONSUmPTION AS OPERATION***")
-    logger.debug(Json.prettyPrint(o.asJson))
-    logger.debug("**********************************************")
-
-    val settingsAndInfos = o.payload.map(payload =>
-      (
-        (payload \ "paymentSettings").asOpt(using json.PaymentSettingsFormat),
-        (payload \ "thirdPartySubscriptionInformations").asOpt(using
-          json.ThirdPartySubscriptionInformationsFormat
-        )
-      )
-    )
-
-    (for {
-      consumption <- OptionT(
-        env.dataStore.consumptionRepo
-          .forTenant(o.tenant)
-          .findByIdNotDeleted(o.itemId)
-      )
-      _ <- OptionT(
-        Future
-          .sequence(settingsAndInfos.map { case (settings, informations) =>
-            paymentClient
-              .syncWithThirdParty(consumption, settings, informations)
-          }.toList)
-          .map(_.headOption)
-      )
-      _ <- OptionT.liftF(
-        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-      )
-    } yield ()).value.map(_ => ())
-  }
-
   // deleteStripeSubscription ignore le status HTTP (EitherT.liftF) → Stripe 404 sur retry traité comme succès.
   // Le retry résout donc automatiquement un échec de deleteById.
   private def deleteThirdPartySubscription(o: Operation): Future[Unit] = {
@@ -688,8 +651,6 @@ class QueueJob(
             deleteThirdPartySubscription(firstOperation)
           case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
             deleteThirdPartyProduct(firstOperation)
-          case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
-            syncConsumption(firstOperation)
           case (_, _) => FastFuture.successful(())
         })
       _ <- EitherT.liftF(deleteFirstOperation())

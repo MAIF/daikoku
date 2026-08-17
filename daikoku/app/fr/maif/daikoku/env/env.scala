@@ -446,6 +446,14 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.cypherSecret")
     .getOrElse("cypherSecret")
 
+  lazy val stripeUrl: String = underlying
+    .getOptional[String]("daikoku.stripe.url")
+    .getOrElse("https://api.stripe.com")
+
+  lazy val stripeApiVersion: String = underlying
+    .getOptional[String]("daikoku.stripe.apiVersion")
+    .getOrElse("2026-07-29.dahlia")
+
   lazy val signingKey: String =
     underlying.get[String]("daikoku.signingKey")
 

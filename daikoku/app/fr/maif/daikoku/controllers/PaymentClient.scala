@@ -29,7 +29,7 @@ class PaymentClient(
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  val STRIPE_URL = "https://api.stripe.com";
+  val STRIPE_URL = env.config.stripeUrl
   val ws: WSClient = env.wsClient
 
   def getStripeProductName(api: Api, plan: UsagePlan) =
@@ -40,7 +40,8 @@ class PaymentClient(
   )(implicit stripeSettings: StripeSettings): WSRequest = {
     ws.url(s"$STRIPE_URL$path")
       .withHttpHeaders(
-        "content-type" -> "application/x-www-form-urlencoded"
+        "content-type" -> "application/x-www-form-urlencoded",
+        "Stripe-Version" -> env.config.stripeApiVersion
       )
       .withAuth(
         stripeSettings.secretKey,
@@ -143,9 +144,32 @@ class PaymentClient(
               )
             case None => EitherT.pure[Future, AppError](Json.obj().as[JsValue])
           }
+          meterResponse <- priceIds.meterId match {
+            case Some(meterId) =>
+              EitherT(
+                stripeClient(s"/v1/billing/meters/$meterId/deactivate")
+                  .post(Map.empty[String, String])
+                  .map {
+                    case response if response.status == 404 =>
+                      Right[AppError, JsValue](
+                        Json.obj("status" -> "already_deactivated")
+                      )
+                    case response if response.status >= 400 =>
+                      Left[AppError, JsValue](
+                        AppError.PaymentError(
+                          (response.json.as[JsObject] \ "error" \ "message")
+                            .as[String]
+                        )
+                      )
+                    case response => Right[AppError, JsValue](response.json)
+                  }
+              )
+            case None => EitherT.pure[Future, AppError](Json.obj().as[JsValue])
+          }
         } yield Json.obj(
           "basePrice" -> baseResponse,
-          "additionnalPrice" -> additionalResponse
+          "additionnalPrice" -> additionalResponse,
+          "meter" -> meterResponse
         )
     }
   }
@@ -295,6 +319,36 @@ class PaymentClient(
       })
   }
 
+  private def createStripeMeter(displayName: String)(implicit
+      s: StripeSettings
+  ): EitherT[Future, AppError, (String, String)] = {
+    val eventName = s"daikoku_usage_${IdGenerator.token(24)}"
+    val body = Map(
+      "display_name" -> displayName,
+      "event_name" -> eventName,
+      "default_aggregation[formula]" -> "sum",
+      "customer_mapping[type]" -> "by_id",
+      "customer_mapping[event_payload_key]" -> "stripe_customer_id",
+      "value_settings[event_payload_key]" -> "value"
+    )
+    EitherT(
+      stripeClient("/v1/billing/meters")
+        .post(body)
+        .map {
+          case res if res.status == 200 || res.status == 201 =>
+            Right[AppError, (String, String)](
+              ((res.json \ "id").as[String], eventName)
+            )
+          case res =>
+            Left[AppError, (String, String)](
+              AppError.PaymentError(
+                (res.json.as[JsObject] \ "error" \ "message").as[String]
+              )
+            )
+        }
+    )
+  }
+
   def createStripePrice(
       plan: UsagePlan,
       productId: ProductId
@@ -316,6 +370,8 @@ class PaymentClient(
           case (Some(costPerRequest), Some(maxPerMonth)) =>
             for {
               baseprice <- postStripePrice(body)
+              meter <- createStripeMeter(s"${plan.customName} usage")
+              (meterId, eventName) = meter
               payperUsePrice <- postStripePrice(
                 Map(
                   "product" -> productId,
@@ -324,7 +380,7 @@ class PaymentClient(
                   "metadata[plan]" -> plan.id.value,
                   "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
                   "recurring[usage_type]" -> "metered",
-                  "recurring[aggregate_usage]" -> "sum",
+                  "recurring[meter]" -> meterId,
                   "tiers_mode" -> "graduated",
                   "billing_scheme" -> "tiered",
                   "tiers[0][unit_amount]" -> "0",
@@ -338,12 +394,16 @@ class PaymentClient(
               productId,
               StripePriceIds(
                 basePriceId = baseprice,
-                additionalPriceId = payperUsePrice.some
+                additionalPriceId = payperUsePrice.some,
+                meterId = meterId.some,
+                meterEventName = eventName.some
               )
             )
           case (Some(costPerRequest), None) =>
             for {
               baseprice <- postStripePrice(body)
+              meter <- createStripeMeter(s"${plan.customName} usage")
+              (meterId, eventName) = meter
               payperUsePrice <- postStripePrice(
                 Map(
                   "product" -> productId,
@@ -353,7 +413,7 @@ class PaymentClient(
                   "metadata[plan]" -> plan.id.value,
                   "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
                   "recurring[usage_type]" -> "metered",
-                  "recurring[aggregate_usage]" -> "sum"
+                  "recurring[meter]" -> meterId
                 )
               )
             } yield PaymentSettings.Stripe(
@@ -361,7 +421,9 @@ class PaymentClient(
               productId,
               StripePriceIds(
                 basePriceId = baseprice,
-                additionalPriceId = payperUsePrice.some
+                additionalPriceId = payperUsePrice.some,
+                meterId = meterId.some,
+                meterEventName = eventName.some
               )
             )
           case _ =>
@@ -549,28 +611,7 @@ class PaymentClient(
         } yield {
           StripeSubscriptionInformations(
             subscriptionId = (subscription.json \ "id").as[String],
-            primaryElementId = (subscription.json \ "items")
-              .asOpt[JsObject]
-              .flatMap(items =>
-                (items \ "data")
-                  .as[JsArray]
-                  .value
-                  .find(element =>
-                    (element \ "plan" \ "usage_type").as[String] != "metered"
-                  )
-                  .map(element => (element \ "id").as[String])
-              ),
-            meteredElementId = (subscription.json \ "items")
-              .asOpt[JsObject]
-              .flatMap(items =>
-                (items \ "data")
-                  .as[JsArray]
-                  .value
-                  .find(element =>
-                    (element \ "plan" \ "usage_type").as[String] == "metered"
-                  )
-                  .map(element => (element \ "id").as[String])
-              )
+            customerId = (subscription.json \ "customer").asOpt[String]
           ).some
         }
       case None => FastFuture.successful(None)
@@ -581,7 +622,7 @@ class PaymentClient(
       consumption: ApiKeyConsumption,
       maybePaymentSettings: Option[PaymentSettings],
       maybeInfos: Option[ThirdPartySubscriptionInformations]
-  ): Future[Unit] = {
+  ): Future[Either[AppError, Unit]] = {
     AppLogger.debug("*** SYNC CONSUmPTION with THIRD PARTY***")
     AppLogger.debug(Json.prettyPrint(consumption.asJson))
     AppLogger.debug(s"$maybePaymentSettings")
@@ -599,42 +640,66 @@ class PaymentClient(
               .find(_.id == paymentSettings.thirdPartyPaymentSettingsId)
           )
         } yield {
-          (setting, infos) match {
+          (setting, infos, paymentSettings) match {
             case (
                   s: ThirdPartyPaymentSettings.StripeSettings,
-                  i: StripeSubscriptionInformations
+                  i: StripeSubscriptionInformations,
+                  p: PaymentSettings.Stripe
                 ) =>
               implicit val stripeSettings: StripeSettings = s
-              syncConsumptionWithStripe(consumption, i)
+              syncConsumptionWithStripe(consumption, i, p)
           }
-        }).value
-          .map(_ => AppLogger.debug("sync with third party ok"))
-          .map(_ => ())
-      case _ => FastFuture.successful(())
+        }).value.flatMap {
+          case Some(result) => result
+          case None         => FastFuture.successful(Right[AppError, Unit](()))
+        }
+      case _ => FastFuture.successful(Right[AppError, Unit](()))
     }
-
   }
 
   private def syncConsumptionWithStripe(
       consumption: ApiKeyConsumption,
-      informations: StripeSubscriptionInformations
-  )(implicit stripeSettings: StripeSettings) = {
-    AppLogger.debug("*** Sync with stripe ***")
+      informations: StripeSubscriptionInformations,
+      settings: PaymentSettings.Stripe
+  )(implicit
+      stripeSettings: StripeSettings
+  ): Future[Either[AppError, Unit]] = {
+    val delta = consumption.hits - consumption.lastReportedHits
     AppLogger.debug(
-      s"*** Sync ${consumption.id} - ${informations.meteredElementId} - ${consumption.hits}"
+      s"*** Sync with stripe ${consumption.id} - ${informations.customerId} - delta $delta (hits ${consumption.hits}, reported ${consumption.lastReportedHits})"
     )
 
-    informations.meteredElementId match {
-      case Some(meteredElementId) =>
-        val body = Map(
-          "quantity" -> consumption.hits.toString,
-          "timestamp" -> (consumption.from.getMillis / 1000).toString
-        )
+    if (delta <= 0) {
+      FastFuture.successful(Right[AppError, Unit](()))
+    } else {
+      (informations.customerId, settings.priceIds.meterEventName) match {
+        case (Some(customerId), Some(eventName)) =>
+          val body = Map(
+            "event_name" -> eventName,
+            "identifier" -> s"${consumption.id.value}-${consumption.lastReportedHits}",
+            "payload[value]" -> delta.toString,
+            "payload[stripe_customer_id]" -> customerId,
+            "timestamp" -> (System.currentTimeMillis() / 1000).toString
+          )
 
-        stripeClient(
-          s"/v1/subscription_items/${meteredElementId}/usage_records"
-        ).post(body)
-      case None => FastFuture.successful(())
+          stripeClient("/v1/billing/meter_events").post(body).map {
+            case res if res.status == 200 || res.status == 201 =>
+              Right[AppError, Unit](())
+            case res =>
+              Left[AppError, Unit](
+                AppError.PaymentError(
+                  (res.json \ "error" \ "message")
+                    .asOpt[String]
+                    .getOrElse(res.body)
+                )
+              )
+          }
+        case _ =>
+          AppLogger.warn(
+            "[PAYMENT] metered sync skipped (legacy subscription without a meter)"
+          )
+          FastFuture.successful(Right[AppError, Unit](()))
+      }
     }
   }
 
@@ -721,7 +786,7 @@ class PaymentClient(
     apiSubscription.thirdPartySubscriptionInformations match {
       case Some(informations) =>
         informations match {
-          case StripeSubscriptionInformations(subscriptionId, _, _) =>
+          case StripeSubscriptionInformations(subscriptionId, _) =>
             val body =
               if (apiSubscription.enabled)
                 Map("pause_collection" -> "")

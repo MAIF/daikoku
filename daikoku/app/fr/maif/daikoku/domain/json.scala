@@ -1089,7 +1089,9 @@ object json {
         JsSuccess(
           StripePriceIds(
             basePriceId = (json \ "basePriceId").as[String],
-            additionalPriceId = (json \ "additionalPriceId").asOpt[String]
+            additionalPriceId = (json \ "additionalPriceId").asOpt[String],
+            meterId = (json \ "meterId").asOpt[String],
+            meterEventName = (json \ "meterEventName").asOpt[String]
           )
         )
       } recover { case e =>
@@ -1103,7 +1105,9 @@ object json {
         "additionalPriceId" -> o.additionalPriceId
           .map(JsString.apply)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "meterId" -> o.meterId,
+        "meterEventName" -> o.meterEventName
       )
   }
 
@@ -2485,8 +2489,7 @@ object json {
           JsSuccess(
             StripeSubscriptionInformations(
               subscriptionId = (json \ "subscriptionId").as[String],
-              primaryElementId = (json \ "primaryElementId").asOpt[String],
-              meteredElementId = (json \ "meteredElementId").asOpt[String]
+              customerId = (json \ "customerId").asOpt[String]
             )
           )
         } recover { case e =>
@@ -2497,8 +2500,7 @@ object json {
       override def writes(o: StripeSubscriptionInformations): JsValue =
         Json.obj(
           "subscriptionId" -> o.subscriptionId,
-          "primaryElementId" -> o.primaryElementId,
-          "meteredElementId" -> o.meteredElementId
+          "customerId" -> o.customerId
         )
     }
 
@@ -3811,7 +3813,9 @@ object json {
               billing = (json \ "billing").as(using ApiKeyBillingFormat),
               from = (json \ "from").as(using DateTimeFormat),
               to = (json \ "to").as(using DateTimeFormat),
-              state = (json \ "state").as(using ApiKeyConsumptionStateFormat)
+              state = (json \ "state").as(using ApiKeyConsumptionStateFormat),
+              lastReportedHits =
+                (json \ "lastReportedHits").asOpt[Long].getOrElse(0)
             )
           )
         } recover { case e =>
@@ -3837,7 +3841,8 @@ object json {
           "billing" -> ApiKeyBillingFormat.writes(o.billing),
           "from" -> DateTimeFormat.writes(o.from),
           "to" -> DateTimeFormat.writes(o.to),
-          "state" -> ApiKeyConsumptionStateFormat.writes(o.state)
+          "state" -> ApiKeyConsumptionStateFormat.writes(o.state),
+          "lastReportedHits" -> o.lastReportedHits
         )
     }
   val GlobalConsumptionInformationsFormat
