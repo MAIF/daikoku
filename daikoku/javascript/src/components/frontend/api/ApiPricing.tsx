@@ -1,19 +1,22 @@
 import { constraints, Flow, Form, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import classNames from 'classnames';
+import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
+import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
-import { GraphQLClient } from 'graphql-request';
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
+import { SubscriptionReturn } from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
   ApiPricingProps,
@@ -34,6 +37,7 @@ import {
   OtoroshiEntity
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
+import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import {
   access,
   api as API,
@@ -45,15 +49,9 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing,
-  Spinner
+  renderPricing
 } from '../../utils';
 import { CmsViewerByPath } from "../CmsViewer";
-import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
-import { DynamicTable, FetchData, FetchResult } from "../../inputs";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { SubscriptionReturn } from '../../../services';
 
 type Option = {
   type: 'group' | 'route';
@@ -173,7 +171,7 @@ export const OtoroshiEntitiesSelector = ({
         });
     }
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
-  }, [rawValues.otoroshiSettings]);
+  }, [rawValues.otoroshiSettings, rawValues, ownerTeam._id]);
 
   useEffect(() => {
     if (groups && services && routes) {
@@ -2198,7 +2196,7 @@ function SubscriptionResultForm(props: { close: () => any; url: string, teamName
     } else if (Services.isResponseError(currentStatus)) {
       statusDisplay = <>{translate({ key: "subscription.plan.failed", replacements: [plan.customName, props.teamName] })} ❌</>
     }
-    return <li>{statusDisplay}</li>
+    return <li key={plan._id}>{statusDisplay}</li>
   })}</ul>
 }
 
