@@ -391,7 +391,7 @@ case object ThirdPartyPaymentSettings {
     override def toUiPayload: JsValue =
       json.StripeSettingsFormat.writes(this).as[JsObject] ++ Json.obj(
         "type" -> "Stripe"
-      ) - "publicKey" - "privateKey"
+      ) - "secretKey"
   }
 }
 
