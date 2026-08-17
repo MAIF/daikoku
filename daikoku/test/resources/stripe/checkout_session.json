@@ -1,0 +1,9 @@
+{
+  "id": "cs_test123",
+  "object": "checkout.session",
+  "customer": "cus_test123",
+  "mode": "subscription",
+  "status": "complete",
+  "payment_status": "paid",
+  "subscription": "sub_test123"
+}

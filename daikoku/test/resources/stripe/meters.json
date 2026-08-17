@@ -1,0 +1,17 @@
+{
+  "id": "mtr_test123",
+  "object": "billing.meter",
+  "status": "active",
+  "display_name": "Quotas Without Limits usage",
+  "event_name": "daikoku_usage_seed",
+  "default_aggregation": {
+    "formula": "sum"
+  },
+  "customer_mapping": {
+    "type": "by_id",
+    "event_payload_key": "stripe_customer_id"
+  },
+  "value_settings": {
+    "event_payload_key": "value"
+  }
+}
