@@ -1226,7 +1226,7 @@ object json {
       Try {
         JsSuccess(
           CustomMetadata(
-            key = (json \ "key").as[String],
+            key = (json \ "key").as[String].replace(".", ""),
             possibleValues = (json \ "possibleValues")
               .asOpt[Seq[String]]
               .map(_.toSet)
