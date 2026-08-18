@@ -1985,6 +1985,7 @@ class GraphQLControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = IdGenerator.token(32)
       )
       val subscription = ApiSubscription(

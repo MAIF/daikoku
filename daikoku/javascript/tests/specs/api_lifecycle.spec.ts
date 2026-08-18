@@ -100,7 +100,12 @@ const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: bool
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: 'Dépréciée' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+
+  await Promise.all([
+    page.waitForResponse((res) => res.url().includes('visible-apis') && res.request().method() === 'GET' && res.ok()),
+    page.getByRole('button', { name: 'Enregistrer' }).click(),
+  ]);
+
   if (assertResult) {
     await expect(page.getByText('Dépréciée')).toBeVisible();
   }

@@ -34,6 +34,7 @@ class RotationStateMachineSpec extends PlaySpec {
       createdAt = DateTime.now(),
       rotation = rotation,
       integrationToken = "integration-token",
+      customName = "teamConsumer-apiName-planName-firstKeyring",
       bearerToken = bearerToken
     )
 

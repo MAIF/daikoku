@@ -638,6 +638,8 @@ export interface ApiPricingProps {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
+    /** only meaningful when creating a new keyring ; a joined keyring keeps its own name */
+    keyringCustomName?: string;
     redirect?: boolean;
   }) => Promise<SubscriptionReturn>;
 }

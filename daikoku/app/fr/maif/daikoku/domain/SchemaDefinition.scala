@@ -736,13 +736,13 @@ object SchemaDefinition {
       )
     )
 
-    lazy val BillingTimeUnitInterfaceType = InterfaceType(
+    // a plain value enum, exposed as such: this matches both the REST
+    // serialization (BillingTimeUnit.asJson is a JsString) and the frontend
+    // IBillingDuration type, where unit is a string
+    lazy val BillingTimeUnitEnumType = EnumType(
       "BillingTimeUnit",
-      "Interface of billing Time : hour, day, month or year",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), BillingTimeUnit](
-          Field("name", StringType, resolve = _.value.name)
-        )
+      Some("Unit of a billing duration : hour, day, month or year"),
+      BillingTimeUnit.values.map(unit => EnumValue(unit.name, value = unit)).toList
     )
 
     lazy val BillingDurationType = deriveObjectType[
@@ -752,7 +752,7 @@ object SchemaDefinition {
       ObjectTypeDescription("A possible value of billing duration"),
       ReplaceField(
         "unit",
-        Field("unit", BillingTimeUnitInterfaceType, resolve = _.value.unit)
+        Field("unit", BillingTimeUnitEnumType, resolve = _.value.unit)
       )
     )
 
@@ -1147,6 +1147,11 @@ object SchemaDefinition {
             "costPerMonth",
             OptionType(BigDecimalType),
             resolve = _.value.costPerMonth
+          ),
+          Field(
+            "costPerRequest",
+            OptionType(BigDecimalType),
+            resolve = _.value.costPerRequest
           ),
           Field(
             "maxPerSecond",
@@ -1654,7 +1659,7 @@ object SchemaDefinition {
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
-            OptionType(StringType),
+            StringType,
             resolve = _.value.customName
           ),
           Field(

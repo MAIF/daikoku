@@ -275,6 +275,7 @@ class NotificationControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -945,6 +946,7 @@ class NotificationControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -1047,6 +1049,7 @@ class NotificationControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -1075,6 +1078,7 @@ class NotificationControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test3"
       )
       val subThird = ApiSubscription(
