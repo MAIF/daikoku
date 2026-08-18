@@ -13,6 +13,10 @@ import {
 import { MICHAEL } from "./users";
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 
+// keyring names come from the seed (dev/config + tests/config ndjson) and follow
+// the default naming applied on creation: "<api name> - <plan name>"
+const COMMAND_DEV_KEYRING = "api commande - dev";
+
 test.beforeEach(async ({ context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await Promise.all([
@@ -73,8 +77,7 @@ async function extendCommandDevKeyringToPapierDev(page: Page) {
   await page
     .getByRole("button", { name: "Souscrire en l'ajoutant à un" })
     .click();
-  await page.getByRole("button", { name: "logistique-api-commande-dev" }).click();
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole("button", { name: COMMAND_DEV_KEYRING }).click();
   await expect(
     page.getByText("Votre souscription a été créée avec succès"),
   ).toBeVisible();
@@ -253,9 +256,11 @@ test("Disabling keyring should prevent calling all associated routes", async ({
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
+  const keyringCard = page
+    .locator('.keyring-card')
+    .filter({ hasText: COMMAND_DEV_KEYRING });
 
-  await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
-
+  await keyringCard.getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Désactiver le trousseau" }).click();
   await expect(page.getByText("Trousseau désactivé")).toBeVisible();
   await checkOtoroshiCall({
@@ -270,8 +275,7 @@ test("Disabling keyring should prevent calling all associated routes", async ({
     authHeader,
     status: 401,
   });
-    await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
-
+  await keyringCard.getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Activer le trousseau" }).click();
   await expect(page.getByText("Trousseau activé")).toBeVisible();
   await checkOtoroshiCall({
@@ -405,13 +409,18 @@ test("Deleting a keyring should prevent all call using its key", async ({
     status: 200,
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
-  
-  await page.locator('#keyring-dropdown-iXaRzJPRKsP0XTYUCRmYeltG3sifYdfF').click();
-  await page.getByRole('button', { name: 'Actions du trousseau' }).nth(1).click();
+
+  // the keyring extended above now carries both the command/dev and the
+  // paper/dev subscriptions: deleting it must kill both calls
+  await page
+    .locator('.keyring-card')
+    .filter({ hasText: COMMAND_DEV_KEYRING })
+    .getByLabel('Actions du trousseau')
+    .click();
   await page.getByRole("button", { name: "Supprimer le trousseau" }).click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
-    .fill("Logistique-API-papier-dev-firstKeyring");
+    .fill(COMMAND_DEV_KEYRING);
   await page.getByRole("button", { name: "Confirmation" }).click();
   await expect(page.getByText("Le trousseau a été supprimé")).toBeVisible();
   await checkOtoroshiCall({

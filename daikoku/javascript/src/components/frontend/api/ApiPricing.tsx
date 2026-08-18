@@ -1,4 +1,4 @@
-import { constraints, Flow, Form, format, type, Schema } from '@maif/react-forms';
+import { constraints, Flow, Form, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import classNames from 'classnames';
@@ -806,7 +806,7 @@ const SimpleTeamSelector = (props: {
   );
 }
 
-const  TeamSelector = (props: ITeamSelector) => {
+const TeamSelector = (props: ITeamSelector) => {
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -844,7 +844,7 @@ const  TeamSelector = (props: ITeamSelector) => {
                   })}
                   onClick={() => {
                     return allowed
-                      ? props.showKeyringSelectModal(team._id, team.name)
+                      ? props.showKeyringSelectModal(team._id)
                       : () => {
                       };
                   }}
@@ -903,6 +903,10 @@ const ToggleFormPartButton = (props: ToggleButtonProps) => {
 function hasProcess(plan: IUsagePlanGQL) {
   return plan.subscriptionProcess.length > 0
 }
+
+// form field holding the name of the keyring to create for a given plan, in the
+// multi-plan request form (which mixes one keyring-select + one name per plan).
+const keyringNameField = (planId: string) => `${planId}__keyringName`;
 
 export const ApiPricing = (props: ApiPricingProps) => {
   const {
@@ -1109,20 +1113,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   ]
 
-  const getCustomNameSchema= (existingCustomNames: string[]): Schema => ({
-    customName: {
-      type: type.string,
-      label: translate('keyring.custom.name.label'),
-      ...existingCustomNames.length > 0 ? {
-        format: format.select,
-        options: existingCustomNames.map((name) => ({ label: name, value: name })),
-        props: {
-          isClearable: true,
-        }
-      } : {},
-    },
-  });
-
   const savePlan = (plan: IUsagePlan, creation: boolean = false): Promise<void> => {
     if (creation) {
       return (
@@ -1227,50 +1217,25 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
     // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-    const showKeyringSelectModal = (teamId: string, teamName: string) => {
+    const showKeyringSelectModal = (teamId: string) => {
 
       const askForApikeys = (
         team: string,
         plan: IUsagePlan,
-        keyrings?: any,
         apiKey?: ISubscription,
       ) => {
         const formStep = plan.subscriptionProcess.find((s) =>
           s.type === 'form'
         );
+        // joining an existing keyring: it keeps the name it already has, so
+        // there is nothing to ask and nothing to send.
+        const joinsExistingKeyring = !!apiKey;
 
-        const existingKeyringCustomName = [
-          ...new Set(
-            (keyrings ?? [])
-              .map((k: any) => k.keyringCustomName)
-              .filter(Boolean)
-          ),
-        ] as string[];
-        const nameByDefault = `${teamName}-${apiName}-${plan.customName}-firstKeyring`.replaceAll(" ","-")
-        const customNameSchema = getCustomNameSchema(existingKeyringCustomName);
+        const submit = (keyringCustomName?: string, motivation?: object) =>
+          props.askForApikeys({ team, plan, apiKey, keyringCustomName, motivation })
+            .then(() => close());
 
-        const openCustomNameKeyringModal = (
-          onSubmit: (data: { customName: string }) => void | Promise<any>
-        ) => {
-          openFormModal({
-            title: translate("keyring_select_modal.title"),
-            schema: customNameSchema,
-            actionLabel: translate('Send'),
-            description: (
-              <div
-                className="alert alert-info"
-                dangerouslySetInnerHTML={{
-                  __html: translate({
-                    key: 'keyring_select_modal.help',
-                    replacements: [`<strong>${nameByDefault}</strong>`],
-                  }),
-                }}
-              />
-            ),
-            onSubmit,
-          });
-        };
-        const openMotivationModal = (keyringCustomName: string) => {
+        const openMotivationModal = (keyringCustomName?: string) => {
           openFormModal({
             title: translate('motivations.modal.title'),
             schema: formStep!.schema,
@@ -1279,26 +1244,29 @@ export const ApiPricing = (props: ApiPricingProps) => {
             description: formStep!.info
               ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep!.info }} />
               : <></>,
-            onSubmit: (motivation) =>
-              props.askForApikeys({ team, plan, apiKey, keyringCustomName, motivation }).then(() => close())
+            onSubmit: (motivation) => submit(keyringCustomName, motivation)
           });
         };
 
-        const hasExistingKeyringCustomName = existingKeyringCustomName.length > 0;
-
-        if (formStep) {
-          if (hasExistingKeyringCustomName) {
-            openMotivationModal('');
-          } else {
-            openCustomNameKeyringModal(({ customName }) => {
-              void setTimeout(() => openMotivationModal(customName ?? ''), 250);
-            });
-          }
-        } else {
-          openCustomNameKeyringModal(({ customName }) =>
-            props.askForApikeys({ team, plan, apiKey, keyringCustomName: customName ?? '' }).then(() => close())
-          );
+        if (joinsExistingKeyring) {
+          return formStep ? openMotivationModal() : submit();
         }
+
+        openFormModal<{ customName?: string }>({
+          title: translate('keyring_select_modal.title'),
+          schema: {
+            customName: {
+              type: type.string,
+              label: translate('keyring.custom.name.label'),
+              placeholder: `${apiName} - ${plan.customName}`,
+            },
+          },
+          actionLabel: translate(formStep ? 'Next' : 'Send'),
+          // the next modal replaces this one ; closing here would wipe it
+          noClose: !!formStep,
+          onSubmit: ({ customName }) =>
+            formStep ? openMotivationModal(customName) : submit(customName),
+        });
       };
 
       type IUsagePlanGQL = {
@@ -1396,8 +1364,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 plan,
                 keyrings,
                 onSubscribe: () => askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan)),
-                onSelectKeyring: (subscription: ISubscription, keyringCustomName : string  | null) =>
-                  askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan), keyrings, subscription),
+                onSelectKeyring: (subscription: ISubscription) =>
+                  askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
               });
             }
           }
@@ -2103,14 +2071,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   }
                 })
 
-              const customNameSchema: Schema = {
-                customName: {
-                  type: type.string,
-                  label: translate('Keyring name')
-                },
-              };
-
-
               openCustomModal({
                 title: translate('team.selection.title'),
                 content: <SimpleTeamSelector
@@ -2129,38 +2089,13 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           teamApiSubscriptions: subscriptionsWithApis
                         })
                       }).then(compatibleSubscriptionsByPlan => {
+                        const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                         openFormModal({
                           title: translate("apikey_select_modal.title"),
                           onSubmit: (selectedApiKeyByPlanId) => {
-                            const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                             const teamName = props.myTeams.find(t => t._id === teamId)!.name;
-                            const nameByDefault = `${teamName.replaceAll(" ","-")}-multiplePlans`
-
-
-                            const openCustomNameKeyringModal = (
-                              onSubmit: (data: { customName: string }) => void | Promise<any>
-                            ) => {
-                              openFormModal({
-                                title: translate("keyring_select_modal.title"),
-                                schema: customNameSchema,
-                                actionLabel: translate('Send'),
-                                description: (
-                                  <div
-                                    className="alert alert-info"
-                                    dangerouslySetInnerHTML={{
-                                      __html: translate({
-                                        key: 'keyring_select_modal.help',
-                                        replacements: [`<strong>${nameByDefault}</strong>`],
-                                      }),
-                                    }}
-                                  />
-                                ),
-                                onSubmit,
-                              });
-                            };
 
                             const openMultiSubscriptionModal = (
-                              customName: string,
                               motivation?: any // optionnel, absent dans le cas 4
                             ) => {
                               const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
@@ -2175,7 +2110,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                     apiKey: sub,
                                     motivation: hasForm ? motivation : undefined,
                                     redirect: false,
-                                    keyringCustomName: customName ?? '',
+                                    // one keyring per plan: each carries its own name, and a
+                                    // joined keyring keeps the one it already has.
+                                    keyringCustomName: sub
+                                      ? undefined
+                                      : selectedApiKeyByPlanId[keyringNameField(plan._id)],
                                   }),
                                 };
                               });
@@ -2194,28 +2133,22 @@ export const ApiPricing = (props: ApiPricingProps) => {
                             };
 
                             if (formStep) {
-                              openCustomNameKeyringModal(({ customName }) => {
-                                setTimeout(() => {
-                                  openFormModal({
-                                    title: translate('motivations.modal.title'),
-                                    noClose: true,
-                                    schema: formStep.schema,
-                                    actionLabel: translate('Send'),
-                                    description: formStep.info ?
-                                      <div className='alert alert-info'
-                                           dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
-                                    onSubmit: (motivation) => {
-                                      openMultiSubscriptionModal(customName, motivation)
-                                    }
-                                  })
-                                }, 250)
-                              });
+                              openFormModal({
+                                title: translate('motivations.modal.title'),
+                                noClose: true,
+                                schema: formStep.schema,
+                                actionLabel: translate('Send'),
+                                description: formStep.info ?
+                                  <div className='alert alert-info'
+                                       dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
+                                onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
+                              })
                             } else {
-                              openCustomNameKeyringModal(({ customName }) => openMultiSubscriptionModal(customName));
+                              openMultiSubscriptionModal();
                             }
                           }
                           ,
-                          actionLabel: translate('Confirm'),
+                          actionLabel: translate(formStep ? 'Next' : 'Confirm'),
                           noClose: true,
                           schema: compatibleSubscriptionsByPlan.reduce((acc, { plan, subscriptions }) => {
                             acc[plan._id] = {
@@ -2231,6 +2164,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                   return ({ label: keyringName, value: s._id })
                                 }))
                                 ]
+                            }
+                            // one name per plan, only asked when a brand new keyring
+                            // will be created for it (i.e. no existing one selected).
+                            acc[keyringNameField(plan._id)] = {
+                              type: type.string,
+                              label: translate({
+                                key: 'keyring.custom.name.for.plan',
+                                replacements: [plan.customName],
+                              }),
+                              placeholder: `${props.api.name} - ${plan.customName}`,
+                              visible: ({ rawValues }) => (rawValues[plan._id] ?? '----') === '----',
                             }
                             return acc;
                           }

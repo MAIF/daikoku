@@ -201,7 +201,7 @@ export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
-  keyringCustomName: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
@@ -1216,7 +1216,7 @@ export const extendApiKey = (
   apiKeyId: string,
   teamId: string,
   planId: string,
-  keyringCustomName: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> =>
   customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {

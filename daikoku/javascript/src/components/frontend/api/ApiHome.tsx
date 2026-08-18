@@ -108,7 +108,7 @@ export const ApiHome = () => {
   }, [])
 
   const askForApikeys = ({ team, plan, apiKey, motivation, keyringCustomName, redirect }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, keyringCustomName: string, redirect?: boolean }
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, keyringCustomName?: string, redirect?: boolean }
   ) => {
 
     const needRedirection = redirect ?? true;
