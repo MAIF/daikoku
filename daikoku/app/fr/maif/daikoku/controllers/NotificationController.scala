@@ -650,7 +650,7 @@ class NotificationController(
                 "$in" -> JsArray(
                   team.users
                     .filter(_.teamPermission == Administrator)
-                    .map(_.asJson)
+                    .map(_.userId.asJson)
                     .toSeq
                 )
               )
