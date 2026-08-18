@@ -12,9 +12,9 @@ import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.Cypher.encrypt
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSResponse
 
 import java.net.URLDecoder
@@ -29,6 +29,7 @@ class StripeBillingSpec()
     extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
+    with Eventually
     with BeforeAndAfterEach {
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
@@ -138,6 +139,18 @@ class StripeBillingSpec()
       get(urlEqualTo(s"/v1/subscriptions/$subscriptionId"))
         .willReturn(okJson(fixture("subscription")))
     )
+    stubFor(
+      post(urlMatching("/v1/prices/[^/]+"))
+        .willReturn(okJson(fixture("prices")))
+    )
+    stubFor(
+      post(urlMatching("/v1/products/[^/]+"))
+        .willReturn(okJson(fixture("products")))
+    )
+    stubFor(
+      post(urlEqualTo(s"/v1/billing/meters/$meterId/deactivate"))
+        .willReturn(okJson(fixture("meters")))
+    )
   }
 
   private def stubOtoroshi(hits: Long): Unit = {
@@ -180,7 +193,15 @@ class StripeBillingSpec()
   private def decode(value: String): String =
     URLDecoder.decode(value, StandardCharsets.UTF_8)
 
-  private def setupTenantWithStripeAccount(): Unit =
+  private lazy val startupSeedingSettled: Unit =
+    eventually {
+      daikokuComponents.env.dataStore.reportsInfoRepo
+        .count()
+        .futureValue must be > 0L
+    }
+
+  private def setupTenantWithStripeAccount(): Unit = {
+    startupSeedingSettled
     setupEnvBlocking(
       tenants = Seq(stripeTenant),
       users = Seq(userAdmin),
@@ -188,6 +209,7 @@ class StripeBillingSpec()
       apis = Seq(defaultApi.api),
       usagePlans = plans
     )
+  }
 
   private def makePlanPayable(): WSResponse = {
     implicit val session: UserSession =
@@ -280,6 +302,15 @@ class StripeBillingSpec()
     currentSubscription()
   }
 
+  private def archiveStripeProduct(): Either[AppError, JsValue] =
+    daikokuComponents.paymentClient
+      .deleteThirdPartyProduct(
+        currentPlan().paymentSettings.get,
+        stripeTenant.id
+      )
+      .value
+      .futureValue
+
   private def consume(hits: Long): Unit = {
     stubOtoroshi(hits)
     daikokuComponents.statsJob
@@ -371,6 +402,18 @@ class StripeBillingSpec()
       requestsTo("/v1/billing/meter_events").size mustBe 1
     }
 
+    "not mark usage as reported when the Stripe account cannot be resolved" in {
+      subscribeAndPay()
+      daikokuComponents.env.dataStore.tenantRepo
+        .save(stripeTenant.copy(thirdPartyPaymentSettings = Seq.empty))
+        .futureValue
+
+      consume(hits = 250)
+
+      requestsTo("/v1/billing/meter_events") mustBe empty
+      currentConsumption().lastReportedHits mustBe 0
+    }
+
     "never fall back on the usage records endpoint Stripe removed" in {
       subscribeAndPay()
 
@@ -397,6 +440,26 @@ class StripeBillingSpec()
         _.getHeader("Stripe-Version") mustBe
           daikokuComponents.env.config.stripeApiVersion
       )
+    }
+  }
+
+  "archiving the Stripe product of a plan" must {
+    "deactivate the meter along with the prices, so it stops counting" in {
+      subscribeAndPay()
+
+      archiveStripeProduct().isRight mustBe true
+
+      requestsTo(s"/v1/billing/meters/$meterId/deactivate").size mustBe 1
+    }
+
+    "tolerate a meter Stripe already deactivated" in {
+      subscribeAndPay()
+      stubFor(
+        post(urlEqualTo(s"/v1/billing/meters/$meterId/deactivate"))
+          .willReturn(aResponse().withStatus(404).withBody("{}"))
+      )
+
+      archiveStripeProduct().isRight mustBe true
     }
   }
 }
