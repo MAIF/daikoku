@@ -1514,9 +1514,11 @@ export const graphql = {
           billingDuration {
             ... on BillingDuration {
               value
+              unit
             }
           }
           costPerMonth
+          costPerRequest
           currency {
             code
           }
@@ -1624,9 +1626,7 @@ export const graphql = {
           trialPeriod {
             ... on BillingDuration {
               value
-              unit {
-                name
-              }
+              unit
             }
           }
           visibility

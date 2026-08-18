@@ -9,49 +9,33 @@ import fr.maif.daikoku.actions.{
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.ApiSubscriptionState.Blocked
 import fr.maif.daikoku.domain.NotificationAction.{
   ApiAccess,
   ApiSubscriptionDemand
 }
-import fr.maif.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{
-  ApiLifeCycleService,
-  ApiService,
-  DeletionService,
-  KeyringService,
-  MailService
-}
-import fr.maif.daikoku.storage.Desc
-import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
-import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
-import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  OtoroshiClient,
-  RegexUtil,
-  Time,
-  Translator
-}
-import fr.maif.daikoku.controllers.authorizations.async.*
-import fr.maif.daikoku.domain.ApiSubscriptionState.{Active, Blocked}
-import fr.maif.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
-import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestBody
+import fr.maif.daikoku.services.*
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
+import fr.maif.daikoku.utils.*
+import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
+import fr.maif.daikoku.utils.RequestImplicits.{
+  EnhancedRequestBody,
+  EnhancedRequestHeader
+}
+import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import org.apache.pekko.util.ByteString
-import org.joda.time.{DateTime, Days}
+import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.i18n.I18nSupport
@@ -88,7 +72,7 @@ class ApiController(
 
   val logger: Logger = Logger("ApiController")
 
-  def me() =
+  def me(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       authorizations.sync.PublicUserAccess(
         AuditTrailEvent("@{user.name} has accessed his own profile")
@@ -103,7 +87,11 @@ class ApiController(
       }
     }
 
-  def apiSwagger(teamId: String, apiId: String, version: String) =
+  def apiSwagger(
+      teamId: String,
+      apiId: String,
+      version: String
+  ): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -205,7 +193,7 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -318,7 +306,7 @@ class ApiController(
       }
     }
 
-  def myTeams() =
+  def myTeams(): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} has accessed his team list")
@@ -337,7 +325,7 @@ class ApiController(
       }
     }
 
-  def subscribedApis(teamId: String) =
+  def subscribedApis(teamId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
         AuditTrailEvent(
@@ -377,7 +365,7 @@ class ApiController(
       }
     }
 
-  def getTeamVisibleApis(teamId: String, apiId: String, version: String) =
+  def getTeamVisibleApis(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       import cats.implicits.*
       TeamMemberOnly(
@@ -462,12 +450,12 @@ class ApiController(
       }
     }
 
-  object UserLevel extends Enumeration {
+  private object UserLevel extends Enumeration {
     type UserLevel = Value
     val Admin, User, Guest = Value
   }
 
-  def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
+  def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits.*
 
     def control(myTeams: Seq[Team]): EitherT[Future, AppError, UserLevel.UserLevel] = {
@@ -555,7 +543,7 @@ class ApiController(
     }
   }
 
-  def getVisibleApiWithId(apiId: String) =
+  def getVisibleApiWithId(apiId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
@@ -642,7 +630,7 @@ class ApiController(
       }
     }
 
-  def getVisiblePlans(apiId: String, version: String) =
+  def getVisiblePlans(apiId: String, version: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -720,7 +708,7 @@ class ApiController(
       }
     }
 
-  def getVisibleApi(humanReadableId: String, version: String) =
+  def getVisibleApi(humanReadableId: String, version: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent("@{user.name} is accessing visible api @{api.name}")
@@ -740,7 +728,7 @@ class ApiController(
       }
     }
 
-  def getDocumentationPage(apiId: String, pageId: String) =
+  def getDocumentationPage(apiId: String, pageId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -820,7 +808,7 @@ class ApiController(
       }
     }
 
-  def getPlanDocumentationPage(apiId: String, planId: String, pageId: String) =
+  def getPlanDocumentationPage(apiId: String, planId: String, pageId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -884,7 +872,7 @@ class ApiController(
       }
     }
 
-  def getDocumentationPageRemoteContent(apiId: String, pageId: String) =
+  def getDocumentationPageRemoteContent(apiId: String, pageId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       import scala.concurrent.duration.*
 
@@ -1004,7 +992,7 @@ class ApiController(
       }
   }
 
-  def getRootApi(apiId: String) =
+  def getRootApi(apiId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has requested root api @{api.id}")
@@ -1024,7 +1012,7 @@ class ApiController(
       }
     }
 
-  def getDocumentationDetails(apiId: String, version: String) =
+  def getDocumentationDetails(apiId: String, version: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1041,7 +1029,7 @@ class ApiController(
       }
     }
 
-  def getAllApis() = DaikokuAction.async { ctx =>
+  def getAllApis(): Action[AnyContent] = DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has fetch all apis"
@@ -1051,7 +1039,7 @@ class ApiController(
       }
   }
 
-  def byteStringToApi: Flow[ByteString, Api, NotUsed] =
+  private def byteStringToApi: Flow[ByteString, Api, NotUsed] =
     Flow[ByteString]
       .via(JsonFraming.objectScanner(Int.MaxValue))
       .map(_.utf8String)
@@ -1061,7 +1049,7 @@ class ApiController(
       .filterNot(_.isError)
       .map(_.get)
 
-  val sourceApiBodyParser: BodyParser[Source[Api, ?]] =
+  private val sourceApiBodyParser: BodyParser[Source[Api, ?]] =
     BodyParser("Streaming BodyParser") { req =>
       req.contentType match {
         case Some("application/json") =>
@@ -1071,7 +1059,7 @@ class ApiController(
       }
     }
 
-  def initApis() =
+  def initApis(): Action[Source[Api, ?]] =
     DaikokuAction.async(sourceApiBodyParser) { ctx =>
       TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init apis"))(
         ctx.tenant.id.value,
@@ -1124,7 +1112,7 @@ class ApiController(
       planId: String,
       teamId: String,
       apiKeyId: String
-  ) =
+  ): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -1170,7 +1158,7 @@ class ApiController(
       }
     }
 
-  def askForApiKey(apiId: String, planId: String, teamId: String) =
+  def askForApiKey(apiId: String, planId: String, teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -1215,7 +1203,7 @@ class ApiController(
       }
     }
 
-  def validateProcess() =
+  def validateProcess(): Action[AnyContent] =
     DaikokuUnauthenticatedAction.async { ctx =>
       import fr.maif.daikoku.utils.RequestImplicits.*
       implicit val language: String = ctx.request.getLanguage(ctx.tenant)
@@ -1249,7 +1237,7 @@ class ApiController(
         .merge
     }
 
-  def abortProcess() =
+  def abortProcess(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1281,7 +1269,7 @@ class ApiController(
       }
     }
 
-  def declineProcess() =
+  def declineProcess(): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1309,7 +1297,7 @@ class ApiController(
       }
     }
 
-  def getSubscriptionDemand(teamId: String, demandId: String) =
+  def getSubscriptionDemand(teamId: String, demandId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
         AuditTrailEvent(
@@ -1337,7 +1325,7 @@ class ApiController(
       }
     }
 
-  def runProcess(teamId: String, demandId: String) =
+  def runProcess(teamId: String, demandId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
         AuditTrailEvent(
@@ -1509,7 +1497,7 @@ class ApiController(
     } yield ()
   }
 
-  def getMyTeamsApiSubscriptions(apiId: String, version: String) =
+  def getMyTeamsApiSubscriptions(apiId: String, version: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1591,7 +1579,7 @@ class ApiController(
       }
     }
 
-  def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String) =
+  def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -1629,7 +1617,7 @@ class ApiController(
       }
     }
 
-  def updateKeyringCustomName(teamId: String, keyringId: String) =
+  def updateKeyringCustomName(teamId: String, keyringId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
@@ -1658,7 +1646,7 @@ class ApiController(
       }
     }
 
-  def deleteKeyring(teamId: String, keyringId: String) =
+  def deleteKeyring(teamId: String, keyringId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -1713,7 +1701,7 @@ class ApiController(
       }
     }
 
-  def updateApiSubscription(teamId: String, subscriptionId: String) =
+  def updateApiSubscription(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -1771,7 +1759,7 @@ class ApiController(
       teamId: String,
       version: String,
       plan: Option[String]
-  ) =
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
@@ -1914,7 +1902,7 @@ class ApiController(
       }
     }
 
-  def getSubscriptionsOfTeam(teamId: String) =
+  def getSubscriptionsOfTeam(teamId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
@@ -2008,7 +1996,7 @@ class ApiController(
       }
     }
 
-  def getSubscriptionInformations(teamId: String, subscriptionId: String) =
+  def getSubscriptionInformations(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -2055,7 +2043,7 @@ class ApiController(
       teamId: String,
       subscriptionId: String,
       enabled: Option[Boolean]
-  ) =
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -2088,7 +2076,7 @@ class ApiController(
       }
     }
 
-  def checkTransferLink() =
+  def checkTransferLink(): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent("@{user.name} has check a transfer link for @{subscription.id}")
@@ -2118,7 +2106,7 @@ class ApiController(
       }
     }
 
-  def getTransferLink(teamId: String, subscriptionId: String) =
+  def getTransferLink(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(s"@{user.name} has generated a link to transfer subscription @{subscription.id}"))(teamId, ctx) { team => {
@@ -2153,7 +2141,7 @@ class ApiController(
       }
     }
 
-  def transferSubscription(teamId: String, subscriptionId: String) =
+  def transferSubscription(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
@@ -2177,7 +2165,7 @@ class ApiController(
       }
     }
 
-  def makeUniqueSubscription(teamId: String, subscriptionId: String) =
+  def makeUniqueSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(
         AuditTrailEvent(
@@ -2212,7 +2200,7 @@ class ApiController(
       teamId: String,
       subscriptionId: String,
       enabled: Option[Boolean]
-  ) =
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2252,7 +2240,7 @@ class ApiController(
       }
     }
 
-  def toggleApiKeyRotation(teamId: String, subscriptionId: String) =
+  def toggleApiKeyRotation(teamId: String, subscriptionId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -2285,7 +2273,7 @@ class ApiController(
       }
     }
 
-  def regenerateKeyringSecret(teamId: String, keyringId: String) =
+  def regenerateKeyringSecret(teamId: String, keyringId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -2304,7 +2292,7 @@ class ApiController(
       }
     }
 
-  def toggleKeyring(teamId: String, keyringId: String, enabled: Boolean) =
+  def toggleKeyring(teamId: String, keyringId: String, enabled: Boolean): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -2388,7 +2376,7 @@ class ApiController(
 
   }
 
-  def toggleSubscription(
+  private def toggleSubscription(
       plan: UsagePlan,
       subscription: ApiSubscription,
       tenant: Tenant,
@@ -2404,7 +2392,7 @@ class ApiController(
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def apiOfTeam(teamId: String, apiId: String, version: String) =
+  def apiOfTeam(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       CommonServices
         .apiOfTeam(teamId, apiId, version)(using ctx, env, ec)
@@ -2414,7 +2402,7 @@ class ApiController(
         }
     }
 
-  def apisOfTeam(teamId: String) =
+  def apisOfTeam(teamId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(
         AuditTrailEvent(
@@ -2434,7 +2422,7 @@ class ApiController(
       }
     }
 
-  def checkApiNameUniqueness(
+  private def checkApiNameUniqueness(
       maybeApiId: Option[String],
       name: String,
       tenant: TenantId
@@ -2467,7 +2455,7 @@ class ApiController(
 
   }
 
-  def verifyNameUniqueness() =
+  def verifyNameUniqueness(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -2487,7 +2475,7 @@ class ApiController(
       }
     }
 
-  def getAllApiDocumentation(teamId: String, apiId: String, version: String) =
+  def getAllApiDocumentation(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2546,7 +2534,7 @@ class ApiController(
       }
     }
 
-  def getAllPlansDocumentation(teamId: String, apiId: String, version: String) =
+  def getAllPlansDocumentation(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2600,7 +2588,7 @@ class ApiController(
       }
     }
 
-  def cloneDocumentation(teamId: String, apiId: String, version: String) =
+  def cloneDocumentation(teamId: String, apiId: String, version: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2682,7 +2670,7 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2756,7 +2744,7 @@ class ApiController(
       }
     }
 
-  def askForApiAccess(apiId: String) =
+  def askForApiAccess(apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       val teamIds: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
 
@@ -2795,7 +2783,7 @@ class ApiController(
       }
     }
 
-  def askOwnerForApiAccess(
+  private def askOwnerForApiAccess(
       api: Api,
       team: Team,
       ctx: DaikokuActionContext[JsValue]
@@ -2985,7 +2973,7 @@ class ApiController(
       }
     }
 
-  def updateApiOfTeam(teamId: String, apiId: String, version: String) =
+  def updateApiOfTeam(teamId: String, apiId: String, version: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       val finalBody = ctx.request.body
       TeamApiEditorOnly(
@@ -2993,7 +2981,7 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
-        implicit val c = ctx
+        implicit val c: DaikokuActionContext[JsValue] = ctx
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
@@ -3119,7 +3107,7 @@ class ApiController(
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def createDocPage(teamId: String) =
+  def createDocPage(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -3139,7 +3127,7 @@ class ApiController(
                 )
               )
             )
-          case JsSuccess(page, _) => {
+          case JsSuccess(page, _) =>
             ctx.setCtxValue("page.id", page.id)
             env.dataStore.apiDocumentationPageRepo
               .forTenant(ctx.tenant.id)
@@ -3147,12 +3135,11 @@ class ApiController(
               .map { _ =>
                 Ok(page.asJson)
               }
-          }
         }
       }
     }
 
-  def deleteDocPage(teamId: String, pageId: String) =
+  def deleteDocPage(teamId: String, pageId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -3172,7 +3159,7 @@ class ApiController(
       }
     }
 
-  def saveDocPage(teamId: String, pageId: String) =
+  def saveDocPage(teamId: String, pageId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -3190,7 +3177,7 @@ class ApiController(
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "Page not found 5"))
               )
-            case Some(p) => {
+            case Some(p) =>
               ApiDocumentationPageFormat.reads(ctx.request.body) match {
                 case JsError(e) =>
                   FastFuture
@@ -3202,21 +3189,19 @@ class ApiController(
                         )
                       )
                     )
-                case JsSuccess(page, _) => {
+                case JsSuccess(page, _) =>
                   env.dataStore.apiDocumentationPageRepo
                     .forTenant(ctx.tenant.id)
                     .save(page)
                     .map { _ =>
                       Ok(page.asJson)
                     }
-                }
               }
-            }
           }
       }
     }
 
-  def search() =
+  def search(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
         ctx
@@ -3308,7 +3293,7 @@ class ApiController(
       }
     }
 
-  def categories() =
+  def categories(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} get categories"))(ctx) {
         env.dataStore.apiRepo
@@ -3325,7 +3310,7 @@ class ApiController(
       }
     }
 
-  def getApiSubscriptions(teamId: String, apiId: String, version: String) =
+  def getApiSubscriptions(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -3379,7 +3364,7 @@ class ApiController(
       version: String,
       offset: Option[Int],
       limit: Option[Int]
-  ) =
+  ): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}")
@@ -3436,7 +3421,7 @@ class ApiController(
     }
   }
 
-  def createPost(teamId: String, apiId: String) =
+  def createPost(teamId: String, apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has created posts for @{api.id}")
@@ -3567,7 +3552,7 @@ class ApiController(
       }
     }
 
-  def updatePost(teamId: String, apiId: String, postId: String) =
+  def updatePost(teamId: String, apiId: String, postId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has updated posts for @{api.id}")
@@ -3603,7 +3588,7 @@ class ApiController(
       }
     }
 
-  def removePost(teamId: String, apiId: String, postId: String) =
+  def removePost(teamId: String, apiId: String, postId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has removed posts for @{api.id}")
@@ -3622,7 +3607,7 @@ class ApiController(
       }
     }
 
-  def toggleStar(apiId: String) =
+  def toggleStar(apiId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}")
@@ -3656,7 +3641,7 @@ class ApiController(
       }
     }
 
-  def getIssue(apiId: String, issueId: String) =
+  def getIssue(apiId: String, issueId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}")
@@ -3727,7 +3712,7 @@ class ApiController(
       }
     }
 
-  def getIssues(apiId: String) =
+  def getIssues(apiId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}")
@@ -3792,7 +3777,7 @@ class ApiController(
       }
     }
 
-  def createIssue(teamId: String, apiId: String) =
+  def createIssue(teamId: String, apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}")
@@ -3987,7 +3972,7 @@ class ApiController(
       }
     }
 
-  def updateIssue(teamId: String, apiId: String, issueId: String) =
+  def updateIssue(teamId: String, apiId: String, issueId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(s"@{user.name} has updated issues for @{api.id}")
@@ -4115,7 +4100,7 @@ class ApiController(
       }
     }
 
-  def getComments(apiId: String, issueId: String) =
+  def getComments(apiId: String, issueId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has accessed comments for @{api.id}")
@@ -4155,7 +4140,7 @@ class ApiController(
       }
     }
 
-  def createVersion(teamId: String, apiId: String) =
+  def createVersion(teamId: String, apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4261,7 +4246,7 @@ class ApiController(
       }
     }
 
-  def getAllApiVersions(teamId: String, apiId: String) =
+  def getAllApiVersions(teamId: String, apiId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -4287,7 +4272,7 @@ class ApiController(
       }
     }
 
-  def getDefaultApiVersion(apiId: String) =
+  def getDefaultApiVersion(apiId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -4328,7 +4313,7 @@ class ApiController(
       }
     }
 
-  def getAllPlan(teamId: String, apiId: String, version: String) =
+  def getAllPlan(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4355,7 +4340,7 @@ class ApiController(
       }
     }
 
-  def getPlan(teamId: String, apiId: String, version: String, planId: String) =
+  def getPlan(teamId: String, apiId: String, version: String, planId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4390,7 +4375,7 @@ class ApiController(
       }
     }
 
-  def clonePlan(teamId: String, apiId: String) =
+  def clonePlan(teamId: String, apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4431,7 +4416,7 @@ class ApiController(
       }
     }
 
-  def getMyTeamsStatusAccess(teamId: String, apiId: String, version: String) =
+  def getMyTeamsStatusAccess(teamId: String, apiId: String, version: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -4497,7 +4482,7 @@ class ApiController(
       }
     }
 
-  def transferApiOwnership(teamId: String, apiId: String) =
+  def transferApiOwnership(teamId: String, apiId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -4537,7 +4522,7 @@ class ApiController(
       }
     }
 
-  def createPlan(teamId: String, apiId: String, version: String) =
+  def createPlan(teamId: String, apiId: String, version: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4628,7 +4613,7 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -4988,7 +4973,7 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -5028,37 +5013,55 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} has setup payment for plan @{plan.id} of api @{api.name}"
         )
       )(teamId, ctx) { team =>
+        val body = ctx.request.body
+
         val paymentSettingsId =
-          (ctx.request.body \ "paymentSettings" \ "thirdPartyPaymentSettingsId")
-            .as(using ThirdPartyPaymentSettingsIdFormat)
-        val base = ctx.request.body.as(using BasePaymentInformationFormat)
+          (body \ "paymentSettings" \ "thirdPartyPaymentSettingsId")
+            .asOpt(using ThirdPartyPaymentSettingsIdFormat)
 
-        def getRatedPlan(
+        // The pricing payload is all or nothing: either it holds a complete
+        // payment information, or it holds none at all - which means the plan
+        // goes back to being free. Note that costPerRequest is a surcharge on
+        // top of costPerMonth (see ApiKeyStatsJob and createStripePrice), never
+        // a pricing on its own, so it does not make a payload complete.
+        val pricingFields =
+          Seq("costPerMonth", "costPerRequest", "currency", "billingDuration")
+        val hasNoPricing =
+          pricingFields.forall(field => (body \ field).toOption.forall(_ == JsNull))
+
+        val maybeBase: Either[AppError, Option[BasePaymentInformation]] =
+          if (hasNoPricing) Right(None)
+          else
+            BasePaymentInformationFormat.reads(body) match {
+              case JsSuccess(base, _) => Right(base.some)
+              case JsError(_) =>
+                Left(
+                  AppError.ParsingPayloadError(
+                    "a priced plan requires costPerMonth, currency and billingDuration"
+                  )
+                )
+            }
+
+        def applyPayment(
             plan: UsagePlan,
-            base: BasePaymentInformation
-        ): EitherT[Future, AppError, UsagePlan] = {
-
-          (plan.costPerMonth, plan.costPerRequest) match {
-            case (Some(_), None) =>
-              EitherT.pure(plan.mergeBase(base))
-            case (Some(_), Some(_)) =>
-              val costPerRequest =
-                (ctx.request.body \ "costPerRequest").as[BigDecimal]
-              val ratedPlan = plan
-                .mergeBase(base)
-                .copy(costPerRequest = costPerRequest.some)
-              EitherT.pure(ratedPlan)
-            case _ =>
-              EitherT.leftT[Future, UsagePlan](AppError.PlanUnauthorized)
+            base: Option[BasePaymentInformation]
+        ): UsagePlan =
+          base match {
+            case None => plan.clearPayment
+            case Some(b) =>
+              plan
+                .mergeBase(b)
+                .copy(costPerRequest =
+                  (body \ "costPerRequest").asOpt[BigDecimal]
+                )
           }
-        }
 
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(
@@ -5077,34 +5080,58 @@ class ApiController(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
             AppError.PlanNotFound
           )
-          _ <- plan.paymentSettings match {
-            case Some(_) =>
+          base <- EitherT.fromEither[Future](maybeBase)
+          // Setting up a new pricing on a plan already backed by a third party
+          // product would leave that product orphaned, so it is rejected.
+          // Going back to a free plan is allowed: the product is archived
+          // asynchronously by the queue job.
+          _ <- (plan.paymentSettings, base) match {
+            case (Some(_), Some(_)) =>
               EitherT.leftT[Future, Unit](
-                AppError.EntityConflict("Payment,  already setup")
+                AppError.EntityConflict("payment, already setup")
               )
-            case None => EitherT.pure[Future, AppError](())
-          }
-          ratedPlan <- getRatedPlan(plan, base)
-          paymentSettings <- paymentClient.createProduct(
-            ctx.tenant,
-            api,
-            ratedPlan,
-            paymentSettingsId
-          )
-
-          ratedPlanwithSettings = ratedPlan.isPaymentDefined match {
-            case true =>
-              ratedPlan.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(
-                  ValidationStep.Payment(
-                    id = IdGenerator.token(32),
-                    thirdPartyPaymentSettingsId =
-                      paymentSettings.thirdPartyPaymentSettingsId
+            case (Some(paymentSettings), None) =>
+              EitherT.liftF[Future, AppError, Unit](
+                env.dataStore.operationRepo
+                  .forTenant(ctx.tenant)
+                  .save(
+                    Operation(
+                      DatastoreId(IdGenerator.token(24)),
+                      tenant = ctx.tenant.id,
+                      itemId = plan.id.value,
+                      itemType = ItemType.ThirdPartyProduct,
+                      action = OperationAction.Delete,
+                      payload = Json
+                        .obj("paymentSettings" -> paymentSettings.asJson)
+                        .some
+                    )
                   )
-                )
-            case false => ratedPlan
+                  .map(_ => ())
+              )
+            case (None, _) => EitherT.pure[Future, AppError](())
           }
+          ratedPlan = applyPayment(plan, base)
 
+          ratedPlanwithSettings <- (ratedPlan.isPaymentDefined, paymentSettingsId) match {
+            // a third party provider bills the plan: create the product and add
+            // the matching step to the subscription process
+            case (true, Some(id)) =>
+              paymentClient
+                .createProduct(ctx.tenant, api, ratedPlan, id)
+                .map { settings =>
+                  ratedPlan
+                    .copy(paymentSettings = settings.some)
+                    .addSubscriptionStep(
+                      ValidationStep.Payment(
+                        id = IdGenerator.token(32),
+                        thirdPartyPaymentSettingsId = settings.thirdPartyPaymentSettingsId
+                      )
+                    )
+                }
+            // no provider: Daikoku computes the billing itself from the plan
+            // pricing (see ApiKeyStatsJob), there is nothing to set up
+            case _ => EitherT.pure[Future, AppError](ratedPlan)
+          }
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
@@ -5120,7 +5147,7 @@ class ApiController(
       apiId: String,
       version: String,
       planId: String
-  ) =
+  ): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
@@ -5135,13 +5162,13 @@ class ApiController(
           //todo: save api
           //todo: run job to "close payment"
           //todo: close pricing in stripe ?
-        } yield (Ok(Json.obj()))
+        } yield Ok(Json.obj())
 
         value.merge
       }
     }
 
-  def getApiSubscriptionsUsage(teamId: String) =
+  def getApiSubscriptionsUsage(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(

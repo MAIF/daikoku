@@ -310,6 +310,23 @@ case class UsagePlan(
       billingDuration = a.billingDuration.some
     )
 
+  /** Drop every pricing information, turning the plan back into a free one. The
+    * payment validation step is removed as well, as it would otherwise refer to
+    * a product that is no longer billed.
+    */
+  def clearPayment: UsagePlan =
+    this.copy(
+      costPerMonth = None,
+      costPerRequest = None,
+      currency = None,
+      trialPeriod = None,
+      billingDuration = None,
+      paymentSettings = None,
+      subscriptionProcess = SubscriptionProcess(steps =
+        subscriptionProcess.steps.filterNot(_.name == "payment")
+      )
+    )
+
   def addSubscriptionStep(
       step: ValidationStep,
       idx: Option[Int] = None

@@ -1,19 +1,22 @@
 import { constraints, Flow, Form, format, type, Schema } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import classNames from 'classnames';
+import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
+import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
-import { GraphQLClient } from 'graphql-request';
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
+import { SubscriptionReturn } from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
   ApiPricingProps,
@@ -34,6 +37,7 @@ import {
   OtoroshiEntity
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
+import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import {
   access,
   api as API,
@@ -45,15 +49,9 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing,
-  Spinner
+  renderPricing
 } from '../../utils';
 import { CmsViewerByPath } from "../CmsViewer";
-import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
-import { DynamicTable, FetchData, FetchResult } from "../../inputs";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { SubscriptionReturn } from '../../../services';
 
 type Option = {
   type: 'group' | 'route';
@@ -173,7 +171,7 @@ export const OtoroshiEntitiesSelector = ({
         });
     }
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
-  }, [rawValues.otoroshiSettings]);
+  }, [rawValues.otoroshiSettings, rawValues, ownerTeam._id]);
 
   useEffect(() => {
     if (groups && services && routes) {
@@ -549,7 +547,12 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
 
-  const [billingDisplayed, setBillingDisplayed] = useState(!!props.plan.costPerMonth || !!props.plan.costPerRequest)
+  const hasPricing = props.plan.costPerMonth != null || props.plan.costPerRequest != null;
+  const isPaymentDefined = props.plan.costPerMonth != null
+    && props.plan.billingDuration != null
+    && props.plan.currency != null;
+
+  const [billingDisplayed, setBillingDisplayed] = useState(hasPricing)
 
   const billingSchema = ({
     paymentSettings: {
@@ -585,7 +588,17 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
           `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
         ),
       placeholder: translate('Cost per billing period'),
-      constraints: [constraints.positive(translate('constraints.positive'))],
+      constraints: [
+        constraints.positive(translate('constraints.positive')),
+        // costPerRequest is a surcharge on top of costPerMonth, never a pricing
+        // on its own: the backend rejects such a plan and the billing job would
+        // bill it 0
+        constraints.when(
+          'costPerRequest',
+          (costPerRequest) => costPerRequest !== undefined && costPerRequest !== null,
+          [constraints.required(translate('constraints.required.cost.per.period'))]
+        ),
+      ],
     },
     costPerRequest: {
       type: type.number,
@@ -702,7 +715,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     <>
       <ToggleFormPartButton
         value={billingDisplayed}
-        disabledTrue={true}
+        // disabledTrue={true}
         action={(value) => setBillingDisplayed(value)}
         falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
         falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
@@ -718,6 +731,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
           <button className='mrf-btn mrf-btn_green mrf-ml_10'
             type='button'
+            disabled={!isPaymentDefined}
             onClick={() => props.savePlan({
               ...props.plan,
               costPerMonth: undefined,
@@ -762,8 +776,9 @@ const SimpleTeamSelector = (props: {
                   };
               }}
             >
-              {disabledFor.map((cause) =>
+              {disabledFor.map((cause, idx) =>
                 <button
+                  key={idx}
                   type="button"
                   className="btn btn-sm btn-outline-primary disabled"
                 >
@@ -1375,10 +1390,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
               !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
               keyrings.length <= 0
             ) {
-              console.log("pas de keyring")
               askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan));
             } else {
-              console.log("keyring")
               openKeyringSelectModal({
                 plan,
                 keyrings,
@@ -1992,6 +2005,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           {translate('pricing.edit.process.btn.label')}
                         </span>
                       </Can>
+                      <Can I={manage} a={API} team={props.ownerTeam}>
+                        <span className='dropdown-item cursor-pointer'
+                          onClick={() => actions(plan).editPricing()}>
+                          <span className='feature__description'>
+                            <Pencil size={16} />
+                            {translate('usage.plan.form.pricing.display.button.label')}
+                          </span>
+                        </span>
+                      </Can>
+
                       {props.api.visibility !== 'AdminOnly' && <>
                         {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 && <span
                           className="dropdown-item cursor-pointer"
@@ -2280,7 +2303,7 @@ function SubscriptionResultForm(props: { close: () => any; url: string, teamName
     } else if (Services.isResponseError(currentStatus)) {
       statusDisplay = <>{translate({ key: "subscription.plan.failed", replacements: [plan.customName, props.teamName] })} ❌</>
     }
-    return <li>{statusDisplay}</li>
+    return <li key={plan._id}>{statusDisplay}</li>
   })}</ul>
 }
 
