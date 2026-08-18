@@ -196,6 +196,8 @@ A JSON response is awaited with a precise format.
 > **Quotas / Pay Per Use**: Two products are created: a fixed-price subscription and a variable component linked to the user's consumption, which is synchronized with Stripe at the end of each day.
 > 
 > **Pay Per Use**: Similarly, two products are created: a fixed-price subscription and a variable component linked to the user's consumption.
+>
+> For the two plan types that bill usage, a [Stripe billing meter](https://docs.stripe.com/billing/subscriptions/usage-based/meters/configure) is also created, and the variable price is attached to it. Daikoku reports each day's consumption to that meter, and Stripe sums the reported values over the billing period. The meter appears in your Stripe dashboard under **Billing > Meters**, named after the plan; deleting the plan deactivates it.
 
 
 :::warning

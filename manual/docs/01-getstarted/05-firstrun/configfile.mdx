@@ -40,6 +40,25 @@ or
 | `daikoku.api.headerName`<br />(`DAIKOKU_API_HEADERNAME`) | String | "Otoroshi-Claim" | |
 | `daikoku.api.headerSecret`<br />(`DAIKOKU_API_HEADERSECRET`) | String | "secret" | |
 
+## Stripe settings
+
+Only used by tenants that configure a Stripe payment provider. The Stripe API keys
+themselves are not configured here: they belong to the tenant, and are set from the
+tenant administration page.
+
+| name <br /> (env.variable) | type | default value | description |
+|------|:----:|---------------|-------------|
+| `daikoku.stripe.url`<br />(`DAIKOKU_STRIPE_URL`) | string | "https://api.stripe.com" | Base URL of the Stripe API. Only change it to point Daikoku at a stub, for tests |
+| `daikoku.stripe.apiVersion`<br />(`DAIKOKU_STRIPE_API_VERSION`) | string | "2026-07-29.dahlia" | Value of the `Stripe-Version` header sent on every call. Pinning it keeps behaviour identical whatever default version each tenant's Stripe account is on |
+
+:::warning
+Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage).
+Subscriptions taken before Daikoku 19.0.0 reference the legacy usage records API, which
+Stripe removed: their usage is no longer reported. They are logged and skipped. To bill
+them again, the plan has to be set up for payment anew, and consumers have to subscribe
+to the new plan.
+:::
+
 ## Otoroshi settings
 
 | name | type | default value | description |
@@ -70,6 +89,8 @@ or
 | `daikoku.verifierJob.key`<br />(`DAIKOKU_VERIFIER_JOB_ACCESS_KEY`) | string | "secret" | Access key to run otoroshi entities verifier job |
 | `daikoku.verifierJob.cronExpression`<br />(`DAIKOKU_VERIFIER_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
 | `daikoku.verifierJob.interval`<br />(`DAIKOKU_VERIFIER_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
+| `daikoku.stats.sync.cron`<br />(`DAIKOKU_STATS_SYNC_CRON`) | boolean | false | Value to define if apikey consumption is collected by cron. This job is what reports usage to Stripe for pay-per-use plans |
+| `daikoku.stats.sync.interval` | duration | 1hour | **Only used when `cron = false`**. Delay in milliseconds between each consumption collection |
 
 ## Daikoku init
 
