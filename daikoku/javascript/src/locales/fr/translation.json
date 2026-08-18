@@ -804,6 +804,7 @@
   "constraint.match.path": "La valeur doit être un chemin valide",
   "constraints.match.subscription": "La valeur ne correspond pas au nom exact de la souscription",
   "constraints.match.keyring": "La valeur ne correspond pas au nom exact du trousseau",
+  "constraints.test.no.dot.in.metadata.key": "La clé d'une métadonné ne doit pas contenir le caractère `.`",
   "Robot.txt.label": "Contenu du fichier robots.txt",
   "Mode": "Mode",
   "ldap.namefields.help": "le nom d'utilisateur est construit en concaténant les champs LDAP fournis",

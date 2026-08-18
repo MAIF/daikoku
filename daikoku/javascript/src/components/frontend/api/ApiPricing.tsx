@@ -364,7 +364,8 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
-    const sanitizedValue = e.target.value.replace(/\./g, '');
+    // const sanitizedValue = e.target.value.replace(/\./g, '');
+    const sanitizedValue = e.target.value;
     const newValues = props.value?.map(v => {
       if (v.key === oldName) {
         return { ...v, key: sanitizedValue }
@@ -441,7 +442,7 @@ const CustomMetadataInput = (props: {
             />
             <button
               type="button"
-              className="input-group-text btn btn-outline-danger"
+              className="ms-1 btn --secondary --small --icon-only"
               onClick={(e) => remove(e, key)}
             >
               <Trash2 />
@@ -1582,6 +1583,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
             type: type.object,
             label: translate('Automatic API key metadata'),
             help: translate('automatic.metadata.help'),
+            constraints: [
+              constraints.test(
+                "no-dot-in-metadata",
+                translate("constraints.test.no.dot.in.metadata.key"),
+                (metadata) => {
+                  return Object.keys(metadata).every(key => !key.includes('.'))
+                })
+            ]
           },
           customMetadata: {
             type: type.object,
@@ -1592,6 +1601,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <CustomMetadataInput {...props} translate={translate} />
             ),
             help: translate('custom.metadata.help'),
+            arrayConstraints: [
+              constraints.test(
+                "no-dot-in-metadata",
+                translate("constraints.test.no.dot.in.metadata.key"),
+                (metadata) => {
+                  return metadata.every(({ key }) => !key.includes('.'))
+                })
+            ]
           },
           tags: {
             type: type.string,
@@ -1880,77 +1897,77 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
-              {
-                !connectedUser.isGuest &&
-                (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
-                (
-                  <button
-                    type="button"
-                    aria-label={translate("Get API key")}
-                    className="btn --tertiary --small --icon-only"
-                  >
-                    <KeyRound size={16}/>
-                  </button>
-                )
-              }
-              {
-                ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
-                  props.api.visibility === 'AdminOnly') &&
-                (!isAccepted || props.api.visibility === 'AdminOnly') &&
-                isPublish(props.api) &&
-                props.api.state !== "blocked" &&
-                (
-                  <Can
-                    I={access}
-                    a={apikey}
-                    teams={authorizedTeams.filter(
-                      (team) =>
-                        plan.visibility === 'Public' ||
-                        team._id === props.ownerTeam._id ||
-                        plan.authorizedTeams.some((t) => t._id === team._id)
-                    )}
-                  >
-                    {
-                      (props.api.visibility === 'AdminOnly' ||
-                        (plan.otoroshiTarget && !isAccepted)) && (
-                        <button
-                          type="button"
-                          className="btn --tertiary --small --icon-only"
-                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
-                          onClick={() => openTeamSelectorModal()}
-                        >
-                          <KeyRound size={16}/>
-                        </button>
-                      )
-                    }
-                  </Can>
-                )
-              }
-              {
-                connectedUser.isGuest && (
-                  <button
-                    type="button"
-                    className="btn --tertiary --small --icon-only"
-                    aria-label={translate("Get API key")}
-                    onClick={() => openLoginOrRegisterModal({ tenant })}
-                  >
-                    <KeyRound size={16} />
-                  </button>
-                )
-              }
-            </div>
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <div className="p-2">
-                    <div>
-                      <button
-                        className="btn --tertiary --small --icon-only"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                        id={`${plan.customName}-dropdownMenuButton`}
-                      >
-                        <EllipsisVertical size={16} />
-                      </button>
+                {
+                  !connectedUser.isGuest &&
+                  (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
+                  props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
+                  (
+                    <button
+                      type="button"
+                      aria-label={translate("Get API key")}
+                      className="btn --tertiary --small --icon-only"
+                    >
+                      <KeyRound size={16} />
+                    </button>
+                  )
+                }
+                {
+                  ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
+                    props.api.visibility === 'AdminOnly') &&
+                  (!isAccepted || props.api.visibility === 'AdminOnly') &&
+                  isPublish(props.api) &&
+                  props.api.state !== "blocked" &&
+                  (
+                    <Can
+                      I={access}
+                      a={apikey}
+                      teams={authorizedTeams.filter(
+                        (team) =>
+                          plan.visibility === 'Public' ||
+                          team._id === props.ownerTeam._id ||
+                          plan.authorizedTeams.some((t) => t._id === team._id)
+                      )}
+                    >
+                      {
+                        (props.api.visibility === 'AdminOnly' ||
+                          (plan.otoroshiTarget && !isAccepted)) && (
+                          <button
+                            type="button"
+                            className="btn --tertiary --small --icon-only"
+                            aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                            onClick={() => openTeamSelectorModal()}
+                          >
+                            <KeyRound size={16} />
+                          </button>
+                        )
+                      }
+                    </Can>
+                  )
+                }
+                {
+                  connectedUser.isGuest && (
+                    <button
+                      type="button"
+                      className="btn --tertiary --small --icon-only"
+                      aria-label={translate("Get API key")}
+                      onClick={() => openLoginOrRegisterModal({ tenant })}
+                    >
+                      <KeyRound size={16} />
+                    </button>
+                  )
+                }
+              </div>
+              <Can I={manage} a={API} team={props.ownerTeam}>
+                <div className="p-2">
+                  <div>
+                    <button
+                      className="btn --tertiary --small --icon-only"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      id={`${plan.customName}-dropdownMenuButton`}
+                    >
+                      <EllipsisVertical size={16} />
+                    </button>
                     <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
                       <span className="dropdown-item cursor-pointer"
                         onClick={() => actions(plan).editPlan()}>
@@ -2140,7 +2157,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 actionLabel: translate('Send'),
                                 description: formStep.info ?
                                   <div className='alert alert-info'
-                                       dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
+                                    dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
                                 onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
                               })
                             } else {

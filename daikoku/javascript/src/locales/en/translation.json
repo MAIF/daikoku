@@ -801,6 +801,7 @@
   "constraint.match.path": "value must be a valid path",
   "constraints.match.subscription": "Value doesn't match the exact name of subscription",
   "constraints.match.keyring": "Value doesn't match the exact name of keyring",
+  "constraints.test.no.dot.in.metadata.key": "A metadata key must not contain the `.` character",
   "Robot.txt.label": "Robots.txt content",
   "Mode": "Mode",
   "ldap.namefields.help": "username is built by concatenating the provided LDAP fields",
