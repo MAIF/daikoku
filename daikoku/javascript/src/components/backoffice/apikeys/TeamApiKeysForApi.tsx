@@ -138,7 +138,7 @@ export interface IKeyringSubscriptionGql {
 
 export interface IKeyringForApiGql {
   _id: string;
-  customName: string | null;
+  customName: string;
   enabled: boolean;
   integrationToken: string;
   bearerToken?: string;
@@ -619,6 +619,8 @@ export const KeyringCard = ({
   return (
     <div
       className="api-subscription keyring-card mb-3 p-3"
+      role='listitem'
+      aria-label={keyring.customName}
       style={{ position: 'relative', width: '100%' }}
     >
       {isPending && <Placeholder />}
@@ -724,7 +726,7 @@ export const KeyringCard = ({
                 </button>
                 {/* TODO: better label */}
                 <button className={classNames('dropdown-item cursor-pointer')}
-                        onClick={() => toggleKeyring(!keyring.enabled)}
+                  onClick={() => toggleKeyring(!keyring.enabled)}
                 >
                   {translate(
                     keyring.enabled
@@ -912,8 +914,8 @@ export const KeyringCard = ({
                             className="dropdown-item cursor-pointer"
                             onClick={() => withLoader(() => transferKey(sub))}
                           >
-        {translate('subscription.transfer.label')}
-      </span>
+                            {translate('subscription.transfer.label')}
+                          </span>
                         )}
                         {sub.state !== 'blocked' && (
                           <button

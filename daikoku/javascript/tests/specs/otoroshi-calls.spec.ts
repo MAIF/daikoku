@@ -11,7 +11,7 @@ import {
   otoroshiAdminApikeySecret,
 } from "./utils";
 import { MICHAEL } from "./users";
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 
 // keyring names come from the seed (dev/config + tests/config ndjson) and follow
 // the default naming applied on creation: "<api name> - <plan name>"
@@ -333,7 +333,8 @@ test("Removing a key from keyring should prevent calling associated route with k
     status: 200,
   });
 
-  await page.getByRole('button', { name: 'Copier les secrets encodés en' }).nth(1).click();
+  await page.getByRole('listitem', { name: 'api commande - dev' })
+    .getByRole('button', { name: 'Copier les secrets encodés en' }).click();
   const handle = await page.evaluateHandle(() =>
     navigator.clipboard.readText(),
   );
@@ -346,6 +347,7 @@ test("Removing a key from keyring should prevent calling associated route with k
     status: 200,
   });
 });
+
 
 test("Deleting a key from keyring should prevent calling associated route with keyring", async ({
   page,
