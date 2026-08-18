@@ -147,18 +147,18 @@ run = [{task = "test:front"}, {task = "test:back"}]
 [tasks."test:stripe:run"]
 dir = "daikoku/javascript"
 tools.node = "22"
-run = "[ -f ../.env.stripe ] && . ../.env.stripe; FORCE_COLOR=1 npx playwright test stripe_billing --trace on --workers 1 --config ./tests/playwright.config.js"
+run = "[ -f ../.env.stripe ] && . ../.env.stripe; FORCE_COLOR=1 npx playwright test stripe_billing --trace on --workers 1 --reporter=list --config ./tests/playwright.config.js"
 
 # One-shot: brings up the local stack (Daikoku from source + Otoroshi/mailhog/pg) and runs
 # the Stripe spec against it.
 [tasks."test:stripe"]
-run = "process-compose -f ./dev/process-compose-test-stripe.yaml -p 9999"
+run = "process-compose -f ./dev/process-compose-test-stripe.yaml -p 9999 -t=false"
 
 # --- Consumption pipeline (Otoroshi -> ES -> Daikoku), no Stripe ---
 [tasks."test:consumption:run"]
 dir = "daikoku/javascript"
 tools.node = "22"
-run = "FORCE_COLOR=1 npx playwright test consumption_sync --trace on --workers 1 --config ./tests/playwright.config.js"
+run = "FORCE_COLOR=1 npx playwright test consumption_sync --trace on --workers 1 --reporter=list --config ./tests/playwright.config.js"
 
 [tasks."test:consumption"]
-run = "process-compose -f ./dev/process-compose-test-consumption.yaml -p 9999"
+run = "process-compose -f ./dev/process-compose-test-consumption.yaml -p 9999 -t=false"
