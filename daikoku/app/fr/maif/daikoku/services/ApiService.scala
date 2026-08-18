@@ -2016,13 +2016,14 @@ class ApiService(
                 .findById(demand.plan),
               AppError.PlanNotFound
             )
-            maybeSubscriptionInformations <-
-              EitherT.liftF(plan.paymentSettings match {
-                case Some(settings) =>
-                  paymentClient
-                    .getSubscription(maybeSessionId, settings, tenant)
-                case None => FastFuture.successful(None)
-              })
+            maybeSubscriptionInformations <- plan.paymentSettings match {
+              case Some(settings) =>
+                paymentClient.getSubscription(maybeSessionId, settings, tenant)
+              case None =>
+                EitherT.pure[Future, AppError](
+                  Option.empty[ThirdPartySubscriptionInformations]
+                )
+            }
             subscription <- EitherT(
               subscribeToApi(
                 tenant = tenant,

@@ -11,12 +11,14 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.pattern.after
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest, WSResponse}
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 class PaymentClient(
@@ -36,12 +38,15 @@ class PaymentClient(
     s"${api.name}::${api.currentVersion.value}/${plan.customName}"
 
   private def stripeClient(
-      path: String
+      path: String,
+      idempotencyKey: Option[String] = None
   )(implicit stripeSettings: StripeSettings): WSRequest = {
     ws.url(s"$STRIPE_URL$path")
       .withHttpHeaders(
-        "content-type" -> "application/x-www-form-urlencoded",
-        "Stripe-Version" -> env.config.stripeApiVersion
+        Seq(
+          "content-type" -> "application/x-www-form-urlencoded",
+          "Stripe-Version" -> env.config.stripeApiVersion
+        ) ++ idempotencyKey.map("Idempotency-Key" -> _)*
       )
       .withAuth(
         stripeSettings.secretKey,
@@ -98,6 +103,64 @@ class PaymentClient(
       )
   }
 
+  private def stripeSettingsOf(
+      tenant: Tenant,
+      settings: PaymentSettings
+  ): Option[StripeSettings] =
+    tenant.thirdPartyPaymentSettings
+      .find(_.id == settings.thirdPartyPaymentSettingsId)
+      .collect { case s: StripeSettings => s }
+
+  private val defaultCurrency = Currency("EUR")
+
+  private val zeroDecimalCurrencies = Set(
+    "BIF",
+    "CLP",
+    "DJF",
+    "GNF",
+    "JPY",
+    "KMF",
+    "KRW",
+    "MGA",
+    "PYG",
+    "RWF",
+    "UGX",
+    "VND",
+    "VUV",
+    "XAF",
+    "XOF",
+    "XPF"
+  )
+
+  private def toStripeAmount(
+      amount: BigDecimal,
+      currency: Option[Currency]
+  ): String =
+    if (
+      zeroDecimalCurrencies.contains(
+        currency.getOrElse(defaultCurrency).code.toUpperCase
+      )
+    ) amount.longValue.toString
+    else (amount * 100).longValue.toString
+
+  private def retryingOn429(
+      call: => Future[WSResponse]
+  ): Future[WSResponse] = {
+    def attempt(remaining: Int, delay: FiniteDuration): Future[WSResponse] =
+      call.flatMap {
+        case response if response.status == 429 && remaining > 0 =>
+          AppLogger.warn(
+            s"[PAYMENT] stripe rate limited, retrying in ${delay.toMillis}ms"
+          )
+          after(delay, env.defaultActorSystem.scheduler)(
+            attempt(remaining - 1, delay * 2)
+          )
+        case response => FastFuture.successful(response)
+      }
+
+    attempt(3, 200.milliseconds)
+  }
+
   private def stripeErrorMessage(response: WSResponse): AppError =
     AppError.PaymentError(
       (response.json \ "error" \ "message")
@@ -111,8 +174,7 @@ class PaymentClient(
       body: Map[String, String] = Map("active" -> "false")
   )(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] =
     EitherT(
-      stripeClient(path)
-        .post(body)
+      retryingOn429(stripeClient(path).post(body))
         .map {
           case response if response.status == 404 =>
             Right[AppError, JsValue](Json.obj("status" -> alreadyRetired))
@@ -249,47 +311,52 @@ class PaymentClient(
   ) = {
     settings match {
       case p: PaymentSettings.Stripe =>
-        implicit val stripeSettings: StripeSettings =
-          tenant.thirdPartyPaymentSettings
-            .find(_.id == p.thirdPartyPaymentSettingsId)
-            .get
-            .asInstanceOf[StripeSettings]
-        createStripeCheckoutSession(
-          tenant,
-          api,
-          plan,
-          team,
-          apiTeam,
-          demand,
-          p,
-          user,
-          step,
-          from
-        )
+        stripeSettingsOf(tenant, p) match {
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            createStripeCheckoutSession(
+              tenant,
+              api,
+              plan,
+              team,
+              apiTeam,
+              demand,
+              p,
+              user,
+              step,
+              from
+            )
+          case None =>
+            EitherT.leftT[Future, String](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+        }
     }
   }
 
   def postStripePrice(
-      body: Map[String, String]
+      body: Map[String, String],
+      idempotencyKey: String
   )(implicit s: StripeSettings): EitherT[Future, AppError, PriceId] = {
     EitherT
       .liftF(
-        stripeClient("/v1/prices")
-          .post(body)
+        retryingOn429(
+          stripeClient("/v1/prices", idempotencyKey.some).post(body)
+        )
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
           EitherT.rightT[Future, AppError]((res.json \ "id").as[PriceId])
         } else {
           EitherT.leftT[Future, PriceId](
-            AppError.OtoroshiError(res.json.as[JsObject])
+            stripeErrorMessage(res)
           )
         }
       })
   }
 
-  private def createStripeMeter(displayName: String)(implicit
-      s: StripeSettings
+  private def createStripeMeter(displayName: String, idempotencyKey: String)(
+      implicit s: StripeSettings
   ): EitherT[Future, AppError, (String, String)] = {
     val eventName = s"daikoku_usage_${IdGenerator.token(24)}"
     val body = Map(
@@ -301,8 +368,9 @@ class PaymentClient(
       "value_settings[event_payload_key]" -> "value"
     )
     EitherT(
-      stripeClient("/v1/billing/meters")
-        .post(body)
+      retryingOn429(
+        stripeClient("/v1/billing/meters", idempotencyKey.some).post(body)
+      )
         .map {
           case res if res.status == 200 || res.status == 201 =>
             Right[AppError, (String, String)](
@@ -316,7 +384,8 @@ class PaymentClient(
 
   def createStripePrice(
       plan: UsagePlan,
-      productId: ProductId
+      productId: ProductId,
+      operationKey: String
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, PaymentSettings] = {
@@ -324,7 +393,7 @@ class PaymentClient(
       case (Some(costPerMonth), Some(currency), Some(billingDuration)) =>
         val body = Map(
           "product" -> productId,
-          "unit_amount" -> (costPerMonth * 100).longValue.toString,
+          "unit_amount" -> toStripeAmount(costPerMonth, plan.currency),
           "currency" -> currency.code,
           "nickname" -> plan.customName,
           "metadata[plan]" -> plan.id.value,
@@ -348,22 +417,32 @@ class PaymentClient(
                 "billing_scheme" -> "tiered",
                 "tiers[0][unit_amount]" -> "0",
                 "tiers[0][up_to]" -> maxPerMonth.toString,
-                "tiers[1][unit_amount]" -> (costPerRequest * 100).longValue.toString,
+                "tiers[1][unit_amount]" -> toStripeAmount(
+                  costPerRequest,
+                  plan.currency
+                ),
                 "tiers[1][up_to]" -> "inf"
               )).some
             case (Some(costPerRequest), None) =>
-              (meteredBody + ("unit_amount" -> (costPerRequest * 100).longValue.toString)).some
+              (meteredBody + ("unit_amount" -> toStripeAmount(
+                costPerRequest,
+                plan.currency
+              ))).some
             case _ => None
           }
 
         usagePricing match {
           case Some(pricing) =>
             for {
-              baseprice <- postStripePrice(body)
-              meter <- createStripeMeter(s"${plan.customName} usage")
+              baseprice <- postStripePrice(body, s"$operationKey-price-base")
+              meter <- createStripeMeter(
+                s"${plan.customName} usage",
+                s"$operationKey-meter"
+              )
               (meterId, eventName) = meter
               payperUsePrice <- postStripePrice(
-                pricing + ("recurring[meter]" -> meterId)
+                pricing + ("recurring[meter]" -> meterId),
+                s"$operationKey-price-usage"
               )
             } yield PaymentSettings.Stripe(
               stripeSettings.id,
@@ -376,7 +455,7 @@ class PaymentClient(
               )
             )
           case None =>
-            postStripePrice(body)
+            postStripePrice(body, s"$operationKey-price-base")
               .map(priceId =>
                 PaymentSettings.Stripe(
                   stripeSettings.id,
@@ -409,15 +488,18 @@ class PaymentClient(
       "metadata[plan]" -> plan.id.value
     )
 
+    val operationKey = s"${plan.id.value}-${IdGenerator.token(16)}"
+
     EitherT
       .liftF(
-        stripeClient("/v1/products")
-          .post(body)
+        retryingOn429(
+          stripeClient("/v1/products", s"$operationKey-product".some).post(body)
+        )
       )
       .flatMap(res => {
         if (res.status == 200 || res.status == 201) {
           val productId = (res.json \ "id").as[ProductId]
-          createStripePrice(plan, productId)
+          createStripePrice(plan, productId, operationKey)
         } else {
           EitherT.leftT[Future, PaymentSettings](
             AppError.PaymentError(
@@ -473,7 +555,7 @@ class PaymentClient(
           "line_items[0][quantity]" -> "1",
           "mode" -> "subscription",
           "customer" -> stripeCustomer,
-          "billing_address_collection " -> "required",
+          "billing_address_collection" -> "required",
           "locale" -> user.defaultLanguage
             .orElse(tenant.defaultLanguage)
             .getOrElse("en")
@@ -512,7 +594,10 @@ class PaymentClient(
           r <-
             EitherT
               .liftF(
-                stripeClient("/v1/checkout/sessions")
+                stripeClient(
+                  "/v1/checkout/sessions",
+                  s"checkout-${subscriptionDemand.id.value}-${step.id.value}".some
+                )
                   .post(finalBody)
               )
               .flatMap(res => {
@@ -523,7 +608,7 @@ class PaymentClient(
                 } else {
                   val r: EitherT[Future, AppError, CustomerId] =
                     EitherT.leftT[Future, CustomerId](
-                      AppError.OtoroshiError(res.json.as[JsObject])
+                      stripeErrorMessage(res)
                     )
                   r
                 }
@@ -537,33 +622,51 @@ class PaymentClient(
       maybeSessionId: Option[String],
       settings: PaymentSettings,
       tenant: Tenant
-  ): Future[Option[ThirdPartySubscriptionInformations]] =
+  ): EitherT[Future, AppError, Option[ThirdPartySubscriptionInformations]] =
     settings match {
       case p: PaymentSettings.Stripe =>
-        implicit val stripeSettings: StripeSettings =
-          tenant.thirdPartyPaymentSettings
-            .find(_.id == p.thirdPartyPaymentSettingsId)
-            .get
-            .asInstanceOf[StripeSettings]
-        getStripeSubscriptionInformations(maybeSessionId)
+        stripeSettingsOf(tenant, p) match {
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            getStripeSubscriptionInformations(maybeSessionId).map(
+              _.map(informations =>
+                informations: ThirdPartySubscriptionInformations
+              )
+            )
+          case None =>
+            EitherT.leftT[Future, Option[ThirdPartySubscriptionInformations]](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+        }
     }
 
   def getStripeSubscriptionInformations(maybeSessionId: Option[String])(implicit
       stripeSettings: StripeSettings
-  ): Future[Option[StripeSubscriptionInformations]] = {
+  ): EitherT[Future, AppError, Option[StripeSubscriptionInformations]] = {
     maybeSessionId match {
+      case None => EitherT.pure[Future, AppError](None)
       case Some(sessionId) =>
         for {
-          session <- stripeClient(s"/v1/checkout/sessions/$sessionId").get()
-          sub = (session.json \ "subscription").as[String]
-          subscription <- stripeClient(s"/v1/subscriptions/$sub").get()
-        } yield {
-          StripeSubscriptionInformations(
-            subscriptionId = (subscription.json \ "id").as[String],
-            customerId = (subscription.json \ "customer").asOpt[String]
-          ).some
-        }
-      case None => FastFuture.successful(None)
+          session <- EitherT.liftF(
+            stripeClient(s"/v1/checkout/sessions/$sessionId").get()
+          )
+          sub <- EitherT.fromOption[Future](
+            (session.json \ "subscription").asOpt[String],
+            AppError.PaymentError(
+              s"checkout session $sessionId carries no subscription"
+            )
+          )
+          subscription <- EitherT.liftF(
+            stripeClient(s"/v1/subscriptions/$sub").get()
+          )
+          subscriptionId <- EitherT.fromOption[Future](
+            (subscription.json \ "id").asOpt[String],
+            AppError.PaymentError(s"stripe subscription $sub could not be read")
+          )
+        } yield StripeSubscriptionInformations(
+          subscriptionId = subscriptionId,
+          customerId = (subscription.json \ "customer").asOpt[String]
+        ).some
     }
   }
 
@@ -629,11 +732,12 @@ class PaymentClient(
             "timestamp" -> (System.currentTimeMillis() / 1000).toString
           )
 
-          stripeClient("/v1/billing/meter_events").post(body).map {
-            case res if res.status == 200 || res.status == 201 =>
-              Right[AppError, Unit](())
-            case res => Left[AppError, Unit](stripeErrorMessage(res))
-          }
+          retryingOn429(stripeClient("/v1/billing/meter_events").post(body))
+            .map {
+              case res if res.status == 200 || res.status == 201 =>
+                Right[AppError, Unit](())
+              case res => Left[AppError, Unit](stripeErrorMessage(res))
+            }
         case _ =>
           AppLogger.warn(
             "[PAYMENT] metered sync skipped (legacy subscription without a meter)"
@@ -770,8 +874,10 @@ class PaymentClient(
               "name" -> team.name,
               "metadata[daikoku_id]" -> team.id.value
             )
-            stripeClient("/v1/customers")
-              .post(bodyClient)
+            retryingOn429(
+              stripeClient("/v1/customers", s"customer-${team.id.value}".some)
+                .post(bodyClient)
+            )
               .map(customer => (customer.json \ "id").as[CustomerId])
           case seq => FastFuture.successful((seq.head \ "id").as[CustomerId])
         }

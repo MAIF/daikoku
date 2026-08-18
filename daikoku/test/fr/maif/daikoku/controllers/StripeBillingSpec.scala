@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.github.tomakehurst.wiremock.verification.LoggedRequest
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
@@ -211,7 +212,7 @@ class StripeBillingSpec()
     )
   }
 
-  private def makePlanPayable(): WSResponse = {
+  private def makePlanPayable(currency: String = "EUR"): WSResponse = {
     implicit val session: UserSession =
       loginWithBlocking(userAdmin, stripeTenant)
     val api = defaultApi.api
@@ -228,7 +229,7 @@ class StripeBillingSpec()
           "costPerMonth" -> 10,
           "costPerRequest" -> 0.02,
           "billingDuration" -> Json.obj("value" -> 1, "unit" -> "Month"),
-          "currency" -> Json.obj("code" -> "EUR")
+          "currency" -> Json.obj("code" -> currency)
         )
         .some
     )(using stripeTenant, session)
@@ -331,6 +332,17 @@ class StripeBillingSpec()
       meter("value_settings[event_payload_key]") mustBe "value"
     }
 
+    "send the amount in the smallest unit of the currency, which has no cents for JPY" in {
+      setupTenantWithStripeAccount()
+
+      makePlanPayable(currency = "JPY")
+
+      val base = formBodies("/v1/prices")
+        .find(!_.contains("recurring[usage_type]"))
+        .get
+      base("unit_amount") mustBe "10"
+    }
+
     "price the usage through that meter, never through the removed aggregate_usage" in {
       setupTenantWithStripeAccount()
 
@@ -412,6 +424,28 @@ class StripeBillingSpec()
 
       requestsTo("/v1/billing/meter_events") mustBe empty
       currentConsumption().lastReportedHits mustBe 0
+    }
+
+    "retry a rate-limited report rather than losing the delta" in {
+      subscribeAndPay()
+      stubFor(
+        post(urlEqualTo("/v1/billing/meter_events"))
+          .inScenario("rate limit")
+          .whenScenarioStateIs(Scenario.STARTED)
+          .willSetStateTo("accepted")
+          .willReturn(aResponse().withStatus(429).withBody("{}"))
+      )
+      stubFor(
+        post(urlEqualTo("/v1/billing/meter_events"))
+          .inScenario("rate limit")
+          .whenScenarioStateIs("accepted")
+          .willReturn(okJson(fixture("meter_events")))
+      )
+
+      consume(hits = 250)
+
+      requestsTo("/v1/billing/meter_events").size mustBe 2
+      currentConsumption().lastReportedHits mustBe 250
     }
 
     "never fall back on the usage records endpoint Stripe removed" in {
