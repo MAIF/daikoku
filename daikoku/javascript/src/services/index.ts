@@ -201,11 +201,12 @@ export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
-    body: JSON.stringify({ motivation }),
+    body: JSON.stringify({ motivation, keyringCustomName }),
   });
 };
 
@@ -1215,11 +1216,12 @@ export const extendApiKey = (
   apiKeyId: string,
   teamId: string,
   planId: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> =>
   customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
     method: 'PUT',
-    body: JSON.stringify({ motivation }),
+    body: JSON.stringify({ motivation, keyringCustomName }),
   });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>

@@ -138,7 +138,7 @@ export interface IKeyringSubscriptionGql {
 
 export interface IKeyringForApiGql {
   _id: string;
-  customName: string | null;
+  customName: string;
   enabled: boolean;
   integrationToken: string;
   bearerToken?: string;
@@ -619,6 +619,8 @@ export const KeyringCard = ({
   return (
     <div
       className="api-subscription keyring-card mb-3 p-3"
+      role='listitem'
+      aria-label={keyring.customName}
       style={{ position: 'relative', width: '100%' }}
     >
       {isPending && <Placeholder />}
@@ -683,14 +685,19 @@ export const KeyringCard = ({
 
           {/* Keyring-level menu : refresh secret / rotation */}
           <Can I={manage} a={apikey} team={currentTeam}>
-            <button className="btn --ghost --icon-only dropdown" aria-label={translate('keyring.actions.aria.label')}>
-              <Menu
-                className="dropdown-menu-button cursor-pointer"
-                style={{ fontSize: '20px' }}
+            <div className="dropdown">
+              <button
+                className="btn --ghost --icon-only dropdown"
+                aria-label={translate('keyring.actions.aria.label')}
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
                 id={`keyring-dropdown-${keyring._id}`}
-              />
+              >
+                <Menu
+                  className="dropdown-menu-button cursor-pointer"
+                  style={{ fontSize: '20px' }}
+                />
+              </button>
               <div
                 className="dropdown-menu dropdown-menu-end"
                 aria-labelledby={`keyring-dropdown-${keyring._id}`}
@@ -775,7 +782,7 @@ export const KeyringCard = ({
                   {translate('keyring.delete.label')}
                 </button>
               </div>
-            </button>
+            </div>
           </Can>
         </div>
       </div>
@@ -864,14 +871,19 @@ export const KeyringCard = ({
                 </td>
                 <td className="text-end">
                   <Can I={manage} a={apikey} team={currentTeam}>
-                    <button className="btn --ghost --small --icon-only dropdown" aria-label={translate('subscription.actions.aria.label')}>
-                      <Menu
-                        className="cursor-pointer dropdown-menu-button"
-                        style={{ fontSize: '18px' }}
+                    <div className="dropdown">
+                      <button
+                        className="btn --ghost --small --icon-only dropdown"
+                        aria-label={translate('subscription.actions.aria.label')}
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                         id={`dropdown-${sub._id}`}
-                      />
+                      >
+                        <Menu
+                          className="cursor-pointer dropdown-menu-button"
+                          style={{ fontSize: '18px' }}
+                        />
+                      </button>
                       <div
                         className="dropdown-menu dropdown-menu-end"
                         aria-labelledby={`dropdown-${sub._id}`}
@@ -881,43 +893,40 @@ export const KeyringCard = ({
                           className="dropdown-item cursor-pointer"
                           onClick={() =>
                             openFormModal({
-                              title: translate(
-                                'subscription.custom.name.update.label'
-                              ),
+                              title: translate('subscription.custom.name.update.label'),
                               actionLabel: translate('Save'),
                               schema: {
                                 customName: {
                                   type: type.string,
-                                  placeholder: translate(
-                                    'subscription.custom.name.update.placeholder'
-                                  ),
-                                  label: translate(
-                                    'subscription.custom.name.update.message'
-                                  ),
+                                  placeholder: translate('subscription.custom.name.update.placeholder'),
+                                  label: translate('subscription.custom.name.update.message'),
                                 },
                               },
-                              onSubmit: (data) =>
-                                updateCustomName(sub._id, data.customName ?? ''),
+                              onSubmit: (data) => updateCustomName(sub._id, data.customName ?? ''),
                               value: { customName: sub.customName },
                             })
                           }
                         >
                           {translate('subscription.custom.name.update.label')}
                         </button>
-                        {!aggregated && <span
-                          className="dropdown-item cursor-pointer"
-                          onClick={() => withLoader(() => transferKey(sub))}
-                        >
-                          {translate('subscription.transfer.label')}
-                        </span>}
-                        {sub.state !== 'blocked' && <button
-                          className="dropdown-item cursor-pointer"
-                          onClick={() => withLoader(() => toggle(sub))}
-                        >
-                          {sub.enabled
-                            ? translate('subscription.disable.button.label')
-                            : translate('subscription.enable.button.label')}
-                        </button>}
+                        {!aggregated && (
+                          <span
+                            className="dropdown-item cursor-pointer"
+                            onClick={() => withLoader(() => transferKey(sub))}
+                          >
+                            {translate('subscription.transfer.label')}
+                          </span>
+                        )}
+                        {sub.state !== 'blocked' && (
+                          <button
+                            className="dropdown-item cursor-pointer"
+                            onClick={() => withLoader(() => toggle(sub))}
+                          >
+                            {sub.enabled
+                              ? translate('subscription.disable.button.label')
+                              : translate('subscription.enable.button.label')}
+                          </button>
+                        )}
                         {aggregated && (
                           <button
                             className="dropdown-item cursor-pointer danger"
@@ -934,7 +943,7 @@ export const KeyringCard = ({
                           {translate('subscription.delete.button.label')}
                         </button>
                       </div>
-                    </button>
+                    </div>
                   </Can>
                 </td>
               </tr>

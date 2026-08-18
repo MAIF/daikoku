@@ -366,7 +366,7 @@ const CustomMetadataInput = (props: {
     if (e && e.preventDefault) e.preventDefault();
     const sanitizedValue = e.target.value.replace(/\./g, '');
     const newValues = props.value?.map(v => {
-      if(v.key === oldName) {
+      if (v.key === oldName) {
         return { ...v, key: sanitizedValue }
       } else {
         return v;
@@ -904,6 +904,10 @@ function hasProcess(plan: IUsagePlanGQL) {
   return plan.subscriptionProcess.length > 0
 }
 
+// form field holding the name of the keyring to create for a given plan, in the
+// multi-plan request form (which mixes one keyring-select + one name per plan).
+const keyringNameField = (planId: string) => `${planId}__keyringName`;
+
 export const ApiPricing = (props: ApiPricingProps) => {
   const {
     openLoginOrRegisterModal,
@@ -1204,7 +1208,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const otoroshiTargetColumn = (plan: IUsagePlanGQL) => {
+  const otoroshiTargetColumn = (plan: IUsagePlanGQL, apiName: string) => {
     const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan);
 
     const graphqlEndpoint = `${window.location.origin}/api/search`;
@@ -1213,29 +1217,56 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
     // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-    const showKeyringSelectModal = (team: string) => {
+    const showKeyringSelectModal = (teamId: string) => {
 
       const askForApikeys = (
         team: string,
         plan: IUsagePlan,
-        apiKey?: ISubscription
+        apiKey?: ISubscription,
       ) => {
         const formStep = plan.subscriptionProcess.find((s) =>
           s.type === 'form'
         );
-        if (formStep) {
+        // joining an existing keyring: it keeps the name it already has, so
+        // there is nothing to ask and nothing to send.
+        const joinsExistingKeyring = !!apiKey;
+
+        const submit = (keyringCustomName?: string, motivation?: object) =>
+          props.askForApikeys({ team, plan, apiKey, keyringCustomName, motivation })
+            .then(() => close());
+
+        const openMotivationModal = (keyringCustomName?: string) => {
           openFormModal({
             title: translate('motivations.modal.title'),
-            schema: formStep.schema,
-            onSubmit: (motivation) =>
-              props.askForApikeys({ team, plan, apiKey, motivation }),
+            schema: formStep!.schema,
             actionLabel: translate('Send'),
             value: apiKey?.customMetadata,
-            description: formStep.info ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>
+            description: formStep!.info
+              ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep!.info }} />
+              : <></>,
+            onSubmit: (motivation) => submit(keyringCustomName, motivation)
           });
-        } else {
-          props.askForApikeys({ team, plan: plan, apiKey }).then(() => close());
+        };
+
+        if (joinsExistingKeyring) {
+          return formStep ? openMotivationModal() : submit();
         }
+
+        openFormModal<{ customName?: string }>({
+          title: translate('keyring_select_modal.title'),
+          schema: {
+            customName: {
+              type: type.string,
+              label: translate('keyring.custom.name.label'),
+              placeholder: `${apiName} - ${plan.customName}`,
+            },
+          },
+          actionLabel: translate(formStep ? 'Next' : 'Send'),
+          // the next modal replaces this one ; closing here would wipe it
+          noClose: !!formStep,
+          onSubmit: ({ customName }) =>
+            formStep ? openMotivationModal(customName) : submit(customName),
+        });
       };
 
       type IUsagePlanGQL = {
@@ -1257,7 +1288,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         possibleUsagePlans: IUsagePlanGQL[];
       };
 
-      Services.getAllTeamSubscriptions(team)
+      Services.getAllTeamSubscriptions(teamId)
         .then((subscriptions) =>
           customGraphQLClient.request<{ apis: Array<IApiGQL> }>(Services.graphql.apisByIdsWithPlans,
             { ids: [...new Set(subscriptions.map((s) => s.api))] },
@@ -1269,7 +1300,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             apis,
             subscriptions,
           }) => {
-            const int = subscriptions.map((subscription) => {
+            const subscription = subscriptions.map((subscription) => {
               const api = apis.find((a) => a._id === subscription.api);
               const plan = Option(api?.possibleUsagePlans)
                 .flatMap((plans) =>
@@ -1282,18 +1313,18 @@ export const ApiPricing = (props: ApiPricingProps) => {
             // group every candidate subscription by its keyring : a keyring can
             // be joined only if ALL its members are compatible with the joining
             // plan (mirror of backend controlSubscriptionExtension)
-            const byKeyring = new Map<string, typeof int>();
-            for (const i of int) {
-              const id = i.subscription.keyring?._id;
-              if (!i.plan || !id) continue;
+            const byKeyring = new Map<string, typeof subscription>();
+            for (const subApiPlan of subscription) {
+              const id = subApiPlan.subscription.keyring?._id;
+              if (!subApiPlan.plan || !id) continue;
               if (!byKeyring.has(id)) byKeyring.set(id, []);
-              byKeyring.get(id)!.push(i);
+              byKeyring.get(id)!.push(subApiPlan);
             }
 
             const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
             const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
             const envSecurity = tenant.environmentAggregationApiKeysSecurity;
-            const effectiveReadOnly = (i: (typeof int)[number]) =>
+            const effectiveReadOnly = (i: (typeof subscription)[number]) =>
               i.subscription.customReadOnly ??
               !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
 
@@ -1316,6 +1347,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   apiName: rep.apiName,
                   planName: rep.planName,
                   customName: rep.customName,
+                  keyringCustomName: rep.keyring?.customName,
                   count: members.length,
                   aggregated: members.length > 1,
                   subscription: rep,
@@ -1326,14 +1358,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
               !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
               keyrings.length <= 0
             ) {
-              askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan));
+              askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan));
             } else {
               openKeyringSelectModal({
                 plan,
                 keyrings,
-                onSubscribe: () => askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan)),
+                onSubscribe: () => askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan)),
                 onSelectKeyring: (subscription: ISubscription) =>
-                  askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
+                  askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
               });
             }
           }
@@ -1842,7 +1874,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             authorizedTeams,
             openTeamSelectorModal,
             isAutomaticProcess
-          } = otoroshiTargetColumn(plan)
+          } = otoroshiTargetColumn(plan, props.api.name)
 
           return (
             <div className="d-flex flex-row align-items-center justify-content-end">
@@ -2057,11 +2089,49 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           teamApiSubscriptions: subscriptionsWithApis
                         })
                       }).then(compatibleSubscriptionsByPlan => {
+                        const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                         openFormModal({
                           title: translate("apikey_select_modal.title"),
                           onSubmit: (selectedApiKeyByPlanId) => {
-                            const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                             const teamName = props.myTeams.find(t => t._id === teamId)!.name;
+
+                            const openMultiSubscriptionModal = (
+                              motivation?: any // optionnel, absent dans le cas 4
+                            ) => {
+                              const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
+                                const subscriptionId = selectedApiKeyByPlanId[plan._id];
+                                const sub = subscriptions.find((sub) => sub._id === subscriptionId);
+                                const hasForm = plan.subscriptionProcess.some((s) => s.type === "form");
+                                return {
+                                  plan,
+                                  request: props.askForApikeys({
+                                    team: teamId,
+                                    plan: convertIUsagePlanGQLToIUsagePlan(plan),
+                                    apiKey: sub,
+                                    motivation: hasForm ? motivation : undefined,
+                                    redirect: false,
+                                    // one keyring per plan: each carries its own name, and a
+                                    // joined keyring keeps the one it already has.
+                                    keyringCustomName: sub
+                                      ? undefined
+                                      : selectedApiKeyByPlanId[keyringNameField(plan._id)],
+                                  }),
+                                };
+                              });
+
+                              openCustomModal({
+                                title: translate("Creating subscription requests"),
+                                content: (
+                                  <SubscriptionResultForm
+                                    close={() => close()}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    teamName={teamName}
+                                    requests={promises}
+                                  />
+                                ),
+                              });
+                            };
+
                             if (formStep) {
                               openFormModal({
                                 title: translate('motivations.modal.title'),
@@ -2069,46 +2139,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 schema: formStep.schema,
                                 actionLabel: translate('Send'),
                                 description: formStep.info ?
-                                  <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
-                                onSubmit: (motivation) => {
-                                  const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
-                                    const subscriptionId = selectedApiKeyByPlanId[plan._id];
-                                    const sub = subscriptions.find((sub) => sub._id === subscriptionId);
-                                    const hasForm = plan.subscriptionProcess.some(s => s.type === "form")
-                                    return {
-                                      plan, request: props.askForApikeys({
-                                        team: teamId,
-                                        plan: convertIUsagePlanGQLToIUsagePlan(plan),
-                                        apiKey: sub,
-                                        motivation: hasForm ? motivation : undefined,
-                                        redirect: false
-                                      })
-                                    };
-                                  });
-
-                                  openCustomModal({
-                                    title: translate("Creating subscription requests"),
-                                    content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />,
-                                  })
-
-                                }
+                                  <div className='alert alert-info'
+                                       dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
+                                onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
                               })
                             } else {
-                              const promises = compatibleSubscriptionsByPlan.map(
-                                ({ plan, subscriptions }) => {
-                                  const subscriptionId = selectedApiKeyByPlanId[plan._id];
-                                  const sub = subscriptions.find((sub) => sub._id === subscriptionId)
-                                  return { plan, request: props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub, redirect: false }) };
-                                }
-                              )
-                              openCustomModal({
-                                title: translate("Creating subscription requests"),
-                                content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />
-                              })
+                              openMultiSubscriptionModal();
                             }
                           }
                           ,
-                          actionLabel: translate('Confirm'),
+                          actionLabel: translate(formStep ? 'Next' : 'Confirm'),
                           noClose: true,
                           schema: compatibleSubscriptionsByPlan.reduce((acc, { plan, subscriptions }) => {
                             acc[plan._id] = {
@@ -2125,6 +2165,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 }))
                                 ]
                             }
+                            // one name per plan, only asked when a brand new keyring
+                            // will be created for it (i.e. no existing one selected).
+                            acc[keyringNameField(plan._id)] = {
+                              type: type.string,
+                              label: translate({
+                                key: 'keyring.custom.name.for.plan',
+                                replacements: [plan.customName],
+                              }),
+                              placeholder: `${props.api.name} - ${plan.customName}`,
+                              visible: ({ rawValues }) => (rawValues[plan._id] ?? '----') === '----',
+                            }
                             return acc;
                           }
                             , {}
@@ -2139,18 +2190,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
         ]}
         toolbar={
           <>
-                <button
-                  type='button'
-                  onClick={() => createNewPlan()}
-                  className="btn btn-outline-primary d-flex align-items-center gap-2">
-                  <Plus />
-                  <p className="m-0">{
-                  tenant.display === 'environment' ?
+            <button
+              type='button'
+              onClick={() => createNewPlan()}
+              className="btn btn-outline-primary d-flex align-items-center gap-2">
+              <Plus />
+              <p className="m-0">{
+                tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
                   translate('api.pricings.creation.plan.button.label'
                   )}</p>
             </button>
-
           </>
         }
       />

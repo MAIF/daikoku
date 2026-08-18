@@ -795,7 +795,6 @@ class NotificationController(
           ),
         AppError.EntityNotFound("Subscription demand")
       )
-
       upgradedDemand: SubscriptionDemand = demand.copy(
         customReadOnly =
           ctx.request.body.getBodyField[Boolean]("customReadOnly"),

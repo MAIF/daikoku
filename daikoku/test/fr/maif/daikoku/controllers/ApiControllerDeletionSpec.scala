@@ -68,6 +68,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-removal"
       )
       val payperUseSub = ApiSubscription(
@@ -164,6 +165,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-removal"
       )
       val payperUseSub = ApiSubscription(
@@ -451,6 +453,7 @@ class ApiControllerDeletionSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-removal"
       )
       val payperUseSub = ApiSubscription(

@@ -178,6 +178,7 @@ class ApiKeySecretRotationJobSpec()
       otoroshiSettings = binding,
       createdAt = DateTime.now(),
       rotation = rotation,
+      customName = "teamConsumer-apiName-planName-firstKeyring",
       integrationToken = s"token-$id"
     )
 

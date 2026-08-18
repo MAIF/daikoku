@@ -1659,7 +1659,7 @@ object SchemaDefinition {
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
-            OptionType(StringType),
+            StringType,
             resolve = _.value.customName
           ),
           Field(

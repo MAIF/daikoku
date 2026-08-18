@@ -500,6 +500,7 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.getByText('Environnements').click();
   await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Pam Beesly').click();
+  await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('motivation');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await page.getByRole('button', { name: 'Close toast' }).click();

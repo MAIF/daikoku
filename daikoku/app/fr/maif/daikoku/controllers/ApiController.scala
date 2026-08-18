@@ -1137,6 +1137,8 @@ class ApiController(
           ctx.request.body.getBodyField[JsObject]("customMetadata")
         val adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName")
+        val keyringCustomName =
+          ctx.request.body.getBodyField[String]("keyringCustomName")
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -1149,6 +1151,7 @@ class ApiController(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
+          keyringCustomName = keyringCustomName,
           motivation = motivation,
           keyringId = Some(KeyringId(apiKeyId))
         )
@@ -1180,6 +1183,8 @@ class ApiController(
           ctx.request.body.getBodyField[JsObject]("customMetadata")
         val adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName")
+        val keyringCustomName =
+          ctx.request.body.getBodyField[String]("keyringCustomName")
 
         apiService._createOrExtendApiKey(
           tenant = ctx.tenant,
@@ -1192,6 +1197,7 @@ class ApiController(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
+          keyringCustomName = keyringCustomName,
           motivation = motivation
         )
       }
@@ -1631,7 +1637,7 @@ class ApiController(
                 NotFound(Json.obj("error" -> "keyring not found"))
               )
             case Some(keyring) =>
-              val updated = keyring.copy(customName = Some(customName))
+              val updated = keyring.copy(customName = customName)
               env.dataStore.keyringRepo
                 .forTenant(ctx.tenant)
                 .save(updated)
@@ -4936,7 +4942,7 @@ class ApiController(
           _ <- EitherT.liftF(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
           )
-          _ <- EitherT.liftF(
+          _ <- EitherT.liftF[Future, AppError, Unit](
             otoroshiSynchronisator.run(updatedPlan.id, ctx.tenant)
           )
           _ <- runDemandUpdate(oldPlan, updatedPlan, api)
