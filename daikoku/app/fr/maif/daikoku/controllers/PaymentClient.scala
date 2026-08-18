@@ -13,7 +13,7 @@ import fr.maif.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
-import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest}
+import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest, WSResponse}
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
@@ -98,74 +98,57 @@ class PaymentClient(
       )
   }
 
+  private def stripeErrorMessage(response: WSResponse): AppError =
+    AppError.PaymentError(
+      (response.json \ "error" \ "message")
+        .asOpt[String]
+        .getOrElse(response.body)
+    )
+
+  private def retireOnStripe(
+      path: String,
+      alreadyRetired: String,
+      body: Map[String, String] = Map("active" -> "false")
+  )(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] =
+    EitherT(
+      stripeClient(path)
+        .post(body)
+        .map {
+          case response if response.status == 404 =>
+            Right[AppError, JsValue](Json.obj("status" -> alreadyRetired))
+          case response if response.status >= 400 =>
+            Left[AppError, JsValue](stripeErrorMessage(response))
+          case response => Right[AppError, JsValue](response.json)
+        }
+    )
+
   private def archiveStripePrices(
       paymentSettings: PaymentSettings
   )(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
+    val nothingToRetire = EitherT.pure[Future, AppError](Json.obj().as[JsValue])
+
     paymentSettings match {
       case PaymentSettings.Stripe(_, _, priceIds) =>
         for {
-          baseResponse <- EitherT(
-            stripeClient(s"/v1/prices/${priceIds.basePriceId}")
-              .post(Map("active" -> "false"))
-              .map {
-                case response if response.status == 404 =>
-                  Right[AppError, JsValue](
-                    Json.obj("status" -> "already_inactive")
-                  )
-                case response if response.status >= 400 =>
-                  Left(
-                    AppError.PaymentError(
-                      (response.json.as[JsObject] \ "error" \ "message")
-                        .as[String]
-                    )
-                  )
-                case response => Right(response.json)
-              }
+          baseResponse <- retireOnStripe(
+            s"/v1/prices/${priceIds.basePriceId}",
+            "already_inactive"
           )
-          additionalResponse <- priceIds.additionalPriceId match {
-            case Some(additionalPriceId) =>
-              EitherT(
-                stripeClient(s"/v1/prices/$additionalPriceId")
-                  .post(Map("active" -> "false"))
-                  .map {
-                    case response if response.status == 404 =>
-                      Right[AppError, JsValue](
-                        Json.obj("status" -> "already_inactive")
-                      )
-                    case response if response.status >= 400 =>
-                      Left[AppError, JsValue](
-                        AppError.PaymentError(
-                          (response.json.as[JsObject] \ "error" \ "message")
-                            .as[String]
-                        )
-                      )
-                    case response => Right[AppError, JsValue](response.json)
-                  }
-              )
-            case None => EitherT.pure[Future, AppError](Json.obj().as[JsValue])
-          }
-          meterResponse <- priceIds.meterId match {
-            case Some(meterId) =>
-              EitherT(
-                stripeClient(s"/v1/billing/meters/$meterId/deactivate")
-                  .post(Map.empty[String, String])
-                  .map {
-                    case response if response.status == 404 =>
-                      Right[AppError, JsValue](
-                        Json.obj("status" -> "already_deactivated")
-                      )
-                    case response if response.status >= 400 =>
-                      Left[AppError, JsValue](
-                        AppError.PaymentError(
-                          (response.json.as[JsObject] \ "error" \ "message")
-                            .as[String]
-                        )
-                      )
-                    case response => Right[AppError, JsValue](response.json)
-                  }
-              )
-            case None => EitherT.pure[Future, AppError](Json.obj().as[JsValue])
-          }
+          additionalResponse <- priceIds.additionalPriceId.fold(
+            nothingToRetire
+          )(additionalPriceId =>
+            retireOnStripe(
+              s"/v1/prices/$additionalPriceId",
+              "already_inactive"
+            )
+          )
+          meterResponse <- priceIds.meterId.fold(nothingToRetire)(meterId =>
+            retireOnStripe(
+              s"/v1/billing/meters/$meterId/deactivate",
+              "already_deactivated",
+              Map.empty
+            )
+          )
         } yield Json.obj(
           "basePrice" -> baseResponse,
           "additionnalPrice" -> additionalResponse,
@@ -183,23 +166,9 @@ class PaymentClient(
           pricesResponse <- archiveStripePrices(
             paymentSettings: PaymentSettings
           )
-          productResponse <- EitherT(
-            stripeClient(s"/v1/products/$productId")
-              .post(Map("active" -> "false"))
-              .map {
-                case response if response.status == 404 =>
-                  Right[AppError, JsValue](
-                    Json.obj("status" -> "already_archived")
-                  )
-                case response if response.status >= 400 =>
-                  Left[AppError, JsValue](
-                    AppError.PaymentError(
-                      (response.json.as[JsObject] \ "error" \ "message")
-                        .as[String]
-                    )
-                  )
-                case response => Right[AppError, JsValue](response.json)
-              }
+          productResponse <- retireOnStripe(
+            s"/v1/products/$productId",
+            "already_archived"
           )
         } yield Json.obj(
           "prices" -> pricesResponse,
@@ -340,11 +309,7 @@ class PaymentClient(
               ((res.json \ "id").as[String], eventName)
             )
           case res =>
-            Left[AppError, (String, String)](
-              AppError.PaymentError(
-                (res.json.as[JsObject] \ "error" \ "message").as[String]
-              )
-            )
+            Left[AppError, (String, String)](stripeErrorMessage(res))
         }
     )
   }
@@ -366,28 +331,39 @@ class PaymentClient(
           "recurring[interval]" -> billingDuration.unit.name.toLowerCase
         )
 
-        (plan.costPerRequest, plan.maxPerMonth) match {
-          case (Some(costPerRequest), Some(maxPerMonth)) =>
+        val meteredBody = Map(
+          "product" -> productId,
+          "currency" -> currency.code,
+          "nickname" -> plan.customName,
+          "metadata[plan]" -> plan.id.value,
+          "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
+          "recurring[usage_type]" -> "metered"
+        )
+
+        val usagePricing: Option[Map[String, String]] =
+          (plan.costPerRequest, plan.maxPerMonth) match {
+            case (Some(costPerRequest), Some(maxPerMonth)) =>
+              (meteredBody ++ Map(
+                "tiers_mode" -> "graduated",
+                "billing_scheme" -> "tiered",
+                "tiers[0][unit_amount]" -> "0",
+                "tiers[0][up_to]" -> maxPerMonth.toString,
+                "tiers[1][unit_amount]" -> (costPerRequest * 100).longValue.toString,
+                "tiers[1][up_to]" -> "inf"
+              )).some
+            case (Some(costPerRequest), None) =>
+              (meteredBody + ("unit_amount" -> (costPerRequest * 100).longValue.toString)).some
+            case _ => None
+          }
+
+        usagePricing match {
+          case Some(pricing) =>
             for {
               baseprice <- postStripePrice(body)
               meter <- createStripeMeter(s"${plan.customName} usage")
               (meterId, eventName) = meter
               payperUsePrice <- postStripePrice(
-                Map(
-                  "product" -> productId,
-                  "currency" -> currency.code,
-                  "nickname" -> plan.customName,
-                  "metadata[plan]" -> plan.id.value,
-                  "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
-                  "recurring[usage_type]" -> "metered",
-                  "recurring[meter]" -> meterId,
-                  "tiers_mode" -> "graduated",
-                  "billing_scheme" -> "tiered",
-                  "tiers[0][unit_amount]" -> "0",
-                  "tiers[0][up_to]" -> maxPerMonth.toString,
-                  "tiers[1][unit_amount]" -> (costPerRequest * 100).longValue.toString,
-                  "tiers[1][up_to]" -> "inf"
-                )
+                pricing + ("recurring[meter]" -> meterId)
               )
             } yield PaymentSettings.Stripe(
               stripeSettings.id,
@@ -399,34 +375,7 @@ class PaymentClient(
                 meterEventName = eventName.some
               )
             )
-          case (Some(costPerRequest), None) =>
-            for {
-              baseprice <- postStripePrice(body)
-              meter <- createStripeMeter(s"${plan.customName} usage")
-              (meterId, eventName) = meter
-              payperUsePrice <- postStripePrice(
-                Map(
-                  "product" -> productId,
-                  "unit_amount" -> (costPerRequest * 100).longValue.toString,
-                  "currency" -> currency.code,
-                  "nickname" -> plan.customName,
-                  "metadata[plan]" -> plan.id.value,
-                  "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
-                  "recurring[usage_type]" -> "metered",
-                  "recurring[meter]" -> meterId
-                )
-              )
-            } yield PaymentSettings.Stripe(
-              stripeSettings.id,
-              productId,
-              StripePriceIds(
-                basePriceId = baseprice,
-                additionalPriceId = payperUsePrice.some,
-                meterId = meterId.some,
-                meterEventName = eventName.some
-              )
-            )
-          case _ =>
+          case None =>
             postStripePrice(body)
               .map(priceId =>
                 PaymentSettings.Stripe(
@@ -632,15 +581,16 @@ class PaymentClient(
     (maybePaymentSettings, maybeInfos) match {
       case (Some(paymentSettings), Some(infos)) =>
         (for {
-          tenant <- OptionT(
-            env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant)
+          tenant <- EitherT.fromOptionF(
+            env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant),
+            AppError.TenantNotFound
           )
-          setting <- OptionT.fromOption[Future](
+          setting <- EitherT.fromOption[Future](
             tenant.thirdPartyPaymentSettings
-              .find(_.id == paymentSettings.thirdPartyPaymentSettingsId)
+              .find(_.id == paymentSettings.thirdPartyPaymentSettingsId),
+            AppError.ThirdPartyPaymentSettingsNotFound
           )
-        } yield {
-          (setting, infos, paymentSettings) match {
+          _ <- EitherT((setting, infos, paymentSettings) match {
             case (
                   s: ThirdPartyPaymentSettings.StripeSettings,
                   i: StripeSubscriptionInformations,
@@ -648,11 +598,8 @@ class PaymentClient(
                 ) =>
               implicit val stripeSettings: StripeSettings = s
               syncConsumptionWithStripe(consumption, i, p)
-          }
-        }).value.flatMap {
-          case Some(result) => result
-          case None         => FastFuture.successful(Right[AppError, Unit](()))
-        }
+          })
+        } yield ()).value
       case _ => FastFuture.successful(Right[AppError, Unit](()))
     }
   }
@@ -685,14 +632,7 @@ class PaymentClient(
           stripeClient("/v1/billing/meter_events").post(body).map {
             case res if res.status == 200 || res.status == 201 =>
               Right[AppError, Unit](())
-            case res =>
-              Left[AppError, Unit](
-                AppError.PaymentError(
-                  (res.json \ "error" \ "message")
-                    .asOpt[String]
-                    .getOrElse(res.body)
-                )
-              )
+            case res => Left[AppError, Unit](stripeErrorMessage(res))
           }
         case _ =>
           AppLogger.warn(
