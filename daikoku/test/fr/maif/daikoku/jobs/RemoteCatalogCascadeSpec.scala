@@ -139,7 +139,8 @@ class RemoteCatalogCascadeSpec
     apiKey = otoroshiApiKey1,
     otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
     createdAt = DateTime.now(),
-    integrationToken = "test-catalog-cascade"
+    integrationToken = "test-catalog-cascade",
+    customName = "test-keyring"
   )
 
   private val catalogSub = ApiSubscription(
