@@ -16,6 +16,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Base64
 import scala.concurrent.Await
 import scala.concurrent.duration.*
+import java.nio.file.attribute.PosixFilePermissions
 
 /** End-to-end coverage for the `http` catalog source: a static nginx container
   * serves the fixtures, and the run goes through the real `env.wsClient`
@@ -33,9 +34,13 @@ class RemoteCatalogHttpSourceSpec
   // Bound before the container starts; files written later are still visible
   // through the mount. Rooted in /tmp because macOS Docker Desktop does not
   // share the default java.io.tmpdir (/var/folders/...).
-  private val fixturesDir =
-    Files.createTempDirectory(Paths.get("/tmp"), "daikoku-catalog-http")
 
+//  private val fixturesDir = Paths.get(getClass.getResource("/remote-catalog-http-fixtures").toURI)
+  val pwd = System.getProperty("user.dir")
+  private val fixturesDir =
+    Paths.get(s"$pwd/test/resources/remote-catalog-http-fixtures")
+//  private val fixturesDir =
+//    Paths.get("modules/daikoku/src/test/resources/remote-catalog-http-fixtures")
   override val container: GenericContainer = GenericContainer(
     "nginx:1.27-alpine",
     exposedPorts = Seq(80),
@@ -61,15 +66,7 @@ class RemoteCatalogHttpSourceSpec
     )
   }
 
-  /** Writes (or overwrites) a fixture served by nginx and returns its URL. The
-    * host side of the read-only bind stays writable, so re-serving updates the
-    * content nginx exposes.
-    */
-  private def serveFixture(name: String, content: String): String = {
-    Files.write(
-      fixturesDir.resolve(name),
-      content.getBytes(StandardCharsets.UTF_8)
-    )
+  private def servedFixtureUrl(name: String): String = {
     s"http://localhost:${container.mappedPort(80)}/$name"
   }
 
@@ -77,7 +74,8 @@ class RemoteCatalogHttpSourceSpec
     RemoteCatalog(
       id = id,
       name = "http test catalog",
-      source = RemoteCatalogSource(kind = "http", config = Json.obj("url" -> url)),
+      source =
+        RemoteCatalogSource(config = Json.obj("url" -> url)),
       scheduling = RemoteCatalogScheduling(enabled = true),
       allowedKinds = Set("team")
     )
@@ -109,15 +107,15 @@ class RemoteCatalogHttpSourceSpec
   private def getTeam(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/teams/$id",
-      method = "GET",
       headers = adminHeader
     )(using tenant)
 
   "Remote catalog (http source)" should {
 
     "sync entities served over HTTP through the job" in {
-      val url = serveFixture("catalog.json", teamDoc("team-http", "Http Team"))
-      val t   = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", url)))
+      val url = servedFixtureUrl("catalog.json")
+
+      val t = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", url)))
       setupEnvBlocking(
         tenants = Seq(t),
         teams = Seq(defaultAdminTeam),
@@ -135,7 +133,8 @@ class RemoteCatalogHttpSourceSpec
     }
 
     "re-sync updated content over HTTP and reflect the change" in {
-      val v1 = serveFixture("catalog-v1.json", teamDoc("team-http", "Http Team"))
+      val v1 =
+        servedFixtureUrl("catalog-v1.json")
       val t1 = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", v1)))
       setupEnvBlocking(
         tenants = Seq(t1),
@@ -151,7 +150,7 @@ class RemoteCatalogHttpSourceSpec
       // mount would otherwise serve stale content on Docker Desktop. The catalog
       // id is unchanged, so the same team is matched and updated, not recreated.
       // job.run reads the catalog off the passed tenant, so no DB re-seed needed.
-      val v2 = serveFixture("catalog-v2.json", teamDoc("team-http", "Http Team Renamed"))
+      val v2 = servedFixtureUrl("catalog-v2.json")
       val t2 = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", v2)))
 
       syncAndExpectCompleted(t2)
