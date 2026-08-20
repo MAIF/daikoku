@@ -163,7 +163,8 @@ class AdminApiCascadeSpec
     apiKey = otoroshiApiKey1,
     otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
     createdAt = DateTime.now(),
-    integrationToken = "test-cascade"
+    integrationToken = "test-cascade",
+    customName = "test keyring"
   )
 
   private val cascadeSub = ApiSubscription(
