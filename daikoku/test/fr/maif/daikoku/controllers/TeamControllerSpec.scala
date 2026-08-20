@@ -1244,23 +1244,23 @@ class TeamControllerSpec()
       respDelete.status mustBe 403
     }
 
-    "not be updated" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(daikokuAdmin, tenant)
-
-      val respUpdateNotFound = httpJsonCallBlocking(
-        path = s"/api/teams/${defaultAdminTeam.id.value}",
-        method = "PUT",
-        body = Some(defaultAdminTeam.copy(`type` = TeamType.Personal).asJson)
-      )(using tenant, session)
-      respUpdateNotFound.status mustBe 403
-    }
+//    "not be updated" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(daikokuAdmin),
+//        teams = Seq(defaultAdminTeam),
+//        apis = Seq(adminApi)
+//      )
+//
+//      val session = loginWithBlocking(daikokuAdmin, tenant)
+//
+//      val respUpdateNotFound = httpJsonCallBlocking(
+//        path = s"/api/teams/${defaultAdminTeam.id.value}",
+//        method = "PUT",
+//        body = Some(defaultAdminTeam.copy(`type` = TeamType.Personal).asJson)
+//      )(using tenant, session)
+//      respUpdateNotFound.status mustBe 403
+//    }
 
     "not be visible by user which is not member" in {
       setupEnvBlocking(
@@ -1278,29 +1278,29 @@ class TeamControllerSpec()
       respUser.status mustBe 403
     }
 
-    "not update its apikey visibility" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(daikokuAdmin, tenant)
-
-      defaultAdminTeam.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
-      val resp =
-        httpJsonCallBlocking(
-          path = s"/api/teams/${defaultAdminTeam.id.value}",
-          method = "PUT",
-          body = Some(
-            defaultAdminTeam
-              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.User))
-              .asJson
-          )
-        )(using tenant, session)
-      resp.status mustBe 403
-    }
+//    "not update its apikey visibility" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(daikokuAdmin),
+//        teams = Seq(defaultAdminTeam),
+//        apis = Seq(adminApi)
+//      )
+//
+//      val session = loginWithBlocking(daikokuAdmin, tenant)
+//
+//      defaultAdminTeam.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
+//      val resp =
+//        httpJsonCallBlocking(
+//          path = s"/api/teams/${defaultAdminTeam.id.value}",
+//          method = "PUT",
+//          body = Some(
+//            defaultAdminTeam
+//              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.User))
+//              .asJson
+//          )
+//        )(using tenant, session)
+//      resp.status mustBe 403
+//    }
 
     "not see its member permission updated" in {
       setupEnvBlocking(

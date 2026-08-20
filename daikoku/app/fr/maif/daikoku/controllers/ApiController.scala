@@ -20,7 +20,15 @@ import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.*
+import fr.maif.daikoku.services.{
+  ApiCrudService,
+  ApiLifeCycleService,
+  ApiService,
+  DeletionService,
+  KeyringService,
+  MailService,
+  UsagePlanService
+}
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import fr.maif.daikoku.utils.*
@@ -62,7 +70,9 @@ class ApiController(
     mailService: MailService,
     apiLifeCycleService: ApiLifeCycleService,
     deletionService: DeletionService,
-    keyringService: KeyringService
+    keyringService: KeyringService,
+    apiCrudService: ApiCrudService,
+    usagePlanService: UsagePlanService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -1226,7 +1236,7 @@ class ApiController(
           AppError.EntityNotFound("token")
         )
 
-        _ <- validateProcessWithStepValidator(
+        _ <- apiService.validateProcessWithStepValidator(
           validator,
           ctx.tenant,
           maybeSessionId
@@ -1290,7 +1300,7 @@ class ApiController(
               .findOneNotDeleted(Json.obj("token" -> token)),
             AppError.EntityNotFound("token")
           )
-          _ <- declineProcessWithStepValidator(validator, ctx.tenant)
+          _ <- apiService.declineProcessWithStepValidator(validator, ctx.tenant)
         } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-decline")))
           .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
           .merge
@@ -1391,113 +1401,7 @@ class ApiController(
       }
     }
 
-  private def validateProcessWithStepValidator(
-      validator: StepValidator,
-      tenant: Tenant,
-      maybeSessionId: Option[String] = None
-  )(implicit language: String, currentUser: User) = {
-    for {
-      demand <- EitherT.fromOptionF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(validator.subscriptionDemand),
-        AppError.EntityNotFound("Subscription demand Validator")
-      )
-      _ <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(demand.team),
-        AppError.TeamNotFound
-      )
-      _ <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
-        AppError.ApiNotFound
-      )
-      step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == validator.step),
-        AppError.EntityNotFound("Validation Step")
-      )
-      _ <- step.check()
-      updatedDemand = demand.copy(steps =
-        demand.steps.map(s =>
-          if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted)
-          else s
-        )
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .save(updatedDemand)
-      )
-      _ <- EitherT.liftF(
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "action.type" -> "CheckoutForSubscription",
-              "action.demand" -> demand.id.asJson,
-              "action.step" -> step.id.asJson
-            ),
-            Json.obj(
-              "$set" -> Json.obj(
-                "status" -> json.NotificationStatusFormat
-                  .writes(NotificationStatus.Accepted())
-              )
-            )
-          )
-      )
-      result <- apiService.runSubscriptionProcess(
-        demand.id,
-        tenant,
-        maybeSessionId = maybeSessionId
-      )
-      _ <- EitherT.liftF[Future, AppError, Boolean](
-        env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
-      )
-    } yield result
-  }
-
-  private def declineProcessWithStepValidator(
-      validator: StepValidator,
-      tenant: Tenant
-  ): EitherT[Future, AppError, Unit] = {
-    for {
-      demand <- EitherT.fromOptionF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(validator.subscriptionDemand),
-        AppError.EntityNotFound("Subscription demand Validator")
-      )
-      _ <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
-        AppError.ApiNotFound
-      )
-      step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == validator.step),
-        AppError.EntityNotFound("Validation Step")
-      )
-      _ <- step.check()
-      _ <- apiService.declineSubscriptionDemand(
-        tenant,
-        demand.id,
-        step.id,
-        NotificationSender(
-          (validator.metadata \ "email").as[String],
-          (validator.metadata \ "email").as[String],
-          None
-        )
-      )
-      _ <- EitherT.liftF[Future, AppError, Boolean](
-        env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
-      )
-    } yield ()
-  }
-
-  def getMyTeamsApiSubscriptions(apiId: String, version: String): Action[AnyContent] =
+  def getMyTeamsApiSubscriptions(apiId: String, version: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
@@ -1733,7 +1637,7 @@ class ApiController(
               .findById(subscription.plan),
             AppError.PlanNotFound
           )
-          subToSave = subscription.copy(
+          updated = subscription.copy(
             customMetadata = (body \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (body \ "customMaxPerSecond").asOpt[Long],
             customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
@@ -1742,12 +1646,11 @@ class ApiController(
             adminCustomName = (body \ "adminCustomName").asOpt[String],
             validUntil = (body \ "validUntil").asOpt(using DateTimeFormat),
           )
-          _ <- EitherT.right[AppError](
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .save(subToSave))
-
-          _ <- EitherT.right[AppError](otoroshiSynchronisator.run(subscription.id, ctx.tenant))
+          subToSave <- apiService.updateSubscriptionCustomization(
+            ctx.tenant,
+            subscription,
+            updated
+          )
         } yield Ok(subToSave.asJson))
           .leftMap(_.render())
           .merge
@@ -2422,40 +2325,7 @@ class ApiController(
       }
     }
 
-  private def checkApiNameUniqueness(
-      maybeApiId: Option[String],
-      name: String,
-      tenant: TenantId
-  ): Future[Boolean] = {
-    val apiRepo = env.dataStore.apiRepo.forTenant(tenant)
-    val maybeHumanReadableId = name.urlPathSegmentSanitized
-
-    def uniquenessQuery(excludedId: Option[String]): JsObject = {
-      Json.obj(
-        "_humanReadableId" -> maybeHumanReadableId,
-        "_deleted" -> false,
-        "parent" -> JsNull
-      ) ++ excludedId.map(id => Json.obj("_id" -> Json.obj("$ne" -> id))).getOrElse(Json.obj())
-    }
-
-    maybeApiId match {
-      case Some(apiId) =>
-        apiRepo.findByIdNotDeleted(apiId).flatMap {
-          case None =>
-            apiRepo.exists(uniquenessQuery(None))
-
-          case Some(api) =>
-            val excludedId = api.parent.map(_.value).orElse(Some(apiId))
-            apiRepo.exists(uniquenessQuery(excludedId))
-        }
-
-      case None =>
-        apiRepo.exists(uniquenessQuery(None))
-    }
-
-  }
-
-  def verifyNameUniqueness(): Action[JsValue] =
+  def verifyNameUniqueness() =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -2470,7 +2340,8 @@ class ApiController(
           (ctx.request.body.as[JsObject] \ "id").asOpt[String].map(_.trim)
         ctx.setCtxValue("api.name", name)
 
-        checkApiNameUniqueness(id, name, ctx.tenant.id)
+        apiCrudService
+          .checkApiNameUniqueness(id, name, ctx.tenant.id)
           .map(exists => Ok(Json.obj("exists" -> exists)))
       }
     }
@@ -2862,43 +2733,13 @@ class ApiController(
           s"@{user.name} has delete api @{api.name} - @{api.id} of team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-
-        def processNextCurrentVersion(api: Api, nextVersion: Option[String]): EitherT[Future, AppError, Unit] = {
-          if (nextVersion.isEmpty) {
-            return EitherT.pure[Future, AppError](())
-          }
-
-          for {
-            nextCurrentApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findOneNotDeleted(
-                Json.obj("_humanReadableId" -> api.humanReadableId, "currentVersion" -> nextVersion.get)
-              ), AppError.ApiNotFound)
-            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .save(nextCurrentApi.copy(isDefault = true, parent = None)))
-            _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .updateManyByQuery(Json.obj(
-                "_deleted" -> false,
-                "_humanReadableId" -> api.humanReadableId,
-                "parent" -> api.id.asJson,
-                "_id" -> Json.obj("$ne" -> nextCurrentApi.id.asJson)
-              ), Json.obj("$set" -> Json.obj("parent" -> nextCurrentApi.id.asJson))))
-          } yield ()
-        }
-
-
-
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .findOneNotDeleted(
               Json.obj("_id" -> apiId, "team" -> team.id.asJson)
             ), AppError.ApiNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](api.visibility != ApiVisibility.AdminOnly, (), AppError.ForbiddenAction)
-          _ <- deletionService.deleteApiByQueue(id = api.id, tenant = ctx.tenant.id)
-          _ <- processNextCurrentVersion(api, nextCurrentVersion)
+          _ <- apiCrudService.deleteApi(ctx.tenant, api, nextCurrentVersion)
         } yield Ok(Json.obj("done" -> true)))
           .recover(d => {
             AppLogger.error(d.getErrorMessage())
@@ -2918,57 +2759,30 @@ class ApiController(
           body ++ Json.obj("_id" -> IdGenerator.token(32))
       }
 
-      val name = (finalBody \ "name").as[String].toLowerCase.trim
-      val id = (finalBody \ "_id").asOpt[String].map(_.trim)
-
       TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} want to create an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
-        ctx.tenant.creationSecurity match {
-          case Some(true) if !team.apisCreationPermission.getOrElse(false) =>
-            FastFuture.successful(
-              Forbidden(
-                Json.obj(
-                  "error" -> "Team forbidden to create api on current tenant"
+        ApiFormat.reads(finalBody) match {
+          case JsError(e) =>
+            FastFuture
+              .successful(
+                BadRequest(
+                  Json.obj(
+                    "error" -> "Error while parsing payload",
+                    "msg" -> e.toString()
+                  )
                 )
               )
-            )
-          case _ =>
-            ApiFormat.reads(finalBody) match {
-              case JsError(e) =>
-                FastFuture
-                  .successful(
-                    BadRequest(
-                      Json.obj(
-                        "error" -> "Error while parsing payload",
-                        "msg" -> e.toString()
-                      )
-                    )
-                  )
-              case JsSuccess(api, _) =>
-                checkApiNameUniqueness(id, name, ctx.tenant.id)
-                  .flatMap {
-                    case true =>
-                      FastFuture.successful(
-                        Conflict(
-                          Json.obj(
-                            "error" -> "Resource with same name already exists"
-                          )
-                        )
-                      )
-                    case false =>
-                      ctx.setCtxValue("api.id", api.id)
-                      ctx.setCtxValue("api.name", api.name)
-                      env.dataStore.apiRepo
-                        .forTenant(ctx.tenant.id)
-                        .save(api)
-                        .map { _ =>
-                          Created(api.asJson)
-                        }
-                  }
-            }
+          case JsSuccess(api, _) =>
+            ctx.setCtxValue("api.id", api.id)
+            ctx.setCtxValue("api.name", api.name)
+            apiCrudService
+              .createApi(ctx.tenant, team, api)
+              .map(createdApi => Created(createdApi.asJson))
+              .leftMap(_.render())
+              .merge
         }
       }
     }
@@ -2981,7 +2795,6 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
-        implicit val c: DaikokuActionContext[JsValue] = ctx
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
@@ -2992,118 +2805,17 @@ class ApiController(
               case JsSuccess(api, _) => Right(api)
             }
           )
-          anotherApiHasSameName <- EitherT.liftF[Future, AppError, Boolean](checkApiNameUniqueness(
-            Some(newApi.id.value),
-            newApi.name,
-            ctx.tenant.id
-          ))
-          _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
-          _ <- EitherT.cond[Future][AppError, Unit](newApi.state.checkPreviousState(oldApi.state), (), AppError.EntityConflict("api state"))
-          // An API cannot be moved (back) to draft while it still has subscriptions.
-          hasSubscriptions <-
-            if (newApi.state == ApiState.Created && oldApi.state != ApiState.Created)
-              EitherT.liftF[Future, AppError, Boolean](
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant.id)
-                  .count(Json.obj("api" -> newApi.id.value, "_deleted" -> false))
-                  .map(_ > 0)
-              )
-            else EitherT.pure[Future, AppError](false)
-          _ <- EitherT.cond[Future][AppError, Unit](!hasSubscriptions, (), AppError.EntityConflict("api subscriptions"))
-          anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .exists(
-              Json.obj(
-                "_deleted" -> false,
-                "_humanReadableId" -> newApi.humanReadableId,
-                "currentVersion" -> newApi.currentVersion.asJson,
-                "_id" -> Json.obj("$ne" -> newApi.id.value)
-              )
-            ))
-          _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameVersion, (), AppError.ApiVersionConflict)
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .save(newApi))
-          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi, ctx.tenant, ctx.user)
-          _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.run(newApi.id, ctx.tenant))
-          _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
-          _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))
-          _ <- EitherT.liftF[Future, AppError, Long](turnOffDefaultVersion(
-            ctx,
-            newApi,
-            oldApi,
-            newApi.humanReadableId,
-            newApi.currentVersion.value
-          ))
+          updatedApi <- apiCrudService.updateApi(ctx.tenant, ctx.user, oldApi, newApi)
         } yield {
-          ctx.setCtxValue("api.name", newApi.name)
-          ctx.setCtxValue("api.id", newApi.id)
+          ctx.setCtxValue("api.name", updatedApi.name)
+          ctx.setCtxValue("api.id", updatedApi.id)
 
-          Ok(newApi.asJson)
+          Ok(updatedApi.asJson)
         })
           .leftMap(_.render())
           .merge
       }
     }
-
-  private def updateAllHumanReadableId(
-      ctx: DaikokuActionContext[JsValue],
-      apiToSave: Api,
-      oldApi: Api
-  ) = {
-    if (oldApi.name != apiToSave.name) {
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .updateManyByQuery(
-          Json.obj("_humanReadableId" -> oldApi.humanReadableId),
-          Json.obj("$set" -> Json.obj(
-            "_humanReadableId" -> apiToSave.humanReadableId
-          ))
-        )
-    } else
-      FastFuture.successful(0L)
-  }
-
-  private def turnOffDefaultVersion(
-      ctx: DaikokuActionContext[JsValue],
-      apiToSave: Api,
-      oldApi: Api,
-      humanReadableId: String,
-      version: String
-  ) = {
-    if (apiToSave.isDefault && !oldApi.isDefault)
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .updateManyByQuery(
-          Json.obj(
-            "_humanReadableId" -> humanReadableId,
-            "currentVersion" -> Json.obj("$ne" -> version)
-          ),
-          Json.obj("$set" -> Json.obj(
-            "isDefault" -> false
-          ))
-        )
-    else
-      FastFuture.successful(0L)
-  }
-
-  private def updateTagsOfIssues(tenantId: TenantId, api: Api) = {
-    env.dataStore.apiIssueRepo
-      .forTenant(tenantId)
-      .findAll()
-      .flatMap { issues =>
-        Future.sequence(issues.map(issue => {
-          env.dataStore.apiIssueRepo
-            .forTenant(tenantId)
-            .save(
-              issue.copy(tags =
-                issue.tags
-                  .filter(tag => api.issuesTags.exists(t => t.id == tag))
-              )
-            )
-        }))
-      }
-  }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -4531,50 +4243,7 @@ class ApiController(
       )(teamId, ctx) { team =>
         val newPlan = ctx.request.body.as(using UsagePlanFormat)
 
-        def addProcess(
-            api: Api,
-            plan: UsagePlan
-        ): EitherT[Future, AppError, UsagePlan] = {
-          val updatedPlan: UsagePlan = (
-            plan.otoroshiTarget.forall(
-              _.apikeyCustomization.customMetadata.isEmpty
-            ),
-            plan.paymentSettings
-          ) match {
-            case (true, None) => plan
-            case (true, Some(settings)) =>
-              plan.addSubscriptionStep(
-                ValidationStep.Payment(
-                  IdGenerator.token(32),
-                  settings.thirdPartyPaymentSettingsId
-                )
-              )
-            case (false, Some(settings)) =>
-              plan
-                .ensureFormStep()
-                .addSubscriptionStep(
-                  ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                  1.some
-                )
-                .addSubscriptionStep(
-                  ValidationStep.Payment(
-                    IdGenerator.token(32),
-                    settings.thirdPartyPaymentSettingsId
-                  )
-                )
-            case (false, None) =>
-              plan
-                .ensureFormStep()
-                .addSubscriptionStep(
-                  ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                  1.some
-                )
-          }
-          EitherT.pure[Future, AppError](updatedPlan)
-        }
-
         (for {
-          _ <- newPlan.checkAuthorizedEntities(team)
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
@@ -4587,22 +4256,9 @@ class ApiController(
               ),
             AppError.ApiNotFound
           )
-          updatedPlan <- addProcess(api, newPlan)
-          plans <- EitherT.liftF(
-            env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api)
-          )
-          _ <- updatedPlan.checkCustomName(ctx.tenant, plans, api.visibility)
-          updatedApi = api.copy(possibleUsagePlans =
-            api.possibleUsagePlans :+ updatedPlan.id
-          )
-          _ <- EitherT.liftF[Future, AppError, Boolean](
-            env.dataStore.apiRepo.forTenant(ctx.tenant).save(updatedApi)
-          )
-          _ <- EitherT.liftF[Future, AppError, Boolean](
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
-          )
-
-        } yield Created(updatedApi.asJson))
+          result <-
+            usagePlanService.createPlan(ctx.tenant, team, api, newPlan)
+        } yield Created(result._1.asJson))
           .leftMap(_.render())
           .merge
       }
@@ -4620,287 +4276,11 @@ class ApiController(
           s"@{user.name} has updated plan @{plan.id} for api @{api.name} to @{newTeam.name}"
         )
       )(teamId, ctx) { team =>
-        val updatedPlan = ctx.request.body.as(using UsagePlanFormat)
+        implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+        val newPlan = ctx.request.body.as(using UsagePlanFormat)
 
-        def getPlanAndCheckIt(
-            oldPlan: UsagePlan,
-            newPlan: UsagePlan
-        ): EitherT[Future, AppError, UsagePlan] = {
-          oldPlan match {
-            //it's forbidden to update otoroshi target, must use migration API instead
-            case _
-                if oldPlan.otoroshiTarget.isDefined && oldPlan.otoroshiTarget
-                  .map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(
-                  _.otoroshiSettings
-                ) =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            //Handle prices changes or payment settings deletion (addition is really forbidden)
-            case _ if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan
-              .costPerRequest =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
-              newPlan.aggregationApiKeysSecurity.exists(identity) =>
-              EitherT.leftT(AppError.SubscriptionAggregationDisabled)
-            case _ if oldPlan.visibility == UsagePlanVisibility.Admin =>
-              EitherT.pure(oldPlan.copy(
-                otoroshiTarget = newPlan.otoroshiTarget,
-                allowMultipleKeys = newPlan.allowMultipleKeys,
-                autoRotation = newPlan.autoRotation
-              ))
-            case _ => EitherT.pure(newPlan)
-          }
-        }
-
-        def handleVisibilityToggling(
-            oldPlan: UsagePlan,
-            plan: UsagePlan,
-            api: Api
-        ): EitherT[Future, AppError, UsagePlan] = {
-          oldPlan match {
-            case _ if plan.visibility != oldPlan.visibility =>
-              plan.visibility match {
-                case UsagePlanVisibility.Public =>
-                  EitherT.pure(plan.removeAllAuthorizedTeams())
-                case UsagePlanVisibility.Private =>
-                  val future: Future[Either[AppError, UsagePlan]] =
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(ctx.tenant)
-                      .findNotDeleted(
-                        Json
-                          .obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-                      )
-                      .map(subs => subs.map(_.team).distinct)
-                      .map(x => Right(plan.addAutorizedTeams(x)))
-                  val value: EitherT[Future, AppError, UsagePlan] =
-                    EitherT(future)
-                  value
-                case UsagePlanVisibility.Admin => EitherT.leftT[Future, UsagePlan](AppError.ForbiddenAction)
-              }
-            case _ => EitherT.pure(plan)
-          }
-        }
-
-        def handleProcess(
-            plan: UsagePlan,
-            newPlan: UsagePlan,
-            api: Api
-        ): EitherT[Future, AppError, UsagePlan] = {
-          //FIXME rewrite the following code
-          plan.some
-            .map(oldPlan => {
-              if (
-                oldPlan.paymentSettings.isEmpty && newPlan.paymentSettings.isDefined
-              ) {
-                (
-                  oldPlan,
-                  newPlan.addSubscriptionStep(
-                    ValidationStep.Payment(
-                      IdGenerator.token(32),
-                      newPlan.paymentSettings.get.thirdPartyPaymentSettingsId
-                    )
-                  )
-                )
-              } else {
-                (oldPlan, newPlan)
-              }
-            })
-            .map {
-              case (oldPlan, plan) =>
-                if (
-                  oldPlan.paymentSettings.isDefined && plan.paymentSettings.isEmpty
-                ) {
-                  (
-                    oldPlan,
-                    plan.removeSubscriptionStep(step => step.name == "payment")
-                  )
-                } else {
-                  (oldPlan, plan)
-                }
-            }
-            .map {
-              case (oldPlan, plan) =>
-                if (
-                  oldPlan.otoroshiTarget.forall(
-                    _.apikeyCustomization.customMetadata.isEmpty
-                  ) &&
-                  plan.otoroshiTarget.exists(
-                    _.apikeyCustomization.customMetadata.nonEmpty &&
-                      plan.subscriptionProcess.steps.forall(_.name != "teamAdmin")
-                  )
-                ) {
-                  plan
-                    .ensureFormStep()
-                    .addSubscriptionStep(
-                      ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-                      1.some
-                    )
-                } else {
-                  plan
-                }
-            } match {
-            case Some(zeUpdatedPlan) =>
-              EitherT.pure[Future, AppError](zeUpdatedPlan)
-            case None => EitherT.leftT[Future, UsagePlan](AppError.PlanNotFound)
-          }
-        }
-
-        def runDemandUpdate(
-            oldPlan: UsagePlan,
-            updatedPlan: UsagePlan,
-            api: Api
-        ): EitherT[Future, AppError, Unit] = {
-          import fr.maif.daikoku.utils.RequestImplicits.*
-
-          implicit val mat: Materializer = env.defaultMaterializer
-          implicit val language: String = ctx.request.getLanguage(ctx.tenant)
-          implicit val currentUser: User = ctx.user
-
-          val res: Future[Either[AppError, Unit]] =
-            env.dataStore.subscriptionDemandRepo
-              .forTenant(ctx.tenant)
-              .streamAllRaw(
-                Json.obj(
-                  "api" -> api.id.asJson,
-                  "plan" -> updatedPlan.id.asJson,
-                  "$or" -> Json.arr(
-                    Json
-                      .obj("state" -> SubscriptionDemandState.InProgress.name),
-                    Json.obj("state" -> SubscriptionDemandState.Waiting.name)
-                  )
-                )
-              )
-              .map(json.SubscriptionDemandFormat.reads)
-              .collect { case JsSuccess(demand, _) => demand }
-              .mapAsync(1)(demand => {
-
-                val newSteps =
-                  updatedPlan.subscriptionProcess.steps.map(validationStep => {
-                    val demandStep =
-                      demand.steps.find(_.step.id == validationStep.id)
-
-                    SubscriptionDemandStep(
-                      id = demandStep
-                        .map(_.id)
-                        .getOrElse(
-                          SubscriptionDemandStepId(IdGenerator.token(32))
-                        ),
-                      state = demandStep
-                        .map(_.state)
-                        .getOrElse(SubscriptionDemandState.Waiting),
-                      step = validationStep,
-                      metadata =
-                        demandStep.map(_.metadata).getOrElse(Json.obj())
-                    )
-                  })
-
-                env.dataStore.subscriptionDemandRepo
-                  .forTenant(ctx.tenant)
-                  .save(demand.copy(steps = newSteps))
-              })
-              .runWith(Sink.ignore)
-              .map(_ => {
-                updatedPlan.subscriptionProcess.steps.foreach(step => {
-                  if (!oldPlan.subscriptionProcess.steps.exists(_.id == step.id)) {
-                    for {
-                      demands <-
-                        env.dataStore.subscriptionDemandRepo
-                          .forTenant(ctx.tenant)
-                          .findNotDeleted(
-                            Json.obj(
-                              "api" -> api.id.asJson,
-                              "plan" -> updatedPlan.id.asJson,
-                              "$or" -> Json.arr(
-                                Json.obj(
-                                  "state" -> SubscriptionDemandState.InProgress.name
-                                ),
-                                Json.obj(
-                                  "state" -> SubscriptionDemandState.Waiting.name
-                                )
-                              )
-                            )
-                          )
-                      validators <-
-                        env.dataStore.stepValidatorRepo
-                          .forTenant(ctx.tenant)
-                          .findNotDeleted(
-                            Json.obj(
-                              "subscriptionDemand" -> Json.obj(
-                                "$in" -> JsArray(demands.map(_.id.asJson))
-                              ),
-                              "step" -> step.id
-                            )
-                          )
-                      _ <- Future.sequence(
-                        validators
-                          .map(v =>
-                            validateProcessWithStepValidator(v, ctx.tenant)
-                          )
-                          .map(_.value)
-                      )
-                    } yield ()
-                  } else if (
-                    !oldPlan.subscriptionProcess
-                      .steps
-                      .find(_.id == step.id)
-                      .contains(step)
-                  ) {
-                    for {
-                      demands <-
-                        env.dataStore.subscriptionDemandRepo
-                          .forTenant(ctx.tenant)
-                          .findNotDeleted(
-                            Json.obj(
-                              "api" -> api.id.asJson,
-                              "plan" -> updatedPlan.id.asJson,
-                              "$or" -> Json.arr(
-                                Json.obj(
-                                  "state" -> SubscriptionDemandState.InProgress.name
-                                ),
-                                Json.obj(
-                                  "state" -> SubscriptionDemandState.Waiting.name
-                                )
-                              )
-                            )
-                          )
-                      validators <-
-                        env.dataStore.stepValidatorRepo
-                          .forTenant(ctx.tenant)
-                          .findNotDeleted(
-                            Json.obj(
-                              "subscriptionDemand" -> Json.obj(
-                                "$in" -> JsArray(demands.map(_.id.asJson))
-                              ),
-                              "step" -> step.id
-                            )
-                          )
-                      _ <- Future.sequence(
-                        demands
-                          .filter(d =>
-                            validators.exists(_.subscriptionDemand == d.id)
-                          )
-                          .map(d =>
-                            apiService.runSubscriptionProcess(d.id, ctx.tenant)
-                          )
-                          .map(_.value)
-                      )
-                    } yield ()
-                  }
-                }) match {
-                  case _ => Right(())
-                }
-              })
-
-          val value: EitherT[Future, AppError, Unit] = EitherT(res)
-          value
-        }
-
-        val value: EitherT[Future, AppError, Result] = for {
-          _ <- updatedPlan.checkAuthorizedEntities(team)
-          api <- EitherT.fromOptionF(
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(
@@ -4912,59 +4292,21 @@ class ApiController(
               ),
             AppError.ApiNotFound
           )
-          plans <- EitherT.liftF(
-            env.dataStore.usagePlanRepo.findByApi(ctx.tenant.id, api)
-          )
-          _ <- updatedPlan.checkCustomName(ctx.tenant, plans, api.visibility)
-          oldPlan <- EitherT.fromOptionF(
+          oldPlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
             AppError.PlanNotFound
           )
-          _ <- EitherT.liftF(
-            env.dataStore.subscriptionDemandRepo
-              .forTenant(ctx.tenant)
-              .updateManyByQuery(
-                Json.obj(
-                  "api" -> api.id.asJson,
-                  "plan" -> planId,
-                  "state" -> SubscriptionDemandState.InProgress.name
-                ),
-                Json.obj(
-                  "$set" -> Json
-                    .obj("state" -> SubscriptionDemandState.Blocked.name)
-                )
-              )
+          updatedPlan <- usagePlanService.updatePlan(
+            ctx.tenant,
+            ctx.user,
+            team,
+            api,
+            oldPlan,
+            newPlan
           )
-          updatedPlan <- getPlanAndCheckIt(oldPlan, updatedPlan)
-          handledUpdatedPlan <-
-            handleVisibilityToggling(oldPlan, updatedPlan, api)
-          updatedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
-          _ <- EitherT.liftF(
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
-          )
-          _ <- EitherT.liftF[Future, AppError, Unit](
-            otoroshiSynchronisator.run(updatedPlan.id, ctx.tenant)
-          )
-          _ <- runDemandUpdate(oldPlan, updatedPlan, api)
-          //FIXME: attention, peut etre il y en a qui sont blocked de base
-          _ <- EitherT.liftF[Future, AppError, Long](
-            env.dataStore.subscriptionDemandRepo
-              .forTenant(ctx.tenant)
-              .updateManyByQuery(
-                Json.obj(
-                  "api" -> api.id.asJson,
-                  "plan" -> planId,
-                  "state" -> SubscriptionDemandState.Blocked.name
-                ),
-                Json.obj(
-                  "$set" -> Json
-                    .obj("state" -> SubscriptionDemandState.InProgress.name)
-                )
-              )
-          )
-        } yield Ok(updatedPlan.asJson)
-
-        value.leftMap(_.render()).merge
+        } yield Ok(updatedPlan.asJson))
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -4997,11 +4339,7 @@ class ApiController(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
             AppError.PlanNotFound
           )
-          _ <- deletionService.deleteUsagePlanByQueue(
-            planId = plan.id,
-            apiId = api.id,
-            tenantId = ctx.tenant.id
-          )
+          _ <- usagePlanService.deletePlan(ctx.tenant, api, plan)
         } yield Ok(Json.obj("done" -> true))
 
         value.leftMap(_.render()).merge

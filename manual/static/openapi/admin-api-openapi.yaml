@@ -33,7 +33,7 @@ components:
         contact:
           type: string
         style:
-          $ref: '#/components/schemas/DaikokuStyle'
+          $ref: "#/components/schemas/DaikokuStyle"
           nullable: true
         defaultLanguage:
           type: string
@@ -42,18 +42,18 @@ components:
           type: array
           nullable: true
           items:
-            $ref: '#/components/schemas/OtoroshiSettings'
+            $ref: "#/components/schemas/OtoroshiSettings"
         mailerSettings:
           nullable: true
           oneOf:
-            - $ref: '#/components/schemas/MailerSettings.ConsoleMailerSettings'
-            - $ref: '#/components/schemas/MailerSettings.MailgunSettings'
-            - $ref: '#/components/schemas/MailerSettings.MailjetSettings'
-            - $ref: '#/components/schemas/MailerSettings.SimpleSMTPSettings'
-            - $ref: '#/components/schemas/MailerSettings.SendgridSettings'
+            - $ref: "#/components/schemas/MailerSettings.ConsoleMailerSettings"
+            - $ref: "#/components/schemas/MailerSettings.MailgunSettings"
+            - $ref: "#/components/schemas/MailerSettings.MailjetSettings"
+            - $ref: "#/components/schemas/MailerSettings.SimpleSMTPSettings"
+            - $ref: "#/components/schemas/MailerSettings.SendgridSettings"
         bucketSettings:
           nullable: true
-          $ref: '#/components/schemas/S3Configuration'
+          $ref: "#/components/schemas/S3Configuration"
         authProvider:
           nullable: true
           type: string
@@ -66,7 +66,7 @@ components:
           type: object
         auditTrailConfig:
           nullable: false
-          $ref: '#/components/schemas/AuditTrailConfig'
+          $ref: "#/components/schemas/AuditTrailConfig"
         isPrivate:
           type: boolean
           nullable: true
@@ -107,7 +107,7 @@ components:
           nullable: true
           items:
             oneOf:
-              - $ref: '#/components/schemas/ThirdPartyPaymentSettings.StripeSettings'
+              - $ref: "#/components/schemas/ThirdPartyPaymentSettings.StripeSettings"
         display:
           nullable: true
           type: string
@@ -150,7 +150,8 @@ components:
     GraphQLSchema:
       type: object
     patch:
-      description: 'A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)'
+      description: "A set of changes described in JSON Patch format:
+        http://jsonpatch.com/ (RFC 6902)"
       type: array
       items:
         type: object
@@ -396,20 +397,20 @@ components:
       description: AuditTrailConfig
       properties:
         elasticConfigs:
-          $ref: '#/components/schemas/ElasticAnalyticsConfig'
+          $ref: "#/components/schemas/ElasticAnalyticsConfig"
           nullable: true
         auditWebhooks:
           type: array
           nullable: true
           items:
-            $ref: '#/components/schemas/Webhook'
+            $ref: "#/components/schemas/Webhook"
         alertsEmails:
           type: array
           nullable: true
           items:
             type: string
         kafkaConfig:
-          $ref: '#/components/schemas/KafkaConfig'
+          $ref: "#/components/schemas/KafkaConfig"
           nullable: true
     Webhook:
       description: Webhook
@@ -504,7 +505,8 @@ components:
         password:
           type: string
           nullable: true
-          description: optionnal value but required in case of tenant has a Local AuthProvider
+          description: optionnal value but required in case of tenant has a Local
+            AuthProvider
         hardwareKeyRegistrations:
           type: array
           nullable: true
@@ -525,10 +527,10 @@ components:
           items:
             type: string
         twoFactorAuthentication:
-          $ref: '#/components/schemas/TwoFactorAuthentication'
+          $ref: "#/components/schemas/TwoFactorAuthentication"
           nullable: true
         invitation:
-          $ref: '#/components/schemas/UserInvitation'
+          $ref: "#/components/schemas/UserInvitation"
           nullable: true
       required:
         - _id
@@ -598,7 +600,7 @@ components:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/UserWithPermission'
+            $ref: "#/components/schemas/UserWithPermission"
         authorizedEntities:
           type: array
           nullable: true
@@ -607,7 +609,7 @@ components:
               otoroshiSettingsId:
                 type: string
               authorizedEntities:
-                $ref: '#/components/schemas/AuthorizedEntities'
+                $ref: "#/components/schemas/AuthorizedEntities"
         apiKeyVisibility:
           type: string
           enum:
@@ -681,12 +683,12 @@ components:
           type: boolean
           nullable: true
         testing:
-          $ref: '#/components/schemas/Testing'
+          $ref: "#/components/schemas/Testing"
           nullable: true
         documentation:
-          $ref: '#/components/schemas/ApiDocumentation'
+          $ref: "#/components/schemas/ApiDocumentation"
         swagger:
-          $ref: '#/components/schemas/SwaggerAccess'
+          $ref: "#/components/schemas/SwaggerAccess"
           nullable: true
         tags:
           type: array
@@ -731,7 +733,7 @@ components:
           type: array
           nullable: true
           items:
-            $ref: '#/components/schemas/ApiIssueTag'
+            $ref: "#/components/schemas/ApiIssueTag"
         stars:
           type: integer
           format: int32
@@ -794,7 +796,7 @@ components:
           type: string
           nullable: true
         config:
-          $ref: '#/components/schemas/TestingConfig'
+          $ref: "#/components/schemas/TestingConfig"
           nullable: true
     ApiDocumentation:
       description: ApiDocumentation
@@ -807,7 +809,7 @@ components:
           type: array
           nullable: true
           items:
-            $ref: '#/components/schemas/ApiDocumentationDetailPage'
+            $ref: "#/components/schemas/ApiDocumentationDetailPage"
         lastModificationAt:
           type: integer
           format: timestamp
@@ -858,7 +860,7 @@ components:
         otoroshiSettings:
           type: string
         authorizedEntities:
-          $ref: '#/components/schemas/AuthorizedEntities'
+          $ref: "#/components/schemas/AuthorizedEntities"
         clientName:
           type: string
         tag:
@@ -896,7 +898,7 @@ components:
         children:
           type: array
           items:
-            $ref: '#/components/schemas/ApiDocumentationDetailPage'
+            $ref: "#/components/schemas/ApiDocumentationDetailPage"
       required:
         - id
         - title
@@ -931,7 +933,7 @@ components:
           type: boolean
           nullable: true
         apiKey:
-          $ref: '#/components/schemas/OtoroshiApiKey'
+          $ref: "#/components/schemas/OtoroshiApiKey"
         plan:
           type: string
         team:
@@ -953,7 +955,7 @@ components:
           type: boolean
           nullable: true
         rotation:
-          $ref: '#/components/schemas/ApiSubscriptionRotation'
+          $ref: "#/components/schemas/ApiSubscriptionRotation"
         integrationToken:
           type: string
         customMetadata:
@@ -985,7 +987,7 @@ components:
           nullable: true
         thirdPartySubscriptionInformations:
           oneOf:
-            - $ref: '#/components/schemas/ThirdPartySubscriptionInformations.Stripe'
+            - $ref: "#/components/schemas/ThirdPartySubscriptionInformations.Stripe"
       required:
         - _id
         - _tenant
@@ -1086,7 +1088,7 @@ components:
         team:
           type: string
         sender:
-          $ref: '#/components/schemas/NotificationSender'
+          $ref: "#/components/schemas/NotificationSender"
         date:
           type: integer
           format: timestamp
@@ -1098,28 +1100,28 @@ components:
             - AcceptOnly
         status:
           oneOf:
-            - $ref: '#/components/schemas/NotificationStatus.Accepted'
-            - $ref: '#/components/schemas/NotificationStatus.Rejected'
-            - $ref: '#/components/schemas/NotificationStatus.Pending'
+            - $ref: "#/components/schemas/NotificationStatus.Accepted"
+            - $ref: "#/components/schemas/NotificationStatus.Rejected"
+            - $ref: "#/components/schemas/NotificationStatus.Pending"
         action:
           oneOf:
-            - $ref: '#/components/schemas/NotificationAction.ApiAccess'
-            - $ref: '#/components/schemas/NotificationAction.TeamAccess'
-            - $ref: '#/components/schemas/NotificationAction.ApiSubscription'
-            - $ref: '#/components/schemas/NotificationAction.ApiSubscriptionReject'
-            - $ref: '#/components/schemas/NotificationAction.ApiSubscriptionAccept'
-            - $ref: '#/components/schemas/NotificationAction.OtoroshiSyncSubscriptionError'
-            - $ref: '#/components/schemas/NotificationAction.OtoroshiSyncApiError'
-            - $ref: '#/components/schemas/NotificationAction.ApiKeyDeletionInformation'
-            - $ref: '#/components/schemas/NotificationAction.ApiKeyRotationInProgress'
-            - $ref: '#/components/schemas/NotificationAction.ApiKeyRotationEnded'
-            - $ref: '#/components/schemas/NotificationAction.TeamInvitation'
-            - $ref: '#/components/schemas/NotificationAction.ApiKeyRefresh'
-            - $ref: '#/components/schemas/NotificationAction.NewPostPublished'
-            - $ref: '#/components/schemas/NotificationAction.NewIssueOpen'
-            - $ref: '#/components/schemas/NotificationAction.NewCommentOnIssue'
-            - $ref: '#/components/schemas/NotificationAction.TransferApiOwnership'
-            - $ref: '#/components/schemas/NotificationAction.CheckoutForSubscription'
+            - $ref: "#/components/schemas/NotificationAction.ApiAccess"
+            - $ref: "#/components/schemas/NotificationAction.TeamAccess"
+            - $ref: "#/components/schemas/NotificationAction.ApiSubscription"
+            - $ref: "#/components/schemas/NotificationAction.ApiSubscriptionReject"
+            - $ref: "#/components/schemas/NotificationAction.ApiSubscriptionAccept"
+            - $ref: "#/components/schemas/NotificationAction.OtoroshiSyncSubscriptionError"
+            - $ref: "#/components/schemas/NotificationAction.OtoroshiSyncApiError"
+            - $ref: "#/components/schemas/NotificationAction.ApiKeyDeletionInformation"
+            - $ref: "#/components/schemas/NotificationAction.ApiKeyRotationInProgress"
+            - $ref: "#/components/schemas/NotificationAction.ApiKeyRotationEnded"
+            - $ref: "#/components/schemas/NotificationAction.TeamInvitation"
+            - $ref: "#/components/schemas/NotificationAction.ApiKeyRefresh"
+            - $ref: "#/components/schemas/NotificationAction.NewPostPublished"
+            - $ref: "#/components/schemas/NotificationAction.NewIssueOpen"
+            - $ref: "#/components/schemas/NotificationAction.NewCommentOnIssue"
+            - $ref: "#/components/schemas/NotificationAction.TransferApiOwnership"
+            - $ref: "#/components/schemas/NotificationAction.CheckoutForSubscription"
       required:
         - _id
         - _tenant
@@ -1453,11 +1455,11 @@ components:
           type: integer
           format: int32
         globalInformations:
-          $ref: '#/components/schemas/ApiKeyGlobalConsumptionInformations'
+          $ref: "#/components/schemas/ApiKeyGlobalConsumptionInformations"
         quotas:
-          $ref: '#/components/schemas/ApiKeyQuotas'
+          $ref: "#/components/schemas/ApiKeyQuotas"
         billing:
-          $ref: '#/components/schemas/ApiKeyBilling'
+          $ref: "#/components/schemas/ApiKeyBilling"
         from:
           type: integer
           format: timestamp
@@ -1568,7 +1570,7 @@ components:
           type: string
         messageType:
           oneOf:
-            - $ref: '#/components/schemas/MessageType.Tenant'
+            - $ref: "#/components/schemas/MessageType.Tenant"
         chat:
           type: string
           description: user id
@@ -1654,7 +1656,7 @@ components:
         comments:
           type: array
           items:
-            $ref: '#/components/schemas/ApiIssueComment'
+            $ref: "#/components/schemas/ApiIssueComment"
         lastModificationAt:
           type: integer
           format: timestamp
@@ -1742,7 +1744,7 @@ components:
           type: boolean
           nullable: true
         currency:
-          $ref: '#/components/schemas/Currency'
+          $ref: "#/components/schemas/Currency"
           nullable: true
         customName:
           type: string
@@ -1750,10 +1752,10 @@ components:
           type: string
           nullable: true
         otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
+          $ref: "#/components/schemas/OtoroshiTarget"
           nullable: true
         billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
+          $ref: "#/components/schemas/BillingDuration"
           nullable: true
         allowMultipleKeys:
           type: boolean
@@ -1775,10 +1777,10 @@ components:
           type: array
           items:
             oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
+              - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.HttpRequest"
         integrationProcess:
           type: string
           enum:
@@ -1789,13 +1791,13 @@ components:
           nullable: true
         swagger:
           nullable: true
-          $ref: '#/components/schemas/SwaggerAccess'
+          $ref: "#/components/schemas/SwaggerAccess"
         testing:
           nullable: true
-          $ref: '#/components/schemas/Testing'
+          $ref: "#/components/schemas/Testing"
         documentation:
           nullable: true
-          $ref: '#/components/schemas/ApiDocumentation'
+          $ref: "#/components/schemas/ApiDocumentation"
         maxPerSecond:
           type: integer
           format: int64
@@ -1817,12 +1819,12 @@ components:
           format: float64
           nullable: true
         trialPeriod:
-          $ref: '#/components/schemas/BillingDuration'
+          $ref: "#/components/schemas/BillingDuration"
           nullable: true
         paymentSettings:
           nullable: true
           oneOf:
-            - $ref: '#/components/schemas/PaymentSettings.Stripe'
+            - $ref: "#/components/schemas/PaymentSettings.Stripe"
       required:
         - _id
         - _tenant
@@ -1859,9 +1861,9 @@ components:
         otoroshiSettings:
           type: string
         authorizedEntities:
-          $ref: '#/components/schemas/AuthorizedEntities'
+          $ref: "#/components/schemas/AuthorizedEntities"
         apikeyCustomization:
-          $ref: '#/components/schemas/ApikeyCustomization'
+          $ref: "#/components/schemas/ApikeyCustomization"
       required:
         - otoroshiSettings
         - authorizedEntities
@@ -1874,7 +1876,7 @@ components:
         productId:
           type: string
         priceIds:
-          $ref: '#/components/schemas/StripePriceIds'
+          $ref: "#/components/schemas/StripePriceIds"
       required:
         - thirdPartyPaymentSettings
         - productId
@@ -1913,7 +1915,7 @@ components:
             type: string
           nullable: true
         restrictions:
-          $ref: '#/components/schemas/ApiKeyRestrictions'
+          $ref: "#/components/schemas/ApiKeyRestrictions"
       required:
         - restrictions
     ApiKeyRestrictions:
@@ -1928,15 +1930,15 @@ components:
         allowed:
           type: array
           items:
-            $ref: '#/components/schemas/ApiKeyRestrictionPath'
+            $ref: "#/components/schemas/ApiKeyRestrictionPath"
         forbidden:
           type: array
           items:
-            $ref: '#/components/schemas/ApiKeyRestrictionPath'
+            $ref: "#/components/schemas/ApiKeyRestrictionPath"
         notFound:
           type: array
           items:
-            $ref: '#/components/schemas/ApiKeyRestrictionPath'
+            $ref: "#/components/schemas/ApiKeyRestrictionPath"
     ApiKeyRestrictionPath:
       description: ApiKeyRestriction Path
       properties:
@@ -1964,12 +1966,12 @@ components:
           type: array
           items:
             oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
+              - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
+              - $ref: "#/components/schemas/SubscriptionDemandStep.HttpRequest"
         state:
-          $ref: '#/components/schemas/SubscriptionDemandState'
+          $ref: "#/components/schemas/SubscriptionDemandState"
         team:
           type: string
         from:
@@ -2028,7 +2030,7 @@ components:
             - refused
             - blocked
         step:
-          $ref: '#/components/schemas/ValidationStep'
+          $ref: "#/components/schemas/ValidationStep"
         metadata:
           type: object
       required:
@@ -2127,24 +2129,24 @@ paths:
       summary: delete a tenant
       operationId: tenants.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2164,23 +2166,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Tenant'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/Tenant"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2199,22 +2201,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tenant'
+              $ref: "#/components/schemas/Tenant"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2228,26 +2230,26 @@ paths:
       summary: read a tenant
       operationId: tenants.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Tenant'
-        '401':
+                  $ref: "#/components/schemas/Tenant"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2262,20 +2264,20 @@ paths:
       summary: read all tenant
       operationId: tenants.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Tenant'
-        '401':
+                  $ref: "#/components/schemas/Tenant"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - tenant
     post:
@@ -2286,27 +2288,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tenant'
+              $ref: "#/components/schemas/Tenant"
       operationId: tenants.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tenant'
-        '400':
+                $ref: "#/components/schemas/Tenant"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - tenant
   /admin-api/users/{id}:
@@ -2314,24 +2316,24 @@ paths:
       summary: delete a user
       operationId: users.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2350,23 +2352,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/User'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/User"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2384,22 +2386,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: "#/components/schemas/User"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2412,26 +2414,26 @@ paths:
       summary: read a user
       operationId: users.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/User'
-        '401':
+                  $ref: "#/components/schemas/User"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2445,20 +2447,20 @@ paths:
       summary: read all user
       operationId: users.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
-        '401':
+                  $ref: "#/components/schemas/User"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - user
     post:
@@ -2469,27 +2471,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: "#/components/schemas/User"
       operationId: users.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '400':
+                $ref: "#/components/schemas/User"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - user
   /admin-api/teams/{id}:
@@ -2497,24 +2499,24 @@ paths:
       summary: delete a team
       operationId: teams.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2533,23 +2535,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Team'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/Team"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2567,22 +2569,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Team'
+              $ref: "#/components/schemas/Team"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2595,26 +2597,26 @@ paths:
       summary: read a team
       operationId: teams.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Team'
-        '401':
+                  $ref: "#/components/schemas/Team"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2628,20 +2630,20 @@ paths:
       summary: read all team
       operationId: teams.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Team'
-        '401':
+                  $ref: "#/components/schemas/Team"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - team
     post:
@@ -2652,27 +2654,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Team'
+              $ref: "#/components/schemas/Team"
       operationId: teams.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Team'
-        '400':
+                $ref: "#/components/schemas/Team"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - team
   /admin-api/apis/{id}:
@@ -2680,24 +2682,24 @@ paths:
       summary: delete a api
       operationId: apis.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2716,23 +2718,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Api'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/Api"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2750,22 +2752,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Api'
+              $ref: "#/components/schemas/Api"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2778,26 +2780,26 @@ paths:
       summary: read a api
       operationId: apis.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Api'
-        '401':
+                  $ref: "#/components/schemas/Api"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2811,20 +2813,20 @@ paths:
       summary: read all api
       operationId: apis.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Api'
-        '401':
+                  $ref: "#/components/schemas/Api"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api
     post:
@@ -2835,27 +2837,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Api'
+              $ref: "#/components/schemas/Api"
       operationId: apis.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Api'
-        '400':
+                $ref: "#/components/schemas/Api"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api
   /admin-api/subscriptions/{id}:
@@ -2863,24 +2865,24 @@ paths:
       summary: delete a api-subscription
       operationId: api-subscriptions.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2899,23 +2901,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiSubscription'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/ApiSubscription"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2933,22 +2935,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiSubscription'
+              $ref: "#/components/schemas/ApiSubscription"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2961,26 +2963,26 @@ paths:
       summary: read a api-subscription
       operationId: api-subscriptions.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/ApiSubscription'
-        '401':
+                  $ref: "#/components/schemas/ApiSubscription"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -2994,20 +2996,20 @@ paths:
       summary: read all api-subscription
       operationId: api-subscriptions.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApiSubscription'
-        '401':
+                  $ref: "#/components/schemas/ApiSubscription"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api-subscription
     post:
@@ -3018,27 +3020,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiSubscription'
+              $ref: "#/components/schemas/ApiSubscription"
       operationId: api-subscriptions.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiSubscription'
-        '400':
+                $ref: "#/components/schemas/ApiSubscription"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api-subscription
   /admin-api/pages/{id}:
@@ -3046,24 +3048,24 @@ paths:
       summary: delete a api-documentation-page
       operationId: api-documentation-pages.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3073,7 +3075,8 @@ paths:
       tags:
         - api-documentation-page
     patch:
-      summary: update a api-documentation-page with JSON patch or by  merging JSON object
+      summary: update a api-documentation-page with JSON patch or by  merging JSON
+        object
       operationId: api-documentation-pages.patch
       requestBody:
         description: the patch to update the api-documentation-page or a JSON object
@@ -3082,23 +3085,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiDocumentationPage'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/ApiDocumentationPage"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3116,22 +3119,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiDocumentationPage'
+              $ref: "#/components/schemas/ApiDocumentationPage"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3144,26 +3147,26 @@ paths:
       summary: read a api-documentation-page
       operationId: api-documentation-pages.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/ApiDocumentationPage'
-        '401':
+                  $ref: "#/components/schemas/ApiDocumentationPage"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3177,20 +3180,20 @@ paths:
       summary: read all api-documentation-page
       operationId: api-documentation-pages.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApiDocumentationPage'
-        '401':
+                  $ref: "#/components/schemas/ApiDocumentationPage"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api-documentation-page
     post:
@@ -3201,27 +3204,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiDocumentationPage'
+              $ref: "#/components/schemas/ApiDocumentationPage"
       operationId: api-documentation-pages.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiDocumentationPage'
-        '400':
+                $ref: "#/components/schemas/ApiDocumentationPage"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api-documentation-page
   /admin-api/notifications/{id}:
@@ -3229,92 +3232,24 @@ paths:
       summary: delete a notification
       operationId: notifications.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - notification
-    patch:
-      summary: update a notification with JSON patch or by  merging JSON object
-      operationId: notifications.patch
-      requestBody:
-        description: the patch to update the notification or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Notification'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - notification
-    put:
-      summary: update a notification
-      operationId: notifications.update
-      requestBody:
-        description: the notification to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Notification'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3327,26 +3262,26 @@ paths:
       summary: read a notification
       operationId: notifications.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Notification'
-        '401':
+                  $ref: "#/components/schemas/Notification"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3360,51 +3295,20 @@ paths:
       summary: read all notification
       operationId: notifications.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
-        '401':
+                  $ref: "#/components/schemas/Notification"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - notification
-    post:
-      summary: creates a notification
-      requestBody:
-        description: the notification to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Notification'
-      operationId: notifications.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Notification'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - notification
   /admin-api/sessions/{id}:
@@ -3412,92 +3316,24 @@ paths:
       summary: delete a user-session
       operationId: user-sessions.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - user-session
-    patch:
-      summary: update a user-session with JSON patch or by  merging JSON object
-      operationId: user-sessions.patch
-      requestBody:
-        description: the patch to update the user-session or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/UserSession'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - user-session
-    put:
-      summary: update a user-session
-      operationId: user-sessions.update
-      requestBody:
-        description: the user-session to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserSession'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3510,26 +3346,26 @@ paths:
       summary: read a user-session
       operationId: user-sessions.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/UserSession'
-        '401':
+                  $ref: "#/components/schemas/UserSession"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3543,51 +3379,20 @@ paths:
       summary: read all user-session
       operationId: user-sessions.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserSession'
-        '401':
+                  $ref: "#/components/schemas/UserSession"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - user-session
-    post:
-      summary: creates a user-session
-      requestBody:
-        description: the user-session to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserSession'
-      operationId: user-sessions.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserSession'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - user-session
   /admin-api/consumptions/{id}:
@@ -3595,92 +3400,24 @@ paths:
       summary: delete a api-key-consumption
       operationId: api-key-consumptions.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - api-key-consumption
-    patch:
-      summary: update a api-key-consumption with JSON patch or by  merging JSON object
-      operationId: api-key-consumptions.patch
-      requestBody:
-        description: the patch to update the api-key-consumption or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiKeyConsumption'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - api-key-consumption
-    put:
-      summary: update a api-key-consumption
-      operationId: api-key-consumptions.update
-      requestBody:
-        description: the api-key-consumption to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApiKeyConsumption'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3693,26 +3430,26 @@ paths:
       summary: read a api-key-consumption
       operationId: api-key-consumptions.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/ApiKeyConsumption'
-        '401':
+                  $ref: "#/components/schemas/ApiKeyConsumption"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3726,51 +3463,20 @@ paths:
       summary: read all api-key-consumption
       operationId: api-key-consumptions.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApiKeyConsumption'
-        '401':
+                  $ref: "#/components/schemas/ApiKeyConsumption"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - api-key-consumption
-    post:
-      summary: creates a api-key-consumption
-      requestBody:
-        description: the api-key-consumption to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApiKeyConsumption'
-      operationId: api-key-consumptions.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiKeyConsumption'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - api-key-consumption
   /admin-api/audit-events/{id}:
@@ -3778,92 +3484,24 @@ paths:
       summary: delete a audit-event
       operationId: audit-events.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - audit-event
-    patch:
-      summary: update a audit-event with JSON patch or by  merging JSON object
-      operationId: audit-events.patch
-      requestBody:
-        description: the patch to update the audit-event or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/object'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - audit-event
-    put:
-      summary: update a audit-event
-      operationId: audit-events.update
-      requestBody:
-        description: the audit-event to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/object'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3876,26 +3514,26 @@ paths:
       summary: read a audit-event
       operationId: audit-events.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/object'
-        '401':
+                  $ref: "#/components/schemas/object"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -3909,51 +3547,20 @@ paths:
       summary: read all audit-event
       operationId: audit-events.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/object'
-        '401':
+                  $ref: "#/components/schemas/object"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - audit-event
-    post:
-      summary: creates a audit-event
-      requestBody:
-        description: the audit-event to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/object'
-      operationId: audit-events.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - audit-event
   /admin-api/messages/{id}:
@@ -3961,92 +3568,24 @@ paths:
       summary: delete a message
       operationId: messages.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - message
-    patch:
-      summary: update a message with JSON patch or by  merging JSON object
-      operationId: messages.patch
-      requestBody:
-        description: the patch to update the message or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Message'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - message
-    put:
-      summary: update a message
-      operationId: messages.update
-      requestBody:
-        description: the message to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4059,26 +3598,26 @@ paths:
       summary: read a message
       operationId: messages.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Message'
-        '401':
+                  $ref: "#/components/schemas/Message"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4092,51 +3631,20 @@ paths:
       summary: read all message
       operationId: messages.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Message'
-        '401':
+                  $ref: "#/components/schemas/Message"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - message
-    post:
-      summary: creates a message
-      requestBody:
-        description: the message to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-      operationId: messages.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - message
   /admin-api/issues/{id}:
@@ -4144,24 +3652,24 @@ paths:
       summary: delete a issue
       operationId: issues.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4180,23 +3688,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiIssue'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/ApiIssue"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4214,22 +3722,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiIssue'
+              $ref: "#/components/schemas/ApiIssue"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4242,26 +3750,26 @@ paths:
       summary: read a issue
       operationId: issues.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/ApiIssue'
-        '401':
+                  $ref: "#/components/schemas/ApiIssue"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4275,20 +3783,20 @@ paths:
       summary: read all issue
       operationId: issues.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApiIssue'
-        '401':
+                  $ref: "#/components/schemas/ApiIssue"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - issue
     post:
@@ -4299,27 +3807,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiIssue'
+              $ref: "#/components/schemas/ApiIssue"
       operationId: issues.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiIssue'
-        '400':
+                $ref: "#/components/schemas/ApiIssue"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - issue
   /admin-api/posts/{id}:
@@ -4327,24 +3835,24 @@ paths:
       summary: delete a post
       operationId: posts.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4363,23 +3871,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiPost'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/ApiPost"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4397,22 +3905,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiPost'
+              $ref: "#/components/schemas/ApiPost"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4425,26 +3933,26 @@ paths:
       summary: read a post
       operationId: posts.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/ApiPost'
-        '401':
+                  $ref: "#/components/schemas/ApiPost"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4458,20 +3966,20 @@ paths:
       summary: read all post
       operationId: posts.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApiPost'
-        '401':
+                  $ref: "#/components/schemas/ApiPost"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - post
     post:
@@ -4482,27 +3990,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiPost'
+              $ref: "#/components/schemas/ApiPost"
       operationId: posts.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiPost'
-        '400':
+                $ref: "#/components/schemas/ApiPost"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - post
   /admin-api/translations/{id}:
@@ -4510,24 +4018,24 @@ paths:
       summary: delete a translation
       operationId: translations.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4546,23 +4054,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Translation'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/Translation"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4580,22 +4088,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Translation'
+              $ref: "#/components/schemas/Translation"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4608,26 +4116,26 @@ paths:
       summary: read a translation
       operationId: translations.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/Translation'
-        '401':
+                  $ref: "#/components/schemas/Translation"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4641,20 +4149,20 @@ paths:
       summary: read all translation
       operationId: translations.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Translation'
-        '401':
+                  $ref: "#/components/schemas/Translation"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - translation
     post:
@@ -4665,27 +4173,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Translation'
+              $ref: "#/components/schemas/Translation"
       operationId: translations.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Translation'
-        '400':
+                $ref: "#/components/schemas/Translation"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - translation
   /admin-api/usage-plans/{id}:
@@ -4693,24 +4201,24 @@ paths:
       summary: delete a usage-plan
       operationId: usage-plans.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4729,23 +4237,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/UsagePlan'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/UsagePlan"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4763,22 +4271,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsagePlan'
+              $ref: "#/components/schemas/UsagePlan"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4791,24 +4299,24 @@ paths:
       summary: read a usage-plan
       operationId: usage-plans.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsagePlan'
-        '401':
+                $ref: "#/components/schemas/UsagePlan"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4822,20 +4330,20 @@ paths:
       summary: read all usage-plan
       operationId: usage-plans.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UsagePlan'
-        '401':
+                  $ref: "#/components/schemas/UsagePlan"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - usage-plan
     post:
@@ -4846,27 +4354,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsagePlan'
+              $ref: "#/components/schemas/UsagePlan"
       operationId: usage-plans.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsagePlan'
-        '400':
+                $ref: "#/components/schemas/UsagePlan"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - usage-plan
   /admin-api/subscription-demands/{id}:
@@ -4874,24 +4382,24 @@ paths:
       summary: delete a subscription-demand
       operationId: subscription-demands.delete
       responses:
-        '200':
+        "200":
           description: entity deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/done'
-        '401':
+                $ref: "#/components/schemas/done"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4910,23 +4418,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/SubscriptionDemand'
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/SubscriptionDemand"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4944,22 +4452,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubscriptionDemand'
+              $ref: "#/components/schemas/SubscriptionDemand"
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -4972,26 +4480,26 @@ paths:
       summary: read a subscription-demand
       operationId: subscription-demands.findById
       responses:
-        '200':
+        "200":
           description: found entity
           content:
             application/json:
               schema:
                 type: object
                 items:
-                  $ref: '#/components/schemas/SubscriptionDemand'
-        '401':
+                  $ref: "#/components/schemas/SubscriptionDemand"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: entity not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       parameters:
         - schema:
             type: string
@@ -5005,20 +4513,20 @@ paths:
       summary: read all subscription-demand
       operationId: subscription-demands.findAll
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SubscriptionDemand'
-        '401':
+                  $ref: "#/components/schemas/SubscriptionDemand"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - subscription-demand
     post:
@@ -5029,27 +4537,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubscriptionDemand'
+              $ref: "#/components/schemas/SubscriptionDemand"
       operationId: subscription-demands.create
       responses:
-        '201':
+        "201":
           description: entity created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionDemand'
-        '400':
+                $ref: "#/components/schemas/SubscriptionDemand"
+        "400":
           description: bad entity format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-        '401':
+                $ref: "#/components/schemas/error"
+        "401":
           description: unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
       tags:
         - subscription-demand
   /admin-api/search:
@@ -5063,14 +4571,14 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/GraphQLQuery'
+                - $ref: "#/components/schemas/GraphQLQuery"
       responses:
-        '200':
+        "200":
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GraphQLResponse'
+                $ref: "#/components/schemas/GraphQLResponse"
       tags:
         - GraphQL
   /admin-api/schema:
@@ -5084,14 +4592,14 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/GraphQLQuery'
+                - $ref: "#/components/schemas/GraphQLQuery"
       responses:
-        '200':
+        "200":
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GraphQLSchema'
+                $ref: "#/components/schemas/GraphQLSchema"
       tags:
         - GraphQL
   /admin-api/credentials/{token}/plans:
@@ -5107,9 +4615,9 @@ paths:
           required: true
           description: integration token
       responses:
-        '200':
+        "200":
           description: success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OtoroshiApiKey'
+                $ref: "#/components/schemas/OtoroshiApiKey"

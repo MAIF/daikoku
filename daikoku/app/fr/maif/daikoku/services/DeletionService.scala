@@ -26,15 +26,7 @@ class DeletionService(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  private val systemUser = User(
-    id = UserId("daikoku-system"),
-    tenants = Set.empty,
-    origins = Set.empty,
-    name = "Daikoku",
-    email = "system@daikoku.io",
-    lastTenant = None,
-    defaultLanguage = None
-  )
+  private val systemUser = User.system
 
   /** Delete logically a team Add an operation in deletion queue to process
     * complete deletion (delete user notifications & messages)

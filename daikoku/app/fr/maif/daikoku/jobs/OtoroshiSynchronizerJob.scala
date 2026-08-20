@@ -782,10 +782,12 @@ class OtoroshiSynchronizerJob(
 
         val clientId = keyring.apiKey.clientId
 
+        if (keyring.otoroshiSettings == KeyringOtoroshiBinding.Internal) {
+          skipped.incrementAndGet()
+          Future.successful(createdAt)
+        } else {
         (for {
           otoroshiSettings <- EitherT.fromOption[Future](
-            // keyring.otoroshiSettings is a KeyringOtoroshiBinding : unwrap it
-            // before matching the tenant's OtoroshiSettings by id
             keyring.otoroshiSettings match {
               case KeyringOtoroshiBinding.Otoroshi(id) =>
                 tenant.otoroshiSettings.find(_.id == id)
@@ -865,6 +867,7 @@ class OtoroshiSynchronizerJob(
               synced.incrementAndGet()
           }
           .map(_ => createdAt)
+        }
       }
       // Ce stage s'exécute dans le thread downstream ordonné de mapAsync :
       // lastCursor.set est donc toujours appelé dans l'ordre des souscriptions

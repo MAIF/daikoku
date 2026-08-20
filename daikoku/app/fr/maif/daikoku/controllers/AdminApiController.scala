@@ -9,9 +9,9 @@ import fr.maif.daikoku.controllers.authorizations.async.DaikokuAdminOnly
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.{DaikokuMode, Env}
+import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{CmsPage, DeletionService}
-import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
+import fr.maif.daikoku.services.*
 import fr.maif.daikoku.storage.{DataStore, Repo}
 import fr.maif.daikoku.utils.*
 import io.vertx.sqlclient.Pool
@@ -289,7 +289,8 @@ class StateAdminApiController(
 class TenantAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
-    cc: ControllerComponents
+    cc: ControllerComponents,
+    tenantService: TenantService
 ) extends AdminApiController[Tenant, TenantId](daa, env, cc) {
   override def entityClass = classOf[Tenant]
   override def entityName: String = "tenant"
@@ -326,13 +327,34 @@ class TenantAdminApiController(
     )
 
   override def getId(entity: Tenant): TenantId = entity.id
+
+  override def doCreate(
+      tenant: Tenant,
+      entity: Tenant
+  ): EitherT[Future, AppError, Tenant] =
+    tenantService.createTenant(entity)
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: Tenant,
+      newEntity: Tenant
+  ): EitherT[Future, AppError, Tenant] =
+    tenantService.updateTenant(oldEntity, newEntity, None)
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: Tenant,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    tenantService.deleteTenant(entity).map(_ => ())
 }
 
 class UserAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
     cc: ControllerComponents,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    userService: UserService
 ) extends AdminApiController[User, UserId](daa, env, cc) {
   override def entityClass = classOf[User]
   override def entityName: String = "user"
@@ -367,21 +389,40 @@ class UserAdminApiController(
 
   override def getId(entity: User): UserId = entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      deletionService
-        .deleteCompleteUserByQueue(id, ctx.tenant)
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
-    }
+  override def doCreate(
+      tenant: Tenant,
+      entity: User
+  ): EitherT[Future, AppError, User] =
+    userService.createUser(entity, hashPassword = false)
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: User,
+      newEntity: User
+  ): EitherT[Future, AppError, User] =
+    userService.updateUser(
+      tenant,
+      oldEntity,
+      newEntity,
+      elevatedRights = true,
+      hashPassword = false
+    )
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: User,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    deletionService
+      .deleteCompleteUserByQueue(entity.id.value, tenant)
 }
 
 class TeamAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
     cc: ControllerComponents,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    teamService: TeamService
 ) extends AdminApiController[Team, TeamId](daa, env, cc) {
   override def entityClass = classOf[Team]
 
@@ -425,21 +466,43 @@ class TeamAdminApiController(
 
   override def getId(entity: Team): TeamId = entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      deletionService
-        .deleteTeamByQueue(TeamId(id), ctx.tenant.id)
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
-    }
+  override def doCreate(
+      tenant: Tenant,
+      entity: Team
+  ): EitherT[Future, AppError, Team] = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+    teamService.createTeam(tenant, entity, None)
+  }
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: Team,
+      newEntity: Team
+  ): EitherT[Future, AppError, Team] = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+    teamService.updateTeam(
+      tenant,
+      User.system,
+      oldEntity,
+      newEntity,
+      elevatedRights = true
+    )
+  }
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: Team,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    teamService.deleteTeam(tenant, entity)
 }
 
 class ApiAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
     cc: ControllerComponents,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    apiCrudService: ApiCrudService
 ) extends AdminApiController[Api, ApiId](daa, env, cc) {
   override def entityClass = classOf[Api]
   override def entityName: String = "api"
@@ -577,20 +640,44 @@ class ApiAdminApiController(
 
   override def getId(entity: Api): ApiId = entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      deletionService
-        .deleteApiByQueue(ApiId(id), ctx.tenant.id)
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
+  override def doCreate(
+      tenant: Tenant,
+      entity: Api
+  ): EitherT[Future, AppError, Api] =
+    entity.parent match {
+      case Some(_) => super.doCreate(tenant, entity)
+      case None =>
+        for {
+          team <- EitherT.fromOptionF[Future, AppError, Team](
+            env.dataStore.teamRepo.forTenant(tenant).findById(entity.team),
+            AppError.TeamNotFound
+          )
+          created <- apiCrudService.createApi(tenant, team, entity)
+        } yield created
     }
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: Api,
+      newEntity: Api
+  ): EitherT[Future, AppError, Api] =
+    apiCrudService.updateApi(tenant, User.system, oldEntity, newEntity)
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: Api,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    apiCrudService.deleteApi(tenant, entity)
 }
 
 class ApiSubscriptionAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
-    cc: ControllerComponents
+    cc: ControllerComponents,
+    apiService: ApiService,
+    deletionService: DeletionService,
+    otoroshiSynchronisator: OtoroshiSynchronizerJob
 ) extends AdminApiController[ApiSubscription, ApiSubscriptionId](
       daa,
       env,
@@ -647,6 +734,100 @@ class ApiSubscriptionAdminApiController(
   }
 
   override def getId(entity: ApiSubscription): ApiSubscriptionId = entity.id
+
+  override def doCreate(
+      tenant: Tenant,
+      entity: ApiSubscription
+  ): EitherT[Future, AppError, ApiSubscription] =
+    for {
+      created <- super.doCreate(tenant, entity)
+      _ <- EitherT.liftF[Future, AppError, Unit](
+        otoroshiSynchronisator.run(created.id, tenant)
+      )
+    } yield created
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: ApiSubscription,
+      newEntity: ApiSubscription
+  ): EitherT[Future, AppError, ApiSubscription] = {
+    val structuralChange =
+      oldEntity.api != newEntity.api ||
+        oldEntity.plan != newEntity.plan ||
+        oldEntity.team != newEntity.team ||
+        oldEntity.keyring != newEntity.keyring ||
+        oldEntity.by != newEntity.by
+    val oldOwnerBlock =
+      oldEntity.blockedBy.contains(SubscriptionBlockReason.Owner)
+    val newOwnerBlock =
+      newEntity.blockedBy.contains(SubscriptionBlockReason.Owner)
+
+    for {
+      _ <- EitherT.cond[Future][AppError, Unit](
+        !structuralChange,
+        (),
+        AppError.EntityConflict("subscription structural field")
+      )
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(oldEntity.plan),
+        AppError.PlanNotFound
+      )
+      base = oldEntity.copy(
+        customName = newEntity.customName,
+        metadata = newEntity.metadata,
+        tags = newEntity.tags
+      )
+      customized <- apiService.updateSubscriptionCustomization(
+        tenant,
+        base,
+        newEntity
+      )
+      _ <-
+        if (newEntity.enabled != oldEntity.enabled)
+          EitherT(
+            apiService.archiveApiKey(
+              tenant,
+              customized,
+              plan,
+              enabled = newEntity.enabled
+            )
+          )
+        else EitherT.pure[Future, AppError](Json.obj())
+      _ <-
+        if (newOwnerBlock != oldOwnerBlock)
+          EitherT(
+            apiService.archiveApiKey(
+              tenant,
+              customized.copy(enabled = newEntity.enabled),
+              plan,
+              enabled = !newOwnerBlock,
+              byOwner = true
+            )
+          )
+        else EitherT.pure[Future, AppError](Json.obj())
+    } yield customized.copy(
+      enabled = newEntity.enabled,
+      blockedBy =
+        if (newOwnerBlock)
+          oldEntity.blockedBy + SubscriptionBlockReason.Owner
+        else oldEntity.blockedBy - SubscriptionBlockReason.Owner
+    )
+  }
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: ApiSubscription,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    for {
+      api <- EitherT.fromOptionF[Future, AppError, Api](
+        env.dataStore.apiRepo.forTenant(tenant).findById(entity.api),
+        AppError.ApiNotFound
+      )
+      _ <- deletionService.deleteSubscriptions(Seq(entity), api, tenant)
+    } yield ()
 }
 
 class ApiDocumentationPageAdminApiController(
@@ -677,7 +858,27 @@ class ApiDocumentationPageAdminApiController(
       entity: ApiDocumentationPage,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiDocumentationPage] =
-    EitherT.pure[Future, AppError](entity)
+    for {
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
+        env.dataStore.tenantRepo.findById(entity.tenant),
+        AppError.ParsingPayloadError("Tenant not found")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.title.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page title is empty")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.remoteContentEnabled || entity.content.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page content is empty")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        entity.contentType.trim.nonEmpty,
+        (),
+        AppError.ParsingPayloadError("Documentation page contentType is empty")
+      )
+    } yield entity
 
   override def getId(entity: ApiDocumentationPage): ApiDocumentationPageId =
     entity.id
@@ -1076,7 +1277,8 @@ class UsagePlansAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
     cc: ControllerComponents,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    usagePlanService: UsagePlanService
 ) extends AdminApiController[UsagePlan, UsagePlanId](daa, env, cc) {
   override def entityClass = classOf[UsagePlan]
   override def entityName: String = "usage-plan"
@@ -1126,26 +1328,114 @@ class UsagePlansAdminApiController(
 
   override def getId(entity: UsagePlan): UsagePlanId = entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      (for {
-        api <- EitherT.fromOptionF(
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj("possibleUsagePlans" -> Json.obj("$in" -> Json.arr(id)))
-            ),
-          AppError.ApiNotFound
+  private def findOwningApi(
+      tenant: Tenant,
+      planId: UsagePlanId
+  ): Future[Option[Api]] =
+    env.dataStore.apiRepo
+      .forTenant(tenant)
+      .findOneNotDeleted(
+        Json.obj(
+          "possibleUsagePlans" -> Json.obj("$in" -> Json.arr(planId.value))
         )
-        _ <- deletionService.deleteUsagePlanByQueue(
-          UsagePlanId(id),
-          api.id,
-          ctx.tenant.id
-        )
-      } yield Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
+      )
+
+  override def createEntity(): Action[JsValue] =
+    daa.async(parse.json) { ctx =>
+      fromJson(ctx.request.body) match {
+        case Left(e) =>
+          logger.error(s"Bad $entityName format", new RuntimeException(e))
+          Errors.craftResponseResultF(
+            s"Bad $entityName format",
+            Results.BadRequest
+          )
+        case Right(newEntity) =>
+          entityStore(ctx.tenant, env.dataStore)
+            .findByIdNotDeleted(newEntity.id.value)
+            .flatMap {
+              case Some(_) =>
+                AppError
+                  .EntityConflict("entity with same id already exists")
+                  .renderF()
+              case None =>
+                (for {
+                  validated <- validate(newEntity, UpdateOrCreate.Create)
+                  created <- ctx.request.getQueryString("apiId") match {
+                    case None => super.doCreate(ctx.tenant, validated)
+                    case Some(apiId) =>
+                      for {
+                        api <- EitherT.fromOptionF[Future, AppError, Api](
+                          env.dataStore.apiRepo
+                            .forTenant(ctx.tenant)
+                            .findByIdNotDeleted(apiId),
+                          AppError.ApiNotFound
+                        )
+                        team <- EitherT.fromOptionF[Future, AppError, Team](
+                          env.dataStore.teamRepo
+                            .forTenant(ctx.tenant)
+                            .findById(api.team),
+                          AppError.TeamNotFound
+                        )
+                        result <- usagePlanService.createPlan(
+                          ctx.tenant,
+                          team,
+                          api,
+                          validated
+                        )
+                      } yield result._2
+                  }
+                } yield {
+                  auditAdminApiWrite(ctx, "create", created.id.value)
+                  Created(toJson(created))
+                })
+                  .leftMap(_.render())
+                  .merge
+            }
+      }
     }
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: UsagePlan,
+      newEntity: UsagePlan
+  ): EitherT[Future, AppError, UsagePlan] =
+    EitherT
+      .liftF[Future, AppError, Option[Api]](
+        findOwningApi(tenant, oldEntity.id)
+      )
+      .flatMap {
+        case None => super.doUpdate(tenant, oldEntity, newEntity)
+        case Some(api) =>
+          implicit val language: String =
+            tenant.defaultLanguage.getOrElse("en")
+          for {
+            team <- EitherT.fromOptionF[Future, AppError, Team](
+              env.dataStore.teamRepo.forTenant(tenant).findById(api.team),
+              AppError.TeamNotFound
+            )
+            updated <- usagePlanService.updatePlan(
+              tenant,
+              User.system,
+              team,
+              api,
+              oldEntity,
+              newEntity
+            )
+          } yield updated
+      }
+
+  override def doDelete(
+      tenant: Tenant,
+      entity: UsagePlan,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    for {
+      api <- EitherT.fromOptionF[Future, AppError, Api](
+        findOwningApi(tenant, entity.id),
+        AppError.ApiNotFound
+      )
+      _ <- usagePlanService.deletePlan(tenant, api, entity)
+    } yield ()
 }
 
 class SubscriptionDemandsAdminApiController(
@@ -1205,14 +1495,14 @@ class SubscriptionDemandsAdminApiController(
   override def getId(entity: SubscriptionDemand): DemandId =
     entity.id
 
-  override def deleteEntity(id: String): Action[AnyContent] =
-    daa.async { ctx =>
-      deletionService
-        .cancelSubscriptionDemand(id, ctx.tenant)
-        .map(_ => Ok(Json.obj("done" -> true)))
-        .leftMap(_.render())
-        .merge
-    }
+  override def doDelete(
+      tenant: Tenant,
+      entity: SubscriptionDemand,
+      logically: Boolean
+  ): EitherT[Future, AppError, Unit] =
+    deletionService
+      .cancelSubscriptionDemand(entity.id.value, tenant)
+      .map(_ => ())
 }
 
 class AdminApiSwaggerController(
