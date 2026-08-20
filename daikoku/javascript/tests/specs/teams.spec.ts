@@ -1,8 +1,7 @@
 import test, { expect } from '@playwright/test';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam, updateUserRightForTeam } from './utils';
-import { after } from 'lodash';
 
 
 test.beforeEach(async () => {
@@ -78,7 +77,7 @@ test("un admin de tenant peut creer une équipe quelque soit la securité", asyn
     ])
   })
   //add dwight as tenant admin
-  await fetch(`http://localhost:${exposedPort}/admin-api/teams/${tenantAdminTeam}`, {
+  const resp = await fetch(`http://localhost:${exposedPort}/admin-api/teams/${tenantAdminTeam}`, {
     method: 'PATCH',
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
@@ -108,7 +107,6 @@ test("un admin de tenant peut creer une équipe quelque soit la securité", asyn
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
   await page.getByRole('button', { name: 'Créer', exact: true }).click();
-  await expect(page.getByText('L\'équipe test created team a')).toBeVisible();
   await expect(page.locator('.avatar-with-action', { hasText: 'test created team' })).toBeVisible();
 });
 

@@ -1,5 +1,5 @@
 import test, { expect } from '@playwright/test';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 import { JIM, MICHAEL, PAM } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
@@ -426,7 +426,7 @@ test('Voir ses notifications', async ({ page }) => {
 
 
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  
+
   await expect(page.getByText('58 notifications')).toBeVisible();
   // await expect(page.getByLabel('notifications', { exact: true })).toContainText('58');
   await expect(page.getByRole('article')).toHaveCount(25);
@@ -476,15 +476,17 @@ test('Voir ses notifications', async ({ page }) => {
 
 
 test('Notification Count différencie les notifications à valider et a consulter', async ({ page }) => {
-  const senderCommande = {sender: JIM, api: apiCommande, subscription: subCommandeProdLogistique}
+  const senderCommande = { sender: JIM, api: apiCommande, subscription: subCommandeProdLogistique }
   const notifs: Array<NotifProps> = [
-    { ...senderCommande, 
-      type: "ApiAccess", 
-      fromTeam: logistique , 
+    {
+      ...senderCommande,
+      type: "ApiAccess",
+      fromTeam: logistique,
       team: apiDivision
     },
-    { ...senderCommande, 
-      type: "TransferApiOwnership", 
+    {
+      ...senderCommande,
+      type: "TransferApiOwnership",
       team: apiDivision
     },
     { type: "ApiKeyDeletionInformation", sender: JIM, api: 'API Commande', clientId: "apikey 1", team: apiDivision },
@@ -508,9 +510,9 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await loginAs(MICHAEL, page)
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  expect(page.getByRole('button', { name: 'Demandes à valider 3'})).toBeVisible
+  expect(page.getByRole('button', { name: 'Demandes à valider 3' })).toBeVisible
   await page.getByRole('button', { name: 'Demandes à valider' }).click();
-  
+
   const parsedUrl = new URL(page.url());
   const params = parsedUrl.searchParams;
   const filter = JSON.parse(params.get('filter')!);

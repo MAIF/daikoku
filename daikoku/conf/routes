@@ -408,6 +408,7 @@ GET     /admin-api/pages                                fr.maif.daikoku.controll
 DELETE  /admin-api/notifications/:id                    fr.maif.daikoku.controllers.NotificationAdminApiController.deleteEntity(id)
 GET     /admin-api/notifications/:id                    fr.maif.daikoku.controllers.NotificationAdminApiController.findById(id)
 GET     /admin-api/notifications                        fr.maif.daikoku.controllers.NotificationAdminApiController.findAll()
+POST    /admin-api/notifications                        fr.maif.daikoku.controllers.NotificationAdminApiController.createEntity()
 
 DELETE  /admin-api/sessions/:id                         fr.maif.daikoku.controllers.UserSessionAdminApiController.deleteEntity(id)
 GET     /admin-api/sessions/:id                         fr.maif.daikoku.controllers.UserSessionAdminApiController.findById(id)
