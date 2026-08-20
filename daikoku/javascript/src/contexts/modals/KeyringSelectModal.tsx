@@ -16,7 +16,7 @@ export interface IKeyringOption {
   keyringId: string;
   apiName: string;
   planName: string;
-  customName?: string | null;
+  keyringCustomName?: string | null;
   count: number;
   aggregated: boolean;
   subscription: ISubscription;
@@ -99,7 +99,7 @@ type KeyringsViewProps = {
 const KeyringsView = (props: KeyringsViewProps) => {
   const { translate } = useContext(I18nContext);
   const keyrings = [...props.keyrings].sort((a, b) =>
-    (a.customName ?? a.planName).localeCompare(b.customName ?? b.planName)
+    (a.keyringCustomName || a.planName).localeCompare(b.keyringCustomName || b.planName)
   );
   return (
     <div>
@@ -117,9 +117,9 @@ const KeyringsView = (props: KeyringsViewProps) => {
             <div className="d-flex align-items-center gap-3">
               <KeyRound />
               <div className="d-flex flex-column">
-                <strong>{keyring.customName ?? keyring.planName}</strong>
+                <strong>{keyring.keyringCustomName || keyring.planName}</strong>
                 <small className="text-muted">
-                  {keyring.apiName}{keyring.customName ? '' : ` · ${keyring.planName}`}
+                  {keyring.apiName}{keyring.keyringCustomName ? '' : ` · ${keyring.planName}`}
                 </small>
                 {keyring.aggregated && (
                   <span className="badge --primary align-self-start mt-1">

@@ -135,6 +135,7 @@ class UserControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(
@@ -476,6 +477,7 @@ class UserControllerSpec()
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val personalSubscription = ApiSubscription(

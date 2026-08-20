@@ -75,7 +75,15 @@ class NotificationController(
                 )
               )
             )
-          } yield Ok(Json.obj("count" -> youHaveUnreadNotifications.size))
+            toValidateNotifications = youHaveUnreadNotifications.filter(notif =>
+              notif.notificationType == NotificationType.AcceptOrReject
+            )
+          } yield Ok(
+            Json.obj(
+              "count" -> youHaveUnreadNotifications.size,
+              "toValidateCount" -> toValidateNotifications.size
+            )
+          )
       }
     }
 
@@ -787,7 +795,6 @@ class NotificationController(
           ),
         AppError.EntityNotFound("Subscription demand")
       )
-
       upgradedDemand: SubscriptionDemand = demand.copy(
         customReadOnly =
           ctx.request.body.getBodyField[Boolean]("customReadOnly"),

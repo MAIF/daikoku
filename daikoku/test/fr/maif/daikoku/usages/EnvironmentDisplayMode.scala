@@ -1,7 +1,14 @@
 package fr.maif.daikoku.usages
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain.{IntegrationProcess, SubscriptionProcess, Tenant, TenantDisplay, UsagePlan, UsagePlanId}
+import fr.maif.daikoku.domain.{
+  IntegrationProcess,
+  SubscriptionProcess,
+  Tenant,
+  TenantDisplay,
+  UsagePlan,
+  UsagePlanId
+}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience

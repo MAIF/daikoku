@@ -124,8 +124,7 @@ object json {
             clientSecret = (json \ "clientSecret")
               .asOpt[String]
               .getOrElse("admin-api-apikey-secret"),
-            elasticConfig =
-              (json \ "elasticConfig").asOpt(using
+            elasticConfig = (json \ "elasticConfig").asOpt(using
               ElasticAnalyticsConfig.format
             )
           )
@@ -1227,7 +1226,7 @@ object json {
       Try {
         JsSuccess(
           CustomMetadata(
-            key = (json \ "key").as[String],
+            key = (json \ "key").as[String].replace(".", ""),
             possibleValues = (json \ "possibleValues")
               .asOpt[Seq[String]]
               .map(_.toSet)
@@ -1393,8 +1392,7 @@ object json {
           OtoroshiTarget(
             otoroshiSettings =
               (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
-            authorizedEntities =
-              (json \ "authorizedEntities").asOpt(using
+            authorizedEntities = (json \ "authorizedEntities").asOpt(using
               AuthorizedEntitiesFormat
             ),
             apikeyCustomization = (json \ "apikeyCustomization")
@@ -1639,8 +1637,7 @@ object json {
             ApiDocumentationDetailPage(
               id = (json \ "id").as(using ApiDocumentationPageIdFormat),
               title = (json \ "title").as[String],
-              children =
-                (json \ "children").as(using
+              children = (json \ "children").as(using
                 SeqApiDocumentationDetailPageFormat
               )
             )
@@ -2081,8 +2078,7 @@ object json {
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
-            starredApis =
-              (json \ "starredApis")
+            starredApis = (json \ "starredApis")
               .asOpt(using SetApiIdFormat)
               .getOrElse(Set.empty),
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
@@ -2216,8 +2212,7 @@ object json {
         Try {
           JsSuccess(
             TeamAuthorizedEntities(
-              otoroshiSettingsId =
-                (json \ "otoroshiSettingsId").as(using
+              otoroshiSettingsId = (json \ "otoroshiSettingsId").as(using
                 OtoroshiSettingsIdFormat
               ),
               authorizedEntities =
@@ -2579,7 +2574,11 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            customName = (json \ "customName").asOpt[String],
+            customName = (json \ "customName")
+              .asOpt[String]
+              .getOrElse(
+                ""
+              ),
             apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
             otoroshiSettings = (json \ "otoroshiSettings").as(using
               KeyringOtoroshiBindingFormat
@@ -2617,10 +2616,7 @@ object json {
         "_tenant" -> o.tenant.asJson,
         "team" -> TeamIdFormat.writes(o.team),
         "_deleted" -> o.deleted,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "customName" -> o.customName,
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(
           o.otoroshiSettings
@@ -2702,10 +2698,10 @@ object json {
   val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
     override def reads(json: JsValue) =
       json.asOpt[String] match {
-        case None => JsSuccess(ApiSubscriptionState.Active)
+        case None            => JsSuccess(ApiSubscriptionState.Active)
         case Some("blocked") => JsSuccess(ApiSubscriptionState.Blocked)
         case Some("active")  => JsSuccess(ApiSubscriptionState.Active)
-        case Some(str)          => JsError(s"Bad ApiSubscriptionState value: $str")
+        case Some(str)       => JsError(s"Bad ApiSubscriptionState value: $str")
       }
 
     override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)
@@ -2754,6 +2750,10 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
+        "keyringCustomName" -> o.keyringCustomName
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "customName" -> o.customName
           .map(JsString.apply)
           .getOrElse(JsNull)
@@ -2782,6 +2782,7 @@ object json {
               .asOpt[String]
               .map(m => Json.obj("motivation" -> m))
               .orElse((json \ "motivation").asOpt[JsObject]),
+            keyringCustomName = (json \ "keyringCustomName").asOpt[String],
             keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
@@ -2845,8 +2846,7 @@ object json {
             deleted = (json \ "_deleted").as[Boolean],
             token = (json \ "token").as[String],
             step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            subscriptionDemand =
-              (json \ "subscriptionDemand").as(using
+            subscriptionDemand = (json \ "subscriptionDemand").as(using
               SubscriptionDemandIdFormat
             ),
             metadata = (json \ "metadata").as[JsObject]
@@ -3944,8 +3944,7 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(using TeamIdFormat),
             sender = (json \ "sender").as(using NotificationSenderFormat),
-            date =
-              (json \ "date")
+            date = (json \ "date")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
             status = (json \ "status").as(using NotificationStatusFormat),
@@ -4643,14 +4642,14 @@ object json {
                 (json \ "apiSubscription").as(using ApiSubscriptionFormat),
               keyring = (json \ "keyring").asOpt(using KeyringFormat),
               accessibleResources = (json \ "accessibleResources").as(using
-              SeqApiSubscriptionAccessibleResourceFormat
+                SeqApiSubscriptionAccessibleResourceFormat
+              )
             )
           )
-        )
-      } recover { case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      } get
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        } get
 
       override def writes(o: ApiSubscriptionDetail): JsValue =
         Json.obj(
@@ -5111,8 +5110,7 @@ object json {
           plans = (json \ "plans").as(using SeqUsagePlanFormat),
           authorizations =
             (json \ "authorizations").as(using SeqAuthorizationApiFormat),
-          subscriptionDemands =
-            (json \ "subscriptionDemands").as(using
+          subscriptionDemands = (json \ "subscriptionDemands").as(using
             SeqSubscriptionDemandFormat
           ),
           subscriptionCount = (json \ "subscriptionCount").as[Int],
@@ -5279,7 +5277,8 @@ object json {
     override def reads(json: JsValue): JsResult[DaikokuFlags] =
       Try {
         DaikokuFlags(
-          multiPlanSubscriptionEnabled = (json \ "multiPlanSubscriptionEnabled").as[Boolean]
+          multiPlanSubscriptionEnabled =
+            (json \ "multiPlanSubscriptionEnabled").as[Boolean]
         )
       } match {
         case Failure(e) =>

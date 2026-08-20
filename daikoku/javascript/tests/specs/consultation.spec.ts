@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
-import { JIM, MICHAEL } from './users';
+import { JIM, MICHAEL, PAM } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
 
@@ -472,4 +472,60 @@ test('Voir ses notifications', async ({ page }) => {
   await page.getByRole('button', { name: 'À traiter' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
   await expect(page.locator('article')).toHaveCount(2)
+});
+
+
+test('Notification Count différencie les notifications à valider et a consulter', async ({ page }) => {
+  const senderCommande = {sender: JIM, api: apiCommande, subscription: subCommandeProdLogistique}
+  const notifs: Array<NotifProps> = [
+    { ...senderCommande, 
+      type: "ApiAccess", 
+      fromTeam: logistique , 
+      team: apiDivision
+    },
+    { ...senderCommande, 
+      type: "TransferApiOwnership", 
+      team: apiDivision
+    },
+    { type: "ApiKeyDeletionInformation", sender: JIM, api: 'API Commande', clientId: "apikey 1", team: apiDivision },
+    { type: "ApiKeyDeletionInformation", sender: JIM, api: 'API Commande', clientId: "apikey 2", team: apiDivision },
+    { type: "ApiKeyRefresh", sender: JIM, api: 'API Commande', plan: 'dev', team: apiDivision, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: JIM, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+  ]
+
+  await Promise.all(notifs.map(n => postNewNotif(n)))
+  await page.goto(ACCUEIL);
+  await loginAs(PAM, page)
+  await page.getByRole('link', { name: 'API Commande' }).click();
+  await page.getByText('Environnements').click();
+  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  await page.getByText('Pam Beesly').click();
+  await page.getByRole('button', { name: 'Suivant' }).click();
+  await page.getByRole('textbox', { name: 'motivation' }).fill('motivation');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('button', { name: 'Close toast' }).click();
+  await page.getByRole('button', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await loginAs(MICHAEL, page)
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  expect(page.getByRole('button', { name: 'Demandes à valider 3'})).toBeVisible
+  await page.getByRole('button', { name: 'Demandes à valider' }).click();
+  
+  const parsedUrl = new URL(page.url());
+  const params = parsedUrl.searchParams;
+  const filter = JSON.parse(params.get('filter')!);
+  const typeFilter = filter.find((f) => f.id === 'type');
+  expect(typeFilter.value).toEqual(
+    expect.arrayContaining([
+      'ApiSubscription',
+      'ApiAccess',
+      'CheckoutForSubscription',
+      'TransferApiOwnership',
+      'ApiSubscriptionDemand',
+    ])
+  );
+  expect(page.getByText('3 notifications (sur 6)')).toBeVisible
+  await page.getByRole('button', { name: 'À traiter' }).click();
+  await page.getByRole('button', { name: 'Clear selection' }).click();
+  expect(page.getByText('6 notifications')).toBeVisible
 });

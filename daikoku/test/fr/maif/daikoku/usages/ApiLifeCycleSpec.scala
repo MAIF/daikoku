@@ -192,6 +192,7 @@ class ApiLifeCycleSpec
             otoroshiSettings =
               KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
             createdAt = DateTime.now(),
+            customName = "teamConsumer-apiName-planName-firstKeyring",
             integrationToken = "test 1"
           ),
           Keyring(
@@ -202,6 +203,7 @@ class ApiLifeCycleSpec
             otoroshiSettings =
               KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
             createdAt = DateTime.now(),
+            customName = "teamConsumer-apiName-planName-firstKeyring",
             integrationToken = "test 2"
           ),
           Keyring(
@@ -212,6 +214,7 @@ class ApiLifeCycleSpec
             otoroshiSettings =
               KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
             createdAt = DateTime.now(),
+            customName = "teamConsumer-apiName-planName-firstKeyring",
             integrationToken = "test 3"
           )
         ),
@@ -345,6 +348,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-lifecycle"
       )
       val subParent = ApiSubscription(
@@ -519,6 +523,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-lifecycle"
       )
       val subParent = ApiSubscription(
@@ -826,6 +831,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-auth"
       )
       val sub = ApiSubscription(
@@ -915,6 +921,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-precedence"
       )
       val sub = ApiSubscription(
@@ -1034,6 +1041,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-shared"
       )
       val subA = ApiSubscription(
@@ -1159,6 +1167,7 @@ class ApiLifeCycleSpec
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-draft"
       )
       val sub = ApiSubscription(
@@ -1206,7 +1215,8 @@ class ApiLifeCycleSpec
         body = Some(apiWithSub.copy(state = ApiState.Created).asJson)
       )(using tenant, adminSession)
       respRefused.status mustBe 409
-      (respRefused.json \ "error").as[String] mustBe "Conflict with api subscriptions"
+      (respRefused.json \ "error")
+        .as[String] mustBe "Conflict with api subscriptions"
 
       // Without subscription: moving to draft is allowed.
       val respAllowed = httpJsonCallBlocking(
@@ -1216,7 +1226,9 @@ class ApiLifeCycleSpec
         body = Some(apiWithoutSub.copy(state = ApiState.Created).asJson)
       )(using tenant, adminSession)
       respAllowed.status mustBe 200
-      (respAllowed.json \ "state").as(using json.ApiStateFormat) mustBe ApiState.Created
+      (respAllowed.json \ "state").as(using
+        json.ApiStateFormat
+      ) mustBe ApiState.Created
     }
 
     def changingAPIState(

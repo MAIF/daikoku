@@ -32,6 +32,7 @@ import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
+import {toast} from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -323,10 +324,18 @@ export const NotificationList = () => {
                       .then(demand => {
                         if (!isError(demand)) {
                           openSubMetadataModal({
-                            save: (sub) => accept(notification._id, sub),
+                            save: (sub) => accept(notification._id, sub)
+                              .then((res) => {
+                                toast.success(
+                                  translate({ key: "notif.subscription.accepted", replacements:[
+                                      _plan.customName, _api.name, _team.name
+                                  ]
+                                  })
+                                )
+                              }),
                             api: _api._id,
-                            plan: _plan._id,
-                            team: _team,
+                            plan: _api._id,
+                            team: _api,
                             subscriptionDemand: demand,
                             creationMode: true,
                           })
@@ -463,27 +472,27 @@ export const NotificationList = () => {
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <FeedbackButton
-                  className="btn --tertiary --small --icon-only"
-                  title={translate('Accept')}
-                  aria-label={translate('Accept')}
-                  onPress={() => accept(notification._id)}
-                >
-                  <Check />
-                </FeedbackButton>
-              )}
-              {notification.notificationType.value === 'AcceptOrReject' && notification.status.status === 'Pending' && (
-                <FeedbackButton
-                  className="btn --tertiary --small --icon-only"
-                  onPress={() => reject(notification._id)}
-                  onSuccess={() => { }} feedbackTimeout={100} disabled={false}
-                  // title={translate('Reject')}
-                  aria-label={translate('Reject')}
-                  title={translate('Reject')}
-                // onClick={() => reject(notification._id)}
-                >
-                  <Ban />
-                </FeedbackButton>
+                <>
+                  <FeedbackButton
+                    className="btn --tertiary --small --icon-only"
+                    title={translate('Accept')}
+                    aria-label={translate('Accept')}
+                    onPress={() => accept(notification._id)}
+                  >
+                    <Check />
+                  </FeedbackButton>
+                  <FeedbackButton
+                    className="btn --tertiary --small --icon-only"
+                    onPress={() => reject(notification._id)}
+                    onSuccess={() => { }} feedbackTimeout={100} disabled={false}
+                    // title={translate('Reject')}
+                    aria-label={translate('Reject')}
+                    title={translate('Reject')}
+                    // onClick={() => reject(notification._id)}
+                  >
+                    <Ban />
+                  </FeedbackButton>
+                </>
               )}
               {notification.notificationType.value === 'AcceptOrReject' && notification.status.status !== 'Pending' && statusFormatter(notification.status)}
             </div>

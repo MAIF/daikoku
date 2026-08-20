@@ -736,13 +736,13 @@ object SchemaDefinition {
       )
     )
 
-    lazy val BillingTimeUnitInterfaceType = InterfaceType(
+    // a plain value enum, exposed as such: this matches both the REST
+    // serialization (BillingTimeUnit.asJson is a JsString) and the frontend
+    // IBillingDuration type, where unit is a string
+    lazy val BillingTimeUnitEnumType = EnumType(
       "BillingTimeUnit",
-      "Interface of billing Time : hour, day, month or year",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), BillingTimeUnit](
-          Field("name", StringType, resolve = _.value.name)
-        )
+      Some("Unit of a billing duration : hour, day, month or year"),
+      BillingTimeUnit.values.map(unit => EnumValue(unit.name, value = unit)).toList
     )
 
     lazy val BillingDurationType = deriveObjectType[
@@ -752,7 +752,7 @@ object SchemaDefinition {
       ObjectTypeDescription("A possible value of billing duration"),
       ReplaceField(
         "unit",
-        Field("unit", BillingTimeUnitInterfaceType, resolve = _.value.unit)
+        Field("unit", BillingTimeUnitEnumType, resolve = _.value.unit)
       )
     )
 
@@ -1147,6 +1147,11 @@ object SchemaDefinition {
             "costPerMonth",
             OptionType(BigDecimalType),
             resolve = _.value.costPerMonth
+          ),
+          Field(
+            "costPerRequest",
+            OptionType(BigDecimalType),
+            resolve = _.value.costPerRequest
           ),
           Field(
             "maxPerSecond",
@@ -1654,7 +1659,7 @@ object SchemaDefinition {
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
-            OptionType(StringType),
+            StringType,
             resolve = _.value.customName
           ),
           Field(
@@ -3970,9 +3975,9 @@ object SchemaDefinition {
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
 
-    val TO                                                                               = Argument("to", OptionInputType(LongType), description = "Date to")
-    val VERSION                                                                          = Argument("version", StringType, description = "a version")
-    val API_IDS                                                                          = Argument(
+    val TO = Argument("to", OptionInputType(LongType), description = "Date to")
+    val VERSION = Argument("version", StringType, description = "a version")
+    val API_IDS = Argument(
       "apiIds",
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
@@ -3992,7 +3997,8 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A cms filter about path of page"
     )
-    def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "myTeams",
@@ -4666,7 +4672,7 @@ object SchemaDefinition {
               "$or" -> Json.arr(
                 Json
                   .obj(
-                    "_id"         -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                    "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                   ),
                 Json.obj(
                   "_humanReadableId" -> Json
@@ -4679,7 +4685,7 @@ object SchemaDefinition {
             Json.obj(
               "$or" -> Json.arr(
                 Json.obj(
-                  "_id"              -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
+                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
                 ),
                 Json.obj(
                   "_humanReadableId" -> Json

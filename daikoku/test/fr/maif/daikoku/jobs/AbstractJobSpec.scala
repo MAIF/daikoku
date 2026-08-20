@@ -17,8 +17,8 @@ import scala.concurrent.{Await, Future, Promise}
 /** Coordination coverage for [[AbstractJob]] driven through a programmable fake
   * job, DB-only (no Otoroshi needed). What is proven here is the behaviour the
   * base gives every job for free: the single-instance claim, the run state
-  * machine (skip / resume / interval gate) and the Completed / PartiallyCompleted
-  * / Failed reporting.
+  * machine (skip / resume / interval gate) and the Completed /
+  * PartiallyCompleted / Failed reporting.
   */
 class AbstractJobSpec
     extends PlaySpec
@@ -193,7 +193,9 @@ class AbstractJobSpec
 
     "mark the job as Failed and keep the persisted cursor when the work throws" in {
       val job = new TestJob((_, saveCursor) =>
-        saveCursor(42L).flatMap(_ => Future.failed(new RuntimeException("boom")))
+        saveCursor(42L).flatMap(_ =>
+          Future.failed(new RuntimeException("boom"))
+        )
       )
 
       outcomeName(runNow(job, Runner.Scheduler)) mustBe "failed"
@@ -263,9 +265,7 @@ class AbstractJobSpec
       // the winner blocks in process until the gate opens, so the other run
       // necessarily observes it as running and steps aside.
       val job = new TestJob((_, _) =>
-        gate.future.map(_ =>
-          JobRunResult(1, 1, Seq.empty, Some(0L))
-        )
+        gate.future.map(_ => JobRunResult(1, 1, Seq.empty, Some(0L)))
       )
 
       val a = job.run(tenant, Runner.Scheduler)
