@@ -245,6 +245,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -323,6 +324,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -434,6 +436,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(
@@ -693,6 +696,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         apiKey = OtoroshiApiKey("name", "id", "secret"),
         otoroshiSettings = KeyringOtoroshiBinding.Internal,
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub = ApiSubscription(

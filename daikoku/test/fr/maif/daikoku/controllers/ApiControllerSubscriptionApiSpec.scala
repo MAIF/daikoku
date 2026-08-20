@@ -396,6 +396,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val parentSub = ApiSubscription(
@@ -696,6 +697,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test-removal"
       )
       val payperUseSub = ApiSubscription(

@@ -45,6 +45,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       setupEnvBlocking(
@@ -158,6 +159,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "defaultAdminTeam-adminApi-dev-firstKeyring",
         integrationToken = "parent"
       )
 
@@ -229,6 +231,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "defaultAdminTeam-adminApi-dev-firstKeyring",
         integrationToken = "test"
       )
       val standaloneSub = ApiSubscription(
@@ -331,6 +334,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
       )
       val sub1 = ApiSubscription(
@@ -421,6 +425,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent"
       )
       setupEnvBlocking(
@@ -544,6 +549,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -693,6 +699,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -915,6 +922,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -1137,6 +1145,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -1359,6 +1368,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -1579,6 +1589,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(
@@ -1698,6 +1709,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "token"
       )
       val sub = ApiSubscription(
@@ -1835,6 +1847,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "parent_token"
       )
       val parentSub = ApiSubscription(

@@ -123,7 +123,7 @@ class TeamService(
           )
         )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         tenant.mailer
           .send(title, Seq(team.contact), value, tenant)
       )
@@ -145,11 +145,11 @@ class TeamService(
     }
 
     for {
-      _ <- EitherT.cond[Future][AppError, Unit](
-        oldTeam.`type` != TeamType.Admin,
-        (),
-        AppError.ForbiddenAction
-      )
+//      _ <- EitherT.cond[Future][AppError, Unit](
+//        oldTeam.`type` != TeamType.Admin,
+//        (),
+//        AppError.ForbiddenAction
+//      )
       _ <- EitherT.cond[Future][AppError, Unit](
         !(oldTeam.`type` == TeamType.Personal && personalTeamIsKO),
         (),

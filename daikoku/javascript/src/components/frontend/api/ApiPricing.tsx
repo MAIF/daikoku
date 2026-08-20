@@ -1,19 +1,22 @@
 import { constraints, Flow, Form, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
 import classNames from 'classnames';
+import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
+import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, EllipsisVertical, Trash2, Pencil, CopyPlus, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
-import { GraphQLClient } from 'graphql-request';
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
+import { SubscriptionReturn } from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
   ApiPricingProps,
@@ -34,6 +37,7 @@ import {
   OtoroshiEntity
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
+import { DynamicTable, FetchData, FetchResult } from "../../inputs";
 import {
   access,
   api as API,
@@ -45,15 +49,9 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing,
-  Spinner
+  renderPricing
 } from '../../utils';
 import { CmsViewerByPath } from "../CmsViewer";
-import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
-import { DynamicTable, FetchData, FetchResult } from "../../inputs";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { SubscriptionReturn } from '../../../services';
 
 type Option = {
   type: 'group' | 'route';
@@ -173,7 +171,7 @@ export const OtoroshiEntitiesSelector = ({
         });
     }
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
-  }, [rawValues.otoroshiSettings]);
+  }, [rawValues.otoroshiSettings, rawValues, ownerTeam._id]);
 
   useEffect(() => {
     if (groups && services && routes) {
@@ -352,8 +350,8 @@ const CustomMetadataInput = (props: {
 
   const changeValue = (possibleValues: any, key: string) => {
     const newValues = props.value?.map(v => {
-      if(v.key === key) {
-        return {...v, possibleValues}
+      if (v.key === key) {
+        return { ...v, possibleValues }
       } else {
         return v;
       }
@@ -366,9 +364,11 @@ const CustomMetadataInput = (props: {
     oldName: string
   ) => {
     if (e && e.preventDefault) e.preventDefault();
+    // const sanitizedValue = e.target.value.replace(/\./g, '');
+    const sanitizedValue = e.target.value;
     const newValues = props.value?.map(v => {
-      if(v.key === oldName) {
-        return {...v, key: e.target.value}
+      if (v.key === oldName) {
+        return { ...v, key: sanitizedValue }
       } else {
         return v;
       }
@@ -442,7 +442,7 @@ const CustomMetadataInput = (props: {
             />
             <button
               type="button"
-              className="input-group-text btn btn-outline-danger"
+              className="ms-1 btn --secondary --small --icon-only"
               onClick={(e) => remove(e, key)}
             >
               <Trash2 />
@@ -548,7 +548,12 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
 
-  const [billingDisplayed, setBillingDisplayed] = useState(!!props.plan.costPerMonth || !!props.plan.costPerRequest)
+  const hasPricing = props.plan.costPerMonth != null || props.plan.costPerRequest != null;
+  const isPaymentDefined = props.plan.costPerMonth != null
+    && props.plan.billingDuration != null
+    && props.plan.currency != null;
+
+  const [billingDisplayed, setBillingDisplayed] = useState(hasPricing)
 
   const billingSchema = ({
     paymentSettings: {
@@ -584,7 +589,17 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
           `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
         ),
       placeholder: translate('Cost per billing period'),
-      constraints: [constraints.positive(translate('constraints.positive'))],
+      constraints: [
+        constraints.positive(translate('constraints.positive')),
+        // costPerRequest is a surcharge on top of costPerMonth, never a pricing
+        // on its own: the backend rejects such a plan and the billing job would
+        // bill it 0
+        constraints.when(
+          'costPerRequest',
+          (costPerRequest) => costPerRequest !== undefined && costPerRequest !== null,
+          [constraints.required(translate('constraints.required.cost.per.period'))]
+        ),
+      ],
     },
     costPerRequest: {
       type: type.number,
@@ -701,7 +716,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     <>
       <ToggleFormPartButton
         value={billingDisplayed}
-        disabledTrue={true}
+        // disabledTrue={true}
         action={(value) => setBillingDisplayed(value)}
         falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
         falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
@@ -717,6 +732,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
           <button className='mrf-btn mrf-btn_green mrf-ml_10'
             type='button'
+            disabled={!isPaymentDefined}
             onClick={() => props.savePlan({
               ...props.plan,
               costPerMonth: undefined,
@@ -761,8 +777,9 @@ const SimpleTeamSelector = (props: {
                   };
               }}
             >
-              {disabledFor.map((cause) =>
+              {disabledFor.map((cause, idx) =>
                 <button
+                  key={idx}
                   type="button"
                   className="btn btn-sm btn-outline-primary disabled"
                 >
@@ -888,6 +905,10 @@ function hasProcess(plan: IUsagePlanGQL) {
   return plan.subscriptionProcess.length > 0
 }
 
+// form field holding the name of the keyring to create for a given plan, in the
+// multi-plan request form (which mixes one keyring-select + one name per plan).
+const keyringNameField = (planId: string) => `${planId}__keyringName`;
+
 export const ApiPricing = (props: ApiPricingProps) => {
   const {
     openLoginOrRegisterModal,
@@ -910,7 +931,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
     // We don't allow multi subscrption for paying plans for now, since it would
     // be too complicated to pay for multiple plans at once
-    if(plan.paymentSettings) return false;
+    if (plan.paymentSettings) return false;
     if (selectedPlans.length === 0) return true;
 
 
@@ -1093,7 +1114,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   ]
 
-  const savePlan = (plan: IUsagePlan, creation: boolean = false) => {
+  const savePlan = (plan: IUsagePlan, creation: boolean = false): Promise<void> => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
@@ -1102,21 +1123,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
             replacements: [plan.customName]
           })))
           .then(closeRightPanel)
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
+          .then(() => Promise.all([
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+          ]))
+          .then(() => undefined)
       )
     } else {
       return (
         Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
           .then(() => toast.success(translate('update.plan.successful.toast.label')))
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
+          .then(() => Promise.all([
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+          ]))
           .then(closeRightPanel)
+          .then(() => undefined)
       )
     }
   }
 
   const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
-
-    // Convertier IUsagePlanGQL en IUsagePlan
+    // Convertire IUsagePlanGQL en IUsagePlan
     const planToUse = plan
     availableEnvQuery.refetch().then(({ data: availableEnvs = [] }) => {
       openRightPanel({
@@ -1181,60 +1209,87 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const otoroshiTargetColumn = (plan: IUsagePlanGQL) => {
+  const otoroshiTargetColumn = (plan: IUsagePlanGQL, apiName: string) => {
     const isAutomaticProcess = isSubscriptionProcessIsAutomatic(plan);
 
     const graphqlEndpoint = `${window.location.origin}/api/search`;
 
     const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
-  // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
+    // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
-  const showKeyringSelectModal = (team: string) => {
+    const showKeyringSelectModal = (teamId: string) => {
 
-    const askForApikeys = (
-      team: string,
-      plan: IUsagePlan,
-      apiKey?: ISubscription
-    ) => {
-      const formStep = plan.subscriptionProcess.find((s) =>
-        s.type === 'form'
-      );
-      if (formStep) {
-        openFormModal({
-          title: translate('motivations.modal.title'),
-          schema: formStep.schema,
-          onSubmit: (motivation) =>
-            props.askForApikeys({ team, plan, apiKey, motivation }),
-          actionLabel: translate('Send'),
-          value: apiKey?.customMetadata,
-          description: formStep.info ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>
-        });
-      } else {
-        props.askForApikeys({ team, plan: plan, apiKey }).then(() => close());
-      }
-    };
+      const askForApikeys = (
+        team: string,
+        plan: IUsagePlan,
+        apiKey?: ISubscription,
+      ) => {
+        const formStep = plan.subscriptionProcess.find((s) =>
+          s.type === 'form'
+        );
+        // joining an existing keyring: it keeps the name it already has, so
+        // there is nothing to ask and nothing to send.
+        const joinsExistingKeyring = !!apiKey;
 
-    type IUsagePlanGQL = {
-      _id: string;
-      customName: string;
-      otoroshiTarget: {
-        otoroshiSettings: string;
-        apikeyCustomization?: {
-          readOnly?: boolean;
+        const submit = (keyringCustomName?: string, motivation?: object) =>
+          props.askForApikeys({ team, plan, apiKey, keyringCustomName, motivation })
+            .then(() => close());
+
+        const openMotivationModal = (keyringCustomName?: string) => {
+          openFormModal({
+            title: translate('motivations.modal.title'),
+            schema: formStep!.schema,
+            actionLabel: translate('Send'),
+            value: apiKey?.customMetadata,
+            description: formStep!.info
+              ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep!.info }} />
+              : <></>,
+            onSubmit: (motivation) => submit(keyringCustomName, motivation)
+          });
         };
-      };
-      aggregationApiKeysSecurity: boolean;
-    };
-    type IApiGQL = {
-      _id: string;
-      _humanReadableId: string;
-      currentVersion: string;
-      name: string;
-      possibleUsagePlans: IUsagePlanGQL[];
-    };
 
-      Services.getAllTeamSubscriptions(team)
+        if (joinsExistingKeyring) {
+          return formStep ? openMotivationModal() : submit();
+        }
+
+        openFormModal<{ customName?: string }>({
+          title: translate('keyring_select_modal.title'),
+          schema: {
+            customName: {
+              type: type.string,
+              label: translate('keyring.custom.name.label'),
+              placeholder: `${apiName} - ${plan.customName}`,
+            },
+          },
+          actionLabel: translate(formStep ? 'Next' : 'Send'),
+          // the next modal replaces this one ; closing here would wipe it
+          noClose: !!formStep,
+          onSubmit: ({ customName }) =>
+            formStep ? openMotivationModal(customName) : submit(customName),
+        });
+      };
+
+      type IUsagePlanGQL = {
+        _id: string;
+        customName: string;
+        otoroshiTarget: {
+          otoroshiSettings: string;
+          apikeyCustomization?: {
+            readOnly?: boolean;
+          };
+        };
+        aggregationApiKeysSecurity: boolean;
+      };
+      type IApiGQL = {
+        _id: string;
+        _humanReadableId: string;
+        currentVersion: string;
+        name: string;
+        possibleUsagePlans: IUsagePlanGQL[];
+      };
+
+      Services.getAllTeamSubscriptions(teamId)
         .then((subscriptions) =>
           customGraphQLClient.request<{ apis: Array<IApiGQL> }>(Services.graphql.apisByIdsWithPlans,
             { ids: [...new Set(subscriptions.map((s) => s.api))] },
@@ -1246,7 +1301,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             apis,
             subscriptions,
           }) => {
-            const int = subscriptions.map((subscription) => {
+            const subscription = subscriptions.map((subscription) => {
               const api = apis.find((a) => a._id === subscription.api);
               const plan = Option(api?.possibleUsagePlans)
                 .flatMap((plans) =>
@@ -1256,144 +1311,145 @@ export const ApiPricing = (props: ApiPricingProps) => {
               return { subscription, api, plan };
             });
 
-          // group every candidate subscription by its keyring : a keyring can
-          // be joined only if ALL its members are compatible with the joining
-          // plan (mirror of backend controlSubscriptionExtension)
-          const byKeyring = new Map<string, typeof int>();
-          for (const i of int) {
-            const id = i.subscription.keyring?._id;
-            if (!i.plan || !id) continue;
-            if (!byKeyring.has(id)) byKeyring.set(id, []);
-            byKeyring.get(id)!.push(i);
-          }
+            // group every candidate subscription by its keyring : a keyring can
+            // be joined only if ALL its members are compatible with the joining
+            // plan (mirror of backend controlSubscriptionExtension)
+            const byKeyring = new Map<string, typeof subscription>();
+            for (const subApiPlan of subscription) {
+              const id = subApiPlan.subscription.keyring?._id;
+              if (!subApiPlan.plan || !id) continue;
+              if (!byKeyring.has(id)) byKeyring.set(id, []);
+              byKeyring.get(id)!.push(subApiPlan);
+            }
 
-          const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
-          const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
-          const envSecurity = tenant.environmentAggregationApiKeysSecurity;
-          const effectiveReadOnly = (i: (typeof int)[number]) =>
-            i.subscription.customReadOnly ??
-            !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+            const joiningOtoroshi = plan?.otoroshiTarget?.otoroshiSettings;
+            const joiningReadOnly = !!plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
+            const envSecurity = tenant.environmentAggregationApiKeysSecurity;
+            const effectiveReadOnly = (i: (typeof subscription)[number]) =>
+              i.subscription.customReadOnly ??
+              !!i.plan?.otoroshiTarget?.apikeyCustomization?.readOnly;
 
-          const keyrings = [...byKeyring.entries()]
-            .filter(([, members]) =>
-              members.every(
-                (m) =>
-                  // same Otoroshi instance
-                  m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
-                  // environment aggregation security : same plan name
-                  (!envSecurity || m.subscription.planName === plan.customName) &&
-                  // uniform readOnly across the keyring
-                  effectiveReadOnly(m) === joiningReadOnly
+            const keyrings = [...byKeyring.entries()]
+              .filter(([, members]) =>
+                members.every(
+                  (m) =>
+                    // same Otoroshi instance
+                    m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
+                    // environment aggregation security : same plan name
+                    (!envSecurity || m.subscription.planName === plan.customName) &&
+                    // uniform readOnly across the keyring
+                    effectiveReadOnly(m) === joiningReadOnly
+                )
               )
-            )
-            .map(([id, members]) => {
-              const rep = members[0].subscription;
-              return {
-                keyringId: id,
-                apiName: rep.apiName,
-                planName: rep.planName,
-                customName: rep.customName,
-                count: members.length,
-                aggregated: members.length > 1,
-                subscription: rep,
-              };
-            });
+              .map(([id, members]) => {
+                const rep = members[0].subscription;
+                return {
+                  keyringId: id,
+                  apiName: rep.apiName,
+                  planName: rep.planName,
+                  customName: rep.customName,
+                  keyringCustomName: rep.keyring?.customName,
+                  count: members.length,
+                  aggregated: members.length > 1,
+                  subscription: rep,
+                };
+              });
 
-          if (
-            !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-            keyrings.length <= 0
-          ) {
-            askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan));
-          } else {
-            openKeyringSelectModal({
-              plan,
-              keyrings,
-              onSubscribe: () => askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan)),
-              onSelectKeyring: (subscription: ISubscription) =>
-                askForApikeys(team, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
-            });
+            if (
+              !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
+              keyrings.length <= 0
+            ) {
+              askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan));
+            } else {
+              openKeyringSelectModal({
+                plan,
+                keyrings,
+                onSubscribe: () => askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan)),
+                onSelectKeyring: (subscription: ISubscription) =>
+                  askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan), subscription),
+              });
+            }
           }
-        }
-      );
-  };
+        );
+    };
 
-  const authorizedTeams = props.myTeams
-    .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
-    .filter(
-      (t) =>
-        props.api.visibility === 'Public' ||
-        props.api.authorizedTeams.includes(t._id) ||
-        t._id === props.ownerTeam._id
-    )
-    .filter(
-      (t) =>
-        plan.visibility === 'Public' ||
-        plan.authorizedTeams.map(team => team._id).includes(t._id) ||
-        t._id === props.ownerTeam._id
+    const authorizedTeams = props.myTeams
+      .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')
+      .filter(
+        (t) =>
+          props.api.visibility === 'Public' ||
+          props.api.authorizedTeams.includes(t._id) ||
+          t._id === props.ownerTeam._id
+      )
+      .filter(
+        (t) =>
+          plan.visibility === 'Public' ||
+          plan.authorizedTeams.map(team => team._id).includes(t._id) ||
+          t._id === props.ownerTeam._id
+      );
+
+    const allPossibleTeams = difference(
+      authorizedTeams.map((t) => t._id),
+      props.subscriptions
+        .filter((_) => !plan.allowMultipleKeys)
+        .filter((f) => !f._deleted)
+        .map((s) => s.team)
     );
 
-  const allPossibleTeams = difference(
-    authorizedTeams.map((t) => t._id),
-    props.subscriptions
-      .filter((_) => !plan.allowMultipleKeys)
-      .filter((f) => !f._deleted)
-      .map((s) => s.team)
-  );
+    const isAccepted = !allPossibleTeams.length;
 
-  const isAccepted = !allPossibleTeams.length;
+    const otoroshiTargetIsDefined =
+      !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
+    const otoroshiEntitiesIsDefined =
+      otoroshiTargetIsDefined &&
+      (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
+        !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
+        !!plan.otoroshiTarget?.authorizedEntities?.services.length);
 
-  const otoroshiTargetIsDefined =
-    !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
-  const otoroshiEntitiesIsDefined =
-    otoroshiTargetIsDefined &&
-    (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
-      !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
-      !!plan.otoroshiTarget?.authorizedEntities?.services.length);
+    const openTeamSelectorModal = () => {
+      const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
+        title: translate({
+          key: 'team.api.state.information.title',
+          replacements:
+            [props.api.name]
+        }),
+        message:
+          <div>
+            <CmsViewerByPath
+              path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
+              fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
+                fallBack={() => <div>{translate({
+                  key: 'team.api.state.information.message',
+                  replacements:
+                    [props.api.name,
+                    props.api.state]
+                })}</div>} />} />
+          </div>
+      }) : Promise.resolve(true)
 
-  const openTeamSelectorModal = () => {
-    const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
-      title: translate({
-        key: 'team.api.state.information.title',
-        replacements:
-          [props.api.name]
-      }),
-      message:
-        <div>
-          <CmsViewerByPath
-            path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
-            fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
-              fallBack={() => <div>{translate({
-                key: 'team.api.state.information.message',
-                replacements:
-                  [props.api.name,
-                  props.api.state]
-              })}</div>} />} />
-        </div>
-    }) : Promise.resolve(true)
-
-    alertAPIStatus
-      .then(ok => {
-        if (ok) {
-    openCustomModal({
-      title: translate('team.selection.title'),
-      content: <TeamSelector
-        teams={authorizedTeams
-          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.some(at => at._id === team._id))
-          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
-        pendingTeams={props.inProgressDemands.map((s) => s.team)}
-        acceptedTeams={props.subscriptions
-          .filter((f) => !f._deleted)
-          .filter(s => s.plan === plan._id)
-          .map((subs) => subs.team)}
-        allowMultipleDemand={plan.allowMultipleKeys}
-        showKeyringSelectModal={showKeyringSelectModal}
-        plan={plan}
-      />
-    })
+      alertAPIStatus
+        .then(ok => {
+          if (ok) {
+            openCustomModal({
+              title: translate('team.selection.title'),
+              content: <TeamSelector
+                teams={authorizedTeams
+                  .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                  .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id || plan.authorizedTeams.some(at => at._id === team._id))
+                  .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+                pendingTeams={props.inProgressDemands.map((s) => s.team)}
+                acceptedTeams={props.subscriptions
+                  .filter((f) => !f._deleted)
+                  .filter(s => s.plan === plan._id)
+                  .map((subs) => subs.team)}
+                allowMultipleDemand={plan.allowMultipleKeys}
+                showKeyringSelectModal={showKeyringSelectModal}
+                plan={plan}
+              />
+            })
+          }
+        })
     }
-    })
-  }
 
     return ({
       otoroshiTargetIsDefined, otoroshiEntitiesIsDefined,
@@ -1527,6 +1583,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
             type: type.object,
             label: translate('Automatic API key metadata'),
             help: translate('automatic.metadata.help'),
+            constraints: [
+              constraints.test(
+                "no-dot-in-metadata",
+                translate("constraints.test.no.dot.in.metadata.key"),
+                (metadata) => {
+                  return Object.keys(metadata).every(key => !key.includes('.'))
+                })
+            ]
           },
           customMetadata: {
             type: type.object,
@@ -1537,6 +1601,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <CustomMetadataInput {...props} translate={translate} />
             ),
             help: translate('custom.metadata.help'),
+            arrayConstraints: [
+              constraints.test(
+                "no-dot-in-metadata",
+                translate("constraints.test.no.dot.in.metadata.key"),
+                (metadata) => {
+                  return metadata.every(({ key }) => !key.includes('.'))
+                })
+            ]
           },
           tags: {
             type: type.string,
@@ -1608,7 +1680,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         const clone: IUsagePlanGQL = {
           ...cloneDeep(plan),
           _id: nanoid(32),
-          customName: `${plan.customName} (copy)`,
+          customName: ``,
           paymentSettings: undefined,
         };
         updatePlan(convertIUsagePlanGQLToIUsagePlan(clone), true)
@@ -1637,7 +1709,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
           onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(plan))
-            .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
+            .then(() => Promise.all([
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
+              queryClient.invalidateQueries({ queryKey: ['plans'] }),
+            ]))
             .then(() => toast.success(translate({
               key: `delete.${displayType}.successful.toast.label`,
               replacements: [plan.customName]
@@ -1694,7 +1769,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const columnHelper = createColumnHelper<IUsagePlanGQL>();
   const columns: ((ColumnDef<IUsagePlanGQL, any>))[] = useMemo((): ((ColumnDef<IUsagePlanGQL, any>))[] => {
-
     return [
       columnHelper.display({
         meta: {
@@ -1722,9 +1796,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         meta: {
           className: "plan-cell",
           title: tenant.display === 'environment'
-                          ? translate('api.pricings.name.table.env')
-                          : translate('api.pricings.name.table.title'),
-          size: 6 },
+            ? translate('api.pricings.name.table.env')
+            : translate('api.pricings.name.table.title'),
+          size: 6
+        },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1816,83 +1891,83 @@ export const ApiPricing = (props: ApiPricingProps) => {
             authorizedTeams,
             openTeamSelectorModal,
             isAutomaticProcess
-          } = otoroshiTargetColumn(plan)
+          } = otoroshiTargetColumn(plan, props.api.name)
 
           return (
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
-              {
-                !connectedUser.isGuest &&
-                (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
-                (
-                  <button
-                    type="button"
-                    aria-label={translate("Get API key")}
-                    className="btn btn-outline-secondary btn-square-sm"
-                  >
-                    <KeyRound size={16}/>
-                  </button>
-                )
-              }
-              {
-                ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
-                  props.api.visibility === 'AdminOnly') &&
-                (!isAccepted || props.api.visibility === 'AdminOnly') &&
-                isPublish(props.api) &&
-                props.api.state !== "blocked" &&
-                (
-                  <Can
-                    I={access}
-                    a={apikey}
-                    teams={authorizedTeams.filter(
-                      (team) =>
-                        plan.visibility === 'Public' ||
-                        team._id === props.ownerTeam._id ||
-                        plan.authorizedTeams.some((t) => t._id === team._id)
-                    )}
-                  >
-                    {
-                      (props.api.visibility === 'AdminOnly' ||
-                        (plan.otoroshiTarget && !isAccepted)) && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-square-sm"
-                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key') }
-                          onClick={() => openTeamSelectorModal()}
-                        >
-                          <KeyRound size={16}/>
-                        </button>
-                      )
-                    }
-                  </Can>
-                )
-              }
-              {
-                connectedUser.isGuest && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-square-sm"
-                    aria-label={translate("Get API key")}
-                    onClick={() => openLoginOrRegisterModal({ tenant })}
-                  >
-                    <KeyRound size={16} />
-                  </button>
-                )
-              }
-            </div>
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <div className="p-2">
-                    <div>
-                      <button
-                        className="btn btn-outline-secondary btn-square-sm"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                        id={`${plan._id}-dropdownMenuButton`}
-                      >
-                        <EllipsisVertical size={16} />
-                      </button>
+                {
+                  !connectedUser.isGuest &&
+                  (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
+                  props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
+                  (
+                    <button
+                      type="button"
+                      aria-label={translate("Get API key")}
+                      className="btn --tertiary --small --icon-only"
+                    >
+                      <KeyRound size={16} />
+                    </button>
+                  )
+                }
+                {
+                  ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
+                    props.api.visibility === 'AdminOnly') &&
+                  (!isAccepted || props.api.visibility === 'AdminOnly') &&
+                  isPublish(props.api) &&
+                  props.api.state !== "blocked" &&
+                  (
+                    <Can
+                      I={access}
+                      a={apikey}
+                      teams={authorizedTeams.filter(
+                        (team) =>
+                          plan.visibility === 'Public' ||
+                          team._id === props.ownerTeam._id ||
+                          plan.authorizedTeams.some((t) => t._id === team._id)
+                      )}
+                    >
+                      {
+                        (props.api.visibility === 'AdminOnly' ||
+                          (plan.otoroshiTarget && !isAccepted)) && (
+                          <button
+                            type="button"
+                            className="btn --tertiary --small --icon-only"
+                            aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                            onClick={() => openTeamSelectorModal()}
+                          >
+                            <KeyRound size={16} />
+                          </button>
+                        )
+                      }
+                    </Can>
+                  )
+                }
+                {
+                  connectedUser.isGuest && (
+                    <button
+                      type="button"
+                      className="btn --tertiary --small --icon-only"
+                      aria-label={translate("Get API key")}
+                      onClick={() => openLoginOrRegisterModal({ tenant })}
+                    >
+                      <KeyRound size={16} />
+                    </button>
+                  )
+                }
+              </div>
+              <Can I={manage} a={API} team={props.ownerTeam}>
+                <div className="p-2">
+                  <div>
+                    <button
+                      className="btn --tertiary --small --icon-only"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      id={`${plan.customName}-dropdownMenuButton`}
+                    >
+                      <EllipsisVertical size={16} />
+                    </button>
                     <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
                       <span className="dropdown-item cursor-pointer"
                         onClick={() => actions(plan).editPlan()}>
@@ -1904,31 +1979,41 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <span className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editOtoroshiTarget()}>
-                        <Pencil size={16}  />
+                          <Pencil size={16} />
                           {translate('Edit Otoroshi target')}
-                          </span>
+                        </span>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <span className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editProcess()}>
-                        <Pencil size={16}  />
+                          <Pencil size={16} />
                           {translate('pricing.edit.process.btn.label')}
-                          </span>
+                        </span>
                       </Can>
+                      <Can I={manage} a={API} team={props.ownerTeam}>
+                        <span className='dropdown-item cursor-pointer'
+                          onClick={() => actions(plan).editPricing()}>
+                          <span className='feature__description'>
+                            <Pencil size={16} />
+                            {translate('usage.plan.form.pricing.display.button.label')}
+                          </span>
+                        </span>
+                      </Can>
+
                       {props.api.visibility !== 'AdminOnly' && <>
-                        <span
+                        {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 && <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).duplicatePlan()}>
-                          <CopyPlus size={16}  />
+                          <CopyPlus size={16} />
                           {tenant.display === 'environment'
                             ? translate('pricing.clone.env.btn.label')
                             : translate('Duplicate plan')}
-                        </span>
+                        </span>}
                         <span
                           className="dropdown-item cursor-pointer"
                           onClick={() => actions(plan).deleteWithConfirm()}
                         >
-                          <Trash2 size={16}  />
+                          <Trash2 size={16} />
                           {tenant.display === 'environment'
                             ? translate('pricing.delete.env.btn.label')
                             : translate('Delete plan')}
@@ -1944,7 +2029,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       })
     ] as ColumnDef<IUsagePlanGQL, any>[]
-  }, [])
+  }, [availableEnvQuery])
 
   return (
     <>
@@ -2021,11 +2106,49 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           teamApiSubscriptions: subscriptionsWithApis
                         })
                       }).then(compatibleSubscriptionsByPlan => {
+                        const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                         openFormModal({
                           title: translate("apikey_select_modal.title"),
                           onSubmit: (selectedApiKeyByPlanId) => {
-                            const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
                             const teamName = props.myTeams.find(t => t._id === teamId)!.name;
+
+                            const openMultiSubscriptionModal = (
+                              motivation?: any // optionnel, absent dans le cas 4
+                            ) => {
+                              const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
+                                const subscriptionId = selectedApiKeyByPlanId[plan._id];
+                                const sub = subscriptions.find((sub) => sub._id === subscriptionId);
+                                const hasForm = plan.subscriptionProcess.some((s) => s.type === "form");
+                                return {
+                                  plan,
+                                  request: props.askForApikeys({
+                                    team: teamId,
+                                    plan: convertIUsagePlanGQLToIUsagePlan(plan),
+                                    apiKey: sub,
+                                    motivation: hasForm ? motivation : undefined,
+                                    redirect: false,
+                                    // one keyring per plan: each carries its own name, and a
+                                    // joined keyring keeps the one it already has.
+                                    keyringCustomName: sub
+                                      ? undefined
+                                      : selectedApiKeyByPlanId[keyringNameField(plan._id)],
+                                  }),
+                                };
+                              });
+
+                              openCustomModal({
+                                title: translate("Creating subscription requests"),
+                                content: (
+                                  <SubscriptionResultForm
+                                    close={() => close()}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    teamName={teamName}
+                                    requests={promises}
+                                  />
+                                ),
+                              });
+                            };
+
                             if (formStep) {
                               openFormModal({
                                 title: translate('motivations.modal.title'),
@@ -2033,44 +2156,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 schema: formStep.schema,
                                 actionLabel: translate('Send'),
                                 description: formStep.info ?
-                                  <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
-                                onSubmit: (motivation) => {
-                                  const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
-                                    const subscriptionId = selectedApiKeyByPlanId[plan._id];
-                                    const sub = subscriptions.find((sub) => sub._id === subscriptionId);
-                                    const hasForm = plan.subscriptionProcess.some(s => s.type === "form")
-                                    return {plan, request: props.askForApikeys({
-                                      team: teamId,
-                                      plan: convertIUsagePlanGQLToIUsagePlan(plan),
-                                      apiKey: sub,
-                                      motivation: hasForm ? motivation : undefined,
-                                      redirect: false
-                                    })};
-                                  });
-
-                                  openCustomModal({
-                                    title: translate("Creating subscription requests"),
-                                    content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />,
-                                  })
-
-                                }
+                                  <div className='alert alert-info'
+                                    dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
+                                onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
                               })
                             } else {
-                              const promises = compatibleSubscriptionsByPlan.map(
-                                ({ plan, subscriptions }) => {
-                                  const subscriptionId = selectedApiKeyByPlanId[plan._id];
-                                  const sub = subscriptions.find((sub) => sub._id === subscriptionId)
-                                  return {plan, request: props.askForApikeys({ team: teamId, plan: convertIUsagePlanGQLToIUsagePlan(plan), apiKey: sub, redirect: false })};
-                                }
-                              )
-                              openCustomModal({
-                                    title: translate("Creating subscription requests"),
-                                    content: <SubscriptionResultForm close={() => close()} url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`} teamName={teamName} requests={promises} />
-                              })
+                              openMultiSubscriptionModal();
                             }
                           }
                           ,
-                          actionLabel: translate('Confirm'),
+                          actionLabel: translate(formStep ? 'Next' : 'Confirm'),
                           noClose: true,
                           schema: compatibleSubscriptionsByPlan.reduce((acc, { plan, subscriptions }) => {
                             acc[plan._id] = {
@@ -2087,6 +2182,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 }))
                                 ]
                             }
+                            // one name per plan, only asked when a brand new keyring
+                            // will be created for it (i.e. no existing one selected).
+                            acc[keyringNameField(plan._id)] = {
+                              type: type.string,
+                              label: translate({
+                                key: 'keyring.custom.name.for.plan',
+                                replacements: [plan.customName],
+                              }),
+                              placeholder: `${props.api.name} - ${plan.customName}`,
+                              visible: ({ rawValues }) => (rawValues[plan._id] ?? '----') === '----',
+                            }
                             return acc;
                           }
                             , {}
@@ -2101,14 +2207,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
         ]}
         toolbar={
           <>
-                <button
-                  type='button'
-                  onClick={() => createNewPlan()}
-                  className="btn btn-outline-primary d-flex align-items-center gap-2">
-                  <Plus />
-                  <p className="m-0">{translate('api.pricings.creation.button.label')}</p>
-                </button>
-
+            <button
+              type='button'
+              onClick={() => createNewPlan()}
+              className="btn btn-outline-primary d-flex align-items-center gap-2">
+              <Plus />
+              <p className="m-0">{
+                tenant.display === 'environment' ?
+                  translate('api.pricings.creation.environment.button.label') :
+                  translate('api.pricings.creation.plan.button.label'
+                  )}</p>
+            </button>
           </>
         }
       />
@@ -2116,17 +2225,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
   );
 }
 
-function SubscriptionResultForm(props: {close: () => any; url: string, teamName: string, requests: {plan: IUsagePlanGQL, request: Promise<SubscriptionReturn>}[]}) {
+function SubscriptionResultForm(props: { close: () => any; url: string, teamName: string, requests: { plan: IUsagePlanGQL, request: Promise<SubscriptionReturn> }[] }) {
   const { translate } = useContext(I18nContext);
-  const [state, setState] = useState<{planId: string, status?: SubscriptionReturn}[]>(props.requests.map(r => ({planId: r.plan._id})));
+  const [state, setState] = useState<{ planId: string, status?: SubscriptionReturn }[]>(props.requests.map(r => ({ planId: r.plan._id })));
   useEffect(() => {
-    props.requests.forEach(({plan, request}) => {
+    props.requests.forEach(({ plan, request }) => {
       request.then(response => {
-        const currentState = state.find(({planId}) => planId === plan._id);
-        if(currentState?.status !== response) {
+        const currentState = state.find(({ planId }) => planId === plan._id);
+        if (currentState?.status !== response) {
           setState(oldState => oldState.map(s => {
-            if(s.planId === plan._id) {
-              return {...s, status: response}
+            if (s.planId === plan._id) {
+              return { ...s, status: response }
             } else {
               return s
             }
@@ -2136,26 +2245,26 @@ function SubscriptionResultForm(props: {close: () => any; url: string, teamName:
     })
   }, []);
 
-  return <ul>{props.requests.map(({plan}) => {
-    const currentStatus = state.find(({planId}) => planId === plan._id)?.status;
-    let statusDisplay: ReactNode = <>{translate({key: "subscription.plan.pending", replacements: [plan.customName, props.teamName]})} ⏳</>;
-    if(Services.isCreationDone(currentStatus)) {
+  return <ul>{props.requests.map(({ plan }) => {
+    const currentStatus = state.find(({ planId }) => planId === plan._id)?.status;
+    let statusDisplay: ReactNode = <>{translate({ key: "subscription.plan.pending", replacements: [plan.customName, props.teamName] })} ⏳</>;
+    if (Services.isCreationDone(currentStatus)) {
       const link = <Link
-                  to={props.url}
-                  className="btn --secondary --small --icon-only"
-                  title={translate("apikeys.view.api")}
-                  aria-label={translate("apikeys.view.api")}
-                  onClick={_ => props?.close()}
-                >
-                  <ExternalLink />
-                </Link>
-      statusDisplay = <>{translate({key: "subscription.plan.accepted", replacements: [plan.customName, props.teamName]})} ✅ {link}</>
-    } else if(Services.isCreationWaiting(currentStatus)) {
-      statusDisplay = <>{translate({key: "subscription.plan.waiting", replacements: [plan.customName, props.teamName]})} ✅</>
-    } else if(Services.isResponseError(currentStatus)) {
-      statusDisplay = <>{translate({key: "subscription.plan.failed", replacements: [plan.customName, props.teamName]})} ❌</>
+        to={props.url}
+        className="btn --secondary --small --icon-only"
+        title={translate("apikeys.view.api")}
+        aria-label={translate("apikeys.view.api")}
+        onClick={_ => props?.close()}
+      >
+        <ExternalLink />
+      </Link>
+      statusDisplay = <>{translate({ key: "subscription.plan.accepted", replacements: [plan.customName, props.teamName] })} ✅ {link}</>
+    } else if (Services.isCreationWaiting(currentStatus)) {
+      statusDisplay = <>{translate({ key: "subscription.plan.waiting", replacements: [plan.customName, props.teamName] })} ✅</>
+    } else if (Services.isResponseError(currentStatus)) {
+      statusDisplay = <>{translate({ key: "subscription.plan.failed", replacements: [plan.customName, props.teamName] })} ❌</>
     }
-    return <li>{statusDisplay}</li>
+    return <li key={plan._id}>{statusDisplay}</li>
   })}</ul>
 }
 

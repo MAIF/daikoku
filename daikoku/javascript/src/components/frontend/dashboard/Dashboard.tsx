@@ -111,7 +111,13 @@ export const Dashboard = (_: NewHomeProps) => {
           <div className="d-flex flex-column gap-3 justify-content-end">
             {!!unreadNotificationsCount && (
               <button
-                onClick={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription","ApiAccess"]}]')}
+                onClick={() =>
+                  navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":[' +
+                    '"ApiSubscription",' +
+                    '"ApiAccess",' +
+                    '"CheckoutForSubscription",' +
+                    '"TransferApiOwnership",' +
+                    '"ApiSubscriptionDemand"]}]')}
                 className="btn --secondary">
                 <div className="d-flex gap-2 align-items-center">
                   {translate('dashboard.demands.tile.title')}

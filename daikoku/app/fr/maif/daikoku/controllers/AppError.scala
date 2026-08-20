@@ -10,10 +10,10 @@ import play.api.mvc.Results.*
 import scala.concurrent.Future
 
 sealed trait AppError {
-  def render()         : Result = AppError.render(this)
-  def renderF()        : Future[Result] = AppError.renderF(this)
-  def toJson()         : JsObject = AppError.toJson(this)
-  def future()         : Future[AppError] = FastFuture.successful(this)
+  def render(): Result = AppError.render(this)
+  def renderF(): Future[Result] = AppError.renderF(this)
+  def toJson(): JsObject = AppError.toJson(this)
+  def future(): Future[AppError] = FastFuture.successful(this)
   def getErrorMessage(): String = AppError.getErrorMessage(this)
 }
 
@@ -201,12 +201,12 @@ object AppError {
         "The subscribed plan has a different readOnly value than the keyring it extends"
       case MissingParentSubscription =>
         "The parent of this subscription is missing"
-      case TranslationNotFound                        => "Translation not found"
-      case Unauthorized                               => "You're not authorized here"
-      case UnauthorizedExplicit(message)                      => message
-      case Forbidden(message)                         => message
-      case NameAlreadyExists                          => "Resource with same name already exists"
-      case ThirdPartyPaymentSettingsNotFound          =>
+      case TranslationNotFound           => "Translation not found"
+      case Unauthorized                  => "You're not authorized here"
+      case UnauthorizedExplicit(message) => message
+      case Forbidden(message)            => message
+      case NameAlreadyExists => "Resource with same name already exists"
+      case ThirdPartyPaymentSettingsNotFound =>
         "Third-party payment settings not found"
       case SecurityError(s)    => s"Forbidden action due to security : $s"
       case TeamAlreadyVerified => "This team is already verified"

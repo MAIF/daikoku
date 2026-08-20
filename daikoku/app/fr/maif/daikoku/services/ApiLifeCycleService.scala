@@ -151,7 +151,7 @@ class ApiLifeCycleService(
       _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
     } yield ()
   }
-  
+
   private def notifyBlocking(
       subscriptions: Seq[ApiSubscription],
       api: Api,

@@ -2012,9 +2012,11 @@ object evolution_1900 extends EvolutionScript {
                 |         'rotation', s.content->'rotation',
                 |         'integrationToken', s.content->>'integrationToken',
                 |         'bearerToken', s.content->'bearerToken',
-                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations'
+                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
+                |         'customName', coalesce(a.content->>'name' || ' - ' || p.content->>'customName', s.content->'apiKey'->>'clientName')
                 |       )
                 |FROM api_subscriptions s
+                |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
                 |JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
                 |WHERE s._deleted = false
                 |  AND s.content->>'parent' IS NULL
@@ -2043,9 +2045,12 @@ object evolution_1900 extends EvolutionScript {
                 |         'rotation', s.content->'rotation',
                 |         'integrationToken', s.content->>'integrationToken',
                 |         'bearerToken', s.content->'bearerToken',
-                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations'
+                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
+                |         'customName', coalesce(a.content->>'name' || ' - ' || p.content->>'customName', s.content->'apiKey'->>'clientName')
                 |       )
                 |FROM api_subscriptions s
+                |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
+                |LEFT JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
                 |WHERE s._deleted = false
                 |  AND s.content->>'parent' IS NULL
                 |  AND s.content->>'keyring' IS NULL

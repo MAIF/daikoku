@@ -18,7 +18,13 @@ import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{IdGenerator, JsonOperationsHelper, OtoroshiClient, Translator, metadataObjectToMap}
+import fr.maif.daikoku.utils.{
+  IdGenerator,
+  JsonOperationsHelper,
+  OtoroshiClient,
+  Translator,
+  metadataObjectToMap
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -44,6 +50,12 @@ class ApiService(
   implicit val ev: Env = env
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
+
+  /** Name given to a keyring when the consumer did not provide one. Kept in
+    * sync with the placeholder displayed by the front (see ApiPricing.tsx).
+    */
+  def defaultKeyringName(api: Api, plan: UsagePlan): String =
+    s"${api.name} - ${plan.customName}"
 
   def jsonToOtoroshiMetadata(json: JsObject) = {
     json.fieldSet.map {
@@ -216,6 +228,7 @@ class ApiService(
       api: Api,
       plan: UsagePlan,
       team: Team,
+      keyringCustomName: String,
       keyringId: Option[KeyringId] = None,
       customMetadata: Option[JsObject] = None,
       customMaxPerSecond: Option[Long] = None,
@@ -287,7 +300,7 @@ class ApiService(
             id = KeyringId(IdGenerator.token(32)),
             tenant = tenant.id,
             team = team.id,
-            customName = customName,
+            customName = keyringCustomName,
             apiKey = tunedApiKey.asOtoroshiApiKey,
             otoroshiSettings =
               KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
@@ -410,6 +423,7 @@ class ApiService(
         tenant = tenant.id,
         team = team.id,
         apiKey = adminApiKey,
+        customName = keyringCustomName,
         otoroshiSettings = KeyringOtoroshiBinding.Internal,
         createdAt = DateTime.now(),
         rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
@@ -571,14 +585,15 @@ class ApiService(
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits.*
 
-    val updatedSubscription = if (byOwner)
-      subscription.copy(
-        blockedBy =
-          if (enabled) subscription.blockedBy - Owner
-          else subscription.blockedBy + Owner
-      )
-    else
-      subscription.copy(enabled = enabled)
+    val updatedSubscription =
+      if (byOwner)
+        subscription.copy(
+          blockedBy =
+            if (enabled) subscription.blockedBy - Owner
+            else subscription.blockedBy + Owner
+        )
+      else
+        subscription.copy(enabled = enabled)
 
     plan.otoroshiTarget
       .map(_.otoroshiSettings)
@@ -598,7 +613,9 @@ class ApiService(
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <- paymentClient.toggleStateThirdPartySubscription(
+            updatedSubscription
+          )
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
@@ -771,7 +788,7 @@ class ApiService(
                 tenant,
                 Map(
                   "keyring_name" -> JsString(
-                    keyring.customName.getOrElse(keyring.apiKey.clientName)
+                    keyring.customName
                   ),
                   "apikey_client_name" -> JsString(keyring.apiKey.clientName),
                   "consumer_team_data" -> consumerTeam.asJson,
@@ -982,7 +999,7 @@ class ApiService(
         id = KeyringId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = team.id,
-        customName = subscription.customName,
+        customName = oldKeyring.customName,
         apiKey = created.asOtoroshiApiKey,
         otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(o.id),
         createdAt = DateTime.now(),
@@ -1921,6 +1938,10 @@ class ApiService(
                 thirdPartySubscriptionInformations =
                   maybeSubscriptionInformations,
                 customName = demand.customName,
+                keyringCustomName = demand.keyringCustomName
+                  .map(_.trim)
+                  .filter(_.nonEmpty)
+                  .getOrElse(defaultKeyringName(api, plan)),
                 tags = demand.tags
               )
             )
@@ -1933,7 +1954,7 @@ class ApiService(
                       "$in" -> JsArray(
                         team.users
                           .filter(_.teamPermission == Administrator)
-                          .map(_.asJson)
+                          .map(u => JsString(u.userId.value))
                           .toSeq
                       )
                     )
@@ -2021,6 +2042,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: Option[String],
       adminCustomName: Option[String]
   )(implicit language: String, currentUser: User) = {
     import cats.implicits.*
@@ -2185,24 +2207,31 @@ class ApiService(
         env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound
       )
+      keyringCustomNameValid = keyringCustomName
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .getOrElse(defaultKeyringName(api, plan))
       _ <- controlTeam(team, api, plan)
       _ <- controlDemand(team, api, plan)
       _ <- controlSubscriptionExtension(plan, team)
-      result <- applyProcessForApiSubscription(
-        tenant,
-        currentUser,
-        api,
-        plan,
-        team,
-        keyringId,
-        motivation,
-        customMetadata,
-        customMaxPerSecond,
-        customMaxPerDay,
-        customMaxPerMonth,
-        customReadOnly,
-        adminCustomName
-      )
+      result <- {
+        applyProcessForApiSubscription(
+          tenant,
+          currentUser,
+          api,
+          plan,
+          team,
+          keyringId,
+          motivation,
+          customMetadata,
+          customMaxPerSecond,
+          customMaxPerDay,
+          customMaxPerMonth,
+          customReadOnly,
+          keyringCustomNameValid,
+          adminCustomName
+        )
+      }
     } yield result
 
     value.leftMap(_.render()).merge
@@ -2221,6 +2250,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: String,
       adminCustomName: Option[String]
   )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2242,19 +2272,20 @@ class ApiService(
           case Nil =>
             EitherT(
               subscribeToApi(
-                tenant,
-                user,
-                api,
-                plan,
-                team,
-                keyringId,
+                tenant = tenant,
+                user = user,
+                api = api,
+                plan = plan,
+                team = team,
+                keyringId = keyringId,
+                keyringCustomName = keyringCustomName,
                 thirdPartySubscriptionInformations = None
               )
-            ).map(s =>
+            ).map(s => {
               Ok(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
-            )
+            })
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
 
@@ -2298,6 +2329,7 @@ class ApiService(
                       from = user.id,
                       motivation = motivation,
                       keyring = keyringId,
+                      keyringCustomName = Some(keyringCustomName),
                       customMetadata = JsonOperationsHelper
                         .mergeOptJson(customMetadata, metadataFromMotivation),
                       customMaxPerSecond = customMaxPerSecond,
@@ -2312,7 +2344,9 @@ class ApiService(
                 language,
                 user
               )
-            } yield result
+            } yield {
+              result
+            }
         }
     }
   }

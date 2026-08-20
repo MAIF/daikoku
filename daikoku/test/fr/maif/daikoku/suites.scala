@@ -1365,7 +1365,8 @@ object testUtils {
       apiKey = adminApiKey,
       otoroshiSettings = KeyringOtoroshiBinding.Internal,
       createdAt = DateTime.now(),
-      integrationToken = IdGenerator.token(64)
+      integrationToken = IdGenerator.token(64),
+      customName = "defaultAdminTeam-adminApi-dev-firstKeyring"
     )
     val adminApiSubscription = ApiSubscription(
       id = ApiSubscriptionId(IdGenerator.token(32)),

@@ -1,7 +1,7 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
-import {ITenant, ThirdPartyPaymentType} from './tenant';
+import { ITenant, ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
 import { SubscriptionReturn } from '../services';
 
@@ -113,7 +113,7 @@ export type IPlansWithCount = {
   plans: Array<IUsagePlanGQL>;
   total: number;
   totalFiltered: number;
-}
+};
 
 export interface ITesting {
   enabled: boolean;
@@ -181,40 +181,40 @@ export interface ISwagger {
 
 export type IValidationStep =
   | {
-    type: 'email';
-    id: string;
-    emails: Array<string>;
-    message: string;
-    title: string;
-  }
+      type: 'email';
+      id: string;
+      emails: Array<string>;
+      message: string;
+      title: string;
+    }
   | {
-    type: 'httpRequest';
-    id: string;
-    title: string;
-    url: string;
-    headers: object;
-  }
+      type: 'httpRequest';
+      id: string;
+      title: string;
+      url: string;
+      headers: object;
+    }
   | {
-    type: 'form';
-    id: string;
-    schema: Schema;
-    formatter: string;
-    title: string;
-    formKeysToMetadata?: Array<string>;
-    info?: string;
-  }
+      type: 'form';
+      id: string;
+      schema: Schema;
+      formatter: string;
+      title: string;
+      formKeysToMetadata?: Array<string>;
+      info?: string;
+    }
   | {
-    type: 'payment';
-    id: string;
-    thirdPartyPaymentSettingsId: string;
-    title?: string;
-  }
+      type: 'payment';
+      id: string;
+      thirdPartyPaymentSettingsId: string;
+      title?: string;
+    }
   | {
-    type: 'teamAdmin';
-    id: string;
-    title?: string;
-    team: string;
-  };
+      type: 'teamAdmin';
+      id: string;
+      title?: string;
+      team: string;
+    };
 
 export interface IBaseUsagePlan {
   _id: string;
@@ -638,6 +638,8 @@ export interface ApiPricingProps {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
+    /** only meaningful when creating a new keyring ; a joined keyring keeps its own name */
+    keyringCustomName?: string;
     redirect?: boolean;
   }) => Promise<SubscriptionReturn>;
 }
@@ -651,24 +653,25 @@ export interface ITeamSelector {
   plan: IUsagePlanGQL;
 }
 export interface OtoroshiEntitiesSelectorProps {
-  rawValues: IOtoroshiTarget
-  onChange: (item: any) => void,
-  translate: (x: string) => string
-  ownerTeam: ITeamSimple
+  rawValues: IOtoroshiTarget;
+  onChange: (item: any) => void;
+  translate: (x: string) => string;
+  ownerTeam: ITeamSimple;
 }
 export interface OtoroshiEntity {
-  label: string
-  value: string
-  type: 'route' | 'group' | 'service'
-  enabled: boolean
+  label: string;
+  value: string;
+  type: 'route' | 'group' | 'service';
+  enabled: boolean;
 }
 
-export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
+export interface IUsagePlanGQL
+  extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _tenant: string;
   _deleted: boolean;
   aggregationApiKeysSecurity?: boolean;
-  allowMultipleDemand?: string
+  allowMultipleDemand?: string;
   allowMultipleKeys?: boolean;
   authorizedTeams: { _id: string; name: string }[];
   autoRotation?: boolean;
@@ -678,15 +681,15 @@ export interface IUsagePlanGQL extends IBaseUsagePlan, IWithSwagger, IWithTestin
   currency?: ICurrency;
   customDescription?: string;
   customName: string;
-  integrationProcess: "Automatic" | "ApiKey";
+  integrationProcess: 'Automatic' | 'ApiKey';
   maxPerDay?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
   otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
   rotation: boolean;
-  subscriptionProcess: Array<IValidationStep>
+  subscriptionProcess: Array<IValidationStep>;
   subscriptionProcessChecksum: string;
   trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
-};
+}

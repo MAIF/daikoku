@@ -150,10 +150,10 @@ trait Repo[Of, Id <: ValueType] {
   /** Run a raw, parameterised SQL statement and parse each returned row's
     * `content` column into an entity of this repo. Intended for statements that
     * `RETURNING content` (e.g. an `UPDATE ... RETURNING content`). The tenant
-    * scoping normally added by `forTenant` is NOT injected here: the caller owns
-    * the whole SQL, so any tenant/`_deleted` filter must be written explicitly.
-    * Always pass values through `params` ($1, $2, …) rather than interpolating
-    * them into `sql`.
+    * scoping normally added by `forTenant` is NOT injected here: the caller
+    * owns the whole SQL, so any tenant/`_deleted` filter must be written
+    * explicitly. Always pass values through `params` ($1, $2, …) rather than
+    * interpolating them into `sql`.
     */
   def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,

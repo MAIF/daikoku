@@ -3,10 +3,10 @@ import merge from 'lodash/merge';
 import { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { api, CanIDoAction, manage, teamPermissions, team as TeamRightScope } from '../components/utils';
+import { api, apikey, CanIDoAction, CanIDoActionForOneOfTeams, manage, read, teamGQLToSimple, teamPermissions, team as TeamRightScope } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, INavMenu, isError, ITeamSimple, ITenant, IUsagePlan } from '../types';
+import { IApi, INavMenu, isError, ITeamFullGql, ITeamSimple, ITenant, IUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContextInstance';
 import { NavContext, navMode, officeMode } from './navUtils';
@@ -64,7 +64,7 @@ export const NavProvider = (props: PropsWithChildren) => {
   );
 };
 
-export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsagePlan[]) => {
+export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsagePlan[], userTeams?: ITeamFullGql[]) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
@@ -100,6 +100,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
   const shouldDisplayNews = userCanUpdateApi || (
     !connectedUser.isGuest && !!api?.posts.length
   )
+
+  const canReadApiKey = CanIDoActionForOneOfTeams(connectedUser, read, apikey, userTeams?.map(t => teamGQLToSimple(t)) ?? [])
 
   const schema = (currentTab: string): INavMenu => ({
     title: api?.name,
@@ -167,6 +169,13 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
               active: currentTab === 'subscriptions',
             },
           },
+          viewApiKey: canReadApiKey && {
+            label: translate({ key: 'API key', plural: true }),
+            action: () => navigateTo('apikeys'),
+            className: {
+              active: currentTab === 'apikeys',
+            },
+          }
         },
       },
       actions: {
