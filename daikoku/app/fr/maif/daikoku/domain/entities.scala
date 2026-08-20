@@ -182,6 +182,7 @@ enum JobName(val value: String):
   case OtoroshiEntitiesVerifier extends JobName("OtoroshiEntitiesVerifier")
   case KeyringSubscriptionExpiration
       extends JobName("KeyringSubscriptionExpiration")
+  case RemoteCatalog extends JobName("RemoteCatalog")
 
 case class JobInformation(
     id: DatastoreId,

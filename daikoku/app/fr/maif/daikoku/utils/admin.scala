@@ -265,6 +265,62 @@ abstract class AdminApiController[Of, Id <: ValueType](
       )
     )(using env)
 
+  def readMetadata(e: Of): Map[String, String] = Map.empty
+
+  def reconcileMerge(existing: Of, incoming: Of): Of = incoming
+
+  def reconcileUpsert(
+      tenant: Tenant,
+      raw: JsValue,
+      dryRun: Boolean = false
+  ): Future[Either[String, String]] =
+    fromJson(raw) match {
+      case Left(err) => Future.successful(Left(err))
+      case Right(entity) =>
+        entityStore(tenant, env.dataStore).findByIdNotDeleted(getId(entity).value).flatMap { existing =>
+          val mode = if (existing.isDefined) UpdateOrCreate.Update else UpdateOrCreate.Create
+          validate(entity, mode).value.flatMap {
+            case Left(error) => Future.successful(Left(error.getErrorMessage()))
+            case Right(validated) =>
+              existing match {
+                case Some(old) =>
+                  val toSave = reconcileMerge(old, validated)
+                  if (toJson(old) == toJson(toSave)) Future.successful(Right("unchanged"))
+                  else if (dryRun) Future.successful(Right("updated"))
+                  else
+                    doUpdate(tenant, old, toSave).value.map {
+                      case Left(error) => Left(error.getErrorMessage())
+                      case Right(_)    => Right("updated")
+                    }
+                case None =>
+                  if (dryRun) Future.successful(Right("created"))
+                  else
+                    doCreate(tenant, validated).value.map {
+                      case Left(error) => Left(error.getErrorMessage())
+                      case Right(_)    => Right("created")
+                    }
+              }
+          }
+        }
+    }
+
+  def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
+    entityStore(tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+      case None => Future.successful(false)
+      case Some(entity) =>
+        doDelete(tenant, entity, logically = false).value.map {
+          case Left(_)  => false
+          case Right(_) => true
+        }
+    }
+
+  def reconcileListManaged(
+      tenant: Tenant
+  ): Future[Seq[(String, Map[String, String])]] =
+    entityStore(tenant, env.dataStore)
+      .findAllNotDeleted()
+      .map(_.map(e => (getId(e).value, readMetadata(e))))
+
   def findAll(): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
       val paginationPage: Int = ctx.request.queryString
