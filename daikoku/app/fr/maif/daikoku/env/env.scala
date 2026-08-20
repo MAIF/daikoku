@@ -536,6 +536,24 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Cron)
 
+  lazy val remoteCatalogJobKey: String = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.key")
+    .getOrElse("secret")
+  lazy val remoteCatalogJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.enabled")
+    .getOrElse(false)
+  lazy val remoteCatalogJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.cronExpression")
+  lazy val remoteCatalogJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.remoteCatalogJob.interval")
+    .map(v => v.millis)
+    .getOrElse(1.minute)
+  lazy val remoteCatalogJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
+
+
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
     .getOrElse("secret")

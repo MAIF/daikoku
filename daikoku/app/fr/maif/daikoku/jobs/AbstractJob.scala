@@ -97,6 +97,11 @@ abstract class AbstractJob[Input] {
   protected def onOutcome(tenant: Tenant, outcome: JobOutcome): Future[Unit] =
     Future.successful(())
 
+  /** Cheap business pre-check, evaluated before any claim or DB write.
+   * Some(reason) skips the run entirely. */
+  protected def skipReason(tenant: Tenant): Future[Option[String]] =
+    Future.successful(None)
+
   protected implicit def ec: ExecutionContext = env.defaultExecutionContext
   protected implicit def mat: Materializer = env.defaultMaterializer
   private implicit def implicitEnv: Env = env
@@ -318,36 +323,39 @@ abstract class AbstractJob[Input] {
         lastBatchAt.plusSeconds(jobConfig.interval.toSeconds.toInt).isBeforeNow
 
     // Cheap business pre-check: decides skip / resume cursor before claiming.
-    jobRepo
-      .find(
-        Json.obj("jobName" -> jobName.value),
-        sort = Some(Json.obj("startedAt" -> -1)),
-        maxDocs = 1
-      )
-      .map(_.headOption)
-      .flatMap {
-        case Some(last)
+    skipReason(tenant).flatMap {
+      case Some(reason) => skip(reason)
+      case None => jobRepo
+        .find(
+          Json.obj("jobName" -> jobName.value),
+          sort = Some(Json.obj("startedAt" -> -1)),
+          maxDocs = 1
+        )
+        .map(_.headOption)
+        .flatMap {
+          case Some(last)
             if last.status == JobStatus.Running && last.expiresAt.isAfterNow =>
-          skip("already running")
+            skip("already running")
 
-        case Some(last)
+          case Some(last)
             if last.status == JobStatus.Running && last.expiresAt.isBeforeNow =>
-          logger.info(
-            s"$logPrefix stale running job (expiresAt=${last.expiresAt}), resuming from cursor ${last.cursor}"
-          )
-          attempt(Some(last.cursor))
+            logger.info(
+              s"$logPrefix stale running job (expiresAt=${last.expiresAt}), resuming from cursor ${last.cursor}"
+            )
+            attempt(Some(last.cursor))
 
-        case Some(last) if last.status == JobStatus.Failed =>
-          logger.info(
-            s"$logPrefix previous job failed, resuming from cursor ${last.cursor}"
-          )
-          attempt(Some(last.cursor))
+          case Some(last) if last.status == JobStatus.Failed =>
+            logger.info(
+              s"$logPrefix previous job failed, resuming from cursor ${last.cursor}"
+            )
+            attempt(Some(last.cursor))
 
-        case Some(last) if !intervalElapsed(last.lastBatchAt) =>
-          skip("interval not elapsed")
+          case Some(last) if !intervalElapsed(last.lastBatchAt) =>
+            skip("interval not elapsed")
 
-        case _ =>
-          attempt(None)
-      }
+          case _ =>
+            attempt(None)
+        }
+    }
   }
 }

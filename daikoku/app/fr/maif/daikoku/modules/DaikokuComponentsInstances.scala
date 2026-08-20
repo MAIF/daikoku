@@ -8,6 +8,7 @@ import fr.maif.daikoku.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.daikoku.jobs.*
 import fr.maif.daikoku.login.LocalLoginSupport
 import fr.maif.daikoku.services.*
+import fr.maif.daikoku.services.catalog.RemoteCatalogEngine
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import io.vertx.core.Vertx.vertx
@@ -134,6 +135,11 @@ class DaikokuComponentsInstances(context: Context)
   lazy val usagePlansAdminApiController = wire[UsagePlansAdminApiController]
   lazy val subscriptionDemandsAdminApiController =
     wire[SubscriptionDemandsAdminApiController]
+  lazy val remoteCatalogEngine = wire[RemoteCatalogEngine]
+  lazy val remoteCatalogJob = wire[RemoteCatalogJob]
+  lazy val remoteCatalogAdminApiController =
+    wire[RemoteCatalogAdminApiController]
+  lazy val remoteCatalogController = wire[RemoteCatalogController]
   lazy val graphQLController = wire[GraphQLController]
   lazy val cmsApiController = wire[CmsApiController]
   lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
@@ -250,6 +256,7 @@ class DaikokuComponentsInstances(context: Context)
   notificationPurgeJob.start()
   anonReportingJob.start()
   keyringExpirationJob.start()
+  remoteCatalogJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>
@@ -260,6 +267,7 @@ class DaikokuComponentsInstances(context: Context)
     auditTrailPurgeJob.stop()
     notificationPurgeJob.stop()
     anonReportingJob.stop()
+    remoteCatalogJob.stop()
     keyringExpirationJob.stop()
     env.onShutdown()
     pgPool.close()

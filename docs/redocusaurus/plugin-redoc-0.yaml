@@ -3263,74 +3263,6 @@ paths:
           required: true
       tags:
         - notification
-    patch:
-      summary: update a notification with JSON patch or by  merging JSON object
-      operationId: notifications.patch
-      requestBody:
-        description: the patch to update the notification or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Notification'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - notification
-    put:
-      summary: update a notification
-      operationId: notifications.update
-      requestBody:
-        description: the notification to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Notification'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - notification
     get:
       summary: read a notification
       operationId: notifications.findById
@@ -3384,37 +3316,6 @@ paths:
                 $ref: '#/components/schemas/error'
       tags:
         - notification
-    post:
-      summary: creates a notification
-      requestBody:
-        description: the notification to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Notification'
-      operationId: notifications.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Notification'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - notification
   /admin-api/sessions/{id}:
     delete:
       summary: delete a user-session
@@ -3426,74 +3327,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/done'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - user-session
-    patch:
-      summary: update a user-session with JSON patch or by  merging JSON object
-      operationId: user-sessions.patch
-      requestBody:
-        description: the patch to update the user-session or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/UserSession'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - user-session
-    put:
-      summary: update a user-session
-      operationId: user-sessions.update
-      requestBody:
-        description: the user-session to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserSession'
-      responses:
-        '204':
-          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3567,37 +3400,6 @@ paths:
                 $ref: '#/components/schemas/error'
       tags:
         - user-session
-    post:
-      summary: creates a user-session
-      requestBody:
-        description: the user-session to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserSession'
-      operationId: user-sessions.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserSession'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - user-session
   /admin-api/consumptions/{id}:
     delete:
       summary: delete a api-key-consumption
@@ -3609,74 +3411,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/done'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - api-key-consumption
-    patch:
-      summary: update a api-key-consumption with JSON patch or by  merging JSON object
-      operationId: api-key-consumptions.patch
-      requestBody:
-        description: the patch to update the api-key-consumption or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/ApiKeyConsumption'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - api-key-consumption
-    put:
-      summary: update a api-key-consumption
-      operationId: api-key-consumptions.update
-      requestBody:
-        description: the api-key-consumption to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApiKeyConsumption'
-      responses:
-        '204':
-          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3750,37 +3484,6 @@ paths:
                 $ref: '#/components/schemas/error'
       tags:
         - api-key-consumption
-    post:
-      summary: creates a api-key-consumption
-      requestBody:
-        description: the api-key-consumption to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApiKeyConsumption'
-      operationId: api-key-consumptions.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiKeyConsumption'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - api-key-consumption
   /admin-api/audit-events/{id}:
     delete:
       summary: delete a audit-event
@@ -3792,74 +3495,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/done'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - audit-event
-    patch:
-      summary: update a audit-event with JSON patch or by  merging JSON object
-      operationId: audit-events.patch
-      requestBody:
-        description: the patch to update the audit-event or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/object'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - audit-event
-    put:
-      summary: update a audit-event
-      operationId: audit-events.update
-      requestBody:
-        description: the audit-event to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/object'
-      responses:
-        '204':
-          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3933,37 +3568,6 @@ paths:
                 $ref: '#/components/schemas/error'
       tags:
         - audit-event
-    post:
-      summary: creates a audit-event
-      requestBody:
-        description: the audit-event to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/object'
-      operationId: audit-events.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - audit-event
   /admin-api/messages/{id}:
     delete:
       summary: delete a message
@@ -3975,74 +3579,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/done'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - message
-    patch:
-      summary: update a message with JSON patch or by  merging JSON object
-      operationId: messages.patch
-      requestBody:
-        description: the patch to update the message or a JSON object
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/Message'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        '404':
-          description: entity not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      parameters:
-        - schema:
-            type: string
-          in: path
-          name: id
-          required: true
-      tags:
-        - message
-    put:
-      summary: update a message
-      operationId: messages.update
-      requestBody:
-        description: the message to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-      responses:
-        '204':
-          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4108,37 +3644,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Message'
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      tags:
-        - message
-    post:
-      summary: creates a message
-      requestBody:
-        description: the message to create
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-      operationId: messages.create
-      responses:
-        '201':
-          description: entity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '400':
-          description: bad entity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
         '401':
           description: unauthorized
           content:

@@ -22,6 +22,7 @@ class JobsController(
     otoroshiSynchronizerJob: OtoroshiSynchronizerJob,
     rotationJob: ApiKeySecretRotationJob,
     verifierJob: OtoroshiEntitiesVerifierJob,
+    remoteCatalogJob: RemoteCatalogJob,
     apiKeyStatsJob: ApiKeyStatsJob,
     auditTrailPurgeJob: AuditTrailPurgeJob,
     env: Env,
@@ -38,7 +39,7 @@ class JobsController(
         ctx
           .getQueryString("access_key")
           .orElse(ctx.getQueryString("key")) match {
-          case Some(key) if env.config.otoroshiSyncKey.contains(key) =>
+          case Some(key) if env.config.otoroshiSyncKey == key =>
             val entryPoint
                 : ApiId | UsagePlanId | ApiSubscriptionId | SyncAllSubscription =
               ctx.getQueryString("subscription") match {
@@ -71,7 +72,7 @@ class JobsController(
         ctx
           .getQueryString("access_key")
           .orElse(ctx.getQueryString("key")) match {
-          case Some(key) if env.config.rotationJobKey.contains(key) =>
+          case Some(key) if env.config.rotationJobKey == key =>
             rotationJob
               .run(
                 tenant = tenant,
@@ -90,7 +91,7 @@ class JobsController(
         ctx
           .getQueryString("access_key")
           .orElse(ctx.getQueryString("key")) match {
-          case Some(key) if env.config.verifierJobKey.contains(key) =>
+          case Some(key) if env.config.verifierJobKey == key =>
             verifierJob
               .run(tenant = tenant)
               .map(_ => Ok(Json.obj("done" -> true)))
@@ -114,6 +115,25 @@ class JobsController(
         auditTrailPurgeJob.purge().map(_ => Ok(Json.obj("done" -> true)))
       } else {
         FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
+      }
+    }
+
+  def remoteCatalogRunJob(parallelism: Int = 25): Action[AnyContent] =
+    Action.async { ctx =>
+      TenantHelper.withTenant(ctx, env) { tenant =>
+        ctx
+          .getQueryString("access_key")
+          .orElse(ctx.getQueryString("key")) match {
+          case Some(key) if env.config.remoteCatalogJobKey == key =>
+            remoteCatalogJob
+              .run(
+                tenant = tenant,
+                runBy = Runner.Api,
+                parallelism = parallelism
+              )
+              .map(_ => Ok(Json.obj("done" -> true)))
+          case _ => AppError.Unauthorized.renderF()
+        }
       }
     }
 }
