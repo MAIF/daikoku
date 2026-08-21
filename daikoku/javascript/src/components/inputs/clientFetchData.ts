@@ -77,13 +77,13 @@ export function clientFetchData<T>(
 
       const sorted = sorting.length
         ? [...filtered].sort((a, b) => {
-          for (const { id, desc } of sorting) {
-            const get = sortKey(id);
-            const result = compare(get(a), get(b));
-            if (result !== 0) return desc ? -result : result;
-          }
-          return 0;
-        })
+            for (const { id, desc } of sorting) {
+              const get = sortKey(id);
+              const result = compare(get(a), get(b));
+              if (result !== 0) return desc ? -result : result;
+            }
+            return 0;
+          })
         : filtered;
 
       return {
