@@ -9,23 +9,42 @@ import {
   ColumnDef,
   ColumnFiltersState,
   PaginationState,
+  RowData,
   Row,
   SortingState,
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable, RowSelectionState, OnChangeFn,
+  createSortedRowModel,
+  useTable,
+  tableFeatures,
+  rowSortingFeature,
+  rowSelectionFeature,
+  columnFilteringFeature,
+  rowPaginationFeature,
+  RowSelectionState, OnChangeFn,
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
-import { ChevronLeft, ChevronRight, Ellipsis, RefreshCcw, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Ellipsis, RefreshCcw, Search } from 'lucide-react';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends unknown, TValue> extends DynamicTableColumnMeta { }
+  interface ColumnMeta<TFeatures, TData, TValue> extends DynamicTableColumnMeta { }
 }
+
+// Jeu de features statique, partagé par toutes les instances de DynamicTable
+// (indépendant de T) : tri, sélection de lignes, filtres colonne et pagination
+// (ces deux derniers pour exposer les slices d'état `columnFilters`/`pagination`
+// même si le fetch/tri/pagination restent "manual").
+export const dynamicTableFeatures = tableFeatures({
+  rowSortingFeature,
+  rowSelectionFeature,
+  columnFilteringFeature,
+  rowPaginationFeature,
+  sortedRowModel: createSortedRowModel(),
+});
+export type DynamicTableFeatures = typeof dynamicTableFeatures;
 
 type DynamicTableColumnMeta = {
   className?: string;
@@ -34,6 +53,7 @@ type DynamicTableColumnMeta = {
   /** Relative width (in `fr` units) of the column in the CSS grid. Default: 1. */
   size?: number;
   hidden?: boolean;
+  style?: { [x: string]: string };
 };
 
 type FilterOption = {
@@ -189,14 +209,14 @@ export type DynamicTableColumnCtx = {
   seedFilterLabels: (filterId: string, options: FilterOption[]) => void;
 };
 
-export type DynamicTableProps<T> = {
+export type DynamicTableProps<T extends RowData> = {
   queryKey: string[];
-  columns: ColumnDef<T, any>[] | ((ctx: DynamicTableColumnCtx) => ColumnDef<T, any>[]);
+  columns: ColumnDef<DynamicTableFeatures, T, any>[] | ((ctx: DynamicTableColumnCtx) => ColumnDef<DynamicTableFeatures, T, any>[]);
   fetchData: FetchData<T>;
   filters?: FilterDef[];
   defaultFilters?: ColumnFiltersState;
   defaultSorting?: SortingState;
-  enableRowSelection?: boolean | ((row: Row<T>) => boolean);
+  enableRowSelection?: boolean | ((row: Row<DynamicTableFeatures, T>) => boolean);
   bulkActions?: BulkAction<T>[];
   pageSize?: number;
   persistFiltersInUrl?: boolean;
@@ -214,7 +234,7 @@ export type DynamicTableProps<T> = {
   isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
 };
 
-export function DynamicTable<T>({
+export function DynamicTable<T extends RowData>({
   queryKey,
   columns,
   fetchData,
@@ -296,6 +316,14 @@ export function DynamicTable<T>({
     }
   }, [columnFilters, persistFiltersInUrl]);
 
+  const isFirstSortRender = useRef(true);
+  useEffect(() => {
+    if (isFirstSortRender.current) { isFirstSortRender.current = false; return; }
+    // Sorting reorders the whole result set, so the current page no longer
+    // shows the same slice: go back to the first page.
+    setPage(0);
+  }, [sorting]);
+
   const commitPageSize = () => {
     const parsed = Math.trunc(Number(pageSizeRef.current?.value));
     const next = !parsed || Number.isNaN(parsed) ? pageSize : Math.max(parsed, 1);
@@ -326,7 +354,8 @@ export function DynamicTable<T>({
   );
 
   const defaultData = useMemo(() => [], []);
-  const table = useReactTable<T>({
+  const table = useTable<DynamicTableFeatures, T>({
+    features: dynamicTableFeatures,
     data: items.length ? items : defaultData,
     columns: resolvedColumns,
     getRowId,
@@ -335,8 +364,6 @@ export function DynamicTable<T>({
     onPaginationChange: setPagination,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     manualSorting: true,
     enableRowSelection: isRowSelectable
@@ -574,15 +601,47 @@ export function DynamicTable<T>({
 
   // When the table has a leading selection column, its header slot is the
   // "select all" checkbox rendered in renderBulkRow, so we skip it here.
+  //
+  // Sorting is `manual`, so toggling a header only updates the `sorting` state:
+  // that state is part of the query key, so the change is what triggers a
+  // refetch. Only accessor columns can sort (`getCanSort` requires an
+  // `accessorFn`), so `display` columns stay plain headers without opting out.
   const renderColumnHeaders = (skipFirst = false) =>
     table
-      .getVisibleLeafColumns()
+      .getAllLeafColumns()
       .slice(skipFirst ? 1 : 0)
-      .map(column => (
-        (column.columnDef.meta?.hidden !== true) && <div key={column.id} className={column.columnDef.meta?.className}>
-          {column.columnDef.meta?.title}
-        </div>
-      ));
+      .filter(column => column.columnDef.meta?.hidden !== true)
+      .map(column => {
+        const title = column.columnDef.meta?.title;
+
+        if (!column.getCanSort()) {
+          return (
+            <div key={column.id} className={column.columnDef.meta?.className}>
+              {title}
+            </div>
+          );
+        }
+
+        const sorted = column.getIsSorted();
+        return (
+          <div
+            key={column.id}
+            className={column.columnDef.meta?.className}
+            aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}
+          >
+            <button
+              type="button"
+              className={classNames('dynamic-table__sort', { '--sorted': !!sorted })}
+              onClick={column.getToggleSortingHandler()}
+            >
+              <span>{title}</span>
+              {sorted === 'asc' && <ChevronUp />}
+              {sorted === 'desc' && <ChevronDown />}
+              {!sorted && <ChevronsUpDown className="--idle" />}
+            </button>
+          </div>
+        );
+      });
 
   const renderBulkRow = () => {
     if (!hasBulkActions) return null;
@@ -673,9 +732,9 @@ export function DynamicTable<T>({
       }
     });
     if (noRowSelectable) {
-        setRowSelection({});
-        return
-      }
+      setRowSelection({});
+      return
+    }
     setRowSelection(newSelection);
   };
 
@@ -687,7 +746,7 @@ export function DynamicTable<T>({
   // `fr` track grows to its content's min-content width (worsened by the
   // `white-space: nowrap` on rows), so a row with long content gets misaligned.
   const gridTemplateColumns = table
-    .getVisibleLeafColumns()
+    .getAllLeafColumns()
     .filter(c => c.columnDef.meta?.hidden !== true)
     .map(c => `minmax(0, ${c.columnDef.meta?.size ?? 1}fr)`)
     .join(' ');
@@ -733,7 +792,7 @@ export function DynamicTable<T>({
               {table.getRowModel().rows.map(row => (
                 <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)}>
                   <article className="table-row" aria-label={getRowAriaLabel?.(row.original)}>
-                    {row.getVisibleCells().map(cell => (
+                    {row.getAllCells().map(cell => (
                       (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </div>

@@ -1,25 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
-import classNames from 'classnames';
+import { createColumnHelper } from "@tanstack/react-table";
 import { subHours } from 'date-fns';
-import { useContext, useMemo, useState } from "react";
+import { useContext, useState } from "react";
 
-import Pagination from '../../utils/Pagination';
 import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from '../../../services';
 import { IAuditTrailEventGQL } from '../../../types';
-import { Filter } from '../../inputs';
+import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import { Can, formatDate, manage, tenant } from '../../utils';
-
-type NotificationColumnMeta = {
-  style?: { [x: string]: string };
-};
-declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
-}
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
@@ -28,33 +17,33 @@ export const AuditTrailList = () => {
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  )
+  const pageSize = 25;
+
   const [from, setFrom] = useState(subHours(new Date(), 1));
   const [to, setTo] = useState(new Date());
 
 
-  const auditTrailQuery = useQuery({
-    queryKey: ["audits", from, to, columnFilters, sorting, pagination],
-    queryFn: () => customGraphQLClient.request<{ auditTrail: { events: Array<IAuditTrailEventGQL>, total: number } }>(Services.graphql.getAuditTrail, {
+
+  // ─── fetchData ──────────────────────────────────────────────────────────
+  type IAuditTrailGQL = { events: Array<IAuditTrailEventGQL>, total: number }
+  const fetchData: FetchData<IAuditTrailEventGQL> = ({ limit, offset, filters, sorting }) =>
+    customGraphQLClient.request<{ auditTrail: IAuditTrailGQL }>(Services.graphql.getAuditTrail, {
       from: from.getTime(),
       to: to.getTime(),
-      filterTable: JSON.stringify([...(columnFilters ?? [])]),
-      sortingTable: JSON.stringify(sorting ?? []),
-      limit: pagination.pageSize,
-      offset: pagination.pageIndex * pagination.pageSize,
-    }),
-    select: d => d.auditTrail
-  });
+      filterTable: JSON.stringify(filters),
+      sortingTable: JSON.stringify(sorting),
+      limit: limit,
+      offset: offset,
+    })
+      .then(({ auditTrail }): FetchResult<IAuditTrailEventGQL> => {
+        return {
+          items: auditTrail.events,
+          total: auditTrail.total,
+        }
+      })
 
 
-  const columnHelper = createColumnHelper<IAuditTrailEventGQL>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IAuditTrailEventGQL>();
   const columns = [
     columnHelper.accessor('event_timestamp', {
       header: translate('Date'),
@@ -110,26 +99,6 @@ export const AuditTrailList = () => {
     }),
   ];
 
-  const defaultData = useMemo(() => [], [])
-  const table = useReactTable({
-    data: auditTrailQuery.data?.events ?? defaultData,
-    columns: columns,
-    rowCount: auditTrailQuery.data?.total,
-    state: {
-      pagination,
-      columnFilters,
-      sorting
-    },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
-
-
 
   const updateDateRange = (from: Date, to: Date) => {
     setFrom(from);
@@ -141,67 +110,15 @@ export const AuditTrailList = () => {
         <h1>{translate('Audit trail')}</h1>
         <section className="section p-2">
           <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />
-          <table className="reactTableV7 mt-3">
-            <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => {
-                    return (
-                      <th
-                        key={header.id}
-                        colSpan={header.colSpan}
-                        className={classNames({
-                          '--sort-asc': header.column.getIsSorted() === 'asc',
-                          '--sort-desc': header.column.getIsSorted() === 'desc',
-                        })}>
-                        {header.isPlaceholder ? null : (
-                          <div onClick={header.column.getToggleSortingHandler()}>
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          </div>
-                        )}
-                        {header.column.getCanFilter() && <div className='my-2'>
-                          <Filter column={header.column} table={table} />
-                        </div>}
-                      </th>
-                    )
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map(row => {
-                return (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map(cell => {
-                      return (
-                        <td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          <Pagination
-            previousLabel={translate('Previous')}
-            nextLabel={translate('Next')}
-            breakLabel={'...'}
-            breakClassName={'break'}
-            pageCount={table.getPageCount()}
-            marginPagesDisplayed={1}
-            pageRangeDisplayed={5}
-            onPageChange={(page) => table.setPageIndex(page.selected)}
-            containerClassName={'pagination'}
-            pageClassName={'page-selector'}
-            activeClassName={'active'} />
+          <DynamicTable<IAuditTrailEventGQL>
+            queryKey={['auudit-events']}
+            columns={columns}
+            fetchData={fetchData}
+            pageSize={pageSize}
+            getRowId={row => row.id}
+            getRowAriaLabel={row => row.message}
+            countLabelKey="Event"
+          />
         </section>
       </main>
     </Can>

@@ -2,7 +2,7 @@ import { constraints, format, Schema, type } from '@maif/react-forms';
 import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
@@ -12,7 +12,7 @@ import {
   ITenantFull,
   RemoteCatalogSourceKind,
 } from '../../../../types';
-import { Table, TableRef } from '../../../inputs/Table';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { formatDate } from '../../../utils/formatters';
 
@@ -31,21 +31,23 @@ export const RemoteCatalogsForm = (props: {
   tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
-  const table = useRef<TableRef>(undefined);
-
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm, alert } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
+  const queryKey = ['remote-catalogs', props.tenant._id];
+
+  // The rows come straight from the tenant prop, so the table has to be told
+  // when that prop changes — nothing else would invalidate its cached page.
   useEffect(() => {
-    table.current?.update();
+    queryClient.invalidateQueries({ queryKey });
   }, [props.tenant.remoteCatalogs]);
 
   const persist = (remoteCatalogs: Array<IRemoteCatalog>) =>
     props.updateTenant
       .mutateAsync({ ...props.tenant, remoteCatalogs })
       .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
-      .then(() => table.current?.update());
+      .then(() => queryClient.invalidateQueries({ queryKey }));
 
   const formatAt = (at: any): string => {
     const ts = typeof at === 'object' && at !== null ? at.$long : at;
@@ -291,6 +293,21 @@ export const RemoteCatalogsForm = (props: {
         : translate('remote-catalog.modal.createBtn'),
     });
 
+  const fetchData = clientFetchData<IRemoteCatalog>(
+    () => props.tenant.remoteCatalogs ?? [],
+    {
+      searchable: (c) => [c.name, c.source?.kind],
+      sortValues: {
+        source: (c) => c.source?.kind,
+        scheduling: (c) => !!c.scheduling?.enabled,
+      },
+    }
+  );
+
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
+
   const deleteCatalog = (catalog: IRemoteCatalog) =>
     confirm({
       message: translate({ key: 'remote-catalog.deleteConfirm', replacements: [catalog.name] }),
@@ -301,21 +318,27 @@ export const RemoteCatalogsForm = (props: {
       }
     });
 
-  const columnHelper = createColumnHelper<IRemoteCatalog>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IRemoteCatalog>();
   const columns = [
-    columnHelper.accessor('name', { header: translate('remote-catalog.label.name') }),
+    columnHelper.accessor('name', {
+      id: 'name',
+      meta: { title: translate('remote-catalog.label.name'), size: 25 },
+    }),
     columnHelper.accessor('source.kind', {
-      header: translate('remote-catalog.label.source'),
+      id: 'source',
+      meta: { title: translate('remote-catalog.label.source'), size: 15 },
       cell: (info) => <span className="badge bg-secondary">{info.getValue()}</span>,
     }),
     columnHelper.accessor('enabled', {
-      header: translate('remote-catalog.label.enabled'),
+      id: 'enabled',
+      meta: { title: translate('remote-catalog.label.enabled'), size: 10 },
       cell: (info) => (
         <i className={`fas ${info.getValue() ? 'fa-check text-success' : 'fa-times text-danger'}`} />
       ),
     }),
     columnHelper.accessor('scheduling.enabled', {
-      header: translate('remote-catalog.label.scheduling'),
+      id: 'scheduling',
+      meta: { title: translate('remote-catalog.label.scheduling'), size: 10 },
       cell: (info) => {
         const sched = info.row.original.scheduling;
         if (!sched?.enabled) return <span className="text-muted">—</span>;
@@ -323,10 +346,8 @@ export const RemoteCatalogsForm = (props: {
       },
     }),
     columnHelper.display({
-      header: translate('remote-catalog.label.actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'actions',
+      meta: { title: translate('remote-catalog.label.actions'), size: 12, className: 'action-cell' },
       cell: (info) => {
         const catalog = info.row.original;
         return (
@@ -381,11 +402,14 @@ export const RemoteCatalogsForm = (props: {
           {translate('remote-catalog.action.create')}
         </button>
         <div className="section p-2" />
-        <Table
-          defaultSort="name"
+        <DynamicTable<IRemoteCatalog>
+          queryKey={queryKey}
           columns={columns}
-          fetchItems={() => props.tenant.remoteCatalogs ?? []}
-          ref={table}
+          fetchData={fetchData}
+          filters={filters}
+          defaultSorting={[{ id: 'name', desc: false }]}
+          getRowId={row => row.id}
+          getRowAriaLabel={row => row.name}
         />
       </div>
     </Can>

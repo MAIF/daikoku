@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import { useContext, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, Group, Separator } from 'react-resizable-panels';
 
 import { ModalContext } from '../../../contexts';
 
@@ -9,15 +9,15 @@ import { ModalContext } from '../../../contexts';
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
 
-  const closeOnEsc = (e: any) => {
-    if (e.key == 'Escape' || e.key == 'Esc') {
-      e.preventDefault();
-      closeRightPanel();
-      return false;
-    }
-  };
-
   useEffect(() => {
+    const closeOnEsc = (e: any) => {
+      if (e.key == 'Escape' || e.key == 'Esc') {
+        e.preventDefault();
+        closeRightPanel();
+        return false;
+      }
+    };
+
     window.addEventListener('keydown', closeOnEsc, true);
 
     return () => {
@@ -39,7 +39,7 @@ export const RightPanel = () => {
 
   return (
     <div className={classNames("right-panel-container", { opened: rightPanelContent })}>
-      <PanelGroup direction='horizontal'>
+      <Group orientation='horizontal'>
         <Panel defaultSize={25} maxSize={65}>
           <div
             className={classNames('right-panel-background', {
@@ -50,7 +50,7 @@ export const RightPanel = () => {
           />
 
         </Panel>
-        <PanelResizeHandle />
+        <Separator />
         <Panel defaultSize={75} minSize={35}>
           <div
             className={classNames('right-panel', {
@@ -60,7 +60,7 @@ export const RightPanel = () => {
           >
             <div className="m-2 p-2">
               <button className="btn --icon-only --secondary right-panel__back " onClick={closeRightPanel}>
-                <X/>
+                <X />
               </button>
               {rightPanelContent?.title}
             </div>
@@ -69,7 +69,7 @@ export const RightPanel = () => {
             </div>
           </div>
         </Panel>
-      </PanelGroup>
+      </Group>
 
     </div>
   );

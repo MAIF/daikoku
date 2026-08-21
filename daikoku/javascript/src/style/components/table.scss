@@ -69,6 +69,38 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     font-weight: bold;
   }
 
+  // Sortable column header: a borderless button so the whole label stays
+  // keyboard-reachable. The idle chevron only shows on hover/focus, so an
+  // unsorted table reads exactly like a non-sortable one.
+  .dynamic-table__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: inherit;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+
+    .--idle {
+      opacity: 0;
+      transition: opacity .15s ease-in-out;
+    }
+
+    &:hover .--idle,
+    &:focus-visible .--idle {
+      opacity: .5;
+    }
+  }
+
   li:last-of-type .table-row {
     border: none;
   }

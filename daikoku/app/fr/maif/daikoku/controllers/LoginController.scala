@@ -5,12 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext,
-  DaikokuUnauthenticatedAction
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext, DaikokuUnauthenticatedAction}
 import fr.maif.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.daikoku.controllers.AppError.getErrorMessage
 import fr.maif.daikoku.domain.*
@@ -34,6 +29,7 @@ import play.api.mvc.*
 import play.api.routing.Router.RequestImplicits.WithHandlerDef
 
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.TimeUnit
@@ -500,7 +496,7 @@ class LoginController(
           try {
             redirectUri = new String(
               Base64.getUrlDecoder.decode(redirectUri),
-              Charsets.UTF_8
+              StandardCharsets.UTF_8
             )
           } catch {
             case _: Throwable =>

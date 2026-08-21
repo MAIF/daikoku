@@ -1,14 +1,15 @@
 /* eslint-disable react/display-name */
 import { constraints, format, type } from '@maif/react-forms';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IAsset, ITeamSimple } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import { Can, tenant as TENANT, asset, manage } from '../../utils';
 import { Download, Eye, Pen, RefreshCw, Trash2 } from "lucide-react";
 
@@ -145,7 +146,8 @@ const ReplaceButton = (props: any) => {
 export const AssetsList = ({
   currentTeam
 }: { currentTeam?: ITeamSimple }) => {
-  const tableRef = useRef<TableRef>(undefined);
+  const queryClient = useQueryClient();
+  const queryKey = ['assets', currentTeam?._id ?? 'tenant'];
   const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
@@ -211,34 +213,27 @@ export const AssetsList = ({
     },
   };
 
-  const columnHelper = createColumnHelper<IAsset>()
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IAsset>()
   const columns = [
     columnHelper.accessor(row => row.meta.filename, {
       id: 'filename',
-      header: translate('Filename'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Filename'), size: 20 },
     }),
     columnHelper.accessor(row => row.meta.title, {
       id: 'title',
-      header: translate('Title'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Title'), size: 20 },
     }),
     columnHelper.accessor(row => row.slug, {
       id: 'slug',
-      header: translate('Slug'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Slug'), size: 20 },
     }),
     columnHelper.accessor(row => row.meta.desc, {
       id: 'desc',
-      header: translate('Description'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Description'), size: 20 },
     }),
     columnHelper.display({
       id: 'thumbnail',
-      header: translate('Thumbnail'),
-      meta: { style: { textAlign: 'left' } },
-      enableSorting: false,
-      enableColumnFilter: false,
+      meta: { title: translate('Thumbnail'), size: 10 },
       cell: (info) => {
         const item = info.row.original;
         const type = item.meta['content-type'];
@@ -265,15 +260,11 @@ export const AssetsList = ({
     }),
     columnHelper.accessor(row => row.contentType, {
       id: 'content-type',
-      header: translate('Content-Type'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Content-Type'), size: 15 },
     }),
     columnHelper.display({
       id: 'actions',
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '180px' } },
-      enableSorting: false,
-      enableColumnFilter: false,
+      meta: { title: translate('Actions'), size: 15, className: 'action-cell' },
       cell: (info) => {
         const item = info.row.original;
         return (
@@ -292,7 +283,7 @@ export const AssetsList = ({
               tenantMode={!currentTeam}
               teamId={currentTeam ? currentTeam._id : undefined}
               displayError={(error) => toast.error(error)}
-              postAction={() => tableRef.current?.update()}
+              postAction={() => queryClient.invalidateQueries({ queryKey })}
             />
             <a href={assetLink(item.meta.asset, false)}
               className="btn --secondary --small --icon-only"
@@ -391,20 +382,27 @@ export const AssetsList = ({
       .then((ok) => {
         if (ok) {
           serviceDelete(asset.meta.asset)
-            .then(() => tableRef.current?.update());
+            .then(() => queryClient.invalidateQueries({ queryKey }));
         }
       });
   };
 
-  const fetchAssets = () => {
-    let getAssets;
-    if (!currentTeam) {
-      getAssets = Services.listTenantAssets();
-    } else {
-      getAssets = Services.listAssets(currentTeam._id);
-    }
-    return getAssets
-  };
+  const fetchAssets = () =>
+    !currentTeam ? Services.listTenantAssets() : Services.listAssets(currentTeam._id);
+
+  const fetchData = clientFetchData<IAsset>(fetchAssets, {
+    searchable: (a) => [a.meta.filename, a.meta.title, a.slug, a.meta.desc, a.contentType],
+    sortValues: {
+      filename: (a) => a.meta.filename,
+      title: (a) => a.meta.title,
+      desc: (a) => a.meta.desc,
+      'content-type': (a) => a.contentType,
+    },
+  });
+
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
 
   const addAsset = (asset: any) => {
     const file = asset.file[0];
@@ -417,7 +415,7 @@ export const AssetsList = ({
         file
       )
         .then((r) => maybeCreateThumbnail(r.id, file))
-        .then(() => tableRef.current?.update())
+        .then(() => queryClient.invalidateQueries({ queryKey }))
     } else {
       return Services.storeAsset(
         currentTeam._id,
@@ -428,7 +426,7 @@ export const AssetsList = ({
         file
       )
         .then((asset) => maybeCreateThumbnail(asset.id, file))
-        .then(() => tableRef.current?.update())
+        .then(() => queryClient.invalidateQueries({ queryKey }))
     }
   }
 
@@ -451,11 +449,14 @@ export const AssetsList = ({
       </div>
       <div className="row">
         <div className="col">
-          <Table
+          <DynamicTable<IAsset>
+            queryKey={queryKey}
             columns={columns}
-            fetchItems={() => fetchAssets()}
-            ref={tableRef}
-            defaultSort='title'
+            fetchData={fetchData}
+            filters={filters}
+            defaultSorting={[{ id: 'title', desc: false }]}
+            getRowId={row => row.meta.asset}
+            getRowAriaLabel={row => row.meta.filename}
           />
         </div>
       </div>

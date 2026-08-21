@@ -113,7 +113,8 @@ libraryDependencies ++= Seq(
   "org.yaml" % "snakeyaml" % "2.6",
   "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2",
   "com.github.alonsodomin.cron4s" %% "cron4s-joda" % "0.8.2",
-  "org.awaitility" % "awaitility-scala" % "4.3.0" % Test
+  "org.awaitility" % "awaitility-scala" % "4.3.0" % Test,
+  "commons-codec" % "commons-codec" % "1.22.1"
 )
 
 dependencyOverrides ++= Seq(
