@@ -203,10 +203,7 @@ export interface IGitSourceConfig {
   base_url?: string;
   repo_patterns?: Array<string>;
 }
-export type IRemoteCatalogSourceConfig =
-  | IFileSourceConfig
-  | IHttpSourceConfig
-  | IGitSourceConfig;
+export type IRemoteCatalogSourceConfig = IFileSourceConfig | IHttpSourceConfig | IGitSourceConfig;
 
 export interface IRemoteCatalogSource {
   kind: RemoteCatalogSourceKind;

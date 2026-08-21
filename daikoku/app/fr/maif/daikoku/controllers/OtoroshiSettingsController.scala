@@ -5,13 +5,9 @@ import com.google.common.base.Charsets
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
-import fr.maif.daikoku.controllers.authorizations.async._
-import fr.maif.daikoku.domain.json.{
-  AuthorizedEntitiesFormat,
-  OtoroshiSettingsFormat,
-  TestingConfigFormat
-}
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.controllers.authorizations.async.*
+import fr.maif.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, TestingConfigFormat}
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -23,10 +19,11 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
 import play.api.http.HttpEntity
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_WsBody
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
 
+import java.nio.charset.StandardCharsets
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -707,7 +704,7 @@ class OtoroshiSettingsController(
             if auth.name == TestingAuth.Basic.name =>
           headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
               .encodeBase64String(s"${username.getOrElse("")}:${password
-                  .getOrElse("")}".getBytes(Charsets.UTF_8))}")
+                  .getOrElse("")}".getBytes(StandardCharsets.UTF_8))}")
         case _ => headers
       }
     }

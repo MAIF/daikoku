@@ -2,25 +2,26 @@ import { constraints, format, Schema, type } from '@maif/react-forms';
 import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect } from 'react';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
-import { Table, TableRef } from '../../../inputs/Table';
+import { clientFetchData, DynamicTable, DynamicTableFeatures } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { Edit, Trash2 } from "lucide-react";
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const table = useRef<TableRef>(undefined);
-
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
 
+  const queryKey = ['third-party-payment-settings', props.tenant._id];
+
+  // The rows come straight from the tenant prop, so the table has to be told
+  // when that prop changes — nothing else would invalidate its cached page.
   useEffect(() => {
-    //todo: refactor this
-    table.current?.update()
+    queryClient.invalidateQueries({ queryKey })
   }, [props.tenant.thirdPartyPaymentSettings])
 
 
@@ -67,19 +68,17 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   //   }
   // }]
 
-  const columnHelper = createColumnHelper<IThirdPartyPaymentSettings>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IThirdPartyPaymentSettings>();
   const columns = [
     columnHelper.accessor("name", {
-      header: translate('Name'),
+      meta: { title: translate('Name'), size: 20 },
     }),
     columnHelper.accessor("type", {
-      header: translate('Type'),
+      meta: { title: translate('Type'), size: 20 },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'actions',
+      meta: { title: translate('Actions'), size: 8, className: 'action-cell' },
       cell: (info) => {
         const settings = info.row.original;
         return (
@@ -105,6 +104,10 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       },
     }),
   ];
+
+  const fetchData = clientFetchData<IThirdPartyPaymentSettings>(
+    () => props.tenant.thirdPartyPaymentSettings
+  );
 
   const getSettingsSchema = (paymentType: ThirdPartyPaymentType): Schema => {
     switch (paymentType) {
@@ -145,7 +148,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       if (ok) {
         props.updateTenant.mutateAsync({ ...props.tenant, thirdPartyPaymentSettings })
           .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
-          .then(() => table.current?.update())
+          .then(() => queryClient.invalidateQueries({ queryKey }))
       }
     })
   }
@@ -173,7 +176,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           thirdPartyPaymentSettings
         })
           .then(() => queryClient.invalidateQueries({ queryKey: ['full-tenant'] }))
-          .then(() => table.current?.update())
+          .then(() => queryClient.invalidateQueries({ queryKey }))
       },
       actionLabel: paymentSetttings ? translate('Update') : translate('Create')
     })
@@ -212,11 +215,13 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           {translate('third-party.payment.list.add.label')}
         </button>
         <div className="section p-2"></div>
-        <Table
-          defaultSort="Url"
+        <DynamicTable<IThirdPartyPaymentSettings>
+          queryKey={queryKey}
           columns={columns}
-          fetchItems={() => props.tenant.thirdPartyPaymentSettings}
-          ref={table}
+          fetchData={fetchData}
+          defaultSorting={[{ id: 'name', desc: false }]}
+          getRowId={row => row._id}
+          getRowAriaLabel={row => row.name}
         />
       </div>
     </Can>

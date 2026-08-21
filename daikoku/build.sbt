@@ -10,11 +10,12 @@ scalaVersion := "3.8.2"
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val wiremockVersion = "3.13.2"
-lazy val awsJavaSdkVersion = "2.41.29"
+lazy val awsJavaSdkVersion = "2.54.0"
 lazy val akkaHttp2Version = "10.2.10"
-val pekkoVersion = "1.1.5"
-val pekkoHttpVersion = "1.1.0"
-lazy val jacksonVersion = "2.17.3"
+val pekkoVersion = "1.7.0"
+val pekkoHttpVersion = "1.4.0"
+lazy val jacksonVersion = "2.22.2"
+lazy val toolsJacksonVersion = "3.2.2"
 
 lazy val root = (project in file("."))
   .enablePlugins(
@@ -72,47 +73,48 @@ libraryDependencies ++= Seq(
   "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
   "org.wiremock" % "wiremock" % wiremockVersion % Test,
 //  "org.wiremock" % "wiremock-jre8" % wiremockVersion % Test,
-  "org.testcontainers" % "testcontainers" % "2.0.3" % Test,
+  "org.testcontainers" % "testcontainers" % "2.0.5" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.44.1" % Test,
   "org.apache.commons" % "commons-lang3" % "3.20.0",
-  "org.bouncycastle" % "bcprov-jdk18on" % "1.83",
+  "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2",
   // play framework
   "org.playframework" %% "play-json" % "3.0.6",
-  "org.playframework" %% "play-pekko-http2-support" % "3.0.10",
+  "org.playframework" %% "play-pekko-http2-support" % "3.0.11",
   // pekko
   "org.apache.pekko" %% "pekko-connectors-kafka" % "1.1.0",
-  "org.apache.pekko" %% "pekko-connectors-s3" % "1.2.0",
-  "com.auth0" % "java-jwt" % "4.5.1" excludeAll (excludesJackson: _*),
-  "com.auth0" % "jwks-rsa" % "0.23.0" excludeAll (excludesJackson: _*), // https://github.com/auth0/jwks-rsa-java
-  "com.nimbusds" % "nimbus-jose-jwt" % "10.7",
+  "org.apache.pekko" %% "pekko-connectors-s3" % "1.3.0",
+  "com.auth0" % "java-jwt" % "4.6.0" excludeAll (excludesJackson: _*),
+  "com.auth0" % "jwks-rsa" % "0.24.1" excludeAll (excludesJackson: _*), // https://github.com/auth0/jwks-rsa-java
+  "com.nimbusds" % "nimbus-jose-jwt" % "10.9.1",
   "com.softwaremill.macwire" %% "macros" % "2.6.7" % "provided",
-  "io.vertx" % "vertx-pg-client" % "5.0.8", // scram-client included transitively
+  "io.vertx" % "vertx-pg-client" % "5.1.6", // scram-client included transitively
   "io.nayuki" % "qrcodegen" % "1.8.0",
-  "com.eatthepath" % "java-otp" % "0.4.0",
+  "com.eatthepath" % "java-otp" % "1.0.0",
   "com.sun.mail" % "jakarta.mail" % "2.0.2",
-  "org.gnieh" %% "diffson-play-json" % "4.6.1" excludeAll ExclusionRule(
+  "org.gnieh" %% "diffson-play-json" % "4.7.0" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"
   ),
   "org.typelevel" %% "cats-core" % "2.13.0",
   "de.svenkubiak" % "jBCrypt" % "0.4.3",
   "software.amazon.awssdk" % "aws-core" % awsJavaSdkVersion,
   "software.amazon.awssdk" % "s3" % awsJavaSdkVersion,
-  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20260102.1",
-  "commons-logging" % "commons-logging" % "1.3.5",
-  "com.github.jknack" % "handlebars" % "4.5.0",
-  "org.sangria-graphql" %% "sangria" % "4.2.15",
+  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20260313.1",
+  "commons-logging" % "commons-logging" % "1.4.0",
+  "com.github.jknack" % "handlebars" % "4.5.4",
+  "org.sangria-graphql" %% "sangria" % "4.2.19",
   "org.sangria-graphql" %% "sangria-play-json" % "2.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.play"
   ),
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.17.3",
-  "org.apache.logging.log4j" % "log4j-api" % "2.25.3",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.2",
+  "org.apache.logging.log4j" % "log4j-api" % "2.26.1",
   "com.github.blemale" %% "scaffeine" % "5.3.0",
-  "com.github.slugify" % "slugify" % "3.0.7",
-  "joda-time" % "joda-time" % "2.14.0",
+  "com.github.slugify" % "slugify" % "4.0.1",
+  "joda-time" % "joda-time" % "2.14.3",
   "org.yaml" % "snakeyaml" % "2.6",
   "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2",
   "com.github.alonsodomin.cron4s" %% "cron4s-joda" % "0.8.2",
-  "org.awaitility" % "awaitility-scala" % "4.3.0" % Test
+  "org.awaitility" % "awaitility-scala" % "4.3.0" % Test,
+  "commons-codec" % "commons-codec" % "1.22.1"
 )
 
 dependencyOverrides ++= Seq(
@@ -133,14 +135,14 @@ dependencyOverrides ++= Seq(
   "io.netty" % "netty-transport" % "4.2.10.Final",
   "io.netty" % "netty-transport-native-unix-common" % "4.2.10.Final",
   //jackson
-  "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
-  "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-  "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
+  "tools.jackson.core" % "jackson-core" % toolsJacksonVersion,
+  "tools.jackson.core" % "jackson-databind" % toolsJacksonVersion,
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.22",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
-  "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion,
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
+  "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % "2.22.1",
+  "tools.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
   "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion,
-  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion,
+  "tools.jackson.dataformat" % "jackson-dataformat-cbor" % toolsJacksonVersion,
   // Pekko Core
   "org.apache.pekko" %% "pekko-actor" % pekkoVersion,
   "org.apache.pekko" %% "pekko-actor-typed" % pekkoVersion,

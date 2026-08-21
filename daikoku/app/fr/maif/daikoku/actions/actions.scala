@@ -14,6 +14,7 @@ import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.*
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
@@ -173,7 +174,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   def decodeBase64(encoded: String): String =
-    new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
+    new String(Base64.getUrlDecoder.decode(encoded), StandardCharsets.UTF_8)
   private def extractUsernamePassword(
       header: String
   ): Option[(String, String)] = {

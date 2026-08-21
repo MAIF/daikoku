@@ -10,7 +10,7 @@ import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
 import { isError } from "../../../types/api"
-import { DynamicTable, FetchData, FetchResult, FilterDef } from "../../inputs/DynamicTable"
+import { DynamicTable, FetchData, FetchResult, FilterDef, type DynamicTableFeatures } from "../../inputs/DynamicTable"
 import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
@@ -49,7 +49,7 @@ export const ApiList = (props: ApiListProps) => {
 
   // ─── Table columns ──────────────────────────────────────────────────────
 
-  const columnHelper = createColumnHelper<IApiWithAuthorization>()
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IApiWithAuthorization>()
 
   const columns = useMemo(() => {
     const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
