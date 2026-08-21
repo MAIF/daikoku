@@ -21,7 +21,6 @@ import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '.
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 
-//@ts-ignore
 import 'highlight.js/styles/monokai.css';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 

@@ -46,10 +46,9 @@ export const AuditTrailList = () => {
   const columnHelper = createColumnHelper<DynamicTableFeatures, IAuditTrailEventGQL>();
   const columns = [
     columnHelper.accessor('event_timestamp', {
-      header: translate('Date'),
       id: 'date',
       enableColumnFilter: false,
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Date'), style: { textAlign: 'left' } },
       cell: (info) => {
         const item = info.getValue();
         const value: number = item['$long'] ?? item
@@ -58,25 +57,22 @@ export const AuditTrailList = () => {
     }),
     columnHelper.accessor(row => row.user.name, {
       id: 'user',
-      header: translate('User'),
-      meta: { style: { textAlign: 'left' } }
+      meta: { title: translate('User'), style: { textAlign: 'left' } }
     }),
     columnHelper.accessor(row => row.impersonator?.name, {
       id: 'impersonator',
-      header: translate('Impersonator'),
       enableSorting: false,
       meta: { style: { textAlign: 'left' } },
       cell: (info) => info.getValue() || ''
     }),
     columnHelper.accessor('message', {
       id: 'message',
-      header: translate('Message'),
       enableSorting: false,
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Message'), style: { textAlign: 'left' } },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
+      id: 'action',
+      meta: { title: translate('Actions'), style: { textAlign: 'center', width: '120px' } },
       enableColumnFilter: false,
       enableSorting: false,
       cell: (info) => {
