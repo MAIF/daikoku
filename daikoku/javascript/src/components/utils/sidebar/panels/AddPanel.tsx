@@ -56,7 +56,6 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
         onSubmit={(data) => {
           props.handleSubmit(data)
             .then((r) => {
-              console.debug({ r })
               closeRightPanel()
             })
         }}

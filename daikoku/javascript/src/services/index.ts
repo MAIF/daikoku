@@ -1072,8 +1072,6 @@ export const login = (
 
   const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
 
-  console.debug({ url, action, redirect });
-
   return fetch(url, {
     method: 'POST',
     headers: {
