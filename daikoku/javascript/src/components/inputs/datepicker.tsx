@@ -1,6 +1,6 @@
 
 import { DatePicker } from 'antd';
-import dateFnsGenerateConfig from 'rc-picker/lib/generate/dateFns';
+import dateFnsGenerateConfig from 'rc-picker/es/generate/dateFns';
 import { NoUndefinedRangeValueType } from 'rc-picker/lib/PickerInput/RangePicker';
 import { useContext } from 'react';
 

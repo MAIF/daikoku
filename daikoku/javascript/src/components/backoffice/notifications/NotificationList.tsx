@@ -2,7 +2,7 @@ import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
-import { formatDistanceToNow } from 'date-fns';
+import { format as formatDate, formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash/debounce';
 import { useContext, useMemo } from 'react';
 import { ArrowRight, Ban, Check, Smile } from "lucide-react";
@@ -68,7 +68,19 @@ type NotificationActionGQL =
   | { __typename: 'NewIssueOpenV2'; api: IApiGQL; issue: Issue }
   | { __typename: 'CheckoutForSubscription'; plan: IUsagePlan; step: IValidationStep & { type: 'payment' }; demand: ISubscriptionDemandGQL; api: IApiGQL }
   | { __typename: 'ApiSubscriptionTransferSuccess'; subscription: ISubscription }
-  | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string };
+  | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string }
+  | {
+    __typename: 'SubscriptionPriceChangeScheduled';
+    api: IApiGQL; plan: IUsagePlan;
+    costPerMonth: number; costPerRequest?: number; currency: { code: string }; effectiveAt: number;
+  }
+  | {
+    __typename: 'SubscriptionPaymentFailed';
+    api: IApiGQL; plan: IUsagePlan;
+    amount: number; currency: { code: string }; failedAt: number; gracePeriodEndsAt: number;
+  }
+  | { __typename: 'SubscriptionKeyDisabled'; api: IApiGQL; plan: IUsagePlan; disabledAt: number }
+  | { __typename: 'SubscriptionCancellationScheduled'; api: IApiGQL; plan: IUsagePlan; effectiveAt: number };
 
 type NotificationGQL = {
   _id: string
@@ -104,7 +116,11 @@ const getApiFromNotification = (
     case 'NewIssueOpenV2':
     case 'NewCommentOnIssueV2':
     case 'TransferApiOwnership':
-    case 'CheckoutForSubscription': {
+    case 'CheckoutForSubscription':
+    case 'SubscriptionPriceChangeScheduled':
+    case 'SubscriptionPaymentFailed':
+    case 'SubscriptionKeyDisabled':
+    case 'SubscriptionCancellationScheduled': {
       const _api = notification.action.api;
       return { _id: _api._id, name: _api.name, currentVersion: _api.currentVersion };
     }
@@ -149,7 +165,9 @@ export const NotificationList = () => {
     { type: 'TeamInvitation' }, { type: 'ApiKeyRefreshV2' }, { type: 'NewPostPublishedV2' },
     { type: 'NewIssueOpenV2' }, { type: 'NewCommentOnIssueV2' }, { type: 'TransferApiOwnership' },
     { type: 'ApiSubscriptionTransferSuccess' }, { type: 'CheckoutForSubscription' },
-    { type: 'AccountCreation' },
+    { type: 'AccountCreation' }, { type: 'SubscriptionPriceChangeScheduled' },
+    { type: 'SubscriptionPaymentFailed' }, { type: 'SubscriptionKeyDisabled' },
+    { type: 'SubscriptionCancellationScheduled' },
   ];
 
   // ─── Actions ─────────────────────────────────────────────────────────────
@@ -166,6 +184,8 @@ export const NotificationList = () => {
   };
 
   // ─── Formatters ──────────────────────────────────────────────────────────
+
+  const day = (date: number) => formatDate(date, 'P', { locale: getLanguageFns(language) });
 
   const statusFormatter = (status: { date?: number; status: 'Pending' | 'Accepted' | 'Rejected' }) => {
     switch (status.status) {
@@ -574,6 +594,30 @@ export const NotificationList = () => {
         return translate('notif.issues.comment');
       case 'ApiSubscriptionTransferSuccess':
         return translate('notif.subscription.transfer.success');
+      case 'SubscriptionPriceChangeScheduled':
+        return translate({
+          key: 'notif.billing.price.change',
+          replacements: [notification.action.plan.customName, day(notification.action.effectiveAt)],
+        });
+      case 'SubscriptionPaymentFailed':
+        return translate({
+          key: 'notif.billing.payment.failed',
+          replacements: [
+            `${notification.action.amount} ${notification.action.currency.code}`,
+            notification.action.plan.customName,
+            day(notification.action.gracePeriodEndsAt),
+          ],
+        });
+      case 'SubscriptionKeyDisabled':
+        return translate({
+          key: 'notif.billing.key.disabled',
+          replacements: [notification.action.plan.customName, day(notification.action.disabledAt)],
+        });
+      case 'SubscriptionCancellationScheduled':
+        return translate({
+          key: 'notif.billing.cancellation',
+          replacements: [notification.action.plan.customName, day(notification.action.effectiveAt)],
+        });
       case 'AccountCreationAttempt': {
         const description = translate('notif.account.creation.attempt');
         const value = notification.action.demand?.value;

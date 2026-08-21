@@ -134,3 +134,21 @@ mail.account.creation.mail.accepted.title = Your registration on [tenant] has be
 mail.account.creation.mail.accepted.body = Hello [userName], </br>\
 Thank you for signing up on [tenant]. </br>\
 After review, we are pleased to inform you that your account creation request has been approved. </br>\
+
+mail.billing.price.change.title=The price of one of your plans is changing
+mail.billing.price.change.body=The price of the plan [planName] of the API [apiName] changes on [effectiveAt]. </br>\
+From that date, the team [teamName] is charged [costPerMonth] [currency] per month and [costPerRequest] [currency] per call. </br>\
+Until then, nothing changes. </br>\
+<a href="[link]">See your subscription</a>
+mail.billing.payment.failed.title=A payment for your subscription has failed
+mail.billing.payment.failed.body=The payment of [amount] [currency] for the plan [planName] of the API [apiName] failed on [failedAt]. </br>\
+Please update your payment method before [gracePeriodEndsAt]. Past that date, the api key of the team [teamName] stops working. </br>\
+<a href="[link]">See your subscription</a>
+mail.billing.key.disabled.title=Your api key has been disabled
+mail.billing.key.disabled.body=The api key of the team [teamName] for the plan [planName] of the API [apiName] has been disabled on [disabledAt], after an unpaid invoice. </br>\
+Nothing has been deleted: the same credentials work again as soon as the invoice is paid. </br>\
+<a href="[link]">See your subscription</a>
+mail.billing.cancellation.title=Your cancellation has been recorded
+mail.billing.cancellation.body=The subscription of the team [teamName] to the plan [planName] of the API [apiName] ends on [effectiveAt]. </br>\
+The api key keeps working until that date, and the last invoice covers the usage up to it. </br>\
+<a href="[link]">See your subscription</a>

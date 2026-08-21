@@ -131,3 +131,21 @@ mail.account.creation.mail.accepted.title = Votre inscription sur [tenant] a ét
 mail.account.creation.mail.accepted.body = Bonjour [userName], </br>\
 Merci de vous être inscrit sur [tenant]. </br>\
 Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\
+
+mail.billing.price.change.title=Le tarif d''un de vos plans change
+mail.billing.price.change.body=Le tarif du plan [planName] de l''API [apiName] change le [effectiveAt]. </br>\
+À partir de cette date, l''équipe [teamName] est facturée [costPerMonth] [currency] par mois et [costPerRequest] [currency] par appel. </br>\
+D''ici là, rien ne change. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.billing.payment.failed.title=Un paiement de votre souscription a échoué
+mail.billing.payment.failed.body=Le paiement de [amount] [currency] pour le plan [planName] de l''API [apiName] a échoué le [failedAt]. </br>\
+Merci de mettre à jour votre moyen de paiement avant le [gracePeriodEndsAt]. Passé cette date, la clé d''API de l''équipe [teamName] cesse de fonctionner. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.billing.key.disabled.title=Votre clé d''API a été désactivée
+mail.billing.key.disabled.body=La clé d''API de l''équipe [teamName] pour le plan [planName] de l''API [apiName] a été désactivée le [disabledAt], suite à une facture impayée. </br>\
+Rien n''a été supprimé : les mêmes identifiants refonctionnent dès que la facture est réglée. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.billing.cancellation.title=Votre résiliation a été enregistrée
+mail.billing.cancellation.body=La souscription de l''équipe [teamName] au plan [planName] de l''API [apiName] prend fin le [effectiveAt]. </br>\
+La clé d''API continue de fonctionner jusqu''à cette date, et la dernière facture couvre la consommation jusque-là. </br>\
+<a href="[link]">Voir votre souscription</a>

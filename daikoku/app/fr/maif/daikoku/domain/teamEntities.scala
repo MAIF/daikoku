@@ -322,6 +322,40 @@ object NotificationAction {
       plan: UsagePlanId,
       step: SubscriptionDemandStepId
   ) extends NotificationAction
+
+  case class SubscriptionPriceChangeScheduled(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      costPerMonth: BigDecimal,
+      costPerRequest: Option[BigDecimal],
+      currency: Currency,
+      effectiveAt: DateTime
+  ) extends NotificationAction
+
+  case class SubscriptionPaymentFailed(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      amount: BigDecimal,
+      currency: Currency,
+      failedAt: DateTime,
+      gracePeriodEndsAt: DateTime
+  ) extends NotificationAction
+
+  case class SubscriptionKeyDisabled(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      disabledAt: DateTime
+  ) extends NotificationAction
+
+  case class SubscriptionCancellationScheduled(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      effectiveAt: DateTime
+  ) extends NotificationAction
 }
 
 sealed trait NotificationType {

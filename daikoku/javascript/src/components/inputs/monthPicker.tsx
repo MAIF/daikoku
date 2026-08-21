@@ -1,6 +1,6 @@
-import DatePicker from 'antd/lib/date-picker';
+import { DatePicker } from 'antd';
 import { useContext } from 'react';
-import dateFnsGenerateConfig from 'rc-picker/lib/generate/dateFns'
+import dateFnsGenerateConfig from 'rc-picker/es/generate/dateFns'
 import { endOfMonth } from 'date-fns';
 
 import { I18nContext } from '../../contexts';

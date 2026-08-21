@@ -2882,6 +2882,14 @@ object json {
             ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
+          case "SubscriptionPriceChangeScheduled" =>
+            SubscriptionPriceChangeScheduledFormat.reads(json)
+          case "SubscriptionPaymentFailed" =>
+            SubscriptionPaymentFailedFormat.reads(json)
+          case "SubscriptionKeyDisabled" =>
+            SubscriptionKeyDisabledFormat.reads(json)
+          case "SubscriptionCancellationScheduled" =>
+            SubscriptionCancellationScheduledFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
         }
 
@@ -2988,6 +2996,26 @@ object json {
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
+          case p: SubscriptionPriceChangeScheduled =>
+            SubscriptionPriceChangeScheduledFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionPriceChangeScheduled"
+            )
+          case p: SubscriptionPaymentFailed =>
+            SubscriptionPaymentFailedFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionPaymentFailed"
+            )
+          case p: SubscriptionKeyDisabled =>
+            SubscriptionKeyDisabledFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionKeyDisabled"
+            )
+          case p: SubscriptionCancellationScheduled =>
+            SubscriptionCancellationScheduledFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionCancellationScheduled"
+            )
         }
     }
 
@@ -3079,6 +3107,129 @@ object json {
         "step" -> o.step.asJson
       )
   }
+
+  val SubscriptionPriceChangeScheduledFormat =
+    new Format[SubscriptionPriceChangeScheduled] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionPriceChangeScheduled] =
+        Try {
+          JsSuccess(
+            SubscriptionPriceChangeScheduled(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              costPerMonth = (json \ "costPerMonth").as[BigDecimal],
+              costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
+              currency = (json \ "currency").as(using CurrencyFormat),
+              effectiveAt = (json \ "effectiveAt").as(using DateTimeFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionPriceChangeScheduled): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "costPerMonth" -> o.costPerMonth,
+          "costPerRequest" -> o.costPerRequest
+            .map(JsNumber(_))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "currency" -> o.currency.asJson,
+          "effectiveAt" -> DateTimeFormat.writes(o.effectiveAt)
+        )
+    }
+
+  val SubscriptionPaymentFailedFormat =
+    new Format[SubscriptionPaymentFailed] {
+      override def reads(json: JsValue): JsResult[SubscriptionPaymentFailed] =
+        Try {
+          JsSuccess(
+            SubscriptionPaymentFailed(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              amount = (json \ "amount").as[BigDecimal],
+              currency = (json \ "currency").as(using CurrencyFormat),
+              failedAt = (json \ "failedAt").as(using DateTimeFormat),
+              gracePeriodEndsAt =
+                (json \ "gracePeriodEndsAt").as(using DateTimeFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionPaymentFailed): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "amount" -> o.amount,
+          "currency" -> o.currency.asJson,
+          "failedAt" -> DateTimeFormat.writes(o.failedAt),
+          "gracePeriodEndsAt" -> DateTimeFormat.writes(o.gracePeriodEndsAt)
+        )
+    }
+
+  val SubscriptionKeyDisabledFormat = new Format[SubscriptionKeyDisabled] {
+    override def reads(json: JsValue): JsResult[SubscriptionKeyDisabled] =
+      Try {
+        JsSuccess(
+          SubscriptionKeyDisabled(
+            subscription =
+              (json \ "subscription").as(using ApiSubscriptionIdFormat),
+            api = (json \ "api").as(using ApiIdFormat),
+            plan = (json \ "plan").as(using UsagePlanIdFormat),
+            disabledAt = (json \ "disabledAt").as(using DateTimeFormat)
+          )
+        )
+      } recover { case e =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: SubscriptionKeyDisabled): JsValue =
+      Json.obj(
+        "subscription" -> o.subscription.asJson,
+        "api" -> o.api.asJson,
+        "plan" -> o.plan.asJson,
+        "disabledAt" -> DateTimeFormat.writes(o.disabledAt)
+      )
+  }
+
+  val SubscriptionCancellationScheduledFormat =
+    new Format[SubscriptionCancellationScheduled] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionCancellationScheduled] =
+        Try {
+          JsSuccess(
+            SubscriptionCancellationScheduled(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              effectiveAt = (json \ "effectiveAt").as(using DateTimeFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionCancellationScheduled): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "effectiveAt" -> DateTimeFormat.writes(o.effectiveAt)
+        )
+    }
 
   val NewIssueOpenFormat = new Format[NewIssueOpen] {
     override def reads(json: JsValue): JsResult[NewIssueOpen] =

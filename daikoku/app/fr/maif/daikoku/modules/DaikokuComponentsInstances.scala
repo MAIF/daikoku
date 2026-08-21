@@ -11,6 +11,7 @@ import fr.maif.daikoku.services.{
   AccountCreationService,
   ApiService,
   AssetsService,
+  BillingNotificationService,
   DeletionService,
   TranslationsService,
   UserService
@@ -66,6 +67,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val UserService = wire[UserService]
   lazy val localLoginSupport = wire[LocalLoginSupport]
   lazy val deletionService = wire[DeletionService]
+  lazy val billingNotificationService = wire[BillingNotificationService]
 
   lazy val translator = wire[Translator]
 
