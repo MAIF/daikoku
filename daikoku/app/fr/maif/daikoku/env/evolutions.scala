@@ -2013,7 +2013,7 @@ object evolution_1900 extends EvolutionScript {
                 |         'integrationToken', s.content->>'integrationToken',
                 |         'bearerToken', s.content->'bearerToken',
                 |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
-                |         'customName', coalesce(a.content->>'name' || ' - ' || p.content->>'customName', s.content->'apiKey'->>'clientName')
+                |         'customName', coalesce((a.content->>'name') || ' - ' || (p.content->>'customName'), s.content->'apiKey'->>'clientName')
                 |       )
                 |FROM api_subscriptions s
                 |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
@@ -2046,7 +2046,7 @@ object evolution_1900 extends EvolutionScript {
                 |         'integrationToken', s.content->>'integrationToken',
                 |         'bearerToken', s.content->'bearerToken',
                 |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
-                |         'customName', coalesce(a.content->>'name' || ' - ' || p.content->>'customName', s.content->'apiKey'->>'clientName')
+                |         'customName', coalesce((a.content->>'name') || ' - ' || (p.content->>'customName'), s.content->'apiKey'->>'clientName')
                 |       )
                 |FROM api_subscriptions s
                 |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
