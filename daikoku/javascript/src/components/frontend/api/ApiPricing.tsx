@@ -44,7 +44,7 @@ import {
   apikey,
   Can,
   CanIDoAction,
-  CanIDoActionForOneOfTeams,
+  CanIDoActionForOneOfTeams, humanReadableBigNumber,
   isPublish,
   isSubscriptionProcessIsAutomatic,
   manage,
@@ -1823,17 +1823,30 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'quotas',
-        meta: { className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 5 },
+        meta: { className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 8 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <div className='feature__description'>
               {!plan.maxPerMonth && translate('plan.limits.unlimited')}
-              {!!plan.maxPerMonth && translate({
-                key: 'api.pricings.quotas.value', replacements: [
-                  String(plan.maxPerSecond), String(plan.maxPerDay), String(plan.maxPerMonth)
+              {!!plan.maxPerMonth && <ul>
+                <li>{translate({
+                key: 'api.pricings.quotas.sec.value', replacements: [
+                  humanReadableBigNumber((plan.maxPerSecond || 1000), translate)
                 ]
-              })}
+                })}</li>
+                {plan.maxPerDay && <li>{translate({
+                  key: 'api.pricings.quotas.day.value', replacements: [
+                    humanReadableBigNumber(plan.maxPerDay, translate)
+                  ]
+                })}</li>}
+                {plan.maxPerMonth && <li>{translate({
+                  key: 'api.pricings.quotas.month.value', replacements: [
+                    humanReadableBigNumber(plan.maxPerMonth, translate)
+                  ]
+                })}</li>}
+              </ul>
+              }
             </div>
           )
         }
@@ -1988,6 +2001,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           onClick={() => actions(plan).editProcess()}>
                           <Pencil size={16} />
                           {translate('pricing.edit.process.btn.label')}
+                        </span>
+                      </Can>
+                      <Can I={manage} a={API} team={props.ownerTeam}>
+                        <span className='dropdown-item cursor-pointer'
+                              onClick={() => actions(plan).editQuotas()}>
+                          <span className='feature__description'>
+                            <Pencil size={16} />
+                            {translate('usage.plan.form.quotas.selector.true.label')}
+                          </span>
                         </span>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>

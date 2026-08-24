@@ -942,7 +942,9 @@
   "Process": "Process",
   "api.pricings.no.step.explanation": "It's seems that there is no process subscription request validation process",
   "api.pricings.add.first.step.btn.label": "Add a first validation step",
-  "api.pricings.quotas.value": "%s req./sec, %s req./day, %s req./month",
+  "api.pricings.quotas.sec.value": "%s req./sec",
+  "api.pricings.quotas.day.value": "%s req./day",
+  "api.pricings.quotas.month.value": "%s req./month",
   "api.pricings.otoroshi.target.value.none": "None",
   "api.pricings.process.value.none": "None",
   "api.pricings.process.value": "%s steps",
@@ -1426,5 +1428,8 @@
   "account.creation.form.name.label": "Name",
   "account.creation.form.email.label": "Email",
   "account.creation.form.password.label": "Password",
-  "account.creation.form.confirm.password.label": "Confirm password"
+  "account.creation.form.confirm.password.label": "Confirm password",
+  "trillion": "trillion",
+  "billion": "billion",
+  "million": "million"
 }
