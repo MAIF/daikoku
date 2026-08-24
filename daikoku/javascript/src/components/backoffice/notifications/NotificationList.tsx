@@ -4,10 +4,11 @@ import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash/debounce';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Ban, Check, Smile } from "lucide-react";
+import { useContext, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
+import { toast } from "sonner";
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -27,12 +28,11 @@ import {
   IUser,
   IValidationStep,
 } from '../../../types';
-import { BulkAction, DynamicTable, DynamicTableColumnCtx, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
+import { BulkAction, DynamicTable, DynamicTableColumnCtx, DynamicTableFeatures, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
 import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 import { IApiSubscriptionGql } from '../apis';
-import {toast} from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -325,11 +325,12 @@ export const NotificationList = () => {
                         if (!isError(demand)) {
                           openSubMetadataModal({
                             save: (sub) => accept(notification._id, sub)
-                              .then((res) => {
+                              .then(() => {
                                 toast.success(
-                                  translate({ key: "notif.subscription.accepted", replacements:[
+                                  translate({
+                                    key: "notif.subscription.accepted", replacements: [
                                       _plan.customName, _api.name, _team.name
-                                  ]
+                                    ]
                                   })
                                 )
                               }),
@@ -488,7 +489,7 @@ export const NotificationList = () => {
                     // title={translate('Reject')}
                     aria-label={translate('Reject')}
                     title={translate('Reject')}
-                    // onClick={() => reject(notification._id)}
+                  // onClick={() => reject(notification._id)}
                   >
                     <Ban />
                   </FeedbackButton>
@@ -778,7 +779,7 @@ export const NotificationList = () => {
     }
   }
 
-  const columnHelper = createColumnHelper<NotificationGQL>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, NotificationGQL>();
 
   const buildColumns = ({ setColumnFilters, selectAll, seedFilterLabels }: DynamicTableColumnCtx) => [
     columnHelper.display({

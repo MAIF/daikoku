@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 import { JIM, MICHAEL } from './users';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 
 
 test.beforeEach(async () => {
@@ -179,8 +179,8 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
   await page.getByRole('link', { name: 'Vendeurs' }).click();
   await page.getByText('Clés d\'API').click();
-  await expect(page.getByRole("cell", {name: "API Commande"})).toBeVisible();
-  await expect(page.getByRole("cell", {name: "API papier"})).toBeHidden();
+  await expect(page.getByRole("listitem", { name: "API Commande" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "API papier" })).toBeHidden();
 
   //verifier dans oto que les clé sont plus dispo
   // La suppression est propagée à Otoroshi de façon asynchrone : on poll Otoroshi

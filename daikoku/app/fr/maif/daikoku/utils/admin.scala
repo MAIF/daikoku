@@ -14,10 +14,11 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.Logger
 import play.api.http.HttpEntity
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 import fr.maif.daikoku.storage.{DataStore, Repo}
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -35,7 +36,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   def decodeBase64(encoded: String): String =
-    new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
+    new String(Base64.getUrlDecoder.decode(encoded), StandardCharsets.UTF_8)
   private def extractUsernamePassword(
       header: String
   ): Option[(String, String)] = {

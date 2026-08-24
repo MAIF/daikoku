@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { toast } from 'sonner';
@@ -10,7 +10,7 @@ import {
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import {
   Can,
   Spinner,
@@ -28,7 +28,6 @@ export const TeamApiKeys = () => {
 
   const { connectedUser } = useContext(GlobalContext);
 
-  const tableRef = useRef<TableRef>(undefined);
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translate, Translation } = useContext(I18nContext);
@@ -48,21 +47,21 @@ export const TeamApiKeys = () => {
       document.title = `${currentTeam.name} - ${translate('API key')}`;
   }, [currentTeam]);
 
-  const columnHelper = createColumnHelper<IApi>();
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
+
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IApi>();
   const columns = (currentTeam: ITeamSimple) => [
     columnHelper.accessor('name', {
-      header: translate('Api Name'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Api Name'), size: 30 },
     }),
     columnHelper.accessor('currentVersion', {
-      header: translate('Version'),
-      meta: { style: { textAlign: 'left' } },
+      meta: { title: translate('Version'), size: 10 },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'actions',
+      meta: { title: translate('Actions'), size: 8, className: 'action-cell' },
       cell: (info) => {
         const api = info.row.original;
         return (
@@ -113,11 +112,17 @@ export const TeamApiKeys = () => {
               <Translation i18nkey="See Stats">See Stats</Translation>
             </Link>
             <div className="section p-2">
-              <Table
-                defaultSort="name"
+              <DynamicTable<IApi>
+                queryKey={['subscribed-apis', currentTeam._id]}
                 columns={columns(currentTeam)}
-                fetchItems={() => Services.subscribedApis(currentTeam._id)}
-                ref={tableRef}
+                fetchData={clientFetchData<IApi>(
+                  () => Services.subscribedApis(currentTeam._id),
+                  { searchable: (api) => [api.name, api.currentVersion] }
+                )}
+                filters={filters}
+                defaultSorting={[{ id: 'name', desc: false }]}
+                getRowId={row => row._id}
+                getRowAriaLabel={row => row.name}
               />
             </div>
           </div>

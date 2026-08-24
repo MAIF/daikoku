@@ -1,6 +1,6 @@
 import { constraints, Flow, Form, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ColumnDef, createColumnHelper, } from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper, RowSelectionState, } from "@tanstack/react-table";
 import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
@@ -37,7 +37,7 @@ import {
   OtoroshiEntity
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
-import { DynamicTable, FetchData, FetchResult } from "../../inputs";
+import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   access,
   api as API,
@@ -925,7 +925,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     multiPlanSubscriptionEnabled
   } } = useContext(GlobalContext);
 
-  const [rowSelection, setRowSelection] = useState<{ [planId: string]: boolean }>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const hasSelectedRow = Object.values(rowSelection).includes(true)
 
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
@@ -1767,8 +1767,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
-  const columnHelper = createColumnHelper<IUsagePlanGQL>();
-  const columns: ((ColumnDef<IUsagePlanGQL, any>))[] = useMemo((): ((ColumnDef<IUsagePlanGQL, any>))[] => {
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IUsagePlanGQL>();
+  const columns = useMemo(() => {
     return [
       columnHelper.display({
         meta: {
@@ -2028,7 +2028,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           )
         }
       })
-    ] as ColumnDef<IUsagePlanGQL, any>[]
+    ] as ColumnDef<DynamicTableFeatures, IUsagePlanGQL, any>[]
   }, [availableEnvQuery])
 
   return (

@@ -544,12 +544,7 @@ export interface IApiPost {
 }
 
 export type ISubscriptionDemandState =
-  | 'accepted'
-  | 'refused'
-  | 'canceled'
-  | 'inProgress'
-  | 'waiting'
-  | 'blocked';
+  'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked';
 
 export interface SubscriptionDemandStep {
   id: string;
