@@ -2010,6 +2010,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
 
+  // Makes the generic helpers of `Repo` scope their SQL to this tenant.
+  override protected def tenantScope: Option[String] = Some(tenant.value)
+
   override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
@@ -2510,6 +2513,15 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       values: Seq[Of]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     insertMany(values, Json.obj())
+
+  override protected def queryExists(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    logger.debug(s"$tableName.queryExists($sql)")
+
+    reactivePg.query(sql, params).map(_.size() > 0)
+  }
 
   override def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,

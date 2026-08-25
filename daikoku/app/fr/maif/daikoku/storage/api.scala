@@ -170,204 +170,129 @@ trait Repo[Of, Id <: ValueType] {
   ): Future[Option[Long]]
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Generic helpers.  Their bodies are plain parameterised SQL run through the
+  // primitives below (`query` / `queryOne` / `execute` / `queryExists`): no
+  // Mongo-style JsObject query is built, and every value goes through `params`.
+  //
+  // Beware: those primitives run the SQL exactly as written, so the tenant
+  // scoping added by `forTenant` is NOT injected for free.  Every helper here
+  // therefore builds its WHERE clause with `scopedWhere`, which appends
+  // `content->>'_tenant' = $n` when the repo is tenant-scoped.
+
+  /** Tenant this repo is scoped to, when it was obtained through `forTenant`.
+    */
+  protected def tenantScope: Option[String] = None
+
+  /** Matches the entities not logically deleted, the way the former JsObject
+    * query `{"_deleted": false}` did: an entity without a `_deleted` key does
+    * not match.
+    */
+  protected val notDeletedSql: String = "content->>'_deleted' = 'false'"
+
+  /** Builds the ` WHERE …` clause (empty string when there is nothing to filter
+    * on) of a generic helper. `predicates` must already reference `$1..$n`
+    * consistently with `params`; the tenant value, when the repo is
+    * tenant-scoped, is bound to the next free placeholder.
+    */
+  protected def scopedWhere(
+      predicates: Seq[String],
+      params: Seq[AnyRef] = Seq.empty
+  ): (String, Seq[AnyRef]) = {
+    val (allPredicates, allParams) = tenantScope match {
+      case Some(tenant) =>
+        (
+          predicates :+ s"content->>'_tenant' = $$${params.size + 1}",
+          params :+ tenant
+        )
+      case None => (predicates, params)
+    }
+
+    if (allPredicates.isEmpty) ("", allParams)
+    else (s" WHERE ${allPredicates.mkString(" AND ")}", allParams)
+  }
+
+  private def findOneByIdOrHrId(id: String, hrid: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Of]] = {
+    val (where, params) = scopedWhere(
+      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)", notDeletedSql),
+      Seq(id, hrid)
+    )
+    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
+  }
+
   def findByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
-    findOneNotDeleted(
-      Json.obj(
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
-    )
+    findOneByIdOrHrId(id, hrid)
 
   def findByIdOrHrId(id: Id, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
-    findOneNotDeleted(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
+    findOneByIdOrHrId(id.value, hrid)
 
   def findByIdOrHrId(
       idOrHrid: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOneNotDeleted(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> idOrHrid),
-          Json.obj("_humanReadableId" -> idOrHrid)
-        )
-      )
-    )
+    findOneByIdOrHrId(idOrHrid, idOrHrid)
 
   def findByIdOrHrIdNotDeleted(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
-    findOneNotDeleted(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
-    )
+    findOneByIdOrHrId(id, hrid)
 
   def findByIdOrHrIdNotDeleted(id: Id, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Option[Of]] =
-    findOneNotDeleted(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
+    findOneByIdOrHrId(id.value, hrid)
 
   def findByIdOrHrIdNotDeleted(
       idOrHrid: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    findOneNotDeleted(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> idOrHrid),
-          Json.obj("_humanReadableId" -> idOrHrid)
-        )
-      )
-    )
-  }
-
-  def findByIdOrHrIdRaw(id: String, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
-    )
-
-  def findByIdOrHrIdRaw(id: Id, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
-
-  def findByIdOrHrIdRaw(
-      idOrHrid: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> idOrHrid),
-          Json.obj("_humanReadableId" -> idOrHrid)
-        )
-      )
-    )
-
-  def findByIdOrHrIdNotDeletedRaw(id: String, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
-    )
-
-  def findByIdOrHrIdNotDeletedRaw(id: Id, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
-
-  def findByIdOrHrIdNotDeletedRaw(
-      idOrHrid: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
-    findOneNotDeletedRaw(
-      Json.obj(
-        "_deleted" -> false,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> idOrHrid),
-          Json.obj("_humanReadableId" -> idOrHrid)
-        )
-      )
-    )
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
+    findOneByIdOrHrId(idOrHrid, idOrHrid)
 
   def deleteByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Boolean] =
-    delete(
-      Json.obj(
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
+  ): Future[Boolean] = {
+    val (where, params) = scopedWhere(
+      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)"),
+      Seq(id, hrid)
     )
+    execute(s"DELETE FROM $tableName$where", params).map(_ => true)
+  }
 
   def deleteByIdOrHrId(id: Id, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
-    delete(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
+    deleteByIdOrHrId(id.value, hrid)
 
   def deleteLogicallyByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Boolean] =
-    deleteLogically(
-      Json.obj(
-        "$or" -> Json
-          .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> hrid))
-      )
+  ): Future[Boolean] = {
+    val (where, params) = scopedWhere(
+      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)", notDeletedSql),
+      Seq(id, hrid)
     )
+    execute(
+      s"UPDATE $tableName SET _deleted = true, " +
+        "content = content || '{ \"_deleted\" : true }'" + where,
+      params
+    ).map(_ > 0)
+  }
 
   def deleteLogicallyByIdOrHrId(id: Id, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] =
-    deleteLogically(
-      Json.obj(
-        "$or" -> Json.arr(
-          Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid)
-        )
-      )
-    )
+    deleteLogicallyByIdOrHrId(id.value, hrid)
 
   def existsByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
@@ -405,13 +330,12 @@ trait Repo[Of, Id <: ValueType] {
   def findAllNotDeleted()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Seq[Of]] =
-    find(
-      Json.obj(
-        "$or" -> Json
-          .arr(Json.obj("_deleted" -> false), Json.obj("_deleted" -> JsNull))
-      )
+  ): Future[Seq[Of]] = {
+    val (where, params) = scopedWhere(
+      Seq(s"($notDeletedSql OR content->>'_deleted' IS NULL)")
     )
+    query(s"SELECT content FROM $tableName$where", params)
+  }
 
   def findNotDeleted(
       query: JsObject,
@@ -432,8 +356,11 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdNotDeleted(
       id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_deleted" -> false, "_id" -> id))
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
+    val (where, params) =
+      scopedWhere(Seq(s"_id = $$1", notDeletedSql), Seq(id))
+    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
+  }
 
   def findByIdNotDeleted(
       id: Id
@@ -443,63 +370,87 @@ trait Repo[Of, Id <: ValueType] {
 
   def findById(
       id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_id" -> id))
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
+    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
+    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
+  }
 
   def findById(
       id: Id
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_id" -> id.value))
+    findById(id.value)
 
   def findByIds(
       ids: Seq[Id]
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
-    find(
-      Json.obj(
-        "_id" -> Json.obj("$in" -> JsArray(ids.map(id => JsString(id.value))))
-      )
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
+    val (where, params) = scopedWhere(
+      Seq(s"_id = ANY($$1::text[])"),
+      Seq(ids.map(_.value).toArray)
     )
+    query(s"SELECT content FROM $tableName$where", params)
+  }
 
   def findByIdsNotDeleted(
       ids: Seq[Id]
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
-    findNotDeleted(
-      Json.obj(
-        "_id" -> Json.obj("$in" -> JsArray(ids.map(id => JsString(id.value))))
-      )
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
+    val (where, params) = scopedWhere(
+      Seq(s"_id = ANY($$1::text[])", notDeletedSql),
+      Seq(ids.map(_.value).toArray)
     )
+    query(s"SELECT content FROM $tableName$where", params)
+  }
 
   def findAll()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Seq[Of]] =
-    find(Json.obj())
+  ): Future[Seq[Of]] = {
+    val (where, params) = scopedWhere(Seq.empty)
+    query(s"SELECT content FROM $tableName$where", params)
+  }
 
+  // NB: like the JsObject-based `delete` it replaces, this reports success
+  // regardless of the number of rows actually removed.
   def deleteById(
       id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    delete(Json.obj("_id" -> id))
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
+    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
+    execute(s"DELETE FROM $tableName$where", params).map(_ => true)
+  }
 
   def deleteById(
       id: Id
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    delete(Json.obj("_id" -> id.value))
+    deleteById(id.value)
 
   def deleteAll()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Boolean] =
-    delete(Json.obj())
+  ): Future[Boolean] = {
+    val (where, params) = scopedWhere(Seq.empty)
+    execute(s"DELETE FROM $tableName$where", params).map(_ => true)
+  }
 
   def exists(
       id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    exists(Json.obj("_id" -> id))
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
+    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
+    queryExists(s"SELECT 1 FROM $tableName$where LIMIT 1", params)
+  }
 
   def exists(
       id: Id
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    exists(Json.obj("_id" -> id.value))
+    exists(id.value)
+
+  /** True as soon as the parameterised SQL returns at least one row. Used by
+    * the generic helpers above, which must not parse `content` just to know
+    * whether a row exists.
+    */
+  protected def queryExists(query: String, params: Seq[AnyRef] = Seq.empty)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean]
 
   def queryOne(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
