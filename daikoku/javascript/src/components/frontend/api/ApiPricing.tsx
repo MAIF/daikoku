@@ -781,7 +781,7 @@ const SimpleTeamSelector = (props: {
                 <button
                   key={idx}
                   type="button"
-                  className="btn btn-sm btn-outline-primary disabled"
+                  className="btn --small --secondary disabled"
                 >
                   {cause}
                 </button>
@@ -789,7 +789,7 @@ const SimpleTeamSelector = (props: {
               {/*displayVerifiedBtn && !team.verified && (
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-danger"
+                  className="btn --small --secondary"
                   onClick={() => {
                     close();
                     navigate(`/${team._humanReadableId}/settings/edition`);
@@ -853,7 +853,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   {props.pendingTeams.includes(team._id) && (
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-primary disabled"
+                      className="btn --small --secondary disabled"
                     >
                       {translate('Request in progress')}
                     </button>
@@ -861,7 +861,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   {displayVerifiedBtn && !team.verified && (
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-danger"
+                      className="btn --tertiary --warning --small"
                       onClick={() => {
                         close();
                         navigate(`/${team._humanReadableId}/settings/edition`);
@@ -883,14 +883,14 @@ const TeamSelector = (props: ITeamSelector) => {
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
   return (
     <div className='form-selector mt-4'>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: props.value })}
+      <button type='button' className={classNames('btn --secondary col-6', { active: props.value })}
         onClick={() => props.action(true)}
         disabled={props.disabledTrue}
       >
         <div className='label'>{props.trueLabel}</div>
         <div className='description'>{props.trueDescription}</div>
       </button>
-      <button type='button' className={classNames('btn btn-outline-info col-6', { active: !props.value })}
+      <button type='button' className={classNames('btn --secondary col-6', { active: !props.value })}
         onClick={() => props.action(false)}
         disabled={props.disabledFalse}>
         <div className='label'>{props.falseLabel}</div>
@@ -1174,14 +1174,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <div className='d-flex flex-column'>
           <span>{translate("api.home.create.plan.modal.description")}</span>
           <div className='d-flex flex-rox justify-content-around'>
-            <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan()
+            <button className='btn --primary' onClick={() => Services.fetchNewPlan()
               .then(p => {
                 close()
                 updatePlan(convertIUsagePlanGQLToIUsagePlan(p), true)
               })}>
               {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
-            <button className='btn btn-outline-info' onClick={() => {
+            <button className='btn --primary' onClick={() => {
               close()
               openApiSelectModal({
                 api: props.api,
@@ -1823,12 +1823,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'quotas',
-        meta: { className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 8 },
+        meta: { className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 6 },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <div className='feature__description'>
-              <ul>
+              <ul className='pricing-quotas'>
                 <li>{translate({
                   key: 'api.pricings.quotas.sec.value', replacements: [
                     humanReadableBigNumber((plan.maxPerSecond || 1000), translate)
@@ -1987,7 +1987,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     <div className="dropdown-menu"
                       aria-labelledby={`${plan._id}-dropdownMenuButton`}
                       role='menu'>
-                      <button className="dropdown-item cursor-pointer"
+                      <button className="dropdown-item d-flex gap-1 align-items-center"
                         onClick={() => actions(plan).editPlan()}>
                         <Pencil size={16} />
                         {
@@ -1997,28 +1997,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
                         }
                       </button>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <button className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editOtoroshiTarget()}>
                           <Pencil size={16} />
                           {translate('Edit Otoroshi target')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <button className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editProcess()}>
                           <Pencil size={16} />
                           {translate('pricing.edit.process.btn.label')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <button className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item  d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editQuotas()}>
                           <Pencil size={16} />
                           {translate('usage.plan.form.quotas.selector.true.label')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <button className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item  d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editPricing()}>
                           <Pencil size={16} />
                           {translate('usage.plan.form.pricing.display.button.label')}
@@ -2026,23 +2026,25 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       </Can>
 
                       {props.api.visibility !== 'AdminOnly' && <>
-                        {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 && <span
-                          className="dropdown-item cursor-pointer"
-                          onClick={() => actions(plan).duplicatePlan()}>
-                          <CopyPlus size={16} />
-                          {tenant.display === 'environment'
-                            ? translate('pricing.clone.env.btn.label')
-                            : translate('Duplicate plan')}
-                        </span>}
-                        <span
-                          className="dropdown-item cursor-pointer"
+                        {availableEnvQuery.isSuccess && availableEnvQuery.data?.length > 0 && (
+                          <button
+                            className="dropdown-item d-flex gap-1 align-items-center"
+                            onClick={() => actions(plan).duplicatePlan()}>
+                            <CopyPlus size={16} />
+                            {tenant.display === 'environment'
+                              ? translate('pricing.clone.env.btn.label')
+                              : translate('Duplicate plan')}
+                          </button>)
+                        }
+                        <button
+                          className="dropdown-item d-flex gap-1 align-items-center"
                           onClick={() => actions(plan).deleteWithConfirm()}
                         >
                           <Trash2 size={16} />
                           {tenant.display === 'environment'
                             ? translate('pricing.delete.env.btn.label')
                             : translate('Delete plan')}
-                        </span>
+                        </button>
 
                       </>}
                     </div>
@@ -2235,7 +2237,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <button
               type='button'
               onClick={() => createNewPlan()}
-              className="btn btn-outline-primary d-flex align-items-center gap-2">
+              className="btn --primary d-flex align-items-center gap-2">
               <Plus />
               <p className="m-0">{
                 tenant.display === 'environment' ?

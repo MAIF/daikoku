@@ -208,9 +208,11 @@ export const formatMessageDate = (date: number, language: string, translate: (pa
   }
 };
 
+const roundToTwoDecimals = (n: number): string => Number(n.toFixed(2)).toString();
+
 export function humanReadableBigNumber(n: number, translate: (params: string | TranslateParams) => string): string {
-  if (n >= 1e12) return `${n / 1e12} ${translate('trillion')}${n / 1e12 > 1 ? 's' : ''}`;
-  if (n >= 1e9) return `${n / 1e9} ${translate('billion')}${n / 1e9 > 1 ? 's' : ''}`;
-  if (n >= 1e6) return `${n / 1e6} ${translate('million')}${n / 1e6 > 1 ? 's' : ''}`;
+  if (n >= 1e12) return `${roundToTwoDecimals(n / 1e12)} ${translate('trillion')}${n / 1e12 > 1 ? 's' : ''}`;
+  if (n >= 1e9) return `${roundToTwoDecimals(n / 1e9)} ${translate('billion')}${n / 1e9 > 1 ? 's' : ''}`;
+  if (n >= 1e6) return `${roundToTwoDecimals(n / 1e6)} ${translate('million')}${n / 1e6 > 1 ? 's' : ''}`;
   return `${n}`;
 }
