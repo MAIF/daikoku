@@ -207,3 +207,10 @@ export const formatMessageDate = (date: number, language: string, translate: (pa
     return format(messageDate, translate("date.format.message.info.year"), { locale: getLanguageFns(language) });
   }
 };
+
+export function humanReadableBigNumber(n: number, translate: (params: string | TranslateParams) => string): string {
+  if (n >= 1e12) return `${n / 1e12} ${translate('trillion')}${n / 1e12 > 1 ? 's' : ''}`;
+  if (n >= 1e9) return `${n / 1e9} ${translate('billion')}${n / 1e9 > 1 ? 's' : ''}`;
+  if (n >= 1e6) return `${n / 1e6} ${translate('million')}${n / 1e6 > 1 ? 's' : ''}`;
+  return `${n}`;
+}

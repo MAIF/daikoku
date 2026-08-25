@@ -581,7 +581,7 @@
   "permission.caption.user": "un utilisateur peut consulter les clés API",
   "Team forbidden to create api on current tenant": "Équipe interdite de créer une API sur l'organisation actuelle",
   "plan.limits": "%s appels/sec, %s appels/mois",
-  "plan.limits.unlimited": "appels illimités",
+  "plan.limits.unlimited": "∞",
   "req.": "appels",
   "month": "mois",
   "Free": "Gratuit",
@@ -945,7 +945,9 @@
   "Process": "Process",
   "api.pricings.no.step.explanation": "Il semble qu'il n'y ait pas de processus de validation de la demande d'abonnement au processus",
   "api.pricings.add.first.step.btn.label": "Ajouter une première étape de validation",
-  "api.pricings.quotas.value": "%s req./sec, %s req./jour, %s req./mois",
+  "api.pricings.quotas.sec.value": "%s req./sec",
+  "api.pricings.quotas.day.value": "%s req./jour",
+  "api.pricings.quotas.month.value": "%s req./mois",
   "api.pricings.otoroshi.target.value.none": "Aucun",
   "api.pricings.process.value.none": "Aucun",
   "api.pricings.process.value": "%s étapes",
@@ -1426,5 +1428,8 @@
   "remote-catalog.help.cron": "Format cron avec secondes : secondes minutes heures jour-du-mois mois jour-de-semaine.\nToutes les 5 secondes : */5 * * * * ?\nToutes les 2 minutes : 0 */2 * * * ?\nToutes les 3 heures : 0 0 */3 * * ?\nTous les jours à minuit : 0 0 0 * * ?",
   "remote-catalog.deleteConfirm": "Êtes-vous sûr de vouloir supprimer le catalogue distant %s ?",
   "remote-catalog.noRun": "Aucune exécution pour le moment",
-  "Creating subscription requests": "Création des demandes de souscription"
+  "Creating subscription requests": "Création des demandes de souscription",
+  "trillion": "billion",
+  "billion": "milliard",
+  "million": "million"
 }
