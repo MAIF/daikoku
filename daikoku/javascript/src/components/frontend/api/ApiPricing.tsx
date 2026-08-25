@@ -1830,18 +1830,18 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <div className='feature__description'>
               <ul>
                 <li>{translate({
-                key: 'api.pricings.quotas.sec.value', replacements: [
-                  humanReadableBigNumber((plan.maxPerSecond || 1000), translate)
-                ]
+                  key: 'api.pricings.quotas.sec.value', replacements: [
+                    humanReadableBigNumber((plan.maxPerSecond || 1000), translate)
+                  ]
                 })}</li>
                 <li>{translate({
                   key: 'api.pricings.quotas.day.value', replacements: [
-                    plan.maxPerDay ? humanReadableBigNumber(plan.maxPerDay, translate) :  translate('plan.limits.unlimited')
+                    plan.maxPerDay ? humanReadableBigNumber(plan.maxPerDay, translate) : translate('plan.limits.unlimited')
                   ]
                 })}</li>
                 <li>{translate({
                   key: 'api.pricings.quotas.month.value', replacements: [
-                    plan.maxPerMonth ? humanReadableBigNumber(plan.maxPerMonth, translate) :  translate('plan.limits.unlimited')
+                    plan.maxPerMonth ? humanReadableBigNumber(plan.maxPerMonth, translate) : translate('plan.limits.unlimited')
                   ]
                 })}</li>
               </ul>
@@ -1975,49 +1975,54 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       className="btn --tertiary --small --icon-only"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
+                      aria-label={
+                        tenant.display === 'environment'
+                          ? translate('environment.actions.aria.label')
+                          : translate('plan.actions.aria.label')
+                      }
                       id={`${plan.customName}-dropdownMenuButton`}
                     >
                       <EllipsisVertical size={16} />
                     </button>
-                    <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
-                      <span className="dropdown-item cursor-pointer"
+                    <div className="dropdown-menu"
+                      aria-labelledby={`${plan._id}-dropdownMenuButton`}
+                      role='menu'>
+                      <button className="dropdown-item cursor-pointer"
                         onClick={() => actions(plan).editPlan()}>
                         <Pencil size={16} />
-                        {tenant.display === 'environment'
-                          ? translate('pricing.edit.env.btn.label')
-                          : translate('Edit plan')}
-                      </span>
+                        {
+                          tenant.display === 'environment'
+                            ? translate('environment.actions.aria.label')
+                            : translate('plan.actions.aria.label')
+                        }
+                      </button>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <span className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editOtoroshiTarget()}>
                           <Pencil size={16} />
                           {translate('Edit Otoroshi target')}
-                        </span>
+                        </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <span className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editProcess()}>
                           <Pencil size={16} />
                           {translate('pricing.edit.process.btn.label')}
-                        </span>
+                        </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <span className='dropdown-item cursor-pointer'
-                              onClick={() => actions(plan).editQuotas()}>
-                          <span className='feature__description'>
-                            <Pencil size={16} />
-                            {translate('usage.plan.form.quotas.selector.true.label')}
-                          </span>
-                        </span>
+                        <button className='dropdown-item cursor-pointer'
+                          onClick={() => actions(plan).editQuotas()}>
+                          <Pencil size={16} />
+                          {translate('usage.plan.form.quotas.selector.true.label')}
+                        </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
-                        <span className='dropdown-item cursor-pointer'
+                        <button className='dropdown-item cursor-pointer'
                           onClick={() => actions(plan).editPricing()}>
-                          <span className='feature__description'>
-                            <Pencil size={16} />
-                            {translate('usage.plan.form.pricing.display.button.label')}
-                          </span>
-                        </span>
+                          <Pencil size={16} />
+                          {translate('usage.plan.form.pricing.display.button.label')}
+                        </button>
                       </Can>
 
                       {props.api.visibility !== 'AdminOnly' && <>

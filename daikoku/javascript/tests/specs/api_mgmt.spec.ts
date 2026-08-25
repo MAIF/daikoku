@@ -294,6 +294,84 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.locator('h1')).toBeVisible();
-
-
 });
+
+test('configurer un environnement', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByText('Environnements').click();
+
+  //global config
+  await page.getByRole('listitem', { name: 'prod' })
+    .getByRole('button', { name: 'Configurer' }).click()
+  await page
+    .getByRole('listitem', { name: 'prod' })
+    .getByRole('menu')
+    .getByRole('button', { name: 'Configurer l\'environnement' }).click();
+  await page.getByRole('textbox', { name: 'Description' }).fill('nouvelle description de l\'environnement');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText('Le plan a été mis à jour avec')).toBeVisible();
+  await expect(page.getByText('nouvelle description de l\'')).toBeVisible();
+
+  //quotas config
+  await expect(page
+    .getByRole('listitem', { name: 'prod' })
+    .getByText('100 req./sec')).toBeVisible();
+  await expect(page
+    .getByRole('listitem', { name: 'prod' })
+    .getByText('1000 req./jour')).toBeVisible();
+  await expect(page
+    .getByRole('listitem', { name: 'prod' })
+    .getByText('1000 req./mois')).toBeVisible();
+  await await page.getByRole('listitem', { name: 'prod' })
+    .getByRole('button', { name: 'Configurer' }).click()
+  await page
+    .getByRole('listitem', { name: 'prod' })
+    .getByRole('menu')
+    .getByRole('button', { name: 'Configurer les quotas' }).click();
+
+  await page.getByRole('button', { name: 'Configurer les quotas' }).click();
+
+  await page.getByLabel('Max. par seconde').fill('10');
+  await page.getByLabel('Max. par jour').fill('20');
+  await page.getByLabel('Max. par mois').clear();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page
+    .getByRole('listitem', { name: 'prod' }).getByText('10 req./sec')).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'prod' })
+    .getByText('20 req./jour')).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'prod' })
+    .getByText('∞ req./mois')).toBeVisible();
+
+  //process config
+  await await page.getByRole('listitem', { name: 'dev' })
+    .getByRole('button', { name: 'Configurer' }).click();
+  await page
+    .getByRole('listitem', { name: 'dev' })
+    .getByRole('menu')
+    .getByRole('button', { name: 'Modifier le process' }).click();
+  await page.getByRole('button', { name: 'Ajouter une première étape de' }).click();
+  await page.getByRole('button', { name: 'Admin. équipe' }).click();
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+  await page.getByRole('button', { name: 'save' }).click();
+  await expect(page
+    .getByRole('listitem', { name: 'dev' })
+    .getByText('2 étapes')).toBeVisible();
+
+  //pricing config
+  await await page.getByRole('listitem', { name: 'prod' })
+    .getByRole('button', { name: 'Configurer' }).click();
+  await page
+    .getByRole('listitem', { name: 'prod' })
+    .getByRole('menu')
+    .getByRole('button', { name: 'Configurer les tarifs' }).click();
+  await page.getByRole('button', { name: 'Avec frais Définissez des' }).click();
+  await page.getByRole('spinbutton', { name: 'Coût par mois' }).fill('10');
+  await page.getByRole('spinbutton', { name: 'Coût par req.' }).fill('0.08');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page
+    .getByRole('listitem', { name: 'prod' })
+    .getByText('€/mois + 0,08 €/appels')).toBeVisible();
+})
