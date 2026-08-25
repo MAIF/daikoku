@@ -1828,25 +1828,23 @@ export const ApiPricing = (props: ApiPricingProps) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
             <div className='feature__description'>
-              {!plan.maxPerMonth && translate('plan.limits.unlimited')}
-              {!!plan.maxPerMonth && <ul>
+              <ul>
                 <li>{translate({
                 key: 'api.pricings.quotas.sec.value', replacements: [
                   humanReadableBigNumber((plan.maxPerSecond || 1000), translate)
                 ]
                 })}</li>
-                {plan.maxPerDay && <li>{translate({
+                <li>{translate({
                   key: 'api.pricings.quotas.day.value', replacements: [
-                    humanReadableBigNumber(plan.maxPerDay, translate)
+                    plan.maxPerDay ? humanReadableBigNumber(plan.maxPerDay, translate) :  translate('plan.limits.unlimited')
                   ]
-                })}</li>}
-                {plan.maxPerMonth && <li>{translate({
+                })}</li>
+                <li>{translate({
                   key: 'api.pricings.quotas.month.value', replacements: [
-                    humanReadableBigNumber(plan.maxPerMonth, translate)
+                    plan.maxPerMonth ? humanReadableBigNumber(plan.maxPerMonth, translate) :  translate('plan.limits.unlimited')
                   ]
-                })}</li>}
+                })}</li>
               </ul>
-              }
             </div>
           )
         }

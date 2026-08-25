@@ -581,7 +581,7 @@
   "permission.caption.user": "un utilisateur peut consulter les clés API",
   "Team forbidden to create api on current tenant": "Équipe interdite de créer une API sur l'organisation actuelle",
   "plan.limits": "%s appels/sec, %s appels/mois",
-  "plan.limits.unlimited": "appels illimités",
+  "plan.limits.unlimited": "∞",
   "req.": "appels",
   "month": "mois",
   "Free": "Gratuit",

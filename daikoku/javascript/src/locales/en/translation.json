@@ -578,7 +578,7 @@
   "permission.caption.user": "a User can read team API keys",
   "Team forbidden to create api on current tenant": "Team forbidden to create API on current tenant",
   "plan.limits": "%s req./sec, %s req./month",
-  "plan.limits.unlimited": "unlimited calls",
+  "plan.limits.unlimited": "∞",
   "req.": "req.",
   "month": "month",
   "Free": "Free",
