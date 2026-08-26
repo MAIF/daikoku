@@ -253,13 +253,8 @@ class LoginFilter(env: Env)(implicit
   def findUserTeam(tenantId: TenantId, user: User): Future[Option[Team]] = {
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
-      maybePersonnalTeam: Option[Team] <- teamRepo.findOne(
-        Json.obj(
-          "type" -> TeamType.Personal.name,
-          "users.userId" -> user.id.value,
-          "_deleted" -> false
-        )
-      )
+      maybePersonnalTeam: Option[Team] <- env.dataStore.teamRepo
+        .findPersonalTeam(tenantId, user.id)
       backupTeam = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenantId,
@@ -282,14 +277,8 @@ class LoginFilter(env: Env)(implicit
           teamRepo
             .save(backupTeam)
             .flatMap(_ =>
-              teamRepo
-                .findOne(
-                  Json.obj(
-                    "type" -> TeamType.Personal.name,
-                    "users.userId" -> user.id.value,
-                    "_deleted" -> false
-                  )
-                )
+              env.dataStore.teamRepo
+                .findPersonalTeam(tenantId, user.id)
                 .map(_.orElse(Some(backupTeam)))
             )
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)

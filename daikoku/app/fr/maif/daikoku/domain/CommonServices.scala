@@ -225,13 +225,14 @@ object CommonServices {
             .findByIdsNotDeleted(allApis.map(_.team).distinct)
         demands <-
           env.dataStore.subscriptionDemandRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "team" -> teamId,
-                "api" -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
-                "state" -> Json.obj("$in" -> Json.arr("waiting", "inProgress"))
-              )
+            .findByStates(
+              ctx.tenant.id,
+              Seq(
+                SubscriptionDemandState.Waiting,
+                SubscriptionDemandState.InProgress
+              ),
+              apis = allApis.map(_.id).some,
+              teams = Seq(TeamId(teamId)).some
             )
         plans <-
           env.dataStore.usagePlanRepo

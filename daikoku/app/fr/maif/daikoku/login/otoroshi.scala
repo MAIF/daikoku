@@ -60,13 +60,8 @@ object OtoroshiIdentityFilter {
   ): Future[Option[Team]] = {
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
-      maybePersonnalTeam <- teamRepo.findOne(
-        Json.obj(
-          "type" -> TeamType.Personal.name,
-          "users.userId" -> user.id.value,
-          "_deleted" -> false
-        )
-      )
+      maybePersonnalTeam <- env.dataStore.teamRepo
+        .findPersonalTeam(tenantId, user.id)
       maybePersonnalTeamId =
         maybePersonnalTeam
           .map(_.id)

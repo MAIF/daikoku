@@ -44,11 +44,8 @@ class Translator {
     val body = if (key.startsWith("mail")) {
       env.dataStore.cmsRepo
         .forTenant(tenant)
-        .findOne(
-          Json.obj(
-            "_id" -> s".mails.$key.${language.toLowerCase}"
-              .replaceAll("\\.", "-")
-          )
+        .findById(
+          s".mails.$key.${language.toLowerCase}".replaceAll("\\.", "-")
         )
         .flatMap {
           case None =>
@@ -148,11 +145,8 @@ class Translator {
 
     env.dataStore.cmsRepo
       .forTenant(tenant)
-      .findOne(
-        Json.obj(
-          "_id" -> s".mails.root.$key.${language.toLowerCase}"
-            .replaceAll("\\.", "-")
-        )
+      .findById(
+        s".mails.root.$key.${language.toLowerCase}".replaceAll("\\.", "-")
       )
       .flatMap {
         case None => _getMailTemplate(key, tenant, args)

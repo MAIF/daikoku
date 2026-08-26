@@ -34,8 +34,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo` (**done**), `messageRepo` (**done**), `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
-| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
+| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | **Next** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
@@ -151,6 +151,11 @@ which is not a tenant-scoped repo.
   valid — same storage. What the migration reveals they *don't* cover is collected below.
 
 ## Phase 2 notes
+
+Closing the phase also removed two more `JsObject` methods from `Repo`: `findMaxByQuery` (see the
+`messageRepo` note) and the last `findWithProjection` outside `apiRepo` — an `Asset` is
+`(id, tenant, slug)`, so loading them whole costs exactly what the projection did. The three
+remaining `findWithProjection` callers are all on `apiRepo`, i.e. phase 3.
 
 `messageRepo` exposed a third silently-broken query, of the same family as the phase-1 one.
 `ReadMessages` marked a chat as read with `{"readBy": {"$ne": userId}}`; `$ne` renders as

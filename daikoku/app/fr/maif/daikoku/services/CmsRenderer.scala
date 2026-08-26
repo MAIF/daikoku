@@ -592,16 +592,7 @@ case class CmsPage(
   )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     Await.result(
       env.dataStore.cmsRepo
-        .forTenant(ctx.tenant)
-        .findOne(
-          Json.obj(
-            "$or" -> Json.arr(
-              Json.obj("_id" -> cleanPath(id)),
-              Json.obj("_id" -> cleanPath(id).replace("/", "-")),
-              Json.obj("_id" -> cleanPath(id).replace("/", "-").substring(1))
-            )
-          )
-        ),
+        .findByIdOrPathVariants(ctx.tenant.id, cleanPath(id), byPath = false),
       10.seconds
     )
   }
@@ -633,15 +624,10 @@ case class CmsPage(
       case None =>
         Await.result(
           env.dataStore.cmsRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj(
-                "$or" -> Json.arr(
-                  Json.obj("path" -> cleanPath(id)),
-                  Json.obj("_id" -> cleanPath(id)),
-                  Json.obj("_id" -> cleanPath(id).replace("/", "-"))
-                )
-              )
+            .findByIdOrPathVariants(
+              ctx.tenant.id,
+              cleanPath(id),
+              byPath = true
             ),
           10.seconds
         )

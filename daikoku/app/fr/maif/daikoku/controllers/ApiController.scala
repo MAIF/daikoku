@@ -1413,14 +1413,11 @@ class ApiController(
                 )
             pendingRequests <-
               env.dataStore.subscriptionDemandRepo
-                .forTenant(ctx.tenant)
-                .findNotDeleted(
-                  Json.obj(
-                    "api" -> api.id.asJson,
-                    "team" -> Json
-                      .obj("$in" -> JsArray(teams.map(_.id.asJson))),
-                    "state" -> SubscriptionDemandState.InProgress.name
-                  )
+                .findByStates(
+                  ctx.tenant.id,
+                  Seq(SubscriptionDemandState.InProgress),
+                  apis = Seq(api.id).some,
+                  teams = teams.map(_.id).some
                 )
           } yield {
             Ok(

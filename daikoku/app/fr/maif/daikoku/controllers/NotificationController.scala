@@ -55,26 +55,12 @@ class NotificationController(
         case Some(user) =>
           for {
             myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, user)
-            notificationRepo <- env.dataStore.notificationRepo.forTenantF(
-              ctx.tenant.id
-            )
-            youHaveUnreadNotifications <- notificationRepo.findNotDeleted(
-              Json.obj(
-                "status.status" -> "Pending",
-                "$or" -> Json.arr(
-                  Json.obj(
-                    "team" -> Json.obj(
-                      "$in" -> JsArray(
-                        myTeams
-                          .filter(t => t.admins().contains(user.id))
-                          .map(_.id.asJson)
-                      )
-                    )
-                  ),
-                  Json.obj("action.user" -> user.id.asJson)
-                )
+            youHaveUnreadNotifications <-
+              env.dataStore.notificationRepo.findPendingForUser(
+                ctx.tenant.id,
+                user.id,
+                myTeams.filter(t => t.admins().contains(user.id)).map(_.id)
               )
-            )
             toValidateNotifications = youHaveUnreadNotifications.filter(notif =>
               notif.notificationType == NotificationType.AcceptOrReject
             )
@@ -780,11 +766,7 @@ class NotificationController(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(ctx.tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "_id" -> subscriptionDemandId.asJson
-            )
-          ),
+          .findByIdNotDeleted(subscriptionDemandId),
         AppError.EntityNotFound("Subscription demand")
       )
       upgradedDemand: SubscriptionDemand = demand.copy(
@@ -848,17 +830,13 @@ class NotificationController(
       )
       demands <- EitherT.liftF(
         env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "state" -> Json.obj(
-                "$in" -> Json.arr(
-                  SubscriptionDemandState.InProgress.name,
-                  SubscriptionDemandState.Waiting.name
-                )
-              )
-            )
+          .findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = versions.map(_.id).some
           )
       )
       _ <- EitherT.liftF(

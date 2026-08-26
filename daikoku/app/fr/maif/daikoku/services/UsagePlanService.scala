@@ -8,7 +8,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
 import fr.maif.daikoku.utils.IdGenerator
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -64,17 +64,12 @@ class UsagePlanService(
       _ <- newPlan.checkCustomName(tenant, plans, api.visibility)
       _ <- EitherT.liftF(
         env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> oldPlan.id.asJson,
-              "state" -> SubscriptionDemandState.InProgress.name
-            ),
-            Json.obj(
-              "$set" -> Json
-                .obj("state" -> SubscriptionDemandState.Blocked.name)
-            )
+          .changeState(
+            tenant.id,
+            api.id,
+            oldPlan.id,
+            SubscriptionDemandState.InProgress,
+            SubscriptionDemandState.Blocked
           )
       )
       checkedPlan <- getPlanAndCheckIt(tenant, oldPlan, newPlan)
@@ -91,17 +86,12 @@ class UsagePlanService(
       //FIXME: attention, peut etre il y en a qui sont blocked de base
       _ <- EitherT.liftF(
         env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "api" -> api.id.asJson,
-              "plan" -> oldPlan.id.asJson,
-              "state" -> SubscriptionDemandState.Blocked.name
-            ),
-            Json.obj(
-              "$set" -> Json
-                .obj("state" -> SubscriptionDemandState.InProgress.name)
-            )
+          .changeState(
+            tenant.id,
+            api.id,
+            oldPlan.id,
+            SubscriptionDemandState.Blocked,
+            SubscriptionDemandState.InProgress
           )
       )
     } yield updatedPlan
@@ -300,21 +290,19 @@ class UsagePlanService(
     implicit val currentUser: User = user
 
     val res: Future[Either[AppError, Unit]] =
-      env.dataStore.subscriptionDemandRepo
-        .forTenant(tenant)
-        .streamAllRaw(
-          Json.obj(
-            "api" -> api.id.asJson,
-            "plan" -> updatedPlan.id.asJson,
-            "$or" -> Json.arr(
-              Json
-                .obj("state" -> SubscriptionDemandState.InProgress.name),
-              Json.obj("state" -> SubscriptionDemandState.Waiting.name)
-            )
+      Source
+        .future(
+          env.dataStore.subscriptionDemandRepo.findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = Seq(api.id).some,
+            plan = updatedPlan.id.some
           )
         )
-        .map(json.SubscriptionDemandFormat.reads)
-        .collect { case JsSuccess(demand, _) => demand }
+        .flatMapConcat(demands => Source(demands.toList))
         .mapAsync(1)(demand => {
 
           val newSteps =
@@ -346,22 +334,15 @@ class UsagePlanService(
             if (!oldPlan.subscriptionProcess.steps.exists(_.id == step.id)) {
               for {
                 demands <-
-                  env.dataStore.subscriptionDemandRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "api" -> api.id.asJson,
-                        "plan" -> updatedPlan.id.asJson,
-                        "$or" -> Json.arr(
-                          Json.obj(
-                            "state" -> SubscriptionDemandState.InProgress.name
-                          ),
-                          Json.obj(
-                            "state" -> SubscriptionDemandState.Waiting.name
-                          )
-                        )
-                      )
-                    )
+                  env.dataStore.subscriptionDemandRepo.findByStates(
+                    tenant.id,
+                    Seq(
+                      SubscriptionDemandState.InProgress,
+                      SubscriptionDemandState.Waiting
+                    ),
+                    apis = Seq(api.id).some,
+                    plan = updatedPlan.id.some
+                  )
                 validators <-
                   env.dataStore.stepValidatorRepo
                     .forTenant(tenant)
@@ -389,22 +370,15 @@ class UsagePlanService(
             ) {
               for {
                 demands <-
-                  env.dataStore.subscriptionDemandRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "api" -> api.id.asJson,
-                        "plan" -> updatedPlan.id.asJson,
-                        "$or" -> Json.arr(
-                          Json.obj(
-                            "state" -> SubscriptionDemandState.InProgress.name
-                          ),
-                          Json.obj(
-                            "state" -> SubscriptionDemandState.Waiting.name
-                          )
-                        )
-                      )
-                    )
+                  env.dataStore.subscriptionDemandRepo.findByStates(
+                    tenant.id,
+                    Seq(
+                      SubscriptionDemandState.InProgress,
+                      SubscriptionDemandState.Waiting
+                    ),
+                    apis = Seq(api.id).some,
+                    plan = updatedPlan.id.some
+                  )
                 validators <-
                   env.dataStore.stepValidatorRepo
                     .forTenant(tenant)

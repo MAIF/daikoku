@@ -186,8 +186,7 @@ object evolution_151 extends EvolutionScript {
               tenant.style match {
                 case Some(value) =>
                   dataStore.cmsRepo
-                    .forTenant(tenant)
-                    .findOneNotDeleted(Json.obj("path" -> "/"))
+                    .findByPath(tenant.id, "/")
                     .map {
                       case Some(_) => FastFuture.successful(())
                       case None =>
@@ -1721,8 +1720,7 @@ object evolution_1860 extends EvolutionScript {
             case Some(footer) =>
               val tenant = (value \ "_id").as(using json.TenantIdFormat)
               dataStore.cmsRepo
-                .forTenant(tenant)
-                .findOneNotDeleted(Json.obj("name" -> "footer.html"))
+                .findByName(tenant, "footer.html")
                 .map {
                   case Some(_) => FastFuture.successful(())
                   case None =>

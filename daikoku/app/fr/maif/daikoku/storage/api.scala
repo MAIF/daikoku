@@ -962,6 +962,31 @@ trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId] {
     )
   }
 
+  /** What a user still has to answer: the pending notifications addressed to
+    * the teams they administrate, plus those aimed at them personally.
+    */
+  def findPendingForUser(
+      tenant: TenantId,
+      user: UserId,
+      administratedTeams: Seq[TeamId]
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND $pending " +
+        "AND (content->>'team' = ANY($2::text[]) " +
+        "OR content->'action'->>'user' = $3)",
+      Seq(
+        tenant.value,
+        administratedTeams.map(_.value).toArray,
+        user.value
+      )
+    )
+  }
+
   /** Drops what a subscription demand raised, once it is settled. */
   def deleteByDemand(tenant: TenantId, demand: DemandId)(implicit
       dbConn: DbConn,
@@ -1315,14 +1340,262 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
   private def millis(value: Long): AnyRef = java.lang.Long.valueOf(value)
 }
 
-trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
+trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
 
-trait AssetRepo extends TenantCapableRepo[Asset, AssetId]
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out; it is bound to `$1` by convention.
+    */
+  private val cmsScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  /** The page served at a given url path. */
+  def findByPath(tenant: TenantId, path: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[CmsPage]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $cmsScope AND content->>'path' = $$2 LIMIT 1",
+      Seq(tenant.value, path)
+    )
+  }
+
+  def findByName(tenant: TenantId, name: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[CmsPage]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $cmsScope AND content->>'name' = $$2 LIMIT 1",
+      Seq(tenant.value, name)
+    )
+  }
+
+  def deleteByPath(tenant: TenantId, path: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'path' = $2",
+      Seq(tenant.value, path)
+    )
+  }
+
+  /** Resolves a page from a reference that may be an id or a path, in the
+    * spellings the CMS renderer accepts: `/a/b`, `-a-b` and `a-b`. `byPath`
+    * additionally matches the `path` field itself.
+    */
+  def findByIdOrPathVariants(
+      tenant: TenantId,
+      reference: String,
+      byPath: Boolean
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[CmsPage]] = {
+    val repo = forTenant(tenant)
+    val dashed = reference.replace("/", "-")
+    val (predicate, params) =
+      if (byPath)
+        (
+          "(content->>'path' = $2 OR _id = $3 OR _id = $4)",
+          Seq(tenant.value, reference, reference, dashed)
+        )
+      else
+        (
+          "(_id = $2 OR _id = $3 OR _id = $4)",
+          Seq(
+            tenant.value,
+            reference,
+            dashed,
+            if (dashed.isEmpty) dashed else dashed.substring(1)
+          )
+        )
+
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $cmsScope AND $predicate LIMIT 1",
+      params
+    )
+  }
+
+  /** The GraphQL `pages` / `page` fields let an admin list the *deleted* pages
+    * too, so `deleted` is an explicit filter here rather than the usual
+    * not-deleted default.
+    */
+  def findAllWithDeletedFlag(tenant: TenantId, deleted: Boolean)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[CmsPage]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2",
+      Seq(tenant.value, deleted.toString)
+    )
+  }
+
+  def findOneByNameOrPath(
+      tenant: TenantId,
+      name: Option[String],
+      path: Option[String],
+      deleted: Boolean
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[CmsPage]] = {
+    val repo = forTenant(tenant)
+    val predicates = Seq.newBuilder[String]
+    val params = Seq.newBuilder[AnyRef]
+    var placeholder = 2
+    params += tenant.value += deleted.toString
+
+    name.foreach { value =>
+      placeholder += 1
+      predicates += s"content->>'name' = $$$placeholder"
+      params += value
+    }
+    path.foreach { value =>
+      placeholder += 1
+      predicates += s"content->>'path' = $$$placeholder"
+      params += value
+    }
+
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2 " +
+        predicates.result().map(p => s"AND $p ").mkString +
+        "LIMIT 1",
+      params.result()
+    )
+  }
+}
+
+trait AssetRepo extends TenantCapableRepo[Asset, AssetId] {
+
+  /** An asset is addressed by its slug in urls, not by its id. Raw SQL bypasses
+    * the tenant scoping of `forTenant`, so `_tenant` is spelled out.
+    */
+  def findBySlug(tenant: TenantId, slug: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Asset]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'slug' = $2 LIMIT 1",
+      Seq(tenant.value, slug)
+    )
+  }
+}
 
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
 trait SubscriptionDemandRepo
-    extends TenantCapableRepo[SubscriptionDemand, DemandId]
+    extends TenantCapableRepo[SubscriptionDemand, DemandId] {
+
+  /** Demands in one of the given states, optionally narrowed to a set of apis
+    * or teams. `None` means "no filter on that dimension"; `Some(Seq.empty)`
+    * matches nothing, the way the former empty `$in` did.
+    *
+    * Raw SQL bypasses the tenant scoping of `forTenant`, so `_tenant` is
+    * spelled out and bound to `$1`.
+    */
+  private def byStatesWhere(
+      tenant: TenantId,
+      states: Seq[SubscriptionDemandState],
+      apis: Option[Seq[ApiId]],
+      teams: Option[Seq[TeamId]],
+      plan: Option[UsagePlanId]
+  ): (String, Seq[AnyRef]) = {
+    val predicates = Seq.newBuilder[String] +=
+      "content->>'_tenant' = $1" += "content->>'_deleted' = 'false'" +=
+      "content->>'state' = ANY($2::text[])"
+    val params = Seq.newBuilder[AnyRef] +=
+      tenant.value += states.map(_.name).toArray
+    var placeholder = 2
+
+    apis.foreach { ids =>
+      placeholder += 1
+      predicates += s"content->>'api' = ANY($$$placeholder::text[])"
+      params += ids.map(_.value).toArray
+    }
+    teams.foreach { ids =>
+      placeholder += 1
+      predicates += s"content->>'team' = ANY($$$placeholder::text[])"
+      params += ids.map(_.value).toArray
+    }
+    plan.foreach { id =>
+      placeholder += 1
+      predicates += s"content->>'plan' = $$$placeholder"
+      params += id.value
+    }
+
+    (predicates.result().mkString(" AND "), params.result())
+  }
+
+  def findByStates(
+      tenant: TenantId,
+      states: Seq[SubscriptionDemandState],
+      apis: Option[Seq[ApiId]] = None,
+      teams: Option[Seq[TeamId]] = None,
+      plan: Option[UsagePlanId] = None
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[SubscriptionDemand]] = {
+    val repo = forTenant(tenant)
+    val (where, params) = byStatesWhere(tenant, states, apis, teams, plan)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} WHERE $where",
+      params
+    )
+  }
+
+  /** Moves every demand of a plan from one state to another — used to freeze
+    * the demands in flight while their plan is being updated, then release
+    * them.
+    */
+  def changeState(
+      tenant: TenantId,
+      api: ApiId,
+      plan: UsagePlanId,
+      from: SubscriptionDemandState,
+      to: SubscriptionDemandState
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{state}', to_jsonb($5::text)) " +
+        "WHERE content->>'_tenant' = $1 AND content->>'api' = $2 " +
+        "AND content->>'plan' = $3 AND content->>'state' = $4",
+      Seq(tenant.value, api.value, plan.value, from.name, to.name)
+    )
+  }
+
+  /** `page` is a zero-based page index, not a row offset — the GraphQL `offset`
+    * argument it comes from has always been multiplied by `pageSize`.
+    */
+  def findByStatesPaginated(
+      tenant: TenantId,
+      states: Seq[SubscriptionDemandState],
+      apis: Option[Seq[ApiId]] = None,
+      teams: Option[Seq[TeamId]] = None,
+      page: Int,
+      pageSize: Int
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[(Seq[SubscriptionDemand], Long)] = {
+    val repo = forTenant(tenant)
+    val (where, params) = byStatesWhere(tenant, states, apis, teams, None)
+    repo.queryPaginated(
+      s"SELECT content FROM ${repo.tableName} WHERE $where ORDER BY _id ASC",
+      params,
+      offset = page * pageSize,
+      limit = pageSize
+    )
+  }
+}
 
 trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
 

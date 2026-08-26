@@ -282,19 +282,14 @@ class AssetsService {
         )
       case Some(cfg) =>
         for {
+          // An Asset is (id, tenant, slug), so loading them whole costs
+          // exactly what the former projection did.
           slugs <-
             env.dataStore.assetRepo
               .forTenant(ctx.tenant)
-              .findWithProjection(
-                Json.obj(),
-                Json.obj("slug" -> true, "_id" -> true)
-              )
-              .map(items =>
-                items.foldLeft(Map.empty[String, Option[String]]) {
-                  case (acc, item) =>
-                    acc + ((item \ "_id").as[String] -> (item \ "slug")
-                      .asOpt[String])
-                }
+              .findAll()
+              .map(assets =>
+                assets.map(a => a.id.value -> Option(a.slug)).toMap
               )
           assets <- env.assetsStore.listTenantAssets(ctx.tenant.id)(using cfg)
         } yield {
@@ -337,8 +332,7 @@ class AssetsService {
         )
       case Some(cfg) =>
         env.dataStore.assetRepo
-          .forTenant(ctx.tenant)
-          .findOne(Json.obj("slug" -> assetId))
+          .findBySlug(ctx.tenant.id, assetId)
           .map(_.map(_.id.value))
           .map {
             case None     => assetId
@@ -369,8 +363,7 @@ class AssetsService {
         )
       case Some(cfg) =>
         env.dataStore.assetRepo
-          .forTenant(ctx.tenant)
-          .findOne(Json.obj("slug" -> slug))
+          .findBySlug(ctx.tenant.id, slug)
           .map {
             case Some(_) => NoContent
             case None    => NotFound
@@ -393,8 +386,7 @@ class AssetsService {
         val redirect = ctx.request.getQueryString("redirect").contains("true")
 
         env.dataStore.assetRepo
-          .forTenant(ctx.tenant)
-          .findOne(Json.obj("slug" -> assetId))
+          .findBySlug(ctx.tenant.id, assetId)
           .map {
             case Some(asset) =>
               env.assetsStore.getTenantAssetPresignedUrl(

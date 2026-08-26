@@ -391,8 +391,7 @@ class HomeController(
         }
 
         env.dataStore.cmsRepo
-          .forTenant(ctx.tenant)
-          .findOneNotDeleted(Json.obj("path" -> actualPath))
+          .findByPath(ctx.tenant.id, actualPath)
           .flatMap {
             case None =>
               env.dataStore.cmsRepo
@@ -535,9 +534,7 @@ class HomeController(
       case id: CmsPageId =>
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
       case path: Path =>
-        env.dataStore.cmsRepo
-          .forTenant(ctx.tenant)
-          .findOneNotDeleted(Json.obj("path" -> path))
+        env.dataStore.cmsRepo.findByPath(ctx.tenant.id, path)
     }
 
     maybePage.flatMap {

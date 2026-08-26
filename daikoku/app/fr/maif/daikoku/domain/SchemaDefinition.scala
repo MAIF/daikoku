@@ -4475,11 +4475,9 @@ object SchemaDefinition {
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
               ctx.ctx._1.cmsRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .find(
-                  Json.obj(
-                    "_deleted" -> JsBoolean(ctx.arg(DELETED))
-                  )
+                .findAllWithDeletedFlag(
+                  ctx.ctx._2.tenant.id,
+                  ctx.arg(DELETED)
                 )
             }.map {
               case Right(value) => value
@@ -4507,16 +4505,11 @@ object SchemaDefinition {
                 case (None, None) => FastFuture.successful(None)
                 case (maybeName, maybePath) =>
                   ctx.ctx._1.cmsRepo
-                    .forTenant(ctx.ctx._2.tenant)
-                    .findOne(
-                      Json.obj(
-                        "_deleted" -> JsBoolean(ctx.arg(DELETED))
-                      ) ++ maybeName
-                        .map(name => Json.obj("name" -> name))
-                        .getOrElse(Json.obj())
-                        ++ maybePath
-                          .map(path => Json.obj("path" -> path))
-                          .getOrElse(Json.obj())
+                    .findOneByNameOrPath(
+                      ctx.ctx._2.tenant.id,
+                      maybeName,
+                      maybePath,
+                      ctx.arg(DELETED)
                     )
               }
             }.map {
@@ -4577,23 +4570,15 @@ object SchemaDefinition {
                   _ <- testApisTeam(apis, team)
                   demands <- EitherT.right[AppError](
                     dataStore.subscriptionDemandRepo
-                      .forTenant(tenant)
-                      .findWithPagination(
-                        Json.obj(
-                          "_deleted" -> false,
-                          "$or" -> Json.arr(
-                            Json.obj(
-                              "state" -> SubscriptionDemandState.InProgress.name
-                            ),
-                            Json.obj(
-                              "state" -> SubscriptionDemandState.Waiting.name
-                            )
-                          ),
-                          "api" -> Json
-                            .obj("$in" -> JsArray(apis.map(_.id.asJson)))
+                      .findByStatesPaginated(
+                        tenant.id,
+                        Seq(
+                          SubscriptionDemandState.InProgress,
+                          SubscriptionDemandState.Waiting
                         ),
-                        ctx.arg(OFFSET),
-                        ctx.arg(LIMIT)
+                        apis = apis.map(_.id).some,
+                        page = ctx.arg(OFFSET),
+                        pageSize = ctx.arg(LIMIT)
                       )
                   )
                 } yield demands
@@ -4626,20 +4611,15 @@ object SchemaDefinition {
               val dataStore = ctx.ctx._1
 
               dataStore.subscriptionDemandRepo
-                .forTenant(tenant)
-                .findWithPagination(
-                  Json.obj(
-                    "_deleted" -> false,
-                    "team" -> team.id.asJson,
-                    "$or" -> Json.arr(
-                      Json.obj(
-                        "state" -> SubscriptionDemandState.InProgress.name
-                      ),
-                      Json.obj("state" -> SubscriptionDemandState.Waiting.name)
-                    )
+                .findByStatesPaginated(
+                  tenant.id,
+                  Seq(
+                    SubscriptionDemandState.InProgress,
+                    SubscriptionDemandState.Waiting
                   ),
-                  ctx.arg(OFFSET),
-                  ctx.arg(LIMIT)
+                  teams = Seq(team.id).some,
+                  page = ctx.arg(OFFSET),
+                  pageSize = ctx.arg(LIMIT)
                 )
                 .map { case (demands, count) =>
                   SubscriptionDemandWithCount(demands, count)

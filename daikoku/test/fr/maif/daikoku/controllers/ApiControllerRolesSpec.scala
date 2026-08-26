@@ -908,14 +908,21 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
 
       // check also demand
       val demands = Await.result(
-        daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> defaultApi.api.id.asJson,
-              "team" -> teamConsumerId.asJson
+        {
+          val repo = daikokuComponents.env.dataStore.subscriptionDemandRepo
+            .forTenant(tenant)
+          repo.query(
+            s"SELECT content FROM ${repo.tableName} " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->>'_deleted' = 'false' " +
+              "AND content->>'api' = $2 AND content->>'team' = $3",
+            Seq(
+              tenant.id.value,
+              defaultApi.api.id.value,
+              teamConsumerId.value
             )
-          ),
+          )
+        },
         5.seconds
       )
       demands.length mustBe 1
@@ -1043,17 +1050,13 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check also demand
       val demandsForAllversion = Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "state" -> Json.obj(
-                "$in" -> Json.arr(
-                  SubscriptionDemandState.InProgress.name,
-                  SubscriptionDemandState.Waiting.name
-                )
-              )
-            )
+          .findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = Some(versions.map(_.id))
           ),
         5.seconds
       )
@@ -1156,17 +1159,13 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // 6
       val demandsForAllversion2 = Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "state" -> Json.obj(
-                "$in" -> Json.arr(
-                  SubscriptionDemandState.InProgress.name,
-                  SubscriptionDemandState.Waiting.name
-                )
-              )
-            )
+          .findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = Some(versions.map(_.id))
           ),
         5.seconds
       )

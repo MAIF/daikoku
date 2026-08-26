@@ -150,8 +150,7 @@ class CmsApiController(
                   .contains(page.name)
               ) {
                 env.dataStore.cmsRepo
-                  .forTenant(ctx.tenant)
-                  .delete(Json.obj("path" -> page.path()))
+                  .deleteByPath(ctx.tenant.id, page.path())
                   .map(_ =>
                     env.dataStore.cmsRepo
                       .forTenant(ctx.tenant)
@@ -167,8 +166,7 @@ class CmsApiController(
                   )
               } else if (path.startsWith("/customization/")) {
                 env.dataStore.cmsRepo
-                  .forTenant(ctx.tenant)
-                  .delete(Json.obj("path" -> page.path()))
+                  .deleteByPath(ctx.tenant.id, page.path())
                   .map(_ =>
                     env.dataStore.cmsRepo
                       .forTenant(ctx.tenant)
