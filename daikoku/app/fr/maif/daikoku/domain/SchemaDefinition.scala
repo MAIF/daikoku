@@ -1720,11 +1720,7 @@ object SchemaDefinition {
             IntType,
             resolve = ctx =>
               env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .count(
-                  Json
-                    .obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
-                )
+                .countByKeyring(ctx.ctx._2.tenant.id, ctx.value.id)
                 .map(_.toInt)
           )
         )

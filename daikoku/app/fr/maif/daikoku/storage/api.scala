@@ -63,72 +63,25 @@ trait Repo[Of, Id <: ValueType] {
 
   def count()(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
 
-  def count(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
-
   // Streaming methods are intentionally excluded from DbConn: they return a
   // lazy Source that materialises outside any transaction window.
-  def streamAllRaw(query: JsObject = Json.obj())(implicit
-      ec: ExecutionContext
-  ): Source[JsValue, NotUsed]
+  def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed]
 
-  def streamAllRawFormatted(query: JsObject = Json.obj())(implicit
+  def streamAllRawFormatted()(implicit
       ec: ExecutionContext
   ): Source[Of, NotUsed]
 
-  def findRaw(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]]
-
-  def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[Of]]
-
-  def findWithProjection(query: JsObject, projection: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[JsObject]]
-
-  def findOneRaw(query: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsValue]]
-
-  def findOne(query: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Of]]
-
-  def findOneWithProjection(query: JsObject, projection: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsObject]]
-
-  def findWithPagination(
-      query: JsObject,
-      page: Int,
-      pageSize: Int,
-      sort: Option[JsObject] = None,
-      order: Option[SortingOrder] = None
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)]
-
-  def delete(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
-
   def save(
       value: Of
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    val payload = format.writes(value).as[JsObject]
-    save(Json.obj("_id" -> extractId(value)), payload)
-  }
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+    saveRaw(extractId(value), format.writes(value).as[JsObject])
 
-  def save(query: JsObject, value: JsObject)(implicit
+  /** Inserts or replaces the whole `content` of one entity. The JSON here is
+    * the stored representation, not a query — the evolutions use it to write
+    * entities in the shape of their period, which the current format would
+    * refuse to read.
+    */
+  def saveRaw(id: String, payload: JsObject)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean]
@@ -136,16 +89,6 @@ trait Repo[Of, Id <: ValueType] {
   def insertMany(
       values: Seq[Of]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long]
-
-  def updateMany(query: JsObject, Value: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long]
-
-  def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long]
 
   /** Run a raw, parameterised SQL statement and parse each returned row's
     * `content` column into an entity of this repo. Intended for statements that
@@ -160,14 +103,10 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Seq[Of]]
 
-  def exists(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Generic helpers.  Their bodies are plain parameterised SQL run through the
-  // primitives below (`query` / `queryOne` / `execute` / `queryExists`): no
-  // Mongo-style JsObject query is built, and every value goes through `params`.
+  // primitives below (`query` / `queryOne` / `execute` / `queryExists` /
+  // `queryCount`); every value goes through `params`, never into the string.
   //
   // Beware: those primitives run the SQL exactly as written, so the tenant
   // scoping added by `forTenant` is NOT injected for free.  Every helper here
@@ -178,9 +117,8 @@ trait Repo[Of, Id <: ValueType] {
     */
   protected def tenantScope: Option[String] = None
 
-  /** Matches the entities not logically deleted, the way the former JsObject
-    * query `{"_deleted": false}` did: an entity without a `_deleted` key does
-    * not match.
+  /** Matches the entities not logically deleted. Note an entity without a
+    * `_deleted` key does not match.
     */
   protected val notDeletedSql: String = "content->>'_deleted' = 'false'"
 
@@ -295,11 +233,6 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def deleteLogically(query: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
   def deleteAllLogically()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
@@ -317,23 +250,6 @@ trait Repo[Of, Id <: ValueType] {
     )
     query(s"SELECT content FROM $tableName$where", params)
   }
-
-  def findNotDeleted(
-      query: JsObject,
-      maxDocs: Int = -1,
-      sort: Option[JsObject] = None
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] =
-    find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs, sort = sort)
-
-  def findOneNotDeletedRaw(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] =
-    findOneRaw(query ++ Json.obj("_deleted" -> false))
-
-  def findOneNotDeleted(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOne(query ++ Json.obj("_deleted" -> false))
 
   def findById(
       id: String
@@ -488,8 +404,8 @@ trait Repo[Of, Id <: ValueType] {
     execute(s"DELETE FROM $tableName$where", params)
   }
 
-  // NB: like the JsObject-based `delete` it replaces, this reports success
-  // regardless of the number of rows actually removed.
+  // NB: reports success regardless of the number of rows actually removed.
+  // `deleteByIds` returns the count instead.
   def deleteById(
       id: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
@@ -796,9 +712,9 @@ trait ApiSubscriptionTransferRepo
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
 
-  /** Raw SQL bypasses the tenant scoping that `forTenant` adds to the JsObject
-    * query methods, so every method here spells the `_tenant` predicate out. By
-    * convention it is bound to `$1`, and the other values follow.
+  /** Raw SQL bypasses the tenant scoping that `forTenant` applies to the
+    * generic helpers, so every method here spells the `_tenant` predicate out.
+    * By convention it is bound to `$1`, and the other values follow.
     */
   private val teamScope: String =
     "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
@@ -1974,7 +1890,7 @@ trait ConsumptionRepo
 
   /** A consumption covers the window `[from, to]`. Both bounds inside `[start,
     * end]` is the same thing as `from >= start AND to <= end`, since `from <=
-    * to` always holds — the two spellings the JsObject queries used were
+    * to` always holds — the two spellings the former queries used were
     * equivalent.
     */
   private def windowSql(from: Int, to: Int): String =
@@ -2265,7 +2181,7 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
   }
 
   /** Adds a user to the `readBy` of every message of a chat they have not read
-    * yet. The `@>` guard matters: the former `{"readBy": {"$ne": …}}` compared
+    * yet. The `@>` guard matters: the former `readBy` guard compared
     * the *whole* array rendered as text against a single id, so it was always
     * true and the id was appended again on every read.
     */
@@ -2738,10 +2654,10 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 trait EmailVerificationRepo
     extends TenantCapableRepo[EmailVerification, DatastoreId] {
 
-  /** Note the explicit `_tenant` predicate: raw SQL bypasses the tenant scoping
-    * that `forTenant` adds to the JsObject query methods.
+  /** The pending verification a user follows from their mail. Note the
+    * explicit `_tenant` predicate: raw SQL bypasses the scoping that
+    * `forTenant` applies to the generic helpers.
     */
-  /** The pending verification a user follows from their mail. */
   def findByRandomId(tenant: TenantId, randomId: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext

@@ -37,8 +37,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
 | 3 | Big ones: `apiRepo`, `apiSubscriptionRepo`, `usagePlanRepo` | **Done** |
 | 4 | Repos the plan had not listed: `operationRepo`, `stepValidatorRepo`, `keyringRepo`, `apiDocumentationPageRepo`, `auditTrailRepo`, `translationRepo`, `apiIssueRepo`, `jobRepo`, `apiSubscriptionTransferRepo`, `apiPostRepo`, `emailVerificationRepo` | **Done** |
-| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Next** — no caller left outside `PostgresDataStore` |
-| Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
+| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** |
+| Final B | Slim down / dedupe the `Repo` layer | Largely done with the `find*` renaming; what is left is the indexes below |
 
 ## The pattern to follow
 
@@ -163,6 +163,28 @@ which is not a tenant-scoped repo.
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay
   valid — same storage. What the migration reveals they *don't* cover is collected below.
+
+## Final A notes
+
+`convertQuery` is gone. What went with it, in one commit:
+
+- 15 `JsObject` methods off the `Repo` trait — `find`, `findOne`, `findRaw`, `findOneRaw`,
+  `findNotDeleted`, `findOneNotDeleted`, `findOneNotDeletedRaw`, `findWithProjection`,
+  `findOneWithProjection`, `findWithPagination`, `delete`, `deleteLogically`, `updateMany`,
+  `updateManyByQuery`, `count(JsObject)`, `exists(JsObject)` — and their 19 implementations in
+  `PostgresDataStore`, which shrinks by ~680 lines.
+- `Helper.scala` keeps only `rowToJson`: 323 lines down to 35.
+
+Two things deliberately stayed `JsObject`:
+
+- **`saveRaw(id, payload)`**, the former `save(query, value)` minus its query argument. The JSON here
+  is the *stored* representation, not a query, and four evolutions need it to write entities in the
+  shape of their period — the current formats would refuse to read them back.
+- **`AuditTrailRepo`**, whose `Of` *is* `JsObject`. Audit events are schemaless by design; only its
+  query surface is typed now.
+
+`streamAllRaw` / `streamAllRawFormatted` lose their query argument and keep loading the whole table
+before emitting — they never streamed, and the export and evolutions are their only callers.
 
 ## Phase 4 notes
 

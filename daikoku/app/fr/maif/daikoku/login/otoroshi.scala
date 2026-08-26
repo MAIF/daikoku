@@ -144,10 +144,7 @@ object OtoroshiIdentityFilter {
                       maybeUser match {
                         case None =>
                           env.dataStore.userRepo
-                            .findOne(
-                              Json
-                                .obj("_deleted" -> false, "email" -> user.email)
-                            )
+                            .findByEmail(user.email)
                             .flatMap {
                               case None =>
                                 val userId = UserId(IdGenerator.token(32))
@@ -407,9 +404,7 @@ object OtoroshiIdentityFilter {
                             _ <- env.dataStore.userRepo.save(updatedUser)
                             impersonator <-
                               session.impersonatorId
-                                .map(id =>
-                                  env.dataStore.userRepo.findById(id)
-                                )
+                                .map(id => env.dataStore.userRepo.findById(id))
                                 .getOrElse(FastFuture.successful(None))
                             rr <- nextFilter(
                               request

@@ -109,7 +109,7 @@ object evolution_102 extends EvolutionScript {
 
           dataStore.apiRepo
             .forAllTenant()
-            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
+            .saveRaw((goodApi \ "_id").as[String], goodApi)
         }
         .runWith(Sink.ignore)(using mat)
     }
@@ -753,7 +753,7 @@ object evolution_1612_c extends EvolutionScript {
               jsValue.as[JsObject] ++ Json.obj("possibleUsagePlans" -> plans)
             dataStore.apiRepo
               .forAllTenant()
-              .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
+              .saveRaw((goodApi \ "_id").as[String], goodApi)
           })
           .runWith(Sink.ignore)(using mat)
       }
@@ -825,10 +825,7 @@ object evolution_1613 extends EvolutionScript {
 
           dataStore.apiRepo
             .forAllTenant()
-            .save(
-              Json.obj({ "_id" -> (updatedApi \ "_id").as[String] }),
-              updatedApi
-            )
+            .saveRaw((updatedApi \ "_id").as[String], updatedApi)
           // FIXME can't get errors ?
         }
 
@@ -1125,8 +1122,8 @@ object evolution_1634 extends EvolutionScript {
 
               dataStore.consumptionRepo
                 .forAllTenant()
-                .save(
-                  Json.obj("_id" -> id),
+                .saveRaw(
+                  id,
                   consumption.as[
                     JsObject
                   ] + ("state" -> json.ApiKeyConsumptionStateFormat
