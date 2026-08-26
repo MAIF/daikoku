@@ -1641,28 +1641,26 @@ class ApiController(
 
           ctx.setCtxValue("api.name", api.name)
           ctx.setCtxValue("api.id", api.id.value)
-          val jsonResearch = {
-            planId match {
-              case Some(_) =>
-                Json.obj(
-                  "api" -> api.id.value,
-                  "team" -> team.id.value,
-                  "plan" -> planId
+          val subscriptions = planId match {
+            case Some(plan) =>
+              env.dataStore.apiSubscriptionRepo
+                .findByApiTeamAndPlan(
+                  ctx.tenant.id,
+                  api.id,
+                  team.id,
+                  UsagePlanId(plan)
                 )
-              case None =>
-                Json.obj("api" -> api.id.value, "team" -> team.id.value)
-            }
+            case None =>
+              env.dataStore.apiSubscriptionRepo
+                .findByApiAndTeams(ctx.tenant.id, api.id, Seq(team.id))
           }
 
-          repo
-            .findNotDeleted(jsonResearch)
+          subscriptions
             .flatMap { subscriptions =>
-              repo
-                .findNotDeleted(
-                  Json.obj(
-                    "keyring" -> Json
-                      .obj("$in" -> subscriptions.map(_.keyring.value))
-                  )
+              env.dataStore.apiSubscriptionRepo
+                .findByKeyrings(
+                  ctx.tenant.id,
+                  subscriptions.map(_.keyring).distinct
                 )
                 .flatMap { keyringMembers =>
                   val all = (subscriptions ++ keyringMembers).distinctBy(_.id)

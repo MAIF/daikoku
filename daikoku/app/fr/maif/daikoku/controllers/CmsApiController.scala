@@ -214,7 +214,7 @@ class CmsApiController(
   def version() =
     CmsApiAction.async { ctx =>
       entityStore(ctx.tenant, env.dataStore)
-        .exists(Json.obj("_id" -> "daikoku_metadata"))
+        .exists("daikoku_metadata")
         .map {
           case true  => Ok(Json.obj())
           case false => NotFound

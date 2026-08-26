@@ -1092,6 +1092,22 @@ trait ApiSubscriptionRepo
       Seq(api.value, plan.value)
     )
 
+  def findByApiTeamAndPlan(
+      tenant: TenantId,
+      api: ApiId,
+      team: TeamId,
+      plan: UsagePlanId
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'api' = $2 AND content->>'team' = $3 " +
+        "AND content->>'plan' = $4",
+      Seq(api.value, team.value, plan.value)
+    )
+
   def findOneByTeamApiAndPlan(
       tenant: TenantId,
       team: TeamId,

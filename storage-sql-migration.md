@@ -36,7 +36,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
 | 3 | Big ones: `apiRepo`, `apiSubscriptionRepo`, `usagePlanRepo` | **Done** |
-| 4 | Repos the plan had not listed: `apiDocumentationPageRepo`, `keyringRepo`, `apiPostRepo`, `apiIssueRepo`, `stepValidatorRepo`, `translationRepo`, `operationRepo`, `auditTrailRepo` | **Next** |
+| 4 | Repos the plan had not listed — 83 queries left: `operationRepo` (23), `stepValidatorRepo` (13), `keyringRepo` (11), `apiDocumentationPageRepo` (8), `auditTrailRepo` (7), `translationRepo` (7), `apiIssueRepo` (4), `jobRepo` (4), `apiSubscriptionTransferRepo` (3), `apiPostRepo` (2), `emailVerificationRepo` (1) | **Next** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
