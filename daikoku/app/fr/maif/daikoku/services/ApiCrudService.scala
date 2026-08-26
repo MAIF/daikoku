@@ -68,7 +68,8 @@ class ApiCrudService(
   ): EitherT[Future, AppError, Api] = {
     for {
       _ <- EitherT.cond[Future][AppError, Unit](
-        !(tenant.creationSecurity.getOrElse(false) && !team.apisCreationPermission
+        !(tenant.creationSecurity
+          .getOrElse(false) && !team.apisCreationPermission
           .getOrElse(false)),
         (),
         AppError.Forbidden("Team forbidden to create api on current tenant")
@@ -116,11 +117,12 @@ class ApiCrudService(
         AppError.EntityConflict("api state")
       )
       hasSubscriptions <-
-        if (newApi.state == ApiState.Created && oldApi.state != ApiState.Created)
+        if (
+          newApi.state == ApiState.Created && oldApi.state != ApiState.Created
+        )
           EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant.id)
-              .count(Json.obj("api" -> newApi.id.value, "_deleted" -> false))
+              .countByApi(tenant.id, newApi.id)
               .map(_ > 0)
           )
         else EitherT.pure[Future, AppError](false)

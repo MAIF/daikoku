@@ -400,8 +400,7 @@ class ConsumptionController(
         for {
           subscriptions <-
             env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(Json.obj("team" -> team.id.value))
+              .findByTeam(ctx.tenant.id, team.id)
           keyrings <-
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant.id)

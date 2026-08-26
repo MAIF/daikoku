@@ -169,8 +169,7 @@ object CommonServices {
       for {
         subs <-
           env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("team" -> teamId))
+            .findByTeam(ctx.tenant.id, TeamId(teamId))
         subsOnlyFilter =
           if (apiSubOnly)
             Json.obj(

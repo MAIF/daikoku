@@ -486,6 +486,15 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
     exists(id.value)
 
+  /** Runs a parameterised `SELECT COUNT(*) AS count …` and returns the count.
+    * Like the other primitives it takes the SQL as written: no tenant or
+    * `_deleted` filter is injected.
+    */
+  def queryCount(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long]
+
   /** True as soon as the parameterised SQL returns at least one row. Used by
     * the generic helpers above, which must not parse `content` just to know
     * whether a row exists.
@@ -1003,7 +1012,256 @@ trait ApiPostRepo extends TenantCapableRepo[ApiPost, ApiPostId]
 trait ApiIssueRepo extends TenantCapableRepo[ApiIssue, ApiIssueId]
 
 trait ApiSubscriptionRepo
-    extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
+    extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId] {
+
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out; it is bound to `$1` by convention.
+    */
+  private val subscriptionScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  private def select(tenant: TenantId, predicate: String, params: Seq[AnyRef])(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $subscriptionScope AND $predicate",
+      tenant.value +: params
+    )
+  }
+
+  private def selectOne(
+      tenant: TenantId,
+      predicate: String,
+      params: Seq[AnyRef]
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[ApiSubscription]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $subscriptionScope AND $predicate LIMIT 1",
+      tenant.value +: params
+    )
+  }
+
+  def findByApi(tenant: TenantId, api: ApiId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(tenant, "content->>'api' = $2", Seq(api.value))
+
+  def findByApis(tenant: TenantId, apis: Seq[ApiId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'api' = ANY($2::text[])",
+      Seq(apis.map(_.value).toArray)
+    )
+
+  def findByTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(tenant, "content->>'team' = $2", Seq(team.value))
+
+  def findByApiAndTeams(tenant: TenantId, api: ApiId, teams: Seq[TeamId])(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'api' = $2 AND content->>'team' = ANY($3::text[])",
+      Seq(api.value, teams.map(_.value).toArray)
+    )
+
+  def findByApiAndPlan(tenant: TenantId, api: ApiId, plan: UsagePlanId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'api' = $2 AND content->>'plan' = $3",
+      Seq(api.value, plan.value)
+    )
+
+  def findOneByTeamApiAndPlan(
+      tenant: TenantId,
+      team: TeamId,
+      api: ApiId,
+      plan: UsagePlanId
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[ApiSubscription]] =
+    selectOne(
+      tenant,
+      "content->>'team' = $2 AND content->>'api' = $3 " +
+        "AND content->>'plan' = $4",
+      Seq(team.value, api.value, plan.value)
+    )
+
+  def findByIdAndTeam(tenant: TenantId, id: String, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[ApiSubscription]] =
+    selectOne(tenant, "_id = $2 AND content->>'team' = $3", Seq(id, team.value))
+
+  /** Subscriptions sharing a keyring — the aggregation unit an Otoroshi apikey
+    * is attached to.
+    */
+  def findByKeyring(tenant: TenantId, keyring: KeyringId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(tenant, "content->>'keyring' = $2", Seq(keyring.value))
+
+  def findByKeyrings(tenant: TenantId, keyrings: Seq[KeyringId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'keyring' = ANY($2::text[])",
+      Seq(keyrings.map(_.value).toArray)
+    )
+
+  def findOneByKeyring(tenant: TenantId, keyring: KeyringId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[ApiSubscription]] =
+    selectOne(tenant, "content->>'keyring' = $2", Seq(keyring.value))
+
+  /** The other subscriptions of a keyring: what would keep its apikey alive if
+    * this one went away.
+    */
+  def findKeyringSiblings(
+      tenant: TenantId,
+      keyring: KeyringId,
+      excluding: ApiSubscriptionId
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->>'keyring' = $2 AND _id <> $3",
+      Seq(keyring.value, excluding.value)
+    )
+
+  /** Resolves the subscription an Otoroshi apikey belongs to. */
+  def findByApiKey(tenant: TenantId, clientId: String, clientSecret: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "content->'apiKey'->>'clientId' = $2 " +
+        "AND content->'apiKey'->>'clientSecret' = $3",
+      Seq(clientId, clientSecret)
+    )
+
+  /** Subscriptions whose validity window has run out. */
+  def findExpiredBefore(tenant: TenantId, millis: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiSubscription]] =
+    select(
+      tenant,
+      "(content->>'validUntil')::bigint < $2",
+      Seq(java.lang.Long.valueOf(millis))
+    )
+
+  def countByApi(tenant: TenantId, api: ApiId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = countBy(tenant, "content->>'api' = $2", Seq(api.value))
+
+  def countByKeyring(tenant: TenantId, keyring: KeyringId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
+    countBy(tenant, "content->>'keyring' = $2", Seq(keyring.value))
+
+  private def countBy(
+      tenant: TenantId,
+      predicate: String,
+      params: Seq[AnyRef]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.queryCount(
+      s"SELECT COUNT(*) AS count FROM ${repo.tableName} " +
+        s"WHERE $subscriptionScope AND $predicate",
+      tenant.value +: params
+    )
+  }
+
+  /** Turns a batch of subscriptions off — what deleting the keyring behind them
+    * amounts to, before the queue removes them for good.
+    */
+  def disableByIds(tenant: TenantId, ids: Seq[ApiSubscriptionId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{enabled}', 'false'::jsonb) " +
+        "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+      Seq(tenant.value, ids.map(_.value).toArray)
+    )
+  }
+
+  def deleteByIds(tenant: TenantId, ids: Seq[ApiSubscriptionId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+      Seq(tenant.value, ids.map(_.value).toArray)
+    )
+  }
+
+  /** Hands a subscription and its keyring siblings over to another team. */
+  def moveToTeam(
+      tenant: TenantId,
+      ids: Seq[ApiSubscriptionId],
+      team: TeamId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{team}', to_jsonb($3::text)) " +
+        "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+      Seq(tenant.value, ids.map(_.value).toArray, team.value)
+    )
+  }
+
+  /** Propagates a keyring's apikey to every subscription that shares it. */
+  def updateApiKeyOfKeyring(
+      tenant: TenantId,
+      keyring: KeyringId,
+      apiKey: JsValue
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{apiKey}', $3::jsonb) " +
+        "WHERE content->>'_tenant' = $1 AND content->>'keyring' = $2",
+      Seq(tenant.value, keyring.value, Json.stringify(apiKey))
+    )
+  }
+}
 
 trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId]
 

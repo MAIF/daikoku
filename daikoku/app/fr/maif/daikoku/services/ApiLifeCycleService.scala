@@ -226,10 +226,7 @@ class ApiLifeCycleService(
     for {
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(api.tenant)
-          .findNotDeleted(
-            Json.obj("api" -> api.id.value)
-          )
+          .findByApi(api.tenant, api.id)
       )
 
       subscriptionsTeamsIds: Seq[TeamId] = subscriptions.map(_.team).distinct

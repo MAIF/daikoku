@@ -2457,6 +2457,17 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     reactivePg.query(sql, params).map(_.size() > 0)
   }
 
+  override def queryCount(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    logger.debug(s"$tableName.queryCount($sql)")
+
+    reactivePg
+      .queryOne(sql, params)(_.optLong("count"))
+      .map(_.getOrElse(0L))
+  }
+
   override def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
       ec: ExecutionContext

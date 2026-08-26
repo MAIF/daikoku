@@ -228,13 +228,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                   )
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "apiKey.clientId" -> clientId,
-                        "apiKey.clientSecret" -> clientSecret
-                      )
-                    )
+                    .findByApiKey(tenant.id, clientId, clientSecret)
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>

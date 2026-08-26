@@ -350,9 +350,17 @@ object evolution_157 extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val source = dataStore.apiSubscriptionRepo
-        .forAllTenant()
-        .streamAllRaw(Json.obj("_deleted" -> false))
+      val subscriptionRepo = dataStore.apiSubscriptionRepo.forAllTenant()
+
+      val source = Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${subscriptionRepo.tableName} " +
+              "WHERE content->>'_deleted' = 'false'",
+            "content"
+          )
+        )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(10) { value =>
           ApiSubscriptionFormat.reads(value) match {
             case JsSuccess(sub, _) =>
@@ -387,7 +395,9 @@ object evolution_157 extends EvolutionScript {
                       )
                       tenant <- OptionT(
                         dataStore.tenantRepo
-                          .findByIdIncludingDeleted((api \ "_tenant").as[String])
+                          .findByIdIncludingDeleted(
+                            (api \ "_tenant").as[String]
+                          )
                       )
                       otoSettings <- OptionT.fromOption[Future](
                         tenant.otoroshiSettings
@@ -1002,13 +1012,18 @@ object evolution_1630 extends EvolutionScript {
                   val apiId = (api \ "_id").as[String]
 
                   for {
-                    s <-
-                      dataStore.apiSubscriptionRepo
-                        .forAllTenant()
-                        .updateManyByQuery(
-                          Json.obj("plan" -> oldId, "api" -> apiId),
-                          Json.obj("$set" -> Json.obj("plan" -> _id))
-                        )
+                    s <- {
+                      val repo =
+                        dataStore.apiSubscriptionRepo.forAllTenant()
+                      repo.execute(
+                        s"UPDATE ${repo.tableName} " +
+                          "SET content = jsonb_set(content, '{plan}', " +
+                          "  to_jsonb($1::text)) " +
+                          "WHERE content->>'plan' = $2 " +
+                          "AND content->>'api' = $3",
+                        Seq(_id, oldId, apiId)
+                      )
+                    }
                     n <-
                       dataStore.notificationRepo
                         .forAllTenant()

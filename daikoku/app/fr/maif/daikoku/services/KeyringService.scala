@@ -32,9 +32,7 @@ class KeyringService(env: Env) {
       tenant: TenantId,
       keyring: KeyringId
   ): Future[Seq[ApiSubscription]] =
-    env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .findNotDeleted(Json.obj("keyring" -> keyring.asJson))
+    env.dataStore.apiSubscriptionRepo.findByKeyring(tenant, keyring)
 
   /** Propagate the keyring's api key (the denormalized copy) to every
     * subscription referencing it. Must be called whenever a keyring's api key
@@ -45,14 +43,10 @@ class KeyringService(env: Env) {
       keyring: Keyring
   ): Future[Long] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .updateManyByQuery(
-        Json.obj("keyring" -> keyring.id.asJson),
-        Json.obj(
-          "$set" -> Json.obj(
-            "apiKey" -> OtoroshiApiKeyFormat.writes(keyring.apiKey)
-          )
-        )
+      .updateApiKeyOfKeyring(
+        tenant,
+        keyring.id,
+        OtoroshiApiKeyFormat.writes(keyring.apiKey)
       )
 
   /** Logically delete the keyring and enqueue its physical deletion in the
@@ -93,8 +87,7 @@ class KeyringService(env: Env) {
       keyring: KeyringId
   ): Future[Boolean] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .count(Json.obj("keyring" -> keyring.asJson, "_deleted" -> false))
+      .countByKeyring(tenant, keyring)
       .flatMap {
         case 0L => deleteKeyring(tenant, keyring)
         case _  => Future.successful(false)

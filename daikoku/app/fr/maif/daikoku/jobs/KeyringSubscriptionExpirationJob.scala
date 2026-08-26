@@ -161,10 +161,7 @@ class KeyringSubscriptionExpirationJob(
       now: DateTime
   ): Future[Int] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .findNotDeleted(
-        Json.obj("validUntil" -> Json.obj("$lt" -> now.getMillis))
-      )
+      .findExpiredBefore(tenant.id, now.getMillis)
       .flatMap { expired =>
         if (expired.isEmpty) Future.successful(0)
         else

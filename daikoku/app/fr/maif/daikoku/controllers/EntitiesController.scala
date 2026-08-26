@@ -2,7 +2,11 @@ package fr.maif.daikoku.controllers
 
 import cats.syntax.option.*
 import com.google.common.base.Charsets
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, tenantSecurity}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  tenantSecurity
+}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.sync.PublicUserAccess
 import fr.maif.daikoku.domain.*
@@ -106,13 +110,7 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
               extractUsernamePassword(auth) match {
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "apiKey.clientId" -> clientId,
-                        "apiKey.clientSecret" -> clientSecret
-                      )
-                    )
+                    .findByApiKey(tenant.id, clientId, clientSecret)
                     .map(_.length == 1)
                     .flatMap {
                       case true => block(buildContext(request, tenant))

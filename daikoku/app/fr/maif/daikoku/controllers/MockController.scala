@@ -160,9 +160,15 @@ class MockController(
               NotFound(Json.obj("error" -> "subscription not found"))
             )
           case Some(keyring) =>
-            env.dataStore.apiSubscriptionRepo
-              .forAllTenant()
-              .findOneNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+            {
+              val repo = env.dataStore.apiSubscriptionRepo.forAllTenant()
+              repo.queryOne(
+                s"SELECT content FROM ${repo.tableName} " +
+                  "WHERE content->>'_deleted' = 'false' " +
+                  "AND content->>'keyring' = $1 LIMIT 1",
+                Seq(keyring.id.value)
+              )
+            }
               .flatMap {
                 case None =>
                   FastFuture.successful(
@@ -198,9 +204,15 @@ class MockController(
               NotFound(Json.obj("error" -> "subscription not found"))
             )
           case Some(keyring) =>
-            env.dataStore.apiSubscriptionRepo
-              .forAllTenant()
-              .findOneNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+            {
+              val repo = env.dataStore.apiSubscriptionRepo.forAllTenant()
+              repo.queryOne(
+                s"SELECT content FROM ${repo.tableName} " +
+                  "WHERE content->>'_deleted' = 'false' " +
+                  "AND content->>'keyring' = $1 LIMIT 1",
+                Seq(keyring.id.value)
+              )
+            }
               .flatMap {
                 case None =>
                   FastFuture.successful(

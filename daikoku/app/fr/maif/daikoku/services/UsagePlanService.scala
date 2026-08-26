@@ -201,10 +201,7 @@ class UsagePlanService(
           case UsagePlanVisibility.Private =>
             val future: Future[Either[AppError, UsagePlan]] =
               env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant)
-                .findNotDeleted(
-                  Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-                )
+                .findByApiAndPlan(tenant.id, api.id, plan.id)
                 .map(subs => subs.map(_.team).distinct)
                 .map(x => Right(plan.addAutorizedTeams(x)))
             val value: EitherT[Future, AppError, UsagePlan] =

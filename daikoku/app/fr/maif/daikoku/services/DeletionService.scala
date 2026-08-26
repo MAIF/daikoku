@@ -104,7 +104,9 @@ class DeletionService(
   ): Future[Either[AppError, SubscriptionContext]] =
     (for {
       api <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdIncludingDeleted(subscription.api),
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
@@ -231,14 +233,7 @@ class DeletionService(
       // en base mais actives côté Otoroshi. Non transactionnable sans saga ou compensation explicite.
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))
-            ),
-            Json.obj("$set" -> Json.obj("enabled" -> false))
-          )
+          .disableByIds(tenant.id, subscriptions.map(_.id).distinct)
       )
       // Phase 2 — per impacted keyring, recompute its Otoroshi key without the
       // deleted subs, or delete the key + the keyring when no subscription
@@ -248,8 +243,7 @@ class DeletionService(
           .sequence(
             affectedKeyringIds.map { kid =>
               env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant)
-                .findNotDeleted(Json.obj("keyring" -> kid.asJson))
+                .findByKeyring(tenant.id, kid)
                 .flatMap { keyringSubs =>
                   val remaining =
                     keyringSubs.filterNot(s => deletedIds.contains(s.id))
@@ -312,13 +306,8 @@ class DeletionService(
       // Phase 4 — physically delete in DB (otoroshi/stripe cleanup already done above)
       result <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .delete(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(subscriptions.map(_.id.asJson).distinct))
-            )
-          )
+          .deleteByIds(tenant.id, subscriptions.map(_.id).distinct)
+          .map(_ > 0)
       )
     } yield result
   }
@@ -362,10 +351,7 @@ class DeletionService(
       .mapAsync(5) { case (api, plan) =>
         for {
           subscriptions <- env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-            )
+            .findByApiAndPlan(tenant.id, api.id, plan.id)
           _ <- deleteSubscriptions(subscriptions, api, tenant).value.map {
             case Left(e) =>
               AppLogger.error(
@@ -606,22 +592,21 @@ class DeletionService(
       )
       apis <- EitherT.liftF(
         env.dataStore.apiRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> team.id.asJson))
+          .forTenant(tenant.id)
+          .findNotDeleted(Json.obj("team" -> team.id.value))
       )
       allSubscriptions <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "$or" -> Json.arr(
-                Json.obj("team" -> team.id.asJson),
-                Json.obj(
-                  "api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson)))
-                )
-              )
-            )
+        {
+          val repo = env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+          repo.query(
+            s"SELECT content FROM ${repo.tableName} " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->>'_deleted' = 'false' " +
+              "AND (content->>'team' = $2 " +
+              "OR content->>'api' = ANY($3::text[]))",
+            Seq(tenant.id.value, team.id.value, apis.map(_.id.value).toArray)
           )
+        }
       )
       _ <- EitherT.liftF(
         Source(apis)
@@ -692,10 +677,7 @@ class DeletionService(
       )
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj("api" -> api.id.asJson, "plan" -> plan.id.asJson)
-          )
+          .findByApiAndPlan(tenant.id, api.id, plan.id)
       )
       _ <- deleteSubscriptions(subscriptions, api, tenant)
       _ <- EitherT.right[AppError](
@@ -767,8 +749,7 @@ class DeletionService(
       )
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("api" -> api.id.asJson))
+          .findByApi(tenant.id, api.id)
       )
       _ <- deleteSubscriptions(subscriptions, api, tenant)
       _ <- deleteApis(Seq(api), tenant)

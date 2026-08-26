@@ -35,7 +35,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
-| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` (**done**) | **In progress** |
+| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo` (**done**), `usagePlanRepo` (**done**) | **In progress** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
@@ -164,6 +164,22 @@ which is not a tenant-scoped repo.
   valid — same storage. What the migration reveals they *don't* cover is collected below.
 
 ## Phase 3 notes
+
+`apiSubscriptionRepo` is the widest surface of the phase — 54 queries — but a narrow set of
+dimensions: `api`, `team`, `plan`, `keyring`, `apiKey.clientId`. The keyring ones carry the
+aggregation model (several subscriptions share one Otoroshi apikey), which is why they get named
+methods rather than a generic filter: `findKeyringSiblings`, `countByKeyring` and
+`updateApiKeyOfKeyring` each answer a question the domain asks, not a shape of WHERE clause.
+
+Migrating it needed one new primitive on `Repo`: `queryCount`, the parameterised counterpart of
+`count(JsObject)`. Without it a count had to go through `queryPaginated` with `LIMIT 0`, which runs
+two statements to throw one away.
+
+A warning for the remaining `apiRepo` step: a regex rewrite of the `.forTenant(x).findNotDeleted(
+Json.obj("team" -> …))` shape silently matched `apiRepo` as well as `apiSubscriptionRepo`. The
+compiler caught it, but only because `ApiRepo` had no `findByTeam` yet — once it does, the same
+mistake compiles. Rewrite call sites repo by repo, never by shape alone.
+
 
 `usagePlanRepo` turned out to be the easy one of the three: eighteen of its twenty-one queries were
 `_id $in [...]`, which the generic `findByIdsNotDeleted` of phase 0 already covers. A plan does not
