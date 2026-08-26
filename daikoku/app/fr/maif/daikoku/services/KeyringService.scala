@@ -25,7 +25,7 @@ class KeyringService(env: Env) {
       tenant: TenantId,
       id: KeyringId
   ): Future[Option[Keyring]] =
-    env.dataStore.keyringRepo.forTenant(tenant).findByIdNotDeleted(id)
+    env.dataStore.keyringRepo.forTenant(tenant).findById(id)
 
   /** All non-deleted subscriptions referencing the given keyring. */
   def keyringSubscriptions(

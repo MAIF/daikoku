@@ -123,7 +123,7 @@ class AbstractJobSpec
     )
 
   private def reload(): Option[JobInformation] =
-    Await.result(jobRepo.findById(stableId), 10.seconds)
+    Await.result(jobRepo.findByIdIncludingDeleted(stableId), 10.seconds)
 
   private def outcomeName(o: JobOutcome): String = o match {
     case _: JobOutcome.Skipped            => "skipped"

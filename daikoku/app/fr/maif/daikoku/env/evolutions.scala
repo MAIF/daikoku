@@ -387,7 +387,7 @@ object evolution_157 extends EvolutionScript {
                       )
                       tenant <- OptionT(
                         dataStore.tenantRepo
-                          .findById((api \ "_tenant").as[String])
+                          .findByIdIncludingDeleted((api \ "_tenant").as[String])
                       )
                       otoSettings <- OptionT.fromOption[Future](
                         tenant.otoroshiSettings
@@ -477,7 +477,7 @@ object evolution_157_b extends EvolutionScript {
               oldPages.map(page =>
                 dataStore.apiDocumentationPageRepo
                   .forTenant(tenantId)
-                  .findById(page)
+                  .findByIdIncludingDeleted(page)
                   .map {
                     case Some(p) =>
                       ApiDocumentationDetailPage(
@@ -1135,7 +1135,7 @@ object evolution_1750 extends EvolutionScript {
       implicit val executionContext: ExecutionContext = ec
 
       for {
-        tenants <- dataStore.tenantRepo.findAll()
+        tenants <- dataStore.tenantRepo.findAllIncludingDeleted()
         _ <- Future.sequence(
           tenants.map(tenant =>
             dataStore.teamRepo

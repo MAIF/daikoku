@@ -30,7 +30,7 @@ class MailService {
           .map(user => (user.userId, team))
       )
     val usersFromDatabase: Future[Seq[User]] =
-      env.dataStore.userRepo.findByIdsNotDeleted(adminIdsWithTeam.map(_._1))
+      env.dataStore.userRepo.findByIds(adminIdsWithTeam.map(_._1))
 
     val eventualMaybeAdminsWithTeam: Future[Seq[(Option[User], Team)]] =
       usersFromDatabase.map(users => {

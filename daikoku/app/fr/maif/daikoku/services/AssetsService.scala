@@ -287,7 +287,7 @@ class AssetsService {
           slugs <-
             env.dataStore.assetRepo
               .forTenant(ctx.tenant)
-              .findAll()
+              .findAllIncludingDeleted()
               .map(assets =>
                 assets.map(a => a.id.value -> Option(a.slug)).toMap
               )
@@ -307,7 +307,7 @@ class AssetsService {
 
   def slugifiedAssets[T](ctx: ApiActionContext[T])(implicit env: Env) = {
     implicit val ec = env.defaultExecutionContext
-    env.dataStore.assetRepo.forTenant(ctx.tenant).findAllNotDeleted().map {
+    env.dataStore.assetRepo.forTenant(ctx.tenant).findAll().map {
       res => Ok(JsArray(res.map(_.asJson)))
     }
   }

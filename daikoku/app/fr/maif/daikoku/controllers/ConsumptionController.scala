@@ -59,7 +59,7 @@ class ConsumptionController(
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findById(subscriptionId)
+          .findByIdIncludingDeleted(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -80,7 +80,7 @@ class ConsumptionController(
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findById(subscription.plan)
+                .findByIdIncludingDeleted(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(
@@ -93,7 +93,7 @@ class ConsumptionController(
                   case Some(plan) =>
                     env.dataStore.keyringRepo
                       .forTenant(ctx.tenant.id)
-                      .findById(subscription.keyring)
+                      .findByIdIncludingDeleted(subscription.keyring)
                       .flatMap {
                         case None =>
                           FastFuture.successful(
@@ -134,7 +134,7 @@ class ConsumptionController(
 
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findById(subscriptionId)
+          .findByIdIncludingDeleted(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -229,7 +229,7 @@ class ConsumptionController(
         ctx.setCtxValue("subscriptionId", subscriptionId)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(subscriptionId)
+          .findById(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -242,7 +242,7 @@ class ConsumptionController(
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findById(subscription.plan)
+                .findByIdIncludingDeleted(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(
@@ -271,7 +271,7 @@ class ConsumptionController(
                               otoSettings
                             env.dataStore.keyringRepo
                               .forTenant(ctx.tenant.id)
-                              .findById(subscription.keyring)
+                              .findByIdIncludingDeleted(subscription.keyring)
                               .flatMap {
                                 case None =>
                                   FastFuture.successful(
@@ -314,7 +314,7 @@ class ConsumptionController(
 
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(planId)
+          .findById(planId)
           .flatMap {
             case None => AppError.ApiNotFound.renderF()
             case Some(plan) =>
@@ -426,12 +426,7 @@ class ConsumptionController(
           plans <-
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json
-                    .obj("$in" -> JsArray(subscriptions.map(_.plan.asJson)))
-                )
-              )
+              .findByIds(subscriptions.map(_.plan).distinct)
           consumptions <-
             env.dataStore.consumptionRepo
               .findByTeamBetween(
@@ -511,7 +506,7 @@ class ConsumptionController(
           .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant)
-          .findByIdNotDeleted(plan)
+          .findById(plan)
           .map {
             case Some(plan) =>
               paymentClient

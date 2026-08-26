@@ -220,7 +220,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
         .result(
           daikokuComponents.env.dataStore.keyringRepo
             .forTenant(tenant)
-            .findById(sub.keyring),
+            .findByIdIncludingDeleted(sub.keyring),
           5.seconds
         )
         .get

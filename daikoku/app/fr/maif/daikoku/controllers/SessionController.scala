@@ -27,7 +27,7 @@ class SessionController(
       DaikokuAdminOnly(
         AuditTrailEvent("@{user.name} has accessed all sessions")
       )(ctx) {
-        env.dataStore.userSessionRepo.findAll().map { users =>
+        env.dataStore.userSessionRepo.findAllIncludingDeleted().map { users =>
           Ok(JsArray(users.map(_.asJson)))
         }
       }

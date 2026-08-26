@@ -85,7 +85,7 @@ class KeyringSubscriptionExpirationJob(
 
   private def runForAllTenants(): Future[Unit] =
     env.dataStore.tenantRepo
-      .findAllNotDeleted()
+      .findAll()
       .flatMap(tenants => Future.sequence(tenants.map(run)))
       .map(_ => ())
       .recover { case e: Throwable =>
@@ -172,7 +172,7 @@ class KeyringSubscriptionExpirationJob(
             .sequence(expired.groupBy(_.api).toSeq.map { case (apiId, subs) =>
               env.dataStore.apiRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(apiId)
+                .findById(apiId)
                 .flatMap {
                   case None =>
                     logger.warn(

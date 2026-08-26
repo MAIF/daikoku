@@ -303,7 +303,7 @@ class ApiKeySecretRotationJob(
       case Some(ctx) =>
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(ctx.subscription)
+          .findById(ctx.subscription)
           .map {
             case None => ()
             case Some(subscription) =>

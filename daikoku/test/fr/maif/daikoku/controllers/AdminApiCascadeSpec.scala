@@ -73,7 +73,7 @@ class AdminApiCascadeSpec
     Await.result(
       daikokuComponents.env.dataStore.apiSubscriptionRepo
         .forTenant(tenant)
-        .findById(id),
+        .findByIdIncludingDeleted(id),
       5.second
     )
 

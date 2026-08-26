@@ -91,7 +91,7 @@ class StateController(
         )
       )(ctx) {
         env.dataStore.reportsInfoRepo
-          .findAll()
+          .findAllIncludingDeleted()
           .map(info => {
             val date: Long = info.headOption
               .flatMap(_.date)
@@ -121,7 +121,7 @@ class StateController(
         val body = ctx.request.body.as[JsObject]
         for {
           maybeDate <-
-            env.dataStore.reportsInfoRepo.findAll().map(info => info.head.date)
+            env.dataStore.reportsInfoRepo.findAllIncludingDeleted().map(info => info.head.date)
           _ <- env.dataStore.reportsInfoRepo.save(
             ReportsInfo(
               DatastoreId((body \ "id").as[String]),
@@ -150,7 +150,7 @@ class StateController(
         removeAllUserSessions(ctx)
           .flatMap { _ =>
             env.dataStore.tenantRepo
-              .findAllNotDeleted()
+              .findAll()
               .map(
                 _.map(tenant =>
                   env.dataStore.tenantRepo
@@ -176,7 +176,7 @@ class StateController(
         )
       )(ctx) {
         env.dataStore.tenantRepo
-          .findAllNotDeleted()
+          .findAll()
           .map(
             _.map(tenant =>
               env.dataStore.tenantRepo
@@ -199,7 +199,7 @@ class StateController(
         AuditTrailEvent(s"@{user.name} has accessed to maintenance mode")
       )(ctx) {
         env.dataStore.tenantRepo
-          .findAllNotDeleted()
+          .findAll()
           .map { tenants =>
             tenants.forall(tenant =>
               tenant.tenantMode.isDefined && tenant.tenantMode.get
@@ -429,14 +429,14 @@ class TeamAdminApiController(
     import cats.implicits.*
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <-
         entity.users
           .map(u =>
             EitherT.fromOptionF[Future, AppError, User](
-              env.dataStore.userRepo.findById(u.userId),
+              env.dataStore.userRepo.findByIdIncludingDeleted(u.userId),
               AppError.ParsingPayloadError(s"User ${u.userId.value} not found")
             )
           )
@@ -520,7 +520,7 @@ class ApiAdminApiController(
     import cats.implicits.*
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <-
@@ -529,7 +529,7 @@ class ApiAdminApiController(
             EitherT.fromOptionF[Future, AppError, UsagePlan](
               env.dataStore.usagePlanRepo
                 .forTenant(entity.tenant)
-                .findById(planId),
+                .findByIdIncludingDeleted(planId),
               AppError.ParsingPayloadError(
                 s"Usage Plan (${planId.value}) not found"
               )
@@ -545,7 +545,7 @@ class ApiAdminApiController(
         )
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo.forTenant(entity.tenant).findByIdIncludingDeleted(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- updateOrCreate match {
@@ -601,7 +601,7 @@ class ApiAdminApiController(
             EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](
               env.dataStore.apiDocumentationPageRepo
                 .forTenant(entity.tenant)
-                .findById(pageId),
+                .findByIdIncludingDeleted(pageId),
               AppError.ParsingPayloadError(
                 s"Documentation page (${pageId.value}) not found"
               )
@@ -612,7 +612,7 @@ class ApiAdminApiController(
       _ <- entity.parent match {
         case Some(api) =>
           EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo.forTenant(entity.tenant).findById(api),
+            env.dataStore.apiRepo.forTenant(entity.tenant).findByIdIncludingDeleted(api),
             AppError.ParsingPayloadError("Parent API not found")
           )
         case None => EitherT.pure[Future, AppError](())
@@ -622,7 +622,7 @@ class ApiAdminApiController(
           apis
             .map(api =>
               EitherT.fromOptionF[Future, AppError, Api](
-                env.dataStore.apiRepo.forTenant(entity.tenant).findById(api),
+                env.dataStore.apiRepo.forTenant(entity.tenant).findByIdIncludingDeleted(api),
                 AppError.ParsingPayloadError(
                   s"Children API (${api.value}) not found"
                 )
@@ -646,7 +646,7 @@ class ApiAdminApiController(
       case None =>
         for {
           team <- EitherT.fromOptionF[Future, AppError, Team](
-            env.dataStore.teamRepo.forTenant(tenant).findById(entity.team),
+            env.dataStore.teamRepo.forTenant(tenant).findByIdIncludingDeleted(entity.team),
             AppError.TeamNotFound
           )
           created <- apiCrudService.createApi(tenant, team, entity)
@@ -706,28 +706,28 @@ class ApiSubscriptionAdminApiController(
     import cats.implicits.*
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(entity.tenant)
-          .findById(entity.plan),
+          .findByIdIncludingDeleted(entity.plan),
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo.forTenant(entity.tenant).findByIdIncludingDeleted(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.by),
+        env.dataStore.userRepo.findByIdIncludingDeleted(entity.by),
         AppError.ParsingPayloadError("By not found")
       )
       _ <- EitherT
         .fromOptionF[Future, AppError, Keyring](
           env.dataStore.keyringRepo
             .forTenant(entity.tenant)
-            .findById(entity.keyring),
+            .findByIdIncludingDeleted(entity.keyring),
           AppError.ParsingPayloadError(s"Keyring not found")
         )
 
@@ -772,7 +772,7 @@ class ApiSubscriptionAdminApiController(
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findById(oldEntity.plan),
+          .findByIdIncludingDeleted(oldEntity.plan),
         AppError.PlanNotFound
       )
       base = oldEntity.copy(
@@ -824,7 +824,7 @@ class ApiSubscriptionAdminApiController(
   ): EitherT[Future, AppError, Unit] =
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(tenant).findById(entity.api),
+        env.dataStore.apiRepo.forTenant(tenant).findByIdIncludingDeleted(entity.api),
         AppError.ApiNotFound
       )
       _ <- deletionService.deleteSubscriptions(Seq(entity), api, tenant)
@@ -861,7 +861,7 @@ class ApiDocumentationPageAdminApiController(
   ): EitherT[Future, AppError, ApiDocumentationPage] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -911,7 +911,7 @@ class NotificationAdminApiController(
   ): EitherT[Future, AppError, Notification] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("tenant not found")
       )
     } yield entity
@@ -945,7 +945,7 @@ class UserSessionAdminApiController(
   ): EitherT[Future, AppError, UserSession] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.userId),
+        env.dataStore.userRepo.findByIdIncludingDeleted(entity.userId),
         AppError.ParsingPayloadError("User not found")
       )
     } yield entity
@@ -979,17 +979,17 @@ class ApiKeyConsumptionAdminApiController(
   ): EitherT[Future, AppError, ApiKeyConsumption] = {
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(entity.tenant)
-          .findById(entity.plan),
+          .findByIdIncludingDeleted(entity.plan),
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api),
+        env.dataStore.apiRepo.forTenant(entity.tenant).findByIdIncludingDeleted(entity.api),
         AppError.ParsingPayloadError("Api not found")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -1079,11 +1079,11 @@ class MessagesAdminApiController(
   ): EitherT[Future, AppError, Message] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.sender),
+        env.dataStore.userRepo.findByIdIncludingDeleted(entity.sender),
         AppError.ParsingPayloadError(
           s"Sender (${entity.sender.value}) not found"
         )
@@ -1092,7 +1092,7 @@ class MessagesAdminApiController(
         entity.participants
           .map(u =>
             EitherT.fromOptionF[Future, AppError, User](
-              env.dataStore.userRepo.findById(u),
+              env.dataStore.userRepo.findByIdIncludingDeleted(u),
               AppError.ParsingPayloadError(
                 s"Participant (${u.value}) not found"
               )
@@ -1136,11 +1136,11 @@ class IssuesAdminApiController(
   ): EitherT[Future, AppError, ApiIssue] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.by),
+        env.dataStore.userRepo.findByIdIncludingDeleted(entity.by),
         AppError.ParsingPayloadError("By not found")
       )
     } yield entity
@@ -1174,7 +1174,7 @@ class PostsAdminApiController(
   ): EitherT[Future, AppError, ApiPost] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
     } yield entity
@@ -1211,7 +1211,7 @@ class CmsPagesAdminApiController(
   ): EitherT[Future, AppError, CmsPage] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
     } yield entity
@@ -1269,7 +1269,7 @@ class TranslationsAdminApiController(
   ): EitherT[Future, AppError, Translation] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
     } yield entity
@@ -1308,7 +1308,7 @@ class UsagePlansAdminApiController(
   ): EitherT[Future, AppError, UsagePlan] =
     for {
       tenant <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- entity.otoroshiTarget match {
@@ -1358,7 +1358,7 @@ class UsagePlansAdminApiController(
           )
         case Right(newEntity) =>
           entityStore(ctx.tenant, env.dataStore)
-            .findByIdNotDeleted(newEntity.id.value)
+            .findById(newEntity.id.value)
             .flatMap {
               case Some(_) =>
                 AppError
@@ -1374,13 +1374,13 @@ class UsagePlansAdminApiController(
                         api <- EitherT.fromOptionF[Future, AppError, Api](
                           env.dataStore.apiRepo
                             .forTenant(ctx.tenant)
-                            .findByIdNotDeleted(apiId),
+                            .findById(apiId),
                           AppError.ApiNotFound
                         )
                         team <- EitherT.fromOptionF[Future, AppError, Team](
                           env.dataStore.teamRepo
                             .forTenant(ctx.tenant)
-                            .findById(api.team),
+                            .findByIdIncludingDeleted(api.team),
                           AppError.TeamNotFound
                         )
                         result <- usagePlanService.createPlan(
@@ -1417,7 +1417,7 @@ class UsagePlansAdminApiController(
             tenant.defaultLanguage.getOrElse("en")
           for {
             team <- EitherT.fromOptionF[Future, AppError, Team](
-              env.dataStore.teamRepo.forTenant(tenant).findById(api.team),
+              env.dataStore.teamRepo.forTenant(tenant).findByIdIncludingDeleted(api.team),
               AppError.TeamNotFound
             )
             updated <- usagePlanService.updatePlan(
@@ -1476,25 +1476,25 @@ class SubscriptionDemandsAdminApiController(
   ): EitherT[Future, AppError, SubscriptionDemand] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api),
+        env.dataStore.apiRepo.forTenant(entity.tenant).findByIdIncludingDeleted(entity.api),
         AppError.ParsingPayloadError("Api not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(entity.tenant)
-          .findById(entity.plan),
+          .findByIdIncludingDeleted(entity.plan),
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo.forTenant(entity.tenant).findByIdIncludingDeleted(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.from),
+        env.dataStore.userRepo.findByIdIncludingDeleted(entity.from),
         AppError.ParsingPayloadError("From not found")
       )
     } yield entity

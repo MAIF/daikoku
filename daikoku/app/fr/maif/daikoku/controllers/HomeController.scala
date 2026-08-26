@@ -131,7 +131,7 @@ class HomeController(
                 .map(_ => ServiceStatus.Up)
           }
           env.dataStore.tenantRepo
-            .findAll()
+            .findAllIncludingDeleted()
             .flatMap(tenantList =>
               datastoreHealth
                 .zip(
@@ -396,7 +396,7 @@ class HomeController(
             case None =>
               env.dataStore.cmsRepo
                 .forTenant(ctx.tenant)
-                .findAllNotDeleted()
+                .findAll()
                 .map(cmsPages =>
                   cmsPages.filter(p => p.path.exists(_.nonEmpty))
                 )
@@ -435,7 +435,7 @@ class HomeController(
               ) {
                 env.dataStore.cmsRepo
                   .forTenant(ctx.tenant)
-                  .findById("-mails-root-tenant-mail-template-fr")
+                  .findByIdIncludingDeleted("-mails-root-tenant-mail-template-fr")
                   .flatMap {
                     case None => render(ctx, page)
                     case Some(layout) =>
@@ -467,7 +467,7 @@ class HomeController(
       case Some(p) =>
         env.dataStore.cmsRepo
           .forTenant(ctx.tenant)
-          .findById(p.notFoundCmsPage.get)
+          .findByIdIncludingDeleted(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
               page
@@ -532,7 +532,7 @@ class HomeController(
   ) = {
     val maybePage = entity match {
       case id: CmsPageId =>
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
+        env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(id)
       case path: Path =>
         env.dataStore.cmsRepo.findByPath(ctx.tenant.id, path)
     }
@@ -601,7 +601,7 @@ class HomeController(
         {
           env.dataStore.cmsRepo
             .forTenant(tenant)
-            .findById(id)
+            .findByIdIncludingDeleted(id)
             .map {
               case None => NotFound(Json.obj("error" -> "cms page not found"))
               case Some(page) => Ok(page.asJson)

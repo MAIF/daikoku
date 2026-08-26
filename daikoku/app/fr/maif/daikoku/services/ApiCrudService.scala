@@ -47,7 +47,7 @@ class ApiCrudService(
 
     maybeApiId match {
       case Some(apiId) =>
-        apiRepo.findByIdNotDeleted(apiId).flatMap {
+        apiRepo.findById(apiId).flatMap {
           case None =>
             apiRepo.exists(uniquenessQuery(None))
 
@@ -277,7 +277,7 @@ class ApiCrudService(
   ): Future[Seq[Boolean]] = {
     env.dataStore.apiIssueRepo
       .forTenant(tenantId)
-      .findAll()
+      .findAllIncludingDeleted()
       .flatMap { issues =>
         Future.sequence(issues.map(issue => {
           env.dataStore.apiIssueRepo

@@ -159,7 +159,7 @@ class ApiController(
           team <- EitherT.fromOptionF[Future, AppError, Team](
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
-              .findByIdOrHrIdNotDeleted(teamId),
+              .findByIdOrHrId(teamId),
             AppError.TeamNotFound
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -264,7 +264,7 @@ class ApiController(
           team <- EitherT.fromOptionF[Future, AppError, Team](
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
-              .findByIdOrHrIdNotDeleted(teamId),
+              .findByIdOrHrId(teamId),
             AppError.TeamNotFound
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -292,7 +292,7 @@ class ApiController(
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(planId),
+              .findById(planId),
             AppError.PlanNotFound
           )
           myTeams <-
@@ -391,12 +391,7 @@ class ApiController(
           apiPlans <- EitherT.right[Result](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json
-                    .obj("$in" -> JsArray(api.possibleUsagePlans.map(_.asJson)))
-                )
-              )
+              .findByIds(api.possibleUsagePlans)
           )
           pendingRequests <-
             if (api.team == team.id)
@@ -617,7 +612,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF(
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
           myTeams <-
@@ -749,13 +744,7 @@ class ApiController(
                 plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
                   env.dataStore.usagePlanRepo
                     .forTenant(ctx.tenant)
-                    .find(
-                      Json.obj(
-                        "_id" -> Json.obj(
-                          "$in" -> JsArray(api.possibleUsagePlans.map(_.asJson))
-                        )
-                      )
-                    )
+                    .findByIds(api.possibleUsagePlans)
                 )
                 pages <- EitherT.pure[Future, AppError](
                   plans
@@ -780,13 +769,13 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(apiId),
+              .findById(apiId),
             AppError.ApiNotFound
           )
           page <- EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](
             env.dataStore.apiDocumentationPageRepo
               .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(pageId),
+              .findById(pageId),
             AppError.PageNotFound
           )
           isLinked <- verifyLink(api, page.id)
@@ -840,19 +829,19 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(apiId),
+              .findById(apiId),
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(planId),
+              .findById(planId),
             AppError.PlanNotFound
           )
           page <- EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](
             env.dataStore.apiDocumentationPageRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(pageId),
+              .findById(pageId),
             AppError.PageNotFound
           )
           _ <- check(api, plan, page)
@@ -886,7 +875,7 @@ class ApiController(
       )(ctx) {
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(apiId)
+          .findById(apiId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -1312,11 +1301,11 @@ class ApiController(
           demand <- EitherT.fromOptionF(
             env.dataStore.subscriptionDemandRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(demandId),
+              .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
           api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api),
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(demand.api),
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future][AppError, Unit](
@@ -1348,7 +1337,7 @@ class ApiController(
           demand <- EitherT.fromOptionF(
             env.dataStore.subscriptionDemandRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(demandId),
+              .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
           result <-
@@ -1370,7 +1359,7 @@ class ApiController(
           demand <- EitherT.fromOptionF[Future, AppError, SubscriptionDemand](
             env.dataStore.subscriptionDemandRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(demandId),
+              .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
           _ <- EitherT.right[AppError](
@@ -1500,7 +1489,7 @@ class ApiController(
                   .save(updatedSubscription)
                 maybeKeyring <- env.dataStore.keyringRepo
                   .forTenant(ctx.tenant)
-                  .findById(updatedSubscription.keyring)
+                  .findByIdIncludingDeleted(updatedSubscription.keyring)
               } yield maybeKeyring match {
                 case Some(keyring) => Ok(updatedSubscription.asSafeJson(keyring))
                 case None =>
@@ -1606,7 +1595,7 @@ class ApiController(
           subscription <- EitherT.fromOptionF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(subscriptionId),
+              .findById(subscriptionId),
             AppError.SubscriptionNotFound
           )
           _ <- EitherT.fromOptionF(
@@ -1623,7 +1612,7 @@ class ApiController(
           _ <- EitherT.fromOptionF(
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findById(subscription.plan),
+              .findByIdIncludingDeleted(subscription.plan),
             AppError.PlanNotFound
           )
           updated = subscription.copy(
@@ -1678,7 +1667,7 @@ class ApiController(
           val aggregated = keyringSiblings.nonEmpty
           env.dataStore.keyringRepo
             .forTenant(ctx.tenant)
-            .findById(sub.keyring)
+            .findByIdIncludingDeleted(sub.keyring)
             .map { maybeKeyring =>
               val subJson = maybeKeyring match {
                 case Some(keyring) =>
@@ -1740,18 +1729,18 @@ class ApiController(
                         .map(sub => {
                           env.dataStore.apiRepo
                             .forTenant(ctx.tenant.id)
-                            .findByIdNotDeleted(sub.api.value)
+                            .findById(sub.api.value)
                             .flatMap {
                             case Some(subApi) =>
                               env.dataStore.usagePlanRepo
                                 .forTenant(ctx.tenant)
-                                .findByIdNotDeleted(sub.plan)
+                                .findById(sub.plan)
                                 .flatMap {
                                   case None =>
                                     FastFuture.successful(Json.obj()) //FIXME
                                   case Some(plan) =>
                                     env.dataStore.teamRepo.forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(subApi.team)
+                                      .findById(subApi.team)
                                       .flatMap {
                                         case Some(team) => subscriptionToJson(
                                           api = subApi,
@@ -1846,15 +1835,7 @@ class ApiController(
           plans <-
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      apis.flatMap(_.possibleUsagePlans).map(_.asJson)
-                    )
-                  )
-                )
-              )
+              .findByIds(apis.flatMap(_.possibleUsagePlans).distinct)
         } yield {
           Ok(
             JsArray(
@@ -1909,13 +1890,13 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
-              .findById(subscription.api),
+              .findByIdIncludingDeleted(subscription.api),
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findById(subscription.plan),
+              .findByIdIncludingDeleted(subscription.plan),
             AppError.PlanNotFound
           )
         } yield Ok(
@@ -1980,10 +1961,10 @@ class ApiController(
           transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
             AppError.Unauthorized)
           _ <- EitherT.cond[Future][AppError, Unit](transfer.date.plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(transfer.subscription), AppError.SubscriptionNotFound)
-          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.team), AppError.TeamNotFound)
-          usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
-          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(transfer.subscription), AppError.SubscriptionNotFound)
+          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findById(subscription.team), AppError.TeamNotFound)
+          usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(subscription.plan), AppError.PlanNotFound)
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findById(subscription.api), AppError.ApiNotFound)
         } yield {
           ctx.setCtxValue("subscription.id", subscription.id.value)
           Ok(Json.obj(
@@ -2005,7 +1986,7 @@ class ApiController(
 
         ctx.setCtxValue("subscription.id", subscriptionId)
         (for {
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrId(subscriptionId),
             AppError.SubscriptionNotFound)
           keyringSize <- EitherT.liftF[Future, AppError, Long](
             env.dataStore.apiSubscriptionRepo
@@ -2106,7 +2087,7 @@ class ApiController(
           sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
-              .findByIdOrHrIdNotDeleted(subscriptionId),
+              .findByIdOrHrId(subscriptionId),
             AppError.SubscriptionNotFound
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -2121,7 +2102,7 @@ class ApiController(
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .findById(sub.plan),
+              .findByIdIncludingDeleted(sub.plan),
             AppError.PlanNotFound
           )
           _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(sub, ctx.tenant))
@@ -2251,14 +2232,14 @@ class ApiController(
       api <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       _ <- EitherT.cond[Future][AppError, Unit](team.id == subscription.team || team.id == api.team, (), AppError.Unauthorized)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findOneNotDeleted(Json.obj("_id" -> subscription.plan.asJson)),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       result <- EitherT(action(api, plan, subscription))
@@ -2589,7 +2570,7 @@ class ApiController(
             plan <- EitherT.fromOptionF(
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant)
-                .findByIdNotDeleted(planId),
+                .findById(planId),
               AppError.PlanNotFound
             )
             _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -2616,7 +2597,7 @@ class ApiController(
 
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(apiId)
+          .findById(apiId)
           .flatMap {
             case Some(api) =>
               Future
@@ -2624,7 +2605,7 @@ class ApiController(
                   teamIds.map(teamId =>
                     env.dataStore.teamRepo
                       .forTenant(ctx.tenant.id)
-                      .findByIdNotDeleted(teamId)
+                      .findById(teamId)
                       .flatMap {
                         case Some(team) => askOwnerForApiAccess(api, team, ctx)
                         case None =>
@@ -2667,9 +2648,9 @@ class ApiController(
       maybeOwnerteam <-
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(api.team)
+          .findById(api.team)
       maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
-        env.dataStore.userRepo.findByIdsNotDeleted(ownerTeam.admins().toSeq)
+        env.dataStore.userRepo.findByIds(ownerTeam.admins().toSeq)
       }
       _ <- maybeAdmins.traverse { admins =>
         Future.sequence(admins.map { admin =>
@@ -2863,7 +2844,7 @@ class ApiController(
       ) { team =>
         env.dataStore.apiDocumentationPageRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(pageId)
+          .findById(pageId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -3137,7 +3118,7 @@ class ApiController(
 
           for {
             members <- EitherT.liftF[Future, AppError, Seq[User]](
-              env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
+              env.dataStore.userRepo.findByIds(team.admins().toSeq)
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Future[Unit]]](Future.sequence(members.map { member =>
               implicit val language: String =
@@ -3183,10 +3164,10 @@ class ApiController(
             .save(newPost))
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
-            .findByIdNotDeleted(apiId), AppError.ApiNotFound)
+            .findById(apiId), AppError.ApiNotFound)
           ownerTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
             .forTenant(ctx.tenant.id)
-            .findByIdNotDeleted(api.team), AppError.TeamNotFound)
+            .findById(api.team), AppError.TeamNotFound)
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .save(api.copy(posts = api.posts ++ Seq(postId))))
@@ -3219,7 +3200,7 @@ class ApiController(
               )))
           subTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdsNotDeleted(subs.map(_.team).distinct))
+            .findByIds(subs.map(_.team).distinct))
           _ <-  EitherT.pure[Future, AppError](subTeams.foreach(t => sendMailToTeamAdmins(t, api, newPost, ownerTeam)))
 
         } yield Ok(Json.obj("created" -> true)))
@@ -3235,7 +3216,7 @@ class ApiController(
       )(teamId, ctx) { _ =>
         env.dataStore.apiPostRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(postId)
+          .findById(postId)
           .flatMap {
             case Some(post) =>
               env.dataStore.apiPostRepo
@@ -3290,7 +3271,7 @@ class ApiController(
       )(ctx) {
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(apiId)
+          .findById(apiId)
           .flatMap {
             case Some(api) =>
               val starred = ctx.user.starredApis.contains(api.id)
@@ -3339,8 +3320,8 @@ class ApiController(
             case Some(issue) =>
               for {
                 creators <- env.dataStore.userRepo
-                  .findByIdsNotDeleted(issue.comments.map(_.by))
-                issueCreator <- env.dataStore.userRepo.findById(issue.by.value)
+                  .findByIds(issue.comments.map(_.by))
+                issueCreator <- env.dataStore.userRepo.findByIdIncludingDeleted(issue.by.value)
                 api <-
                   env.dataStore.apiRepo
                     .forTenant(ctx.tenant.id)
@@ -3422,7 +3403,7 @@ class ApiController(
                   for {
                     creators <- Future.sequence(
                       issues.map(issue =>
-                        env.dataStore.userRepo.findById(issue.by.value)
+                        env.dataStore.userRepo.findByIdIncludingDeleted(issue.by.value)
                       )
                     )
                   } yield {
@@ -3528,7 +3509,7 @@ class ApiController(
                                       optTeam <-
                                         env.dataStore.teamRepo
                                           .forTenant(ctx.tenant.id)
-                                          .findById(teamId)
+                                          .findByIdIncludingDeleted(teamId)
                                       _ <- {
                                         Future.sequence(
                                           subs
@@ -3559,11 +3540,11 @@ class ApiController(
                                       maybeOwnerteam <-
                                         env.dataStore.teamRepo
                                           .forTenant(ctx.tenant.id)
-                                          .findByIdNotDeleted(api.team)
+                                          .findById(api.team)
                                       maybeAdmins <- maybeOwnerteam.traverse {
                                         ownerTeam =>
                                           env.dataStore.userRepo
-                                            .findByIdsNotDeleted(
+                                            .findByIds(
                                               ownerTeam.admins().toSeq
                                             )
                                       }
@@ -3699,10 +3680,10 @@ class ApiController(
                   .findOne(Json.obj("_id" -> issueId)), AppError.EntityNotFound("issue"))
               team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
-                  .findById(teamId), AppError.TeamNotFound)
+                  .findByIdIncludingDeleted(teamId), AppError.TeamNotFound)
               api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
                 .forTenant(ctx.tenant.id)
-                .findByIdOrHrIdNotDeleted(apiId),
+                .findByIdOrHrId(apiId),
                 AppError.ApiNotFound)
               subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
                 .forTenant(ctx.tenant.id)
@@ -3788,7 +3769,7 @@ class ApiController(
             case Some(_) =>
               env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)
-                .findById(issueId)
+                .findByIdIncludingDeleted(issueId)
                 .flatMap(issue =>
                   FastFuture.successful(
                     Ok(
@@ -4026,12 +4007,12 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(apiId),
+              .findById(apiId),
             AppError.ApiNotFound
           )
           _ <- controlApiAndPlan(api)
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
         } yield Ok(plan.asJson))
@@ -4054,13 +4035,13 @@ class ApiController(
 
         (for {
           fromApi <- EitherT.fromOptionF(
-            apiRepo.findById(fromApiId),
+            apiRepo.findByIdIncludingDeleted(fromApiId),
             AppError.ApiNotFound
           )
           api <-
-            EitherT.fromOptionF(apiRepo.findById(apiId), AppError.ApiNotFound)
+            EitherT.fromOptionF(apiRepo.findByIdIncludingDeleted(apiId), AppError.ApiNotFound)
           plan <- EitherT.fromOptionF(
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
           copyPlanId = UsagePlanId(IdGenerator.token(32))
@@ -4156,13 +4137,13 @@ class ApiController(
           newTeam <- EitherT.fromOptionF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(newTeamId),
+              .findById(newTeamId),
             AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(apiId),
+              .findById(apiId),
             AppError.render(AppError.ApiNotFound)
           )
           notification = Notification(
@@ -4242,7 +4223,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           oldPlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
           updatedPlan <- usagePlanService.updatePlan(
@@ -4285,7 +4266,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
           _ <- usagePlanService.deletePlan(ctx.tenant, api, plan)
@@ -4364,7 +4345,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId),
+            env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(planId),
             AppError.PlanNotFound
           )
           base <- EitherT.fromEither[Future](maybeBase)
@@ -4443,7 +4424,7 @@ class ApiController(
       )(teamId, ctx) { team =>
         val value: EitherT[Future, Result, Result] = for {
           api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId),
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdIncludingDeleted(apiId),
             AppError.ApiNotFound.render()
           )
           //todo: save api
@@ -4469,11 +4450,10 @@ class ApiController(
             env.dataStore.apiSubscriptionRepo
               .forTenant(ctx.tenant)
               .find(Json.obj("_id" -> Json.obj("$in" -> subsIds)))
-          planIds = subscriptions.map(_.plan.asJson).distinct
           plans <-
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
-              .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(planIds))))
+              .findByIds(subscriptions.map(_.plan).distinct)
           test = subscriptions.groupBy(sub => sub.plan).toSeq
           r <- Future.sequence(test.map {
             case (planId, subs) =>

@@ -796,7 +796,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findById(personalSubscription.id),
+            .findByIdIncludingDeleted(personalSubscription.id),
           5.second
         )
         _maybeSubscription.isEmpty
@@ -812,7 +812,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(Json.obj("api" -> defaultApi.api.id.asJson)),
+          .findByIds(defaultApi.plans.map(_.id)),
         5.second
       )
       _maybePlans.isEmpty mustBe true
@@ -821,7 +821,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybeDocs = Await.result(
         daikokuComponents.env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(page.id),
+          .findById(page.id),
         5.second
       )
       _maybeDocs.isEmpty mustBe true
@@ -830,7 +830,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybePosts = Await.result(
         daikokuComponents.env.dataStore.apiPostRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(post.id),
+          .findById(post.id),
         5.second
       )
       _maybePosts.isEmpty mustBe true
@@ -839,7 +839,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybeIssue = Await.result(
         daikokuComponents.env.dataStore.apiIssueRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(issue.id),
+          .findById(issue.id),
         5.second
       )
       _maybeIssue.isEmpty mustBe true
@@ -848,7 +848,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -856,7 +856,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findById(subscriptionDemand.id),
+          .findByIdIncludingDeleted(subscriptionDemand.id),
         5.second
       ) mustBe None
 
@@ -3087,7 +3087,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         .result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findById(parentSub.id),
+            .findByIdIncludingDeleted(parentSub.id),
           5.seconds
         )
         .get
@@ -3202,7 +3202,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -3210,7 +3210,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findById(subscriptionDemand.id),
+          .findByIdIncludingDeleted(subscriptionDemand.id),
         5.second
       ) mustBe None
     }
@@ -3282,7 +3282,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         .result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findAll(),
+            .findAllIncludingDeleted(),
           5.seconds
         )
         .head
@@ -3290,7 +3290,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _keyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findById(sub.keyring),
+          .findByIdIncludingDeleted(sub.keyring),
         5.seconds
       )
 
@@ -3328,7 +3328,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _refreshKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findById(sub.keyring),
+          .findByIdIncludingDeleted(sub.keyring),
         5.seconds
       )
 

@@ -909,7 +909,7 @@ class LoginController(
         accountCreation <-
           EitherT.fromOptionF[Future, AppError, AccountCreation](
             env.dataStore.accountCreationRepo
-              .findByIdNotDeleted(validator.subscriptionDemand),
+              .findById(validator.subscriptionDemand),
             AppError.EntityNotFound("Account creation")
           )
         step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](

@@ -52,7 +52,7 @@ class TenantController(
         )
       )(ctx) {
         env.dataStore.tenantRepo
-          .findByIdsNotDeleted(tenantIds.map(TenantId.apply).toSeq)
+          .findByIds(tenantIds.map(TenantId.apply).toSeq)
           .map { tenants =>
             Ok(JsArray(tenants.map(t => JsString(t.name))))
           }
@@ -64,7 +64,7 @@ class TenantController(
       DaikokuAdminOnly(
         AuditTrailEvent(s"@{user.name} has accessed list of all tenants")
       )(ctx) {
-        env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+        env.dataStore.tenantRepo.findAll().map { tenants =>
           Ok(JsArray(tenants.map(_.asJson)))
         }
       }
@@ -75,7 +75,7 @@ class TenantController(
       PublicUserAccess(
         AuditTrailEvent("@{user.name} has accessed simplified tenant list")
       )(ctx) {
-        env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+        env.dataStore.tenantRepo.findAll().map { tenants =>
           Ok(JsArray(tenants.map { tenant =>
             val status: String =
               if (ctx.user.tenants.contains(tenant.id)) "ALREADY_JOINED"
@@ -110,7 +110,7 @@ class TenantController(
         )
       )(ctx) {
         val newTeamId = TeamId(IdGenerator.token(32))
-        env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
+        env.dataStore.tenantRepo.findById(id).flatMap {
           case Some(tenant) =>
             ctx.setCtxValue("dest.name", tenant.name)
             val wasInTenant = ctx.user.tenants.contains(tenant.id)
@@ -225,7 +225,7 @@ class TenantController(
           "@{user.name} has logically deleted tenant @{tenant.name} - @{tenant.id}"
         )
       )(ctx) {
-        env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
+        env.dataStore.tenantRepo.findById(id).flatMap {
           case Some(tenant) => {
             ctx.setCtxValue("tenant.name", tenant.name)
             ctx.setCtxValue("tenant.id", tenant.id)
@@ -266,7 +266,7 @@ class TenantController(
 
             (for {
               oldTenant <- EitherT.fromOptionF(
-                env.dataStore.tenantRepo.findByIdNotDeleted(updatedTenant.id),
+                env.dataStore.tenantRepo.findById(updatedTenant.id),
                 AppError.TenantNotFound
               )
               tenant <- tenantService.updateTenant(
@@ -454,7 +454,7 @@ class TenantController(
           case (Some(id), _) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(id)
+              .findById(id)
               .flatMap {
                 case Some(team) => sendMail(team.contact, team.asJson)
                 case None =>
@@ -465,12 +465,12 @@ class TenantController(
           case (_, Some(id)) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findByIdNotDeleted(id)
+              .findById(id)
               .flatMap {
                 case Some(api) =>
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant)
-                    .findByIdNotDeleted(api.team)
+                    .findById(api.team)
                     .flatMap {
                       case Some(team) => sendMail(team.contact, team.asJson)
                       case None =>
@@ -516,7 +516,7 @@ class TenantController(
         AuditTrailEvent(s"@{user.name} has accessed the current tenant admins")
       )(tenantId, ctx) { (tenant, adminTeam) =>
         env.dataStore.userRepo
-          .findByIdsNotDeleted(adminTeam.users.map(_.userId).toSeq)
+          .findByIds(adminTeam.users.map(_.userId).toSeq)
           .map(admins =>
             Ok(
               Json.obj(
@@ -653,7 +653,7 @@ class TenantController(
           oldCmsPage <- EitherT.right[AppError](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .findById(s"${ctx.tenant.id.value}-color-theme")
+              .findByIdIncludingDeleted(s"${ctx.tenant.id.value}-color-theme")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.cmsRepo
@@ -728,7 +728,7 @@ class TenantController(
         }
 
         for {
-          teams <- env.dataStore.teamRepo.forTenant(tenant).findAllNotDeleted()
+          teams <- env.dataStore.teamRepo.forTenant(tenant).findAll()
           _ <- Source(teams)
             .mapAsync(5)(team => {
               val updatedTeam = mode match {

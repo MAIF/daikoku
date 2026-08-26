@@ -251,7 +251,7 @@ class UserControllerSpec()
       val _maybeSubscription = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
-          .findById(personalSubscription.id),
+          .findByIdIncludingDeleted(personalSubscription.id),
         5.second
       )
 
@@ -263,7 +263,7 @@ class UserControllerSpec()
       val notifInvitation = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findById(teamInvitationNotif.id),
+          .findByIdIncludingDeleted(teamInvitationNotif.id),
         5.second
       )
       notifInvitation mustBe None
@@ -272,7 +272,7 @@ class UserControllerSpec()
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findById(subDemandNotif.id),
+          .findByIdIncludingDeleted(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -280,7 +280,7 @@ class UserControllerSpec()
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findById(subscriptionDemand.id),
+          .findByIdIncludingDeleted(subscriptionDemand.id),
         5.second
       ) mustBe None
 
@@ -601,7 +601,7 @@ class UserControllerSpec()
       val _maybeSubscription = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
-          .findById(personalSubscription.id),
+          .findByIdIncludingDeleted(personalSubscription.id),
         5.second
       )
 
@@ -613,7 +613,7 @@ class UserControllerSpec()
       val notifInvitation = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findById(teamInvitationNotif.id),
+          .findByIdIncludingDeleted(teamInvitationNotif.id),
         5.second
       )
       notifInvitation mustBe None
@@ -622,7 +622,7 @@ class UserControllerSpec()
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findById(subDemandNotif.id),
+          .findByIdIncludingDeleted(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -630,7 +630,7 @@ class UserControllerSpec()
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findById(subscriptionDemand.id),
+          .findByIdIncludingDeleted(subscriptionDemand.id),
         5.second
       ) mustBe None
     }

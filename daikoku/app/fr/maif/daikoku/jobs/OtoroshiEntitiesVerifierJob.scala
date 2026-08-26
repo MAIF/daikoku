@@ -95,7 +95,7 @@ class OtoroshiEntitiesVerifierJob(
                   env.defaultActorSystem.scheduler.scheduleOnce(delay) {
                     logger.info(s"cron triggered at $now")
                     val _ = env.dataStore.tenantRepo
-                      .findAllNotDeleted()
+                      .findAll()
                       .flatMap(tenants =>
                         Future.sequence(
                           tenants.map(tenant =>
@@ -129,7 +129,7 @@ class OtoroshiEntitiesVerifierJob(
               .scheduleAtFixedRate(10.seconds, env.config.verifierJobInterval) {
                 () =>
                   env.dataStore.tenantRepo
-                    .findAllNotDeleted()
+                    .findAll()
                     .flatMap(tenants =>
                       Future.sequence(
                         tenants.map(tenant =>
@@ -227,7 +227,7 @@ class OtoroshiEntitiesVerifierJob(
       .streamAllRawFormatted(Json.obj("_deleted" -> false) ++ query)
       .mapAsync(par)(api =>
         env.dataStore.tenantRepo
-          .findByIdNotDeleted(api.tenant)
+          .findById(api.tenant)
           .map(tenant => (tenant, api))
       )
       .mapAsync(5) { case (tenant, api) =>

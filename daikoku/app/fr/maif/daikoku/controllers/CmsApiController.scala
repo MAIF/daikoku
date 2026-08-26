@@ -128,7 +128,7 @@ class CmsApiController(
     CmsApiAction.async { ctx =>
       env.dataStore.cmsRepo
         .forTenant(ctx.tenant)
-        .findById(id)
+        .findByIdIncludingDeleted(id)
         .map {
           case None       => NotFound(Json.obj("error" -> "cms page not found"))
           case Some(page) => Ok(page.asJson)
@@ -251,7 +251,7 @@ class CmsApiController(
         cssPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.cssCmsPage)
+            .findByIdIncludingDeleted(tenantStyle.cssCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -267,7 +267,7 @@ class CmsApiController(
         colorThemePage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.colorThemeCmsPage)
+            .findByIdIncludingDeleted(tenantStyle.colorThemeCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -282,7 +282,7 @@ class CmsApiController(
         jsPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.jsCmsPage)
+            .findByIdIncludingDeleted(tenantStyle.jsCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -311,7 +311,7 @@ class CmsApiController(
   def findAll(): Action[AnyContent] =
     CmsApiAction.async { ctx =>
       entityStore(ctx.tenant, env.dataStore)
-        .findAllNotDeleted()
+        .findAll()
         .map(entities => Ok(JsArray(entities.map(_.asJson))))
     }
 

@@ -188,7 +188,7 @@ class RemoteCatalogCascadeSpec
     Await.result(
       daikokuComponents.env.dataStore.apiSubscriptionRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(id),
+        .findById(id),
       5.second
     )
 
@@ -196,7 +196,7 @@ class RemoteCatalogCascadeSpec
     Await.result(
       daikokuComponents.env.dataStore.keyringRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(id),
+        .findById(id),
       5.second
     )
 

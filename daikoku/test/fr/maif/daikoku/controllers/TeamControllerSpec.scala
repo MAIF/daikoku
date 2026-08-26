@@ -1439,7 +1439,7 @@ class TeamControllerSpec()
         .result(
           daikokuComponents.env.dataStore.keyringRepo
             .forTenant(tenant)
-            .findById(personalSub.keyring),
+            .findByIdIncludingDeleted(personalSub.keyring),
           5.seconds
         )
         .get

@@ -216,7 +216,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         .result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findById(newSubId),
+            .findByIdIncludingDeleted(newSubId),
           5.seconds
         )
         .get
@@ -1658,7 +1658,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       val maybeKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(keyring.id.value),
+          .findById(keyring.id.value),
         5.seconds
       )
       maybeKeyring.isDefined mustBe false
@@ -1746,7 +1746,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       val maybeKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(keyring.id.value),
+          .findById(keyring.id.value),
         5.seconds
       )
       maybeKeyring.isDefined mustBe true
@@ -1754,7 +1754,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       val maybeSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(sub.id.value),
+          .findById(sub.id.value),
         5.seconds
       )
       maybeSub.isDefined mustBe true

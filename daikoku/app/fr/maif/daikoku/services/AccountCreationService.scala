@@ -169,7 +169,7 @@ class AccountCreationService {
 
     for {
       accountCreation <- EitherT.fromOptionF(
-        env.dataStore.accountCreationRepo.findById(demandId),
+        env.dataStore.accountCreationRepo.findByIdIncludingDeleted(demandId),
         AppError.EntityNotFound("Account creation")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -418,7 +418,7 @@ class AccountCreationService {
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       )
       admins <- EitherT.liftF(
-        env.dataStore.userRepo.findByIdsNotDeleted(adminTeam.admins().toSeq)
+        env.dataStore.userRepo.findByIds(adminTeam.admins().toSeq)
       )
       _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
         implicit val language: String =
@@ -561,7 +561,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -594,7 +594,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -626,7 +626,7 @@ class AccountCreationService {
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(accountCreation),
+          .findById(accountCreation),
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](
@@ -657,7 +657,7 @@ class AccountCreationService {
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(accountCreation),
+          .findById(accountCreation),
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](

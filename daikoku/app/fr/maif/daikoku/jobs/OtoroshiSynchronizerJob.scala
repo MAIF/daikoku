@@ -386,7 +386,7 @@ class OtoroshiSynchronizerJob(
                   env.defaultActorSystem.scheduler.scheduleOnce(delay) {
                     logger.info(s"[OtoroshiSync] cron triggered at $now")
                     val _ = env.dataStore.tenantRepo
-                      .findAllNotDeleted()
+                      .findAll()
                       .flatMap(tenants =>
                         Future.sequence(
                           tenants.map(tenant =>
@@ -422,7 +422,7 @@ class OtoroshiSynchronizerJob(
                 env.config.otoroshiSyncInterval
               ) { () =>
                 env.dataStore.tenantRepo
-                  .findAllNotDeleted()
+                  .findAll()
                   .flatMap(tenants =>
                     Future.sequence(
                       tenants.map(tenant => run(SyncAllSubscription(), tenant))

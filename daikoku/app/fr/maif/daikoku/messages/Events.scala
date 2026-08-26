@@ -66,7 +66,7 @@ class MessageActor(implicit
   ): Future[Unit] = {
     implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     for {
-      sender <- env.dataStore.userRepo.findById(message.sender)
+      sender <- env.dataStore.userRepo.findByIdIncludingDeleted(message.sender)
       lastMessage <-
         env.dataStore.messageRepo
           .findLastOpenMessageBefore(
@@ -74,7 +74,7 @@ class MessageActor(implicit
             message.chat,
             message.date.getMillis
           )
-      recipients <- env.dataStore.userRepo.findByIdsNotDeleted(
+      recipients <- env.dataStore.userRepo.findByIds(
         (message.participants + message.chat - message.sender).toSeq
       )
       connected <- env.dataStore.userSessionRepo.findActiveByUserIds(

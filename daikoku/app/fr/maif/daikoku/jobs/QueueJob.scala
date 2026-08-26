@@ -81,7 +81,7 @@ class QueueJob(
           plan <- OptionT(
             env.dataStore.usagePlanRepo
               .forTenant(o.tenant)
-              .findById(o.itemId)
+              .findByIdIncludingDeleted(o.itemId)
           )
           _ <- OptionT.liftF(
             plan.documentation match {
@@ -156,7 +156,7 @@ class QueueJob(
   ): Future[Boolean] = {
     env.dataStore.keyringRepo
       .forTenant(subscription.tenant)
-      .findById(subscription.keyring)
+      .findByIdIncludingDeleted(subscription.keyring)
       .flatMap { maybeKeyring =>
         val repo =
           env.dataStore.notificationRepo.forTenant(subscription.tenant)
@@ -203,7 +203,7 @@ class QueueJob(
   }
 
 //  private def deleteThirdPartyPaymentClient(team: Team) = {
-//    env.dataStore.tenantRepo.findById(team.tenant).flatMap {
+//    env.dataStore.tenantRepo.findByIdIncludingDeleted(team.tenant).flatMap {
 //      case Some(tenant) =>
 //        Future.sequence(tenant.thirdPartyPaymentSettings.map {
 //          case p: ThirdPartyPaymentSettings.StripeSettings =>
@@ -267,7 +267,7 @@ class QueueJob(
           api <- OptionT(
             env.dataStore.apiRepo
               .forTenant(o.tenant)
-              .findById(o.itemId)
+              .findByIdIncludingDeleted(o.itemId)
           )
           _ <- OptionT.liftF(
             env.dataStore.apiPostRepo
@@ -301,15 +301,17 @@ class QueueJob(
               )
           )
           _ <- OptionT.liftF(
-            env.dataStore.usagePlanRepo
-              .forTenant(o.tenant)
-              .delete(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(api.possibleUsagePlans.map(_.asJson))
-                  )
+            {
+              val repo = env.dataStore.usagePlanRepo.forTenant(o.tenant)
+              repo.execute(
+                s"DELETE FROM ${repo.tableName} " +
+                  "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+                Seq(
+                  o.tenant.value,
+                  api.possibleUsagePlans.map(_.value).toArray
                 )
               )
+            }
           )
           _ <- OptionT.liftF(deleteApiNotifications(api))
           _ <- OptionT.liftF(
@@ -365,23 +367,23 @@ class QueueJob(
           .save(o.copy(status = OperationStatus.InProgress))
       )
       tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findById(o.tenant),
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant),
         AppError.TenantNotFound
       )
       subscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findById(o.itemId),
+          .findByIdIncludingDeleted(o.itemId),
         AppError.EntityNotFound("subscription")
       )
       api <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(o.tenant).findById(subscription.api),
+        env.dataStore.apiRepo.forTenant(o.tenant).findByIdIncludingDeleted(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findById(subscription.plan),
+          .findByIdIncludingDeleted(subscription.plan),
         AppError.PlanNotFound
       )
       _ <- EitherT.liftF(
@@ -433,7 +435,7 @@ class QueueJob(
       .withTransaction {
         (for {
           team <- OptionT(
-            env.dataStore.teamRepo.forTenant(o.tenant).findById(o.itemId)
+            env.dataStore.teamRepo.forTenant(o.tenant).findByIdIncludingDeleted(o.itemId)
           )
           _ <- OptionT.liftF(
             env.dataStore.operationRepo
@@ -466,7 +468,7 @@ class QueueJob(
     env.dataStore
       .withTransaction {
         (for {
-          user <- OptionT(env.dataStore.userRepo.findById(o.itemId))
+          user <- OptionT(env.dataStore.userRepo.findByIdIncludingDeleted(o.itemId))
           _ <- OptionT.liftF(
             env.dataStore.operationRepo
               .forTenant(o.tenant)
@@ -546,7 +548,7 @@ class QueueJob(
       consumption <- OptionT(
         env.dataStore.consumptionRepo
           .forTenant(o.tenant)
-          .findByIdNotDeleted(o.itemId)
+          .findById(o.itemId)
       )
       _ <- OptionT(
         Future
@@ -587,7 +589,7 @@ class QueueJob(
       apiSubscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findById(o.itemId),
+          .findByIdIncludingDeleted(o.itemId),
         AppError.EntityNotFound("api subscription")
       )
       _ <- settingsAndInfos match {

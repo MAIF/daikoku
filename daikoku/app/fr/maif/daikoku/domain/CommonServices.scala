@@ -77,16 +77,10 @@ object CommonServices {
         plans <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    (publicApis ++ almostPublicApis ++ privateApis ++ adminApis)
-                      .flatMap(_.possibleUsagePlans)
-                      .map(_.asJson)
-                  )
-                )
-              )
+            .findByIds(
+              (publicApis ++ almostPublicApis ++ privateApis ++ adminApis)
+                .flatMap(_.possibleUsagePlans)
+                .distinct
             )
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] =
@@ -222,7 +216,7 @@ object CommonServices {
         teams <-
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdsNotDeleted(allApis.map(_.team).distinct)
+            .findByIds(allApis.map(_.team).distinct)
         demands <-
           env.dataStore.subscriptionDemandRepo
             .findByStates(
@@ -237,14 +231,8 @@ object CommonServices {
         plans <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    allApis.flatMap(_.possibleUsagePlans).map(_.asJson)
-                  )
-                )
-              )
+            .findByIds(
+              allApis.flatMap(_.possibleUsagePlans).distinct
             )
       } yield {
         AccessibleApisWithNumberOfApis(
@@ -1291,14 +1279,14 @@ object CommonServices {
         sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findById(apiSubscriptionId),
+            .findByIdIncludingDeleted(apiSubscriptionId),
           AppError.EntityNotFound("ApiSubscription")
         )
         maybeKeyring <-
           EitherT.liftF[Future, AppError, Option[Keyring]](
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant)
-              .findById(sub.keyring.value)
+              .findByIdIncludingDeleted(sub.keyring.value)
           )
         accessibleResources <-
           EitherT

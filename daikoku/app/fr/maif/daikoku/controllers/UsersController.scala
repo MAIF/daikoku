@@ -53,7 +53,7 @@ class UsersController(
       TenantAdminOnly(
         AuditTrailEvent("@{user.name} has accessed all users list")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
-        env.dataStore.userRepo.findAllNotDeleted().map { users =>
+        env.dataStore.userRepo.findAll().map { users =>
           Ok(
             JsArray(
               users
@@ -72,7 +72,7 @@ class UsersController(
           "@{user.name} has accessed user profile of @{u.email} (@{u.id})"
         )
       )(ctx) {
-        env.dataStore.userRepo.findByIdOrHrIdNotDeleted(id).map {
+        env.dataStore.userRepo.findByIdOrHrId(id).map {
           case Some(user) =>
             ctx.setCtxValue("u.email", user.email)
             ctx.setCtxValue("u.id", user.id.value)
@@ -91,7 +91,7 @@ class UsersController(
       )(ctx) {
         (ctx.request.body \ "isDaikokuAdmin").asOpt[Boolean] match {
           case Some(isDaikokuAdmin) =>
-            env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
+            env.dataStore.userRepo.findById(id).flatMap {
               case Some(user) if user.isDaikokuAdmin == isDaikokuAdmin =>
                 FastFuture.successful(
                   Conflict(Json.obj("error" -> "user have already this status"))
@@ -122,7 +122,7 @@ class UsersController(
           )(userId, ctx) {
             json.UserFormat.reads(ctx.request.body) match {
               case JsSuccess(newUser, _) => {
-                env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
+                env.dataStore.userRepo.findById(id).flatMap {
                   case Some(user) =>
                     ctx.setCtxValue("u.email", user.email)
                     ctx.setCtxValue("u.id", user.id.value)
@@ -214,7 +214,7 @@ class UsersController(
           "@{user.name} has impersonated user profile of @{u.email} (@{u.id})"
         )
       )(ctx) {
-        env.dataStore.userRepo.findByIdNotDeleted(userId).flatMap {
+        env.dataStore.userRepo.findById(userId).flatMap {
           case Some(user) =>
             val session = UserSession(
               id = DatastoreId(IdGenerator.token(32)),

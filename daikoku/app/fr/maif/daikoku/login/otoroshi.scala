@@ -66,7 +66,7 @@ object OtoroshiIdentityFilter {
         maybePersonnalTeam
           .map(_.id)
           .getOrElse(Team.Default)
-      // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
+      // maybeLastTeam <- teamRepo.findById(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
       maybePersonnalTeam
       // maybeLastTeam match {
@@ -210,7 +210,7 @@ object OtoroshiIdentityFilter {
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                   rr <- nextFilter(
@@ -301,7 +301,7 @@ object OtoroshiIdentityFilter {
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                   rr <- nextFilter(
@@ -408,7 +408,7 @@ object OtoroshiIdentityFilter {
                             impersonator <-
                               session.impersonatorId
                                 .map(id =>
-                                  env.dataStore.userRepo.findByIdNotDeleted(id)
+                                  env.dataStore.userRepo.findById(id)
                                 )
                                 .getOrElse(FastFuture.successful(None))
                             rr <- nextFilter(
@@ -472,7 +472,7 @@ object OtoroshiIdentityFilter {
                           case Some(session)
                               if session.expires.isAfter(DateTime.now()) =>
                             env.dataStore.userRepo
-                              .findByIdNotDeleted(session.userId)
+                              .findById(session.userId)
                               .flatMap {
                                 case None =>
                                   createSessionFromOtoroshi(

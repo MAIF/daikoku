@@ -80,7 +80,7 @@ class RemoteCatalogSpec
 
   private def reload(): Option[JobInformation] =
     Await.result(
-      jobRepo.findById(
+      jobRepo.findByIdIncludingDeleted(
         DatastoreId(s"${JobName.RemoteCatalog.value}-${tenant.id.value}")
       ),
       10.seconds
@@ -90,7 +90,7 @@ class RemoteCatalogSpec
     daikokuComponents.env.dataStore.teamRepo.forTenant(tenant.id)
 
   private def loadTeam(id: String): Option[Team] =
-    Await.result(teamRepo.findByIdNotDeleted(id), 10.seconds)
+    Await.result(teamRepo.findById(id), 10.seconds)
 
   private def outcomeName(o: JobOutcome): String = o match {
     case _: JobOutcome.Skipped            => "skipped"

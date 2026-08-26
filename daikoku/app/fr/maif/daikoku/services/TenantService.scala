@@ -239,12 +239,7 @@ class TenantService(
               for {
                 plans <-
                   env.dataStore.usagePlanRepo
-                    .forTenant(updatedTenant)
-                    .find(
-                      Json.obj(
-                        "customName" -> name
-                      )
-                    )
+                    .findByCustomName(updatedTenant.id, name)
                 _ <- Future.sequence(
                   plans
                     .map(plan => {

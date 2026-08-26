@@ -82,40 +82,40 @@ class AnonymousReportingJob(env: Env) {
 
   private def getData = {
     for {
-      daikoku_id <- dataStore.reportsInfoRepo.findAll().map(seq => seq.head.id)
+      daikoku_id <- dataStore.reportsInfoRepo.findAllIncludingDeleted().map(seq => seq.head.id)
 
-      account_creation <- dataStore.accountCreationRepo.findAllNotDeleted()
+      account_creation <- dataStore.accountCreationRepo.findAll()
       api_documentation_pages <-
-        dataStore.apiDocumentationPageRepo.forAllTenant().findAllNotDeleted()
-      api_issues <- dataStore.apiIssueRepo.forAllTenant().findAllNotDeleted()
-      api_posts <- dataStore.apiPostRepo.forAllTenant().findAllNotDeleted()
+        dataStore.apiDocumentationPageRepo.forAllTenant().findAll()
+      api_issues <- dataStore.apiIssueRepo.forAllTenant().findAll()
+      api_posts <- dataStore.apiPostRepo.forAllTenant().findAll()
       api_subscription <-
-        dataStore.apiSubscriptionRepo.forAllTenant().findAllNotDeleted()
-      apis <- dataStore.apiRepo.forAllTenant().findAllNotDeleted()
+        dataStore.apiSubscriptionRepo.forAllTenant().findAll()
+      apis <- dataStore.apiRepo.forAllTenant().findAll()
       audit_events <-
-        dataStore.auditTrailRepo.forAllTenant().findAllNotDeleted()
-      cmspages <- dataStore.cmsRepo.forAllTenant().findAllNotDeleted()
+        dataStore.auditTrailRepo.forAllTenant().findAll()
+      cmspages <- dataStore.cmsRepo.forAllTenant().findAll()
       consumptions <-
-        dataStore.consumptionRepo.forAllTenant().findAllNotDeleted()
+        dataStore.consumptionRepo.forAllTenant().findAll()
       email_verifications <-
-        dataStore.emailVerificationRepo.forAllTenant().findAllNotDeleted()
-      evolutions <- dataStore.evolutionRepo.findAllNotDeleted()
-      messages <- dataStore.messageRepo.forAllTenant().findAllNotDeleted()
+        dataStore.emailVerificationRepo.forAllTenant().findAll()
+      evolutions <- dataStore.evolutionRepo.findAll()
+      messages <- dataStore.messageRepo.forAllTenant().findAll()
       notifications <-
-        dataStore.notificationRepo.forAllTenant().findAllNotDeleted()
-      operations <- dataStore.operationRepo.forAllTenant().findAllNotDeleted()
-      password_reset <- dataStore.passwordResetRepo.findAllNotDeleted()
+        dataStore.notificationRepo.forAllTenant().findAll()
+      operations <- dataStore.operationRepo.forAllTenant().findAll()
+      password_reset <- dataStore.passwordResetRepo.findAll()
       step_validator <-
-        dataStore.stepValidatorRepo.forAllTenant().findAllNotDeleted()
+        dataStore.stepValidatorRepo.forAllTenant().findAll()
       subscription_demands <-
-        dataStore.subscriptionDemandRepo.forAllTenant().findAllNotDeleted()
-      teams <- dataStore.teamRepo.forAllTenant().findAllNotDeleted()
-      tenants <- dataStore.tenantRepo.findAllNotDeleted()
+        dataStore.subscriptionDemandRepo.forAllTenant().findAll()
+      teams <- dataStore.teamRepo.forAllTenant().findAll()
+      tenants <- dataStore.tenantRepo.findAll()
       translations <-
-        dataStore.translationRepo.forAllTenant().findAllNotDeleted()
-      usage_plans <- dataStore.usagePlanRepo.forAllTenant().findAllNotDeleted()
-      user_sessions <- dataStore.userSessionRepo.findAllNotDeleted()
-      users <- dataStore.userRepo.findAllNotDeleted()
+        dataStore.translationRepo.forAllTenant().findAll()
+      usage_plans <- dataStore.usagePlanRepo.forAllTenant().findAll()
+      user_sessions <- dataStore.userSessionRepo.findAll()
+      users <- dataStore.userRepo.findAll()
 
       timestamp = json.DateTimeFormat.writes(DateTime.now())
       timestamp_str = DateTime.now().toString()
@@ -166,7 +166,7 @@ class AnonymousReportingJob(env: Env) {
 
   private def sendDatas(): Future[Done] = {
     dataStore.reportsInfoRepo
-      .findAll()
+      .findAllIncludingDeleted()
       .map(seq => seq.head)
       .flatMap(seq => {
         if (enabled && seq.activated) {

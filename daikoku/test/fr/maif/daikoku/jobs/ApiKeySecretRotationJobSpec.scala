@@ -205,7 +205,7 @@ class ApiKeySecretRotationJobSpec()
       .result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenantId)
-          .findById(id),
+          .findByIdIncludingDeleted(id),
         10.seconds
       )
       .get
@@ -273,7 +273,7 @@ class ApiKeySecretRotationJobSpec()
       val notifications = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forTenant(tenant.id)
-          .findAllNotDeleted(),
+          .findAll(),
         10.seconds
       )
       notifications.count(
@@ -319,7 +319,7 @@ class ApiKeySecretRotationJobSpec()
       val notifications = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forTenant(tenant.id)
-          .findAllNotDeleted(),
+          .findAll(),
         10.seconds
       )
       notifications.count(
@@ -371,7 +371,7 @@ class ApiKeySecretRotationJobSpec()
       val notifications = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forTenant(tenant.id)
-          .findAllNotDeleted(),
+          .findAll(),
         10.seconds
       )
       notifications.count(
@@ -450,7 +450,7 @@ class ApiKeySecretRotationJobSpec()
       val jobInfo = Await.result(
         daikokuComponents.env.dataStore.JobInformationRepo
           .forTenant(tenant.id)
-          .findById(
+          .findByIdIncludingDeleted(
             DatastoreId(
               s"${JobName.ApiKeyRotationVerifier.value}-${tenant.id.value}"
             )

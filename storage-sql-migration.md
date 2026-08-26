@@ -35,7 +35,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
-| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | **Next** |
+| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` (**done**) | **In progress** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
@@ -68,11 +68,24 @@ DSL, no combinator library. That dynamic assembly is exactly what made `convertQ
 ### 2. Naming: not-deleted is the nominal case
 
 Physical deletion has been the rule for two releases; `_deleted` is only a transient state. So every
-typed method carries `notDeletedSql` and **no method carries a `NotDeleted` suffix** —
-`findByDomain`, not `findByDomainNotDeleted`. The `NotDeleted` suffix survives only on the generic
-`Repo` helpers inherited from phase 0 (`findByIdNotDeleted`, `findByIdsNotDeleted`,
-`findAllNotDeleted`), because their unsuffixed twins already mean "no filter"; that pair collapses
-in Final B.
+method carries `notDeletedSql` and **no method carries a `NotDeleted` suffix** — `findByDomain`, not
+`findByDomainNotDeleted`.
+
+The generic `Repo` helpers follow the same rule since the `usagePlanRepo` step: the short name is the
+filtered, nominal one, and reaching a flagged entity is the thing you have to spell out.
+
+| Nominal (filters `_deleted`) | Escape hatch |
+|---|---|
+| `findById` | `findByIdIncludingDeleted` |
+| `findByIds` | `findByIdsIncludingDeleted` |
+| `findAll` | `findAllIncludingDeleted` |
+| `findByIdOrHrId` | *(none — both spellings already filtered)* |
+
+The escape hatches are not dead code, which is why the pairs were swapped rather than merged:
+`findByIdIncludingDeleted` is what `QueueJob` and `DeletionService` use to re-read an entity they
+have just flagged and carry the cascade through, and `findByIdsIncludingDeleted` backs the GraphQL
+Fetchers — Sangria fails a whole query when a batch does not resolve every id it was handed, so a
+reference to a flagged entity must still come back.
 
 ### 3. The `forTenant` trap
 
@@ -149,6 +162,20 @@ which is not a tenant-scoped repo.
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay
   valid — same storage. What the migration reveals they *don't* cover is collected below.
+
+## Phase 3 notes
+
+`usagePlanRepo` turned out to be the easy one of the three: eighteen of its twenty-one queries were
+`_id $in [...]`, which the generic `findByIdsNotDeleted` of phase 0 already covers. A plan does not
+name its api — the relation is carried the other way round, by `Api.possibleUsagePlans` — so
+`findByApi` is just that helper applied to the api's plan ids. Only `findByCustomName` needed a
+method of its own.
+
+It also exposed a test that could not fail. `ApiControllerTeamAdminSpec`, under the comment "test if
+plans are deleted", asserted `findNotDeleted(Json.obj("api" -> api.id)).isEmpty`. `UsagePlan` has no
+`api` field at all, so `content->>'api'` is NULL, the predicate is never true, and the query returned
+nothing whatever the state of the database. It now looks the plans up by id — which means it can now
+actually fail.
 
 ## Phase 2 notes
 

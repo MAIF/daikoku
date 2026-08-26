@@ -171,7 +171,7 @@ class MockController(
                 case Some(sub) =>
                   env.dataStore.apiRepo
                     .forAllTenant()
-                    .findByIdNotDeleted(sub.api)
+                    .findById(sub.api)
                     .map {
                       case None =>
                         NotFound(Json.obj("error" -> "api not found"))
@@ -209,7 +209,7 @@ class MockController(
                 case Some(sub) =>
                   env.dataStore.usagePlanRepo
                     .forAllTenant()
-                    .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
+                    .findById(sub.plan)
                     .map {
                       case None =>
                         NotFound(Json.obj("error" -> "plan not found"))

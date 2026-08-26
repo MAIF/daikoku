@@ -115,7 +115,7 @@ sealed trait AuditEvent {
       details: JsObject = Json.obj()
   )(implicit ec: ExecutionContext, env: Env): Unit = {
     session.impersonatorId.map { iid =>
-      env.dataStore.userRepo.findById(iid)
+      env.dataStore.userRepo.findByIdIncludingDeleted(iid)
     } getOrElse {
       FastFuture.successful(None)
     } map { impersonator =>
@@ -389,21 +389,21 @@ class AuditActor(implicit
           subscription <- OptionT(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findById(event.asInstanceOf[ApiKeyRotationEvent].subscription)
+              .findByIdIncludingDeleted(event.asInstanceOf[ApiKeyRotationEvent].subscription)
           )
           api <- OptionT(
-            env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api)
+            env.dataStore.apiRepo.forTenant(tenant).findByIdIncludingDeleted(subscription.api)
           )
           team <- OptionT(
-            env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team)
+            env.dataStore.teamRepo.forTenant(tenant).findByIdIncludingDeleted(subscription.team)
           )
           admins <- OptionT.liftF(
-            env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
+            env.dataStore.userRepo.findByIds(team.admins().toSeq)
           )
           plan <- OptionT(
             env.dataStore.usagePlanRepo
               .forTenant(tenant)
-              .findById(subscription.plan)
+              .findByIdIncludingDeleted(subscription.plan)
           )
           title <- OptionT.liftF(
             translator.translate("mail.apikey.rotation.title", tenant)

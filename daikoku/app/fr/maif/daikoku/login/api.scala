@@ -84,7 +84,7 @@ object TenantHelper {
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(using env)
-        env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
+        env.dataStore.tenantRepo.findById(tenantId).flatMap {
           case None =>
             Errors.craftResponseResultF(
               "Tenant does not exists (1)",
@@ -142,7 +142,7 @@ object TenantHelper {
                     FastFuture.successful(Tenant.Default)
                   case Some(session) if session.expires.isAfterNow =>
                     env.dataStore.userRepo
-                      .findByIdNotDeleted(session.userId)
+                      .findById(session.userId)
                       .flatMap {
                         case None =>
                           FastFuture.successful(Tenant.Default)
@@ -160,7 +160,7 @@ object TenantHelper {
                 }
           }
         tenantIdF
-          .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
+          .flatMap(env.dataStore.tenantRepo.findById(_))
           .flatMap {
             case None =>
               Errors.craftResponseResultF(
@@ -282,7 +282,7 @@ class LoginFilter(env: Env)(implicit
                 .map(_.orElse(Some(backupTeam)))
             )
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)
-      // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
+      // maybeLastTeam <- teamRepo.findById(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
       theMaybeTeam
       // maybeLastTeam match {
@@ -374,7 +374,7 @@ class LoginFilter(env: Env)(implicit
                       )
                     case Some(session) if session.expires.isAfterNow =>
                       env.dataStore.userRepo
-                        .findByIdNotDeleted(session.userId)
+                        .findById(session.userId)
                         .flatMap {
                           case None =>
                             AppLogger.info("No user found")
@@ -422,7 +422,7 @@ class LoginFilter(env: Env)(implicit
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                       .flatMap { maybeImpersonator =>

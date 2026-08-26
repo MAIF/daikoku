@@ -278,7 +278,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
     fromJson(raw) match {
       case Left(err) => Future.successful(Left(err))
       case Right(entity) =>
-        entityStore(tenant, env.dataStore).findByIdNotDeleted(getId(entity).value).flatMap { existing =>
+        entityStore(tenant, env.dataStore).findById(getId(entity).value).flatMap { existing =>
           val mode = if (existing.isDefined) UpdateOrCreate.Update else UpdateOrCreate.Create
           validate(entity, mode).value.flatMap {
             case Left(error) => Future.successful(Left(error.getErrorMessage()))
@@ -306,7 +306,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
     }
 
   def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
-    entityStore(tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+    entityStore(tenant, env.dataStore).findById(id).flatMap {
       case None => Future.successful(false)
       case Some(entity) =>
         doDelete(tenant, entity, logically = false).value.map {
@@ -319,7 +319,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       tenant: Tenant
   ): Future[Seq[(String, Map[String, String])]] =
     entityStore(tenant, env.dataStore)
-      .findAllNotDeleted()
+      .findAll()
       .map(_.map(e => (getId(e).value, readMetadata(e))))
 
   def findAll(): Action[AnyContent] =
@@ -340,9 +340,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
         if (
           ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
         ) {
-          entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
-        } else {
           entityStore(ctx.tenant, env.dataStore).findAll()
+        } else {
+          entityStore(ctx.tenant, env.dataStore).findAllIncludingDeleted()
         }
       allEntities
         .map(all =>
@@ -372,7 +372,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       val notDeleted: Boolean =
         ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
       if (notDeleted) {
-        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
           case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
           case None =>
             Errors.craftResponseResultF(
@@ -381,7 +381,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             )
         }
       } else {
-        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+        entityStore(ctx.tenant, env.dataStore).findByIdIncludingDeleted(id).flatMap {
           case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
           case None =>
             Errors.craftResponseResultF(
@@ -403,7 +403,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           )
         case Right(newEntity) =>
           entityStore(ctx.tenant, env.dataStore)
-            .findByIdNotDeleted(getId(newEntity).value)
+            .findById(getId(newEntity).value)
             .flatMap {
               case Some(_) =>
                 AppError
@@ -425,7 +425,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def updateEntity(id: String): Action[JsValue] =
     DaikokuApiAction.async(parse.json) { ctx =>
-      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+      entityStore(ctx.tenant, env.dataStore).findByIdIncludingDeleted(id).flatMap {
         case None =>
           Errors.craftResponseResultF(
             s"Entity $entityName not found",
@@ -503,9 +503,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
             .get("notDeleted")
             .exists(_.contains("true"))
         ) {
-          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
-        } else {
           entityStore(ctx.tenant, env.dataStore).findById(id)
+        } else {
+          entityStore(ctx.tenant, env.dataStore).findByIdIncludingDeleted(id)
         }
 
       def finalizePatch(
@@ -588,7 +588,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction.async { ctx =>
       val logically =
         ctx.request.queryString.get("logically").exists(_.contains("true"))
-      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+      entityStore(ctx.tenant, env.dataStore).findByIdIncludingDeleted(id).flatMap {
         case None =>
           Errors.craftResponseResultF(
             s"$entityName not found",

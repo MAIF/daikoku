@@ -270,7 +270,7 @@ class TeamAssetsController(
           case Some(cfg) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findById(teamId)
+              .findByIdIncludingDeleted(teamId)
               .flatMap {
                 case None =>
                   FastFuture.successful(
@@ -460,7 +460,7 @@ class UserAssetsController(
   def getAvatar(tenantId: String, assetId: String) =
     DaikokuAction.async { ctx =>
       env.dataStore.tenantRepo
-        .findByIdOrHrIdNotDeleted(tenantId)
+        .findByIdOrHrId(tenantId)
         .map(maybeTenant => maybeTenant.flatMap(t => t.bucketSettings))
         .flatMap {
           case None =>

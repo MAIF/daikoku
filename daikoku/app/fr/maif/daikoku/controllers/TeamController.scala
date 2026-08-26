@@ -55,7 +55,7 @@ class TeamController(
       )(ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findByIdOrHrIdNotDeleted(teamId)
+          .findByIdOrHrId(teamId)
           .map {
             case Some(team) =>
               ctx.setCtxValue("team.name", team.name);
@@ -115,7 +115,7 @@ class TeamController(
       )(teamId, ctx) { _ =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findAllNotDeleted() map { teams =>
+          .findAll() map { teams =>
           Ok(JsArray(teams.map(_.toUiPayload())))
         }
       }
@@ -260,7 +260,7 @@ class TeamController(
       )(teamId, ctx) { team =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant)
-          .findByIdNotDeleted(teamId)
+          .findById(teamId)
           .flatMap {
             case Some(team) if team.verified =>
               Future(Left(AppError.TeamAlreadyVerified))
@@ -384,7 +384,7 @@ class TeamController(
               .map(_.asInstanceOf[NotificationAction.TeamInvitation])
               .map(_.user)
           pendingUsers <-
-            env.dataStore.userRepo.findByIdsNotDeleted(pendingUsersId.toSeq)
+            env.dataStore.userRepo.findByIds(pendingUsersId.toSeq)
         } yield {
           Ok(
             Json.obj(
@@ -426,7 +426,7 @@ class TeamController(
                   users = team.users.filterNot(_.userId.value == memberId)
                 )
               )
-              maybeTeam <- teamRepo.findById(team.id)
+              maybeTeam <- teamRepo.findByIdIncludingDeleted(team.id)
             } yield {
               maybeTeam match {
                 case Some(updatedTeam) =>
@@ -498,7 +498,7 @@ class TeamController(
     )
 
     for {
-      maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
+      maybeUser <- env.dataStore.userRepo.findById(userId)
       _ <-
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant)
@@ -728,7 +728,7 @@ class TeamController(
                   )
                 )
               )
-              maybeTeam <- teamRepo.findById(team.id)
+              maybeTeam <- teamRepo.findByIdIncludingDeleted(team.id)
             } yield {
               maybeTeam match {
                 case Some(updatedTeam) =>
@@ -749,7 +749,7 @@ class TeamController(
       )(teamId, ctx) {
         // TODO: verify if the behavior is correct
         case team if team.includeUser(UserId(id)) =>
-          env.dataStore.userRepo.findByIdNotDeleted(id).map {
+          env.dataStore.userRepo.findById(id).map {
             case None       => AppError.UserNotFound(None).render()
             case Some(user) => Ok(user.asSimpleJson)
           }
@@ -766,7 +766,7 @@ class TeamController(
         )
       )(teamId, ctx) { team =>
         env.dataStore.userRepo
-          .findByIdsNotDeleted(team.users.map(_.userId).toSeq)
+          .findByIds(team.users.map(_.userId).toSeq)
           .map(users => Ok(JsArray(users.map(_.asSimpleJson))))
       }
     }
@@ -919,7 +919,7 @@ class TeamController(
         team.`type` match {
           case TeamType.Organization =>
             env.dataStore.userRepo
-              .findById(userId)
+              .findByIdIncludingDeleted(userId)
               .flatMap {
                 case Some(user) if user.invitation.isDefined =>
                   env.dataStore.userRepo.deleteById(userId).flatMap {

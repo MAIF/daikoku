@@ -507,7 +507,7 @@ object testUtils {
           case Some(user) =>
             daikokuComponents.env.dataStore.teamRepo
               .forTenant(on)
-              .findAll()
+              .findAllIncludingDeleted()
               .map(_.headOption)
               .map {
                 case None =>

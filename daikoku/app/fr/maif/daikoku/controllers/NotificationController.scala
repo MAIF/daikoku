@@ -92,7 +92,7 @@ class NotificationController(
           notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](
             env.dataStore.notificationRepo
               .forTenant(ctx.tenant)
-              .findByIdsNotDeleted(
+              .findByIds(
                 notificationIdValues.map(NotificationId.apply).toSeq
               )
           )
@@ -210,7 +210,7 @@ class NotificationController(
 
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(notificationId)
+          .findById(notificationId)
           .flatMap {
             case None =>
               FastFuture.successful(AppError.render(NotificationNotFound))
@@ -220,7 +220,7 @@ class NotificationController(
                 case Some(teamId) =>
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant)
-                    .findByIdNotDeleted(teamId)
+                    .findById(teamId)
                     .flatMap {
                       case None =>
                         FastFuture.successful(AppError.render(TeamNotFound))
@@ -268,16 +268,16 @@ class NotificationController(
               api <-
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(api)
+                  .findById(api)
               consumerTeam <-
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(team)
+                  .findById(team)
               recipient <-
                 notification.sender.id
                   .map(id =>
                     env.dataStore.userRepo
-                      .findByIdNotDeleted(id)
+                      .findById(id)
                   )
                   .getOrElse(FastFuture.successful(None))
               unrecognizedApi <-
@@ -320,12 +320,12 @@ class NotificationController(
             (for {
               user <-
                 env.dataStore.userRepo
-                  .findByIdNotDeleted(notif.user)
+                  .findById(notif.user)
               recipient <-
                 notification.sender.id
                   .map(id =>
                     env.dataStore.userRepo
-                      .findByIdNotDeleted(id)
+                      .findById(id)
                   )
                   .getOrElse(FastFuture.successful(None))
               unrecognizedUser <-
@@ -366,24 +366,24 @@ class NotificationController(
               team <-
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(notif.team)
+                  .findById(notif.team)
               maybeApi <-
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(notif.api)
+                  .findById(notif.api)
               maybePlan <-
                 env.dataStore.usagePlanRepo
                   .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(notif.plan)
+                  .findById(notif.plan)
               maybeDemand <-
                 env.dataStore.subscriptionDemandRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(notif.demand)
+                  .findById(notif.demand)
               unknownUser <-
                 translator.translate("unrecognized.team", ctx.tenant)
               maybeUser <-
                 maybeDemand
-                  .map(d => env.dataStore.userRepo.findByIdNotDeleted(d.from))
+                  .map(d => env.dataStore.userRepo.findById(d.from))
                   .getOrElse(FastFuture.successful(None))
               unrecognizedApi <-
                 translator.translate("unrecognized.api", ctx.tenant)
@@ -426,11 +426,11 @@ class NotificationController(
               api <-
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(api)
+                  .findById(api)
               team <-
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(team)
+                  .findById(team)
               unrecognizedApi <-
                 translator.translate("unrecognized.api", ctx.tenant)
               unrecognizedTeam <-
@@ -504,7 +504,7 @@ class NotificationController(
           EitherT.liftF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(team)
+              .findById(team)
               .flatMap {
                 case None =>
                   (for {
@@ -527,7 +527,7 @@ class NotificationController(
 
                 case Some(team) =>
                   env.dataStore.userRepo
-                    .findByIdNotDeleted(user)
+                    .findById(user)
                     .flatMap {
                       case None =>
                         translator
@@ -590,11 +590,11 @@ class NotificationController(
         notification <- EitherT.fromOptionF(
           env.dataStore.notificationRepo
             .forTenant(ctx.tenant.id)
-            .findByIdNotDeleted(notificationId),
+            .findById(notificationId),
           AppError.NotificationNotFound
         )
         sender <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findByIdNotDeleted(notification.sender.id.get),
+          env.dataStore.userRepo.findById(notification.sender.id.get),
           AppError.UserNotFound()
         )
       } yield {
@@ -625,23 +625,23 @@ class NotificationController(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(apiId.value),
+          .findById(apiId.value),
         ApiNotFound
       )
       ownerTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(api.team),
+          .findById(api.team),
         TeamNotFound
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(teamRequestId.value),
+          .findById(teamRequestId.value),
         TeamNotFound
       )
       administrators <- EitherT.liftF(
-        env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
+        env.dataStore.userRepo.findByIds(team.admins().toSeq)
       )
       _ <- EitherT.liftF(
         env.dataStore.apiRepo
@@ -691,11 +691,11 @@ class NotificationController(
       ) // todo: get user defaultlanguage if possible
     val r: EitherT[Future, AppError, Unit] = for {
       invitedUser <- EitherT.fromOptionF(
-        env.dataStore.userRepo.findByIdNotDeleted(invitedUserId),
+        env.dataStore.userRepo.findById(invitedUserId),
         UserNotFound()
       )
       team <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(team),
+        env.dataStore.teamRepo.forTenant(tenant).findById(team),
         TeamNotFound
       )
       _ <- EitherT.liftF(
@@ -753,20 +753,20 @@ class NotificationController(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(apiId.value),
+          .findById(apiId.value),
         ApiNotFound
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(teamRequestId.value),
+          .findById(teamRequestId.value),
         TeamNotFound
       )
 
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(ctx.tenant)
-          .findByIdNotDeleted(subscriptionDemandId),
+          .findById(subscriptionDemandId),
         AppError.EntityNotFound("Subscription demand")
       )
       upgradedDemand: SubscriptionDemand = demand.copy(
@@ -812,7 +812,7 @@ class NotificationController(
 
     val r: EitherT[Future, AppError, Unit] = for {
       newTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(teamId),
+        env.dataStore.teamRepo.forTenant(tenant).findById(teamId),
         AppError.TeamNotFound
       )
       versions <- EitherT.liftF(

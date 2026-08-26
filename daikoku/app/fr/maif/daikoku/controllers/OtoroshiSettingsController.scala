@@ -584,12 +584,12 @@ class OtoroshiSettingsController(
               case "api" =>
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(entityId)
+                  .findById(entityId)
                   .map(api => api.flatMap(_.testing))
               case "plan" =>
                 env.dataStore.usagePlanRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(entityId)
+                  .findById(entityId)
                   .map(plan => plan.flatMap(_.testing))
               case _ => FastFuture.successful(None)
             },
@@ -764,7 +764,7 @@ class OtoroshiSettingsController(
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(teamId),
+            .findById(teamId),
           AppError.TeamNotFound
         )
         api <- EitherT.fromOptionF(
@@ -792,7 +792,7 @@ class OtoroshiSettingsController(
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(teamId),
+            .findById(teamId),
           AppError.TeamNotFound
         )
         api <- EitherT.fromOptionF(
@@ -811,7 +811,7 @@ class OtoroshiSettingsController(
         plan <- EitherT.fromOptionF(
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(planId),
+            .findById(planId),
           AppError.PlanNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](

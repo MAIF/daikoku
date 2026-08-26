@@ -234,23 +234,6 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOneByIdOrHrId(idOrHrid, idOrHrid)
 
-  def findByIdOrHrIdNotDeleted(id: String, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Of]] =
-    findOneByIdOrHrId(id, hrid)
-
-  def findByIdOrHrIdNotDeleted(id: Id, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Of]] =
-    findOneByIdOrHrId(id.value, hrid)
-
-  def findByIdOrHrIdNotDeleted(
-      idOrHrid: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findOneByIdOrHrId(idOrHrid, idOrHrid)
-
   def deleteByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
@@ -322,7 +305,10 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Boolean]
 
-  def findAllNotDeleted()(implicit
+  /** Every entity of the repo. Like the rest of the family, this is the
+    * not-deleted nominal case; `findAllIncludingDeleted` is the escape hatch.
+    */
+  def findAll()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
@@ -349,24 +335,11 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findOne(query ++ Json.obj("_deleted" -> false))
 
-  def findByIdNotDeleted(
+  def findById(
       id: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
     val (where, params) =
       scopedWhere(Seq(s"_id = $$1", notDeletedSql), Seq(id))
-    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
-  }
-
-  def findByIdNotDeleted(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    findByIdNotDeleted(id.value)
-  }
-
-  def findById(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
     queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
   }
 
@@ -375,17 +348,23 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findById(id.value)
 
-  def findByIds(
-      ids: Seq[Id]
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(
-      Seq(s"_id = ANY($$1::text[])"),
-      Seq(ids.map(_.value).toArray)
-    )
-    query(s"SELECT content FROM $tableName$where", params)
+  /** Reaches an entity whatever its `_deleted` flag. The deletion pipeline
+    * needs it: `QueueJob` and `DeletionService` re-read entities they have just
+    * flagged, to carry the cascade through.
+    */
+  def findByIdIncludingDeleted(
+      id: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
+    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
+    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
   }
 
-  def findByIdsNotDeleted(
+  def findByIdIncludingDeleted(
+      id: Id
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
+    findByIdIncludingDeleted(id.value)
+
+  def findByIds(
       ids: Seq[Id]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
     val (where, params) = scopedWhere(
@@ -395,7 +374,21 @@ trait Repo[Of, Id <: ValueType] {
     query(s"SELECT content FROM $tableName$where", params)
   }
 
-  def findAll()(implicit
+  /** Batch counterpart of `findByIdIncludingDeleted`. The GraphQL Fetchers use
+    * it: Sangria fails the whole query when a batch does not resolve every id
+    * it was given, so a reference to a flagged entity must still come back.
+    */
+  def findByIdsIncludingDeleted(
+      ids: Seq[Id]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
+    val (where, params) = scopedWhere(
+      Seq(s"_id = ANY($$1::text[])"),
+      Seq(ids.map(_.value).toArray)
+    )
+    query(s"SELECT content FROM $tableName$where", params)
+  }
+
+  def findAllIncludingDeleted()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
@@ -1037,7 +1030,7 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
 
     val o: OptionT[Future, Seq[Api]] = for {
       api <- OptionT(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrIdNotDeleted(id)
+        env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(id)
       )
       apis <- OptionT.liftF(
         env.dataStore.apiRepo
@@ -1600,18 +1593,31 @@ trait SubscriptionDemandRepo
 trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
 
 trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
+
+  /** A plan does not name its api: the relation is carried the other way round,
+    * by `Api.possibleUsagePlans`.
+    */
   def findByApi(tenant: TenantId, api: Api)(implicit
       env: Env,
       ec: ExecutionContext
+  ): Future[Seq[UsagePlan]] =
+    forTenant(tenant).findByIds(api.possibleUsagePlans)
+
+  /** Plans are named after the environment they target when the tenant runs in
+    * environment mode, so removing an environment means finding what still uses
+    * its name.
+    */
+  def findByCustomName(tenant: TenantId, customName: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
   ): Future[Seq[UsagePlan]] = {
-    env.dataStore.usagePlanRepo
-      .forTenant(tenant)
-      .find(
-        Json.obj(
-          "_id" -> Json
-            .obj("$in" -> JsArray(api.possibleUsagePlans.map(_.asJson)))
-        )
-      )
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'customName' = $2",
+      Seq(tenant.value, customName)
+    )
   }
 }
 

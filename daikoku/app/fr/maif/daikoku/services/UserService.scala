@@ -31,7 +31,7 @@ class UserService(
     for {
       _ <- EitherT.fromOptionF(
         env.dataStore.userRepo
-          .findByIdNotDeleted(user.id)
+          .findById(user.id)
           .map(r => r.fold(().some)(_ => None)),
         AppError.EntityConflict("user id")
       )

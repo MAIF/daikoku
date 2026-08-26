@@ -170,7 +170,7 @@ class ApiLifeCycleService(
         EitherT.right[AppError](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findByIdsNotDeleted(subscriptionsTeamsIds)
+            .findByIds(subscriptionsTeamsIds)
         )
       subscriptionWithMaybeTeams =
         subscriptions.map(subscription =>
@@ -237,7 +237,7 @@ class ApiLifeCycleService(
         EitherT.liftF[Future, AppError, Seq[Team]](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findByIdsNotDeleted(subscriptionsTeamsIds)
+            .findByIds(subscriptionsTeamsIds)
         )
       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](
         Future.sequence(subscriptionTeams.map(subscriptionTeam => {

@@ -63,7 +63,7 @@ class TeamService(
       _ <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdOrHrIdNotDeleted(team.id.value, team.humanReadableId)
+          .findByIdOrHrId(team.id.value, team.humanReadableId)
           .map(r => r.fold(().some)(_ => None)),
         AppError.TeamNameAlreadyExists
       )

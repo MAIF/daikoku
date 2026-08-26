@@ -130,7 +130,7 @@ case class CmsPage(
       (id: String, options: Options) => {
         val userId = renderString(ctx, parentId, id, fields, jsonToCombine, req)
         val optUser =
-          Await.result(env.dataStore.userRepo.findById(userId), 10.seconds)
+          Await.result(env.dataStore.userRepo.findByIdIncludingDeleted(userId), 10.seconds)
 
         optUser match {
           case Some(user) =>
@@ -472,7 +472,7 @@ case class CmsPage(
       s"daikoku-${name}s",
       (_: CmsPage, options: Options) => {
         val apis = Await
-          .result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+          .result(repo.forTenant(ctx.tenant).findAll(), 10.seconds)
         apis
           .map(api =>
             renderString(
@@ -494,7 +494,7 @@ case class CmsPage(
           .result(
             repo
               .forTenant(ctx.tenant)
-              .findByIdOrHrIdNotDeleted(
+              .findByIdOrHrId(
                 renderString(ctx, parentId, id, fields, jsonToCombine, req)
               ),
             10.seconds
@@ -516,7 +516,7 @@ case class CmsPage(
       s"daikoku-json-$name",
       (id: String, _: Options) =>
         Await
-          .result(repo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds)
+          .result(repo.forTenant(ctx.tenant).findById(id), 10.seconds)
           .map(stringify)
           .getOrElse("")
     )
@@ -525,7 +525,7 @@ case class CmsPage(
       (_: CmsPage, _: Options) =>
         JsArray(
           Await
-            .result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+            .result(repo.forTenant(ctx.tenant).findAll(), 10.seconds)
             .map(stringify)
         )
     )
@@ -934,7 +934,7 @@ case class CmsPage(
                       .map(pageId =>
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findById(pageId)
+                          .findByIdIncludingDeleted(pageId)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -961,7 +961,7 @@ case class CmsPage(
                       .map(pageId =>
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findById(pageId)
+                          .findByIdIncludingDeleted(pageId)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -992,7 +992,7 @@ case class CmsPage(
                       .map(
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findById(_)
+                          .findByIdIncludingDeleted(_)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -1021,7 +1021,7 @@ case class CmsPage(
                     .map(
                       env.dataStore.apiDocumentationPageRepo
                         .forTenant(ctx.tenant)
-                        .findById(_)
+                        .findByIdIncludingDeleted(_)
                     )
                     .getOrElse(FastFuture.successful(None))
                 case _ => FastFuture.successful(None)
@@ -1171,7 +1171,7 @@ case class CmsPage(
                   .result(
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant)
-                      .findAllNotDeleted(),
+                      .findAll(),
                     10.seconds
                   )
                   .map(a => {
@@ -1195,7 +1195,7 @@ case class CmsPage(
                   .result(
                     env.dataStore.teamRepo
                       .forTenant(ctx.tenant)
-                      .findAllNotDeleted(),
+                      .findAll(),
                     10.seconds
                   )
                   .map(a => {
@@ -1214,7 +1214,7 @@ case class CmsPage(
               JsArray(
                 Await
                   .result(
-                    env.dataStore.userRepo.findAllNotDeleted(),
+                    env.dataStore.userRepo.findAll(),
                     10.seconds
                   )
                   .map(_.toUiPayload())
