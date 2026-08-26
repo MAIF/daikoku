@@ -141,7 +141,7 @@ object TenantHelper {
               FastFuture.successful(Tenant.Default)
             case Some(sessionId) =>
               env.dataStore.userSessionRepo
-                .findOne(Json.obj("sessionId" -> sessionId))
+                .findBySessionId(sessionId)
                 .flatMap {
                   case Some(session) if !session.expires.isAfterNow =>
                     FastFuture.successful(Tenant.Default)
@@ -357,7 +357,7 @@ class LoginFilter(env: Env)(implicit
                   }
               case Some(sessionId) =>
                 env.dataStore.userSessionRepo
-                  .findOne(Json.obj("sessionId" -> sessionId))
+                  .findBySessionId(sessionId)
                   .flatMap {
                     case None if tenant.isPrivate =>
                       FastFuture.successful(

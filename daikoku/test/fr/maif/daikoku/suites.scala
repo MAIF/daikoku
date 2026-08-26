@@ -486,11 +486,7 @@ object testUtils {
 
     def logout(email: String, on: Tenant): Future[Unit] = {
       daikokuComponents.env.dataStore.userSessionRepo
-        .delete(
-          Json.obj(
-            "userEmail" -> email
-          )
-        )
+        .deleteByUserEmail(email)
         .map(_ => ())
     }
 

@@ -438,8 +438,8 @@ class LoginController(
   private def deleteSessionWithImpersonations(session: UserSession) =
     for {
       _ <- env.dataStore.userSessionRepo.deleteById(session.id)
-      _ <- env.dataStore.userSessionRepo.delete(
-        Json.obj("impersonatorSessionId" -> session.sessionId.value)
+      _ <- env.dataStore.userSessionRepo.deleteByImpersonatorSessionId(
+        session.sessionId
       )
     } yield ()
 
@@ -451,9 +451,7 @@ class LoginController(
       idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
-      .findOne(
-        Json.obj("userEmail" -> user.email, "impersonatorId" -> JsNull)
-      )
+      .findByUserEmailWithoutImpersonator(user.email)
       .map {
         case Some(session) =>
           session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
@@ -1002,7 +1000,7 @@ class LoginController(
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
-            .findOneNotDeleted(Json.obj("randomId" -> id))
+            .findByRandomId(id)
             .flatMap {
               case Some(accountCreation)
                   if accountCreation.validUntil.isBefore(DateTime.now()) =>
@@ -1185,7 +1183,7 @@ class LoginController(
         id = Cypher.decrypt(env.config.cypherSecret, cypheredId, ctx.tenant)
         pwdReset <- EitherT.fromOptionF[Future, AppError, PasswordReset](
           env.dataStore.passwordResetRepo
-            .findOneNotDeleted(Json.obj("randomId" -> id, "email" -> email)),
+            .findByRandomIdAndEmail(id, email),
           AppError.BadRequestError("password.reset.error.invalid")
         )
         _ <- EitherT.cond[Future][AppError, Unit](

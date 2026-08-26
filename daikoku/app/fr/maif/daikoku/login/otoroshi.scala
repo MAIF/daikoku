@@ -460,17 +460,10 @@ object OtoroshiIdentityFilter {
                         val maybeSession = for {
                           session <-
                             env.dataStore.userSessionRepo
-                              .findOne(
-                                Json.obj(
-                                  "userEmail" -> user.email,
-                                  "impersonatorId" -> JsNull
-                                )
-                              )
+                              .findByUserEmailWithoutImpersonator(user.email)
                           impersonatedSession <-
                             env.dataStore.userSessionRepo
-                              .findOne(
-                                Json.obj("impersonatorEmail" -> user.email)
-                              )
+                              .findByImpersonatorEmail(user.email)
                         } yield {
                           impersonatedSession.orElse(session)
                         }

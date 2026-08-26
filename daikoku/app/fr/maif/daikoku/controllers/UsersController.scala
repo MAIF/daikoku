@@ -255,13 +255,11 @@ class UsersController(
           case None => FastFuture.successful(Redirect("/logout"))
           case Some(sessionId) =>
             env.dataStore.userSessionRepo
-              .findOne(Json.obj("sessionId" -> sessionId.value))
+              .findBySessionId(sessionId.value)
               .flatMap {
                 case Some(session) =>
                   env.dataStore.userSessionRepo
-                    .delete(
-                      Json.obj("impersonatorSessionId" -> sessionId.value)
-                    )
+                    .deleteByImpersonatorSessionId(sessionId)
                     .map { _ =>
                       if (session.expires.isBefore(DateTime.now()))
                         Redirect("/logout")

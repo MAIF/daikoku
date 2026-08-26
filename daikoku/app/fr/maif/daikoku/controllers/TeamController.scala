@@ -308,8 +308,7 @@ class TeamController(
                     .send(title, Seq(team.contact), value, ctx.tenant)
                 _ <-
                   env.dataStore.emailVerificationRepo
-                    .forTenant(ctx.tenant)
-                    .delete(Json.obj("teamId" -> team.id.value))
+                    .deleteByTeam(ctx.tenant.id, team.id)
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)

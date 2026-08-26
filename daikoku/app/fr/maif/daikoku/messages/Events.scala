@@ -89,11 +89,9 @@ class MessageActor(implicit
           )
         )
       )
-      connected <- env.dataStore.userSessionRepo.find(
-        Json.obj(
-          "userId" -> Json.obj("$in" -> JsArray(recipients.map(_.id.asJson))),
-          "expires" -> Json.obj("$gt" -> DateTime.now().getMillis)
-        )
+      connected <- env.dataStore.userSessionRepo.findActiveByUserIds(
+        recipients.map(_.id),
+        DateTime.now().getMillis
       )
 
       emails =

@@ -136,20 +136,9 @@ class StateController(
       }
     }
 
-  private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
+  private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) =
     env.dataStore.userSessionRepo
-      .findNotDeleted(
-        Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson))
-      )
-      .flatMap(seq =>
-        env.dataStore.userSessionRepo
-          .delete(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson)))
-            )
-          )
-      )
-  }
+      .deleteAllExceptSession(ctx.session.sessionId.some)
 
   def enableMaintenanceMode(): Action[AnyContent] =
     DaikokuAction.async { ctx =>

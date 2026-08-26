@@ -464,11 +464,7 @@ class DeletionService(
       _ <- deleteUserNotifications(tenant.some, user)
       _ <- deleteChat(tenant.some, user)
       _ <- EitherT.right[AppError](
-        env.dataStore.userSessionRepo.delete(
-          Json.obj(
-            "userId" -> userId
-          )
-        )
+        env.dataStore.userSessionRepo.deleteByUserId(userId)
       )
     } yield ()
   }
@@ -506,11 +502,7 @@ class DeletionService(
       _ <- deleteUserNotifications(None, user)
       _ <- deleteChat(None, user)
       _ <- EitherT.right[AppError](
-        env.dataStore.userSessionRepo.delete(
-          Json.obj(
-            "userId" -> userId
-          )
-        )
+        env.dataStore.userSessionRepo.deleteByUserId(userId)
       )
     } yield ()
   }

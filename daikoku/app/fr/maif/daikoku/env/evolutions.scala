@@ -2292,7 +2292,7 @@ object evolutions {
     Source(list)
       .mapAsync(1) { evolution =>
         dataStore.evolutionRepo
-          .findOne(Json.obj("version" -> evolution.version))
+          .findByVersion(evolution.version)
           .flatMap {
             case None =>
               evolution.run(None, dataStore, otoroshiClient).flatMap { _ =>

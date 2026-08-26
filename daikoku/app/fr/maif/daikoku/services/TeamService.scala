@@ -211,8 +211,7 @@ class TeamService(
             )
             _ <-
               env.dataStore.emailVerificationRepo
-                .forTenant(tenant)
-                .delete(Json.obj("teamId" -> oldTeam.id.value))
+                .deleteByTeam(tenant.id, oldTeam.id)
             _ <-
               env.dataStore.emailVerificationRepo
                 .forTenant(tenant)

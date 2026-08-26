@@ -100,29 +100,17 @@ class TenantService(
       updatedTenant: Tenant,
       excludedSessionId: Option[UserSessionId]
   ): EitherT[Future, AppError, Tenant] = {
-    updatedTenant.tenantMode match {
+    // Going to maintenance or construction disconnects everybody but the
+    // administrator performing the change.
+    val disconnectUsers = updatedTenant.tenantMode match {
       case Some(TenantMode.Maintenance) | Some(TenantMode.Construction) =>
-        val sessionQuery = excludedSessionId match {
-          case Some(sessionId) =>
-            Json.obj("_id" -> Json.obj("$ne" -> sessionId.asJson))
-          case None => Json.obj()
-        }
-        env.dataStore.userSessionRepo
-          .find(sessionQuery)
-          .map(seq =>
-            env.dataStore.userSessionRepo.delete(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(seq.map(_.sessionId.asJson))
-                )
-              )
-            )
-          )
-      case _ =>
+        env.dataStore.userSessionRepo.deleteAllExceptSession(excludedSessionId)
+      case _ => Future.successful(0L)
     }
 
     for {
       _ <- checkRemovedSettingsAreUnused(oldTenant, updatedTenant)
+      _ <- EitherT.liftF[Future, AppError, Long](disconnectUsers)
       adminTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(updatedTenant)

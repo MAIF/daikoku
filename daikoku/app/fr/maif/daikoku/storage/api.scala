@@ -474,17 +474,135 @@ trait Repo[Of, Id <: ValueType] {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-trait UserSessionRepo extends Repo[UserSession, DatastoreId]
+trait UserSessionRepo extends Repo[UserSession, DatastoreId] {
 
-trait PasswordResetRepo extends Repo[PasswordReset, DatastoreId]
+  /** A session is identified by its `sessionId`, which is NOT its `_id`: both
+    * are independent random tokens.
+    */
+  def findBySessionId(
+      sessionId: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE content->>'sessionId' = $$1 LIMIT 1",
+      Seq(sessionId)
+    )
 
-trait AccountCreationRepo extends Repo[AccountCreation, DemandId]
+  /** The sessions of those users that have not expired yet. */
+  def findActiveByUserIds(userIds: Seq[UserId], nowMillis: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[UserSession]] =
+    query(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'userId' = ANY($1::text[]) " +
+        "AND (content->>'expires')::bigint > $2",
+      Seq(userIds.map(_.value).toArray, java.lang.Long.valueOf(nowMillis))
+    )
+
+  /** The genuine session of a user, as opposed to one opened by an admin
+    * impersonating them.
+    */
+  def findByUserEmailWithoutImpersonator(
+      email: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'userEmail' = $1 " +
+        "AND content->>'impersonatorId' IS NULL LIMIT 1",
+      Seq(email)
+    )
+
+  def findByImpersonatorEmail(
+      email: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'impersonatorEmail' = $1 LIMIT 1",
+      Seq(email)
+    )
+
+  def deleteByImpersonatorSessionId(sessionId: UserSessionId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
+    execute(
+      s"DELETE FROM $tableName WHERE content->>'impersonatorSessionId' = $$1",
+      Seq(sessionId.value)
+    )
+
+  def deleteByUserId(
+      userId: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
+    execute(
+      s"DELETE FROM $tableName WHERE content->>'userId' = $$1",
+      Seq(userId)
+    )
+
+  def deleteByUserEmail(
+      email: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
+    execute(
+      s"DELETE FROM $tableName WHERE content->>'userEmail' = $$1",
+      Seq(email)
+    )
+
+  /** Disconnects everybody, optionally sparing one session — typically the one
+    * of the admin triggering the purge.
+    */
+  def deleteAllExceptSession(spared: Option[UserSessionId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
+    spared match {
+      case Some(sessionId) =>
+        execute(
+          s"DELETE FROM $tableName WHERE content->>'sessionId' <> $$1",
+          Seq(sessionId.value)
+        )
+      case None => execute(s"DELETE FROM $tableName")
+    }
+}
+
+trait PasswordResetRepo extends Repo[PasswordReset, DatastoreId] {
+  def findByRandomIdAndEmail(randomId: String, email: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[PasswordReset]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'randomId' = $1 AND content->>'email' = $2 " +
+        s"AND $notDeletedSql LIMIT 1",
+      Seq(randomId, email)
+    )
+}
+
+trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
+  def findByRandomId(
+      randomId: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[AccountCreation]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE content->>'randomId' = $$1 " +
+        s"AND $notDeletedSql LIMIT 1",
+      Seq(randomId)
+    )
+}
 
 trait TenantRepo extends Repo[Tenant, TenantId]
 
 trait UserRepo extends Repo[User, UserId]
 
-trait EvolutionRepo extends Repo[Evolution, DatastoreId]
+trait EvolutionRepo extends Repo[Evolution, DatastoreId] {
+  def findByVersion(
+      version: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Evolution]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE content->>'version' = $$1 LIMIT 1",
+      Seq(version)
+    )
+}
 trait ReportsInfoRepo extends Repo[ReportsInfo, DatastoreId]
 
 trait ApiSubscriptionTransferRepo
@@ -624,7 +742,23 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 }
 
 trait EmailVerificationRepo
-    extends TenantCapableRepo[EmailVerification, DatastoreId]
+    extends TenantCapableRepo[EmailVerification, DatastoreId] {
+
+  /** Note the explicit `_tenant` predicate: raw SQL bypasses the tenant
+    * scoping that `forTenant` adds to the JsObject query methods.
+    */
+  def deleteByTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'teamId' = $1 AND content->>'_tenant' = $2",
+      Seq(team.value, tenant.value)
+    )
+  }
+}
 
 trait DataStore {
   def start(): Future[Unit]
