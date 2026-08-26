@@ -1,6 +1,8 @@
 # Removing the Mongo-style query DSL from the storage layer
 
-Working document for an in-progress, incremental refactor. Delete it once the last phase lands.
+Working document for a refactor that has landed. Everything below is done; what is left is the two
+open calls in [Indexes](#indexes) and the cross-cutting projects that outlive it (physical deletion,
+streaming export). Keep it until those are settled, then delete it.
 
 ## Goal
 
@@ -37,8 +39,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
 | 3 | Big ones: `apiRepo`, `apiSubscriptionRepo`, `usagePlanRepo` | **Done** |
 | 4 | Repos the plan had not listed: `operationRepo`, `stepValidatorRepo`, `keyringRepo`, `apiDocumentationPageRepo`, `auditTrailRepo`, `translationRepo`, `apiIssueRepo`, `jobRepo`, `apiSubscriptionTransferRepo`, `apiPostRepo`, `emailVerificationRepo` | **Done** |
-| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** |
-| Final B | Slim down / dedupe the `Repo` layer | Largely done with the `find*` renaming; what is left is the indexes below |
+| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** — `rowToJson` moved to `pgimplicits`, the file is gone |
+| Final B | Slim down / dedupe the `Repo` layer | **Done** — `find*` renaming, plus the index pass below |
 
 ## The pattern to follow
 
@@ -135,24 +137,25 @@ Two parity quirks were kept on purpose: `findByIdOrHrId` (without `NotDeleted`) 
 `_deleted = false` despite its name, and `deleteById` still reports `true` even when it removes
 nothing.
 
-## Missing indexes
+## Indexes
 
-Collected while migrating, to be added in one pass at the end of the phase — not mixed into the
-refactor commits. None of these are regressions: the JsObject queries they replace were unindexed
-too. Ordered by how much they matter.
+The pass is done: `createIndexes` now covers the predicates the typed methods actually use. Two
+tables had **no index at all** and got one — `tenants` (its `domain` is resolved on every HTTP
+request in `Hostname` mode) and `consumptions` (the largest table of a busy instance). `users.email`
+covers every login, and the `action.user` / `demand` / `subscription` / `keyring` paths of
+`notifications` join their siblings, which were already indexed.
 
-| Table | Expression | Used by | Why it matters |
-|---|---|---|---|
-| `tenants` | `content->>'domain'` | `TenantRepo.findByDomain` | **The table has no index at all.** In `Hostname` tenant-provider mode this runs on *every* HTTP request. |
-| `users` | `content->>'email'` | `UserRepo.findByEmail` | Every login, every auth module. `user_sessions` already indexes `userEmail`; `users` does not index `email`. |
-| `consumptions` | `_tenant`, `clientId`, `api`, `team`, `(from)::bigint` | the whole `ConsumptionRepo` | **The table has no index at all**, and it is the largest one in a busy instance. |
-| `teams` | GIN on `content->'users'` | `findByUser`, `isTenantAdmin`, `findPersonalTeam` | Membership lookups scan today. Needed only if the `EXISTS`/`jsonb_array_elements` form is swapped back for `@>`, which a GIN index can serve. |
-| `notifications` | `content->'action'->>'user'` | `findTeamInvitationForUser`, `deleteTeamInvitation`, `QueueJob.deleteUserNotifications` | The sibling paths `action.type`/`team`/`api`/`plan` are all indexed; `user` was forgotten. |
-| `notifications` | `content->'action'->>'demand'`, `->>'subscription'`, `->>'keyring'` | `deleteByDemand`, `DeletionService`, `QueueJob` | Deletion paths, run per settled demand / deleted subscription. |
+Two judgement calls left open:
 
-Worth checking at the same time: the `((content->>'_id'))` indexes are now dead weight — since phase 0
-every id lookup hits the `_id` PRIMARY KEY instead. Same for `((content->>'_tenant'))` on `users`,
-which is not a tenant-scoped repo.
+- **`teams`, GIN on `content->'users'`.** Membership lookups (`findByUser`, `isTenantAdmin`,
+  `findPersonalTeam`, and `myTeams` behind them) are written as
+  `EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') …)`, which a GIN index cannot serve.
+  Getting one to help means rewriting them as `content->'users' @> …`. Worth measuring first: a
+  tenant rarely has enough teams for it to matter.
+- **Dead weight.** The `((content->>'_id'))` indexes have been useless since phase 0 — id lookups hit
+  the `_id` PRIMARY KEY. Same for `((content->>'_tenant'))` on `users`, which is not tenant-scoped.
+  Dropping them costs nothing at read time and saves on every write, but it is a migration, not a
+  `CREATE INDEX IF NOT EXISTS`.
 
 ## Recipe per entity
 

@@ -9,13 +9,19 @@ import org.apache.pekko.stream.{
   QueueOfferResult
 }
 import org.apache.pekko.stream.scaladsl.Source
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 object pgimplicits {
+
+  /** Default logger for the row accessors below. A repo that declares its own
+    * implicit Logger shadows it, as it did when these lived in `Helper`.
+    */
+  implicit val logger: Logger = Logger("pg")
+
   implicit class VertxFutureEnhancer[A](val future: io.vertx.core.Future[A])
       extends AnyVal {
     def scala: Future[A] = {
@@ -84,6 +90,23 @@ object pgimplicits {
       promise.future
     }
   }
+
+  /** Decodes the `content` column of a row into an entity. Every repo read goes
+    * through it.
+    */
+  def rowToJson[Of](row: Row, format: Format[Of])(implicit
+      logger: Logger
+  ): Option[Of] =
+    row
+      .optJsObject("content")
+      .map(format.reads)
+      .map {
+        case JsSuccess(s, _) => Some(s)
+        case JsError(errors) =>
+          logger.error(errors.toString())
+          None
+      }
+      .collect { case Some(value) => value }
 }
 
 class ReactivePg(pool: Pool, configuration: Configuration)(implicit

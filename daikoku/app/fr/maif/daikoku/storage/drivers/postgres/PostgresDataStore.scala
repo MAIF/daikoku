@@ -16,8 +16,7 @@ import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage._
-import fr.maif.daikoku.storage.drivers.postgres.Helper._
-import fr.maif.daikoku.storage.drivers.postgres.pgimplicits.EnhancedRow
+import fr.maif.daikoku.storage.drivers.postgres.pgimplicits._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
@@ -856,6 +855,46 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
       "CREATE INDEX IF NOT EXISTS idx_job_started_at ON job_informations ((content->>'startedAt'));",
       "CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));",
+      // `findLastRun` orders on the numeric value, which the text index above
+      // cannot serve.
+      "CREATE INDEX IF NOT EXISTS idx_job_started_at_num ON job_informations (((content->>'startedAt')::bigint));",
+      // Resolving the tenant by hostname runs on every request in Hostname
+      // mode, and `tenants` had no index at all.
+      "CREATE INDEX IF NOT EXISTS idx_tenant_domain ON tenants ((content->>'domain'));",
+      // Every login goes through the email.
+      "CREATE INDEX IF NOT EXISTS idx_user_email ON users ((content->>'email'));",
+      // `consumptions` is the largest table of a busy instance and had no
+      // index either.
+      "CREATE INDEX IF NOT EXISTS idx_consumption_tenant ON consumptions ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_client_id ON consumptions ((content->>'clientId'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_api ON consumptions ((content->>'api'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_team ON consumptions ((content->>'team'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_from ON consumptions (((content->>'from')::bigint));",
+      // The sibling action paths were indexed, these were forgotten.
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_user ON notifications ((content-> 'action' ->> 'user'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_demand ON notifications ((content-> 'action' ->> 'demand'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_subscription ON notifications ((content-> 'action' ->> 'subscription'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_keyring ON notifications ((content-> 'action' ->> 'keyring'));",
+      // Chat lookups are all scoped to a chat.
+      "CREATE INDEX IF NOT EXISTS idx_message_tenant ON messages ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_message_chat ON messages ((content->>'chat'));",
+      // The root version of an api is resolved on every api page.
+      "CREATE INDEX IF NOT EXISTS idx_api_parent ON apis ((content->>'parent'));",
+      // Serving a CMS page resolves it by path.
+      "CREATE INDEX IF NOT EXISTS idx_cms_tenant ON cmspages ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_cms_path ON cmspages ((content->>'path'));",
+      // Assets are addressed by slug in urls.
+      "CREATE INDEX IF NOT EXISTS idx_asset_tenant ON assets ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_asset_slug ON assets ((content->>'slug'));",
+      // The deletion queue polls on the status.
+      "CREATE INDEX IF NOT EXISTS idx_operation_tenant ON operations ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_operation_status ON operations ((content->>'status'));",
+      // Mail validation links are claimed by token.
+      "CREATE INDEX IF NOT EXISTS idx_step_validator_token ON step_validators ((content->>'token'));",
+      "CREATE INDEX IF NOT EXISTS idx_step_validator_demand ON step_validators ((content->>'subscriptionDemand'));",
+      // A translation is keyed by (key, language).
+      "CREATE INDEX IF NOT EXISTS idx_translation_key_lang ON translations ((content->>'key'), (content->>'language'));",
+      "CREATE INDEX IF NOT EXISTS idx_demand_plan ON subscription_demands ((content->>'plan'));",
       """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
         |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
         |WHERE _deleted = false AND content->>'type' = 'Personal';""".stripMargin
