@@ -2507,21 +2507,6 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .map(_ => 1L)
   }
 
-  override def findMaxByQuery(query: JsObject, field: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Long]] = {
-    logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
-
-    val (sql, params) = convertQuery(query)
-    reactivePg.queryOne(
-      s"SELECT MAX(content->>${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
-      params ++ Seq(field)
-    ) { row =>
-      Some(row.getLong(0).asInstanceOf[Long])
-    }
-  }
-
   override def findWithProjection(query: JsObject, projection: JsObject)(
       implicit
       dbConn: DbConn,

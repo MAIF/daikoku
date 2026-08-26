@@ -164,11 +164,6 @@ trait Repo[Of, Id <: ValueType] {
       query: JsObject
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean]
 
-  def findMaxByQuery(query: JsObject = Json.obj(), field: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Long]]
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Generic helpers.  Their bodies are plain parameterised SQL run through the
   // primitives below (`query` / `queryOne` / `execute` / `queryExists`): no
@@ -1176,7 +1171,149 @@ trait ConsumptionRepo
 
 trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId]
 
-trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
+trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
+
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out; it is bound to `$1` by convention.
+    */
+  private val messageScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  /** A chat is closed by stamping a date on every one of its messages; an open
+    * one has no `closed` value at all.
+    */
+  private def closedSql(closed: Option[Long], placeholder: Int): String =
+    if (closed.isDefined)
+      s"(content->>'closed')::bigint = $$$placeholder"
+    else "content->>'closed' IS NULL"
+
+  /** Membership of one of the JSON arrays of user ids (`participants`,
+    * `readBy`).
+    */
+  private def containsUser(field: String, placeholder: Int): String =
+    s"content->'$field' @> to_jsonb($$$placeholder::text)"
+
+  /** The messages of the chats a user takes part in — every open one, or a
+    * single chat when `chat` is given.
+    */
+  def findChatMessages(
+      tenant: TenantId,
+      participant: UserId,
+      chat: Option[String],
+      closed: Option[Long]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Message]] = {
+    val repo = forTenant(tenant)
+    val (chatFilter, params) = chat match {
+      case Some(c) =>
+        (
+          s" AND content->>'chat' = $$3 AND ${closedSql(closed, 4)}",
+          Seq(tenant.value, participant.value, c) ++
+            closed.map(millis).toSeq
+        )
+      case None =>
+        (
+          " AND content->>'closed' IS NULL",
+          Seq(tenant.value, participant.value)
+        )
+    }
+
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $messageScope AND ${containsUser("participants", 2)}$chatFilter",
+      params
+    )
+  }
+
+  /** The chat a user holds with the tenant administrators. */
+  def findAdminChatMessages(
+      tenant: TenantId,
+      user: UserId,
+      closed: Option[Long]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Message]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $messageScope AND content->>'chat' = $$2 " +
+        "AND content->'messageType'->>'type' = 'tenant' " +
+        s"AND ${closedSql(closed, 3)}",
+      Seq(tenant.value, user.value) ++ closed.map(millis).toSeq
+    )
+  }
+
+  /** The last message of an open chat before a given instant — used to decide
+    * whether a notification mail is due.
+    */
+  def findLastOpenMessageBefore(tenant: TenantId, chat: UserId, before: Long)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Message]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $messageScope AND content->>'chat' = $$2 " +
+        "AND content->>'closed' IS NULL " +
+        "AND (content->>'date')::bigint < $3 " +
+        "ORDER BY (content->>'date')::bigint DESC LIMIT 1",
+      Seq(tenant.value, chat.value, millis(before))
+    )
+  }
+
+  def closeChat(tenant: TenantId, chat: String, closedAt: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{closed}', to_jsonb($3::bigint)) " +
+        s"WHERE $messageScope AND content->>'chat' = $$2 " +
+        "AND content->>'closed' IS NULL",
+      Seq(tenant.value, chat, millis(closedAt))
+    )
+  }
+
+  /** Adds a user to the `readBy` of every message of a chat they have not read
+    * yet. The `@>` guard matters: the former `{"readBy": {"$ne": …}}` compared
+    * the *whole* array rendered as text against a single id, so it was always
+    * true and the id was appended again on every read.
+    */
+  def markAsRead(tenant: TenantId, chat: String, user: UserId, before: Long)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{readBy}', " +
+        "  (content->'readBy') || to_jsonb($3::text)) " +
+        s"WHERE $messageScope AND content->>'chat' = $$2 " +
+        s"AND NOT ${containsUser("readBy", 3)} " +
+        "AND (content->>'date')::bigint < $4",
+      Seq(tenant.value, chat, user.value, millis(before))
+    )
+  }
+
+  /** When a chat was last closed, before a given instant. */
+  def lastClosedChatDate(tenant: TenantId, chat: String, before: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Long]] = {
+    val repo = forTenant(tenant)
+    repo
+      .queryOne(
+        s"SELECT content FROM ${repo.tableName} " +
+          s"WHERE $messageScope AND content->>'chat' = $$2 " +
+          "AND (content->>'closed')::bigint < $3 " +
+          "ORDER BY (content->>'closed')::bigint DESC LIMIT 1",
+        Seq(tenant.value, chat, millis(before))
+      )
+      .map(_.flatMap(_.closed).map(_.getMillis))
+  }
+
+  private def millis(value: Long): AnyRef = java.lang.Long.valueOf(value)
+}
 
 trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 

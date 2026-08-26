@@ -34,7 +34,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo` (**done**), `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo` (**done**), `messageRepo` (**done**), `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
 | 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
@@ -106,6 +106,25 @@ Two parity quirks were kept on purpose: `findByIdOrHrId` (without `NotDeleted`) 
 `_deleted = false` despite its name, and `deleteById` still reports `true` even when it removes
 nothing.
 
+## Missing indexes
+
+Collected while migrating, to be added in one pass at the end of the phase — not mixed into the
+refactor commits. None of these are regressions: the JsObject queries they replace were unindexed
+too. Ordered by how much they matter.
+
+| Table | Expression | Used by | Why it matters |
+|---|---|---|---|
+| `tenants` | `content->>'domain'` | `TenantRepo.findByDomain` | **The table has no index at all.** In `Hostname` tenant-provider mode this runs on *every* HTTP request. |
+| `users` | `content->>'email'` | `UserRepo.findByEmail` | Every login, every auth module. `user_sessions` already indexes `userEmail`; `users` does not index `email`. |
+| `consumptions` | `_tenant`, `clientId`, `api`, `team`, `(from)::bigint` | the whole `ConsumptionRepo` | **The table has no index at all**, and it is the largest one in a busy instance. |
+| `teams` | GIN on `content->'users'` | `findByUser`, `isTenantAdmin`, `findPersonalTeam` | Membership lookups scan today. Needed only if the `EXISTS`/`jsonb_array_elements` form is swapped back for `@>`, which a GIN index can serve. |
+| `notifications` | `content->'action'->>'user'` | `findTeamInvitationForUser`, `deleteTeamInvitation`, `QueueJob.deleteUserNotifications` | The sibling paths `action.type`/`team`/`api`/`plan` are all indexed; `user` was forgotten. |
+| `notifications` | `content->'action'->>'demand'`, `->>'subscription'`, `->>'keyring'` | `deleteByDemand`, `DeletionService`, `QueueJob` | Deletion paths, run per settled demand / deleted subscription. |
+
+Worth checking at the same time: the `((content->>'_id'))` indexes are now dead weight — since phase 0
+every id lookup hits the `_id` PRIMARY KEY instead. Same for `((content->>'_tenant'))` on `users`,
+which is not a tenant-scoped repo.
+
 ## Recipe per entity
 
 1. `grep -rn "dataStore\.<repo>" app/ test/` and list every `Json.obj(...)` handed to that repo.
@@ -129,9 +148,20 @@ nothing.
 - **`findWithProjection`** has few callers: either provide an SQL replacement returning the wanted
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay
-  valid — same storage — but check they cover the new predicates.
+  valid — same storage. What the migration reveals they *don't* cover is collected below.
 
 ## Phase 2 notes
+
+`messageRepo` exposed a third silently-broken query, of the same family as the phase-1 one.
+`ReadMessages` marked a chat as read with `{"readBy": {"$ne": userId}}`; `$ne` renders as
+`content->>'readBy' <> $n`, and `readBy` is an **array**, so `content->>'readBy'` yields the whole
+array as text (`["u1","u2"]`) — never equal to a single id. The guard was therefore always true and
+the `$push` appended the same id again on every read, growing `readBy` without bound. It is now
+`NOT (content->'readBy' @> to_jsonb($n::text))`.
+
+Migrating it also retired `findMaxByQuery`, whose only two callers were the chat-date lookups: they
+now select the newest matching message and read its `closed` field, which needs no extra primitive.
+
 
 `consumptionRepo` is the first repo whose *trait signature* had to change: `getLastConsumptionsForTenant`
 / `getLastConsumptionsforAllTenant` / `getLastConsumption` took a `JsObject` filter, so they went with

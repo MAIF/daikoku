@@ -235,17 +235,18 @@ class QueueJob(
       .findAdminTeam(tenant)
       .flatMap {
         case Some(adminTeam)
-            if !adminTeam.users.exists(u => u.userId == user.id) =>
-          env.dataStore.messageRepo
-            .forTenant(tenant)
-            .delete(
-              Json.obj(
-                "$or" -> Json.arr(
-                  Json.obj("sender" -> user.id.asJson),
-                  Json.obj("participants" -> user.id.asJson)
-                )
-              )
+            if !adminTeam.users.exists(u => u.userId == user.id) => {
+          val repo = env.dataStore.messageRepo.forTenant(tenant)
+          repo
+            .execute(
+              s"DELETE FROM ${repo.tableName} " +
+                "WHERE content->>'_tenant' = $1 " +
+                "AND (content->>'sender' = $2 " +
+                "OR content->'participants' @> to_jsonb($2::text))",
+              Seq(tenant.value, user.id.value)
             )
+            .map(_ > 0)
+        }
         case _ => FastFuture.successful(false)
       }
   }
