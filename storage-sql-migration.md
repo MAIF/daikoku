@@ -72,6 +72,21 @@ Physical deletion has been the rule for two releases; `_deleted` is only a trans
 method carries `notDeletedSql` and **no method carries a `NotDeleted` suffix** — `findByDomain`, not
 `findByDomainNotDeleted`.
 
+**Check the entity actually writes `_deleted` before filtering on it.** Four of them never do —
+`Message`, `Operation`, `Translation`, `Asset`. Their `Format.writes` has no `_deleted` key, so
+`content->>'_deleted'` is NULL and `notDeletedSql` matches *nothing*. Adding it to `messageScope`
+emptied every chat query and broke six tests; the same mistake on `Translation` and `Asset` was
+silent. A one-liner tells you where you stand:
+
+```bash
+# does <Entity>Format.writes emit "_deleted"?
+grep -A25 'writes(o: Message)' daikoku/app/fr/maif/daikoku/domain/json.scala | grep -c '_deleted'
+```
+
+Note this also means the unsuffixed generic helpers (`findById`, `findByIds`) return nothing for
+those four entities — `findAll` survives only because it spells
+`(_deleted = 'false' OR _deleted IS NULL)`.
+
 The generic `Repo` helpers follow the same rule since the `usagePlanRepo` step: the short name is the
 filtered, nominal one, and reaching a flagged entity is the thing you have to spell out.
 
@@ -220,12 +235,14 @@ that tree (`findRootVersion`, `findOtherVersions`, `existsVersion`, `clearDefaul
 
 Two things it exposed:
 
-- **A `++` that silently dropped a filter.** `AdminApiController.validate` built
+- **A `++` that reads like a bug but is not.** `AdminApiController.validate` built
   `Json.obj("_id" -> {"$ne": id}, "name" -> name) ++ parent.map(p => Json.obj("_id" -> p))`. `++` on a
-  `JsObject` *overwrites* the duplicate key, so as soon as an api had a parent the `$ne` vanished and
-  the query became "the parent api bearing this name". It is now `findAnotherWithName`, on the name
-  alone, letting the surrounding code decide — which it already does, accepting both parent and child
-  explicitly. A creation that used to slip through the hole can now be refused for a name clash.
+  `JsObject` *overwrites* the duplicate key, so with a parent the query silently becomes "the parent
+  api bearing this name" — which is exactly what the caller wants: creating a new version must find
+  its parent and accept it. Rewriting it on the name alone broke
+  `AdminApiControllerSpec` ("create a new version of API (with same name)" got a 400), because
+  `LIMIT 1` may return any other version. `findAnotherWithName` therefore takes the parent and
+  reproduces both branches.
 - **A job that verified nothing.** `OtoroshiEntitiesVerifierJob` filters the *apis* stream with a
   query built from its entry point, which names *subscription* fields (`api`, `plan`, or the
   subscription's `_id`). An `Api` carries none of them, so every entry point but

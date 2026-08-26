@@ -1575,19 +1575,34 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
       Seq(hrid, version, excluding.value)
     ).map(_.isDefined)
 
-  /** Another api bearing the same name, if any. The caller decides what to do
-    * with it: a parent or a child of the api being saved is legitimate, anybody
-    * else is a name clash.
+  /** The api that already bears this name, if any — what tells a name clash
+    * from a legitimate new version.
+    *
+    * When `parent` is given, the api being saved is a new version, and the only
+    * name-sharing api worth looking at is that parent: the caller accepts it
+    * and refuses anybody else. Without a parent, any *other* api of the same
+    * name is a clash.
     */
-  def findAnotherWithName(tenant: TenantId, id: ApiId, name: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Api]] =
-    selectOne(
-      tenant,
-      "_id <> $2 AND content->>'name' = $3",
-      Seq(id.value, name)
-    )
+  def findAnotherWithName(
+      tenant: TenantId,
+      id: ApiId,
+      name: String,
+      parent: Option[ApiId]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Api]] =
+    parent match {
+      case Some(parentId) =>
+        selectOne(
+          tenant,
+          "_id = $2 AND content->>'name' = $3",
+          Seq(parentId.value, name)
+        )
+      case None =>
+        selectOne(
+          tenant,
+          "_id <> $2 AND content->>'name' = $3",
+          Seq(id.value, name)
+        )
+    }
 
   // ----------------------------------------------------------------- writes
 
@@ -2023,6 +2038,8 @@ trait ConsumptionRepo
 
 trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
 
+  // No `_deleted` predicate below: `TranslationFormat` never writes the key.
+
   /** A translation is keyed by (key, language). */
   def findByKeyAndLanguage(tenant: TenantId, key: String, language: String)(
       implicit
@@ -2032,7 +2049,7 @@ trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'key' = $2 AND content->>'language' = $3 LIMIT 1",
       Seq(tenant.value, key, language)
     )
@@ -2055,7 +2072,7 @@ trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->'element'->>'id' = $2",
       Seq(tenant.value, element)
     )
@@ -2071,7 +2088,7 @@ trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'key' ~* $2",
       Seq(tenant.value, pattern)
     )
@@ -2083,8 +2100,11 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
   /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
     * predicate is spelled out; it is bound to `$1` by convention.
     */
-  private val messageScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+  /** No `_deleted` predicate here: `MessageFormat` never writes the key, so
+    * `content->>'_deleted'` is always NULL and filtering on it would match
+    * nothing. Chats are deleted physically.
+    */
+  private val messageScope: String = "content->>'_tenant' = $1"
 
   /** A chat is closed by stamping a date on every one of its messages; an open
     * one has no `closed` value at all.
@@ -2181,9 +2201,9 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
   }
 
   /** Adds a user to the `readBy` of every message of a chat they have not read
-    * yet. The `@>` guard matters: the former `readBy` guard compared
-    * the *whole* array rendered as text against a single id, so it was always
-    * true and the id was appended again on every read.
+    * yet. The `@>` guard matters: the former `readBy` guard compared the
+    * *whole* array rendered as text against a single id, so it was always true
+    * and the id was appended again on every read.
     */
   def markAsRead(tenant: TenantId, chat: String, user: UserId, before: Long)(
       implicit
@@ -2354,7 +2374,8 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
 trait AssetRepo extends TenantCapableRepo[Asset, AssetId] {
 
   /** An asset is addressed by its slug in urls, not by its id. Raw SQL bypasses
-    * the tenant scoping of `forTenant`, so `_tenant` is spelled out.
+    * the tenant scoping of `forTenant`, so `_tenant` is spelled out — and no
+    * `_deleted` predicate, since `AssetFormat` never writes the key.
     */
   def findBySlug(tenant: TenantId, slug: String)(implicit
       dbConn: DbConn,
@@ -2363,8 +2384,7 @@ trait AssetRepo extends TenantCapableRepo[Asset, AssetId] {
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
-        "AND content->>'slug' = $2 LIMIT 1",
+        "WHERE content->>'_tenant' = $1 AND content->>'slug' = $2 LIMIT 1",
       Seq(tenant.value, slug)
     )
   }
@@ -2654,9 +2674,9 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 trait EmailVerificationRepo
     extends TenantCapableRepo[EmailVerification, DatastoreId] {
 
-  /** The pending verification a user follows from their mail. Note the
-    * explicit `_tenant` predicate: raw SQL bypasses the scoping that
-    * `forTenant` applies to the generic helpers.
+  /** The pending verification a user follows from their mail. Note the explicit
+    * `_tenant` predicate: raw SQL bypasses the scoping that `forTenant` applies
+    * to the generic helpers.
     */
   def findByRandomId(tenant: TenantId, randomId: String)(implicit
       dbConn: DbConn,

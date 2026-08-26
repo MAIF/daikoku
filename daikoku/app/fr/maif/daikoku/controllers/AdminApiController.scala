@@ -556,7 +556,12 @@ class ApiAdminApiController(
         case UpdateOrCreate.Update =>
           EitherT(
             env.dataStore.apiRepo
-              .findAnotherWithName(entity.tenant, entity.id, entity.name)
+              .findAnotherWithName(
+                entity.tenant,
+                entity.id,
+                entity.name,
+                entity.parent
+              )
               .map {
                 case Some(api)
                     if entity.parent.contains(api.id) || api.parent
@@ -570,7 +575,12 @@ class ApiAdminApiController(
         case UpdateOrCreate.Create =>
           EitherT(
             env.dataStore.apiRepo
-              .findAnotherWithName(entity.tenant, entity.id, entity.name)
+              .findAnotherWithName(
+                entity.tenant,
+                entity.id,
+                entity.name,
+                entity.parent
+              )
               .map {
                 case None =>
                   Right(())
