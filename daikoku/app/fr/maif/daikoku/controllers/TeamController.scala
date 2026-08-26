@@ -827,8 +827,7 @@ class TeamController(
         )
       )(ctx) {
         env.dataStore.teamRepo
-          .forTenant(ctx.tenant)
-          .findOne(Json.obj("type" -> TeamType.Admin.name))
+          .findAdminTeam(ctx.tenant.id)
           .map {
             case Some(team) => Ok(team.asSimpleJson)
             case None => NotFound(Json.obj("error" -> "Team admin not found"))

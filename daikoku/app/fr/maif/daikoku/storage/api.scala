@@ -731,35 +731,128 @@ trait ApiSubscriptionTransferRepo
     extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
+
+  /** Raw SQL bypasses the tenant scoping that `forTenant` adds to the JsObject
+    * query methods, so every method here spells the `_tenant` predicate out. By
+    * convention it is bound to `$1`, and the other values follow.
+    */
+  private val teamScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  /** Membership predicate on the JSON `users` array — the SQL form of the
+    * former `{"users.userId": …}` query.
+    */
+  private def isMemberSql(placeholder: Int): String =
+    "EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') AS u " +
+      s"WHERE u->>'userId' = $$$placeholder)"
+
+  /** The team backing the tenant administration. */
+  def findAdminTeam(
+      tenant: TenantId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Team]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $teamScope AND content->>'type' = '${TeamType.Admin.name}' " +
+        "LIMIT 1",
+      Seq(tenant.value)
+    )
+  }
+
+  /** The personal team of a user — the one holding them as its single member.
+    */
+  def findPersonalTeam(tenant: TenantId, user: UserId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Team]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $teamScope " +
+        s"AND content->>'type' = '${TeamType.Personal.name}' " +
+        s"AND ${isMemberSql(2)} LIMIT 1",
+      Seq(tenant.value, user.value)
+    )
+  }
+
+  /** True when the user sits in the tenant administration team, i.e. is a
+    * tenant admin.
+    */
+  def isTenantAdmin(tenant: TenantId, user: UserId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    val repo = forTenant(tenant)
+    repo
+      .queryOne(
+        s"SELECT content FROM ${repo.tableName} " +
+          s"WHERE $teamScope AND content->>'type' = '${TeamType.Admin.name}' " +
+          s"AND ${isMemberSql(2)} LIMIT 1",
+        Seq(tenant.value, user.value)
+      )
+      .map(_.isDefined)
+  }
+
+  /** The personal teams a user holds across every tenant — a user has one per
+    * tenant they belong to, so this tells whether they are still known
+    * elsewhere.
+    */
+  def findPersonalTeamsForAllTenants(
+      user: UserId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Team]] = {
+    val repo = forAllTenant()
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_deleted' = 'false' " +
+        s"AND content->>'type' = '${TeamType.Personal.name}' " +
+        s"AND ${isMemberSql(1)}",
+      Seq(user.value)
+    )
+  }
+
+  /** Every team of the tenant, personal ones optionally left out — which is
+    * what `tenant.subscriptionSecurity` asks for.
+    */
+  def findAllTeams(tenant: TenantId, excludePersonal: Boolean)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Team]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} WHERE $teamScope" +
+        personalExclusion(excludePersonal),
+      Seq(tenant.value)
+    )
+  }
+
+  /** The teams a user belongs to. */
+  def findByUser(tenant: TenantId, user: UserId, excludePersonal: Boolean)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Team]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $teamScope AND ${isMemberSql(2)}" +
+        personalExclusion(excludePersonal),
+      Seq(tenant.value, user.value)
+    )
+  }
+
+  private def personalExclusion(excludePersonal: Boolean): String =
+    if (excludePersonal)
+      s" AND content->>'type' <> '${TeamType.Personal.name}'"
+    else ""
+
   def myTeams(tenant: Tenant, user: User)(implicit
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[Team]] = {
-    val typeFilter =
-      if (
-        tenant.subscriptionSecurity.isDefined
-        && tenant.subscriptionSecurity.exists(identity)
-      ) {
-        Json.obj(
-          "type" -> Json.obj("$ne" -> TeamType.Personal.name)
-        )
-      } else {
-        Json.obj()
-      }
-    if (user.isDaikokuAdmin) {
-      env.dataStore.teamRepo
-        .forTenant(tenant.id)
-        .findNotDeleted(
-          typeFilter
-        )
+    val excludePersonal = tenant.subscriptionSecurity.exists(identity)
 
-    } else {
-      env.dataStore.teamRepo
-        .forTenant(tenant.id)
-        .findNotDeleted(
-          Json.obj("users.userId" -> user.id.value) ++ typeFilter
-        )
-    }
+    if (user.isDaikokuAdmin) findAllTeams(tenant.id, excludePersonal)
+    else findByUser(tenant.id, user.id, excludePersonal)
   }
 }
 

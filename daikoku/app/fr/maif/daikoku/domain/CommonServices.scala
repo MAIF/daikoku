@@ -225,11 +225,7 @@ object CommonServices {
         teams <-
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))
-              )
-            )
+            .findByIdsNotDeleted(allApis.map(_.team).distinct)
         demands <-
           env.dataStore.subscriptionDemandRepo
             .forTenant(ctx.tenant)
@@ -956,30 +952,11 @@ object CommonServices {
       ec: ExecutionContext
   ) = {
 
-    val typeFilter =
-      if (
-        ctx.tenant.subscriptionSecurity.isDefined
-        && ctx.tenant.subscriptionSecurity.exists(identity)
-      ) {
-        Json.obj(
-          "type" -> Json.obj("$ne" -> TeamType.Personal.name)
-        )
-      } else {
-        Json.obj()
-      }
     _UberPublicUserAccess(
       AuditTrailEvent("@{user.name} has accessed his team list")
     )(ctx) {
-      (if (ctx.user.isDaikokuAdmin)
-         env.dataStore.teamRepo
-           .forTenant(ctx.tenant)
-           .findNotDeleted(typeFilter)
-       else
-         env.dataStore.teamRepo
-           .forTenant(ctx.tenant)
-           .findNotDeleted(
-             Json.obj("users.userId" -> ctx.user.id.value) ++ typeFilter
-           ))
+      env.dataStore.teamRepo
+        .myTeams(ctx.tenant, ctx.user)
         .map(teams =>
           teams
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
@@ -995,30 +972,23 @@ object CommonServices {
     _TenantAdminAccessTenant(
       AuditTrailEvent("@{user.name} has accessed to all teams list")
     )(ctx) {
-      val typeFilter =
-        if (
-          ctx.tenant.subscriptionSecurity.isDefined
-          && ctx.tenant.subscriptionSecurity.exists(identity)
-        ) {
-          Json.obj(
-            "type" -> TeamType.Organization.name
-          )
-        } else {
-          Json.obj()
-        }
+      val organizationsOnly =
+        if (ctx.tenant.subscriptionSecurity.exists(identity))
+          s" AND content->>'type' = '${TeamType.Organization.name}'"
+        else ""
+      val repo = env.dataStore.teamRepo.forTenant(ctx.tenant)
+
       for {
-        teams <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findWithPagination(
-              Json.obj(
-                "_deleted" -> false,
-                "name" -> Json.obj("$regex" -> research)
-              ) ++ typeFilter,
-              offset,
-              limit,
-              Some(Json.obj("_humanReadableId" -> 1))
-            )
+        teams <- repo.queryPaginated(
+          s"SELECT content FROM ${repo.tableName} " +
+            "WHERE content->>'_tenant' = $1 " +
+            "AND content->>'_deleted' = 'false' " +
+            s"AND content->>'name' ~* $$2$organizationsOnly " +
+            "ORDER BY content->>'_humanReadableId' ASC",
+          Seq(ctx.tenant.id.value, research),
+          offset = offset * limit,
+          limit = limit
+        )
       } yield {
         TeamWithCount(teams._1, teams._2)
       }

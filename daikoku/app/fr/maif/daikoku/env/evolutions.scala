@@ -559,16 +559,10 @@ object evolution_157_c extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val eventualLong = dataStore.teamRepo
-        .forAllTenant()
-        .updateManyByQuery(
-          Json.obj(),
-          Json.obj(
-            "$unset" -> Json.obj(
-              "subscriptions" -> ""
-            )
-          )
-        )
+      val repo = dataStore.teamRepo.forAllTenant()
+      val eventualLong = repo.execute(
+        s"UPDATE ${repo.tableName} SET content = content - 'subscriptions'"
+      )
 
       Source
         .future(eventualLong)
@@ -661,32 +655,19 @@ object evolution_1612_b extends EvolutionScript {
 
         implicit val execContext: ExecutionContext = ec
 
-        val eventualLong = dataStore.teamRepo
-          .forAllTenant()
-          .updateManyByQuery(
-            Json.obj(
-              "$or" -> Json.arr(
-                Json.obj("type" -> "Personal"),
-                Json.obj("type" -> "Admin")
-              )
-            ),
-            Json.obj(
-              "$set" -> Json.obj(
-                "verified" -> true
-              )
-            )
+        val repo = dataStore.teamRepo.forAllTenant()
+        val eventualLong = repo
+          .execute(
+            s"UPDATE ${repo.tableName} " +
+              "SET content = content || '{\"verified\": true}' " +
+              "WHERE content->>'type' IN ('Personal', 'Admin')"
           )
           .flatMap(_ =>
-            dataStore.teamRepo
-              .forAllTenant()
-              .updateManyByQuery(
-                Json.obj("type" -> "Organization"),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "verified" -> false
-                  )
-                )
-              )
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = content || '{\"verified\": false}' " +
+                "WHERE content->>'type' = 'Organization'"
+            )
           )
 
         Source
@@ -1155,8 +1136,7 @@ object evolution_1750 extends EvolutionScript {
         _ <- Future.sequence(
           tenants.map(tenant =>
             dataStore.teamRepo
-              .forTenant(tenant)
-              .findOne(Json.obj("type" -> TeamType.Admin.name))
+              .findAdminTeam(tenant.id)
               .flatMap(team => {
                 if (team.isDefined) {
                   val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
@@ -1581,8 +1561,7 @@ object evolution_1840_b extends EvolutionScript {
         .streamAllRaw()
         .mapAsync(1) { tenant =>
           dataStore.teamRepo
-            .forTenant((tenant \ "_id").as(using TenantIdFormat))
-            .findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name))
+            .findAdminTeam((tenant \ "_id").as(using TenantIdFormat))
             .map(t => (tenant, t))
         }
         .mapAsync(10) {

@@ -33,7 +33,13 @@ object tenantSecurity {
           case true =>
             env.dataStore.teamRepo
               .forTenant(tenant)
-              .find(Json.obj("apisCreationPermission" -> true))
+              .query(
+                s"SELECT content FROM ${env.dataStore.teamRepo.forTenant(tenant).tableName} " +
+                  "WHERE content->>'_tenant' = $1 " +
+                  "AND content->>'_deleted' = 'false' " +
+                  "AND content->>'apisCreationPermission' = 'true'",
+                Seq(tenant.id.value)
+              )
               .map { teams =>
                 if (teams.isEmpty)
                   false

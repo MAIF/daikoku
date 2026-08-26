@@ -507,7 +507,8 @@ object testUtils {
           case Some(user) =>
             daikokuComponents.env.dataStore.teamRepo
               .forTenant(on)
-              .findOne(Json.obj())
+              .findAll()
+              .map(_.headOption)
               .map {
                 case None =>
                   Team(

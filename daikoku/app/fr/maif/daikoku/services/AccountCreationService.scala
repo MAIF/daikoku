@@ -372,9 +372,7 @@ class AccountCreationService {
         AppError.EntityNotFound("form step")
       )
       adminTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(Json.obj("type" -> "Admin")),
+        env.dataStore.teamRepo.findAdminTeam(tenant.id),
         AppError.EntityNotFound("tenant team admin")
       )
       _ <- EitherT.cond[Future](

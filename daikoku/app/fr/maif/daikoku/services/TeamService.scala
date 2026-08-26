@@ -46,11 +46,7 @@ class TeamService(
         case Some(user) =>
           for {
             adminTeam <- EitherT.fromOptionF(
-              env.dataStore.teamRepo
-                .forTenant(tenant)
-                .findOneNotDeleted(
-                  Json.obj("type" -> TeamType.Admin.name)
-                ),
+              env.dataStore.teamRepo.findAdminTeam(tenant.id),
               AppError.EntityNotFound("admin team")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
@@ -67,14 +63,7 @@ class TeamService(
       _ <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "$or" -> Json.arr(
-                Json.obj("_id" -> team.id.asJson),
-                Json.obj("_humanReadableId" -> team.humanReadableId)
-              )
-            )
-          )
+          .findByIdOrHrIdNotDeleted(team.id.value, team.humanReadableId)
           .map(r => r.fold(().some)(_ => None)),
         AppError.TeamNameAlreadyExists
       )

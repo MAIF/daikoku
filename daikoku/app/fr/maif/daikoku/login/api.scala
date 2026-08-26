@@ -428,13 +428,7 @@ class LoginFilter(env: Env)(implicit
                                   _ <- env.dataStore.userRepo.save(user)
                                   isTenantAdmin <-
                                     env.dataStore.teamRepo
-                                      .forTenant(tenant)
-                                      .exists(
-                                        Json.obj(
-                                          "type" -> "Admin",
-                                          "users.userId" -> user.id.asJson
-                                        )
-                                      )
+                                      .isTenantAdmin(tenant.id, user.id)
                                   result <-
                                     session.impersonatorId
                                       .map(id =>

@@ -112,9 +112,7 @@ class TenantService(
       _ <- checkRemovedSettingsAreUnused(oldTenant, updatedTenant)
       _ <- EitherT.liftF[Future, AppError, Long](disconnectUsers)
       adminTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(updatedTenant)
-          .findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name)),
+        env.dataStore.teamRepo.findAdminTeam(updatedTenant.id),
         AppError.EntityNotFound("admin team")
       )
       _ <- deleteUnusedEnvironments(oldTenant, updatedTenant)

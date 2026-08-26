@@ -366,9 +366,7 @@ class AdminApiCascadeSpec
       resp.status mustBe 201
 
       val adminTeam = Await.result(
-        daikokuComponents.env.dataStore.teamRepo
-          .forTenant(newTenant.id)
-          .findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name)),
+        daikokuComponents.env.dataStore.teamRepo.findAdminTeam(newTenant.id),
         5.second
       )
       adminTeam.isDefined mustBe true

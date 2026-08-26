@@ -232,8 +232,7 @@ class QueueJob(
       dbConn: DbConn
   ): Future[Boolean] = {
     env.dataStore.teamRepo
-      .forTenant(tenant)
-      .findOne(Json.obj("type" -> "Admin"))
+      .findAdminTeam(tenant)
       .flatMap {
         case Some(adminTeam)
             if !adminTeam.users.exists(u => u.userId == user.id) =>

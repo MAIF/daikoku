@@ -435,25 +435,11 @@ class DeletionService(
         AppError.UserNotFound()
       )
       personalTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "type" -> TeamType.Personal.name,
-              "users.userId" -> user.id.asJson
-            )
-          ),
+        env.dataStore.teamRepo.findPersonalTeam(tenant.id, user.id),
         AppError.TeamNotFound
       )
       otherTenantPersonalTeam <- EitherT.liftF(
-        env.dataStore.teamRepo
-          .forAllTenant()
-          .findNotDeleted(
-            Json.obj(
-              "type" -> TeamType.Personal.name,
-              "users.userId" -> user.id.asJson
-            )
-          )
+        env.dataStore.teamRepo.findPersonalTeamsForAllTenants(user.id)
       )
       _ <- deleteTeamByQueue(personalTeam.id, tenant.id)
       _ <-
@@ -483,14 +469,7 @@ class DeletionService(
         AppError.UserNotFound()
       )
       teams <- EitherT.right[AppError](
-        env.dataStore.teamRepo
-          .forAllTenant()
-          .findNotDeleted(
-            Json.obj(
-              "type" -> TeamType.Personal.name,
-              "users.userId" -> user.id.asJson
-            )
-          )
+        env.dataStore.teamRepo.findPersonalTeamsForAllTenants(user.id)
       )
       _ <- EitherT.right[AppError](
         Future.sequence(

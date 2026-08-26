@@ -284,10 +284,7 @@ object OtoroshiIdentityFilter {
                                 for {
                                   tenantTeam <-
                                     env.dataStore.teamRepo
-                                      .forTenant(tenant)
-                                      .findNotDeleted(
-                                        Json.obj("type" -> "Admin")
-                                      )
+                                      .findAdminTeam(tenant.id)
                                   userTeamOpt <-
                                     findUserTeam(tenant.id, updatedUser)(using
                                       ec,
@@ -398,9 +395,7 @@ object OtoroshiIdentityFilter {
                               )
                           for {
                             tenantTeam <-
-                              env.dataStore.teamRepo
-                                .forTenant(tenant)
-                                .findNotDeleted(Json.obj("type" -> "Admin"))
+                              env.dataStore.teamRepo.findAdminTeam(tenant.id)
                             userTeamOpt <-
                               findUserTeam(tenant.id, updatedUser)(using
                                 ec,

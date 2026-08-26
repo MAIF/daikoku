@@ -392,14 +392,7 @@ case class CmsPage(
             )
           )(ctxUserContext) {
             env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findOne(
-                Json.obj(
-                  "_deleted" -> false,
-                  "type" -> TeamType.Personal.name,
-                  "users.userId" -> ctx.user.get.id.value
-                )
-              )
+              .findPersonalTeam(ctx.tenant.id, ctx.user.get.id)
               .map {
                 case None => AppError.TeamNotFound
                 case Some(team) if team.includeUser(ctx.user.get.id) =>

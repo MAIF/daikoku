@@ -2913,30 +2913,34 @@ class ApiController(
         val search = (body \ "search").asOpt[String].getOrElse("")
         ctx.setCtxValue("search", search)
 
+        val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
         val searchAsRegex =
-          Json.obj("$regex" -> s".*${RegexUtil.cleanRegex(search)}.*", "$options" -> "-i")
-        val teamUsersFilter =
-          if (ctx.user.isDaikokuAdmin) Json.obj()
-          else Json.obj("users.userId" -> ctx.user.id.value)
-
-        val typeFilter = if (ctx.tenant.subscriptionSecurity.isDefined
-          &&  ctx.tenant.subscriptionSecurity.exists(identity)) {
-          Json.obj(
-            "type" -> Json.obj("$ne" -> TeamType.Personal.name)
-          )
-        } else {
-          Json.obj()
-        }
+          Json.obj("$regex" -> searchPattern, "$options" -> "-i")
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-          teams <-
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj("name" -> searchAsRegex) ++ teamUsersFilter ++ typeFilter,
-                5,
-                Json.obj("name" -> 1).some
-              )
+          teams <- {
+            val repo = env.dataStore.teamRepo.forTenant(ctx.tenant.id)
+            val memberOnly =
+              if (ctx.user.isDaikokuAdmin) ""
+              else
+                " AND EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') " +
+                  "AS u WHERE u->>'userId' = $3)"
+            val notPersonal =
+              if (ctx.tenant.subscriptionSecurity.exists(identity))
+                s" AND content->>'type' <> '${TeamType.Personal.name}'"
+              else ""
+
+            repo.query(
+              s"SELECT content FROM ${repo.tableName} " +
+                "WHERE content->>'_tenant' = $1 " +
+                "AND content->>'_deleted' = 'false' " +
+                s"AND content->>'name' ~* $$2$memberOnly$notPersonal " +
+                "ORDER BY content->>'name' ASC LIMIT 5",
+              Seq(ctx.tenant.id.value, searchPattern) ++
+                (if (ctx.user.isDaikokuAdmin) Seq.empty
+                 else Seq(ctx.user.id.value))
+            )
+          }
           apis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
@@ -3226,15 +3230,7 @@ class ApiController(
               )))
           subTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .find(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    subs.map(_.team).map(_.asJson).toList
-                  )
-                )
-              )
-            ))
+            .findByIdsNotDeleted(subs.map(_.team).distinct))
           _ <-  EitherT.pure[Future, AppError](subTeams.foreach(t => sendMailToTeamAdmins(t, api, newPost, ownerTeam)))
 
         } yield Ok(Json.obj("created" -> true)))
@@ -4175,7 +4171,7 @@ class ApiController(
           newTeam <- EitherT.fromOptionF(
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findOneNotDeleted(Json.obj("_id" -> newTeamId)),
+              .findByIdNotDeleted(newTeamId),
             AppError.render(AppError.TeamNotFound)
           )
           api <- EitherT.fromOptionF(
