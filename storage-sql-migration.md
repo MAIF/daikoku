@@ -175,8 +175,11 @@ Two judgement calls left open:
   all), or we keep carrying `notDeletedSql` and that project removes it afterwards.
 - **`AuditTrailRepo`** has `Of = JsObject` (schemaless). It stays JSONB, just with dedicated typed
   methods.
-- **Export / import.** `exportAsStream` / `streamAllRaw` rely on the `JsObject` surface. A streaming
-  SQL equivalent is needed before `streamAllRaw` can go.
+- **Export / import.** Settled: `streamAllRaw` / `streamAllRawFormatted` now go through
+  `ReactivePg.queryStreamSource`, the server-side cursor that already backed `queryRawMappedStream`.
+  They used to build a `Source` out of a fully materialised `Seq` — the type said stream, the
+  behaviour was a plain `SELECT *`, and `exportAsStream` peaked at the size of the largest table
+  (`consumptions` or `audit_events` on a busy instance). Memory is now bounded by `fetchSize`.
 - **`findWithProjection`** has few callers: either provide an SQL replacement returning the wanted
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay

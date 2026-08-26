@@ -1,22 +1,20 @@
 package fr.maif.daikoku.storage.drivers.postgres
 
-import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain._
-import fr.maif.daikoku.domain.json._
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.services.CmsPage
+import fr.maif.daikoku.storage.*
+import fr.maif.daikoku.storage.drivers.postgres.pgimplicits.*
 import io.vertx.core.json.JsonObject
 import io.vertx.sqlclient.{Pool, Row}
-import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.{Configuration, Logger}
-import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.storage._
-import fr.maif.daikoku.storage.drivers.postgres.pgimplicits._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
@@ -1997,34 +1995,33 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     * rows are materialised first, which is what the JsObject version did too.
     * Only the evolutions and the export use it.
     */
+  /** Walks the whole table through a server-side cursor: memory stays bounded
+    * by `fetchSize`, whatever the table holds. Uses the repo's own materializer
+    * so callers keep their signature.
+    *
+    * Streaming opens its own transaction — a cursor only lives inside one —
+    * which is why these two are excluded from `DbConn`.
+    */
   override def streamAllRaw()(implicit
       ec: ExecutionContext
-  ): Source[JsValue, NotUsed] = {
+  ): Source[JsValue, ?] = {
     logger.debug(s"$tableName.streamAllRaw()")
 
-    Source
-      .future(
-        reactivePg.querySeq(s"SELECT content FROM $tableName") { row =>
-          row.optJsObject("content")
-        }
-      )
-      .flatMapConcat(rows => Source(rows.toList))
+    reactivePg.queryStreamSource(s"SELECT content FROM $tableName")(row =>
+      row.optJsObject("content")
+    )(using env.defaultMaterializer)
   }
 
   override def streamAllRawFormatted()(implicit
       ec: ExecutionContext
-  ): Source[Of, NotUsed] = {
+  ): Source[Of, ?] = {
     logger.debug(s"$tableName.streamAllRawFormatted()")
 
-    Source
-      .future(
-        reactivePg.querySeq(s"SELECT content FROM $tableName") { row =>
-          row.optJsObject("content")
-        }
-      )
-      .flatMapConcat(rows =>
-        Source(rows.toList.map(format.reads).filter(_.isSuccess).map(_.get))
-      )
+    reactivePg.queryStreamSource(s"SELECT content FROM $tableName")(row =>
+      row.optJsObject("content").map(format.reads).collect {
+        case JsSuccess(value, _) => value
+      }
+    )(using env.defaultMaterializer)
   }
 
   override def saveRaw(id: String, payload: JsObject)(implicit

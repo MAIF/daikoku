@@ -4,7 +4,6 @@ import cats.data.OptionT
 import fr.maif.daikoku.domain._
 import fr.maif.daikoku.env.Env
 import io.vertx.sqlclient.SqlConnection
-import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -65,11 +64,11 @@ trait Repo[Of, Id <: ValueType] {
 
   // Streaming methods are intentionally excluded from DbConn: they return a
   // lazy Source that materialises outside any transaction window.
-  def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed]
+  def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, ?]
 
   def streamAllRawFormatted()(implicit
       ec: ExecutionContext
-  ): Source[Of, NotUsed]
+  ): Source[Of, ?]
 
   def save(
       value: Of
