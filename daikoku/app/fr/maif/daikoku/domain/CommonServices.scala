@@ -1,6 +1,7 @@
 package fr.maif.daikoku.domain
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.AuditTrailEvent
@@ -1013,10 +1014,6 @@ object CommonServices {
         DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
       )
       val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
-      val planIdFilters = planId match {
-        case Some(value) => Json.obj("plan" -> value)
-        case None        => Json.obj()
-      }
       for {
         api <-
           env.dataStore.apiRepo
@@ -1033,14 +1030,12 @@ object CommonServices {
         apiId = api.map(api => api.id.value).get
         consumptions <-
           env.dataStore.consumptionRepo
-            .forTenant(ctx.tenant.id)
-            .find(
-              Json.obj(
-                "api" -> apiId,
-                "from" -> Json.obj("$gte" -> fromTimestamp),
-                "to" -> Json.obj("$lte" -> toTimestamp)
-              ) ++ planIdFilters,
-              Some(Json.obj("from" -> 1))
+            .findByApiBetween(
+              ctx.tenant.id,
+              ApiId(apiId),
+              planId.map(UsagePlanId.apply),
+              fromTimestamp,
+              toTimestamp
             )
       } yield {
         Right(consumptions)
@@ -1354,14 +1349,10 @@ object CommonServices {
             .findNotDeleted(Json.obj("team" -> team.id.value))
         revenue <-
           env.dataStore.consumptionRepo
-            .getLastConsumptionsForTenant(
-              ctx.tenant.id,
-              Json.obj(
-                "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
-                "from" -> Json
-                  .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
-                "to" -> Json.obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
-              )
+            .findLastConsumptions(
+              ctx.tenant.id.some,
+              apis = ownApis.map(_.id).some,
+              between = (fromTimestamp, toTimestamp).some
             )
       } yield {
         Right(revenue)

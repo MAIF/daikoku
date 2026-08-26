@@ -8,7 +8,8 @@ import fr.maif.daikoku.controllers.authorizations.async.{
   TeamAdminOnly,
   TeamApiKeyAction
 }
-import fr.maif.daikoku.domain.OtoroshiSettings
+import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.domain.{ApiId, OtoroshiSettings, UsagePlanId}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.OtoroshiClient
 import fr.maif.daikoku.jobs.ApiKeyStatsJob
@@ -100,14 +101,11 @@ class ConsumptionController(
                           )
                         case Some(keyring) =>
                           env.dataStore.consumptionRepo
-                            .forTenant(ctx.tenant.id)
-                            .find(
-                              Json.obj(
-                                "clientId" -> keyring.apiKey.clientId,
-                                "from" -> Json.obj("$gte" -> fromTimestamp),
-                                "to" -> Json.obj("$lte" -> toTimestamp)
-                              ),
-                              Some(Json.obj("from" -> 1))
+                            .findByClientIdBetween(
+                              ctx.tenant.id,
+                              keyring.apiKey.clientId,
+                              fromTimestamp,
+                              toTimestamp
                             )
                             .map(consumptions =>
                               Ok(
@@ -321,15 +319,12 @@ class ConsumptionController(
             case None => AppError.ApiNotFound.renderF()
             case Some(plan) =>
               env.dataStore.consumptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "api" -> apiId, // FIXME: get api from plan
-                    "plan" -> planId,
-                    "from" -> Json.obj("$gte" -> fromTimestamp),
-                    "to" -> Json.obj("$lte" -> toTimestamp)
-                  ),
-                  Some(Json.obj("from" -> 1))
+                .findByApiBetween(
+                  ctx.tenant.id,
+                  ApiId(apiId), // FIXME: get api from plan
+                  UsagePlanId(planId).some,
+                  fromTimestamp,
+                  toTimestamp
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
           }
@@ -373,14 +368,12 @@ class ConsumptionController(
               )
             case Some(api) =>
               env.dataStore.consumptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "api" -> api.id.value,
-                    "from" -> Json.obj("$gte" -> fromTimestamp),
-                    "to" -> Json.obj("$lte" -> toTimestamp)
-                  ),
-                  Some(Json.obj("from" -> 1))
+                .findByApiBetween(
+                  ctx.tenant.id,
+                  api.id,
+                  None,
+                  fromTimestamp,
+                  toTimestamp
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
 
@@ -441,14 +434,11 @@ class ConsumptionController(
               )
           consumptions <-
             env.dataStore.consumptionRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "team" -> team.id.value,
-                  "from" -> Json.obj("$gte" -> fromTimestamp),
-                  "to" -> Json.obj("$lte" -> toTimestamp)
-                ),
-                Some(Json.obj("from" -> 1))
+              .findByTeamBetween(
+                ctx.tenant.id,
+                team.id,
+                fromTimestamp,
+                toTimestamp
               )
         } yield {
           Ok(
@@ -500,13 +490,10 @@ class ConsumptionController(
         )
 
         env.dataStore.consumptionRepo
-          .getLastConsumptionsForTenant(
-            ctx.tenant.id,
-            Json.obj(
-              "team" -> team.id.value,
-              "from" -> Json.obj("$gte" -> fromTimestamp),
-              "to" -> Json.obj("$lte" -> toTimestamp)
-            )
+          .findLastConsumptions(
+            ctx.tenant.id.some,
+            team = team.id.some,
+            between = (fromTimestamp, toTimestamp).some
           )
           .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
       }
@@ -563,15 +550,10 @@ class ConsumptionController(
               .findNotDeleted(Json.obj("team" -> team.id.value))
           revenue <-
             env.dataStore.consumptionRepo
-              .getLastConsumptionsForTenant(
-                ctx.tenant.id,
-                Json.obj(
-                  "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
-                  "from" -> Json
-                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
-                  "to" -> Json
-                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
-                )
+              .findLastConsumptions(
+                ctx.tenant.id.some,
+                apis = ownApis.map(_.id).some,
+                between = (fromTimestamp, toTimestamp).some
               )
         } yield {
           Ok(JsArray(revenue.map(_.asJson)))

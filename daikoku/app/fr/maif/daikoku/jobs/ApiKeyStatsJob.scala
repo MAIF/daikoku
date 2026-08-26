@@ -115,10 +115,11 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       lastConsumption <- maybeKeyring match {
         case Some(keyring) =>
           env.dataStore.consumptionRepo
-            .getLastConsumption(
-              tenant,
-              Json.obj("clientId" -> keyring.apiKey.clientId)
+            .findLastConsumptions(
+              tenant.id.some,
+              clientId = keyring.apiKey.clientId.some
             )
+            .map(_.headOption)
         case None => FastFuture.successful(None)
       }
       api <-
@@ -144,10 +145,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     (for {
       lastConsumptions <-
         env.dataStore.consumptionRepo
-          .getLastConsumptionsForTenant(
-            tenant.id,
-            Json.obj("api" -> api.id.asJson)
-          )
+          .findLastConsumptions(tenant.id.some, apis = Seq(api.id).some)
       subscriptions <-
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -167,10 +165,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     (for {
       lastConsumptions <-
         env.dataStore.consumptionRepo
-          .getLastConsumptionsForTenant(
-            tenant.id,
-            Json.obj("team" -> team.id.asJson)
-          )
+          .findLastConsumptions(tenant.id.some, team = team.id.some)
       subscriptions <-
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -203,8 +198,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       keyrings <-
         env.dataStore.keyringRepo.forAllTenant().findAllNotDeleted()
       lastConsumptions <-
-        env.dataStore.consumptionRepo
-          .getLastConsumptionsforAllTenant(Json.obj())
+        env.dataStore.consumptionRepo.findLastConsumptions(None)
     } yield {
       val keyringById = keyrings.map(k => k.id -> k).toMap
       val nbInterval = Math.ceil(
@@ -248,10 +242,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
           .findNotDeleted(Json.obj("team" -> team.id.asJson))
       lastConsumptions <-
         env.dataStore.consumptionRepo
-          .getLastConsumptionsForTenant(
-            tenant.id,
-            Json.obj("api" -> Json.obj("$in" -> JsArray(apis.map(_.id.asJson))))
-          )
+          .findLastConsumptions(tenant.id.some, apis = apis.map(_.id).some)
       subscriptions <-
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -476,15 +467,24 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
     val to = periodEnd.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay()
 
-    env.dataStore.consumptionRepo
-      .forTenant(tenant)
-      .find(
-        Json.obj(
-          "clientId" -> clientId,
-          "from" -> Json.obj("$gte" -> from.getMillis, "$lte" -> to.getMillis),
-          "state" -> "completed"
+    {
+      val repo = env.dataStore.consumptionRepo.forTenant(tenant)
+      repo.query(
+        s"SELECT content FROM ${repo.tableName} " +
+          "WHERE content->>'_tenant' = $1 " +
+          "AND content->>'_deleted' = 'false' " +
+          "AND content->>'clientId' = $2 " +
+          "AND content->>'state' = 'completed' " +
+          "AND (content->>'from')::bigint >= $3 " +
+          "AND (content->>'from')::bigint <= $4",
+        Seq(
+          tenant.value,
+          clientId,
+          java.lang.Long.valueOf(from.getMillis),
+          java.lang.Long.valueOf(to.getMillis)
         )
       )
+    }
       .map(consumptions => {
         (plan.costPerMonth, plan.costPerRequest, plan.maxPerMonth) match {
           // todo: consider trial period

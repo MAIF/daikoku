@@ -1034,18 +1034,143 @@ trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
 
 trait ConsumptionRepo
     extends TenantCapableRepo[ApiKeyConsumption, DatastoreId] {
-  def getLastConsumptionsforAllTenant(filter: JsObject)(implicit
-      ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]]
 
-  def getLastConsumptionsForTenant(tenantId: TenantId, filter: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]]
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out; it is bound to `$1` by convention.
+    */
+  private val consumptionScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
 
-  def getLastConsumption(tenant: Tenant, query: JsObject)(implicit
+  /** A consumption covers the window `[from, to]`. Both bounds inside `[start,
+    * end]` is the same thing as `from >= start AND to <= end`, since `from <=
+    * to` always holds — the two spellings the JsObject queries used were
+    * equivalent.
+    */
+  private def windowSql(from: Int, to: Int): String =
+    s"AND (content->>'from')::bigint >= $$$from " +
+      s"AND (content->>'to')::bigint <= $$$to"
+
+  private def millis(value: Long): AnyRef = java.lang.Long.valueOf(value)
+
+  def findByClientIdBetween(
+      tenant: TenantId,
+      clientId: String,
+      from: Long,
+      to: Long
+  )(implicit
+      dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Option[ApiKeyConsumption]] = {
-    getLastConsumptionsForTenant(tenant.id, query).map(_.headOption)
+  ): Future[Seq[ApiKeyConsumption]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $consumptionScope AND content->>'clientId' = $$2 " +
+        s"${windowSql(3, 4)} ORDER BY (content->>'from')::bigint ASC",
+      Seq(tenant.value, clientId, millis(from), millis(to))
+    )
+  }
+
+  def findByApiBetween(
+      tenant: TenantId,
+      api: ApiId,
+      plan: Option[UsagePlanId],
+      from: Long,
+      to: Long
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiKeyConsumption]] = {
+    val repo = forTenant(tenant)
+    val planFilter = if (plan.isDefined) " AND content->>'plan' = $5" else ""
+
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $consumptionScope AND content->>'api' = $$2 " +
+        s"${windowSql(3, 4)}$planFilter " +
+        "ORDER BY (content->>'from')::bigint ASC",
+      Seq(tenant.value, api.value, millis(from), millis(to)) ++
+        plan.map(_.value).toSeq
+    )
+  }
+
+  def findByTeamBetween(
+      tenant: TenantId,
+      team: TeamId,
+      from: Long,
+      to: Long
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiKeyConsumption]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $consumptionScope AND content->>'team' = $$2 " +
+        s"${windowSql(3, 4)} ORDER BY (content->>'from')::bigint ASC",
+      Seq(tenant.value, team.value, millis(from), millis(to))
+    )
+  }
+
+  /** The most recent consumption of every apikey matching the filters — one row
+    * per `clientId`, the one with the highest `from`.
+    *
+    * A single `DISTINCT ON` replaces the former two-pass implementation, which
+    * grouped on `clientId` to get `MAX(content->>'from')` — a *textual* max —
+    * then issued one query per client id to fetch the matching row, with
+    * neither the tenant nor the original filters reapplied.
+    *
+    * `tenant` is optional: `None` looks across every tenant.
+    */
+  def findLastConsumptions(
+      tenant: Option[TenantId],
+      clientId: Option[String] = None,
+      apis: Option[Seq[ApiId]] = None,
+      team: Option[TeamId] = None,
+      between: Option[(Long, Long)] = None
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiKeyConsumption]] = {
+    val repo = tenant.map(forTenant).getOrElse(forAllTenant())
+    val predicates = Seq.newBuilder[String] += "content->>'_deleted' = 'false'"
+    val params = Seq.newBuilder[AnyRef]
+    var placeholder = 0
+
+    tenant.foreach { t =>
+      placeholder += 1
+      predicates += s"content->>'_tenant' = $$$placeholder"
+      params += t.value
+    }
+    clientId.foreach { id =>
+      placeholder += 1
+      predicates += s"content->>'clientId' = $$$placeholder"
+      params += id
+    }
+    apis.foreach { ids =>
+      placeholder += 1
+      predicates += s"content->>'api' = ANY($$$placeholder::text[])"
+      params += ids.map(_.value).toArray
+    }
+    team.foreach { t =>
+      placeholder += 1
+      predicates += s"content->>'team' = $$$placeholder"
+      params += t.value
+    }
+    between.foreach { case (from, to) =>
+      predicates += s"(content->>'from')::bigint >= $$${placeholder + 1}"
+      predicates += s"(content->>'to')::bigint <= $$${placeholder + 2}"
+      placeholder += 2
+      params += millis(from)
+      params += millis(to)
+    }
+
+    repo.query(
+      s"SELECT DISTINCT ON (content->>'clientId') content " +
+        s"FROM ${repo.tableName} " +
+        s"WHERE ${predicates.result().mkString(" AND ")} " +
+        "ORDER BY content->>'clientId', (content->>'from')::bigint DESC",
+      params.result()
+    )
   }
 }
 

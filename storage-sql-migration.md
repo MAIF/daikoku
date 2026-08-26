@@ -34,7 +34,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo` (**done**), `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
 | 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
@@ -132,6 +132,18 @@ nothing.
   valid — same storage — but check they cover the new predicates.
 
 ## Phase 2 notes
+
+`consumptionRepo` is the first repo whose *trait signature* had to change: `getLastConsumptionsForTenant`
+/ `getLastConsumptionsforAllTenant` / `getLastConsumption` took a `JsObject` filter, so they went with
+the DSL. Their implementation — the only hand-written `lastConsumptions` in `PostgresDataStore` —
+grouped on `clientId` to get `MAX(content->>'from')`, a **textual** max over millis, then issued one
+extra query per client id to fetch the matching row, with neither the tenant nor the original filters
+reapplied. A single `DISTINCT ON (content->>'clientId') … ORDER BY … (content->>'from')::bigint DESC`
+replaces all of it: one query instead of 1+N, a numeric comparison, and the filters applied once.
+
+Note the two spellings the consumption queries used for a time window — `from >= start AND to <= end`
+and `from BETWEEN start,end AND to BETWEEN start,end` — are equivalent, since `from <= to` always
+holds. One `windowSql` covers both.
 
 `notificationRepo` retires the last three `updateManyByQuery` call sites of the phase — the method
 that substitutes `$N` with hand-escaped values straight into the SQL. Their `$set` becomes the
