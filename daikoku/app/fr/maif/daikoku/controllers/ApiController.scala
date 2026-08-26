@@ -416,14 +416,11 @@ class ApiController(
             else
               EitherT.right[Result](
                 env.dataStore.notificationRepo
-                  .forTenant(ctx.tenant.id)
-                  .findNotDeleted(
-                    Json.obj(
-                      "action.type" -> "ApiSubscription",
-                      "status.status" -> "Pending",
-                      "action.api" -> api.id.asJson,
-                      "action.team" -> team.id.value
-                    )
+                  .findPendingByActionTypeAndTeams(
+                    ctx.tenant.id,
+                    "ApiSubscription",
+                    Seq(team.id),
+                    api.id.some
                   )
               )
           subscriptions <- EitherT.right[Result](
@@ -495,15 +492,11 @@ class ApiController(
       level <- control(myTeams)
       pendingRequests <- EitherT.liftF[Future, AppError, Seq[Notification]](
         env.dataStore.notificationRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(
-            Json.obj(
-              "action.type" -> "ApiSubscription",
-              "status.status" -> "Pending",
-              "action.api" -> api.id.asJson,
-              "action.team" -> Json
-                .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-            )
+          .findPendingByActionTypeAndTeams(
+            ctx.tenant.id,
+            "ApiSubscription",
+            myTeams.map(_.id),
+            api.id.some
           )
       )
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
@@ -1392,8 +1385,7 @@ class ApiController(
           )
           _ <- EitherT.right[AppError](
             env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .delete(Json.obj("action.demand" -> demand.id.asJson))
+              .deleteByDemand(ctx.tenant.id, demand.id)
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
@@ -4110,15 +4102,11 @@ class ApiController(
                 myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
                 pendingRequests <-
                   env.dataStore.notificationRepo
-                    .forTenant(ctx.tenant.id)
-                    .findNotDeleted(
-                      Json.obj(
-                        "action.type" -> "ApiAccess",
-                        "status.status" -> "Pending",
-                        "action.api" -> api.id.asJson,
-                        "action.team" -> Json
-                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                      )
+                    .findPendingByActionTypeAndTeams(
+                      ctx.tenant.id,
+                      "ApiAccess",
+                      myTeams.map(_.id),
+                      api.id.some
                     )
                 subscriptions <-
                   env.dataStore.apiSubscriptionRepo

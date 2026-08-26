@@ -40,14 +40,10 @@ object CommonServices {
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
             env.dataStore.notificationRepo
-              .forTenant(tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiAccess",
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
-                  "status.status" -> "Pending"
-                )
+              .findPendingByActionTypeAndTeams(
+                tenant.id,
+                "ApiAccess",
+                myTeams.map(_.id)
               )
         publicApis <-
           apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ idFilter)

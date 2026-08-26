@@ -1534,21 +1534,26 @@ class ApiService(
           .save(updatedDemand)
       )
       _ <- EitherT.liftF(
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "action.type" -> "CheckoutForSubscription",
-              "action.demand" -> demand.id.asJson,
-              "action.step" -> step.id.asJson
-            ),
-            Json.obj(
-              "$set" -> Json.obj(
-                "status" -> json.NotificationStatusFormat
+        {
+          val repo = env.dataStore.notificationRepo.forTenant(tenant)
+          repo.execute(
+            s"UPDATE ${repo.tableName} " +
+              "SET content = jsonb_set(content, '{status}', $2::jsonb) " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->'action'->>'type' = 'CheckoutForSubscription' " +
+              "AND content->'action'->>'demand' = $3 " +
+              "AND content->'action'->>'step' = $4",
+            Seq(
+              tenant.id.value,
+              Json.stringify(
+                json.NotificationStatusFormat
                   .writes(NotificationStatus.Accepted())
-              )
+              ),
+              demand.id.value,
+              step.id.value
             )
           )
+        }
       )
       result <- runSubscriptionProcess(
         demand.id,

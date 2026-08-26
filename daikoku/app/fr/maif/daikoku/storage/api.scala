@@ -856,7 +856,131 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   }
 }
 
-trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId]
+trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId] {
+
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out here too, bound to `$1` by convention. The
+    * `action.xxx` / `status.status` paths match the JSONB indexes declared in
+    * `PostgresDataStore.createIndexes`.
+    */
+  private val notificationScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  private val pending: String =
+    s"content->'status'->>'status' = '${NotificationStatus.Pending().status}'"
+
+  /** The pending notifications of one kind — an access or a subscription
+    * request, say — raised against a set of teams, optionally about a single
+    * api.
+    */
+  def findPendingByActionTypeAndTeams(
+      tenant: TenantId,
+      actionType: String,
+      teams: Seq[TeamId],
+      api: Option[ApiId] = None
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Notification]] = {
+    val repo = forTenant(tenant)
+    val apiFilter =
+      if (api.isDefined) " AND content->'action'->>'api' = $4" else ""
+
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND $pending " +
+        s"AND content->'action'->>'type' = $$2 " +
+        s"AND content->'action'->>'team' = ANY($$3::text[])$apiFilter",
+      Seq(tenant.value, actionType, teams.map(_.value).toArray) ++
+        api.map(_.value).toSeq
+    )
+  }
+
+  /** The notifications addressed to a team. */
+  def findByTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND content->>'team' = $$2",
+      Seq(tenant.value, team.value)
+    )
+  }
+
+  /** Those of them still waiting for an answer. */
+  def findPendingByTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND $pending AND content->>'team' = $$2",
+      Seq(tenant.value, team.value)
+    )
+  }
+
+  /** The invitations to a team nobody has answered yet. */
+  def findPendingTeamInvitations(tenant: TenantId, team: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND $pending " +
+        "AND content->'action'->>'type' = 'TeamInvitation' " +
+        "AND content->'action'->>'team' = $2",
+      Seq(tenant.value, team)
+    )
+  }
+
+  def findTeamInvitationForUser(tenant: TenantId, user: UserId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope " +
+        "AND content->'action'->>'type' = 'TeamInvitation' " +
+        "AND content->'action'->>'user' = $2 LIMIT 1",
+      Seq(tenant.value, user.value)
+    )
+  }
+
+  def deleteTeamInvitation(tenant: TenantId, team: TeamId, user: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        s"WHERE content->>'_tenant' = $$1 AND $pending " +
+        "AND content->'action'->>'type' = 'TeamInvitation' " +
+        "AND content->'action'->>'team' = $2 " +
+        "AND content->'action'->>'user' = $3",
+      Seq(tenant.value, team.value, user)
+    )
+  }
+
+  /** Drops what a subscription demand raised, once it is settled. */
+  def deleteByDemand(tenant: TenantId, demand: DemandId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND content->'action'->>'demand' = $2",
+      Seq(tenant.value, demand.value)
+    )
+  }
+}
 
 trait ApiDocumentationPageRepo
     extends TenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]

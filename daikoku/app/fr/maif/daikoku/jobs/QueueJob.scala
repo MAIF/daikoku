@@ -58,16 +58,15 @@ class QueueJob(
     logger.debug(Json.prettyPrint(api.asJson))
     logger.debug("**********************************************")
 
-    env.dataStore.notificationRepo
-      .forTenant(api.tenant)
-      .delete(
-        Json.obj(
-          "$or" -> Json.arr(
-            Json.obj("action.api" -> api.id.asJson),
-            Json.obj("action.apiName" -> JsString(api.name))
-          )
-        )
+    val repo = env.dataStore.notificationRepo.forTenant(api.tenant)
+    repo
+      .execute(
+        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
+          "AND (content->'action'->>'api' = $2 " +
+          "OR content->'action'->>'apiName' = $3)",
+        Seq(api.tenant.value, api.id.value, api.name)
       )
+      .map(_ => true)
   }
 
   private def deleteUsagePlan(o: Operation): Future[Unit] = {
@@ -118,9 +117,16 @@ class QueueJob(
               )
           )
           _ <- OptionT.liftF(
-            env.dataStore.notificationRepo
-              .forTenant(o.tenant)
-              .delete(Json.obj("action.plan" -> JsString(o.itemId)))
+            {
+              val repo =
+                env.dataStore.notificationRepo.forTenant(o.tenant)
+              repo.execute(
+                s"DELETE FROM ${repo.tableName} " +
+                  "WHERE content->>'_tenant' = $1 " +
+                  "AND content->'action'->>'plan' = $2",
+                Seq(o.tenant.value, o.itemId)
+              )
+            }
           )
           _ <- OptionT.liftF(
             env.dataStore.usagePlanRepo.forTenant(o.tenant).deleteById(plan.id)
@@ -152,48 +158,48 @@ class QueueJob(
       .forTenant(subscription.tenant)
       .findById(subscription.keyring)
       .flatMap { maybeKeyring =>
-        val clientIdMatch = maybeKeyring
-          .map(k =>
-            Seq(Json.obj("action.clientId" -> JsString(k.apiKey.clientId)))
+        val repo =
+          env.dataStore.notificationRepo.forTenant(subscription.tenant)
+        val clientIdMatch =
+          maybeKeyring.map(_ => " OR content->'action'->>'clientId' = $4")
+
+        repo
+          .execute(
+            s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
+              "AND (content->'action'->>'subscription' = $2 " +
+              s"OR content->'action'->>'keyring' = $$3${clientIdMatch.getOrElse("")})",
+            Seq(
+              subscription.tenant.value,
+              subscription.id.value,
+              subscription.keyring.value
+            ) ++ maybeKeyring.map(_.apiKey.clientId).toSeq
           )
-          .getOrElse(Seq.empty)
-        env.dataStore.notificationRepo
-          .forTenant(subscription.tenant)
-          .delete(
-            Json.obj(
-              "$or" -> JsArray(
-                clientIdMatch ++ Seq(
-                  Json.obj("action.subscription" -> subscription.id.asJson),
-                  Json.obj("action.keyring" -> subscription.keyring.asJson)
-                )
-              )
-            )
-          )
+          .map(_ => true)
       }
   }
 
   private def deleteTeamNotifications(
       team: Team
   )(implicit dbConn: DbConn): Future[Boolean] = {
-    env.dataStore.notificationRepo
-      .forTenant(team.tenant)
-      .delete(
-        Json.obj(
-          "action.type" ->
-            Json.obj(
-              "$in" -> JsArray(
-                Seq(
-                  "TeamInvitation",
-                  "ApiSubscription",
-                  "ApiSubscriptionAccept",
-                  "ApiSubscriptionReject",
-                  "TransferApiOwnership"
-                ).map(JsString.apply)
-              )
-            ),
-          "action.team" -> team.id.asJson
+    val repo = env.dataStore.notificationRepo.forTenant(team.tenant)
+    repo
+      .execute(
+        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
+          "AND content->'action'->>'team' = $2 " +
+          "AND content->'action'->>'type' = ANY($3::text[])",
+        Seq(
+          team.tenant.value,
+          team.id.value,
+          Array(
+            "TeamInvitation",
+            "ApiSubscription",
+            "ApiSubscriptionAccept",
+            "ApiSubscriptionReject",
+            "TransferApiOwnership"
+          )
         )
       )
+      .map(_ => true)
   }
 
 //  private def deleteThirdPartyPaymentClient(team: Team) = {
@@ -211,21 +217,15 @@ class QueueJob(
       user: User,
       tenant: TenantId
   )(implicit dbConn: DbConn): Future[Boolean] = {
-    env.dataStore.notificationRepo
-      .forTenant(tenant)
-      .delete(
-        Json.obj(
-          "action.type" ->
-            Json.obj(
-              "$in" -> JsArray(
-                Seq(
-                  "TeamInvitation"
-                ).map(JsString.apply)
-              )
-            ),
-          "action.user" -> user.id.asJson
-        )
+    val repo = env.dataStore.notificationRepo.forTenant(tenant)
+    repo
+      .execute(
+        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
+          "AND content->'action'->>'type' = 'TeamInvitation' " +
+          "AND content->'action'->>'user' = $2",
+        Seq(tenant.value, user.id.value)
       )
+      .map(_ => true)
   }
 
   private def deleteUserMessages(user: User, tenant: TenantId)(implicit

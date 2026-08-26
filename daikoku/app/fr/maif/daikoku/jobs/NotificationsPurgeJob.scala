@@ -46,42 +46,31 @@ class NotificationsPurgeJob(env: Env) {
     logger.info(
       s"Run notifications purge for last ${env.config.notificationsBasePurgeMaxDate}/${env.config.notificationsToTreatPurgeMaxDate}"
     )
-    env.dataStore.notificationRepo
-      .forAllTenant()
-      .delete(
-        Json.obj(
-          "$or" -> Json.arr(
-            Json.obj(
-              "notificationType" -> NotificationType.AcceptOnly.value,
-              "status.status" -> "Pending",
-              "date" -> Json.obj(
-                "$lt" -> DateTime
-                  .now()
-                  .minus(env.config.notificationsBasePurgeMaxDate.toMillis)
-                  .getMillis
-              )
-            ),
-            Json.obj(
-              "status.status" -> "Accepted",
-              "status.date" -> Json.obj(
-                "$lt" -> DateTime
-                  .now()
-                  .minus(env.config.notificationsBasePurgeMaxDate.toMillis)
-                  .getMillis
-              )
-            ),
-            Json.obj(
-              "notificationType" -> NotificationType.AcceptOrReject.value,
-              "status.status" -> "Pending",
-              "date" -> Json.obj(
-                "$lt" -> DateTime
-                  .now()
-                  .minus(env.config.notificationsToTreatPurgeMaxDate.toMillis)
-                  .getMillis
-              )
-            )
-          )
-        )
+    val repo = env.dataStore.notificationRepo.forAllTenant()
+    val basePurgeBefore = DateTime
+      .now()
+      .minus(env.config.notificationsBasePurgeMaxDate.toMillis)
+      .getMillis
+    val toTreatPurgeBefore = DateTime
+      .now()
+      .minus(env.config.notificationsToTreatPurgeMaxDate.toMillis)
+      .getMillis
+
+    repo.execute(
+      s"""DELETE FROM ${repo.tableName} WHERE
+         |  (content->>'notificationType' = '${NotificationType.AcceptOnly.value}'
+         |    AND content->'status'->>'status' = 'Pending'
+         |    AND (content->>'date')::bigint < $$1)
+         |  OR (content->'status'->>'status' = 'Accepted'
+         |    AND (content->'status'->>'date')::bigint < $$1)
+         |  OR (content->>'notificationType' = '${NotificationType.AcceptOrReject.value}'
+         |    AND content->'status'->>'status' = 'Pending'
+         |    AND (content->>'date')::bigint < $$2)
+         |""".stripMargin,
+      Seq(
+        java.lang.Long.valueOf(basePurgeBefore),
+        java.lang.Long.valueOf(toTreatPurgeBefore)
       )
+    )
   }
 }

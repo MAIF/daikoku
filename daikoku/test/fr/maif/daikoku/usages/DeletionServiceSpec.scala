@@ -1763,9 +1763,17 @@ class DeletionServiceSpec
       maybeKeyring.isDefined mustBe false
 
       val notifs = Await.result(
-        daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("action.type" -> "ApiSubscriptionExpired")),
+        {
+          val repo =
+            daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant)
+          repo.query(
+            s"SELECT content FROM ${repo.tableName} " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->>'_deleted' = 'false' " +
+              "AND content->'action'->>'type' = 'ApiSubscriptionExpired'",
+            Seq(tenant.id.value)
+          )
+        },
         5.second
       )
       notifs must have size 1
@@ -3504,7 +3512,7 @@ class DeletionServiceSpec
         .result(
           daikokuComponents.env.dataStore.notificationRepo
             .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
+            .findAllNotDeleted(),
           5.second
         )
         .map(_.id.value)
@@ -3633,7 +3641,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAllNotDeleted(),
             5.second
           )
           .map(_.id.value)
@@ -3762,7 +3770,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAllNotDeleted(),
             5.second
           )
           .map(_.id.value)
@@ -3893,7 +3901,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAllNotDeleted(),
             5.second
           )
           .map(_.id.value)
@@ -4017,7 +4025,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAllNotDeleted(),
             5.second
           )
           .map(_.id.value)
@@ -4130,7 +4138,7 @@ class DeletionServiceSpec
         .result(
           daikokuComponents.env.dataStore.notificationRepo
             .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
+            .findAllNotDeleted(),
           5.second
         )
         .map(_.id.value)

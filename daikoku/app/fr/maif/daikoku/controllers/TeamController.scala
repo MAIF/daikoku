@@ -377,14 +377,7 @@ class TeamController(
         for {
           pendingNotif <-
             env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .find(
-                Json.obj(
-                  "status.status" -> NotificationStatus.Pending.toString,
-                  "action.team" -> teamId,
-                  "action.type" -> "TeamInvitation"
-                )
-              )
+              .findPendingTeamInvitations(ctx.tenant.id, teamId)
           pendingUsersId =
             pendingNotif
               .map(_.action)
@@ -796,12 +789,9 @@ class TeamController(
           apis <- apiRepo.findNotDeleted(Json.obj("team" -> team.id.value))
           subscriptions <-
             subscriptionRepo.findNotDeleted(Json.obj("team" -> team.id.value))
-          notifications <- notificationRepo.findNotDeleted(
-            Json.obj(
-              "status.status" -> "Pending",
-              "team" -> team.id.value
-            )
-          )
+          notifications <-
+            env.dataStore.notificationRepo
+              .findPendingByTeam(ctx.tenant.id, team.id)
 
         } yield {
           ctx.setCtxValue("team.id", team.id)
@@ -935,15 +925,7 @@ class TeamController(
                   env.dataStore.userRepo.deleteById(userId).flatMap {
                     case true =>
                       env.dataStore.notificationRepo
-                        .forTenant(ctx.tenant.id)
-                        .delete(
-                          Json.obj(
-                            "status.status" -> NotificationStatus.Pending.toString,
-                            "action.team" -> team.id.value,
-                            "action.user" -> userId,
-                            "action.type" -> "TeamInvitation"
-                          )
-                        )
+                        .deleteTeamInvitation(ctx.tenant.id, team.id, userId)
                         .flatMap { _ =>
                           FastFuture.successful(Ok(Json.obj("deleted" -> true)))
                         }
@@ -958,13 +940,7 @@ class TeamController(
                   }
                 case Some(user) if !team.users.exists(_.userId == user.id) =>
                   env.dataStore.notificationRepo
-                    .forTenant(ctx.tenant)
-                    .findOne(
-                      Json.obj(
-                        "action.type" -> "TeamInvitation",
-                        "action.user" -> user.id.asJson
-                      )
-                    )
+                    .findTeamInvitationForUser(ctx.tenant.id, user.id)
                     .flatMap {
                       case Some(n) =>
                         env.dataStore.notificationRepo

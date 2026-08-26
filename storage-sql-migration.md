@@ -34,7 +34,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo` (**done**), `notificationRepo` (**done**), `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
 | 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
@@ -132,6 +132,13 @@ nothing.
   valid — same storage — but check they cover the new predicates.
 
 ## Phase 2 notes
+
+`notificationRepo` retires the last three `updateManyByQuery` call sites of the phase — the method
+that substitutes `$N` with hand-escaped values straight into the SQL. Their `$set` becomes the
+`jsonb_set(content, '{key}', …)` that `convertQuery` generated anyway, this time with the value bound
+as a parameter. The one `streamAllRaw(query)` of the notification evolutions goes through
+`dataStore.queryRaw` + `Source`, which is literally what `streamAllRaw` does internally: it loads
+everything, then emits. Nothing was streaming, so nothing regressed.
 
 `teamRepo` is the first tenant-scoped repo of the phase, so the `forTenant` trap applies: its typed
 methods live on the `TeamRepo` trait, take the tenant as a parameter and spell the `_tenant`

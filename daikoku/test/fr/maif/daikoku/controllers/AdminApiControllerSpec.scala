@@ -5719,7 +5719,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAllNotDeleted(),
             5.seconds
           )
           .map(_.id.value)

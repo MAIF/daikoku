@@ -510,13 +510,7 @@ class UsersController(
           )
           notification <- EitherT.fromOptionF[Future, AppError, Notification](
             env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .findOne(
-                Json.obj(
-                  "action.type" -> "TeamInvitation",
-                  "action.user" -> user.id.asJson
-                )
-              ),
+              .findTeamInvitationForUser(ctx.tenant.id, user.id),
             AppError.EntityNotFound("notification")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](

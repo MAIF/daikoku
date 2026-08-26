@@ -843,15 +843,19 @@ object evolution_1613_b extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-      dataStore.notificationRepo
-        .forAllTenant()
-        .streamAllRaw(
-          Json.obj(
-            "action.type" -> "ApiSubscription",
-            "status.status" -> "Pending",
-            "_deleted" -> false
+      val notificationRepo = dataStore.notificationRepo.forAllTenant()
+
+      Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${notificationRepo.tableName} " +
+              "WHERE content->'action'->>'type' = 'ApiSubscription' " +
+              "AND content->'status'->>'status' = 'Pending' " +
+              "AND content->>'_deleted' = 'false'",
+            "content"
           )
         )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(1) { value =>
           val tenant = (value \ "_tenant").as(using json.TenantIdFormat)
           val action = (value \ "action").as[JsObject]

@@ -269,28 +269,19 @@ class DeletionService(
       // Phase 3b — delete stale pending notifications referencing the deleted
       // subscriptions, or the keyrings that have just been deleted
       _ <- EitherT.right[AppError](
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .delete(
-            Json.obj(
-              "$or" -> JsArray(
-                Seq(
-                  Json.obj(
-                    "action.subscription" -> Json.obj(
-                      "$in" -> JsArray(
-                        subscriptions.map(s => JsString(s.id.value))
-                      )
-                    )
-                  ),
-                  Json.obj(
-                    "action.keyring" -> Json.obj(
-                      "$in" -> JsArray(deletedKeyringIds.map(_.asJson))
-                    )
-                  )
-                )
-              )
+        {
+          val repo = env.dataStore.notificationRepo.forTenant(tenant)
+          repo.execute(
+            s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
+              "AND (content->'action'->>'subscription' = ANY($2::text[]) " +
+              "OR content->'action'->>'keyring' = ANY($3::text[]))",
+            Seq(
+              tenant.id.value,
+              subscriptions.map(_.id.value).toArray,
+              deletedKeyringIds.map(_.value).toArray
             )
           )
+        }
       )
       // Phase 3 — save deletion notifs + payment ops
       _ <- EitherT(
@@ -805,8 +796,7 @@ class DeletionService(
               .forTenant(tenant)
               .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
             _ <- env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .delete(Json.obj("action.demand" -> demand.id.asJson))
+              .deleteByDemand(tenant.id, demand.id)
           } yield ()
         }
       )

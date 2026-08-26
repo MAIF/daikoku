@@ -98,14 +98,16 @@ class NotificationController(
         )
       )(ctx) {
         val notificationIds = (ctx.request.body \ "notificationIds").as[JsArray]
+        val notificationIdValues =
+          notificationIds.value.map(_.as[String]).toArray
         val selectAll = (ctx.request.body \ "selectAll").as[Boolean]
         ctx.setCtxValue("notifications", Json.stringify(notificationIds))
         (for {
           notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](
             env.dataStore.notificationRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj("_id" -> Json.obj("$in" -> notificationIds))
+              .findByIdsNotDeleted(
+                notificationIdValues.map(NotificationId.apply).toSeq
               )
           )
           _ <- EitherT.cond[Future][AppError, Unit](
@@ -114,22 +116,25 @@ class NotificationController(
             AppError.EntityConflict("Notification must be AcceptOnly")
           )
           _ <- EitherT.liftF[Future, AppError, Long](
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .updateManyByQuery(
-                if (selectAll)
-                  Json.obj(
-                    "status.status" -> "Pending",
-                    "notificationType" -> NotificationType.AcceptOnly.value
-                  )
-                else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "status" -> NotificationStatusFormat
-                      .writes(NotificationStatus.Accepted())
-                  )
-                )
+            {
+              val repo = env.dataStore.notificationRepo.forTenant(ctx.tenant)
+              val accepted = Json.stringify(
+                NotificationStatusFormat.writes(NotificationStatus.Accepted())
               )
+              val target =
+                if (selectAll)
+                  "content->'status'->>'status' = 'Pending' " +
+                    s"AND content->>'notificationType' = '${NotificationType.AcceptOnly.value}'"
+                else "_id = ANY($3::text[])"
+
+              repo.execute(
+                s"UPDATE ${repo.tableName} " +
+                  "SET content = jsonb_set(content, '{status}', $2::jsonb) " +
+                  s"WHERE content->>'_tenant' = $$1 AND $target",
+                Seq(ctx.tenant.id.value, accepted) ++
+                  (if (selectAll) Seq.empty else Seq(notificationIdValues))
+              )
+            }
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
@@ -881,18 +886,23 @@ class NotificationController(
       )
 
       _ <- EitherT.liftF(
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "_deleted" -> false,
-              "action.type" -> "ApiSubscription",
-              "action.api" -> Json
-                .obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "status.status" -> NotificationStatus.Pending.toString
-            ),
-            Json.obj("$set" -> Json.obj("team" -> teamId.asJson))
+        {
+          val repo = env.dataStore.notificationRepo.forTenant(tenant)
+          repo.execute(
+            s"UPDATE ${repo.tableName} " +
+              "SET content = jsonb_set(content, '{team}', to_jsonb($2::text)) " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->>'_deleted' = 'false' " +
+              "AND content->'action'->>'type' = 'ApiSubscription' " +
+              "AND content->'status'->>'status' = 'Pending' " +
+              "AND content->'action'->>'api' = ANY($3::text[])",
+            Seq(
+              tenant.id.value,
+              teamId.value,
+              versions.map(_.id.value).toArray
+            )
           )
+        }
       )
     } yield ()
 

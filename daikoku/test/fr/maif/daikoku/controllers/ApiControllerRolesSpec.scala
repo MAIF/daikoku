@@ -821,8 +821,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner.length mustBe 1
@@ -830,8 +829,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForConsumer = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer.length mustBe 0
@@ -894,16 +892,14 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification (O for owner)
       val notificationsForOwner2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner2.length mustBe 0
       // check notification (2 for consumer, demand & transfer accepted)
       val notificationsForConsumer2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer2.length mustBe 2
@@ -1032,8 +1028,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner.length mustBe 2
@@ -1041,8 +1036,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForConsumer = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer.length mustBe 0
@@ -1143,16 +1137,14 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // 5
       val notificationsForOwner2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner2.length mustBe 0
       val notificationsForConsumer2 = Await
         .result(
           daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+            .findByTeam(tenant.id, teamConsumerId),
           5.seconds
         )
         .filter(_.action.isInstanceOf[ApiSubscriptionDemand])
