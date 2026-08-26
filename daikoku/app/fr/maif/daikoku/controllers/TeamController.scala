@@ -390,11 +390,8 @@ class TeamController(
               .map(_.action)
               .map(_.asInstanceOf[NotificationAction.TeamInvitation])
               .map(_.user)
-          pendingUsers <- env.dataStore.userRepo.findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))
-            )
-          )
+          pendingUsers <-
+            env.dataStore.userRepo.findByIdsNotDeleted(pendingUsersId.toSeq)
         } yield {
           Ok(
             Json.obj(
@@ -606,7 +603,7 @@ class TeamController(
     }
 
     env.dataStore.userRepo
-      .findOne(Json.obj("email" -> email))
+      .findByEmail(email)
       .flatMap {
         case Some(user) =>
           addMemberToTeam(team, user.id.value, ctx).flatMap { _ =>
@@ -776,13 +773,7 @@ class TeamController(
         )
       )(teamId, ctx) { team =>
         env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json
-                .obj("$in" -> JsArray(team.users.map(_.userId.asJson).toSeq))
-            )
-          )
+          .findByIdsNotDeleted(team.users.map(_.userId).toSeq)
           .map(users => Ok(JsArray(users.map(_.asSimpleJson))))
       }
     }

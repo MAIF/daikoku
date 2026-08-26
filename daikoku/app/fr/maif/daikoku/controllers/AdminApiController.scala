@@ -358,16 +358,11 @@ class UserAdminApiController(
   ): EitherT[Future, AppError, User] =
     EitherT(
       env.dataStore.userRepo
-        .findOne(
-          Json.obj(
-            "_id" -> Json.obj("$ne" -> entity.id.asJson),
-            "email" -> entity.email
-          )
-        )
+        .existsAnotherWithEmail(entity.id, entity.email)
         .map {
-          case Some(_) =>
+          case true =>
             Left(AppError.ParsingPayloadError("user.email already used"))
-          case None => Right(entity)
+          case false => Right(entity)
         }
     )
 

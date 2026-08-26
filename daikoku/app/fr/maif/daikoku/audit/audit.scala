@@ -398,18 +398,7 @@ class AuditActor(implicit
             env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team)
           )
           admins <- OptionT.liftF(
-            env.dataStore.userRepo.find(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    team.users
-                      .filter(_.teamPermission == TeamPermission.Administrator)
-                      .map(_.userId.asJson)
-                      .toSeq
-                  )
-                )
-              )
-            )
+            env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
           )
           plan <- OptionT(
             env.dataStore.usagePlanRepo

@@ -457,7 +457,7 @@ class UsersController(
       (body \ "token").asOpt[String] match {
         case Some(token) =>
           env.dataStore.userRepo
-            .findOneNotDeleted(Json.obj("invitation.token" -> token))
+            .findByInvitationToken(token)
             .map {
               case Some(user) =>
                 user.invitation
@@ -502,7 +502,7 @@ class UsersController(
           )
           user <- EitherT.fromOptionF[Future, AppError, User](
             env.dataStore.userRepo
-              .findOne(Json.obj("invitation.token" -> token)),
+              .findByInvitationToken(token),
             AppError.UserNotFound()
           )
           _ <- EitherT.pure[Future, AppError](

@@ -37,8 +37,7 @@ class AccountCreationService {
         AppError.BadRequestError("not.valid.anymore")
       )
       optUser <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findOne(Json.obj("email" -> accountCreation.email))
+        env.dataStore.userRepo.findByEmail(accountCreation.email)
       )
       _ <- EitherT.cond[Future][AppError, Unit](
         optUser.forall(_.invitation match {
@@ -421,14 +420,7 @@ class AccountCreationService {
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       )
       admins <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(adminTeam.admins().map(_.asJson).toSeq)
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIdsNotDeleted(adminTeam.admins().toSeq)
       )
       _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
         implicit val language: String =

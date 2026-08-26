@@ -152,9 +152,11 @@ class TenantService(
           .deleteAll()
       _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
-      _ <- env.dataStore.userRepo.updateMany(
-        Json.obj("lastTenant" -> tenant.id.asJson),
-        Json.obj("lastTenant" -> JsNull)
+      _ <- env.dataStore.userRepo.execute(
+        s"UPDATE ${env.dataStore.userRepo.tableName} " +
+          "SET content = content || '{\"lastTenant\": null}' " +
+          "WHERE content->>'lastTenant' = $1",
+        Seq(tenant.id.value)
       )
     } yield tenant.copy(deleted = true))
   }

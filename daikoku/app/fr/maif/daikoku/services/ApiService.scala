@@ -740,18 +740,8 @@ class ApiService(
             AppError.TeamNotFound
           )
           admins <- EitherT.liftF[Future, AppError, Seq[User]](
-            env.dataStore.userRepo.find(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    consumerTeam.users
-                      .filter(_.teamPermission == Administrator)
-                      .map(_.userId.asJson)
-                      .toSeq
-                  )
-                )
-              )
-            )
+            env.dataStore.userRepo
+              .findByIdsNotDeleted(consumerTeam.admins().toSeq)
           )
           apiKey <- EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
           otoApk <- EitherT(
@@ -1293,14 +1283,7 @@ class ApiService(
         AppError.TeamNotFound
       )
       admins <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(apiTeam.admins().map(_.asJson).toSeq)
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIdsNotDeleted(apiTeam.admins().toSeq)
       )
       _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
         implicit val language: String =
@@ -1839,9 +1822,7 @@ class ApiService(
                 .filter(_.teamPermission == TeamPermission.Administrator)
                 .map(_.userId)
             recipent <- EitherT.liftF[Future, AppError, Seq[User]](
-              env.dataStore.userRepo.find(
-                Json.obj("_id" -> Json.obj("$in" -> maybeAdmins.map(_.asJson)))
-              )
+              env.dataStore.userRepo.findByIdsNotDeleted(maybeAdmins.toSeq)
             )
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
@@ -1946,20 +1927,7 @@ class ApiService(
               )
             )
             administrators <- EitherT.liftF(
-              env.dataStore.userRepo
-                .find(
-                  Json.obj(
-                    "_deleted" -> false,
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(
-                        team.users
-                          .filter(_.teamPermission == Administrator)
-                          .map(u => JsString(u.userId.value))
-                          .toSeq
-                      )
-                    )
-                  )
-                )
+              env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
             )
             _ <- EitherT.liftF(
               env.dataStore.withTransaction {
@@ -2432,20 +2400,7 @@ class ApiService(
         AppError.TeamNotFound
       )
       administrators <- EitherT.right[AppError](
-        env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(
-                  team.users
-                    .filter(_.teamPermission == Administrator)
-                    .map(_.asJson)
-                    .toSeq
-                )
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
       )
       _ <- EitherT.right[AppError](
         Future.sequence((administrators ++ Seq(from)).map(admin => {

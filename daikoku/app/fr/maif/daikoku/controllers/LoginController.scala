@@ -627,12 +627,7 @@ class LoginController(
                         // the increment. We handle it here so that LDAP failures are always counted.
                         val auth: EitherT[Future, AppError, User] = EitherT(
                           env.dataStore.userRepo
-                            .findOne(
-                              Json.obj(
-                                "_deleted" -> false,
-                                "email" -> username.trim
-                              )
-                            )
+                            .findByEmail(username.trim)
                             .flatMap {
                               case Some(u) if u.password.isEmpty =>
                                 userService.incrementAttempts(u).map {
@@ -839,7 +834,7 @@ class LoginController(
 
       (for {
         maybeUser <- EitherT.liftF(
-          env.dataStore.userRepo.findOne(Json.obj("email" -> email))
+          env.dataStore.userRepo.findByEmail(email)
         )
         // todo: tester la presence desessentiel ??
         _ <- EitherT.cond[Future](
@@ -1017,7 +1012,7 @@ class LoginController(
               case Some(accountCreation)
                   if accountCreation.validUntil.isAfter(DateTime.now()) =>
                 env.dataStore.userRepo
-                  .findOne(Json.obj("email" -> accountCreation.email))
+                  .findByEmail(accountCreation.email)
                   .flatMap {
                     case Some(user)
                         if user.invitation.isEmpty || user.invitation.get.registered =>
@@ -1096,7 +1091,7 @@ class LoginController(
 
       (for {
         user <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findOne(Json.obj("email" -> email)),
+          env.dataStore.userRepo.findByEmail(email),
           AppError.UserNotFound(None)
         )
         randomId = IdGenerator.token(128)
@@ -1170,8 +1165,7 @@ class LoginController(
 
       (for {
         user <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo
-            .findOneNotDeleted(Json.obj("email" -> email)),
+          env.dataStore.userRepo.findByEmail(email),
           AppError.BadRequestError("password.reset.error.unknown.user")
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -1297,10 +1291,11 @@ class LoginController(
       (token, code) match {
         case (Some(token), Some(code)) =>
           env.dataStore.userRepo
-            .findOne(
-              Json.obj(
-                "twoFactorAuthentication.token" -> token
-              )
+            .queryOne(
+              s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
+                "WHERE content->'twoFactorAuthentication'->>'token' = $1 " +
+                "AND content->>'_deleted' = 'false' LIMIT 1",
+              Seq(token)
             )
             .flatMap {
               case Some(user) if user.twoFactorAuthentication.isDefined =>
@@ -1351,10 +1346,11 @@ class LoginController(
           )
         case Some(backupCodes) =>
           env.dataStore.userRepo
-            .findOne(
-              Json.obj(
-                "twoFactorAuthentication.backupCodes" -> backupCodes
-              )
+            .queryOne(
+              s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
+                "WHERE content->'twoFactorAuthentication'->>'backupCodes' = $1 " +
+                "AND content->>'_deleted' = 'false' LIMIT 1",
+              Seq(backupCodes)
             )
             .flatMap {
               case Some(user) =>

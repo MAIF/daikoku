@@ -516,13 +516,7 @@ class TenantController(
         AuditTrailEvent(s"@{user.name} has accessed the current tenant admins")
       )(tenantId, ctx) { (tenant, adminTeam) =>
         env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(adminTeam.users.map(_.userId.asJson).toList)
-              )
-            )
-          )
+          .findByIdsNotDeleted(adminTeam.users.map(_.userId).toSeq)
           .map(admins =>
             Ok(
               Json.obj(
@@ -540,12 +534,11 @@ class TenantController(
         AuditTrailEvent(s"@{user.name} has accessed the current tenant admins")
       )(tenantId, ctx) { (tenant, adminTeam) =>
         env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$nin" -> JsArray(adminTeam.users.map(_.userId.asJson).toSeq)
-              )
-            )
+          .query(
+            s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
+              "WHERE NOT (_id = ANY($1::text[])) " +
+              "AND content->>'_deleted' = 'false'",
+            Seq(adminTeam.users.map(_.userId.value).toArray)
           )
           .map(addableAdmins =>
             Ok(JsArray(addableAdmins.map(_.asSimpleJson).toList))

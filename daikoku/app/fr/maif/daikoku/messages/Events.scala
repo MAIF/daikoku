@@ -78,16 +78,8 @@ class MessageActor(implicit
             )
           )
           .map(_.sortWith((a, b) => a.date.isAfter(b.date)).headOption)
-      recipients <- env.dataStore.userRepo.find(
-        Json.obj(
-          "_id" -> Json.obj(
-            "$in" -> JsArray(
-              (message.participants + message.chat - message.sender)
-                .map(_.asJson)
-                .toSeq
-            )
-          )
-        )
+      recipients <- env.dataStore.userRepo.findByIdsNotDeleted(
+        (message.participants + message.chat - message.sender).toSeq
       )
       connected <- env.dataStore.userSessionRepo.findActiveByUserIds(
         recipients.map(_.id),

@@ -679,7 +679,42 @@ trait TenantRepo extends Repo[Tenant, TenantId] {
     )
 }
 
-trait UserRepo extends Repo[User, UserId]
+trait UserRepo extends Repo[User, UserId] {
+
+  /** The email identifies a user across tenants: it is what every auth module
+    * (local, LDAP, OAuth) resolves a login against.
+    */
+  def findByEmail(
+      email: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[User]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE content->>'email' = $$1 " +
+        s"AND $notDeletedSql LIMIT 1",
+      Seq(email)
+    )
+
+  /** Guards that uniqueness when creating or updating a user. */
+  def existsAnotherWithEmail(id: UserId, email: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    queryExists(
+      s"SELECT 1 FROM $tableName WHERE _id <> $$1 " +
+        s"AND content->>'email' = $$2 AND $notDeletedSql LIMIT 1",
+      Seq(id.value, email)
+    )
+
+  /** The user holding a pending team invitation. */
+  def findByInvitationToken(
+      token: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[User]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->'invitation'->>'token' = $1 " +
+        s"AND $notDeletedSql LIMIT 1",
+      Seq(token)
+    )
+}
 
 trait EvolutionRepo extends Repo[Evolution, DatastoreId] {
   def findByVersion(

@@ -2680,16 +2680,7 @@ class ApiController(
           .forTenant(ctx.tenant.id)
           .findByIdNotDeleted(api.team)
       maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
-        env.dataStore.userRepo
-          .find(
-            Json
-              .obj(
-                "_deleted" -> false,
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(ownerTeam.admins().map(_.asJson).toSeq)
-                )
-              )
-          )
+        env.dataStore.userRepo.findByIdsNotDeleted(ownerTeam.admins().toSeq)
       }
       _ <- maybeAdmins.traverse { admins =>
         Future.sequence(admins.map { admin =>
@@ -3152,21 +3143,9 @@ class ApiController(
           val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
           for {
-            members <- EitherT.liftF[Future, AppError, Seq[User]](env.dataStore.userRepo
-              .find(
-                Json
-                  .obj(
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(
-                        team.users
-                          .filter(_.teamPermission == TeamPermission.Administrator)
-                          .map(_.userId.asJson)
-                          .toList
-                      )
-                    ),
-                    "_deleted" -> false
-                  )
-              ))
+            members <- EitherT.liftF[Future, AppError, Seq[User]](
+              env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
+            )
             _ <- EitherT.liftF[Future, AppError, Seq[Future[Unit]]](Future.sequence(members.map { member =>
               implicit val language: String =
                 member.defaultLanguage.getOrElse(tenantLanguage)
@@ -3375,7 +3354,7 @@ class ApiController(
             case Some(issue) =>
               for {
                 creators <- env.dataStore.userRepo
-                  .findNotDeleted(Json.obj("$id" -> Json.obj("$in" -> JsArray(issue.comments.map(_.by.asJson)))))
+                  .findByIdsNotDeleted(issue.comments.map(_.by))
                 issueCreator <- env.dataStore.userRepo.findById(issue.by.value)
                 api <-
                   env.dataStore.apiRepo
@@ -3599,19 +3578,8 @@ class ApiController(
                                       maybeAdmins <- maybeOwnerteam.traverse {
                                         ownerTeam =>
                                           env.dataStore.userRepo
-                                            .find(
-                                              Json
-                                                .obj(
-                                                  "_deleted" -> false,
-                                                  "_id" -> Json.obj(
-                                                    "$in" -> JsArray(
-                                                      ownerTeam
-                                                        .admins()
-                                                        .map(_.asJson)
-                                                        .toSeq
-                                                    )
-                                                  )
-                                                )
+                                            .findByIdsNotDeleted(
+                                              ownerTeam.admins().toSeq
                                             )
                                       }
                                       _ <- maybeAdmins.traverse { admins =>

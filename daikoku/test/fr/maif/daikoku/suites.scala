@@ -500,11 +500,7 @@ object testUtils {
 
     def loginWith(email: String, on: Tenant): Future[UserSession] = {
       daikokuComponents.env.dataStore.userRepo
-        .findOneNotDeleted(
-          Json.obj(
-            "email" -> email
-          )
-        )
+        .findByEmail(email)
         .flatMap {
           case None =>
             FastFuture.failed(new RuntimeException("User not found !!!"))

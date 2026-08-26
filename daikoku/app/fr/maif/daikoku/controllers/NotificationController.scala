@@ -650,20 +650,7 @@ class NotificationController(
         TeamNotFound
       )
       administrators <- EitherT.liftF(
-        env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(
-                  team.users
-                    .filter(_.teamPermission == Administrator)
-                    .map(_.asJson)
-                    .toSeq
-                )
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIdsNotDeleted(team.admins().toSeq)
       )
       _ <- EitherT.liftF(
         env.dataStore.apiRepo

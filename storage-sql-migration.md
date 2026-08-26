@@ -34,7 +34,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo` (**done**), `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
 | 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
@@ -130,6 +130,21 @@ nothing.
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay
   valid — same storage — but check they cover the new predicates.
+
+## Phase 2 notes
+
+`userRepo` exposed two queries that never matched, both of the shape flagged after phase 1 — a
+faithful-looking port of a query that returned nothing:
+
+- `NotificationController` (team-access notification) and `ApiService` (subscription demand) looked
+  up team administrators with `_id $in team.users.filter(Administrator).map(_.asJson)`. `asJson` on a
+  `UserWithPermission` serialises the whole `{userId, teamPermission}` object, so the `$in` compared
+  an id against objects and found nobody: those two mails were never sent to anyone.
+- `ApiController.getIssue` filtered on `$id` instead of `_id`. An unknown `$` operator falls back to
+  `1 = 1` in `convertQuery`, so the query returned *every* user of the instance rather than the
+  authors of the issue comments.
+
+Both now go through `findByIdsNotDeleted(team.admins())`.
 
 ## Phase 1 notes
 
