@@ -351,16 +351,7 @@ class ConsumptionController(
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
         env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj(
-              "team" -> team.id.value,
-              "$or" -> Json.arr(
-                Json.obj("_id" -> apiId),
-                Json.obj("_humanReadableId" -> apiId)
-              )
-            )
-          )
+          .findByIdOrHrIdAndTeam(ctx.tenant.id, apiId, team.id)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -416,15 +407,10 @@ class ConsumptionController(
           subscribedApis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json
-                    .obj("$in" -> JsArray(subscriptions.map(s => s.api.asJson)))
-                )
-              )
+              .findByIds(subscriptions.map(_.api).distinct)
           plans <-
             env.dataStore.usagePlanRepo
-              .forTenant(ctx.tenant)
+              .forTenant(ctx.tenant.id)
               .findByIds(subscriptions.map(_.plan).distinct)
           consumptions <-
             env.dataStore.consumptionRepo
@@ -540,8 +526,7 @@ class ConsumptionController(
         for {
           ownApis <-
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(Json.obj("team" -> team.id.value))
+              .findByTeam(ctx.tenant.id, team.id)
           revenue <-
             env.dataStore.consumptionRepo
               .findLastConsumptions(

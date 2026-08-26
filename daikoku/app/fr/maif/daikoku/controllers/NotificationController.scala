@@ -820,13 +820,7 @@ class NotificationController(
       )
       _ <- EitherT.liftF(
         env.dataStore.apiRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson)))
-            ),
-            Json.obj("$set" -> Json.obj("team" -> newTeam.id.asJson))
-          )
+          .moveToTeam(tenant.id, versions.map(_.id), newTeam.id)
       )
       demands <- EitherT.liftF(
         env.dataStore.subscriptionDemandRepo

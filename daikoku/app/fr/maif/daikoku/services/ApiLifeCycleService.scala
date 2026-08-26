@@ -95,13 +95,12 @@ class ApiLifeCycleService(
     EitherT
       .right[AppError](
         env.dataStore.apiRepo
-          .forTenant(api.tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "_humanReadableId" -> api.humanReadableId,
-              "currentVersion" -> Json.obj("$ne" -> api.currentVersion.asJson)
-            )
+          .findOtherVersions(
+            api.tenant,
+            api.humanReadableId,
+            api.currentVersion.value
           )
+          .map(_.headOption)
       )
       .flatMap {
         case None => EitherT.pure[Future, AppError](())

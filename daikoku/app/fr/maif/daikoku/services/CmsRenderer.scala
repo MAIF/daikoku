@@ -130,7 +130,10 @@ case class CmsPage(
       (id: String, options: Options) => {
         val userId = renderString(ctx, parentId, id, fields, jsonToCombine, req)
         val optUser =
-          Await.result(env.dataStore.userRepo.findByIdIncludingDeleted(userId), 10.seconds)
+          Await.result(
+            env.dataStore.userRepo.findByIdIncludingDeleted(userId),
+            10.seconds
+          )
 
         optUser match {
           case Some(user) =>
@@ -212,7 +215,7 @@ case class CmsPage(
           options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
         val optApi = Await.result(
           env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, renderedParameter, version),
+            .findByVersion(ctx.tenant.id, renderedParameter, version),
           10.seconds
         )
 
@@ -252,7 +255,7 @@ case class CmsPage(
           options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
         val optApi = Await.result(
           env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, renderedParameter, version),
+            .findByVersion(ctx.tenant.id, renderedParameter, version),
           10.seconds
         )
 

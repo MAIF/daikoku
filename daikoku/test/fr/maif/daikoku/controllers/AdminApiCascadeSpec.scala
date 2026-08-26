@@ -324,7 +324,7 @@ class AdminApiCascadeSpec
             target.apikeyCustomization
               .copy(metadata = Json.obj("region" -> "eu-west"))
           )
-        ),
+        )
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(
@@ -373,10 +373,8 @@ class AdminApiCascadeSpec
 
       val adminApiForTenant = Await.result(
         daikokuComponents.env.dataStore.apiRepo
-          .forTenant(newTenant.id)
-          .findOneNotDeleted(
-            Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
-          ),
+          .findByVisibility(newTenant.id, ApiVisibility.AdminOnly)
+          .map(_.headOption),
         5.second
       )
       adminApiForTenant.isDefined mustBe true

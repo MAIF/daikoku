@@ -164,16 +164,11 @@ class ApiController(
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "$or" -> Json.arr(
-                    Json.obj("_id" -> apiId),
-                    Json.obj("_humanReadableId" -> apiId)
-                  ),
-                  "currentVersion" -> version,
-                  "team" -> team.id.asJson
-                )
+              .findByIdOrHrIdVersionAndTeam(
+                ctx.tenant.id,
+                apiId,
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -269,13 +264,11 @@ class ApiController(
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> apiId,
-                  "currentVersion" -> version,
-                  "team" -> team.id.asJson
-                )
+              .findByIdVersionAndTeam(
+                ctx.tenant.id,
+                ApiId(apiId),
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -355,14 +348,8 @@ class ApiController(
           apis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      (keyringSiblings ++ subscriptions).map(_.api.asJson)
-                    )
-                  )
-                )
+              .findByIds(
+                (keyringSiblings ++ subscriptions).map(_.api).distinct
               )
         } yield {
           Right(Ok(JsArray(apis.map(_.asJson))))
@@ -380,12 +367,12 @@ class ApiController(
       )(teamId, ctx) { team =>
         val r: EitherT[Future, Result, Result] = for {
           api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+            env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
             NotFound(Json.obj("error" -> "Api not found"))
           )
           apiPlans <- EitherT.right[Result](
             env.dataStore.usagePlanRepo
-              .forTenant(ctx.tenant)
+              .forTenant(ctx.tenant.id)
               .findByIds(api.possibleUsagePlans)
           )
           pendingRequests <-
@@ -593,7 +580,7 @@ class ApiController(
 
         (for {
           api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+            env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
             AppError.ApiNotFound
           )
           plan <- EitherT.fromOptionF(
@@ -659,7 +646,7 @@ class ApiController(
 
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+            env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
             AppError.ApiNotFound
           )
           plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
@@ -699,7 +686,7 @@ class ApiController(
         (for {
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
-              .findByVersion(ctx.tenant, humanReadableId, version),
+              .findByVersion(ctx.tenant.id, humanReadableId, version),
             AppError.ApiNotFound
           )
           betterApi <- getApi(api, ctx)
@@ -728,7 +715,7 @@ class ApiController(
               for {
                 plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
                   env.dataStore.usagePlanRepo
-                    .forTenant(ctx.tenant)
+                    .forTenant(ctx.tenant.id)
                     .findByIds(api.possibleUsagePlans)
                 )
                 pages <- EitherT.pure[Future, AppError](
@@ -931,7 +918,7 @@ class ApiController(
       version: String
   ): Future[Either[JsValue, JsValue]] = {
     env.dataStore.apiRepo
-      .findByVersion(tenant, apiId, version)
+      .findByVersion(tenant.id, apiId, version)
       .flatMap {
         case None => FastFuture.successful(Left(AppError.ApiNotFound.toJson()))
         case Some(api) =>
@@ -974,14 +961,7 @@ class ApiController(
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has requested root api @{api.id}")
       )(ctx) {
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOne(
-            Json.obj(
-              "_humanReadableId" -> apiId,
-              "parent" -> JsNull
-            )
-          )
+        env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
           .map {
             case None      => AppError.render(AppError.ApiNotFound)
             case Some(api) => Ok(ApiFormat.writes(api))
@@ -1414,7 +1394,7 @@ class ApiController(
           .myTeams(ctx.tenant, ctx.user)
           .flatMap(myTeams => {
             env.dataStore.apiRepo
-              .findByVersion(ctx.tenant, apiId, version)
+              .findByVersion(ctx.tenant.id, apiId, version)
               .flatMap {
                 case None =>
                   FastFuture
@@ -1530,13 +1510,7 @@ class ApiController(
           apis <- EitherT.liftF[Future, AppError, Seq[Api]](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(subscriptions.map(_.api.asJson).distinct)
-                  )
-                )
-              )
+              .findByIds(subscriptions.map(_.api).distinct)
           )
           _ <- subscriptions.groupBy(_.api).toList.traverse {
             case (apiId, subs) =>
@@ -1575,13 +1549,7 @@ class ApiController(
           )
           _ <- EitherT.fromOptionF(
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOne(
-                Json.obj(
-                  "_id" -> subscription.api.asJson,
-                  "team" -> team.id.asJson
-                )
-              ),
+              .findByIdAndTeam(ctx.tenant.id, subscription.api, team.id),
             AppError.ForbiddenAction
           )
           _ <- EitherT.fromOptionF(
@@ -1741,7 +1709,7 @@ class ApiController(
         }
 
         env.dataStore.apiRepo
-          .findByVersion(ctx.tenant, apiId, version)
+          .findByVersion(ctx.tenant.id, apiId, version)
           .flatMap {
             case None => AppError.ApiNotFound.renderF()
             case Some(api)
@@ -1793,18 +1761,12 @@ class ApiController(
           apis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      (subscriptions ++ keyringSiblings).map(_.api.asJson)
-                    )
-                  )
-                )
+              .findByIds(
+                (subscriptions ++ keyringSiblings).map(_.api).distinct
               )
           plans <-
             env.dataStore.usagePlanRepo
-              .forTenant(ctx.tenant)
+              .forTenant(ctx.tenant.id)
               .findByIds(apis.flatMap(_.possibleUsagePlans).distinct)
         } yield {
           Ok(
@@ -2057,11 +2019,7 @@ class ApiController(
             AppError.SubscriptionNotFound
           )
           api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj("_id" -> sub.api.asJson, "team" -> team.id.asJson)
-              ),
+            env.dataStore.apiRepo.findByIdAndTeam(ctx.tenant.id, sub.api, team.id),
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future](api.state != ApiState.Blocked, (), AppError.ForbiddenAction)
@@ -2246,9 +2204,7 @@ class ApiController(
           s"@{user.name} has accessed apis of team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findNotDeleted(Json.obj("team" -> team.id.value))
+        env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
           .map { apis =>
             Right(Ok(JsArray(apis.map(_.asJson))))
           }
@@ -2286,18 +2242,12 @@ class ApiController(
         {
           (for {
             api <- EitherT.fromOptionF(
-              env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+              env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
               AppError.ApiNotFound
             )
             apis <- EitherT.liftF[Future, AppError, Seq[Api]](
               env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "_humanReadableId" -> api.humanReadableId,
-                    "currentVersion" -> Json.obj("$ne" -> version)
-                  )
-                )
+              .findOtherVersions(ctx.tenant.id, api.humanReadableId, version)
             )
             docs <- EitherT.liftF[Future, AppError, Seq[JsObject]](
               Future.sequence(
@@ -2345,7 +2295,7 @@ class ApiController(
         ({
           for {
             api <- EitherT.fromOptionF(
-              env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+              env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
               AppError.ApiNotFound
             )
             plans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
@@ -2446,7 +2396,7 @@ class ApiController(
                 }
               )
             api <- EitherT.fromOptionF[Future, AppError, Api](
-              env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
+              env.dataStore.apiRepo.findByVersion(ctx.tenant.id, apiId, version),
               AppError.ApiNotFound
             )
             done <- EitherT.liftF[Future, AppError, Boolean](
@@ -2656,10 +2606,7 @@ class ApiController(
       )(teamId, ctx) { team =>
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-            ), AppError.ApiNotFound)
+              .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id), AppError.ApiNotFound)
           _ <- apiCrudService.deleteApi(ctx.tenant, api, nextCurrentVersion)
         } yield Ok(Json.obj("done" -> true)))
           .recover(d => {
@@ -2718,7 +2665,7 @@ class ApiController(
       )(teamId, ctx) { team =>
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+            .findByVersion(ctx.tenant.id, apiId, version), AppError.ApiNotFound)
           _ <- EitherT.cond[Future][AppError, Unit](oldApi.team == team.id, (), AppError.ApiNotFound)
           newApi <- EitherT.fromEither[Future][AppError, Api](
             ApiFormat.reads(finalBody) match {
@@ -2872,29 +2819,24 @@ class ApiController(
             )
           }
           apis <-
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "name" -> searchAsRegex,
-                  "$or" -> Json.arr(
-                    Json.obj("visibility" -> "Public"),
-                    Json.obj(
-                      "$or" -> Json.arr(
-                        Json.obj(
-                          "authorizedTeams" -> Json
-                            .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                        ),
-                        Json.obj(
-                          "team" -> Json
-                            .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                        )
-                      )
-                    )
-                  )
-                ),
-                5
+            {
+              val repo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+              repo.query(
+                s"SELECT content FROM ${repo.tableName} " +
+                  "WHERE content->>'_tenant' = $1 " +
+                  "AND content->>'_deleted' = 'false' " +
+                  "AND content->>'name' ~* $2 " +
+                  "AND (content->>'visibility' = 'Public' " +
+                  "  OR content->'authorizedTeams' ?| $3::text[] " +
+                  "  OR content->>'team' = ANY($3::text[])) " +
+                  "LIMIT 5",
+                Seq(
+                  ctx.tenant.id.value,
+                  searchPattern,
+                  myTeams.map(_.id.value).toArray
+                )
               )
+            }
         } yield {
           Ok(
             Json.arr(
@@ -2935,14 +2877,8 @@ class ApiController(
       PublicUserAccess(AuditTrailEvent(s"@{user.name} get categories"))(ctx) {
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
-          .findWithProjection(Json.obj(), Json.obj("categories" -> true))
-          .map(projection => {
-            projection
-              .foldLeft(Set.empty[String])((list, item) => {
-                val categories = Json.parse((item \ "categories").as[String]).as[JsArray].value.map(_.as[String]).toSet
-                list ++ categories
-              })
-          })
+          .findAll()
+          .map(apis => apis.flatMap(_.categories).toSet)
           .map(categories => Ok(JsArray(categories.map(JsString.apply).toSeq)))
       }
     }
@@ -2955,7 +2891,7 @@ class ApiController(
         )
       )(teamId, ctx) { team =>
         env.dataStore.apiRepo
-          .findByVersion(ctx.tenant, apiId, version)
+          .findByVersion(ctx.tenant.id, apiId, version)
           .flatMap {
             case Some(api) if api.team != team.id =>
               FastFuture.successful(
@@ -3027,7 +2963,7 @@ class ApiController(
       limit: Int,
       offset: Int
   ): Future[Either[JsValue, JsValue]] = {
-    env.dataStore.apiRepo.findByVersion(tenant, apiId, version).flatMap {
+    env.dataStore.apiRepo.findByVersion(tenant.id, apiId, version).flatMap {
       case None =>
         FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
       case Some(api) =>
@@ -3158,9 +3094,11 @@ class ApiController(
                     )
                   )
               )))
-          subTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findByIds(subs.map(_.team).distinct))
+          subTeams <- EitherT.liftF[Future, AppError, Seq[Team]](
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant)
+              .findByIds(subs.map(_.team).distinct)
+          )
           _ <-  EitherT.pure[Future, AppError](subTeams.foreach(t => sendMailToTeamAdmins(t, api, newPost, ownerTeam)))
 
         } yield Ok(Json.obj("created" -> true)))
@@ -3283,14 +3221,7 @@ class ApiController(
                   .findByIds(issue.comments.map(_.by))
                 issueCreator <- env.dataStore.userRepo.findByIdIncludingDeleted(issue.by.value)
                 api <-
-                  env.dataStore.apiRepo
-                    .forTenant(ctx.tenant.id)
-                    .findOne(
-                      Json.obj(
-                        "_humanReadableId" -> apiId,
-                        "parent" -> JsNull
-                      )
-                    )
+                  env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
               } yield {
                 issueCreator
                   .map { creator =>
@@ -3336,14 +3267,7 @@ class ApiController(
       )(ctx) {
         ctx.setCtxValue("api.id", apiId)
 
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOne(
-            Json.obj(
-              "_humanReadableId" -> apiId,
-              "parent" -> JsNull
-            )
-          )
+        env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -3414,14 +3338,7 @@ class ApiController(
                     Results.NotFound(Json.obj("error" -> "Team not found"))
                   )
                 case Some(_) =>
-                  env.dataStore.apiRepo
-                    .forTenant(ctx.tenant.id)
-                    .findOne(
-                      Json.obj(
-                        "_humanReadableId" -> apiId,
-                        "parent" -> JsNull
-                      )
-                    )
+                  env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
                     .flatMap {
                       case None =>
                         FastFuture.successful(AppError.render(AppError.ApiNotFound))
@@ -3705,14 +3622,7 @@ class ApiController(
       )(ctx) {
         ctx.setCtxValue("api.id", apiId)
 
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOne(
-            Json.obj(
-              "_humanReadableId" -> apiId,
-              "parent" -> JsNull
-            )
-          )
+        env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -3762,16 +3672,8 @@ class ApiController(
             val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
             val generatedApiId = ApiId(IdGenerator.token(32))
 
-            apiRepo
-              .findOneNotDeleted(
-                Json.obj(
-                  "$or" -> Json.arr(
-                    Json.obj("_humanReadableId" -> apiId),
-                    Json.obj("_id" -> apiId)
-                  ),
-                  "parent" -> JsNull
-                )
-              )
+            env.dataStore.apiRepo
+              .findRootVersionByIdOrHrId(ctx.tenant.id, apiId)
               .flatMap {
                 case None => AppError.ApiNotFound.renderF()
                 case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
@@ -3779,13 +3681,11 @@ class ApiController(
                 case Some(api) if api.currentVersion.value == newVersion =>
                   AppError.ApiVersionConflict.renderF()
                 case Some(api) =>
-                  apiRepo
-                    .exists(
-                      Json.obj(
-                        "_deleted" -> false,
-                        "currentVersion" -> newVersion,
-                        "_humanReadableId" -> api.humanReadableId
-                      )
+                  env.dataStore.apiRepo
+                    .existsVersion(
+                      ctx.tenant.id,
+                      api.humanReadableId,
+                      newVersion
                     )
                     .flatMap {
                       case true =>
@@ -3817,16 +3717,11 @@ class ApiController(
                           )
                           .flatMap {
                             case true =>
-                              apiRepo
-                                .updateManyByQuery(
-                                  Json.obj(
-                                    "_humanReadableId" -> api.humanReadableId,
-                                    "_id" -> Json
-                                      .obj("$ne" -> generatedApiId.value)
-                                  ),
-                                  Json.obj(
-                                    "$set" -> Json.obj("isDefault" -> false)
-                                  )
+                              env.dataStore.apiRepo
+                                .clearDefaultVersionExcept(
+                                  ctx.tenant.id,
+                                  api.humanReadableId,
+                                  ApiId(generatedApiId.value)
                                 )
                                 .map(_ => Created(Json.obj("created" -> true)))
                             case false =>
@@ -3880,14 +3775,7 @@ class ApiController(
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
           apis <-
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "_deleted" -> false,
-                  "_humanReadableId" -> apiId
-                )
-              )
+            env.dataStore.apiRepo.findByHumanReadableId(ctx.tenant.id, apiId)
         } yield {
           val filteredApis =
             apis
@@ -3921,8 +3809,7 @@ class ApiController(
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOne(Json.obj("_id" -> apiId, "currentVersion" -> version)),
+              .findByIdAndVersion(ctx.tenant.id, ApiId(apiId), version),
             AppError.ApiNotFound
           )
           _ <-
@@ -4022,7 +3909,7 @@ class ApiController(
         )
       )(ctx) {
         env.dataStore.apiRepo
-          .findByVersion(ctx.tenant, apiId, version)
+          .findByVersion(ctx.tenant.id, apiId, version)
           .flatMap {
             case None => FastFuture.successful(AppError.render(AppError.ApiNotFound))
             case Some(api) =>
@@ -4121,13 +4008,11 @@ class ApiController(
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> apiId,
-                  "team" -> team.id.asJson,
-                  "currentVersion" -> version
-                )
+              .findByIdVersionAndTeam(
+                ctx.tenant.id,
+                ApiId(apiId),
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -4157,13 +4042,11 @@ class ApiController(
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> apiId,
-                  "team" -> team.id.asJson,
-                  "currentVersion" -> version
-                )
+              .findByIdVersionAndTeam(
+                ctx.tenant.id,
+                ApiId(apiId),
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -4200,13 +4083,11 @@ class ApiController(
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> apiId,
-                  "team" -> team.id.asJson,
-                  "currentVersion" -> version
-                )
+              .findByIdVersionAndTeam(
+                ctx.tenant.id,
+                ApiId(apiId),
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -4279,13 +4160,11 @@ class ApiController(
         val value: EitherT[Future, AppError, Result] = for {
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> apiId,
-                  "team" -> team.id.asJson,
-                  "currentVersion" -> version
-                )
+              .findByIdVersionAndTeam(
+                ctx.tenant.id,
+                ApiId(apiId),
+                version,
+                team.id
               ),
             AppError.ApiNotFound
           )
@@ -4399,7 +4278,7 @@ class ApiController(
               )
           plans <-
             env.dataStore.usagePlanRepo
-              .forTenant(ctx.tenant)
+              .forTenant(ctx.tenant.id)
               .findByIds(subscriptions.map(_.plan).distinct)
           test = subscriptions.groupBy(sub => sub.plan).toSeq
           r <- Future.sequence(test.map {

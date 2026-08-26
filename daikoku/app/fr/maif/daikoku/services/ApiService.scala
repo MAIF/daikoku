@@ -1424,12 +1424,7 @@ class ApiService(
       aggregatedApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSubscriptions.map(_.api.asJson)))
-            )
-          )
+          .findByIds(keyringSubscriptions.map(_.api).distinct)
       )
       aggregatedPlan <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
         env.dataStore.usagePlanRepo
@@ -2545,12 +2540,7 @@ class ApiService(
       childApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSiblings.map(_.api.asJson)))
-            )
-          )
+          .findByIds(keyringSiblings.map(_.api).distinct)
       )
       childPlans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
         env.dataStore.usagePlanRepo

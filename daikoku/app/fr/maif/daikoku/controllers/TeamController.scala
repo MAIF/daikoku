@@ -786,9 +786,10 @@ class TeamController(
           notificationRepo <-
             env.dataStore.notificationRepo
               .forTenantF(ctx.tenant.id)
-          apis <- apiRepo.findNotDeleted(Json.obj("team" -> team.id.value))
+          apis <- env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
           subscriptions <-
-            subscriptionRepo.findNotDeleted(Json.obj("team" -> team.id.value))
+            env.dataStore.apiSubscriptionRepo
+              .findByTeam(ctx.tenant.id, team.id)
           notifications <-
             env.dataStore.notificationRepo
               .findPendingByTeam(ctx.tenant.id, team.id)

@@ -170,26 +170,17 @@ class TenantService(
       .map(_.id)
       .diff(updatedTenant.thirdPartyPaymentSettings.map(_.id))
 
-    def referencingPlans(query: JsObject): Future[Seq[UsagePlan]] =
-      env.dataStore.usagePlanRepo
-        .forTenant(updatedTenant)
-        .findNotDeleted(query)
-
     for {
       _ <-
         if (removedOtoroshiSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
           EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            referencingPlans(
-              Json.obj(
-                "otoroshiTarget.otoroshiSettings" -> Json.obj(
-                  "$in" -> JsArray(
-                    removedOtoroshiSettings.map(_.asJson).toSeq
-                  )
-                )
+            env.dataStore.usagePlanRepo
+              .findByOtoroshiSettings(
+                updatedTenant.id,
+                removedOtoroshiSettings.map(_.value).toSeq
               )
-            )
           ).flatMap(plans =>
             EitherT.cond[Future][AppError, Unit](
               plans.isEmpty,
@@ -204,15 +195,11 @@ class TenantService(
           EitherT.pure[Future, AppError](())
         else
           EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            referencingPlans(
-              Json.obj(
-                "paymentSettings.thirdPartyPaymentSettingsId" -> Json.obj(
-                  "$in" -> JsArray(
-                    removedPaymentSettings.map(_.asJson).toSeq
-                  )
-                )
+            env.dataStore.usagePlanRepo
+              .findByPaymentSettings(
+                updatedTenant.id,
+                removedPaymentSettings.map(_.value).toSeq
               )
-            )
           ).flatMap(plans =>
             EitherT.cond[Future][AppError, Unit](
               plans.isEmpty,
@@ -246,12 +233,7 @@ class TenantService(
                       for {
                         api <- EitherT.fromOptionF(
                           env.dataStore.apiRepo
-                            .forTenant(updatedTenant)
-                            .findOne(
-                              Json.obj(
-                                "possibleUsagePlans" -> plan.id.value
-                              )
-                            ),
+                            .findByPlan(updatedTenant.id, plan.id),
                           AppError.ApiNotFound
                         )
                         _ <- deletionService.deleteUsagePlanByQueue(

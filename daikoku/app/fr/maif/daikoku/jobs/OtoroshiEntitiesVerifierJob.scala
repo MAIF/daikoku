@@ -151,8 +151,16 @@ class OtoroshiEntitiesVerifierJob(
     Option(ref.get()).foreach(_.cancel())
   }
 
+  /** `entryPointFilter` narrows the apis to verify. Beware: it is built from
+    * the job's entry point, which names *subscription* fields (`api`, `plan`,
+    * or the subscription's own `_id`) while the filter runs against the apis
+    * table. An `Api` carries none of them, so every entry point but
+    * `SyncAllSubscription` filters the stream down to nothing — the job then
+    * verifies no api at all. Ported as-is; fixing it means deciding which api a
+    * plan or a subscription should resolve to.
+    */
   private def verifyIfOtoroshiGroupsStillExists(
-      query: JsObject = Json.obj()
+      entryPointFilter: Option[(String, String)] = None
   ): Future[Done] = {
     def checkEntities(
         entities: AuthorizedEntities,
@@ -222,9 +230,22 @@ class OtoroshiEntitiesVerifierJob(
 
     logger.info("Verifying if otoroshi groups still exists")
     val par = 10
-    env.dataStore.apiRepo
-      .forAllTenant()
-      .streamAllRawFormatted(Json.obj("_deleted" -> false) ++ query)
+    val apiRepo = env.dataStore.apiRepo.forAllTenant()
+    val (entryPointPredicate, entryPointParams) = entryPointFilter match {
+      case Some((field, value)) =>
+        (s" AND content->>'$field' = $$1", Seq[AnyRef](value))
+      case None => ("", Seq.empty[AnyRef])
+    }
+
+    Source
+      .future(
+        apiRepo.query(
+          s"SELECT content FROM ${apiRepo.tableName} " +
+            s"WHERE content->>'_deleted' = 'false'$entryPointPredicate",
+          entryPointParams
+        )
+      )
+      .flatMapConcat(apis => Source(apis.toList))
       .mapAsync(par)(api =>
         env.dataStore.tenantRepo
           .findById(api.tenant)
@@ -279,12 +300,12 @@ class OtoroshiEntitiesVerifierJob(
     val jobId = DatastoreId(s"sync-${IdGenerator.token(16)}")
     val now = DateTime.now()
 
-    val query = entryPoint match {
-      case apiId: ApiId             => Json.obj("api" -> apiId.asJson)
-      case usagePlanId: UsagePlanId => Json.obj("plan" -> usagePlanId.asJson)
+    val entryPointFilter: Option[(String, String)] = entryPoint match {
+      case apiId: ApiId             => Some("api" -> apiId.value)
+      case usagePlanId: UsagePlanId => Some("plan" -> usagePlanId.value)
       case subscriptionId: ApiSubscriptionId =>
-        Json.obj("_id" -> subscriptionId.asJson)
-      case _: SyncAllSubscription => Json.obj()
+        Some("_id" -> subscriptionId.value)
+      case _: SyncAllSubscription => None
     }
 
     Time.concurrentTime(
@@ -315,7 +336,7 @@ class OtoroshiEntitiesVerifierJob(
               status = JobStatus.Running
             )
             jobRepo.save(jobInfo).flatMap { _ =>
-              verifyIfOtoroshiGroupsStillExists(query)
+              verifyIfOtoroshiGroupsStillExists(entryPointFilter)
                 .flatMap { _ =>
                   logger.info("verify rotation ended")
                   jobRepo

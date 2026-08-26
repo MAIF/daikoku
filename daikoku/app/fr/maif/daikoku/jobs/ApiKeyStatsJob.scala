@@ -171,12 +171,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       apis <-
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(subscriptions.map(_.api.asJson)))
-            )
-          )
+          .findByIds(subscriptions.map(_.api).distinct)
     } yield {
       Source(subscriptions.toList)
         .via(syncConsumptionAsFlow(apis, tenant, lastConsumptions))
@@ -235,9 +230,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       apis <-
-        env.dataStore.apiRepo
-          .forTenant(tenant.id)
-          .findNotDeleted(Json.obj("team" -> team.id.value))
+        env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
       lastConsumptions <-
         env.dataStore.consumptionRepo
           .findLastConsumptions(tenant.id.some, apis = apis.map(_.id).some)

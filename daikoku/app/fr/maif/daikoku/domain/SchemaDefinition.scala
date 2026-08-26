@@ -4562,24 +4562,12 @@ object SchemaDefinition {
                 else EitherT.pure[Future, AppError](())
               }
 
-              val apiFilter =
-                if (apiIds.isEmpty) Json.obj()
-                else
-                  Json.obj(
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(apiIds.get.map(JsString.apply))
-                    )
-                  )
-
               val value
                   : EitherT[Future, AppError, (Seq[SubscriptionDemand], Long)] =
                 for {
                   apis <- EitherT.liftF(
                     dataStore.apiRepo
-                      .forTenant(tenant)
-                      .findNotDeleted(
-                        Json.obj("team" -> team.id.asJson) ++ apiFilter
-                      )
+                      .findByTeamAndIds(tenant.id, team.id, apiIds)
                   )
                   _ <- testApisTeam(apis, team)
                   demands <- EitherT.right[AppError](

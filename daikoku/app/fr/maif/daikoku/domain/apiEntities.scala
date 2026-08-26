@@ -679,8 +679,6 @@ object ApiState {
 
   }
 
-  def publishedJsonFilter: JsObject =
-    Json.obj("$in" -> Json.arr(Published.name, Deprecated.name))
 }
 
 case class Api(

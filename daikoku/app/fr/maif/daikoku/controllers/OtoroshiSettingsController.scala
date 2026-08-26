@@ -6,7 +6,11 @@ import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
-import fr.maif.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, TestingConfigFormat}
+import fr.maif.daikoku.domain.json.{
+  AuthorizedEntitiesFormat,
+  OtoroshiSettingsFormat,
+  TestingConfigFormat
+}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
@@ -769,10 +773,7 @@ class OtoroshiSettingsController(
         )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-            ),
+            .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -797,10 +798,7 @@ class OtoroshiSettingsController(
         )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-            ),
+            .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](

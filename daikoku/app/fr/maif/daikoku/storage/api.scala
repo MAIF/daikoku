@@ -1268,32 +1268,448 @@ trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId]
 trait JobInformationRepo extends TenantCapableRepo[JobInformation, DatastoreId]
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
-  def findByVersion(tenant: Tenant, id: String, version: String)(implicit
-      env: Env,
+
+  /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
+    * predicate is spelled out; it is bound to `$1` by convention.
+    *
+    * An api is versioned: `_humanReadableId` is shared by every version of the
+    * same api, `currentVersion` tells them apart, `parent` is null on the
+    * original one and `isDefault` marks the version served by default.
+    */
+  private val apiScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  /** Matches an api by its id *or* its human readable id, both bound to `$n`.
+    */
+  private def idOrHrId(placeholder: Int): String =
+    s"(_id = $$$placeholder OR content->>'_humanReadableId' = $$$placeholder)"
+
+  private def select(tenant: TenantId, predicate: String, params: Seq[AnyRef])(
+      implicit
+      dbConn: DbConn,
       ec: ExecutionContext
-  ): Future[Option[Api]] = {
-    val query = Json.obj(
-      "currentVersion" -> version,
-      "$or" -> Json
-        .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> id))
+  ): Future[Seq[Api]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} WHERE $apiScope AND $predicate",
+      tenant.value +: params
+    )
+  }
+
+  private def selectOne(
+      tenant: TenantId,
+      predicate: String,
+      params: Seq[AnyRef]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Api]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $apiScope AND $predicate LIMIT 1",
+      tenant.value +: params
+    )
+  }
+
+  // ---------------------------------------------------------------- lookups
+
+  def findByTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Api]] =
+    select(tenant, "content->>'team' = $2", Seq(team.value))
+
+  def findByIdAndTeam(tenant: TenantId, id: ApiId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "_id = $2 AND content->>'team' = $3",
+      Seq(id.value, team.value)
     )
 
-    env.dataStore.apiRepo.forTenant(tenant.id).findOneNotDeleted(query)
+  def findByIdOrHrIdAndTeam(tenant: TenantId, idOrHrid: String, team: TeamId)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      s"${idOrHrId(2)} AND content->>'team' = $$3",
+      Seq(idOrHrid, team.value)
+    )
+
+  def findByIdVersionAndTeam(
+      tenant: TenantId,
+      id: ApiId,
+      version: String,
+      team: TeamId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "_id = $2 AND content->>'currentVersion' = $3 " +
+        "AND content->>'team' = $4",
+      Seq(id.value, version, team.value)
+    )
+
+  def findByIdOrHrIdVersionAndTeam(
+      tenant: TenantId,
+      idOrHrid: String,
+      version: String,
+      team: TeamId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      s"${idOrHrId(2)} AND content->>'currentVersion' = $$3 " +
+        "AND content->>'team' = $4",
+      Seq(idOrHrid, version, team.value)
+    )
+
+  def findByIdAndVersion(tenant: TenantId, id: ApiId, version: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "_id = $2 AND content->>'currentVersion' = $3",
+      Seq(id.value, version)
+    )
+
+  /** Resolves one version of an api, addressed by id or human readable id. */
+  def findByVersion(tenant: TenantId, idOrHrid: String, version: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      s"${idOrHrId(2)} AND content->>'currentVersion' = $$3",
+      Seq(idOrHrid, version)
+    )
+
+  /** The api a usage plan belongs to. */
+  def findByPlan(tenant: TenantId, plan: UsagePlanId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "content->'possibleUsagePlans' @> to_jsonb($2::text)",
+      Seq(plan.value)
+    )
+
+  // --------------------------------------------------------------- versions
+
+  /** Every version of an api, `hrid` being what they share. */
+  def findByHumanReadableId(tenant: TenantId, hrid: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Api]] =
+    select(tenant, "content->>'_humanReadableId' = $2", Seq(hrid))
+
+  def findOtherVersions(tenant: TenantId, hrid: String, excluding: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Api]] =
+    select(
+      tenant,
+      "content->>'_humanReadableId' = $2 " +
+        "AND content->>'currentVersion' <> $3",
+      Seq(hrid, excluding)
+    )
+
+  /** Same, addressed by id *or* human readable id. */
+  def findRootVersionByIdOrHrId(tenant: TenantId, idOrHrid: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      s"${idOrHrId(2)} AND content->>'parent' IS NULL",
+      Seq(idOrHrid)
+    )
+
+  /** The original version of an api — the only one without a `parent`. */
+  def findRootVersion(tenant: TenantId, hrid: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "content->>'_humanReadableId' = $2 AND content->>'parent' IS NULL",
+      Seq(hrid)
+    )
+
+  def existsVersion(tenant: TenantId, hrid: String, version: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    selectOne(
+      tenant,
+      "content->>'_humanReadableId' = $2 " +
+        "AND content->>'currentVersion' = $3",
+      Seq(hrid, version)
+    ).map(_.isDefined)
+
+  /** Guards the uniqueness of a version when saving one. */
+  def existsOtherVersion(
+      tenant: TenantId,
+      hrid: String,
+      version: String,
+      excluding: ApiId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
+    selectOne(
+      tenant,
+      "content->>'_humanReadableId' = $2 " +
+        "AND content->>'currentVersion' = $3 AND _id <> $4",
+      Seq(hrid, version, excluding.value)
+    ).map(_.isDefined)
+
+  /** Another api bearing the same name, if any. The caller decides what to do
+    * with it: a parent or a child of the api being saved is legitimate, anybody
+    * else is a name clash.
+    */
+  def findAnotherWithName(tenant: TenantId, id: ApiId, name: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Api]] =
+    selectOne(
+      tenant,
+      "_id <> $2 AND content->>'name' = $3",
+      Seq(id.value, name)
+    )
+
+  // ----------------------------------------------------------------- writes
+
+  /** Makes one version the default one, clearing the flag on its siblings. */
+  def clearDefaultVersionExcept(tenant: TenantId, hrid: String, keep: ApiId)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{isDefault}', 'false'::jsonb) " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND content->>'_humanReadableId' = $2 AND _id <> $3",
+      Seq(tenant.value, hrid, keep.value)
+    )
+  }
+
+  /** Same, addressing the kept version by its version number. */
+  def clearDefaultVersionExceptVersion(
+      tenant: TenantId,
+      hrid: String,
+      keep: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{isDefault}', 'false'::jsonb) " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND content->>'_humanReadableId' = $2 " +
+        "AND content->>'currentVersion' <> $3",
+      Seq(tenant.value, hrid, keep)
+    )
+  }
+
+  /** Whether the name is already taken by another api — matched on the root
+    * version, since a name maps to one `_humanReadableId` across versions.
+    * `excluding` spares the api being saved (or its root).
+    */
+  def existsRootWithHumanReadableId(
+      tenant: TenantId,
+      hrid: String,
+      excluding: Option[String]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
+    val exclusion = if (excluding.isDefined) " AND _id <> $3" else ""
+    selectOne(
+      tenant,
+      "content->>'_humanReadableId' = $2 " +
+        s"AND content->>'parent' IS NULL$exclusion",
+      Seq(hrid) ++ excluding.toSeq
+    ).map(_.isDefined)
+  }
+
+  /** Re-hangs the versions of an api under a new root, when the current one is
+    * removed.
+    */
+  def reparentVersions(
+      tenant: TenantId,
+      hrid: String,
+      from: ApiId,
+      to: ApiId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{parent}', to_jsonb($4::text)) " +
+        s"WHERE $apiScope AND content->>'_humanReadableId' = $$2 " +
+        "AND content->>'parent' = $3 AND _id <> $4",
+      Seq(tenant.value, hrid, from.value, to.value)
+    )
+  }
+
+  /** Renaming an api renames every one of its versions. */
+  def renameHumanReadableId(tenant: TenantId, from: String, to: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{_humanReadableId}', " +
+        "  to_jsonb($3::text)) " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND content->>'_humanReadableId' = $2",
+      Seq(tenant.value, from, to)
+    )
+  }
+
+  /** Hands every version of an api over to another team. */
+  def moveToTeam(tenant: TenantId, ids: Seq[ApiId], team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} " +
+        "SET content = jsonb_set(content, '{team}', to_jsonb($3::text)) " +
+        "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+      Seq(tenant.value, ids.map(_.value).toArray, team.value)
+    )
+  }
+
+  def deleteLogicallyByIds(tenant: TenantId, ids: Seq[ApiId])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"UPDATE ${repo.tableName} SET _deleted = true, " +
+        "content = content || '{ \"_deleted\" : true }' " +
+        s"WHERE $apiScope AND _id = ANY($$2::text[])",
+      Seq(tenant.value, ids.map(_.value).toArray)
+    )
+  }
+
+  // -------------------------------------------------------------- catalogue
+
+  /** The apis a user may see, by visibility. `Private` additionally requires
+    * one of the user's teams to be authorized.
+    */
+  def findByVisibility(
+      tenant: TenantId,
+      visibility: ApiVisibility,
+      authorizedTeams: Option[Seq[TeamId]] = None,
+      ids: Option[Seq[String]] = None
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Api]] = {
+    val predicates = Seq.newBuilder[String] += "content->>'visibility' = $2"
+    val params = Seq.newBuilder[AnyRef] += visibility.name
+    var placeholder = 2
+
+    authorizedTeams.foreach { teams =>
+      placeholder += 1
+      predicates +=
+        s"content->'authorizedTeams' ?| $$$placeholder::text[]"
+      params += teams.map(_.value).toArray
+    }
+    ids.foreach { values =>
+      placeholder += 1
+      predicates += s"_id = ANY($$$placeholder::text[])"
+      params += values.toArray
+    }
+
+    select(tenant, predicates.result().mkString(" AND "), params.result())
+  }
+
+  /** The published states an api must be in to show up in a catalogue. */
+  private val publishedStates: String =
+    s"content->>'state' IN ('${ApiState.Published.name}', " +
+      s"'${ApiState.Deprecated.name}')"
+
+  /** The catalogue a team sees: published apis it may access, one entry per api
+    * (the root version only), optionally narrowed to what it subscribed to.
+    * `page` is a zero-based page index, not a row offset.
+    */
+  def findAccessibleByTeamPaginated(
+      tenant: TenantId,
+      team: TeamId,
+      research: String,
+      subscribedTo: Option[Seq[ApiId]],
+      page: Int,
+      pageSize: Int
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[(Seq[Api], Long)] = {
+    val repo = forTenant(tenant)
+    val subscribedFilter =
+      if (subscribedTo.isDefined) " AND _id = ANY($4::text[])" else ""
+
+    repo.queryPaginated(
+      s"SELECT content FROM ${repo.tableName} WHERE $apiScope " +
+        "AND (content->>'visibility' = 'Public' " +
+        "  OR content->'authorizedTeams' @> to_jsonb($2::text) " +
+        "  OR content->>'team' = $2) " +
+        s"AND $publishedStates " +
+        // FIXME : could be a problem if parent is not published [#517]
+        "AND content->>'parent' IS NULL " +
+        s"AND content->>'name' ~* $$3$subscribedFilter " +
+        "ORDER BY content->>'name' ASC",
+      Seq(tenant.value, team.value, research) ++
+        subscribedTo.map(_.map(_.value).toArray).toSeq,
+      offset = page * pageSize,
+      limit = pageSize
+    )
+  }
+
+  /** Every published version of the given apis — the catalogue entries above
+    * are roots, this brings back the versions behind them.
+    */
+  def findPublishedVersionsOf(
+      tenant: TenantId,
+      hrids: Seq[String],
+      subscribedTo: Option[Seq[ApiId]]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Api]] = {
+    val subscribedFilter =
+      if (subscribedTo.isDefined) " AND _id = ANY($3::text[])" else ""
+
+    select(
+      tenant,
+      "content->>'_humanReadableId' = ANY($2::text[]) " +
+        s"AND $publishedStates$subscribedFilter " +
+        "ORDER BY content->>'name' ASC",
+      Seq(hrids.toArray) ++ subscribedTo.map(_.map(_.value).toArray).toSeq
+    )
+  }
+
+  /** The apis of a team, optionally narrowed to a set of ids. */
+  def findByTeamAndIds(
+      tenant: TenantId,
+      team: TeamId,
+      ids: Option[Seq[String]]
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Api]] = {
+    val idsFilter = if (ids.isDefined) " AND _id = ANY($3::text[])" else ""
+    select(
+      tenant,
+      s"content->>'team' = $$2$idsFilter",
+      Seq(team.value) ++ ids.map(_.toArray).toSeq
+    )
   }
 
   def findAllVersions(tenant: Tenant, id: String)(implicit
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[Api]] = {
-
     val o: OptionT[Future, Seq[Api]] = for {
-      api <- OptionT(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdOrHrId(id)
-      )
+      api <- OptionT(forTenant(tenant).findByIdOrHrId(id))
       apis <- OptionT.liftF(
-        env.dataStore.apiRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("_humanReadableId" -> api.humanReadableId))
+        findByHumanReadableId(tenant.id, api.humanReadableId)
       )
     } yield apis
 
@@ -1860,6 +2276,37 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
       ec: ExecutionContext
   ): Future[Seq[UsagePlan]] =
     forTenant(tenant).findByIds(api.possibleUsagePlans)
+
+  /** Plans still pointing at one of the given tenant settings — what forbids
+    * removing an Otoroshi or a payment provider from a tenant.
+    */
+  def findByOtoroshiSettings(tenant: TenantId, settings: Seq[String])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[UsagePlan]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->'otoroshiTarget'->>'otoroshiSettings' = " +
+        "  ANY($2::text[])",
+      Seq(tenant.value, settings.toArray)
+    )
+  }
+
+  def findByPaymentSettings(tenant: TenantId, settings: Seq[String])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[UsagePlan]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->'paymentSettings'->>'thirdPartyPaymentSettingsId' = " +
+        "  ANY($2::text[])",
+      Seq(tenant.value, settings.toArray)
+    )
+  }
 
   /** Plans are named after the environment they target when the tenant runs in
     * environment mode, so removing an environment means finding what still uses

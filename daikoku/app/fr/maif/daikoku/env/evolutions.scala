@@ -368,9 +368,13 @@ object evolution_157 extends EvolutionScript {
                 s"begin sync of ${sub.id} with api ${sub.api.asJson}"
               )
 
-              dataStore.apiRepo
-                .forTenant(sub.tenant)
-                .findOneRaw(Json.obj("_id" -> sub.api.asJson))
+              dataStore
+                .queryOneRaw(
+                  s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                    "WHERE content->>'_tenant' = $1 AND _id = $2",
+                  "content",
+                  Seq(sub.tenant.value, sub.api.value)
+                )
                 .map {
                   case Some(api) =>
                     (api \ "possibleUsagePlans")
@@ -389,9 +393,12 @@ object evolution_157 extends EvolutionScript {
                   case Some(otoSettingsId) =>
                     (for {
                       api <- OptionT(
-                        dataStore.apiRepo
-                          .forTenant(sub.tenant)
-                          .findOneRaw(Json.obj("_id" -> sub.api.asJson))
+                        dataStore.queryOneRaw(
+                          s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                            "WHERE content->>'_tenant' = $1 AND _id = $2",
+                          "content",
+                          Seq(sub.tenant.value, sub.api.value)
+                        )
                       )
                       tenant <- OptionT(
                         dataStore.tenantRepo
@@ -474,9 +481,17 @@ object evolution_157_b extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val rewriteApiDocSource = dataStore.apiRepo
-        .forAllTenant()
-        .streamAllRaw(Json.obj("_deleted" -> false))
+      val apiRepo = dataStore.apiRepo.forAllTenant()
+
+      val rewriteApiDocSource = Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${apiRepo.tableName} " +
+              "WHERE content->>'_deleted' = 'false'",
+            "content"
+          )
+        )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(10) { value =>
           val apiId = ApiId((value \ "_id").as[String])
           val doc = (value \ "documentation").as[JsObject]
@@ -505,22 +520,24 @@ object evolution_157_b extends EvolutionScript {
               )
             )
 
-          newPages.flatMap(n =>
-            dataStore.apiRepo
-              .forTenant(tenantId)
-              .updateManyByQuery(
-                Json.obj(
-                  "_id" -> apiId.asJson
-                ),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "documentation" -> (doc ++ Json.obj(
-                      "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)
-                    ))
+          newPages.flatMap(n => {
+            val repo = dataStore.apiRepo.forTenant(tenantId)
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = jsonb_set(content, '{documentation}', " +
+                "  $3::jsonb) " +
+                "WHERE content->>'_tenant' = $1 AND _id = $2",
+              Seq(
+                tenantId.value,
+                apiId.value,
+                Json.stringify(
+                  doc ++ Json.obj(
+                    "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)
                   )
                 )
               )
-          )
+            )
+          })
         }
 
       val recalcDocHumanReadableIdSource = dataStore.apiDocumentationPageRepo
@@ -604,32 +621,24 @@ object evolution_1612_a extends EvolutionScript {
 
         val future: Future[Long] = for {
           apiWithParents <-
-            dataStore.apiRepo
-              .forAllTenant()
-              .findRaw(
-                Json.obj(
-                  "_deleted" -> false,
-                  "parent" -> Json.obj("$exists" -> true, "$ne" -> null),
-                  "isDefault" -> true
-                )
-              )
-          parents =
-            apiWithParents.map(api => (api \ "parent").as[String]).distinct
-          res <-
-            dataStore.apiRepo
-              .forAllTenant()
-              .updateManyByQuery(
-                Json.obj(
-                  "parent" -> JsNull,
-                  "_id" -> Json
-                    .obj("$nin" -> JsArray(parents.map(JsString.apply)))
-                ),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "isDefault" -> true
-                  )
-                )
-              )
+            dataStore.queryString(
+              s"SELECT content->>'parent' AS parent FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                "WHERE content->>'_deleted' = 'false' " +
+                "AND content->>'parent' IS NOT NULL " +
+                "AND content->>'isDefault' = 'true'",
+              "parent"
+            )
+          parents = apiWithParents.distinct
+          res <- {
+            val repo = dataStore.apiRepo.forAllTenant()
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = jsonb_set(content, '{isDefault}', 'true'::jsonb) " +
+                "WHERE content->>'parent' IS NULL " +
+                "AND NOT (_id = ANY($1::text[]))",
+              Seq(parents.toArray)
+            )
+          }
         } yield res
 
         Source
@@ -884,9 +893,12 @@ object evolution_1613_b extends EvolutionScript {
 
           (for {
             api <- OptionT(
-              dataStore.apiRepo
-                .forAllTenant()
-                .findOneRaw(Json.obj("_id" -> apiId.asJson))
+              dataStore.queryOneRaw(
+                s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                  "WHERE _id = $1",
+                "content",
+                Seq(apiId.value)
+              )
             )
             plan <- OptionT.fromOption[Future](
               (api \ "possibleUsagePlans")

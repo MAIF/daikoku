@@ -30,10 +30,7 @@ object CommonServices {
 
       val tenant = ctx.tenant
       val user = ctx.user
-      val idFilter =
-        if (ids.nonEmpty)
-          Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply))))
-        else Json.obj()
+      val idFilter = if (ids.nonEmpty) ids.some else None
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
         apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
@@ -47,36 +44,43 @@ object CommonServices {
                 myTeams.map(_.id)
               )
         publicApis <-
-          apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ idFilter)
+          env.dataStore.apiRepo
+            .findByVisibility(
+              tenant.id,
+              ApiVisibility.Public,
+              ids = idFilter
+            )
         almostPublicApis <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj("visibility" -> "PublicWithAuthorizations") ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.PublicWithAuthorizations,
+                ids = idFilter
+              )
         privateApis <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj(
-                "visibility" -> "Private",
-                "$or" -> Json.arr(
-                  Json.obj(
-                    "authorizedTeams" -> Json
-                      .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                  )
-                )
-              ) ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.Private,
+                authorizedTeams = myTeams.map(_.id).some,
+                ids = idFilter
+              )
         adminApis <-
           if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.AdminOnly,
+                ids = idFilter
+              )
         plans <-
           env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
+            .forTenant(tenant.id)
             .findByIds(
               (publicApis ++ almostPublicApis ++ privateApis ++ adminApis)
                 .flatMap(_.possibleUsagePlans)
@@ -170,47 +174,23 @@ object CommonServices {
         subs <-
           env.dataStore.apiSubscriptionRepo
             .findByTeam(ctx.tenant.id, TeamId(teamId))
-        subsOnlyFilter =
-          if (apiSubOnly)
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
-            )
-          else Json.obj()
-        apiFilter = Json.obj(
-          "$or" -> Json.arr(
-            Json.obj("visibility" -> "Public"),
-            Json.obj("authorizedTeams" -> teamId),
-            Json.obj("team" -> teamId)
-          ),
-          "state" -> ApiState.publishedJsonFilter,
-          "_deleted" -> false,
-          "parent" -> JsNull, // FIXME : could be a problem if parent is not published [#517]
-          "name" -> Json.obj("$regex" -> research)
-        )
+        subscribedTo = if (apiSubOnly) subs.map(_.api).distinct.some else None
         uniqueApis <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findWithPagination(
-              apiFilter ++ subsOnlyFilter,
-              offset,
-              limit,
-              Some(Json.obj("name" -> 1))
+            .findAccessibleByTeamPaginated(
+              ctx.tenant.id,
+              TeamId(teamId),
+              research,
+              subscribedTo,
+              page = offset,
+              pageSize = limit
             )
-        allApisFilter = Json.obj(
-          "_humanReadableId" -> Json.obj(
-            "$in" -> JsArray(
-              uniqueApis._1.map(a => JsString(a.humanReadableId))
-            )
-          ),
-          "state" -> ApiState.publishedJsonFilter
-        )
         allApis <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              query = allApisFilter ++ subsOnlyFilter,
-              sort = Some(Json.obj("name" -> 1))
+            .findPublishedVersionsOf(
+              ctx.tenant.id,
+              uniqueApis._1.map(_.humanReadableId).distinct,
+              subscribedTo
             )
         teams <-
           env.dataStore.teamRepo
@@ -229,7 +209,7 @@ object CommonServices {
             )
         plans <-
           env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
+            .forTenant(ctx.tenant.id)
             .findByIds(
               allApis.flatMap(_.possibleUsagePlans).distinct
             )
@@ -907,20 +887,15 @@ object CommonServices {
         s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"
       )
     )(ctx) { team =>
-      val query = Json.obj(
-        "team" -> team.id.value,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> apiId),
-          Json.obj("_humanReadableId" -> apiId)
-        ),
-        "currentVersion" -> version
-      )
-
       (for {
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(query),
+            .findByIdOrHrIdVersionAndTeam(
+              ctx.tenant.id,
+              apiId,
+              version,
+              team.id
+            ),
           AppError.ApiNotFound
         )
       } yield {
@@ -1005,16 +980,7 @@ object CommonServices {
       for {
         api <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(
-              Json.obj(
-                "team" -> team.id.value,
-                "$or" -> Json.arr(
-                  Json.obj("_id" -> apiId),
-                  Json.obj("_humanReadableId" -> apiId)
-                )
-              )
-            )
+            .findByIdOrHrIdAndTeam(ctx.tenant.id, apiId, team.id)
         apiId = api.map(api => api.id.value).get
         consumptions <-
           env.dataStore.consumptionRepo
@@ -1332,9 +1298,7 @@ object CommonServices {
         to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
       for {
         ownApis <-
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(Json.obj("team" -> team.id.value))
+          env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
         revenue <-
           env.dataStore.consumptionRepo
             .findLastConsumptions(

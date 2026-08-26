@@ -385,13 +385,7 @@ class DeletionService(
       _ <- planDeletion
       _ <-
         env.dataStore.apiRepo
-          .forTenant(tenant)
-          .deleteLogically(
-            Json.obj(
-              "_id" ->
-                Json.obj("$in" -> JsArray(apis.map(_.id.asJson).distinct))
-            )
-          )
+          .deleteLogicallyByIds(tenant.id, apis.map(_.id).distinct)
       _ <- env.dataStore.operationRepo.forTenant(tenant).insertMany(operations)
     } yield ()
 
@@ -591,9 +585,7 @@ class DeletionService(
         AppError.TeamNotFound
       )
       apis <- EitherT.liftF(
-        env.dataStore.apiRepo
-          .forTenant(tenant.id)
-          .findNotDeleted(Json.obj("team" -> team.id.value))
+        env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
       )
       allSubscriptions <- EitherT.liftF(
         {
@@ -627,13 +619,7 @@ class DeletionService(
       consumerApis <- EitherT.liftF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(consumerSubsByApi.keys.map(_.asJson).toSeq)
-              )
-            )
-          )
+          .findByIds(consumerSubsByApi.keys.toSeq)
       )
       _ <- EitherT.liftF(
         Source(consumerApis)

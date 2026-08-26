@@ -35,7 +35,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
-| 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo` (**done**), `usagePlanRepo` (**done**) | **In progress** |
+| 3 | Big ones: `apiRepo`, `apiSubscriptionRepo`, `usagePlanRepo` | **Done** |
+| 4 | Repos the plan had not listed: `apiDocumentationPageRepo`, `keyringRepo`, `apiPostRepo`, `apiIssueRepo`, `stepValidatorRepo`, `translationRepo`, `operationRepo`, `auditTrailRepo` | **Next** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
@@ -164,6 +165,36 @@ which is not a tenant-scoped repo.
   valid — same storage. What the migration reveals they *don't* cover is collected below.
 
 ## Phase 3 notes
+
+`apiRepo` closes the phase: 66 queries, and the widest domain surface of the migration because an api
+is versioned. `_humanReadableId` is shared by every version, `currentVersion` tells them apart,
+`parent` is null on the root and `isDefault` marks the served one — so most methods name a point in
+that tree (`findRootVersion`, `findOtherVersions`, `existsVersion`, `clearDefaultVersionExcept`,
+`reparentVersions`, `renameHumanReadableId`) rather than a WHERE clause.
+
+Two things it exposed:
+
+- **A `++` that silently dropped a filter.** `AdminApiController.validate` built
+  `Json.obj("_id" -> {"$ne": id}, "name" -> name) ++ parent.map(p => Json.obj("_id" -> p))`. `++` on a
+  `JsObject` *overwrites* the duplicate key, so as soon as an api had a parent the `$ne` vanished and
+  the query became "the parent api bearing this name". It is now `findAnotherWithName`, on the name
+  alone, letting the surrounding code decide — which it already does, accepting both parent and child
+  explicitly. A creation that used to slip through the hole can now be refused for a name clash.
+- **A job that verified nothing.** `OtoroshiEntitiesVerifierJob` filters the *apis* stream with a
+  query built from its entry point, which names *subscription* fields (`api`, `plan`, or the
+  subscription's `_id`). An `Api` carries none of them, so every entry point but
+  `SyncAllSubscription` reduced the stream to nothing. Ported as-is with the behaviour spelled out in
+  a comment: fixing it means deciding which api a plan or a subscription should resolve to, which is
+  a product call.
+
+### The scan blind spot
+
+Grepping `<repo>` followed by a JsObject call misses every query built into a variable or a helper
+(`referencingPlans(query)` in `TenantService`, `uniquenessQuery` in `ApiCrudService`,
+`val apiRepo = …` then `apiRepo.findNotDeleted(...)`). Three real call sites hid there. The reliable
+scan walks *every* JsObject-API call and attributes it to a repo by reading backwards — that is what
+the final check below does.
+
 
 `apiSubscriptionRepo` is the widest surface of the phase — 54 queries — but a narrow set of
 dimensions: `api`, `team`, `plan`, `keyring`, `apiKey.clientId`. The keyring ones carry the
@@ -295,7 +326,31 @@ These cost several hours during phase 1 — read before debugging a red suite.
 ## Final check
 
 ```bash
-grep -rn '\$in\|\$or\|\$regex\|\$gte\|\$ne' daikoku/app   # nothing left query-side
+# Every JsObject-API call, attributed to its repo by reading backwards.
+python3 - <<'EOF'
+import re, glob
+files = glob.glob('daikoku/app/**/*.scala', recursive=True) + \
+        glob.glob('daikoku/test/**/*.scala', recursive=True)
+meths = r'\.(find|findOne|findNotDeleted|findOneNotDeleted|findRaw|findOneRaw|' \
+        r'findWithPagination|findWithProjection|delete|deleteLogically|' \
+        r'updateMany|updateManyByQuery|streamAllRaw|streamAllRawFormatted|count|exists)\('
+for p in sorted(files):
+    s = open(p).read(); lines = s.split('\n')
+    for m in re.finditer(meths, s):
+        depth = 0
+        for j in range(m.end() - 1, min(m.end() + 3000, len(s))):
+            if s[j] == '(': depth += 1
+            elif s[j] == ')':
+                depth -= 1
+                if depth == 0: break
+        if 'Json.obj' not in s[m.end():j]: continue
+        ln = s[:m.start()].count('\n')
+        if lines[ln].strip().startswith('//'): continue
+        repo = next((re.search(r'(\w+Repo)\b', lines[k]).group(1)
+                     for k in range(ln, max(0, ln - 8), -1)
+                     if re.search(r'(\w+Repo)\b', lines[k])), None)
+        print(p + ':' + str(ln + 1), repo)
+EOF
 ```
 
 and `Helper.scala` gone.
