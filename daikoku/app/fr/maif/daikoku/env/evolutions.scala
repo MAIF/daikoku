@@ -388,9 +388,7 @@ object evolution_157 extends EvolutionScript {
                       )
                       tenant <- OptionT(
                         dataStore.tenantRepo
-                          .findOne(
-                            Json.obj("_id" -> (api \ "_tenant").as[String])
-                          )
+                          .findById((api \ "_tenant").as[String])
                       )
                       otoSettings <- OptionT.fromOption[Future](
                         tenant.otoroshiSettings

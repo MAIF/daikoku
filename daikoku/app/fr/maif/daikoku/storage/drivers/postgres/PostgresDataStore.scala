@@ -1814,7 +1814,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     for {
       count <-
         reactivePg
-          .queryOne(s"select count(*) as counter from ($query)_")(row =>
+          .queryOne(s"select count(*) as counter from ($query)_", params)(row =>
             row.optLong("counter")
           )
           .map {

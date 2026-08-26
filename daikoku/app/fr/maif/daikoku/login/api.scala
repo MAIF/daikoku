@@ -105,12 +105,7 @@ object TenantHelper {
           .getOrElse(request.host)
         val domain = if (host.contains(":")) host.split(":").apply(0) else host
         env.dataStore.tenantRepo
-          .findOne(
-            Json.obj(
-              "_deleted" -> false,
-              "domain" -> domain
-            )
-          )
+          .findByDomain(domain)
           .flatMap {
             case None =>
               AppLogger.info(

@@ -302,16 +302,11 @@ class TenantAdminApiController(
   ): EitherT[Future, AppError, Tenant] =
     EitherT(
       env.dataStore.tenantRepo
-        .findOne(
-          Json.obj(
-            "_id" -> Json.obj("$ne" -> entity.id.asJson),
-            "domain" -> entity.domain
-          )
-        )
+        .existsAnotherWithDomain(entity.id, entity.domain)
         .map {
-          case Some(_) =>
+          case true =>
             Left(AppError.ParsingPayloadError("tenant.domain already used"))
-          case None => Right(entity)
+          case false => Right(entity)
         }
     )
 
@@ -512,7 +507,6 @@ class ApiAdminApiController(
       issuesTags = existing.issuesTags,
       stars = existing.stars
     )
-
 
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant, ds: DataStore): Repo[Api, ApiId] =

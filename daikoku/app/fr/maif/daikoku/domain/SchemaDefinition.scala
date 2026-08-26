@@ -742,7 +742,9 @@ object SchemaDefinition {
     lazy val BillingTimeUnitEnumType = EnumType(
       "BillingTimeUnit",
       Some("Unit of a billing duration : hour, day, month or year"),
-      BillingTimeUnit.values.map(unit => EnumValue(unit.name, value = unit)).toList
+      BillingTimeUnit.values
+        .map(unit => EnumValue(unit.name, value = unit))
+        .toList
     )
 
     lazy val BillingDurationType = deriveObjectType[
@@ -4661,42 +4663,6 @@ object SchemaDefinition {
         ],
         tags: List[FieldTag] = List.empty
     ): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = {
-      def toQuery(
-          maybeIds: Option[Seq[String]],
-          maybeTeamId: Option[String]
-      ): JsObject = {
-        (maybeIds, maybeTeamId) match {
-          case (None, None) => Json.obj()
-          case (Some(ids), None) =>
-            Json.obj(
-              "$or" -> Json.arr(
-                Json
-                  .obj(
-                    "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
-                  ),
-                Json.obj(
-                  "_humanReadableId" -> Json
-                    .obj("$in" -> JsArray(ids.map(JsString.apply)))
-                )
-              )
-            )
-          case (None, Some(teamId)) => Json.obj("team" -> teamId)
-          case (Some(ids), Some(teamId)) =>
-            Json.obj(
-              "$or" -> Json.arr(
-                Json.obj(
-                  "_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply)))
-                ),
-                Json.obj(
-                  "_humanReadableId" -> Json
-                    .obj("$in" -> JsArray(ids.map(JsString.apply)))
-                )
-              ),
-              "team" -> teamId
-            )
-        }
-      }
-
       List(
         Field(
           fieldName,
@@ -4722,11 +4688,11 @@ object SchemaDefinition {
             ) match {
               case (-1, _, ids, teamId) =>
                 repo(ctx)
-                  .find(toQuery(ids, teamId))
+                  .findByIdsOrHrIdsAndTeam(ids, teamId)
                   .map(_.asInstanceOf[Seq[Out]])
               case (limit, offset, ids, teamId) =>
                 repo(ctx)
-                  .findWithPagination(toQuery(ids, teamId), offset, limit)
+                  .findByIdsOrHrIdsAndTeamPaginated(ids, teamId, offset, limit)
                   .map(_._1.asInstanceOf[Seq[Out]])
             }
           }

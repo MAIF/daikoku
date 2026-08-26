@@ -34,7 +34,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 |---|---|---|
 | 0 | Generic helpers of `Repo` | **Done** — commit `39ec6b5f8` |
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
-| 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
+| 2 | Mid-size tenant-scoped repos: `tenantRepo` (**done**), `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo`, … | **Next** |
 | 3 | Big ones, each its own sub-project: `apiRepo` (+ `ApiController` ~237 calls, `ApiService` ~111), `apiSubscriptionRepo`, `usagePlanRepo` | To do |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
@@ -65,7 +65,16 @@ Rules: values **always** go through `params` (`$1`, `$2`, …), never into the s
 handled locally inside their own method (Scala concat + a params buffer), case by case — no global
 DSL, no combinator library. That dynamic assembly is exactly what made `convertQuery` unmaintainable.
 
-### 2. The `forTenant` trap
+### 2. Naming: not-deleted is the nominal case
+
+Physical deletion has been the rule for two releases; `_deleted` is only a transient state. So every
+typed method carries `notDeletedSql` and **no method carries a `NotDeleted` suffix** —
+`findByDomain`, not `findByDomainNotDeleted`. The `NotDeleted` suffix survives only on the generic
+`Repo` helpers inherited from phase 0 (`findByIdNotDeleted`, `findByIdsNotDeleted`,
+`findAllNotDeleted`), because their unsuffixed twins already mean "no filter"; that pair collapses
+in Final B.
+
+### 3. The `forTenant` trap
 
 `find(JsObject)` on a tenant-aware repo injects the tenant filter automatically. **`query(sql)` does
 not** — the caller owns the whole SQL. Two situations:
@@ -77,7 +86,7 @@ not** — the caller owns the whole SQL. Two situations:
 
 Forgetting this leaks data across tenants, and no test will necessarily catch it.
 
-### 3. What phase 0 put in place
+### 4. What phase 0 put in place
 
 In [`storage/api.scala`](../daikoku/app/fr/maif/daikoku/storage/api.scala):
 

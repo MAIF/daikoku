@@ -408,6 +408,62 @@ trait Repo[Of, Id <: ValueType] {
     query(s"SELECT content FROM $tableName$where", params)
   }
 
+  /** Filters backing the generic GraphQL `xxx` / `xxxs` fields: an optional
+    * list of ids — each matched against `_id` *or* `_humanReadableId` — and an
+    * optional owning team. An empty `ids` list matches nothing, as the former
+    * `$in` did.
+    */
+  private def idsOrHrIdsAndTeamWhere(
+      ids: Option[Seq[String]],
+      team: Option[String]
+  ): (String, Seq[AnyRef]) = {
+    val predicates = Seq.newBuilder[String] += notDeletedSql
+    val params = Seq.newBuilder[AnyRef]
+    var placeholder = 0
+
+    ids.foreach { values =>
+      placeholder += 1
+      predicates += s"(_id = ANY($$$placeholder::text[]) " +
+        s"OR content->>'_humanReadableId' = ANY($$$placeholder::text[]))"
+      params += values.toArray
+    }
+    team.foreach { teamId =>
+      placeholder += 1
+      predicates += s"content->>'team' = $$$placeholder"
+      params += teamId
+    }
+
+    scopedWhere(predicates.result(), params.result())
+  }
+
+  def findByIdsOrHrIdsAndTeam(ids: Option[Seq[String]], team: Option[String])(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Of]] = {
+    val (where, params) = idsOrHrIdsAndTeamWhere(ids, team)
+    query(s"SELECT content FROM $tableName$where", params)
+  }
+
+  /** Same filters, one page at a time. `page` is a zero-based page index, not a
+    * row offset — the GraphQL `offset` argument it comes from has always been
+    * multiplied by `pageSize`.
+    */
+  def findByIdsOrHrIdsAndTeamPaginated(
+      ids: Option[Seq[String]],
+      team: Option[String],
+      page: Int,
+      pageSize: Int
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    val (where, params) = idsOrHrIdsAndTeamWhere(ids, team)
+    queryPaginated(
+      s"SELECT content FROM $tableName$where ORDER BY _id ASC",
+      params,
+      offset = page * pageSize,
+      limit = pageSize
+    )
+  }
+
   // NB: like the JsObject-based `delete` it replaces, this reports success
   // regardless of the number of rows actually removed.
   def deleteById(
@@ -481,7 +537,10 @@ trait UserSessionRepo extends Repo[UserSession, DatastoreId] {
     */
   def findBySessionId(
       sessionId: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[UserSession]] =
     queryOne(
       s"SELECT content FROM $tableName WHERE content->>'sessionId' = $$1 LIMIT 1",
       Seq(sessionId)
@@ -504,7 +563,10 @@ trait UserSessionRepo extends Repo[UserSession, DatastoreId] {
     */
   def findByUserEmailWithoutImpersonator(
       email: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[UserSession]] =
     queryOne(
       s"SELECT content FROM $tableName " +
         "WHERE content->>'userEmail' = $1 " +
@@ -514,7 +576,10 @@ trait UserSessionRepo extends Repo[UserSession, DatastoreId] {
 
   def findByImpersonatorEmail(
       email: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[UserSession]] =
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[UserSession]] =
     queryOne(
       s"SELECT content FROM $tableName " +
         "WHERE content->>'impersonatorEmail' = $1 LIMIT 1",
@@ -590,7 +655,29 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
     )
 }
 
-trait TenantRepo extends Repo[Tenant, TenantId]
+trait TenantRepo extends Repo[Tenant, TenantId] {
+
+  /** Resolves the tenant serving a given hostname. */
+  def findByDomain(
+      domain: String
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Tenant]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE content->>'domain' = $$1 " +
+        s"AND $notDeletedSql LIMIT 1",
+      Seq(domain)
+    )
+
+  /** A domain identifies a tenant, so it cannot be claimed by a second one. */
+  def existsAnotherWithDomain(id: TenantId, domain: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    queryExists(
+      s"SELECT 1 FROM $tableName WHERE _id <> $$1 " +
+        s"AND content->>'domain' = $$2 AND $notDeletedSql LIMIT 1",
+      Seq(id.value, domain)
+    )
+}
 
 trait UserRepo extends Repo[User, UserId]
 
@@ -744,8 +831,8 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 trait EmailVerificationRepo
     extends TenantCapableRepo[EmailVerification, DatastoreId] {
 
-  /** Note the explicit `_tenant` predicate: raw SQL bypasses the tenant
-    * scoping that `forTenant` adds to the JsObject query methods.
+  /** Note the explicit `_tenant` predicate: raw SQL bypasses the tenant scoping
+    * that `forTenant` adds to the JsObject query methods.
     */
   def deleteByTeam(tenant: TenantId, team: TeamId)(implicit
       dbConn: DbConn,

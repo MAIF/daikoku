@@ -87,7 +87,7 @@ object testUtils {
 
         val triedLong = Try(
           Await.result(
-            daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()),
+            daikokuComponents.env.dataStore.tenantRepo.count(),
             1.second
           )
         )

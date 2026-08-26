@@ -94,14 +94,7 @@ object JobUtils {
 
         val tenants: Seq[TenantId] = users.flatMap(u => u.tenants).distinct
         env.dataStore.tenantRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(tenants.map(t => JsString(t.value)))
-              )
-            )
-          )
+          .findByIdsNotDeleted(tenants)
           .map { tenants =>
             tenants.find { t =>
               t.mailerSettings.isDefined && t.mailerSettings.get.mailerType != "console"

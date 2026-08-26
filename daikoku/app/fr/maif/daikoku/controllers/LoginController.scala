@@ -5,7 +5,12 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext, DaikokuUnauthenticatedAction}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext,
+  DaikokuUnauthenticatedAction
+}
 import fr.maif.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.daikoku.controllers.AppError.getErrorMessage
 import fr.maif.daikoku.domain.*
@@ -163,7 +168,7 @@ class LoginController(
   def getAuthContext: Action[AnyContent] = {
     Action.async { ctx =>
       env.dataStore.tenantRepo
-        .findOneNotDeleted(Json.obj("domain" -> ctx.domain))
+        .findByDomain(ctx.domain)
         .map {
           case Some(tenant) =>
             Ok(Json.obj("provider" -> tenant.authProvider.name))

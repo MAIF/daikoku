@@ -45,7 +45,6 @@ class TenantController(
 
   def namesOfTenants() =
     DaikokuAction.async(parse.json) { ctx =>
-      val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
       val tenantIds = ctx.request.body.as[JsArray].value.map(_.as[String])
       PublicUserAccess(
         AuditTrailEvent(
@@ -53,14 +52,7 @@ class TenantController(
         )
       )(ctx) {
         env.dataStore.tenantRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> tenantIdsJs
-              )
-            )
-          )
+          .findByIdsNotDeleted(tenantIds.map(TenantId.apply).toSeq)
           .map { tenants =>
             Ok(JsArray(tenants.map(t => JsString(t.name))))
           }
