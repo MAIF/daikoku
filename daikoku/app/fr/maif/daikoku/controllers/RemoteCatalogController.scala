@@ -51,9 +51,7 @@ class RemoteCatalogController(
     DaikokuAction.async { ctx =>
       TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed remote catalog history $catalogId"))(tenantId, ctx) {
         (tenant, _) =>
-          env.dataStore.auditTrailRepo
-            .forTenant(tenant.id)
-            .find(Json.obj("@userId" -> auditUserId), Some(Json.obj("@timestamp" -> -1)))
+          env.dataStore.auditTrailRepo.findByUser(tenant.id, auditUserId)
             .map { events =>
               val runs = events
                 .filter(e => (e \ "details" \ "catalog_id").asOpt[String].contains(catalogId))

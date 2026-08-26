@@ -510,33 +510,6 @@ case class ApiDocumentation(
   }
 
   def docIds() = flatDocIds(pages)
-  def fetchPages(tenant: Tenant)(implicit ec: ExecutionContext, env: Env) = {
-    env.dataStore.apiDocumentationPageRepo
-      .forTenant(tenant.id)
-      .findWithProjection(
-        Json.obj(
-          "_deleted" -> false,
-          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))
-        ),
-        Json.obj(
-          "_id" -> true,
-          "_humanReadableId" -> true,
-          "title" -> true,
-          "level" -> true,
-          "lastModificationAt" -> true,
-          "content" -> true,
-          "contentType" -> true
-        )
-      )
-      .map { list =>
-        // TODO: fetch remote content
-        pages
-          .map(page =>
-            list.find(o => (o \ "_id").as[String] == page.id.toString)
-          )
-          .collect { case Some(e) => e }
-      }
-  }
 }
 
 // "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"

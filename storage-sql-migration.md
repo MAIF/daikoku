@@ -36,8 +36,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 1 | Small repos: user session, password reset, account creation, evolution, reports info, email verification | **Done** — see git log |
 | 2 | Mid-size tenant-scoped repos: `tenantRepo`, `userRepo`, `teamRepo`, `notificationRepo`, `consumptionRepo`, `messageRepo`, `cmsRepo`, `assetRepo`, `subscriptionDemandRepo` | **Done** |
 | 3 | Big ones: `apiRepo`, `apiSubscriptionRepo`, `usagePlanRepo` | **Done** |
-| 4 | Repos the plan had not listed — 83 queries left: `operationRepo` (23), `stepValidatorRepo` (13), `keyringRepo` (11), `apiDocumentationPageRepo` (8), `auditTrailRepo` (7), `translationRepo` (7), `apiIssueRepo` (4), `jobRepo` (4), `apiSubscriptionTransferRepo` (3), `apiPostRepo` (2), `emailVerificationRepo` (1) | **Next** |
-| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | To do |
+| 4 | Repos the plan had not listed: `operationRepo`, `stepValidatorRepo`, `keyringRepo`, `apiDocumentationPageRepo`, `auditTrailRepo`, `translationRepo`, `apiIssueRepo`, `jobRepo`, `apiSubscriptionTransferRepo`, `apiPostRepo`, `emailVerificationRepo` | **Done** |
+| Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Next** — no caller left outside `PostgresDataStore` |
 | Final B | Slim down / dedupe the `Repo` layer | To do (optional but recommended) |
 
 ## The pattern to follow
@@ -163,6 +163,30 @@ which is not a tenant-scoped repo.
   columns, or move those callers to `find` + `map`.
 - **Indexes.** The ~60 JSONB expression indexes (`createIndexes`, `PostgresDataStore.scala`) stay
   valid — same storage. What the migration reveals they *don't* cover is collected below.
+
+## Phase 4 notes
+
+The repos the plan had forgotten turned out to be the most repetitive: 21 of `operationRepo`'s 23
+queries were the same "pending operations" copy-paste across the test suites, and most of the rest
+were `_id $in [...]`. Two generic helpers absorbed them: `deleteByIds`, the pendant of `findByIds`,
+and `findByIdsPaginated`.
+
+Three more queries that matched nothing:
+
+- **The queue's concurrency guard.** `QueueJob.deleteFirstOperation` asked
+  `exists({"Status": "InProgress"})` — capital S, while an `Operation` writes `status`.
+  `content->>'Status'` is always NULL, so `alreadyRunning` was always false and the queue could pick
+  up a second operation while one was still running.
+- **Team and tenant translations.** `TeamController.teamHome` and `TenantController.getTenant` look
+  translations up by `element.id`, but `Translation` is `(tenant, language, key, value)` — it has no
+  `element` field any more. Both endpoints have always answered an empty `translation` object.
+  Ported as-is: restoring it means deciding how a translation names its entity, which the model no
+  longer expresses.
+- **`fetchPages`** on `ApiDocumentation` had no caller at all. Removed.
+
+The last two `findWithProjection` went with them. Note the projection returned *every* column as
+text, so the documentation titles endpoint rendered `lastModificationAt` as a string; the typed
+replacement keeps that, since the front reads only `_id`, `title` and `level`.
 
 ## Phase 3 notes
 

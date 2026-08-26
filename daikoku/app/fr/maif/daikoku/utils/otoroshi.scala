@@ -496,9 +496,7 @@ class OtoroshiClient(env: Env) {
     val keyringIds = subscriptions.map(_.keyring).distinct
     val keyringsF = env.dataStore.keyringRepo
       .forTenant(tenant.id)
-      .findNotDeleted(
-        Json.obj("_id" -> Json.obj("$in" -> JsArray(keyringIds.map(_.asJson))))
-      )
+      .findByIds(keyringIds)
     EitherT
       .liftF[Future, JsArray, Seq[Keyring]](keyringsF)
       .flatMap { keyrings =>

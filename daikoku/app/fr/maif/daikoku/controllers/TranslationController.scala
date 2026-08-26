@@ -113,12 +113,10 @@ class TranslationController(
                 _save(translation)
               case Some(_) =>
                 env.dataStore.translationRepo
-                  .forTenant(ctx.tenant)
-                  .findOne(
-                    Json.obj(
-                      "language" -> translation.language,
-                      "key" -> translation.key
-                    )
+                  .findByKeyAndLanguage(
+                    ctx.tenant.id,
+                    translation.key,
+                    translation.language
                   )
                   .flatMap {
                     case Some(existingTranslation) =>
@@ -190,7 +188,7 @@ class TranslationController(
           case JsSuccess(translation, _) =>
             env.dataStore.translationRepo
               .forTenant(ctx.tenant.id)
-              .delete(Json.obj("_id" -> translation.id.value))
+              .deleteById(translation.id)
               .map { _ =>
                 Ok(Json.obj("done" -> true))
               }

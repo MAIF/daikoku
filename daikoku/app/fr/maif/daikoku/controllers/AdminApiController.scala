@@ -1044,8 +1044,7 @@ class CredentialsAdminApiController(
   def getCredentials(token: String) =
     DaikokuApiAction.async { ctx =>
       env.dataStore.keyringRepo
-        .forAllTenant()
-        .findOne(Json.obj("integrationToken" -> token))
+        .findByIntegrationTokenForAllTenants(token)
         .map {
           case None => NotFound(Json.obj("error" -> "Keyring not found"))
           case Some(keyring) => Ok(keyring.apiKey.asJson)

@@ -309,13 +309,8 @@ class OtoroshiEntitiesVerifierJob(
     }
 
     Time.concurrentTime(
-      jobRepo
-        .findOneNotDeleted(
-          Json.obj(
-            "jobName" -> JobName.OtoroshiEntitiesVerifier.value,
-            "status" -> JobStatus.Running.value
-          )
-        )
+      env.dataStore.JobInformationRepo
+        .findRunning(tenant.id, JobName.OtoroshiEntitiesVerifier.value)
         .flatMap {
           case Some(_) =>
             logger.info(

@@ -83,7 +83,7 @@ class UsagePlanService(
         otoroshiSynchronisator.run(updatedPlan.id, tenant)
       )
       _ <- runDemandUpdate(tenant, user, oldPlan, updatedPlan, api)
-      //FIXME: attention, peut etre il y en a qui sont blocked de base
+      // FIXME: attention, peut etre il y en a qui sont blocked de base
       _ <- EitherT.liftF(
         env.dataStore.subscriptionDemandRepo
           .changeState(
@@ -154,14 +154,14 @@ class UsagePlanService(
       newPlan: UsagePlan
   ): EitherT[Future, AppError, UsagePlan] = {
     oldPlan match {
-      //it's forbidden to update otoroshi target, must use migration API instead
+      // it's forbidden to update otoroshi target, must use migration API instead
       case _
           if oldPlan.otoroshiTarget.isDefined && oldPlan.otoroshiTarget
             .map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(
             _.otoroshiSettings
           ) =>
         EitherT.leftT(AppError.ForbiddenAction)
-      //Handle prices changes or payment settings deletion (addition is really forbidden)
+      // Handle prices changes or payment settings deletion (addition is really forbidden)
       case _
           if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
         EitherT.leftT(AppError.ForbiddenAction)
@@ -219,7 +219,7 @@ class UsagePlanService(
       newPlan: UsagePlan,
       api: Api
   ): EitherT[Future, AppError, UsagePlan] = {
-    //FIXME rewrite the following code
+    // FIXME rewrite the following code
     plan.some
       .map(oldPlan => {
         if (
@@ -238,37 +238,33 @@ class UsagePlanService(
           (oldPlan, newPlan)
         }
       })
-      .map {
-        case (oldPlan, plan) =>
-          if (
-            oldPlan.paymentSettings.isDefined && plan.paymentSettings.isEmpty
-          ) {
-            (
-              oldPlan,
-              plan.removeSubscriptionStep(step => step.name == "payment")
-            )
-          } else {
-            (oldPlan, plan)
-          }
+      .map { case (oldPlan, plan) =>
+        if (oldPlan.paymentSettings.isDefined && plan.paymentSettings.isEmpty) {
+          (
+            oldPlan,
+            plan.removeSubscriptionStep(step => step.name == "payment")
+          )
+        } else {
+          (oldPlan, plan)
+        }
       }
-      .map {
-        case (oldPlan, plan) =>
-          if (
-            oldPlan.otoroshiTarget.forall(
-              _.apikeyCustomization.customMetadata.isEmpty
-            ) &&
-            plan.otoroshiTarget.exists(
-              _.apikeyCustomization.customMetadata.nonEmpty &&
-                plan.subscriptionProcess.steps.forall(_.name != "teamAdmin")
-            )
-          ) {
-            plan.addSubscriptionStep(
-              ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
-              0.some
-            )
-          } else {
-            plan
-          }
+      .map { case (oldPlan, plan) =>
+        if (
+          oldPlan.otoroshiTarget.forall(
+            _.apikeyCustomization.customMetadata.isEmpty
+          ) &&
+          plan.otoroshiTarget.exists(
+            _.apikeyCustomization.customMetadata.nonEmpty &&
+              plan.subscriptionProcess.steps.forall(_.name != "teamAdmin")
+          )
+        ) {
+          plan.addSubscriptionStep(
+            ValidationStep.TeamAdmin(IdGenerator.token(32), api.team),
+            0.some
+          )
+        } else {
+          plan
+        }
       } match {
       case Some(zeUpdatedPlan) =>
         EitherT.pure[Future, AppError](zeUpdatedPlan)
@@ -342,15 +338,7 @@ class UsagePlanService(
                   )
                 validators <-
                   env.dataStore.stepValidatorRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "subscriptionDemand" -> Json.obj(
-                          "$in" -> JsArray(demands.map(_.id.asJson))
-                        ),
-                        "step" -> step.id
-                      )
-                    )
+                    .findByDemandsAndStep(tenant.id, demands.map(_.id), step.id)
                 _ <- Future.sequence(
                   validators
                     .map(v =>
@@ -378,15 +366,7 @@ class UsagePlanService(
                   )
                 validators <-
                   env.dataStore.stepValidatorRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "subscriptionDemand" -> Json.obj(
-                          "$in" -> JsArray(demands.map(_.id.asJson))
-                        ),
-                        "step" -> step.id
-                      )
-                    )
+                    .findByDemandsAndStep(tenant.id, demands.map(_.id), step.id)
                 _ <- Future.sequence(
                   demands
                     .filter(d =>

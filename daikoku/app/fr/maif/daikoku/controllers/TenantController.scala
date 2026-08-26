@@ -169,8 +169,7 @@ class TenantController(
         )
       )(tenantId, ctx) { (tenant, _) =>
         env.dataStore.translationRepo
-          .forTenant(ctx.tenant)
-          .find(Json.obj("element.id" -> tenant.id.asJson))
+          .findByElement(ctx.tenant.id, tenant.id.value)
           .map(translations => {
             val translationAsJsObject = translations
               .groupBy(t => t.language)

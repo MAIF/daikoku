@@ -452,6 +452,42 @@ trait Repo[Of, Id <: ValueType] {
     )
   }
 
+  /** Ids again, one page at a time and sorted on a JSON field. `page` is a
+    * zero-based page index, not a row offset.
+    */
+  def findByIdsPaginated(
+      ids: Seq[Id],
+      page: Int,
+      pageSize: Int,
+      sortBy: String,
+      order: SortingOrder = Asc
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    val (where, params) = scopedWhere(
+      Seq(s"_id = ANY($$1::text[])", notDeletedSql),
+      Seq(ids.map(_.value).toArray)
+    )
+    queryPaginated(
+      s"SELECT content FROM $tableName$where " +
+        s"ORDER BY content->>'$sortBy' ${order.name}",
+      params,
+      offset = page * pageSize,
+      limit = pageSize
+    )
+  }
+
+  /** Physical deletion of a batch of entities. Pendant of `findByIds`; unlike
+    * `deleteById` it reports how many rows were actually removed.
+    */
+  def deleteByIds(
+      ids: Seq[Id]
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
+    val (where, params) = scopedWhere(
+      Seq(s"_id = ANY($$1::text[])"),
+      Seq(ids.map(_.value).toArray)
+    )
+    execute(s"DELETE FROM $tableName$where", params)
+  }
+
   // NB: like the JsObject-based `delete` it replaces, this reports success
   // regardless of the number of rows actually removed.
   def deleteById(
@@ -725,7 +761,38 @@ trait EvolutionRepo extends Repo[Evolution, DatastoreId] {
 trait ReportsInfoRepo extends Repo[ReportsInfo, DatastoreId]
 
 trait ApiSubscriptionTransferRepo
-    extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
+    extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId] {
+
+  /** A transfer is claimed with the one-shot token carried by its link. */
+  def findByToken(tenant: TenantId, token: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[ApiSubscriptionTransfer]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'token' = $2 LIMIT 1",
+      Seq(tenant.value, token)
+    )
+  }
+
+  /** Only one transfer may be pending for a subscription, so issuing a new one
+    * drops the previous.
+    */
+  def deleteBySubscription(tenant: TenantId, subscription: ApiSubscriptionId)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'subscription' = $2",
+      Seq(tenant.value, subscription.value)
+    )
+  }
+}
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
 
@@ -1236,18 +1303,6 @@ trait ApiSubscriptionRepo
     )
   }
 
-  def deleteByIds(tenant: TenantId, ids: Seq[ApiSubscriptionId])(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long] = {
-    val repo = forTenant(tenant)
-    repo.execute(
-      s"DELETE FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
-      Seq(tenant.value, ids.map(_.value).toArray)
-    )
-  }
-
   /** Hands a subscription and its keyring siblings over to another team. */
   def moveToTeam(
       tenant: TenantId,
@@ -1279,9 +1334,132 @@ trait ApiSubscriptionRepo
   }
 }
 
-trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId]
+trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId] {
 
-trait JobInformationRepo extends TenantCapableRepo[JobInformation, DatastoreId]
+  private val keyringScope: String =
+    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+
+  def findByIdAndTeam(tenant: TenantId, id: String, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Keyring]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $keyringScope AND _id = $$2 AND content->>'team' = $$3 " +
+        "LIMIT 1",
+      Seq(tenant.value, id, team.value)
+    )
+  }
+
+  /** Resolves the keyring holding an Otoroshi apikey. */
+  def findByClientId(tenant: TenantId, clientId: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Keyring]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $keyringScope " +
+        "AND content->'apiKey'->>'clientId' = $2 LIMIT 1",
+      Seq(tenant.value, clientId)
+    )
+  }
+
+  def findByApiKey(tenant: TenantId, clientId: String, clientSecret: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Keyring]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $keyringScope " +
+        "AND content->'apiKey'->>'clientId' = $2 " +
+        "AND content->'apiKey'->>'clientSecret' = $3",
+      Seq(tenant.value, clientId, clientSecret)
+    )
+  }
+
+  /** Cross-tenant variants: an Otoroshi client id and an integration token are
+    * global, the caller has no tenant in hand when resolving them.
+    */
+  def findByClientIdForAllTenants(clientId: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Keyring]] = {
+    val repo = forAllTenant()
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_deleted' = 'false' " +
+        "AND content->'apiKey'->>'clientId' = $1 LIMIT 1",
+      Seq(clientId)
+    )
+  }
+
+  def findByIntegrationTokenForAllTenants(token: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Keyring]] = {
+    val repo = forAllTenant()
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_deleted' = 'false' " +
+        "AND content->>'integrationToken' = $1 LIMIT 1",
+      Seq(token)
+    )
+  }
+
+  /** The token a consumer uses to pull its apikey from the integration api. */
+  def findByIntegrationToken(tenant: TenantId, token: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Keyring]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $keyringScope AND content->>'integrationToken' = $$2 LIMIT 1",
+      Seq(tenant.value, token)
+    )
+  }
+}
+
+trait JobInformationRepo
+    extends TenantCapableRepo[JobInformation, DatastoreId] {
+
+  /** The last run of a job, whatever its outcome — how a job finds its cursor
+    * before claiming the next batch.
+    */
+  def findLastRun(tenant: TenantId, jobName: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[JobInformation]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'jobName' = $2 " +
+        "ORDER BY (content->>'startedAt')::bigint DESC LIMIT 1",
+      Seq(tenant.value, jobName)
+    )
+  }
+
+  /** A run still holding the lock, which is what stops a second one from
+    * starting.
+    */
+  def findRunning(tenant: TenantId, jobName: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[JobInformation]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'jobName' = $2 AND content->>'status' = $3 " +
+        "LIMIT 1",
+      Seq(tenant.value, jobName, JobStatus.Running.value)
+    )
+  }
+}
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
 
@@ -1733,7 +1911,57 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
   }
 }
 
-trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
+trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId] {
+
+  /** Audit events stay schemaless — `Of` is `JsObject` — so these methods still
+    * return raw JSON; only the query surface is typed.
+    */
+  def findBetween(tenant: TenantId, from: Long, to: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[JsObject]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND (content->>'@timestamp')::bigint >= $2 " +
+        "AND (content->>'@timestamp')::bigint <= $3 " +
+        "ORDER BY (content->>'@timestamp')::bigint DESC",
+      Seq(
+        tenant.value,
+        java.lang.Long.valueOf(from),
+        java.lang.Long.valueOf(to)
+      )
+    )
+  }
+
+  /** The events a given actor produced, most recent first. */
+  def findByUser(tenant: TenantId, userId: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[JsObject]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'@userId' = $2 " +
+        "ORDER BY (content->>'@timestamp')::bigint DESC",
+      Seq(tenant.value, userId)
+    )
+  }
+
+  /** Drops the events older than a cut-off, across every tenant. */
+  def deleteOlderThan(millis: Long)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forAllTenant()
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE (content->>'@timestamp')::bigint < $1",
+      Seq(java.lang.Long.valueOf(millis))
+    )
+  }
+}
 
 trait ConsumptionRepo
     extends TenantCapableRepo[ApiKeyConsumption, DatastoreId] {
@@ -1877,7 +2105,62 @@ trait ConsumptionRepo
   }
 }
 
-trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId]
+trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
+
+  /** A translation is keyed by (key, language). */
+  def findByKeyAndLanguage(tenant: TenantId, key: String, language: String)(
+      implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Translation]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'key' = $2 AND content->>'language' = $3 LIMIT 1",
+      Seq(tenant.value, key, language)
+    )
+  }
+
+  /** The translations attached to one entity.
+    *
+    * Beware: `Translation` is `(tenant, language, key, value)` — it has no
+    * `element` field any more, so `content->'element'->>'id'` is always NULL
+    * and this returns nothing. Its two callers, `TeamController.teamHome` and
+    * `TenantController.getTenant`, therefore always answer an empty
+    * `translation` object. Ported as-is: bringing it back means deciding how a
+    * translation names the entity it belongs to, which the current model no
+    * longer expresses.
+    */
+  def findByElement(tenant: TenantId, element: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Translation]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->'element'->>'id' = $2",
+      Seq(tenant.value, element)
+    )
+  }
+
+  /** Keys matching a domain prefix, case-insensitively — the mail templates are
+    * grouped that way.
+    */
+  def findByKeyPattern(tenant: TenantId, pattern: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Translation]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'key' ~* $2",
+      Seq(tenant.value, pattern)
+    )
+  }
+}
 
 trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
 
@@ -2171,7 +2454,57 @@ trait AssetRepo extends TenantCapableRepo[Asset, AssetId] {
   }
 }
 
-trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
+trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId] {
+
+  /** The operations still to be carried out by the deletion queue. */
+  def findPending(tenant: TenantId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[Operation]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'status' = ANY($2::text[])",
+      Seq(
+        tenant.value,
+        Array(OperationStatus.Idle.name, OperationStatus.InProgress.name)
+      )
+    )
+  }
+
+  /** Whether the queue is already busy, across every tenant.
+    *
+    * Note the field name: the former query read `Status`, capital S, while an
+    * `Operation` writes `status`. `content->>'Status'` is always NULL, so this
+    * guard was always false and the queue could pick up a second operation
+    * while one was still running.
+    */
+  def existsInProgress()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    val repo = forAllTenant()
+    repo
+      .queryOne(
+        s"SELECT content FROM ${repo.tableName} " +
+          s"WHERE content->>'status' = '${OperationStatus.InProgress.name}' " +
+          "LIMIT 1"
+      )
+      .map(_.isDefined)
+  }
+
+  /** The next operation waiting to be picked up, across every tenant. */
+  def findFirstIdle()(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Operation]] = {
+    val repo = forAllTenant()
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE content->>'status' = '${OperationStatus.Idle.name}' LIMIT 1"
+    )
+  }
+}
 
 trait SubscriptionDemandRepo
     extends TenantCapableRepo[SubscriptionDemand, DemandId] {
@@ -2280,7 +2613,67 @@ trait SubscriptionDemandRepo
   }
 }
 
-trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId]
+trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId] {
+
+  /** A validator is reached by the one-shot token sent in the validation mail.
+    */
+  def findByToken(tenant: TenantId, token: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[StepValidator]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'token' = $2 LIMIT 1",
+      Seq(tenant.value, token)
+    )
+  }
+
+  /** Validators of a step, among a set of demands. */
+  def findByDemandsAndStep(
+      tenant: TenantId,
+      demands: Seq[DemandId],
+      step: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[StepValidator]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'subscriptionDemand' = ANY($2::text[]) " +
+        "AND content->>'step' = $3",
+      Seq(tenant.value, demands.map(_.value).toArray, step)
+    )
+  }
+
+  def deleteByStep(tenant: TenantId, step: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'step' = $2",
+      Seq(tenant.value, step)
+    )
+  }
+
+  def deleteByDemand(tenant: TenantId, demand: DemandId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    val repo = forTenant(tenant)
+    repo.execute(
+      s"DELETE FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 " +
+        "AND content->>'subscriptionDemand' = $2",
+      Seq(tenant.value, demand.value)
+    )
+  }
+}
 
 trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
 
@@ -2348,6 +2741,20 @@ trait EmailVerificationRepo
   /** Note the explicit `_tenant` predicate: raw SQL bypasses the tenant scoping
     * that `forTenant` adds to the JsObject query methods.
     */
+  /** The pending verification a user follows from their mail. */
+  def findByRandomId(tenant: TenantId, randomId: String)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[EmailVerification]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "AND content->>'randomId' = $2 LIMIT 1",
+      Seq(tenant.value, randomId)
+    )
+  }
+
   def deleteByTeam(tenant: TenantId, team: TeamId)(implicit
       dbConn: DbConn,
       ec: ExecutionContext

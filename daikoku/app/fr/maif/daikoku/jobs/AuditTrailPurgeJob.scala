@@ -44,16 +44,11 @@ class AuditTrailPurgeJob(env: Env) {
       s"Run audit trail purge for last ${env.config.auditTrailPurgeMaxDate}"
     )
     env.dataStore.auditTrailRepo
-      .forAllTenant()
-      .delete(
-        Json.obj(
-          "@timestamp" -> Json.obj(
-            "$lt" -> DateTime
-              .now()
-              .minus(env.config.auditTrailPurgeMaxDate.toMillis)
-              .getMillis
-          )
-        )
+      .deleteOlderThan(
+        DateTime
+          .now()
+          .minus(env.config.auditTrailPurgeMaxDate.toMillis)
+          .getMillis
       )
   }
 }

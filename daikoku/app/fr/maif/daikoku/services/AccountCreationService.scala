@@ -571,8 +571,8 @@ class AccountCreationService {
       _ <- validateStep(step, demand)
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
       result <- runAccountCreationProcess(
         demand.id,
@@ -604,8 +604,8 @@ class AccountCreationService {
       _ <- rejectStep(step, demand, tenant, None)
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield ()
   }

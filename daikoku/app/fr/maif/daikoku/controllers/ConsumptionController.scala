@@ -395,15 +395,7 @@ class ConsumptionController(
           keyrings <-
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      subscriptions.map(_.keyring.asJson).distinct
-                    )
-                  )
-                )
-              )
+              .findByIds(subscriptions.map(_.keyring).distinct)
           subscribedApis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)

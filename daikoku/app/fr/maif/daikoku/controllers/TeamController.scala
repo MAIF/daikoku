@@ -82,8 +82,7 @@ class TeamController(
               ctx.setCtxValue("team.name", team.name)
 
               env.dataStore.translationRepo
-                .forTenant(ctx.tenant)
-                .find(Json.obj("element.id" -> team.id.asJson))
+                .findByElement(ctx.tenant.id, team.id.value)
                 .map(translations => {
                   val translationAsJsObject = translations
                     .groupBy(t => t.language)
@@ -193,8 +192,8 @@ class TeamController(
             case Some(encryptedString) =>
               val token =
                 decrypt(env.config.cypherSecret, encryptedString, ctx.tenant)
-              emailVerificationRepo
-                .findOneNotDeleted(Json.obj("randomId" -> token))
+              env.dataStore.emailVerificationRepo
+                .findByRandomId(ctx.tenant.id, token)
                 .flatMap {
                   case None =>
                     Future(

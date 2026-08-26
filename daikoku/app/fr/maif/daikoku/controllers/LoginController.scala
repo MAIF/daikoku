@@ -898,8 +898,7 @@ class LoginController(
         )
         validator <- EitherT.fromOptionF[Future, AppError, StepValidator](
           env.dataStore.stepValidatorRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("token" -> token)),
+            .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
         _ <- accountCreationService.validateAccountCreationWithStepValidator(
@@ -956,8 +955,7 @@ class LoginController(
         )
         validator <- EitherT.fromOptionF(
           env.dataStore.stepValidatorRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("token" -> token)),
+            .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
         _ <- accountCreationService.declineAccountCreationWithStepValidator(

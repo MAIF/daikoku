@@ -306,7 +306,8 @@ class DeletionService(
       // Phase 4 — physically delete in DB (otoroshi/stripe cleanup already done above)
       result <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .deleteByIds(tenant.id, subscriptions.map(_.id).distinct)
+          .forTenant(tenant)
+          .deleteByIds(subscriptions.map(_.id).distinct)
           .map(_ > 0)
       )
     } yield result
@@ -760,8 +761,7 @@ class DeletionService(
               .forTenant(tenant)
               .deleteById(demand.id)
             _ <- env.dataStore.stepValidatorRepo
-              .forTenant(tenant)
-              .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
+              .deleteByDemand(tenant.id, demand.id)
             _ <- env.dataStore.notificationRepo
               .deleteByDemand(tenant.id, demand.id)
           } yield ()

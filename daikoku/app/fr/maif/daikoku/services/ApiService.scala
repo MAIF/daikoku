@@ -1565,8 +1565,8 @@ class ApiService(
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield result
   }
@@ -1603,8 +1603,8 @@ class ApiService(
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield ()
   }
@@ -2484,8 +2484,7 @@ class ApiService(
       transfer <-
         EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](
           env.dataStore.apiSubscriptionTransferRepo
-            .forTenant(tenant)
-            .findOneNotDeleted(Json.obj("token" -> transferToken)),
+            .findByToken(tenant.id, transferToken),
           AppError.Unauthorized
         )
       _ <- EitherT.cond[Future][AppError, Unit](

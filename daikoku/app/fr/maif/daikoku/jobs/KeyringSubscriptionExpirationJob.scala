@@ -97,12 +97,10 @@ class KeyringSubscriptionExpirationJob(
     val jobId = DatastoreId(s"keyring-expiration-${IdGenerator.token(16)}")
     val now = DateTime.now()
 
-    jobRepo
-      .findOneNotDeleted(
-        Json.obj(
-          "jobName" -> JobName.KeyringSubscriptionExpiration.value,
-          "status" -> JobStatus.Running.value
-        )
+    env.dataStore.JobInformationRepo
+      .findRunning(
+        tenant.id,
+        JobName.KeyringSubscriptionExpiration.value
       )
       .flatMap {
         case Some(_) =>

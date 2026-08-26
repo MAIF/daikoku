@@ -104,8 +104,7 @@ class MockController(
   def fakeOtoroshiApiKey(clientId: String) =
     Action.async {
       env.dataStore.keyringRepo
-        .forAllTenant()
-        .findOne(Json.obj("apiKey.clientId" -> clientId))
+        .findByClientIdForAllTenants(clientId)
         .map {
           case Some(keyring) =>
             Ok(
@@ -152,8 +151,7 @@ class MockController(
       val r = scala.util.Random
 
       env.dataStore.keyringRepo
-        .forAllTenant()
-        .findOneNotDeleted(Json.obj("apiKey.clientId" -> apikey))
+        .findByClientIdForAllTenants(apikey)
         .flatMap {
           case None =>
             FastFuture.successful(
@@ -196,8 +194,7 @@ class MockController(
       val r = scala.util.Random
 
       env.dataStore.keyringRepo
-        .forAllTenant()
-        .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
+        .findByClientIdForAllTenants(clientId)
         .flatMap {
           case None =>
             FastFuture.successful(

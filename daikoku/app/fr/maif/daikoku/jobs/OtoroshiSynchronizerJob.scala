@@ -966,13 +966,8 @@ class OtoroshiSynchronizerJob(
 
     // FIXME: remove the timer after dev
     Time.concurrentTime(
-      jobRepo
-        .find(
-          Json.obj("jobName" -> JobName.ApiKeySynchronization.value),
-          sort = Some(Json.obj("startedAt" -> -1)),
-          maxDocs = 1
-        )
-        .map(_.headOption)
+      env.dataStore.JobInformationRepo
+        .findLastRun(tenant.id, JobName.ApiKeySynchronization.value)
         .flatMap {
           case Some(lastJob)
               if lastJob.status == JobStatus.Running && lastJob.expiresAt.isAfterNow =>

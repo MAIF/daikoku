@@ -925,26 +925,23 @@ class ApiController(
           val doc = api.documentation
           env.dataStore.apiDocumentationPageRepo
             .forTenant(tenant.id)
-            .findWithProjection(
-              Json.obj(
-                "_deleted" -> false,
-                "_id" -> Json
-                  .obj("$in" -> JsArray(doc.docIds().map(JsString.apply)))
-              ),
-              Json.obj(
-                "_id" -> true,
-                "_humanReadableId" -> true,
-                "title" -> true,
-                "lastModificationAt" -> true
-              )
-            )
+            .findByIds(doc.docIds().map(ApiDocumentationPageId.apply))
             .map { list =>
+              val byId = list.map(page => page.id.value -> page).toMap
+              // The former projection returned every column as text, so
+              // lastModificationAt was rendered as a string. Kept as is.
               val pages: Seq[JsObject] = api.documentation
                 .docIds()
-                .map(pageId => list.find(o => (o \ "_id").as[String] == pageId))
-                .collect {
-                  case Some(e) => e
-                }
+                .flatMap(byId.get)
+                .map(page =>
+                  Json.obj(
+                    "_id" -> page.id.value,
+                    "_humanReadableId" -> page.id.value,
+                    "title" -> page.title,
+                    "lastModificationAt" ->
+                      page.lastModificationAt.getMillis.toString
+                  )
+                )
               Right(
                 Json.obj(
                   "pages" -> SeqApiDocumentationDetailPageFormat
@@ -1178,8 +1175,7 @@ class ApiController(
         )
         validator <- EitherT.fromOptionF(
           env.dataStore.stepValidatorRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("token" -> token)),
+            .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
 
@@ -1211,8 +1207,7 @@ class ApiController(
           )
           validator <- EitherT.fromOptionF(
             env.dataStore.stepValidatorRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(Json.obj("token" -> token)),
+              .findByToken(ctx.tenant.id, token),
             AppError.EntityNotFound("token")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -1243,8 +1238,7 @@ class ApiController(
           )
           validator <- EitherT.fromOptionF(
             env.dataStore.stepValidatorRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(Json.obj("token" -> token)),
+              .findByToken(ctx.tenant.id, token),
             AppError.EntityNotFound("token")
           )
           _ <- apiService.declineProcessWithStepValidator(validator, ctx.tenant)
@@ -1334,8 +1328,7 @@ class ApiController(
           )
           _ <- EitherT.right[AppError](
             env.dataStore.stepValidatorRepo
-              .forTenant(ctx.tenant)
-              .delete(Json.obj("subscriptionDemand" -> demand.id.asJson))
+              .deleteByDemand(ctx.tenant.id, demand.id)
           )
           _ <- EitherT.right[AppError](
             env.dataStore.notificationRepo
@@ -1465,10 +1458,7 @@ class ApiController(
         val customName =
           (ctx.request.body.as[JsObject] \ "customName").as[String].trim
         env.dataStore.keyringRepo
-          .forTenant(ctx.tenant)
-          .findOneNotDeleted(
-            Json.obj("_id" -> keyringId, "team" -> teamId)
-          )
+          .findByIdAndTeam(ctx.tenant.id, keyringId, TeamId(teamId))
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -1497,10 +1487,7 @@ class ApiController(
         (for {
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj("_id" -> keyringId, "team" -> team.id.asJson)
-              ),
+              .findByIdAndTeam(ctx.tenant.id, keyringId, team.id),
             AppError.EntityNotFound("keyring")
           )
           subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
@@ -1749,13 +1736,7 @@ class ApiController(
           keyrings <-
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(subscriptions.map(_.keyring.asJson).distinct)
-                  )
-                )
-              )
+              .findByIds(subscriptions.map(_.keyring).distinct)
           apis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
@@ -1885,7 +1866,7 @@ class ApiController(
         (for {
           cypheredInfos <- EitherT.fromOption[Future][AppError, String](ctx.request.getQueryString("token"), AppError.EntityNotFound("token"))
           transferToken <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
-          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
+          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.findByToken(ctx.tenant.id, transferToken),
             AppError.Unauthorized)
           _ <- EitherT.cond[Future][AppError, Unit](transfer.date.plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
           subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(transfer.subscription), AppError.SubscriptionNotFound)
@@ -1930,7 +1911,7 @@ class ApiController(
             date = DateTime.now()
           )
           cipheredToken = encrypt(env.config.cypherSecret, transfer.token, ctx.tenant)
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).delete(Json.obj("subscription" -> subscription.id.asJson)))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.deleteBySubscription(ctx.tenant.id, subscription.id).map(_ > 0))
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).save(transfer))
           link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve")}?token=$cipheredToken")
         } yield Ok(Json.obj("link" -> link)))
@@ -2252,15 +2233,7 @@ class ApiController(
                 apis.map(a =>
                   env.dataStore.apiDocumentationPageRepo
                     .forTenant(ctx.tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "_id" -> Json.obj(
-                          "$in" -> JsArray(
-                            a.documentation.docIds().map(JsString.apply)
-                          )
-                        )
-                      )
-                    )
+                    .findByIds(a.documentation.docIds().map(ApiDocumentationPageId.apply))
                     .map { pages =>
                       Json.obj(
                         "from" -> a.currentVersion.value,
@@ -2304,16 +2277,10 @@ class ApiController(
                 plans.map(p =>
                   env.dataStore.apiDocumentationPageRepo
                     .forTenant(ctx.tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "_id" -> Json.obj(
-                          "$in" -> JsArray(
-                            p.documentation
-                              .map(_.docIds().map(JsString.apply))
-                              .getOrElse(Seq.empty)
-                          )
-                        )
-                      )
+                    .findByIds(
+                      p.documentation
+                        .map(_.docIds().map(ApiDocumentationPageId.apply))
+                        .getOrElse(Seq.empty)
                     )
                     .map { pages =>
                       val str: String = p.customName
@@ -2353,13 +2320,7 @@ class ApiController(
               EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](
                 env.dataStore.apiDocumentationPageRepo
                   .forTenant(ctx.tenant.id)
-                  .find(
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> pages
-                      )
-                    )
-                  )
+                  .findByIds(pages.map(ApiDocumentationPageId.apply))
               )
             createdPages <-
               EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](
@@ -2435,13 +2396,7 @@ class ApiController(
               EitherT.liftF[Future, AppError, Seq[ApiDocumentationPage]](
                 env.dataStore.apiDocumentationPageRepo
                   .forTenant(ctx.tenant.id)
-                  .find(
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> pages
-                      )
-                    )
-                  )
+                  .findByIds(pages.map(ApiDocumentationPageId.apply))
               )
             createdPages <-
               EitherT.liftF[Future, AppError, Seq[ApiDocumentationDetailPage]](
@@ -2789,8 +2744,6 @@ class ApiController(
         ctx.setCtxValue("search", search)
 
         val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
-        val searchAsRegex =
-          Json.obj("$regex" -> searchPattern, "$options" -> "-i")
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
           teams <- {
@@ -2903,13 +2856,7 @@ class ApiController(
                   .findByApi(ctx.tenant.id, api.id)
                 keyrings <- env.dataStore.keyringRepo
                   .forTenant(ctx.tenant)
-                  .findNotDeleted(
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> JsArray(subs.map(_.keyring.asJson).distinct)
-                      )
-                    )
-                  )
+                  .findByIds(subs.map(_.keyring).distinct)
               } yield {
                 ctx.setCtxValue("api.id", api.id.value)
                 val keyringById = keyrings.map(k => k.id -> k).toMap
@@ -2967,16 +2914,12 @@ class ApiController(
       case Some(api) =>
         env.dataStore.apiPostRepo
           .forTenant(tenant.id)
-          .findWithPagination(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(api.posts.map(_.asJson))
-              )
-            ),
+          .findByIdsPaginated(
+            api.posts,
             offset,
             limit,
-            Json.obj("lastModificationAt" -> 1).some,
-            Desc.some
+            sortBy = "lastModificationAt",
+            order = Desc
           )
           .map(data =>
             Right(
@@ -3203,11 +3146,7 @@ class ApiController(
 
         env.dataStore.apiIssueRepo
           .forTenant(ctx.tenant.id)
-          .findOne(
-            Json.obj(
-              "_id" -> issueId
-            )
-          )
+          .findById(issueId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -3274,12 +3213,7 @@ class ApiController(
             case Some(api) =>
               env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "_id" -> Json
-                      .obj("$in" -> JsArray(api.issues.map(_.asJson)))
-                  )
-                )
+                .findByIds(api.issues)
                 .map(issues => issues.filter(!_.deleted))
                 .flatMap(issues =>
                   for {
@@ -3547,7 +3481,7 @@ class ApiController(
             (for {
               existingIssue <- EitherT.fromOptionF[Future, AppError, ApiIssue](env.dataStore.apiIssueRepo
                   .forTenant(ctx.tenant.id)
-                  .findOne(Json.obj("_id" -> issueId)), AppError.EntityNotFound("issue"))
+                  .findById(issueId), AppError.EntityNotFound("issue"))
               team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
                   .findByIdIncludingDeleted(teamId), AppError.TeamNotFound)
