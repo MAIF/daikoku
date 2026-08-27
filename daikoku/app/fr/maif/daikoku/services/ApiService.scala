@@ -1017,37 +1017,6 @@ class ApiService(
     } yield Json.obj("created" -> true)).value
   }
 
-  /** Delete a single subscription then reconcile its keyring: recompute the
-    * keyring's Otoroshi key without it, or delete the key + the keyring when no
-    * subscription references it anymore.
-    */
-  private def deleteSubscriptionAndSyncKeyring(
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      tenant: Tenant
-  )(implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
-    val kid = subscription.keyring
-    for {
-      _ <- env.dataStore.apiSubscriptionRepo
-        .forTenant(tenant.id)
-        .deleteByIdLogically(subscription.id)
-      _ <- env.dataStore.apiSubscriptionRepo
-        .countByKeyring(tenant.id, kid)
-        .flatMap {
-          case 0L =>
-            otoroshiSynchronisator
-              .runForDeletion(kid, tenant)
-              .flatMap(_ =>
-                env.dataStore.keyringRepo
-                  .forTenant(tenant)
-                  .deleteByIdLogically(kid)
-              )
-              .map(_ => ())
-          case _ => otoroshiSynchronisator.run(kid, tenant)
-        }
-    } yield ()
-  }
-
 //  def deleteApiSubscriptionsAsFlow(
 //      tenant: Tenant,
 //      apiOrGroupId: ApiId,
