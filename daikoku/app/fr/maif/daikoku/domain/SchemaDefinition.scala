@@ -3956,12 +3956,6 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A category of an Api"
     )
-    val DELETED: Argument[Boolean] = Argument(
-      "deleted",
-      BooleanType,
-      description = "If enabled, the page is considered deleted",
-      defaultValue = false
-    )
     val IDS = Argument(
       "ids",
       OptionInputType(ListInputType(StringType)),
@@ -4479,16 +4473,11 @@ object SchemaDefinition {
         Field(
           "pages",
           ListType(CmsPageType),
-          arguments = DELETED :: Nil,
           resolve = ctx => {
             _TenantAdminAccessTenant(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
-              ctx.ctx._1.cmsRepo
-                .findAllWithDeletedFlag(
-                  ctx.ctx._2.tenant.id,
-                  ctx.arg(DELETED)
-                )
+              ctx.ctx._1.cmsRepo.forTenant(ctx.ctx._2.tenant.id).findAll()
             }.map {
               case Right(value) => value
               case Left(r)      => throw NotAuthorizedError(r.toString)
@@ -4503,7 +4492,7 @@ object SchemaDefinition {
         Field(
           "page",
           OptionType(CmsPageType),
-          arguments = DELETED :: NAME :: PATH :: Nil,
+          arguments = NAME :: PATH :: Nil,
           resolve = ctx => {
             _UberPublicUserAccess(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
@@ -4518,8 +4507,7 @@ object SchemaDefinition {
                     .findOneByNameOrPath(
                       ctx.ctx._2.tenant.id,
                       maybeName,
-                      maybePath,
-                      ctx.arg(DELETED)
+                      maybePath
                     )
               }
             }.map {

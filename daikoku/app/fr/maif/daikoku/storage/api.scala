@@ -2314,33 +2314,15 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
     )
   }
 
-  /** The GraphQL `pages` / `page` fields let an admin list the *deleted* pages
-    * too, so `deleted` is an explicit filter here rather than the usual
-    * not-deleted default.
-    */
-  def findAllWithDeletedFlag(tenant: TenantId, deleted: Boolean)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[CmsPage]] = {
-    val repo = forTenant(tenant)
-    repo.query(
-      s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2",
-      Seq(tenant.value, deleted.toString)
-    )
-  }
-
   def findOneByNameOrPath(
       tenant: TenantId,
       name: Option[String],
-      path: Option[String],
-      deleted: Boolean
+      path: Option[String]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[CmsPage]] = {
     val repo = forTenant(tenant)
     val predicates = Seq.newBuilder[String]
-    val params = Seq.newBuilder[AnyRef]
-    var placeholder = 2
-    params += tenant.value += deleted.toString
+    val params = Seq.newBuilder[AnyRef] += tenant.value
+    var placeholder = 1
 
     name.foreach { value =>
       placeholder += 1
@@ -2355,7 +2337,7 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
 
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2 " +
+        s"WHERE $cmsScope " +
         predicates.result().map(p => s"AND $p ").mkString +
         "LIMIT 1",
       params.result()
