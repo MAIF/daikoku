@@ -2461,6 +2461,99 @@ object evolution_1900_d extends EvolutionScript {
     }
 }
 
+object evolution_1900_e extends EvolutionScript {
+  override def version: String = "19.0.0_e"
+
+  // The tables created with the `_deleted` column (allFields = true in the
+  // former PostgresDataStore.TABLES).
+  private val tablesWithDeletedColumn = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "users",
+    "api_posts",
+    "api_issues",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations",
+    "keyrings"
+  )
+
+  // Expression indexes on the JSON key, not on the column: dropping the column
+  // does not take them with it, so they have to go explicitly.
+  private val deletedIndexes = Seq(
+    "idx_api_deleted",
+    "idx_notification_deleted",
+    "idx_team_deleted",
+    "idx_plan_deleted",
+    "idx_user_deleted",
+    "idx_keyring_deleted"
+  )
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - drop the _deleted column and its indexes"
+      )
+
+      // Nothing reads or writes the flag any more: the read filter went with
+      // the typed queries, the write family was dead code, and the entities
+      // stopped serialising the key.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script:
+      //   ALTER TABLE <table> ADD COLUMN _deleted BOOLEAN;   -- 24 tables
+      //   UPDATE <table> SET _deleted = false;
+      //   CREATE INDEX idx_api_deleted          ON apis          ((content->>'_deleted'));
+      //   CREATE INDEX idx_notification_deleted ON notifications ((content->>'_deleted'));
+      //   CREATE INDEX idx_team_deleted         ON teams         ((content->>'_deleted'));
+      //   CREATE INDEX idx_plan_deleted         ON usage_plans   ((content->>'_deleted'));
+      //   CREATE INDEX idx_user_deleted         ON users         ((content->>'_deleted'));
+      //   CREATE INDEX idx_keyring_deleted      ON keyrings      ((content->>'_deleted'));
+      val statements =
+        deletedIndexes.map(index => s"DROP INDEX IF EXISTS $index;") ++
+          tablesWithDeletedColumn.map(table =>
+            s"ALTER TABLE $table DROP COLUMN IF EXISTS _deleted;"
+          )
+
+      statements
+        .foldLeft(Future.successful(())) { (acc, statement) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = statement)
+              .map(_ => logger.info(s"[evolution $version] :: $statement"))
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2491,7 +2584,8 @@ object evolutions {
       evolution_1900,
       evolution_1900_b,
       evolution_1900_c,
-      evolution_1900_d
+      evolution_1900_d,
+      evolution_1900_e
     )
   def run(
       dataStore: DataStore,

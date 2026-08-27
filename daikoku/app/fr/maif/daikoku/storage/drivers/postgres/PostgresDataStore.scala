@@ -423,36 +423,35 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  private val TABLES = Map(
-    "tenants" -> true,
-    "password_reset" -> true,
-    "account_creation" -> true,
-    "teams" -> true,
-    "apis" -> true,
-    "translations" -> true,
-    "messages" -> false,
-    "api_subscriptions" -> true,
-    "api_documentation_pages" -> true,
-    "notifications" -> true,
-    "consumptions" -> true,
-    "audit_events" -> false,
-    "users" -> true,
-    "user_sessions" -> false,
-    "api_posts" -> true,
-    "api_issues" -> true,
-    "evolutions" -> false,
-    "cmspages" -> true,
-    "operations" -> true,
-    "email_verifications" -> true,
-    "operations" -> true,
-    "subscription_demands" -> true,
-    "step_validators" -> true,
-    "usage_plans" -> true,
-    "assets" -> true,
-    "reports_info" -> true,
-    "api_subscription_transfers" -> true,
-    "job_informations" -> true,
-    "keyrings" -> true
+  private val TABLES = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "messages",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "audit_events",
+    "users",
+    "user_sessions",
+    "api_posts",
+    "api_issues",
+    "evolutions",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations",
+    "keyrings"
   )
 
   private lazy val reactivePg =
@@ -796,20 +795,18 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
 
   def createDatabase(): Future[Any] = {
     logger.debug("Checking status of database ...")
-    Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
+    Future.sequence(TABLES.map(createTable))
   }
 
   private def createIndexes(): Future[Unit] = {
     val indexes = Seq(
       "CREATE INDEX IF NOT EXISTS idx_api_team ON apis ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_api_tenant ON apis ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_api_deleted ON apis ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_api_hrid ON apis ((content->>'_humanReadableId'));",
       "CREATE INDEX IF NOT EXISTS idx_api_version ON apis ((content->>'currentVersion'));",
       "CREATE INDEX IF NOT EXISTS idx_api_state ON apis ((content->>'state'));",
       "CREATE INDEX IF NOT EXISTS idx_api_plans ON apis USING GIN ((content->'possibleUsagePlans'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_tenant ON notifications ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_notification_deleted ON notifications ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_team ON notifications ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_team ON notifications ((content-> 'action' ->> 'team'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_api ON notifications ((content-> 'action' ->> 'api'));",
@@ -817,14 +814,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_notification_action_type ON notifications ((content-> 'action' ->> 'type'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_status ON notifications ((content-> 'status' ->> 'status'));",
       "CREATE INDEX IF NOT EXISTS idx_team_tenant ON teams ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_team_deleted ON teams ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_team_hrid ON teams ((content->>'_humanReadableId'));",
       "CREATE INDEX IF NOT EXISTS idx_plan_tenant ON usage_plans ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_plan_deleted ON usage_plans ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_session_userid ON user_sessions ((content->>'userId'));",
       "CREATE INDEX IF NOT EXISTS idx_session_useremail ON user_sessions ((content->>'userEmail'));",
       "CREATE INDEX IF NOT EXISTS idx_session_expires ON user_sessions ((content->>'expires'));",
-      "CREATE INDEX IF NOT EXISTS idx_user_deleted ON users ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_user_hrid ON users ((content->>'_humanReadableId'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_tenant ON api_subscriptions ((content->>'_tenant'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_api ON api_subscriptions ((content->>'api'));",
@@ -837,7 +831,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_subscription_clientId ON api_subscriptions ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_team ON api_subscriptions ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_tenant ON keyrings ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_keyring_deleted ON keyrings ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_clientId ON keyrings ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
@@ -896,11 +889,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     }
   }
 
-  def createTable(table: String, allFields: Boolean): Future[Any] = {
+  def createTable(table: String): Future[Any] = {
     logger.debug(
       s"CREATE TABLE $getSchema.$table (" +
         s"_id character varying PRIMARY KEY," +
-        s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)"
     )
 
@@ -919,7 +911,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
             .rawQuery(
               s"CREATE TABLE $getSchema.$table (" +
                 s"_id character varying PRIMARY KEY," +
-                s"${if (allFields) "_deleted BOOLEAN," else ""}" +
                 s"content JSONB)"
             )
             .map { _ =>
@@ -996,9 +987,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     logger.debug("importFromStream")
 
     Future
-      .sequence(TABLES.map { case (key, _) =>
-        reactivePg.rawQuery(s"TRUNCATE $key")
-      })
+      .sequence(TABLES.map(table => reactivePg.rawQuery(s"TRUNCATE $table")))
       .flatMap { _ =>
         source
           .via(
