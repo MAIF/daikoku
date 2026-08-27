@@ -245,6 +245,41 @@ builds them in the first place.
 
 ### C. Physical deletion — **in progress**
 
+> **Resume state (machine switch, 2026-08-27) — the last `wip:` commit is NOT compile-verified.**
+> First thing on the new machine: `cd daikoku && mise exec -- sbt "Test/compile"`, fix any errors
+> (likely candidates: types around `deleteTeamByQueue(...).value` / `tenantRepo.deleteById` in
+> `TenantService.deleteTenant`, or `json.OtoroshiSettingsFormat` in KeyringService/QueueJob), then
+> `cd daikoku && mise exec -- sbt test` (broad run — touches deletion + admin). `HomeControllerFailoverSpec`
+> "services going down" timeout is flaky, ignore it.
+>
+> **Write-side: DONE** for subscription/keyring/api-cascade, team, user, plan (committed earlier), and
+> now — in the two `wip:` commits — **Tenant** and the **admin-api**:
+> - **Option B** (self-contained keyring op): the `(Keyring, Delete)` operation payload carries the
+>   full `OtoroshiSettings` (not just the id), so the queued cleanup no longer resolves the tenant and
+>   survives the tenant being deleted. Touched `QueueJob.deleteKeyring`,
+>   `DeletionService.otoroshiTargetPayload(keyring, tenant)`, `KeyringService.deleteKeyring`. Needed
+>   because the queue is not FIFO (`findFirstIdle` has no ORDER BY, `Operation` has no timestamp).
+> - **Tenant slice**: `TenantService.deleteTenant` cascades every team through `deleteTeamByQueue`,
+>   sweeps leftover tenant-scoped rows, and `tenantRepo.deleteById(tenant.id)` (physical, was
+>   `save(deleted = true)`). `findAllTeams` is called on `teamRepo` directly, not on `.forTenant(...)`.
+> - **Admin-api**: the generic `doDelete` (utils/admin.scala) is always `deleteById` now. The
+>   `?logically=true` / `?notDeleted=true` params are left vestigial (no-op) — remove them cleanly in
+>   step 5. Six AdminApiControllerSpec contract tests updated (GET after DELETE → 404).
+>
+> **Still to do (in order):** step 3 (remove the read-side `_deleted` filter — first `storage/api.scala`:
+> `notDeletedSql` + every `content->>'_deleted' = 'false'`; then the ~40 raw-SQL sites in
+> jobs/controllers/services/CommonServices — **NOT** `evolutions.scala`, it replays the past and the
+> column still exists at its run). Behaviour-preserving: no `_deleted = true` row survives after the
+> `evolution_1900_c` purge. Step 4 (CMS: drop the dead GraphQL `deleted` arg + filter in
+> `findAllWithDeletedFlag` / `findOneByNameOrPath`). Step 5 (drop the column: `ALTER TABLE DROP COLUMN`
+> on the 24 `allFields = true` tables, strip `_deleted` from the ~20 Formats + case classes,
+> `idx_*_deleted`, the partial index `uniq_team_personal_user`, `deleteByIdLogically` /
+> `deleteAllLogically`, the vestigial admin `logically`/`notDeleted` params, `createTable` allFields).
+>
+> Note the earlier reverted attempt at step 3 broke because the write-side wasn't actually finished —
+> Tenant still soft-deleted and the admin-api deliberately exposed logical deletion. Both are handled
+> now, so step 3 can proceed once the current `wip:` commits are green.
+
 The end goal is dropping the `_deleted` column entirely. That retires `notDeletedSql`, the whole
 `deleteLogically*` family, the `_deleted` JSON key, the `idx_*_deleted` indexes, and collapses the
 `findById*` / `findByIds*` / `findAll*` `IncludingDeleted` pairs. But the column can only fall once
