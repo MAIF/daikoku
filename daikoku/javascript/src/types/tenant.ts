@@ -174,6 +174,7 @@ export interface ITenantFull extends ITenant {
   bucketSettings: IBucketSettings;
   daikokuHeader: { name: string; value: string };
   domain: string;
+  additionalDomains: Array<string>;
   enabled: boolean;
   isPrivate: boolean;
   mailerSettings: IMailerSettings;
@@ -321,30 +322,30 @@ export interface ILogger {
 
 type AlgoSettings =
   | {
-      type: 'HSAlgoSettings';
-      size: number;
-      secret: string;
-    }
+    type: 'HSAlgoSettings';
+    size: number;
+    secret: string;
+  }
   | {
-      type: 'RSAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'RSAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'ESAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'ESAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'JWKSAlgoSettings';
-      url: string;
-      timeout: number;
-      headers: { [x: string]: string };
-      ttl: number;
-      kty: string;
-    };
+    type: 'JWKSAlgoSettings';
+    url: string;
+    timeout: number;
+    headers: { [x: string]: string };
+    ttl: number;
+    kty: string;
+  };
 
 export type OAuthSettings = {
   sessionMaxAge: number;

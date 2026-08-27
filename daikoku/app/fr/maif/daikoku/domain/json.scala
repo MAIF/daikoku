@@ -1785,6 +1785,7 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
+            additionalDomains = (json \ "additionalDomains").asOpt[Set[String]].getOrElse(Set.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(using DaikokuStyleFormat),
@@ -1881,6 +1882,7 @@ object json {
         "_deleted" -> o.deleted,
         "name" -> o.name,
         "domain" -> o.domain,
+        "additionalDomains" -> JsArray(o.additionalDomains.map(JsString.apply).toSeq),
         "defaultLanguage" -> o.defaultLanguage
           .fold(JsNull.as[JsValue])(JsString.apply),
         "enabled" -> o.enabled,

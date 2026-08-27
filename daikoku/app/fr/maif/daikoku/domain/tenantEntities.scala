@@ -416,6 +416,7 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String,
+    additionalDomains: Set[String] = Set.empty,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
