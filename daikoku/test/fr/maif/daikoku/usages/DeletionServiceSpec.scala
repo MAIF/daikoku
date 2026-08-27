@@ -1170,6 +1170,178 @@ class DeletionServiceSpec
       maybeKeyring mustBe None
     }
 
+    // TDD pilot for the physical-deletion refactor (point C, stage 1-2).
+    //
+    // Target behaviour: the DELETE request removes the whole DB closure
+    // (api + its subscriptions + orphaned keyrings) *physically and atomically*
+    // in its own transaction, and defers ALL external Otoroshi/Stripe cleanup
+    // to the deletion queue. So the moment the request returns:
+    //   - no row of the closure is left behind, not even flagged _deleted;
+    //   - the Otoroshi apikey is STILL present (its removal is queued, not done
+    //     synchronously in the request — this is the timeout fix);
+    //   - the operations carrying that external cleanup are pending.
+    // Then, once the queue drains, the Otoroshi apikey is gone.
+    //
+    // This is RED today on two counts: DeletionService soft-deletes the api at
+    // request time (so it is still present right after the response), and it
+    // calls Otoroshi synchronously in the request (so the apikey is already
+    // gone right after the response). It goes GREEN once the closure is deleted
+    // in the enqueue transaction and the Otoroshi call is moved to the queue.
+    //
+    // The immediate checks run right after the blocking 200, before the queue's
+    // first tick (>= 1s away), so they need no queue control.
+    "physically remove the API/subscriptions atomically and defer the Otoroshi cleanup to the queue" in {
+      // Fetches the Otoroshi apikeys of the container and tells whether the
+      // given clientId is still known there.
+      def otoroshiKnowsApiKey(clientId: String): Boolean = {
+        val keys = Await.result(
+          daikokuComponents.env.wsClient
+            .url(
+              s"http://otoroshi-api.oto.tools:${container.mappedPort(8080)}" +
+                "/apis/apim.otoroshi.io/v1/apikeys"
+            )
+            .withHttpHeaders(
+              "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+              "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+              "Host" -> "otoroshi-api.oto.tools"
+            )
+            .withFollowRedirects(false)
+            .withRequestTimeout(10.seconds)
+            .get()
+            .map(_.json),
+          10.seconds
+        )
+        keys.asOpt[JsArray].exists { arr =>
+          arr.value.exists(k => (k \ "clientId").asOpt[String].contains(clientId))
+        }
+      }
+
+      val plan = UsagePlan(
+        id = UsagePlanId("atomic-purge-plan"),
+        tenant = tenant.id,
+        customName = "atomic purge plan",
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = SubscriptionProcess(),
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("atomic-purge-api"),
+        name = "atomic purge API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+      val keyring = Keyring(
+        id = KeyringId("atomic-purge-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-atomicKeyring",
+        integrationToken = "atomic-purge-token"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("atomic-purge-sub"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = user.id,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
+      )
+
+      // Precondition: the Otoroshi apikey exists before the deletion (seeded by
+      // cleanOtoroshiServer in `before`).
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+
+      // No row of the DB closure survives the request — not even flagged
+      // _deleted (findByIdIncludingDeleted returns soft-deleted rows too).
+      Await.result(
+        daikokuComponents.env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(api.id),
+        5.second
+      ) mustBe None
+      Await.result(
+        daikokuComponents.env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(sub.id),
+        5.second
+      ) mustBe None
+      Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(keyring.id),
+        5.second
+      ) mustBe None
+
+      // The Otoroshi cleanup was NOT done synchronously in the request: the
+      // apikey is still there, and an operation carrying its removal is pending.
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+      Await.result(
+        daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+        5.second
+      ) must not be empty
+
+      // Once the queue drains, the Otoroshi apikey is finally removed.
+      org.awaitility.Awaitility.await.atMost(15.seconds.toJava) until { () =>
+        Await
+          .result(
+            daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+            5.second
+          )
+          .isEmpty
+      }
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe false
+    }
+
     "be completed by delete a plan" in {
       val userPersonalTeam = Team(
         id = TeamId("user-team"),
@@ -2960,7 +3132,8 @@ class DeletionServiceSpec
       )
       maybeSub mustBe empty
 
-      // otoroshi key must be deleted
+      // otoroshi key must be deleted (deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -3104,7 +3277,9 @@ class DeletionServiceSpec
       // keyring model: parent field no longer exists
       // maybeChildSub.flatMap(_.parent) mustBe None
 
-      // otoroshi key must still exist with only child route
+      // otoroshi key must still exist with only child route (recompute
+      // deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -3248,7 +3423,9 @@ class DeletionServiceSpec
       )
       maybeParentSub.isDefined mustBe true
 
-      // otoroshi key must still exist with only the parent route
+      // otoroshi key must still exist with only the parent route (recompute
+      // deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",

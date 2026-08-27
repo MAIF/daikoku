@@ -243,20 +243,53 @@ The drop itself is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: `evoluti
 no down-script. The `CREATE INDEX` lines are gone from `createIndexes`, so a fresh database never
 builds them in the first place.
 
-### C. Physical deletion — **discuss first, do not start**
+### C. Physical deletion — **in progress**
 
-Grey areas remain; this needs a conversation before any code. What we know:
+The end goal is dropping the `_deleted` column entirely. That retires `notDeletedSql`, the whole
+`deleteLogically*` family, the `_deleted` JSON key, the `idx_*_deleted` indexes, and collapses the
+`findById*` / `findByIds*` / `findAll*` `IncludingDeleted` pairs. But the column can only fall once
+**nothing soft-deletes any more**, on either side — so this lands write-path by write-path first,
+column removal last.
 
-- It would retire `notDeletedSql`, the whole `deleteLogically*` family, the `_deleted` column, the
-  `_deleted` JSON key and the `idx_*_deleted` indexes.
-- It would also collapse `findById` / `findByIdIncludingDeleted` (and the `findByIds` / `findAll`
-  pairs). Those exist only because deletion happens in two steps: `DeletionService` flags the entity
-  and queues an `Operation`, then `QueueJob` re-reads it — already flagged — to carry the cascade
-  through. 14 call sites in `QueueJob` and `DeletionService` depend on that. Make deletion immediate
-  and the escape hatch loses every caller.
+**The pattern (validated, TDD).** Deletion used to soft-delete the rows and run the Otoroshi/Stripe
+cleanup *synchronously in the request*, then physically delete later from the queue — a timeout risk
+on a large closure, and a window of half-deleted state. The replacement, proven on the
+api→subscriptions→keyrings cascade:
+
+- delete the whole DB closure **physically and atomically** in one `withTransaction`;
+- defer every external call to the deletion queue via **self-contained operations** — the payload
+  carries what the call needs (an orphaned keyring's `{clientId, otoroshiSettings}`), because the row
+  is gone. `(Keyring, Delete)` deletes the apikey, `(Keyring, Sync)` recomputes it (row still there),
+  the api's own DB cleanup moves into the transaction so `(Api, Delete)` disappears.
+
+The async move is what forces the transaction: you cannot hold a DB transaction open across N
+Otoroshi round-trips, so "atomic + no synchronous HTTP" and "no half-deleted closure" are the same
+requirement. Idempotency is already there (the external calls tolerate 404 on retry); a frozen
+payload is more deterministic on retry than re-reading a mutated tombstone.
+
+**Landed:** subscription, keyring, and the api cascade — both the `DeletionService` cascade and the
+standalone subscription-deletion endpoint (they share `deleteSubscriptions`). The old
+`ApiService.deleteSubscriptionAndSyncKeyring` turned out to be dead (referenced only from a commented
+block), so that path had no separate implementation to convert.
+
+**Still soft-delete (write-side, one slice each):** `Team` (`DeletionService.deleteTeam`), `User`
+(`deleteUser`), `UsagePlan` (`deletePlanByQueue`), and the generic admin CRUD (`utils/admin.scala`,
+`logically` flag). During the transition the admin-api DELETE is therefore inconsistent: an api is
+removed physically (a read after DELETE returns 404), a team/user/plan is still flagged.
+
+**Then the column removal (read-side, one pass, once all writes are physical):** drop `notDeletedSql`
+from its ~15 methods, collapse the `*IncludingDeleted` pairs (triage the ~174 call sites by category
+— admin validation / GraphQL Fetchers / audit — most fall away once deletion is atomic), strip the
+`_deleted` field from the ~20 `Format`s, and drop the column + `idx_*_deleted` + the
+`deleteByIdLogically` SQL (`WHERE _id = $1 AND _deleted = false`). Watch the partial unique index
+`uniq_team_personal_user … WHERE _deleted = false`.
+
 - **Trap:** four entities are already physically deleted in practice, because their `Format.writes`
   never emits `_deleted` — `Message`, `Operation`, `Translation`, `Asset`. They show none of the work
   the others need, so validating on them would give a false sense of completion.
+- **Testing note:** the external cleanup is now asynchronous, so any test that asserts Otoroshi/Stripe
+  state right after a deletion must first wait for the queue, via the shared
+  `awaitDeletionQueueDrained(tenant)` helper in `suites.scala`.
 
 ## Recipe per entity
 

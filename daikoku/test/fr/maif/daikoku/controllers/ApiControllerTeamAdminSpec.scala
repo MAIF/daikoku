@@ -504,6 +504,9 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       )(using tenant, userSession)
       respVerifDk.status mustBe 404
 
+      // otoroshi apikey deletion is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
+
       val respVerifOto = httpJsonCallBlocking(
         path = s"/api/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",

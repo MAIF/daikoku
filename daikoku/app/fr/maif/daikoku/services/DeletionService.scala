@@ -159,42 +159,6 @@ class DeletionService(
     } yield ctx).value
   }
 
-  private def finalizeSubscriptionDeletion(
-      ctx: SubscriptionContext,
-      tenant: Tenant
-  ): Future[Either[AppError, Unit]] =
-    (for {
-      _ <- ctx.plan.paymentSettings match {
-        case Some(settings) =>
-          EitherT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(tenant)
-              .save(
-                Operation(
-                  DatastoreId(IdGenerator.token(24)),
-                  tenant = tenant.id,
-                  itemId = ctx.subscription.id.value,
-                  itemType = ItemType.ThirdPartySubscription,
-                  action = OperationAction.Delete,
-                  payload = Json
-                    .obj(
-                      "paymentSettings" -> settings.asJson,
-                      "thirdPartySubscriptionInformations" -> ctx.subscription.thirdPartySubscriptionInformations
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue]
-                    )
-                    .some
-                )
-              )
-          )
-        case None => EitherT.pure[Future, AppError](())
-      }
-      _ <- EitherT.liftF(
-        env.dataStore.notificationRepo.forTenant(tenant).save(ctx.notif)
-      )
-    } yield ()).value
-
   /** Delete subscriptions for a given API:
     *   1. Disable subs in DB (signal for Otoroshi sync) 2. Per impacted
     *      keyring: recompute its key without the deleted subs, or delete the
@@ -223,62 +187,39 @@ class DeletionService(
     )
 
     val deletedIds = subscriptions.map(_.id).toSet
+    val affectedKeyringIds = subscriptions.map(_.keyring).distinct
 
     for {
-      // the keyrings impacted by this deletion
-      affectedKeyringIds = subscriptions.map(_.keyring).distinct
-      // Phase 1 — disable subs in DB so the synchronizer sees them as disabled
-      // TODO(transactions): le updateManyByQuery (DB) et les appels otoroshiSynchronizerJob (HTTP) ci-dessous
-      // ne sont pas atomiques. Si le sync Otoroshi échoue après le disable en DB, les subs restent disabled
-      // en base mais actives côté Otoroshi. Non transactionnable sans saga ou compensation explicite.
-      _ <- EitherT.liftF(
-        env.dataStore.apiSubscriptionRepo
-          .disableByIds(tenant.id, subscriptions.map(_.id).distinct)
+      // Split the impacted keyrings: orphaned (no subscription left → its
+      // Otoroshi apikey must be deleted) vs surviving (at least one
+      // subscription left → its apikey must be recomputed without the deleted
+      // subs). Both are carried out later, in the queue, never here.
+      keyringDecisions <- EitherT
+        .liftF[Future, AppError, Seq[(KeyringId, Boolean)]](
+          Future.sequence(affectedKeyringIds.map { kid =>
+            env.dataStore.apiSubscriptionRepo
+              .findByKeyring(tenant.id, kid)
+              .map { keyringSubs =>
+                val remaining =
+                  keyringSubs.filterNot(s => deletedIds.contains(s.id))
+                (kid, remaining.isEmpty)
+              }
+          })
+        )
+      orphanedKeyringIds = keyringDecisions.collect { case (kid, true) => kid }
+      survivingKeyringIds = keyringDecisions.collect { case (kid, false) =>
+        kid
+      }
+      // Load the orphaned keyrings before deleting them, to capture the
+      // Otoroshi target (clientId + settings id) the queued cleanup will need.
+      orphanedKeyrings <- EitherT.liftF(
+        env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findByIdsIncludingDeleted(orphanedKeyringIds)
       )
-      // Phase 2 — per impacted keyring, recompute its Otoroshi key without the
-      // deleted subs, or delete the key + the keyring when no subscription
-      // references it anymore.
-      deletedKeyringIds <- EitherT.liftF[Future, AppError, Seq[KeyringId]](
-        Future
-          .sequence(
-            affectedKeyringIds.map { kid =>
-              env.dataStore.apiSubscriptionRepo
-                .findByKeyring(tenant.id, kid)
-                .flatMap { keyringSubs =>
-                  val remaining =
-                    keyringSubs.filterNot(s => deletedIds.contains(s.id))
-                  if (remaining.isEmpty)
-                    otoroshiSynchronizerJob
-                      .runForDeletion(kid, tenant)
-                      .flatMap(_ =>
-                        keyringService.deleteKeyring(tenant.id, kid)
-                      )
-                      .map(_ => Some(kid))
-                  else otoroshiSynchronizerJob.run(kid, tenant).map(_ => None)
-                }
-            }
-          )
-          .map(_.flatten)
-      )
-      // Phase 3b — delete stale pending notifications referencing the deleted
-      // subscriptions, or the keyrings that have just been deleted
-      _ <- EitherT.right[AppError](
-        {
-          val repo = env.dataStore.notificationRepo.forTenant(tenant)
-          repo.execute(
-            s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
-              "AND (content->'action'->>'subscription' = ANY($2::text[]) " +
-              "OR content->'action'->>'keyring' = ANY($3::text[]))",
-            Seq(
-              tenant.id.value,
-              subscriptions.map(_.id.value).toArray,
-              deletedKeyringIds.map(_.value).toArray
-            )
-          )
-        }
-      )
-      // Phase 3 — save deletion notifs + payment ops
-      _ <- EitherT(
+      // Build the deletion notifications while api/plan/keyring are still
+      // readable (reads only, no writes yet).
+      contexts <- EitherT.liftF(
         Source(subscriptions)
           .mapAsync(1)(subscription =>
             prepareSubscriptionContext(
@@ -296,26 +237,102 @@ class DeletionService(
               )
               List.empty
           }
-          .mapAsync(1)(ctx => finalizeSubscriptionDeletion(ctx, tenant))
-          .runWith(
-            Sink.fold[Either[AppError, Unit], Either[AppError, Unit]](
-              Right[AppError, Unit](())
-            )((_, either) => either)
+          .runWith(Sink.seq)
+      )
+      // Atomic DB closure: physically delete the subs and the orphaned
+      // keyrings, drop the stale notifs, save the deletion notifs + payment
+      // ops, and enqueue the deferred Otoroshi work — all or nothing, no HTTP.
+      result <- EitherT.liftF(env.dataStore.withTransaction {
+        val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
+        val opRepo = env.dataStore.operationRepo.forTenant(tenant)
+        for {
+          deleted <- env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .deleteByIds(subscriptions.map(_.id).distinct)
+          _ <- env.dataStore.keyringRepo
+            .forTenant(tenant)
+            .deleteByIds(orphanedKeyringIds)
+          _ <- notifRepo.execute(
+            s"DELETE FROM ${notifRepo.tableName} WHERE content->>'_tenant' = $$1 " +
+              "AND (content->'action'->>'subscription' = ANY($2::text[]) " +
+              "OR content->'action'->>'keyring' = ANY($3::text[]))",
+            Seq(
+              tenant.id.value,
+              subscriptions.map(_.id.value).toArray,
+              orphanedKeyringIds.map(_.value).toArray
+            )
           )
-      )
-      // Phase 4 — physically delete in DB (otoroshi/stripe cleanup already done above)
-      result <- EitherT.right[AppError](
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .deleteByIds(subscriptions.map(_.id).distinct)
-          .map(_ > 0)
-      )
+          _ <- Future.sequence(contexts.map(ctx => notifRepo.save(ctx.notif)))
+          _ <- Future.sequence(contexts.flatMap { ctx =>
+            ctx.plan.paymentSettings.map { settings =>
+              opRepo.save(
+                Operation(
+                  DatastoreId(IdGenerator.token(24)),
+                  tenant = tenant.id,
+                  itemId = ctx.subscription.id.value,
+                  itemType = ItemType.ThirdPartySubscription,
+                  action = OperationAction.Delete,
+                  payload = Json
+                    .obj(
+                      "paymentSettings" -> settings.asJson,
+                      "thirdPartySubscriptionInformations" -> ctx.subscription.thirdPartySubscriptionInformations
+                        .map(_.asJson)
+                        .getOrElse(JsNull)
+                        .as[JsValue]
+                    )
+                    .some
+                )
+              )
+            }
+          })
+          // Orphaned keyring → queue the Otoroshi apikey deletion. The payload
+          // carries clientId + settings id, since the row itself is now gone.
+          _ <- Future.sequence(orphanedKeyrings.map { keyring =>
+            opRepo.save(
+              Operation(
+                DatastoreId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                itemId = keyring.id.value,
+                itemType = ItemType.Keyring,
+                action = OperationAction.Delete,
+                payload = otoroshiTargetPayload(keyring)
+              )
+            )
+          })
+          // Surviving keyring → queue the Otoroshi apikey recompute. The row
+          // stays, so the synchronizer re-reads it by id.
+          _ <- Future.sequence(survivingKeyringIds.map { kid =>
+            opRepo.save(
+              Operation(
+                DatastoreId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                itemId = kid.value,
+                itemType = ItemType.Keyring,
+                action = OperationAction.Sync
+              )
+            )
+          })
+        } yield deleted > 0
+      })
     } yield result
   }
 
-  /** delete logically all apis add for each apis an operation in queue to
-    * process a complete deletion of each Api (delete doc, issues, posts &
-    * notifications)
+  private def otoroshiTargetPayload(keyring: Keyring): Option[JsObject] =
+    keyring.otoroshiSettings match {
+      case KeyringOtoroshiBinding.Otoroshi(id) =>
+        Json
+          .obj(
+            "clientId" -> keyring.apiKey.clientId,
+            "otoroshiSettings" -> id.value
+          )
+          .some
+      case KeyringOtoroshiBinding.Internal => None
+    }
+
+  /** Physically delete a set of apis and everything they own. Per plan of each
+    * api, delete its subscriptions (which queues the Otoroshi/Stripe cleanup),
+    * then delete the api closure (posts, issues, docs, plans, notifs, pending
+    * demands and the api row) in a transaction.
     *
     * a sequence of Api to delete the tenant where delete those apis
     * @return
@@ -325,19 +342,8 @@ class DeletionService(
       apis: Seq[Api],
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
-    val operations = apis.distinct
-      .map(s =>
-        Operation(
-          DatastoreId(IdGenerator.token(32)),
-          tenant = tenant.id,
-          itemId = s.id.value,
-          itemType = ItemType.Api,
-          action = OperationAction.Delete
-        )
-      )
-
     AppLogger.debug(
-      s"[deletion service] :: add **apis**[${apis.map(_.name).mkString(",")}] to deletion queue"
+      s"[deletion service] :: physically deleting apis[${apis.map(_.name).mkString(",")}] and their closure"
     )
 
     val planDeletion = Source(apis)
@@ -384,14 +390,64 @@ class DeletionService(
 
     val r = for {
       _ <- planDeletion
-      _ <-
-        env.dataStore.apiRepo
-          .deleteLogicallyByIds(tenant.id, apis.map(_.id).distinct)
-      _ <- env.dataStore.operationRepo.forTenant(tenant).insertMany(operations)
+      _ <- Future.sequence(
+        apis.distinct.map(api => deleteApiClosure(api, tenant))
+      )
     } yield ()
 
     EitherT.liftF(r)
   }
+
+  /** Physically delete an api and everything it owns in DB — posts, issues,
+    * documentation pages, its usage plans, its notifications and pending
+    * subscription demands — in a single transaction. Its subscriptions and
+    * keyrings are already gone (deleteSubscriptions), and the external
+    * Otoroshi/Stripe cleanup is carried by queued operations.
+    */
+  private def deleteApiClosure(api: Api, tenant: Tenant): Future[Unit] =
+    env.dataStore.withTransaction {
+      val planRepo = env.dataStore.usagePlanRepo.forTenant(tenant)
+      val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
+      for {
+        _ <- env.dataStore.apiPostRepo.forTenant(tenant).deleteByIds(api.posts)
+        _ <- env.dataStore.apiIssueRepo
+          .forTenant(tenant)
+          .deleteByIds(api.issues)
+        _ <- env.dataStore.apiDocumentationPageRepo
+          .forTenant(tenant)
+          .deleteByIds(
+            api.documentation.docIds().map(ApiDocumentationPageId.apply)
+          )
+        _ <- planRepo.execute(
+          s"DELETE FROM ${planRepo.tableName} " +
+            "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
+          Seq(tenant.id.value, api.possibleUsagePlans.map(_.value).toArray)
+        )
+        _ <- notifRepo.execute(
+          s"DELETE FROM ${notifRepo.tableName} WHERE content->>'_tenant' = $$1 " +
+            "AND (content->'action'->>'api' = $2 " +
+            "OR content->'action'->>'apiName' = $3)",
+          Seq(tenant.id.value, api.id.value, api.name)
+        )
+        _ <- env.dataStore.subscriptionDemandRepo
+          .forAllTenant()
+          .execute(
+            s"""
+               |WITH deleted_demands AS (
+               |  DELETE FROM subscription_demands
+               |  WHERE content->>'_tenant' = $$1
+               |    AND content->>'api' = $$2
+               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |  RETURNING _id AS demand_id
+               |)
+               |DELETE FROM step_validators
+               |WHERE content->>'subscriptionDemand' IN (SELECT demand_id FROM deleted_demands);
+               |""".stripMargin,
+            Seq(api.tenant.value, api.id.value)
+          )
+        _ <- env.dataStore.apiRepo.forTenant(tenant).deleteById(api.id)
+      } yield ()
+    }
 
   /** delete a personal user team in the provided tenant Flag a user as deleted
     * if there is no other account in another tenant Add team (and him probably)

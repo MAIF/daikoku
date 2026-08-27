@@ -2353,9 +2353,11 @@ class OtoroshiSyncSpec()
       )(using tenant, session)
       resp.status mustBe 200
 
+      // the keyring recompute is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
       val metadata = getApkMetadataFromOtoroshi(keyring.apiKey.clientId)
 
-      // the deleted child's metadata values are already removed from the key
+      // the deleted child's metadata values are removed from the key
       metadata.get("env") mustBe "prod".some
       metadata.get("region") mustBe "eu-west".some
       metadata.get("type") mustBe None

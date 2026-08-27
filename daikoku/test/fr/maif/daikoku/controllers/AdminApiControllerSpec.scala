@@ -1139,13 +1139,14 @@ class AdminApiControllerSpec
 
         resp.status mustBe 200
 
+        // Deletion is now physical: the api is gone, not flagged _deleted, so a
+        // subsequent read no longer finds it.
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
 
       "Conflict :: Name already exists" in {

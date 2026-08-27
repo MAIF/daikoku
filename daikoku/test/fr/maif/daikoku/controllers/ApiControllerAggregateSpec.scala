@@ -1506,6 +1506,8 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
 
       respVerifDkChild.status mustBe 200
 
+      // keyring recompute is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
       val respVerifOto = httpJsonCallBlocking(
         path = s"/api/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -1663,6 +1665,8 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
       )
       maybeKeyring.isDefined mustBe false
 
+      // otoroshi apikey deletion is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/api/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",

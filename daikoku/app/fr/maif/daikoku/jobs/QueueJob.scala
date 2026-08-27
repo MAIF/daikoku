@@ -6,6 +6,7 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.OperationStatus
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.ApiService
+import fr.maif.daikoku.utils.OtoroshiClient
 import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.Logger
@@ -21,7 +22,9 @@ class QueueJob(
     env: Env,
     apiKeyStatsJob: ApiKeyStatsJob,
     apiService: ApiService,
-    paymentClient: PaymentClient
+    paymentClient: PaymentClient,
+    otoroshiClient: OtoroshiClient,
+    otoroshiSynchronizerJob: OtoroshiSynchronizerJob
 ) {
   private val logger = Logger("OtoroshiDeletionJob")
 
@@ -50,24 +53,6 @@ class QueueJob(
   // *************************
   // *** ELEMENTS DELETION ***
   // *************************
-
-  private def deleteApiNotifications(
-      api: Api
-  )(implicit dbConn: DbConn): Future[Boolean] = {
-    logger.debug("*** DeLEte api notifications AS OPERATION***")
-    logger.debug(Json.prettyPrint(api.asJson))
-    logger.debug("**********************************************")
-
-    val repo = env.dataStore.notificationRepo.forTenant(api.tenant)
-    repo
-      .execute(
-        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
-          "AND (content->'action'->>'api' = $2 " +
-          "OR content->'action'->>'apiName' = $3)",
-        Seq(api.tenant.value, api.id.value, api.name)
-      )
-      .map(_ => true)
-  }
 
   private def deleteUsagePlan(o: Operation): Future[Unit] = {
     env.dataStore
@@ -247,94 +232,6 @@ class QueueJob(
       }
   }
 
-  private def deleteApi(o: Operation): Future[Unit] = {
-    logger.debug("*** Delete APi AS OPERATION***")
-    logger.debug(Json.prettyPrint(o.asJson))
-    logger.debug("**********************************************")
-
-    env.dataStore
-      .withTransaction {
-        (for {
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(o.tenant)
-              .save(o.copy(status = OperationStatus.InProgress))
-          )
-          api <- OptionT(
-            env.dataStore.apiRepo
-              .forTenant(o.tenant)
-              .findByIdIncludingDeleted(o.itemId)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.apiPostRepo
-              .forTenant(o.tenant)
-              .deleteByIds(api.posts)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.apiIssueRepo
-              .forTenant(o.tenant)
-              .deleteByIds(api.issues)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.apiDocumentationPageRepo
-              .forTenant(o.tenant)
-              .deleteByIds(
-                api.documentation.docIds().map(ApiDocumentationPageId.apply)
-              )
-          )
-          _ <- OptionT.liftF(
-            {
-              val repo = env.dataStore.usagePlanRepo.forTenant(o.tenant)
-              repo.execute(
-                s"DELETE FROM ${repo.tableName} " +
-                  "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
-                Seq(
-                  o.tenant.value,
-                  api.possibleUsagePlans.map(_.value).toArray
-                )
-              )
-            }
-          )
-          _ <- OptionT.liftF(deleteApiNotifications(api))
-          _ <- OptionT.liftF(
-            env.dataStore.subscriptionDemandRepo
-              .forAllTenant()
-              .execute(
-                s"""
-                 |WITH deleted_demands AS (
-                 |  DELETE FROM subscription_demands
-                 |  WHERE content->>'_tenant' = $$1
-                 |    AND content->>'api' = $$2
-                 |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
-                 |  RETURNING _id AS demand_id
-                 |)
-                 |DELETE FROM step_validators
-                 |WHERE content->>'subscriptionDemand' IN (SELECT demand_id FROM deleted_demands);
-                 |""".stripMargin,
-                Seq(api.tenant.value, api.id.value)
-              )
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.apiRepo.forTenant(o.tenant).deleteById(api.id)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-          )
-        } yield ()).value
-      }
-      .map(_ =>
-        logger.debug(s"[deletion job] :: api ${o.itemId} successfully deleted")
-      )
-      .recover(e => {
-        logger.error(
-          s"[deletion job] :: [id ${o.id.value}] :: error during deletion of api ${o.itemId}: $e"
-        )
-        env.dataStore.operationRepo
-          .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.Error))
-      })
-  }
-
   // Les DB writes finaux (deleteByIdLogically + deleteSubscriptionNotifications) sont atomiques.
   // Les appels HTTP précédents (archiveApiKey, syncForSubscription, deleteThirdPartySubscription) restent
   // non transactionnables : si l'un réussit et la transaction DB échoue, le retry repassera les HTTP.
@@ -483,27 +380,81 @@ class QueueJob(
       })
   }
 
+  // The keyring DB row is already gone — DeletionService removes it physically
+  // in the request transaction. This operation only carries the deferred
+  // Otoroshi apikey removal, described by its payload {clientId,
+  // otoroshiSettings}. Idempotent: a missing apikey (already deleted → 404) is
+  // logged and treated as done, so a retry converges.
   private def deleteKeyring(o: Operation): Future[Unit] = {
-    env.dataStore
-      .withTransaction {
-        for {
-          _ <- env.dataStore.operationRepo
-            .forTenant(o.tenant)
-            .save(o.copy(status = OperationStatus.InProgress))
-          _ <- env.dataStore.keyringRepo
-            .forTenant(o.tenant)
-            .deleteById(o.itemId)
-          _ <- env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-        } yield ()
-      }
+    val clientId = o.payload.flatMap(p => (p \ "clientId").asOpt[String])
+    val settingsId = o.payload.flatMap(p => (p \ "otoroshiSettings").asOpt[String])
+
+    (for {
+      tenant <- OptionT(
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant.value)
+      )
+      cid <- OptionT.fromOption[Future](clientId)
+      sid <- OptionT.fromOption[Future](settingsId)
+      settings <- OptionT.fromOption[Future](
+        tenant.otoroshiSettings.find(_.id.value == sid)
+      )
+      _ <- OptionT.liftF(
+        otoroshiClient.deleteApiKey(cid)(using settings).value.map {
+          case Left(error) =>
+            logger.warn(
+              s"[deletion job] :: otoroshi apikey $cid already gone or unreachable: ${error.getErrorMessage()}"
+            )
+          case Right(_) => ()
+        }
+      )
+    } yield ())
+      .getOrElse(
+        logger.warn(
+          s"[deletion job] :: keyring operation ${o.id.value} carries no resolvable otoroshi target, skipping"
+        )
+      )
+      .flatMap(_ =>
+        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+      )
       .map(_ =>
         logger.debug(
-          s"[deletion job] :: keyring ${o.itemId} successfully deleted"
+          s"[deletion job] :: keyring otoroshi cleanup ${o.itemId} done"
         )
       )
       .recover(e => {
         logger.error(
-          s"[deletion job] :: [id ${o.id}] :: error during deletion of keyring ${o.itemId}: $e"
+          s"[deletion job] :: [id ${o.id.value}] :: error during otoroshi cleanup of keyring ${o.itemId}: $e"
+        )
+        env.dataStore.operationRepo
+          .forTenant(o.tenant)
+          .save(o.copy(status = OperationStatus.Error))
+      })
+  }
+
+  // Recompute the Otoroshi apikey of a keyring that survived a subscription
+  // deletion (some subscriptions removed, at least one remaining). The keyring
+  // row is still in DB, so the synchronizer re-reads it by id.
+  private def syncKeyring(o: Operation): Future[Unit] = {
+    (for {
+      tenant <- OptionT(
+        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant.value)
+      )
+      _ <- OptionT.liftF(
+        otoroshiSynchronizerJob.run(KeyringId(o.itemId), tenant)
+      )
+    } yield ())
+      .getOrElse(())
+      .flatMap(_ =>
+        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+      )
+      .map(_ =>
+        logger.debug(
+          s"[deletion job] :: keyring otoroshi recompute ${o.itemId} done"
+        )
+      )
+      .recover(e => {
+        logger.error(
+          s"[deletion job] :: [id ${o.id.value}] :: error during otoroshi recompute of keyring ${o.itemId}: $e"
         )
         env.dataStore.operationRepo
           .forTenant(o.tenant)
@@ -682,8 +633,6 @@ class QueueJob(
         EitherT.liftF((firstOperation.itemType, firstOperation.action) match {
           case (ItemType.Subscription, OperationAction.Delete) =>
             deleteSubscription(firstOperation)
-          case (ItemType.Api, OperationAction.Delete) =>
-            deleteApi(firstOperation)
           case (ItemType.UsagePlan, OperationAction.Delete) =>
             deleteUsagePlan(firstOperation)
           case (ItemType.Team, OperationAction.Delete) =>
@@ -692,6 +641,8 @@ class QueueJob(
             deleteUser(firstOperation)
           case (ItemType.Keyring, OperationAction.Delete) =>
             deleteKeyring(firstOperation)
+          case (ItemType.Keyring, OperationAction.Sync) =>
+            syncKeyring(firstOperation)
           case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
             deleteThirdPartySubscription(firstOperation)
           case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>

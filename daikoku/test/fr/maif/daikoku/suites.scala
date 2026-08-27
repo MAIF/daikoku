@@ -80,6 +80,28 @@ object testUtils {
       daikokuComponents.application
     }
 
+    /** Deletion moved the Otoroshi/Stripe cleanup off the request thread and
+      * onto the deletion queue. Tests that assert the external-facing result
+      * (an Otoroshi apikey deleted or recomputed) must wait for the queue to
+      * drain before checking.
+      */
+    def awaitDeletionQueueDrained(
+        tenant: Tenant,
+        timeout: FiniteDuration = 15.seconds
+    ): Unit = {
+      val deadline = timeout.fromNow
+      var pending = true
+      while (pending && deadline.hasTimeLeft()) {
+        pending = Await
+          .result(
+            daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+            5.seconds
+          )
+          .nonEmpty
+        if (pending) Thread.sleep(200)
+      }
+    }
+
     abstract override def run(testName: Option[String], args: Args): Status = {
       lazy val run = super.run(testName, args)
 
