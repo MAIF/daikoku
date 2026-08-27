@@ -1342,6 +1342,44 @@ class DeletionServiceSpec
       otoroshiKnowsApiKey(parentApiKey.clientId) mustBe false
     }
 
+    // TDD pilot for the team slice of the physical-deletion refactor.
+    // The team must be removed physically in the request, not flagged _deleted
+    // and purged later by the queue. RED until deleteTeam stops soft-deleting.
+    "physically remove the team at enqueue time, not flag it _deleted" in {
+      val team = Team(
+        id = TeamId("atomic-del-team"),
+        tenant = tenant.id,
+        `type` = TeamType.Organization,
+        name = "atomic del team",
+        description = "",
+        contact = "team@foo.bar",
+        users = Set(UserWithPermission(userAdmin.id, TeamPermission.Administrator))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, team)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${team.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
+      // rows too, so a flagged team would still come back here.
+      Await.result(
+        daikokuComponents.env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(team.id),
+        5.second
+      ) mustBe None
+    }
+
     "be completed by delete a plan" in {
       val userPersonalTeam = Team(
         id = TeamId("user-team"),

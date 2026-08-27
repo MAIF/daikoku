@@ -159,30 +159,6 @@ class QueueJob(
       }
   }
 
-  private def deleteTeamNotifications(
-      team: Team
-  )(implicit dbConn: DbConn): Future[Boolean] = {
-    val repo = env.dataStore.notificationRepo.forTenant(team.tenant)
-    repo
-      .execute(
-        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
-          "AND content->'action'->>'team' = $2 " +
-          "AND content->'action'->>'type' = ANY($3::text[])",
-        Seq(
-          team.tenant.value,
-          team.id.value,
-          Array(
-            "TeamInvitation",
-            "ApiSubscription",
-            "ApiSubscriptionAccept",
-            "ApiSubscriptionReject",
-            "TransferApiOwnership"
-          )
-        )
-      )
-      .map(_ => true)
-  }
-
 //  private def deleteThirdPartyPaymentClient(team: Team) = {
 //    env.dataStore.tenantRepo.findByIdIncludingDeleted(team.tenant).flatMap {
 //      case Some(tenant) =>
@@ -309,42 +285,6 @@ class QueueJob(
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
       }
       .map(_ => ())
-  }
-
-  private def deleteTeam(o: Operation): Future[Unit] = {
-    env.dataStore
-      .withTransaction {
-        (for {
-          team <- OptionT(
-            env.dataStore.teamRepo
-              .forTenant(o.tenant)
-              .findByIdIncludingDeleted(o.itemId)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(o.tenant)
-              .save(o.copy(status = OperationStatus.InProgress))
-          )
-          _ <- OptionT.liftF(deleteTeamNotifications(team))
-          _ <- OptionT.liftF(
-            env.dataStore.teamRepo.forTenant(o.tenant).deleteById(team.id)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-          )
-        } yield ()).value
-      }
-      .map(_ =>
-        logger.debug(s"[deletion job] :: team ${o.itemId} successfully deleted")
-      )
-      .recover(e => {
-        logger.error(
-          s"[deletion job] :: [id ${o.id}] :: error during deletion of team ${o.itemId}: $e"
-        )
-        env.dataStore.operationRepo
-          .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.Error))
-      })
   }
 
   private def deleteUser(o: Operation): Future[Unit] = {
@@ -635,8 +575,6 @@ class QueueJob(
             deleteSubscription(firstOperation)
           case (ItemType.UsagePlan, OperationAction.Delete) =>
             deleteUsagePlan(firstOperation)
-          case (ItemType.Team, OperationAction.Delete) =>
-            deleteTeam(firstOperation)
           case (ItemType.User, OperationAction.Delete) =>
             deleteUser(firstOperation)
           case (ItemType.Keyring, OperationAction.Delete) =>

@@ -54,31 +54,39 @@ class DeletionService(
     )
   }
 
-  /** Delete logically a team Add an operation in deletion queue to process
-    * complete deletion (delete team notifications)
+  /** Physically delete a team and its notifications in a single transaction.
+    * Its apis, subscriptions and keyrings are handled beforehand by the caller
+    * (deleteApis / deleteSubscriptions), whose external Otoroshi/Stripe cleanup
+    * is carried by queued operations.
     */
   private def deleteTeam(
       team: Team,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
-    val operation = Operation(
-      DatastoreId(IdGenerator.token(32)),
-      tenant = tenant.id,
-      itemId = team.id.value,
-      itemType = ItemType.Team,
-      action = OperationAction.Delete
-    )
-
     AppLogger.debug(
-      s"[deletion service] :: add **team**[${team.name}] to deletion queue"
+      s"[deletion service] :: physically deleting team[${team.name}]"
     )
     EitherT.right[AppError](
       env.dataStore.withTransaction {
+        val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
         for {
-          _ <- env.dataStore.teamRepo
-            .forTenant(tenant)
-            .deleteByIdLogically(team.id)
-          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+          _ <- notifRepo.execute(
+            s"DELETE FROM ${notifRepo.tableName} WHERE content->>'_tenant' = $$1 " +
+              "AND content->'action'->>'team' = $2 " +
+              "AND content->'action'->>'type' = ANY($3::text[])",
+            Seq(
+              tenant.id.value,
+              team.id.value,
+              Array(
+                "TeamInvitation",
+                "ApiSubscription",
+                "ApiSubscriptionAccept",
+                "ApiSubscriptionReject",
+                "TransferApiOwnership"
+              )
+            )
+          )
+          _ <- env.dataStore.teamRepo.forTenant(tenant).deleteById(team.id)
         } yield ()
       }
     )
