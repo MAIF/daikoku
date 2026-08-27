@@ -1,8 +1,8 @@
 # Removing the Mongo-style query DSL from the storage layer
 
 Working document for a refactor that has landed. The `JsObject` query DSL is gone; what remains is
-listed in [What is left](#what-is-left) — two decided items (a GIN index, a dead-index migration) and
-one that needs a conversation first (physical deletion). Delete this file once those are settled.
+listed in [What is left](#what-is-left) — one item, which needs a conversation before any code
+(physical deletion). Delete this file once it is settled.
 
 ## Goal
 
@@ -41,7 +41,9 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 4 | Repos the plan had not listed: `operationRepo`, `stepValidatorRepo`, `keyringRepo`, `apiDocumentationPageRepo`, `auditTrailRepo`, `translationRepo`, `apiIssueRepo`, `jobRepo`, `apiSubscriptionTransferRepo`, `apiPostRepo`, `emailVerificationRepo` | **Done** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** — `rowToJson` moved to `pgimplicits`, the file is gone |
 | Final B | Slim down / dedupe the `Repo` layer | **Done** — `find*` renaming, plus the index pass below |
-| Next | GIN on `teams.users` (+ rewrite the membership lookups), drop the dead `_id` indexes | See [What is left](#what-is-left) |
+| Final C | GIN on `teams.users` + rewrite of the membership lookups | **Done** |
+| Final D | Drop the dead `_id` / `_tenant` indexes | **Done** — `evolution_1900_b` |
+| Next | Physical deletion | Undecided — see [What is left](#what-is-left) |
 
 ## The pattern to follow
 
@@ -148,49 +150,98 @@ covers every login, and the `action.user` / `demand` / `subscription` / `keyring
 
 ## What is left
 
-Three items, in this order. The first two are decided; the third is not.
+Items A and B have landed. C is not decided and must not be started.
 
-### A. GIN on `teams.content->'users'` — **to do**
+### A. GIN on `teams.content->'users'` — **done**
 
-Membership lookups scan today. `TeamRepo.isMemberSql` is written as
+Membership lookups used to scan. `TeamRepo.isMemberSql` was written as
 
 ```sql
 EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') AS u WHERE u->>'userId' = $n)
 ```
 
 which **no index can serve** — the function unnests the array, so every row of the tenant's teams
-must be opened. The tenant predicate in front restricts it, but `myTeams` sits behind nearly every
-page (catalogue, notifications, subscriptions), so it is the hottest path of the app on a tenant
-with many teams.
+had to be opened. The tenant predicate in front restricted it, but `myTeams` sits behind nearly
+every page (catalogue, notifications, subscriptions), so it is the hottest path of the app on a
+tenant with many teams.
 
-The fix is one method plus one index, and both are needed — the index alone would never be used:
+The fix was one method plus one index, and both were needed — the index alone would never have been
+used:
 
-1. rewrite `isMemberSql` as a containment test a GIN index can serve:
-   `content->'users' @> jsonb_build_array(jsonb_build_object('userId', $n))`
-   (or a `$n::jsonb` parameter carrying `[{"userId": "…"}]`);
-2. add `CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));`
+1. `isMemberSql` is now a containment test a GIN index can serve:
+   `content->'users' @> jsonb_build_array(jsonb_build_object('userId', $n::text))`. The explicit
+   `::text` resolves the parameter type, since `jsonb_build_object` takes `"any"`. Containment
+   matches objects partially, so the `{"userId": …}` probe finds the full
+   `{userId, teamPermission}` entry, at any rank in the array;
+2. `CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));`
 
-Callers to re-check afterwards: `findPersonalTeam`, `findByUser`, `isTenantAdmin`,
-`findPersonalTeamsForAllTenants`, and `ApiController.search`, which spells the same `EXISTS` inline.
-`MessageRepo.containsUser` uses `@>` already and needs nothing.
+`ApiController.search` spelled the same `EXISTS` inline and now calls the repo helper, which became
+public for that reason. The four other callers (`findPersonalTeam`, `isTenantAdmin`,
+`findPersonalTeamsForAllTenants`, `findByUser`) go through `isMemberSql` and followed for free.
+`MessageRepo.containsUser` used `@>` already and needed nothing.
 
-Verify with `EXPLAIN ANALYZE` on `findByUser` before and after, on the largest tenant available.
+Measured with `EXPLAIN (ANALYZE, BUFFERS)` on `findByUser`, on a throwaway schema holding 200k teams
+across 20 tenants (the dev database has 8 teams, which measures nothing):
 
-### B. Drop the dead indexes — **to do**
+| | Execution | Heap blocks |
+|---|---|---|
+| `EXISTS(jsonb_array_elements)` | 85.2 ms | 9686 |
+| `@>`, no index | 19.2 ms | 9686 |
+| `@>` + GIN | 1.6 ms | 12 |
+
+The predicate alone already wins 4× by not unnesting per row, but it stays in the `Filter` and still
+opens every team of the tenant. With the index it moves to a `Recheck Cond` over a Bitmap Index
+Scan.
+
+Note `idx_team_users` is unrelated to the neighbouring `uniq_team_personal_user`, which looks
+similar but is partial (`WHERE … 'Personal'`) and positional (`content->'users'->0`) because it
+enforces "one personal team per user and per tenant". The GIN index has neither restriction and
+indexes every member of every team.
+
+Two `jsonb_array_elements` on `teams` were deliberately left alone: the ones in `evolutions.scala`,
+which replay a past behaviour, and `DeletionService.removeUserFromTeams`, which unnests the array to
+*rewrite* it, not to filter — its own `WHERE` was already a containment test.
+
+### B. Drop the dead indexes — **done**
 
 Every entity carries its id twice: the `_id` column (which holds the PRIMARY KEY) and the JSON key
 `content->>'_id'`. Since phase 0 the generic helpers query the *column*, so the 8
-`((content->>'_id'))` indexes are never read — only maintained, on every insert and every `save`.
-Same for `((content->>'_tenant'))` on `users`, which is not a tenant-scoped repo.
+`((content->>'_id'))` indexes were only maintained — on every insert and every `save` — and never
+read. Same for `((content->>'_tenant'))` on `users`: `UserRepo` is a plain `Repo`, not a
+`TenantCapableRepo`, so no user query filters on `_tenant`.
 
-This is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: it must run once, be reversible, and
-carry a version number. It belongs in the evolution mechanism, not in `createIndexes`.
-
-Confirm the list is complete before dropping — nothing must read `content->>'_id'` any more:
+**The check this section used to give was wrong**, and it is the same blind spot as the phase-3 one:
+it grepped a *shape* instead of the thing itself. `content->>'_id'` only matches the unspaced
+spelling, and the raw SQL of `CommonServices` is written spaced. Spell it as a regex and 52
+occurrences show up instead of the 8 index declarations:
 
 ```bash
-grep -rn "content->>'_id'" daikoku/app | grep -v createIndexes
+grep -rEn "content *->> *'_id'" daikoku/app daikoku/test
 ```
+
+Four of them were live reads on a physical table, i.e. two of the eight indexes were *not* dead:
+
+| Index | Read by |
+|---|---|
+| `idx_api_id` | `CommonServices` — the catalogue's `IN` on api groups, and the notification/api join |
+| `idx_team_id` | `CommonServices` — `JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'` |
+
+Those four now read the `_id` column, which is strictly better: same data (verified in the database,
+zero divergence between `_id` and `content->>'_id'` on every table), and it hits the PRIMARY KEY
+instead of an expression index. The rewrite of the correlated `IN` was checked for scope equivalence
+— two nested unaliased `FROM apis`, where the unqualified `_id` must still bind to the *outer* one —
+by running both spellings side by side.
+
+The remaining ~17 occurrences are projections off the `my_teams` CTE
+(`select t.content ->> '_id' from my_teams t`). They read no index, so they were left alone; the CTE
+does expose `_id` (`SELECT teams.*`), so switching them would save a JSON extraction each on the
+catalogue queries. Worth doing, not needed here. The `evolutions.scala` joins were left alone too:
+they replay a past behaviour and run once.
+
+The drop itself is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: `evolution_1900_b`, with the
+9 declarations spelled out in a comment so it can be replayed by hand — the evolution mechanism has
+no down-script. The `CREATE INDEX` lines are gone from `createIndexes`, so a fresh database never
+builds them in the first place.
 
 ### C. Physical deletion — **discuss first, do not start**
 
@@ -384,8 +435,10 @@ everything, then emits. Nothing was streaming, so nothing regressed.
 methods live on the `TeamRepo` trait, take the tenant as a parameter and spell the `_tenant`
 predicate out (bound to `$1` by convention). The `{"users.userId": …}` membership query becomes
 `EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') AS u WHERE u->>'userId' = $n)`, which
-needs no jsonb literal and no cast. Note there is no GIN index on `content->'users'`, so the former
-`@>` containment was not indexed either — no regression.
+needs no jsonb literal and no cast. There was no GIN index on `content->'users'` at the time, so the
+former `@>` containment was not indexed either — no regression. Both were revisited in
+[item A](#a-gin-on-teamscontent-users--done), which put the containment form back and added the
+index.
 
 `userRepo` exposed two queries that never matched, both of the shape flagged after phase 1 — a
 faithful-looking port of a query that returned nothing:

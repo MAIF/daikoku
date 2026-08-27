@@ -2258,6 +2258,74 @@ object evolution_18110_b extends EvolutionScript {
     }
 }
 
+object evolution_1900_b extends EvolutionScript {
+  override def version: String = "19.0.0_b"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - drop the JSONB indexes no query reads any more"
+      )
+
+      // Every entity carries its id twice: the `_id` column, which holds the
+      // PRIMARY KEY, and the JSON key `content->>'_id'`. Since the storage
+      // layer went to typed SQL, every id lookup goes through the column, so
+      // these expression indexes are only maintained — on every insert and
+      // every save — and never read.
+      //
+      // `idx_user_tenant` goes with them: `UserRepo` is a plain `Repo`, not a
+      // `TenantCapableRepo`, so no user query filters on `_tenant`.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script, so
+      // restoring means replaying these statements as CREATE INDEX:
+      //   idx_api_id           ON apis              ((content->>'_id'))
+      //   idx_notification_id  ON notifications     ((content->>'_id'))
+      //   idx_team_id          ON teams             ((content->>'_id'))
+      //   idx_plan_id          ON usage_plans       ((content->>'_id'))
+      //   idx_session_id       ON user_sessions     ((content->>'_id'))
+      //   idx_user_id          ON users             ((content->>'_id'))
+      //   idx_subscription_id  ON api_subscriptions ((content->>'_id'))
+      //   idx_keyring_id       ON keyrings          ((content->>'_id'))
+      //   idx_user_tenant      ON users             ((content->>'_tenant'))
+      val deadIndexes = Seq(
+        "idx_api_id",
+        "idx_notification_id",
+        "idx_team_id",
+        "idx_plan_id",
+        "idx_session_id",
+        "idx_user_id",
+        "idx_subscription_id",
+        "idx_keyring_id",
+        "idx_user_tenant"
+      )
+
+      deadIndexes
+        .foldLeft(Future.successful(())) { (acc, index) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = s"DROP INDEX IF EXISTS $index;")
+              .map { _ =>
+                logger.info(s"[evolution $version] :: dropped $index")
+              }
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2285,7 +2353,8 @@ object evolutions {
       evolution_1892,
       evolution_18110,
       evolution_18110_b,
-      evolution_1900
+      evolution_1900,
+      evolution_1900_b
     )
   def run(
       dataStore: DataStore,

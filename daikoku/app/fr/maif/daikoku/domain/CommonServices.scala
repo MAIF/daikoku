@@ -284,12 +284,12 @@ object CommonServices {
        |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
        |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
        |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
-       |  (COALESCE($$8, '') = '' OR (content ->> '_id' IN (SELECT jsonb_array_elements_text(content -> 'apis')
+       |  (COALESCE($$8, '') = '' OR (_id IN (SELECT jsonb_array_elements_text(content -> 'apis')
        |                                                    FROM apis
        |                                                    WHERE _id = $$8))) AND
        |  (content ->> 'isDefault')::boolean
        |)
-       |ORDER BY CASE WHEN content ->> '_id' = ANY ($$9::text[]) THEN 0 ELSE 1 END,
+       |ORDER BY CASE WHEN _id = ANY ($$9::text[]) THEN 0 ELSE 1 END,
        |LOWER(content ->> 'name')
        |""".stripMargin
 
@@ -543,7 +543,7 @@ object CommonServices {
           |                       limit CASE WHEN $$7 = -1 THEN null ELSE $$7 END offset $$8),
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis_no_team va
-          |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
+          |                                     JOIN teams t ON t._id = va.content ->> 'team'
           |                            WHERE t._deleted IS FALSE
           |                            GROUP BY t.content ),
           |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
@@ -1439,7 +1439,7 @@ object CommonServices {
                |                                              a._id = n.content -> 'action' ->> 'api'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'
-               |                                                  OR a.content ->> '_id' = n.content -> 'action' -> 'api' ->> '_id'
+               |                                                  OR a._id = n.content -> 'action' -> 'api' ->> '_id'
                |                                              )
                |                       GROUP BY a._id
                |                       ORDER BY total DESC),
