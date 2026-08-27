@@ -28,9 +28,6 @@ class DeletionService(
 
   private val systemUser = User.system
 
-  /** Delete logically a team Add an operation in deletion queue to process
-    * complete deletion (delete user notifications & messages)
-    */
   /** Physically delete a user and the tenant-local traces the queue used to
     * clean up (team-invitation notifications, and their chat messages unless
     * they sit in the tenant admin team), in a single transaction. The broader
@@ -660,9 +657,8 @@ class DeletionService(
     )
   }
 
-  /** Flag a team as deleted and delete his subscriptions, apis and those apis
-    * subscriptions add team, subs and apis to deletion queue to process
-    * complete deletion
+  /** Physically delete a team with its apis, subscriptions and keyrings, and
+    * defer the Otoroshi and Stripe cleanup to the deletion queue.
     */
   def deleteTeamByQueue(
       id: TeamId,

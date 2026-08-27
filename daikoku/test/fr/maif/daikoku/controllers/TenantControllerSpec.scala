@@ -213,7 +213,6 @@ class TenantControllerSpec()
       )(using tenant, session)
       respDelete.status mustBe 200
 
-      // the tenant is physically gone, not flagged _deleted
       Await.result(
         daikokuComponents.env.dataStore.tenantRepo
           .findById(testTenant.id),

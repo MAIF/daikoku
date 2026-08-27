@@ -655,7 +655,7 @@ class DeletionServiceSpec
 
     }
 
-    "physically remove the user at enqueue time, not flag it _deleted" in {
+    "physically remove the user at enqueue time" in {
       val victim = User(
         id = UserId("atomic-del-user"),
         tenants = Set(tenant.id),
@@ -1234,23 +1234,11 @@ class DeletionServiceSpec
       maybeKeyring mustBe None
     }
 
-    // TDD pilot for the physical-deletion refactor (point C, stage 1-2).
-    //
-    // Target behaviour: the DELETE request removes the whole DB closure
-    // (api + its subscriptions + orphaned keyrings) *physically and atomically*
-    // in its own transaction, and defers ALL external Otoroshi/Stripe cleanup
-    // to the deletion queue. So the moment the request returns:
-    //   - no row of the closure is left behind, not even flagged _deleted;
-    //   - the Otoroshi apikey is STILL present (its removal is queued, not done
-    //     synchronously in the request — this is the timeout fix);
-    //   - the operations carrying that external cleanup are pending.
-    // Then, once the queue drains, the Otoroshi apikey is gone.
-    //
-    // This is RED today on two counts: DeletionService soft-deletes the api at
-    // request time (so it is still present right after the response), and it
-    // calls Otoroshi synchronously in the request (so the apikey is already
-    // gone right after the response). It goes GREEN once the closure is deleted
-    // in the enqueue transaction and the Otoroshi call is moved to the queue.
+    // The DELETE removes the whole DB closure (api, its subscriptions and the
+    // orphaned keyrings) in one transaction and defers every Otoroshi/Stripe
+    // call to the deletion queue. So right after the response: no row of the
+    // closure survives, the Otoroshi apikey is still there, and the operations
+    // carrying its removal are pending. It is gone once the queue drains.
     //
     // The immediate checks run right after the blocking 200, before the queue's
     // first tick (>= 1s away), so they need no queue control.
@@ -1441,10 +1429,7 @@ class DeletionServiceSpec
       otoroshiKnowsApiKey(parentApiKey.clientId) mustBe false
     }
 
-    // TDD pilot for the team slice of the physical-deletion refactor.
-    // The team must be removed physically in the request, not flagged _deleted
-    // and purged later by the queue. RED until deleteTeam stops soft-deleting.
-    "physically remove the team at enqueue time, not flag it _deleted" in {
+    "physically remove the team at enqueue time" in {
       val team = Team(
         id = TeamId("atomic-del-team"),
         tenant = tenant.id,
@@ -1478,7 +1463,7 @@ class DeletionServiceSpec
       ) mustBe None
     }
 
-    "physically remove the usage plan at enqueue time, not flag it _deleted" in {
+    "physically remove the usage plan at enqueue time" in {
       val planToDelete = defaultApi.plans.head
 
       setupEnvBlocking(

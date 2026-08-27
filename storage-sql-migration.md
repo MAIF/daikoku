@@ -1,8 +1,8 @@
 # Removing the Mongo-style query DSL from the storage layer
 
-Working document for a refactor that has landed. The `JsObject` query DSL is gone; what remains is
-listed in [What is left](#what-is-left) — one item, which needs a conversation before any code
-(physical deletion). Delete this file once it is settled.
+Working document for a refactor that has landed, kept as the record of how. The `JsObject` query DSL
+is gone, and so is the `_deleted` column it used to filter on — see
+[What was left](#what-was-left) for the three closing passes and the traps they hid.
 
 ## Goal
 
@@ -43,7 +43,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 | Final B | Slim down / dedupe the `Repo` layer | **Done** — `find*` renaming, plus the index pass below |
 | Final C | GIN on `teams.users` + rewrite of the membership lookups | **Done** |
 | Final D | Drop the dead `_id` / `_tenant` indexes | **Done** — `evolution_1900_b` |
-| Next | Physical deletion | Undecided — see [What is left](#what-is-left) |
+| Final E | Physical deletion, and dropping the `_deleted` column | **Done** — `evolution_1900_c` to `_e`, see [C](#c-physical-deletion--done) |
 
 ## The pattern to follow
 
@@ -71,42 +71,18 @@ Rules: values **always** go through `params` (`$1`, `$2`, …), never into the s
 handled locally inside their own method (Scala concat + a params buffer), case by case — no global
 DSL, no combinator library. That dynamic assembly is exactly what made `convertQuery` unmaintainable.
 
-### 2. Naming: not-deleted is the nominal case
+### 2. Naming: there is no deleted state any more
 
-Physical deletion has been the rule for two releases; `_deleted` is only a transient state. So every
-method carries `notDeletedSql` and **no method carries a `NotDeleted` suffix** — `findByDomain`, not
-`findByDomainNotDeleted`.
+The `_deleted` column is gone (see [C](#c-physical-deletion--done)). Nothing filters on it, so no
+method carries a suffix in either direction: `findById` is the only spelling, and the
+`findByIdIncludingDeleted` / `findByIdsIncludingDeleted` / `findAllIncludingDeleted` escape hatches
+were removed once they became character-for-character identical to their twins.
 
-**Check the entity actually writes `_deleted` before filtering on it.** Four of them never do —
-`Message`, `Operation`, `Translation`, `Asset`. Their `Format.writes` has no `_deleted` key, so
-`content->>'_deleted'` is NULL and `notDeletedSql` matches *nothing*. Adding it to `messageScope`
-emptied every chat query and broke six tests; the same mistake on `Translation` and `Asset` was
-silent. A one-liner tells you where you stand:
-
-```bash
-# does <Entity>Format.writes emit "_deleted"?
-grep -A25 'writes(o: Message)' daikoku/app/fr/maif/daikoku/domain/json.scala | grep -c '_deleted'
-```
-
-Note this also means the unsuffixed generic helpers (`findById`, `findByIds`) return nothing for
-those four entities — `findAll` survives only because it spells
-`(_deleted = 'false' OR _deleted IS NULL)`.
-
-The generic `Repo` helpers follow the same rule since the `usagePlanRepo` step: the short name is the
-filtered, nominal one, and reaching a flagged entity is the thing you have to spell out.
-
-| Nominal (filters `_deleted`) | Escape hatch |
-|---|---|
-| `findById` | `findByIdIncludingDeleted` |
-| `findByIds` | `findByIdsIncludingDeleted` |
-| `findAll` | `findAllIncludingDeleted` |
-| `findByIdOrHrId` | *(none — both spellings already filtered)* |
-
-The escape hatches are not dead code, which is why the pairs were swapped rather than merged:
-`findByIdIncludingDeleted` is what `QueueJob` and `DeletionService` use to re-read an entity they
-have just flagged and carry the cascade through, and `findByIdsIncludingDeleted` backs the GraphQL
-Fetchers — Sangria fails a whole query when a batch does not resolve every id it was handed, so a
-reference to a flagged entity must still come back.
+This retired a trap worth remembering, because the same shape can reappear with any optional JSON
+key: four entities never wrote `_deleted` at all — `Message`, `Operation`, `Translation`, `Asset` —
+so `content->>'_deleted'` was NULL for them and a `= 'false'` predicate matched **nothing**. Adding
+it to `messageScope` emptied every chat query and broke six tests; the same mistake on `Translation`
+and `Asset` was silent. Before filtering on a JSON key, check the `Format` actually writes it.
 
 ### 3. The `forTenant` trap
 
@@ -127,18 +103,13 @@ In [`storage/api.scala`](../daikoku/app/fr/maif/daikoku/storage/api.scala):
 - `tenantScope: Option[String]` — hook, overridden by `PostgresTenantAwareRepo`.
 - `scopedWhere(predicates, params)` — the only remaining place that assembles SQL; it only ever
   concatenates hard-coded predicates.
-- `notDeletedSql` — `content->>'_deleted' = 'false'`, matching what the old `{"_deleted": false}`
-  query did (an entity with no `_deleted` key does **not** match).
 - `queryExists(sql, params)` — implemented in `CommonRepo`.
 
-The generic helpers (`findById`, `findByIdNotDeleted`, `findByIds`, `findByIdsNotDeleted`, `findAll`,
-`findAllNotDeleted`, `deleteById`, `deleteAll`, `exists`, the whole `findByIdOrHrId*` family) are
-already parameterised SQL. Their signatures did not change, so roughly 800 call sites were migrated
+The generic helpers (`findById`, `findByIds`, `findAll`, `deleteById`, `deleteAll`, `exists`, the
+whole `findByIdOrHrId*` family) are already parameterised SQL. Their signatures did not change, so roughly 800 call sites were migrated
 without being touched. Id lookups now hit the `_id` PRIMARY KEY instead of `content->>'_id'`.
 
-Two parity quirks were kept on purpose: `findByIdOrHrId` (without `NotDeleted`) already filtered
-`_deleted = false` despite its name, and `deleteById` still reports `true` even when it removes
-nothing.
+One parity quirk was kept on purpose: `deleteById` reports `true` even when it removes nothing.
 
 ## Indexes
 
@@ -148,9 +119,9 @@ request in `Hostname` mode) and `consumptions` (the largest table of a busy inst
 covers every login, and the `action.user` / `demand` / `subscription` / `keyring` paths of
 `notifications` join their siblings, which were already indexed.
 
-## What is left
+## What was left
 
-Items A and B have landed. C is not decided and must not be started.
+A, B and C have all landed; this section records what each one did.
 
 ### A. GIN on `teams.content->'users'` — **done**
 
@@ -243,88 +214,72 @@ The drop itself is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: `evoluti
 no down-script. The `CREATE INDEX` lines are gone from `createIndexes`, so a fresh database never
 builds them in the first place.
 
-### C. Physical deletion — **in progress**
+### C. Physical deletion — **done**
 
-> **Resume state (machine switch, 2026-08-27) — the last `wip:` commit is NOT compile-verified.**
-> First thing on the new machine: `cd daikoku && mise exec -- sbt "Test/compile"`, fix any errors
-> (likely candidates: types around `deleteTeamByQueue(...).value` / `tenantRepo.deleteById` in
-> `TenantService.deleteTenant`, or `json.OtoroshiSettingsFormat` in KeyringService/QueueJob), then
-> `cd daikoku && mise exec -- sbt test` (broad run — touches deletion + admin). `HomeControllerFailoverSpec`
-> "services going down" timeout is flaky, ignore it.
->
-> **Write-side: DONE** for subscription/keyring/api-cascade, team, user, plan (committed earlier), and
-> now — in the two `wip:` commits — **Tenant** and the **admin-api**:
-> - **Option B** (self-contained keyring op): the `(Keyring, Delete)` operation payload carries the
->   full `OtoroshiSettings` (not just the id), so the queued cleanup no longer resolves the tenant and
->   survives the tenant being deleted. Touched `QueueJob.deleteKeyring`,
->   `DeletionService.otoroshiTargetPayload(keyring, tenant)`, `KeyringService.deleteKeyring`. Needed
->   because the queue is not FIFO (`findFirstIdle` has no ORDER BY, `Operation` has no timestamp).
-> - **Tenant slice**: `TenantService.deleteTenant` cascades every team through `deleteTeamByQueue`,
->   sweeps leftover tenant-scoped rows, and `tenantRepo.deleteById(tenant.id)` (physical, was
->   `save(deleted = true)`). `findAllTeams` is called on `teamRepo` directly, not on `.forTenant(...)`.
-> - **Admin-api**: the generic `doDelete` (utils/admin.scala) is always `deleteById` now. The
->   `?logically=true` / `?notDeleted=true` params are left vestigial (no-op) — remove them cleanly in
->   step 5. Six AdminApiControllerSpec contract tests updated (GET after DELETE → 404).
->
-> **Still to do (in order):** step 3 (remove the read-side `_deleted` filter — first `storage/api.scala`:
-> `notDeletedSql` + every `content->>'_deleted' = 'false'`; then the ~40 raw-SQL sites in
-> jobs/controllers/services/CommonServices — **NOT** `evolutions.scala`, it replays the past and the
-> column still exists at its run). Behaviour-preserving: no `_deleted = true` row survives after the
-> `evolution_1900_c` purge. Step 4 (CMS: drop the dead GraphQL `deleted` arg + filter in
-> `findAllWithDeletedFlag` / `findOneByNameOrPath`). Step 5 (drop the column: `ALTER TABLE DROP COLUMN`
-> on the 24 `allFields = true` tables, strip `_deleted` from the ~20 Formats + case classes,
-> `idx_*_deleted`, the partial index `uniq_team_personal_user`, `deleteByIdLogically` /
-> `deleteAllLogically`, the vestigial admin `logically`/`notDeleted` params, `createTable` allFields).
->
-> Note the earlier reverted attempt at step 3 broke because the write-side wasn't actually finished —
-> Tenant still soft-deleted and the admin-api deliberately exposed logical deletion. Both are handled
-> now, so step 3 can proceed once the current `wip:` commits are green.
+Deletion used to flag rows `_deleted = true` and run the Otoroshi/Stripe cleanup *synchronously in
+the request*, purging physically later from the queue — a timeout risk on a large closure, and a
+window of half-deleted state. The column is now gone, along with `notDeletedSql`, the whole
+`deleteLogically*` family, the `_deleted` JSON key, the `idx_*_deleted` indexes and the
+`*IncludingDeleted` method pairs.
 
-The end goal is dropping the `_deleted` column entirely. That retires `notDeletedSql`, the whole
-`deleteLogically*` family, the `_deleted` JSON key, the `idx_*_deleted` indexes, and collapses the
-`findById*` / `findByIds*` / `findAll*` `IncludingDeleted` pairs. But the column can only fall once
-**nothing soft-deletes any more**, on either side — so this lands write-path by write-path first,
-column removal last.
+**The write-side pattern.** Every deletion path now:
 
-**The pattern (validated, TDD).** Deletion used to soft-delete the rows and run the Otoroshi/Stripe
-cleanup *synchronously in the request*, then physically delete later from the queue — a timeout risk
-on a large closure, and a window of half-deleted state. The replacement, proven on the
-api→subscriptions→keyrings cascade:
-
-- delete the whole DB closure **physically and atomically** in one `withTransaction`;
-- defer every external call to the deletion queue via **self-contained operations** — the payload
+- deletes the whole DB closure **physically and atomically** in one `withTransaction`;
+- defers every external call to the deletion queue via **self-contained operations** — the payload
   carries what the call needs (an orphaned keyring's `{clientId, otoroshiSettings}`), because the row
   is gone. `(Keyring, Delete)` deletes the apikey, `(Keyring, Sync)` recomputes it (row still there),
-  the api's own DB cleanup moves into the transaction so `(Api, Delete)` disappears.
+  and the api's own DB cleanup moved into the transaction, so `(Api, Delete)` disappeared.
 
 The async move is what forces the transaction: you cannot hold a DB transaction open across N
 Otoroshi round-trips, so "atomic + no synchronous HTTP" and "no half-deleted closure" are the same
-requirement. Idempotency is already there (the external calls tolerate 404 on retry); a frozen
+requirement. Idempotency was already there (the external calls tolerate 404 on retry); a frozen
 payload is more deterministic on retry than re-reading a mutated tombstone.
 
-**Landed:** subscription, keyring, and the api cascade — both the `DeletionService` cascade and the
-standalone subscription-deletion endpoint (they share `deleteSubscriptions`). The old
-`ApiService.deleteSubscriptionAndSyncKeyring` turned out to be dead (referenced only from a commented
-block), so that path had no separate implementation to convert.
+**The order the passes had to run in.** Each one was landed green on its own, and the sequence is not
+interchangeable:
 
-**Still soft-delete (write-side, one slice each):** `Team` (`DeletionService.deleteTeam`), `User`
-(`deleteUser`), `UsagePlan` (`deletePlanByQueue`), and the generic admin CRUD (`utils/admin.scala`,
-`logically` flag). During the transition the admin-api DELETE is therefore inconsistent: an api is
-removed physically (a read after DELETE returns 404), a team/user/plan is still flagged.
+1. **Write side, one slice at a time** — subscription, keyring and the api cascade, then team, user,
+   plan, then tenant, then the generic admin CRUD. The `?logically` / `?notDeleted` admin-api
+   parameters became no-ops here. Until all of them were physical the reads could not be touched: an
+   earlier attempt at the read side was reverted precisely because tenant still soft-deleted.
+2. **`evolution_1900_c`** purges the legacy `_deleted = true` rows. It must run *before* the read
+   filter goes, otherwise those tombstones resurface as live data.
+3. **Read side** — `notDeletedSql` and the ~15 methods carrying it, then the 47 raw-SQL sites in
+   controllers, jobs, services and `CommonServices`. Behaviour-preserving, since step 2 left no row
+   the filter could exclude.
+4. **The dead code** — the logical-delete write family (already unreachable) and the vestigial admin
+   parameters. Then the `*IncludingDeleted` collapse: 249 call sites renamed onto their twins, which
+   the compiler covers, since the bodies had become identical.
+5. **Frontend before backend.** Two GraphQL queries selected the flag (`apiByIdsWithPlans` asked for
+   `deleted`, `plansByApi` for `_deleted`). Sangria rejects a whole query on an unknown field, so the
+   client had to stop asking *before* the schema dropped the fields — removing a field from a query
+   works against the old server, the reverse does not.
+6. **Stop writing** — the `deleted` field on the 19 case classes, its 40 lines in `json.scala`, the 9
+   GraphQL fields, the `saveRaw` branch that populated the column.
+7. **`evolution_1900_e`** drops the column on its 24 tables.
 
-**Then the column removal (read-side, one pass, once all writes are physical):** drop `notDeletedSql`
-from its ~15 methods, collapse the `*IncludingDeleted` pairs (triage the ~174 call sites by category
-— admin validation / GraphQL Fetchers / audit — most fall away once deletion is atomic), strip the
-`_deleted` field from the ~20 `Format`s, and drop the column + `idx_*_deleted` + the
-`deleteByIdLogically` SQL (`WHERE _id = $1 AND _deleted = false`). Watch the partial unique index
-`uniq_team_personal_user … WHERE _deleted = false`.
+**Two traps that fail silently.** Neither surfaces as an error, which is what makes them worth
+recording:
 
-- **Trap:** four entities are already physically deleted in practice, because their `Format.writes`
-  never emits `_deleted` — `Message`, `Operation`, `Translation`, `Asset`. They show none of the work
-  the others need, so validating on them would give a false sense of completion.
-- **Testing note:** the external cleanup is now asynchronous, so any test that asserts Otoroshi/Stripe
-  state right after a deletion must first wait for the queue, via the shared
+- **The partial unique index.** `uniq_team_personal_user` was `WHERE _deleted = false AND type =
+  'Personal'`. The moment the entities stop writing the key, `saveRaw` leaves the column NULL, and
+  `NULL = false` is not true — so the index quietly stops covering new rows and the "one personal
+  team per user" uniqueness is lost with no error anywhere. `evolution_1900_d` rebuilds it without
+  the predicate, in the same commit that stops the writes.
+- **The `idx_*_deleted` indexes survive `DROP COLUMN`.** They are expression indexes on
+  `content->>'_deleted'`, the JSON key, not on the column, so Postgres has no dependency to cascade.
+  `evolution_1900_e` drops them explicitly.
+
+**Two public contracts changed**, both worth a release note: the GraphQL schema lost `deleted` on
+nine types, and the admin-api payloads lost `_deleted` (its twelve properties are gone from
+`admin-api-openapi.json`).
+
+- **Testing note:** the external cleanup is asynchronous, so any test asserting Otoroshi/Stripe state
+  right after a deletion must first wait for the queue, via the shared
   `awaitDeletionQueueDrained(tenant)` helper in `suites.scala`.
+- **Testing note:** watch for assertions of the form `maybeThing.forall(_.deleted) mustBe true`.
+  `forall` on `None` is `true`, so they passed precisely when the row was gone — two of them were
+  asserting nothing at all.
 
 ## Recipe per entity
 
@@ -338,10 +293,9 @@ from its ~15 methods, collapse the `*IncludingDeleted` pairs (triage the ~174 ca
 
 ## Cross-cutting concerns
 
-- **Logical deletion.** This crosses the `_deleted` → physical-deletion project. The whole
-  `findNotDeleted` / `deleteLogically` / `notDeleted` family disappears with it. Do not couple the
-  two: either physical deletion lands first (simpler — the typed methods then carry no `_deleted` at
-  all), or we keep carrying `notDeletedSql` and that project removes it afterwards.
+- **Logical deletion.** Settled, and it went the simpler way: physical deletion landed after the
+  typed methods, so the `findNotDeleted` / `deleteLogically` / `notDeleted` family was removed
+  wholesale rather than migrated. See [C](#c-physical-deletion--done).
 - **`AuditTrailRepo`** has `Of = JsObject` (schemaless). It stays JSONB, just with dedicated typed
   methods.
 - **Export / import.** Settled: `streamAllRaw` / `streamAllRawFormatted` now go through

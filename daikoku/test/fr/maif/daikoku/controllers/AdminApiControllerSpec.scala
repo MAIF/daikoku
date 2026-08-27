@@ -274,7 +274,6 @@ class AdminApiControllerSpec
 
         resp.status mustBe 200
 
-        // Deletion is physical now: the tenant is gone, not flagged _deleted.
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
@@ -1130,8 +1129,6 @@ class AdminApiControllerSpec
 
         resp.status mustBe 200
 
-        // Deletion is now physical: the api is gone, not flagged _deleted, so a
-        // subsequent read no longer finds it.
         val verif = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
