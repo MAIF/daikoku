@@ -174,24 +174,22 @@ class QueueJob(
 
   // The keyring DB row is already gone — DeletionService removes it physically
   // in the request transaction. This operation only carries the deferred
-  // Otoroshi apikey removal, described by its payload {clientId,
-  // otoroshiSettings}. Idempotent: a missing apikey (already deleted → 404) is
-  // logged and treated as done, so a retry converges.
+  // Otoroshi apikey removal, fully self-contained in its payload {clientId,
+  // otoroshiSettings} — the OtoroshiSettings are embedded, not resolved from
+  // the tenant, so the cleanup survives the tenant itself being deleted.
+  // Idempotent: a missing apikey (already deleted → 404) is logged and treated
+  // as done, so a retry converges.
   private def deleteKeyring(o: Operation): Future[Unit] = {
     val clientId = o.payload.flatMap(p => (p \ "clientId").asOpt[String])
-    val settingsId = o.payload.flatMap(p => (p \ "otoroshiSettings").asOpt[String])
+    val settings = o.payload.flatMap(p =>
+      (p \ "otoroshiSettings").asOpt(using json.OtoroshiSettingsFormat)
+    )
 
     (for {
-      tenant <- OptionT(
-        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant.value)
-      )
       cid <- OptionT.fromOption[Future](clientId)
-      sid <- OptionT.fromOption[Future](settingsId)
-      settings <- OptionT.fromOption[Future](
-        tenant.otoroshiSettings.find(_.id.value == sid)
-      )
+      s <- OptionT.fromOption[Future](settings)
       _ <- OptionT.liftF(
-        otoroshiClient.deleteApiKey(cid)(using settings).value.map {
+        otoroshiClient.deleteApiKey(cid)(using s).value.map {
           case Left(error) =>
             logger.warn(
               s"[deletion job] :: otoroshi apikey $cid already gone or unreachable: ${error.getErrorMessage()}"

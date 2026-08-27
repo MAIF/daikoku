@@ -319,7 +319,7 @@ class DeletionService(
                 itemId = keyring.id.value,
                 itemType = ItemType.Keyring,
                 action = OperationAction.Delete,
-                payload = otoroshiTargetPayload(keyring)
+                payload = otoroshiTargetPayload(keyring, tenant)
               )
             )
           })
@@ -341,15 +341,26 @@ class DeletionService(
     } yield result
   }
 
-  private def otoroshiTargetPayload(keyring: Keyring): Option[JsObject] =
+  /** Payload for the queued (Keyring, Delete) operation: the Otoroshi apikey to
+    * remove plus the full OtoroshiSettings to reach it. The settings are
+    * embedded (resolved from the tenant now) rather than referenced by id, so
+    * the queued cleanup no longer needs the tenant — which lets the tenant
+    * itself be deleted without waiting for the queue.
+    */
+  private def otoroshiTargetPayload(
+      keyring: Keyring,
+      tenant: Tenant
+  ): Option[JsObject] =
     keyring.otoroshiSettings match {
       case KeyringOtoroshiBinding.Otoroshi(id) =>
-        Json
-          .obj(
-            "clientId" -> keyring.apiKey.clientId,
-            "otoroshiSettings" -> id.value
+        tenant.otoroshiSettings
+          .find(_.id == id)
+          .map(settings =>
+            Json.obj(
+              "clientId" -> keyring.apiKey.clientId,
+              "otoroshiSettings" -> json.OtoroshiSettingsFormat.writes(settings)
+            )
           )
-          .some
       case KeyringOtoroshiBinding.Internal => None
     }
 
