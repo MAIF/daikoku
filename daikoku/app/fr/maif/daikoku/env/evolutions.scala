@@ -2326,6 +2326,80 @@ object evolution_1900_b extends EvolutionScript {
     }
 }
 
+object evolution_1900_c extends EvolutionScript {
+  override def version: String = "19.0.0_c"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - purge legacy soft-deleted rows (_deleted = true)"
+      )
+
+      // Logical deletion is gone: every deletion path now removes rows
+      // physically. Rows that were flagged `_deleted = true` before this
+      // change and never purged by the queue are dead weight — invisible to
+      // the app (filtered by notDeletedSql), so removing them changes nothing
+      // observable. This must run before notDeletedSql is dropped, otherwise
+      // those tombstones would resurface.
+      //
+      // Only the tables created with the `_deleted` column (allFields = true in
+      // PostgresDataStore.TABLES) are purged.
+      val softDeleteTables = Seq(
+        "tenants",
+        "password_reset",
+        "account_creation",
+        "teams",
+        "apis",
+        "translations",
+        "api_subscriptions",
+        "api_documentation_pages",
+        "notifications",
+        "consumptions",
+        "users",
+        "api_posts",
+        "api_issues",
+        "cmspages",
+        "operations",
+        "email_verifications",
+        "subscription_demands",
+        "step_validators",
+        "usage_plans",
+        "assets",
+        "reports_info",
+        "api_subscription_transfers",
+        "job_informations",
+        "keyrings"
+      )
+
+      softDeleteTables
+        .foldLeft(Future.successful(())) { (acc, table) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = s"DELETE FROM $table WHERE _deleted = true;")
+              .map { deleted =>
+                logger.info(
+                  s"[evolution $version] :: purged $deleted legacy tombstones from $table"
+                )
+              }
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2354,7 +2428,8 @@ object evolutions {
       evolution_18110,
       evolution_18110_b,
       evolution_1900,
-      evolution_1900_b
+      evolution_1900_b,
+      evolution_1900_c
     )
   def run(
       dataStore: DataStore,
