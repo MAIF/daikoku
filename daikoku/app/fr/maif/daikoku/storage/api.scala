@@ -116,11 +116,6 @@ trait Repo[Of, Id <: ValueType] {
     */
   protected def tenantScope: Option[String] = None
 
-  /** Matches the entities not logically deleted. Note an entity without a
-    * `_deleted` key does not match.
-    */
-  protected val notDeletedSql: String = "content->>'_deleted' = 'false'"
-
   /** Builds the ` WHERE …` clause (empty string when there is nothing to filter
     * on) of a generic helper. `predicates` must already reference `$1..$n`
     * consistently with `params`; the tenant value, when the repo is
@@ -188,27 +183,6 @@ trait Repo[Of, Id <: ValueType] {
   ): Future[Boolean] =
     deleteByIdOrHrId(id.value, hrid)
 
-  def deleteLogicallyByIdOrHrId(id: String, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    val (where, params) = scopedWhere(
-      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)", notDeletedSql),
-      Seq(id, hrid)
-    )
-    execute(
-      s"UPDATE $tableName SET _deleted = true, " +
-        "content = content || '{ \"_deleted\" : true }'" + where,
-      params
-    ).map(_ > 0)
-  }
-
-  def deleteLogicallyByIdOrHrId(id: Id, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] =
-    deleteLogicallyByIdOrHrId(id.value, hrid)
-
   def existsByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
@@ -222,21 +196,6 @@ trait Repo[Of, Id <: ValueType] {
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  def deleteByIdLogically(id: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
-  def deleteByIdLogically(id: Id)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
-  def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
   /** Every entity of the repo. */
   def findAll()(implicit
       dbConn: DbConn,
@@ -1701,19 +1660,6 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
         "SET content = jsonb_set(content, '{team}', to_jsonb($3::text)) " +
         "WHERE content->>'_tenant' = $1 AND _id = ANY($2::text[])",
       Seq(tenant.value, ids.map(_.value).toArray, team.value)
-    )
-  }
-
-  def deleteLogicallyByIds(tenant: TenantId, ids: Seq[ApiId])(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long] = {
-    val repo = forTenant(tenant)
-    repo.execute(
-      s"UPDATE ${repo.tableName} SET _deleted = true, " +
-        "content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE $apiScope AND _id = ANY($$2::text[])",
-      Seq(tenant.value, ids.map(_.value).toArray)
     )
   }
 

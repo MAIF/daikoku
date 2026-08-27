@@ -135,7 +135,7 @@ class RemoteCatalogSpec
 
   private def getTeam(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
-      path = s"/admin-api/teams/$id?notDeleted=true",
+      path = s"/admin-api/teams/$id",
       method = "GET",
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)

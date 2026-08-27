@@ -327,7 +327,7 @@ class CmsApiController(
 
   def getAllApis() =
     CmsApiAction.async { ctx =>
-      apiService.getApis(ctx, true)
+      apiService.getApis(ctx)
     }
 
   def getLoginToken() =

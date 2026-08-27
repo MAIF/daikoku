@@ -2402,10 +2402,11 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
-  def getApis[T](ctx: ApiActionContext[T], notDeleted: Boolean = false) = {
+  def getApis[T](ctx: ApiActionContext[T]) = {
     val repo = env.dataStore.apiRepo.forTenant(ctx.tenant)
 
-    (if (!notDeleted) repo.findAllIncludingDeleted() else repo.findAll())
+    repo
+      .findAll()
       .map(apis => {
         val fields: Seq[String] = ctx.request
           .getQueryString("fields")

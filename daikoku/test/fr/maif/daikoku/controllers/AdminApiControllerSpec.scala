@@ -5439,7 +5439,7 @@ class AdminApiControllerSpec
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/subscriptions/${sub.id.value}?logically=true",
+          path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "DELETE",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)

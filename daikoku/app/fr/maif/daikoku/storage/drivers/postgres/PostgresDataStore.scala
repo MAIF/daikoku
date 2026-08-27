@@ -1809,41 +1809,6 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   ): Future[Long] =
     queryCount(s"SELECT COUNT(*) AS count FROM $tableName")
 
-  override def deleteByIdLogically(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE _id = $$1 AND _deleted = false  RETURNING _id",
-        Seq(id)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteByIdLogically(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-    deleteByIdLogically(id.value)
-  }
-
-  override def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteAllLogically()")
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false RETURNING _id"
-      )
-      .map(_.size() > 0)
-  }
-
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
@@ -1915,43 +1880,6 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         rowToJson(_, format)
       }
     } yield (values, count)
-  }
-
-  override def deleteByIdLogically(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE _id = $$1 AND content ->> '_tenant' = $$2  RETURNING _id",
-        Seq(id, tenant.value)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteByIdLogically(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    deleteByIdLogically(id.value)
-  }
-
-  override def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteAllLogically()")
-
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE content ->> '_tenant' = $$1 AND _deleted = false  RETURNING _id",
-        Seq(tenant.value)
-      )
-      .map(_.size() > 0)
   }
 
   override def insertMany(

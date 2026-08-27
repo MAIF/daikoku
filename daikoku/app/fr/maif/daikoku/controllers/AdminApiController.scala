@@ -329,8 +329,7 @@ class TenantAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Tenant,
-      logically: Boolean
+      entity: Tenant
   ): EitherT[Future, AppError, Unit] =
     tenantService.deleteTenant(entity).map(_ => ())
 }
@@ -391,8 +390,7 @@ class UserAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: User,
-      logically: Boolean
+      entity: User
   ): EitherT[Future, AppError, Unit] =
     deletionService
       .deleteCompleteUserByQueue(entity.id.value, tenant)
@@ -474,8 +472,7 @@ class TeamAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Team,
-      logically: Boolean
+      entity: Team
   ): EitherT[Future, AppError, Unit] =
     teamService.deleteTeam(tenant, entity)
 }
@@ -666,8 +663,7 @@ class ApiAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Api,
-      logically: Boolean
+      entity: Api
   ): EitherT[Future, AppError, Unit] =
     apiCrudService.deleteApi(tenant, entity)
 }
@@ -825,8 +821,7 @@ class ApiSubscriptionAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: ApiSubscription,
-      logically: Boolean
+      entity: ApiSubscription
   ): EitherT[Future, AppError, Unit] =
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -1438,8 +1433,7 @@ class UsagePlansAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: UsagePlan,
-      logically: Boolean
+      entity: UsagePlan
   ): EitherT[Future, AppError, Unit] =
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -1513,8 +1507,7 @@ class SubscriptionDemandsAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: SubscriptionDemand,
-      logically: Boolean
+      entity: SubscriptionDemand
   ): EitherT[Future, AppError, Unit] =
     deletionService
       .cancelSubscriptionDemand(entity.id.value, tenant)
