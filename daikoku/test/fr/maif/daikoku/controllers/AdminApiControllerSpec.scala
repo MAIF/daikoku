@@ -274,20 +274,13 @@ class AdminApiControllerSpec
 
         resp.status mustBe 200
 
+        // Deletion is physical now: the tenant is gone, not flagged _deleted.
         val verif = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/tenants/${id.value}?notDeleted=true",
-          headers = getAdminApiHeader(adminApiKeyring)
-        )(using tenant)
-
-        verif.status mustBe 404
-
-        val verifDeleted = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verifDeleted.status mustBe 200
-        (verifDeleted.json.as[JsObject] \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -531,8 +524,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -833,8 +825,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -4129,8 +4120,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -4979,8 +4969,7 @@ class AdminApiControllerSpec
           path = s"/admin-api/users/${userTeamUserId.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
-        verifUser.status mustBe 200
-        (verifUser.json \ "_deleted").as[Boolean] mustBe true
+        verifUser.status mustBe 404
 
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -5346,8 +5335,7 @@ class AdminApiControllerSpec
           path = s"/admin-api/usage-plans/${subscribedPlan.id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
-        verifPlan.status mustBe 200
-        (verifPlan.json \ "_deleted").as[Boolean] mustBe true
+        verifPlan.status mustBe 404
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           // test if subscriptions are physically deleted

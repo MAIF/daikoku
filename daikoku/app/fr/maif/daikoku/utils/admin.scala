@@ -226,17 +226,18 @@ abstract class AdminApiController[Of, Id <: ValueType](
         .map(_ => newEntity)
     )
 
+  // Deletion is always physical now; the `logically` flag (and the
+  // `?logically=true` / `?notDeleted=true` admin-api params) are vestigial and
+  // removed with the `_deleted` column.
   def doDelete(
       tenant: Tenant,
       entity: Of,
       logically: Boolean
   ): EitherT[Future, AppError, Unit] =
     EitherT.liftF[Future, AppError, Unit] {
-      val store = entityStore(tenant, env.dataStore)
-      val deletion =
-        if (logically) store.deleteByIdLogically(getId(entity).value)
-        else store.deleteById(getId(entity).value)
-      deletion.map(_ => ())
+      entityStore(tenant, env.dataStore)
+        .deleteById(getId(entity).value)
+        .map(_ => ())
     }
 
   protected def auditAdminApiWrite(

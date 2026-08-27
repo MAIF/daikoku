@@ -221,7 +221,7 @@ class TenantController(
     DaikokuAction.async { ctx =>
       DaikokuAdminOnly(
         AuditTrailEvent(
-          "@{user.name} has logically deleted tenant @{tenant.name} - @{tenant.id}"
+          "@{user.name} has deleted tenant @{tenant.name} - @{tenant.id}"
         )
       )(ctx) {
         env.dataStore.tenantRepo.findById(id).flatMap {

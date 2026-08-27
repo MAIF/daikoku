@@ -135,28 +135,30 @@ class TenantService(
 
   def deleteTenant(tenant: Tenant): EitherT[Future, AppError, Tenant] = {
     EitherT.liftF[Future, AppError, Tenant](for {
+      // Cascade every team through the deletion pipeline: this physically
+      // removes its apis, subscriptions and keyrings and defers the
+      // Otoroshi/Stripe cleanup to the queue as self-contained operations
+      // (they embed their target, so they survive the tenant being deleted).
+      teams <- env.dataStore.teamRepo
+        .findAllTeams(tenant.id, excludePersonal = false)
+      _ <- Future.sequence(
+        teams.map(t => deletionService.deleteTeamByQueue(t.id, tenant.id).value)
+      )
+      // Sweep any remaining tenant-scoped rows not owned by a team.
       _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAll()
-      _ <-
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .deleteAll()
-      _ <-
-        env.dataStore.apiDocumentationPageRepo
-          .forTenant(tenant)
-          .deleteAll()
-      _ <-
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .deleteAll()
+      _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteAll()
+      _ <- env.dataStore.apiDocumentationPageRepo.forTenant(tenant).deleteAll()
+      _ <- env.dataStore.notificationRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()
-      _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
+      // Physically delete the tenant row (was a soft-delete before).
+      _ <- env.dataStore.tenantRepo.deleteById(tenant.id)
       _ <- env.dataStore.userRepo.execute(
         s"UPDATE ${env.dataStore.userRepo.tableName} " +
           "SET content = content || '{\"lastTenant\": null}' " +
           "WHERE content->>'lastTenant' = $1",
         Seq(tenant.id.value)
       )
-    } yield tenant.copy(deleted = true))
+    } yield tenant)
   }
 
   private def checkRemovedSettingsAreUnused(
