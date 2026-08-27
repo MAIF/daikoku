@@ -75,7 +75,6 @@ export const apiGQLToLegitApi = (apiGQL: IApiGQL, tenant: ITenant): IApi => {
     _id: apiGQL._id,
     _humanReadableId: apiGQL._humanReadableId,
     _tenant: tenant._id,
-    _deleted: apiGQL._deleted,
     lastUpdate: apiGQL.lastUpdate,
     name: apiGQL.name,
     smallDescription: apiGQL.smallDescription,

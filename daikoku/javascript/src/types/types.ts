@@ -33,7 +33,6 @@ export interface IStoreState {
 }
 
 export interface INotification {
-  _deleted: boolean;
   _id: string;
   _tenant: string;
   action: any;

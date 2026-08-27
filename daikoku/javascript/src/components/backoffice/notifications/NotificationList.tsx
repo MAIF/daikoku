@@ -147,7 +147,6 @@ type NotificationActionGQL =
 type NotificationGQL = {
   _id: string
   action: NotificationActionGQL
-  _deleted: boolean
   _tenant: ITeamFullGql
   date: number
   notificationType: { value: 'AcceptOnly' | 'AcceptOrReject' }
