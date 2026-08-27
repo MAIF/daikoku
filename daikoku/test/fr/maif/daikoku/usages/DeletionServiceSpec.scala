@@ -15,6 +15,8 @@ import play.api.libs.json.{JsArray, JsString, Json}
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
+import fr.maif.daikoku.login.AuthProvider
+
 
 import scala.concurrent.Await
 import scala.concurrent.duration.*
@@ -627,6 +629,54 @@ class DeletionServiceSpec
         5.second
       ) mustBe None
 
+    }
+
+    // TDD pilot for the user slice of the physical-deletion refactor.
+    // The user must be removed physically in the request, not flagged _deleted
+    // and purged later by the queue. The admin GET filters _deleted, so it
+    // can't tell the two apart — assert the physical state directly.
+    // RED until deleteUser stops soft-deleting.
+    "physically remove the user at enqueue time, not flag it _deleted" in {
+      val victim = User(
+        id = UserId("atomic-del-user"),
+        tenants = Set(tenant.id),
+        origins = Set(AuthProvider.Local),
+        name = "victim",
+        email = "victim@foo.bar",
+        lastTenant = None,
+        password = None,
+        defaultLanguage = None
+      )
+      val victimPersonalTeam = Team(
+        id = TeamId("atomic-del-user-team"),
+        tenant = tenant.id,
+        `type` = TeamType.Personal,
+        name = "victim personal team",
+        description = "",
+        contact = victim.email,
+        users = Set(UserWithPermission(victim.id, TeamPermission.Administrator))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, victim),
+        teams = Seq(teamOwner, victimPersonalTeam)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/admin/users/${victim.id.value}",
+        method = "DELETE"
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
+      // rows too, so a flagged user would still come back here.
+      Await.result(
+        daikokuComponents.env.dataStore.userRepo
+          .findByIdIncludingDeleted(victim.id),
+        5.second
+      ) mustBe None
     }
 
     val randomUser = Random.shuffle(Seq(user, userApiEditor, userAdmin)).head
@@ -1376,6 +1426,41 @@ class DeletionServiceSpec
         daikokuComponents.env.dataStore.teamRepo
           .forTenant(tenant)
           .findByIdIncludingDeleted(team.id),
+        5.second
+      ) mustBe None
+    }
+
+    // TDD pilot for the plan slice of the physical-deletion refactor.
+    // The plan must be removed physically in the request, not flagged _deleted
+    // and purged later by the queue. `findByIds` filters _deleted, so assert
+    // the physical state directly. RED until deleteUsagePlanByQueue stops
+    // soft-deleting.
+    "physically remove the usage plan at enqueue time, not flag it _deleted" in {
+      val planToDelete = defaultApi.plans.head
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${planToDelete.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
+      // rows too, so a flagged plan would still come back here.
+      Await.result(
+        daikokuComponents.env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIdIncludingDeleted(planToDelete.id),
         5.second
       ) mustBe None
     }

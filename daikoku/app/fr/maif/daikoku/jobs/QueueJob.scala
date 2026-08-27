@@ -54,84 +54,6 @@ class QueueJob(
   // *** ELEMENTS DELETION ***
   // *************************
 
-  private def deleteUsagePlan(o: Operation): Future[Unit] = {
-    env.dataStore
-      .withTransaction {
-        (for {
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(o.tenant)
-              .save(o.copy(status = OperationStatus.InProgress))
-          )
-          plan <- OptionT(
-            env.dataStore.usagePlanRepo
-              .forTenant(o.tenant)
-              .findByIdIncludingDeleted(o.itemId)
-          )
-          _ <- OptionT.liftF(
-            plan.documentation match {
-              case Some(doc) =>
-                env.dataStore.apiDocumentationPageRepo
-                  .forTenant(o.tenant)
-                  .deleteByIds(
-                    doc.docIds().map(ApiDocumentationPageId.apply)
-                  )
-              case None => FastFuture.successful(false)
-            }
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.subscriptionDemandRepo
-              .forAllTenant()
-              .execute(
-                s"""
-                 |WITH deleted_demands AS (
-                 |  DELETE FROM subscription_demands
-                 |  WHERE content->>'_tenant' = $$1
-                 |    AND content->>'plan' = $$2
-                 |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
-                 |  RETURNING _id AS demand_id
-                 |)
-                 |DELETE FROM step_validators
-                 |WHERE content->>'subscriptionDemand' IN (SELECT demand_id FROM deleted_demands);
-                 |""".stripMargin,
-                Seq(o.tenant.value, o.itemId)
-              )
-          )
-          _ <- OptionT.liftF(
-            {
-              val repo =
-                env.dataStore.notificationRepo.forTenant(o.tenant)
-              repo.execute(
-                s"DELETE FROM ${repo.tableName} " +
-                  "WHERE content->>'_tenant' = $1 " +
-                  "AND content->'action'->>'plan' = $2",
-                Seq(o.tenant.value, o.itemId)
-              )
-            }
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.usagePlanRepo.forTenant(o.tenant).deleteById(plan.id)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-          )
-        } yield ()).value
-      }
-      .map(_ =>
-        logger.debug(
-          s"[deletion job] :: usage plan ${o.itemId} successfully deleted"
-        )
-      )
-      .recover(e => {
-        logger.error(
-          s"[deletion job] :: [id ${o.id.value}] :: error during deletion of plan ${o.itemId}: $e"
-        )
-        env.dataStore.operationRepo
-          .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.Error))
-      })
-  }
-
   private def deleteSubscriptionNotifications(
       subscription: ApiSubscription
   ): Future[Boolean] = {
@@ -169,44 +91,6 @@ class QueueJob(
 //      case None => FastFuture.successful(())
 //    }
 //  }
-
-  private def deleteUserNotifications(
-      user: User,
-      tenant: TenantId
-  )(implicit dbConn: DbConn): Future[Boolean] = {
-    val repo = env.dataStore.notificationRepo.forTenant(tenant)
-    repo
-      .execute(
-        s"DELETE FROM ${repo.tableName} WHERE content->>'_tenant' = $$1 " +
-          "AND content->'action'->>'type' = 'TeamInvitation' " +
-          "AND content->'action'->>'user' = $2",
-        Seq(tenant.value, user.id.value)
-      )
-      .map(_ => true)
-  }
-
-  private def deleteUserMessages(user: User, tenant: TenantId)(implicit
-      dbConn: DbConn
-  ): Future[Boolean] = {
-    env.dataStore.teamRepo
-      .findAdminTeam(tenant)
-      .flatMap {
-        case Some(adminTeam)
-            if !adminTeam.users.exists(u => u.userId == user.id) => {
-          val repo = env.dataStore.messageRepo.forTenant(tenant)
-          repo
-            .execute(
-              s"DELETE FROM ${repo.tableName} " +
-                "WHERE content->>'_tenant' = $1 " +
-                "AND (content->>'sender' = $2 " +
-                "OR content->'participants' @> to_jsonb($2::text))",
-              Seq(tenant.value, user.id.value)
-            )
-            .map(_ > 0)
-        }
-        case _ => FastFuture.successful(false)
-      }
-  }
 
   // Les DB writes finaux (deleteByIdLogically + deleteSubscriptionNotifications) sont atomiques.
   // Les appels HTTP précédents (archiveApiKey, syncForSubscription, deleteThirdPartySubscription) restent
@@ -287,38 +171,6 @@ class QueueJob(
       .map(_ => ())
   }
 
-  private def deleteUser(o: Operation): Future[Unit] = {
-    env.dataStore
-      .withTransaction {
-        (for {
-          user <- OptionT(
-            env.dataStore.userRepo.findByIdIncludingDeleted(o.itemId)
-          )
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo
-              .forTenant(o.tenant)
-              .save(o.copy(status = OperationStatus.InProgress))
-          )
-          _ <- OptionT.liftF(deleteUserNotifications(user, o.tenant))
-          _ <- OptionT.liftF(deleteUserMessages(user, o.tenant))
-          _ <- OptionT.liftF(env.dataStore.userRepo.deleteById(user.id))
-          _ <- OptionT.liftF(
-            env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-          )
-        } yield ()).value
-      }
-      .map(_ =>
-        logger.debug(s"[deletion job] :: user ${o.itemId} successfully deleted")
-      )
-      .recover(e => {
-        logger.error(
-          s"[deletion job] :: [id ${o.id}] :: error during deletion of user ${o.itemId}: $e"
-        )
-        env.dataStore.operationRepo
-          .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.Error))
-      })
-  }
 
   // The keyring DB row is already gone — DeletionService removes it physically
   // in the request transaction. This operation only carries the deferred
@@ -573,10 +425,6 @@ class QueueJob(
         EitherT.liftF((firstOperation.itemType, firstOperation.action) match {
           case (ItemType.Subscription, OperationAction.Delete) =>
             deleteSubscription(firstOperation)
-          case (ItemType.UsagePlan, OperationAction.Delete) =>
-            deleteUsagePlan(firstOperation)
-          case (ItemType.User, OperationAction.Delete) =>
-            deleteUser(firstOperation)
           case (ItemType.Keyring, OperationAction.Delete) =>
             deleteKeyring(firstOperation)
           case (ItemType.Keyring, OperationAction.Sync) =>

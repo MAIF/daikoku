@@ -31,24 +31,40 @@ class DeletionService(
   /** Delete logically a team Add an operation in deletion queue to process
     * complete deletion (delete user notifications & messages)
     */
+  /** Physically delete a user and the tenant-local traces the queue used to
+    * clean up (team-invitation notifications, and their chat messages unless
+    * they sit in the tenant admin team), in a single transaction. The broader
+    * per-user cleanup (all teams, cross-tenant notifs, chat) stays in the
+    * callers.
+    */
   private def deleteUser(
       user: User,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
-    val operation = Operation(
-      DatastoreId(IdGenerator.token(32)),
-      tenant = tenant.id,
-      itemId = user.id.value,
-      itemType = ItemType.User,
-      action = OperationAction.Delete
-    )
-
-    AppLogger.debug(s"add **user**[${user.name}] to deletion queue")
+    AppLogger.debug(s"[deletion service] :: physically deleting user[${user.name}]")
     EitherT.right[AppError](
       env.dataStore.withTransaction {
+        val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
         for {
-          _ <- env.dataStore.userRepo.deleteByIdLogically(user.id)
-          _ <- env.dataStore.operationRepo.forTenant(tenant).save(operation)
+          _ <- notifRepo.execute(
+            s"DELETE FROM ${notifRepo.tableName} WHERE content->>'_tenant' = $$1 " +
+              "AND content->'action'->>'type' = 'TeamInvitation' " +
+              "AND content->'action'->>'user' = $2",
+            Seq(tenant.id.value, user.id.value)
+          )
+          adminTeam <- env.dataStore.teamRepo.findAdminTeam(tenant.id)
+          _ <-
+            if (adminTeam.exists(t => !t.users.exists(_.userId == user.id))) {
+              val msgRepo = env.dataStore.messageRepo.forTenant(tenant)
+              msgRepo.execute(
+                s"DELETE FROM ${msgRepo.tableName} " +
+                  "WHERE content->>'_tenant' = $1 " +
+                  "AND (content->>'sender' = $2 " +
+                  "OR content->'participants' @> to_jsonb($2::text))",
+                Seq(tenant.id.value, user.id.value)
+              )
+            } else FastFuture.successful(0L)
+          _ <- env.dataStore.userRepo.deleteById(user.id)
         } yield ()
       }
     )
@@ -731,20 +747,7 @@ class DeletionService(
           .findByApiAndPlan(tenant.id, api.id, plan.id)
       )
       _ <- deleteSubscriptions(subscriptions, api, tenant)
-      _ <- EitherT.right[AppError](
-        env.dataStore.apiRepo
-          .forTenant(tenant)
-          .save(
-            api.copy(possibleUsagePlans =
-              api.possibleUsagePlans.filter(_ != plan.id)
-            )
-          )
-      )
-      _ <- EitherT.right[AppError](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .deleteByIdLogically(plan.id)
-      )
+      _ <- EitherT.right[AppError](deletePlanClosure(api, plan, tenant))
       _ <- plan.paymentSettings match {
         case Some(paymentSettings) =>
           EitherT
@@ -766,21 +769,62 @@ class DeletionService(
             .map(_ => ())
         case None => EitherT.pure[Future, AppError](())
       }
-      _ <- EitherT.right[AppError](
-        env.dataStore.operationRepo
-          .forTenant(tenant)
-          .save(
-            Operation(
-              DatastoreId(IdGenerator.token(32)),
-              tenant = tenant.id,
-              itemId = plan.id.value,
-              itemType = ItemType.UsagePlan,
-              action = OperationAction.Delete
-            )
-          )
-      )
     } yield ()
   }
+
+  /** Physically delete a usage plan and everything it owns in DB — its
+    * documentation pages, pending subscription demands, notifications — and
+    * detach it from its api, in a single transaction. Its subscriptions and
+    * keyrings are already gone (deleteSubscriptions); the Stripe product
+    * cleanup is carried by a queued operation.
+    */
+  private def deletePlanClosure(
+      api: Api,
+      plan: UsagePlan,
+      tenant: Tenant
+  ): Future[Unit] =
+    env.dataStore.withTransaction {
+      val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
+      for {
+        _ <- env.dataStore.apiRepo
+          .forTenant(tenant)
+          .save(
+            api.copy(possibleUsagePlans =
+              api.possibleUsagePlans.filter(_ != plan.id)
+            )
+          )
+        _ <- plan.documentation match {
+          case Some(doc) =>
+            env.dataStore.apiDocumentationPageRepo
+              .forTenant(tenant)
+              .deleteByIds(doc.docIds().map(ApiDocumentationPageId.apply))
+          case None => FastFuture.successful(false)
+        }
+        _ <- env.dataStore.subscriptionDemandRepo
+          .forAllTenant()
+          .execute(
+            s"""
+               |WITH deleted_demands AS (
+               |  DELETE FROM subscription_demands
+               |  WHERE content->>'_tenant' = $$1
+               |    AND content->>'plan' = $$2
+               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |  RETURNING _id AS demand_id
+               |)
+               |DELETE FROM step_validators
+               |WHERE content->>'subscriptionDemand' IN (SELECT demand_id FROM deleted_demands);
+               |""".stripMargin,
+            Seq(tenant.id.value, plan.id.value)
+          )
+        _ <- notifRepo.execute(
+          s"DELETE FROM ${notifRepo.tableName} " +
+            "WHERE content->>'_tenant' = $1 " +
+            "AND content->'action'->>'plan' = $2",
+          Seq(tenant.id.value, plan.id.value)
+        )
+        _ <- env.dataStore.usagePlanRepo.forTenant(tenant).deleteById(plan.id)
+      } yield ()
+    }
 
   /** Flag an api as deleted and delete his subscriptions add api & subs to
     * deletion queue to process complete deletion
