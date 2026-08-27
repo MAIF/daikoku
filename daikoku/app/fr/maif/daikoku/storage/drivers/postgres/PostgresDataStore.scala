@@ -893,6 +893,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       // A translation is keyed by (key, language).
       "CREATE INDEX IF NOT EXISTS idx_translation_key_lang ON translations ((content->>'key'), (content->>'language'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_plan ON subscription_demands ((content->>'plan'));",
+      // `myTeams` sits behind nearly every page, and membership is the
+      // predicate it filters on. Serves the `@>` of `TeamRepo.isMemberSql`.
+      "CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));",
       """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
         |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
         |WHERE _deleted = false AND content->>'type' = 'Personal';""".stripMargin

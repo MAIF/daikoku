@@ -720,10 +720,16 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
 
   /** Membership predicate on the JSON `users` array — the SQL form of the
     * former `{"users.userId": …}` query.
+    *
+    * Written as a containment test rather than an unnesting `EXISTS`, because
+    * `jsonb_array_elements` opens every row: only `@>` can be served by the
+    * `idx_team_users` GIN index on `content->'users'`. Containment matches
+    * objects partially, so a `{"userId": …}` probe finds the full
+    * `{"userId", "teamPermission"}` entry. Public because `ApiController.search`
+    * needs the same predicate inside its own SQL.
     */
-  private def isMemberSql(placeholder: Int): String =
-    "EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') AS u " +
-      s"WHERE u->>'userId' = $$$placeholder)"
+  def isMemberSql(placeholder: Int): String =
+    s"content->'users' @> jsonb_build_array(jsonb_build_object('userId', $$$placeholder::text))"
 
   /** The team backing the tenant administration. */
   def findAdminTeam(

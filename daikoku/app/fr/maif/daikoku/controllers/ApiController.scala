@@ -2750,9 +2750,7 @@ class ApiController(
             val repo = env.dataStore.teamRepo.forTenant(ctx.tenant.id)
             val memberOnly =
               if (ctx.user.isDaikokuAdmin) ""
-              else
-                " AND EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') " +
-                  "AS u WHERE u->>'userId' = $3)"
+              else s" AND ${env.dataStore.teamRepo.isMemberSql(3)}"
             val notPersonal =
               if (ctx.tenant.subscriptionSecurity.exists(identity))
                 s" AND content->>'type' <> '${TeamType.Personal.name}'"
