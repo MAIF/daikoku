@@ -80,7 +80,7 @@ class RemoteCatalogSpec
 
   private def reload(): Option[JobInformation] =
     Await.result(
-      jobRepo.findByIdIncludingDeleted(
+      jobRepo.findById(
         DatastoreId(s"${JobName.RemoteCatalog.value}-${tenant.id.value}")
       ),
       10.seconds

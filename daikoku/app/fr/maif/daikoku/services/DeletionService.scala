@@ -41,7 +41,9 @@ class DeletionService(
       user: User,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
-    AppLogger.debug(s"[deletion service] :: physically deleting user[${user.name}]")
+    AppLogger.debug(
+      s"[deletion service] :: physically deleting user[${user.name}]"
+    )
     EitherT.right[AppError](
       env.dataStore.withTransaction {
         val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
@@ -130,19 +132,19 @@ class DeletionService(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.plan),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.keyring),
+          .findById(subscription.keyring),
         AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
       )
       notif = Notification(
@@ -239,7 +241,7 @@ class DeletionService(
       orphanedKeyrings <- EitherT.liftF(
         env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdsIncludingDeleted(orphanedKeyringIds)
+          .findByIds(orphanedKeyringIds)
       )
       // Build the deletion notifications while api/plan/keyring are still
       // readable (reads only, no writes yet).

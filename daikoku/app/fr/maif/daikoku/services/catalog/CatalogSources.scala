@@ -20,7 +20,8 @@ object CatalogSources {
     register("gitlab", new CatalogSourceGitlab())
   }
 
-  def register(name: String, source: CatalogSource): Unit = sources.put(name, source)
+  def register(name: String, source: CatalogSource): Unit =
+    sources.put(name, source)
 
   def get(name: String): Option[CatalogSource] = sources.get(name)
 }

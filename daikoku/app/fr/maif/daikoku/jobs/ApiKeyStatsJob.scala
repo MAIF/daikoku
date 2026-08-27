@@ -65,7 +65,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   ): Future[Option[Keyring]] =
     env.dataStore.keyringRepo
       .forTenant(tenant.id)
-      .findByIdIncludingDeleted(subscription.keyring)
+      .findById(subscription.keyring)
 
   def syncConsumptionAsFlow(
       api: Api,
@@ -125,7 +125,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       api <-
         env.dataStore.apiRepo
           .forTenant(tenant.id)
-          .findByIdIncludingDeleted(subscription.api)
+          .findById(subscription.api)
     } yield {
       api match {
         case Some(api) =>
@@ -265,12 +265,12 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       plan <- OptionT(
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.plan)
+          .findById(subscription.plan)
       )
       keyring <- OptionT(
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
-          .findByIdIncludingDeleted(subscription.keyring)
+          .findById(subscription.keyring)
       )
       otoroshiTarget <- OptionT.fromOption[Future](plan.otoroshiTarget)
       otoSettings <- OptionT.fromOption[Future](

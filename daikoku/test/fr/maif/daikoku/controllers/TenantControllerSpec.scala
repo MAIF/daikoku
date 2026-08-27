@@ -216,7 +216,7 @@ class TenantControllerSpec()
       // the tenant is physically gone, not flagged _deleted
       Await.result(
         daikokuComponents.env.dataStore.tenantRepo
-          .findByIdIncludingDeleted(testTenant.id),
+          .findById(testTenant.id),
         5.seconds
       ) mustBe None
 

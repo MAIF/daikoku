@@ -131,7 +131,7 @@ case class CmsPage(
         val userId = renderString(ctx, parentId, id, fields, jsonToCombine, req)
         val optUser =
           Await.result(
-            env.dataStore.userRepo.findByIdIncludingDeleted(userId),
+            env.dataStore.userRepo.findById(userId),
             10.seconds
           )
 
@@ -937,7 +937,7 @@ case class CmsPage(
                       .map(pageId =>
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findByIdIncludingDeleted(pageId)
+                          .findById(pageId)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -964,7 +964,7 @@ case class CmsPage(
                       .map(pageId =>
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findByIdIncludingDeleted(pageId)
+                          .findById(pageId)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -995,7 +995,7 @@ case class CmsPage(
                       .map(
                         env.dataStore.apiDocumentationPageRepo
                           .forTenant(ctx.tenant)
-                          .findByIdIncludingDeleted(_)
+                          .findById(_)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -1024,7 +1024,7 @@ case class CmsPage(
                     .map(
                       env.dataStore.apiDocumentationPageRepo
                         .forTenant(ctx.tenant)
-                        .findByIdIncludingDeleted(_)
+                        .findById(_)
                     )
                     .getOrElse(FastFuture.successful(None))
                 case _ => FastFuture.successful(None)

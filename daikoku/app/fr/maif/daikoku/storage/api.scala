@@ -201,9 +201,7 @@ trait Repo[Of, Id <: ValueType] {
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(
-      Seq.empty
-    )
+    val (where, params) = scopedWhere(Seq.empty)
     query(s"SELECT content FROM $tableName$where", params)
   }
 
@@ -220,22 +218,6 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findById(id.value)
 
-  /** Reaches an entity whatever its `_deleted` flag. The deletion pipeline
-    * needs it: `QueueJob` and `DeletionService` re-read entities they have just
-    * flagged, to carry the cascade through.
-    */
-  def findByIdIncludingDeleted(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
-    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
-  }
-
-  def findByIdIncludingDeleted(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findByIdIncludingDeleted(id.value)
-
   def findByIds(
       ids: Seq[Id]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
@@ -243,28 +225,6 @@ trait Repo[Of, Id <: ValueType] {
       Seq(s"_id = ANY($$1::text[])"),
       Seq(ids.map(_.value).toArray)
     )
-    query(s"SELECT content FROM $tableName$where", params)
-  }
-
-  /** Batch counterpart of `findByIdIncludingDeleted`. The GraphQL Fetchers use
-    * it: Sangria fails the whole query when a batch does not resolve every id
-    * it was given, so a reference to a flagged entity must still come back.
-    */
-  def findByIdsIncludingDeleted(
-      ids: Seq[Id]
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(
-      Seq(s"_id = ANY($$1::text[])"),
-      Seq(ids.map(_.value).toArray)
-    )
-    query(s"SELECT content FROM $tableName$where", params)
-  }
-
-  def findAllIncludingDeleted()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(Seq.empty)
     query(s"SELECT content FROM $tableName$where", params)
   }
 
@@ -395,8 +355,8 @@ trait Repo[Of, Id <: ValueType] {
     exists(id.value)
 
   /** Runs a parameterised `SELECT COUNT(*) AS count …` and returns the count.
-    * Like the other primitives it takes the SQL as written: no tenant filter
-    * is injected.
+    * Like the other primitives it takes the SQL as written: no tenant filter is
+    * injected.
     */
   def queryCount(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
@@ -679,9 +639,9 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
     * Written as a containment test rather than an unnesting `EXISTS`, because
     * `jsonb_array_elements` opens every row: only `@>` can be served by the
     * `idx_team_users` GIN index on `content->'users'`. Containment matches
-    * objects partially, so a `{"userId": …}` probe finds the full
-    * `{"userId", "teamPermission"}` entry. Public because `ApiController.search`
-    * needs the same predicate inside its own SQL.
+    * objects partially, so a `{"userId": …}` probe finds the full `{"userId",
+    * "teamPermission"}` entry. Public because `ApiController.search` needs the
+    * same predicate inside its own SQL.
     */
   def isMemberSql(placeholder: Int): String =
     s"content->'users' @> jsonb_build_array(jsonb_build_object('userId', $$$placeholder::text))"

@@ -82,7 +82,7 @@ class AnonymousReportingJob(env: Env) {
 
   private def getData = {
     for {
-      daikoku_id <- dataStore.reportsInfoRepo.findAllIncludingDeleted().map(seq => seq.head.id)
+      daikoku_id <- dataStore.reportsInfoRepo.findAll().map(seq => seq.head.id)
 
       account_creation <- dataStore.accountCreationRepo.findAll()
       api_documentation_pages <-
@@ -166,7 +166,7 @@ class AnonymousReportingJob(env: Env) {
 
   private def sendDatas(): Future[Done] = {
     dataStore.reportsInfoRepo
-      .findAllIncludingDeleted()
+      .findAll()
       .map(seq => seq.head)
       .flatMap(seq => {
         if (enabled && seq.activated) {

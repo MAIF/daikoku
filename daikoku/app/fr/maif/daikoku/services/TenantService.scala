@@ -177,40 +177,44 @@ class TenantService(
         if (removedOtoroshiSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            env.dataStore.usagePlanRepo
-              .findByOtoroshiSettings(
-                updatedTenant.id,
-                removedOtoroshiSettings.map(_.value).toSeq
-              )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              env.dataStore.usagePlanRepo
+                .findByOtoroshiSettings(
+                  updatedTenant.id,
+                  removedOtoroshiSettings.map(_.value).toSeq
+                )
+            )
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
       _ <-
         if (removedPaymentSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            env.dataStore.usagePlanRepo
-              .findByPaymentSettings(
-                updatedTenant.id,
-                removedPaymentSettings.map(_.value).toSeq
-              )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              env.dataStore.usagePlanRepo
+                .findByPaymentSettings(
+                  updatedTenant.id,
+                  removedPaymentSettings.map(_.value).toSeq
+                )
+            )
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
     } yield ()
   }
 

@@ -60,7 +60,7 @@ class KeyringService(env: Env) {
       keyring: KeyringId
   ): Future[Boolean] =
     env.dataStore.keyringRepo.forTenant(tenant).findById(keyring).flatMap {
-      case None => Future.successful(false)
+      case None    => Future.successful(false)
       case Some(k) =>
         // Resolve the full OtoroshiSettings now and embed them in the payload,
         // so the queued cleanup no longer needs the tenant (which may itself be

@@ -17,7 +17,6 @@ import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
 import fr.maif.daikoku.login.AuthProvider
 
-
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
@@ -408,7 +407,7 @@ class DeletionServiceSpec
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(personalSubscription.id),
+            .findById(personalSubscription.id),
           5.second
         )
         _maybeSubscription.isEmpty
@@ -467,7 +466,7 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subscriptionDemand.id),
+          .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
 
@@ -622,7 +621,7 @@ class DeletionServiceSpec
       val _maybeSubscription = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(personalSubscription.id),
+          .findById(personalSubscription.id),
         5.second
       )
 
@@ -633,7 +632,7 @@ class DeletionServiceSpec
       val notifInvitation = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(teamInvitationNotif.id),
+          .findById(teamInvitationNotif.id),
         5.second
       )
       notifInvitation mustBe None
@@ -642,7 +641,7 @@ class DeletionServiceSpec
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -650,17 +649,12 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subscriptionDemand.id),
+          .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
 
     }
 
-    // TDD pilot for the user slice of the physical-deletion refactor.
-    // The user must be removed physically in the request, not flagged _deleted
-    // and purged later by the queue. The admin GET filters _deleted, so it
-    // can't tell the two apart — assert the physical state directly.
-    // RED until deleteUser stops soft-deleting.
     "physically remove the user at enqueue time, not flag it _deleted" in {
       val victim = User(
         id = UserId("atomic-del-user"),
@@ -695,11 +689,9 @@ class DeletionServiceSpec
       )(using tenant, session)
       resp.status mustBe 200
 
-      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
-      // rows too, so a flagged user would still come back here.
       Await.result(
         daikokuComponents.env.dataStore.userRepo
-          .findByIdIncludingDeleted(victim.id),
+          .findById(victim.id),
         5.second
       ) mustBe None
     }
@@ -842,7 +834,7 @@ class DeletionServiceSpec
       val _maybeSubscription = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(personalSubscription.id),
+          .findById(personalSubscription.id),
         5.second
       )
 
@@ -853,7 +845,7 @@ class DeletionServiceSpec
       val notifInvitation = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(teamInvitationNotif.id),
+          .findById(teamInvitationNotif.id),
         5.second
       )
       notifInvitation mustBe None
@@ -862,7 +854,7 @@ class DeletionServiceSpec
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -870,7 +862,7 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subscriptionDemand.id),
+          .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
     }
@@ -1052,7 +1044,7 @@ class DeletionServiceSpec
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(personalSubscription.id),
+            .findById(personalSubscription.id),
           5.second
         )
         _maybeSubscription.isEmpty
@@ -1111,7 +1103,7 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subscriptionDemand.id),
+          .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
 
@@ -1224,7 +1216,7 @@ class DeletionServiceSpec
         val maybeSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(sub.id),
+            .findById(sub.id),
           5.second
         )
         maybeSub.isEmpty
@@ -1233,13 +1225,10 @@ class DeletionServiceSpec
         operationsPending().isEmpty
       }
 
-      // the keyring must be physically removed, not only flagged _deleted.
-      // findById does not filter on _deleted, so a soft-deleted keyring would
-      // still be returned here.
       val maybeKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(keyring.id),
+          .findById(keyring.id),
         5.second
       )
       maybeKeyring mustBe None
@@ -1351,24 +1340,22 @@ class DeletionServiceSpec
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 
-      // No row of the DB closure survives the request — not even flagged
-      // _deleted (findByIdIncludingDeleted returns soft-deleted rows too).
       Await.result(
         daikokuComponents.env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(api.id),
+          .findById(api.id),
         5.second
       ) mustBe None
       Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(sub.id),
+          .findById(sub.id),
         5.second
       ) mustBe None
       Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(keyring.id),
+          .findById(keyring.id),
         5.second
       ) mustBe None
 
@@ -1384,7 +1371,8 @@ class DeletionServiceSpec
       org.awaitility.Awaitility.await.atMost(15.seconds.toJava) until { () =>
         Await
           .result(
-            daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+            daikokuComponents.env.dataStore.operationRepo
+              .findPending(tenant.id),
             5.second
           )
           .isEmpty
@@ -1433,7 +1421,8 @@ class DeletionServiceSpec
 
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}",
+        path =
+          s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}",
         method = "DELETE"
       )(using tenant, session)
       resp.status mustBe 200
@@ -1442,7 +1431,7 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(keyring.id),
+          .findById(keyring.id),
         5.second
       ) mustBe None
 
@@ -1463,7 +1452,8 @@ class DeletionServiceSpec
         name = "atomic del team",
         description = "",
         contact = "team@foo.bar",
-        users = Set(UserWithPermission(userAdmin.id, TeamPermission.Administrator))
+        users =
+          Set(UserWithPermission(userAdmin.id, TeamPermission.Administrator))
       )
 
       setupEnvBlocking(
@@ -1480,21 +1470,14 @@ class DeletionServiceSpec
       )(using tenant, session)
       resp.status mustBe 200
 
-      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
-      // rows too, so a flagged team would still come back here.
       Await.result(
         daikokuComponents.env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(team.id),
+          .findById(team.id),
         5.second
       ) mustBe None
     }
 
-    // TDD pilot for the plan slice of the physical-deletion refactor.
-    // The plan must be removed physically in the request, not flagged _deleted
-    // and purged later by the queue. `findByIds` filters _deleted, so assert
-    // the physical state directly. RED until deleteUsagePlanByQueue stops
-    // soft-deleting.
     "physically remove the usage plan at enqueue time, not flag it _deleted" in {
       val planToDelete = defaultApi.plans.head
 
@@ -1515,12 +1498,10 @@ class DeletionServiceSpec
       )(using tenant, session)
       resp.status mustBe 200
 
-      // physical, not flagged: findByIdIncludingDeleted returns soft-deleted
-      // rows too, so a flagged plan would still come back here.
       Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(planToDelete.id),
+          .findById(planToDelete.id),
         5.second
       ) mustBe None
     }
@@ -1709,7 +1690,7 @@ class DeletionServiceSpec
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(personalSubscription.id),
+            .findById(personalSubscription.id),
           5.second
         )
         _maybeSubscription.isEmpty
@@ -1749,7 +1730,7 @@ class DeletionServiceSpec
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forAllTenant()
-          .findByIdIncludingDeleted(subscriptionDemand.id),
+          .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
 
@@ -1900,7 +1881,7 @@ class DeletionServiceSpec
         val maybeChildSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(childSub.id),
+            .findById(childSub.id),
           5.second
         )
         maybeChildSub.isEmpty
@@ -2022,7 +2003,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findByIdIncludingDeleted(expiredSub.id),
+              .findById(expiredSub.id),
             5.second
           )
           .isEmpty
@@ -2185,7 +2166,7 @@ class DeletionServiceSpec
         val maybeParentSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(parentSub.id),
+            .findById(parentSub.id),
           5.second
         )
         logger.warn(s"$maybeParentSub")
@@ -2200,7 +2181,7 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.isDefined mustBe true
@@ -2398,7 +2379,7 @@ class DeletionServiceSpec
         val maybeParentSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(parentSub.id),
+            .findById(parentSub.id),
           5.second
         )
         maybeParentSub.isEmpty
@@ -2579,7 +2560,7 @@ class DeletionServiceSpec
         val maybeChildSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(childSub.id),
+            .findById(childSub.id),
           5.second
         )
         maybeChildSub.isEmpty
@@ -2740,7 +2721,7 @@ class DeletionServiceSpec
         val maybeParentSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(parentSub.id),
+            .findById(parentSub.id),
           5.second
         )
         maybeParentSub.isEmpty
@@ -2908,7 +2889,7 @@ class DeletionServiceSpec
         val maybeParentSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(parentSub.id),
+            .findById(parentSub.id),
           5.second
         )
         maybeParentSub.isEmpty
@@ -3085,7 +3066,7 @@ class DeletionServiceSpec
         val maybeParentSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(parentSub.id),
+            .findById(parentSub.id),
           5.second
         )
         maybeParentSub.isEmpty
@@ -3205,7 +3186,7 @@ class DeletionServiceSpec
         val maybeSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(consumerSub.id),
+            .findById(consumerSub.id),
           5.second
         )
         maybeSub.isEmpty
@@ -3310,7 +3291,7 @@ class DeletionServiceSpec
       val maybeSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(sub.id),
+          .findById(sub.id),
         5.second
       )
       maybeSub mustBe empty
@@ -3444,7 +3425,7 @@ class DeletionServiceSpec
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(parentSub.id),
+          .findById(parentSub.id),
         5.second
       )
       maybeParentSub mustBe empty
@@ -3592,7 +3573,7 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.forall(_.deleted) mustBe true

@@ -269,31 +269,37 @@ abstract class AdminApiController[Of, Id <: ValueType](
     fromJson(raw) match {
       case Left(err) => Future.successful(Left(err))
       case Right(entity) =>
-        entityStore(tenant, env.dataStore).findById(getId(entity).value).flatMap { existing =>
-          val mode = if (existing.isDefined) UpdateOrCreate.Update else UpdateOrCreate.Create
-          validate(entity, mode).value.flatMap {
-            case Left(error) => Future.successful(Left(error.getErrorMessage()))
-            case Right(validated) =>
-              existing match {
-                case Some(old) =>
-                  val toSave = reconcileMerge(old, validated)
-                  if (toJson(old) == toJson(toSave)) Future.successful(Right("unchanged"))
-                  else if (dryRun) Future.successful(Right("updated"))
-                  else
-                    doUpdate(tenant, old, toSave).value.map {
-                      case Left(error) => Left(error.getErrorMessage())
-                      case Right(_)    => Right("updated")
-                    }
-                case None =>
-                  if (dryRun) Future.successful(Right("created"))
-                  else
-                    doCreate(tenant, validated).value.map {
-                      case Left(error) => Left(error.getErrorMessage())
-                      case Right(_)    => Right("created")
-                    }
-              }
+        entityStore(tenant, env.dataStore)
+          .findById(getId(entity).value)
+          .flatMap { existing =>
+            val mode =
+              if (existing.isDefined) UpdateOrCreate.Update
+              else UpdateOrCreate.Create
+            validate(entity, mode).value.flatMap {
+              case Left(error) =>
+                Future.successful(Left(error.getErrorMessage()))
+              case Right(validated) =>
+                existing match {
+                  case Some(old) =>
+                    val toSave = reconcileMerge(old, validated)
+                    if (toJson(old) == toJson(toSave))
+                      Future.successful(Right("unchanged"))
+                    else if (dryRun) Future.successful(Right("updated"))
+                    else
+                      doUpdate(tenant, old, toSave).value.map {
+                        case Left(error) => Left(error.getErrorMessage())
+                        case Right(_)    => Right("updated")
+                      }
+                  case None =>
+                    if (dryRun) Future.successful(Right("created"))
+                    else
+                      doCreate(tenant, validated).value.map {
+                        case Left(error) => Left(error.getErrorMessage())
+                        case Right(_)    => Right("created")
+                      }
+                }
+            }
           }
-        }
     }
 
   def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
@@ -396,7 +402,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def updateEntity(id: String): Action[JsValue] =
     DaikokuApiAction.async(parse.json) { ctx =>
-      entityStore(ctx.tenant, env.dataStore).findByIdIncludingDeleted(id).flatMap {
+      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
         case None =>
           Errors.craftResponseResultF(
             s"Entity $entityName not found",

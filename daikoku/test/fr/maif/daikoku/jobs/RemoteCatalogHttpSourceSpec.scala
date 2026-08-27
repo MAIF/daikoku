@@ -74,8 +74,7 @@ class RemoteCatalogHttpSourceSpec
     RemoteCatalog(
       id = id,
       name = "http test catalog",
-      source =
-        RemoteCatalogSource(config = Json.obj("url" -> url)),
+      source = RemoteCatalogSource(config = Json.obj("url" -> url)),
       scheduling = RemoteCatalogScheduling(enabled = true),
       allowedKinds = Set("team")
     )

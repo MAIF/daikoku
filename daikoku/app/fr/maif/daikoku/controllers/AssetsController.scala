@@ -270,7 +270,7 @@ class TeamAssetsController(
           case Some(cfg) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant)
-              .findByIdIncludingDeleted(teamId)
+              .findById(teamId)
               .flatMap {
                 case None =>
                   FastFuture.successful(

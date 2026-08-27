@@ -1233,14 +1233,14 @@ object CommonServices {
         sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findByIdIncludingDeleted(apiSubscriptionId),
+            .findById(apiSubscriptionId),
           AppError.EntityNotFound("ApiSubscription")
         )
         maybeKeyring <-
           EitherT.liftF[Future, AppError, Option[Keyring]](
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant)
-              .findByIdIncludingDeleted(sub.keyring.value)
+              .findById(sub.keyring.value)
           )
         accessibleResources <-
           EitherT

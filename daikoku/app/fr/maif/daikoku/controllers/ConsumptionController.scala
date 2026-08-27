@@ -59,7 +59,7 @@ class ConsumptionController(
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findByIdIncludingDeleted(subscriptionId)
+          .findById(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -80,7 +80,7 @@ class ConsumptionController(
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findByIdIncludingDeleted(subscription.plan)
+                .findById(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(
@@ -93,7 +93,7 @@ class ConsumptionController(
                   case Some(plan) =>
                     env.dataStore.keyringRepo
                       .forTenant(ctx.tenant.id)
-                      .findByIdIncludingDeleted(subscription.keyring)
+                      .findById(subscription.keyring)
                       .flatMap {
                         case None =>
                           FastFuture.successful(
@@ -134,7 +134,7 @@ class ConsumptionController(
 
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findByIdIncludingDeleted(subscriptionId)
+          .findById(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -242,7 +242,7 @@ class ConsumptionController(
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
-                .findByIdIncludingDeleted(subscription.plan)
+                .findById(subscription.plan)
                 .flatMap {
                   case None =>
                     FastFuture.successful(
@@ -271,7 +271,7 @@ class ConsumptionController(
                               otoSettings
                             env.dataStore.keyringRepo
                               .forTenant(ctx.tenant.id)
-                              .findByIdIncludingDeleted(subscription.keyring)
+                              .findById(subscription.keyring)
                               .flatMap {
                                 case None =>
                                   FastFuture.successful(

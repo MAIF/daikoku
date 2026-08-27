@@ -43,7 +43,7 @@ class Translator {
     val body = if (key.startsWith("mail")) {
       env.dataStore.cmsRepo
         .forTenant(tenant)
-        .findByIdIncludingDeleted(
+        .findById(
           s".mails.$key.${language.toLowerCase}".replaceAll("\\.", "-")
         )
         .flatMap {
@@ -143,7 +143,7 @@ class Translator {
 
     env.dataStore.cmsRepo
       .forTenant(tenant)
-      .findByIdIncludingDeleted(
+      .findById(
         s".mails.root.$key.${language.toLowerCase}".replaceAll("\\.", "-")
       )
       .flatMap {

@@ -3679,7 +3679,7 @@ class AdminApiControllerSpec
           Await.result(
             daikokuComponents.env.dataStore.auditTrailRepo
               .forTenant(tenant.id)
-              .findAllIncludingDeleted(),
+              .findAll(),
             10.seconds
           )
 
@@ -4625,7 +4625,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.subscriptionDemandRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(demandId),
+            .findById(demandId),
           5.seconds
         ) mustBe None
 
@@ -4633,7 +4633,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.stepValidatorRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(stepValidator.id),
+            .findById(stepValidator.id),
           5.seconds
         ) mustBe None
 
@@ -4641,7 +4641,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(demandNotif.id),
+            .findById(demandNotif.id),
           5.seconds
         ) mustBe None
       }
@@ -4799,7 +4799,7 @@ class AdminApiControllerSpec
           val _maybeSubscription = Await.result(
             daikokuComponents.env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findByIdIncludingDeleted(personalSubscription.id),
+              .findById(personalSubscription.id),
             5.seconds
           )
           _maybeSubscription.isEmpty
@@ -4851,7 +4851,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.subscriptionDemandRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(subscriptionDemand.id),
+            .findById(subscriptionDemand.id),
           5.seconds
         ) mustBe None
       }
@@ -4974,7 +4974,7 @@ class AdminApiControllerSpec
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(personalSubscription.id),
+            .findById(personalSubscription.id),
           5.seconds
         )
         // subscription is now fully deleted
@@ -4983,7 +4983,7 @@ class AdminApiControllerSpec
         val notifInvitation = Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(teamInvitationNotif.id),
+            .findById(teamInvitationNotif.id),
           5.seconds
         )
         notifInvitation mustBe None
@@ -4991,7 +4991,7 @@ class AdminApiControllerSpec
         val notifDemand = Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(subDemandNotif.id),
+            .findById(subDemandNotif.id),
           5.seconds
         )
         notifDemand mustBe None
@@ -4999,7 +4999,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.subscriptionDemandRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(subscriptionDemand.id),
+            .findById(subscriptionDemand.id),
           5.seconds
         ) mustBe None
       }
@@ -5163,7 +5163,7 @@ class AdminApiControllerSpec
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(personalSubscription.id),
+            .findById(personalSubscription.id),
           5.seconds
         )
         // subscription is now fully deleted
@@ -5215,7 +5215,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.subscriptionDemandRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(subscriptionDemand.id),
+            .findById(subscriptionDemand.id),
           5.seconds
         ) mustBe None
       }
@@ -5342,7 +5342,7 @@ class AdminApiControllerSpec
           val _maybeSubscription = Await.result(
             daikokuComponents.env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findByIdIncludingDeleted(personalSubscription.id),
+              .findById(personalSubscription.id),
             5.seconds
           )
           _maybeSubscription.isEmpty
@@ -5380,7 +5380,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.subscriptionDemandRepo
             .forAllTenant()
-            .findByIdIncludingDeleted(subscriptionDemand.id),
+            .findById(subscriptionDemand.id),
           5.seconds
         ) mustBe None
       }
@@ -5449,7 +5449,7 @@ class AdminApiControllerSpec
         val maybeSub = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(sub.id),
+            .findById(sub.id),
           5.seconds
         )
         maybeSub.isDefined mustBe false

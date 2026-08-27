@@ -57,9 +57,9 @@ class TransactionSpec
         10.second
       )
 
-      val savedUser = Await.result(ds.userRepo.findByIdIncludingDeleted(userId), 5.second)
+      val savedUser = Await.result(ds.userRepo.findById(userId), 5.second)
       val savedTeam =
-        Await.result(ds.teamRepo.forAllTenant().findByIdIncludingDeleted(teamId), 5.second)
+        Await.result(ds.teamRepo.forAllTenant().findById(teamId), 5.second)
 
       savedUser mustBe defined
       savedTeam mustBe defined
@@ -90,7 +90,7 @@ class TransactionSpec
 
       failed mustBe true
 
-      val rolledBackUser = Await.result(ds.userRepo.findByIdIncludingDeleted(user.id), 5.second)
+      val rolledBackUser = Await.result(ds.userRepo.findById(user.id), 5.second)
       rolledBackUser mustBe defined
       rolledBackUser.get.name mustBe user.name
     }

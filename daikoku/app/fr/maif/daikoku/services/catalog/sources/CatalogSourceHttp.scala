@@ -20,27 +20,33 @@ class CatalogSourceHttp extends CatalogSource {
       ec: ExecutionContext,
       env: Env
   ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
-    val url     = (catalog.source.config \ "url").asOpt[String].getOrElse("")
-    val headers = (catalog.source.config \ "headers").asOpt[Map[String, String]].getOrElse(Map.empty)
-    val timeout = (catalog.source.config \ "timeout").asOpt[Long].getOrElse(30000L)
+    val url = (catalog.source.config \ "url").asOpt[String].getOrElse("")
+    val headers = (catalog.source.config \ "headers")
+      .asOpt[Map[String, String]]
+      .getOrElse(Map.empty)
+    val timeout =
+      (catalog.source.config \ "timeout").asOpt[Long].getOrElse(30000L)
 
     if (url.isEmpty) {
       Future.successful(Left(Json.obj("error" -> "No URL configured")))
     } else {
       fetchUrl(url, headers, timeout, env).flatMap {
-        case Left(err)         => Future.successful(Left(err))
+        case Left(err) => Future.successful(Left(err))
         case Right(rawContent) =>
           SourceUtils.isDeployListing(rawContent) match {
             case Some(arr) =>
               val baseUrl = url.substring(0, url.lastIndexOf('/'))
               SourceUtils.resolveDeployListing(
                 arr,
-                relativePath => fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
+                relativePath =>
+                  fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
                 s"http://$url"
               )
-            case None      =>
+            case None =>
               Future.successful(
-                Right(SourceUtils.parseEntityContent(rawContent, s"http://$url")): Either[JsValue, Seq[
+                Right(
+                  SourceUtils.parseEntityContent(rawContent, s"http://$url")
+                ): Either[JsValue, Seq[
                   RemoteEntity
                 ]]
               )
@@ -49,7 +55,12 @@ class CatalogSourceHttp extends CatalogSource {
     }
   }
 
-  private def fetchUrl(url: String, headers: Map[String, String], timeout: Long, env: Env)(implicit
+  private def fetchUrl(
+      url: String,
+      headers: Map[String, String],
+      timeout: Long,
+      env: Env
+  )(implicit
       ec: ExecutionContext
   ): Future[Either[JsValue, String]] = {
     env.wsClient
@@ -62,12 +73,16 @@ class CatalogSourceHttp extends CatalogSource {
         if (resp.status == 200) {
           Right(body): Either[JsValue, String]
         } else {
-          Left(Json.obj("error" -> s"HTTP ${resp.status}: ${body.take(500)}")): Either[JsValue, String]
+          Left(
+            Json.obj("error" -> s"HTTP ${resp.status}: ${body.take(500)}")
+          ): Either[JsValue, String]
         }
       }
       .recover { case e: Throwable =>
         logger.error(s"Error fetching from $url", e)
-        Left(Json.obj("error" -> s"Error fetching from HTTP: ${e.getMessage}")): Either[JsValue, String]
+        Left(
+          Json.obj("error" -> s"Error fetching from HTTP: ${e.getMessage}")
+        ): Either[JsValue, String]
       }
   }
 }

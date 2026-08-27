@@ -242,7 +242,7 @@ class ApiCrudService(
   ): Future[Seq[Boolean]] = {
     env.dataStore.apiIssueRepo
       .forTenant(tenantId)
-      .findAllIncludingDeleted()
+      .findAll()
       .flatMap { issues =>
         Future.sequence(issues.map(issue => {
           env.dataStore.apiIssueRepo

@@ -651,7 +651,7 @@ class TenantController(
           oldCmsPage <- EitherT.right[AppError](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .findByIdIncludingDeleted(s"${ctx.tenant.id.value}-color-theme")
+              .findById(s"${ctx.tenant.id.value}-color-theme")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.cmsRepo

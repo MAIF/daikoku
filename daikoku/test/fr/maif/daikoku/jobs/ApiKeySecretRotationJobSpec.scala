@@ -205,7 +205,7 @@ class ApiKeySecretRotationJobSpec()
       .result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenantId)
-          .findByIdIncludingDeleted(id),
+          .findById(id),
         10.seconds
       )
       .get
@@ -450,7 +450,7 @@ class ApiKeySecretRotationJobSpec()
       val jobInfo = Await.result(
         daikokuComponents.env.dataStore.JobInformationRepo
           .forTenant(tenant.id)
-          .findByIdIncludingDeleted(
+          .findById(
             DatastoreId(
               s"${JobName.ApiKeyRotationVerifier.value}-${tenant.id.value}"
             )

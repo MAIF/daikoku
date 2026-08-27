@@ -74,7 +74,7 @@ class TranslationController(
     DaikokuUnauthenticatedAction.async { ctx =>
       env.dataStore.translationRepo
         .forTenant(ctx.tenant.id)
-        .findAllIncludingDeleted()
+        .findAll()
         .map(translations => {
           Ok(
             Json
@@ -138,7 +138,7 @@ class TranslationController(
       )(ctx.tenant.id.value, ctx) { (_, _) =>
         env.dataStore.translationRepo
           .forTenant(ctx.tenant.id)
-          .findByIdIncludingDeleted(translationId)
+          .findById(translationId)
           .map {
             case None =>
               FastFuture.successful(AppError.render(TranslationNotFound))

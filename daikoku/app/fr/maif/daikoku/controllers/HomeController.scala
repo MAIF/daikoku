@@ -131,7 +131,7 @@ class HomeController(
                 .map(_ => ServiceStatus.Up)
           }
           env.dataStore.tenantRepo
-            .findAllIncludingDeleted()
+            .findAll()
             .flatMap(tenantList =>
               datastoreHealth
                 .zip(
@@ -435,7 +435,7 @@ class HomeController(
               ) {
                 env.dataStore.cmsRepo
                   .forTenant(ctx.tenant)
-                  .findByIdIncludingDeleted("-mails-root-tenant-mail-template-fr")
+                  .findById("-mails-root-tenant-mail-template-fr")
                   .flatMap {
                     case None => render(ctx, page)
                     case Some(layout) =>
@@ -467,7 +467,7 @@ class HomeController(
       case Some(p) =>
         env.dataStore.cmsRepo
           .forTenant(ctx.tenant)
-          .findByIdIncludingDeleted(p.notFoundCmsPage.get)
+          .findById(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
               page
@@ -601,7 +601,7 @@ class HomeController(
         {
           env.dataStore.cmsRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(id)
+            .findById(id)
             .map {
               case None => NotFound(Json.obj("error" -> "cms page not found"))
               case Some(page) => Ok(page.asJson)

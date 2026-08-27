@@ -59,7 +59,7 @@ class QueueJob(
   ): Future[Boolean] = {
     env.dataStore.keyringRepo
       .forTenant(subscription.tenant)
-      .findByIdIncludingDeleted(subscription.keyring)
+      .findById(subscription.keyring)
       .flatMap { maybeKeyring =>
         val repo =
           env.dataStore.notificationRepo.forTenant(subscription.tenant)
@@ -82,7 +82,7 @@ class QueueJob(
   }
 
 //  private def deleteThirdPartyPaymentClient(team: Team) = {
-//    env.dataStore.tenantRepo.findByIdIncludingDeleted(team.tenant).flatMap {
+//    env.dataStore.tenantRepo.findById(team.tenant).flatMap {
 //      case Some(tenant) =>
 //        Future.sequence(tenant.thirdPartyPaymentSettings.map {
 //          case p: ThirdPartyPaymentSettings.StripeSettings =>
@@ -106,25 +106,25 @@ class QueueJob(
           .save(o.copy(status = OperationStatus.InProgress))
       )
       tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant),
+        env.dataStore.tenantRepo.findById(o.tenant),
         AppError.TenantNotFound
       )
       subscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(o.itemId),
+          .findById(o.itemId),
         AppError.EntityNotFound("subscription")
       )
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.plan),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       _ <- EitherT.liftF(
@@ -170,7 +170,6 @@ class QueueJob(
       }
       .map(_ => ())
   }
-
 
   // The keyring DB row is already gone — DeletionService removes it physically
   // in the request transaction. This operation only carries the deferred
@@ -227,7 +226,7 @@ class QueueJob(
   private def syncKeyring(o: Operation): Future[Unit] = {
     (for {
       tenant <- OptionT(
-        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant.value)
+        env.dataStore.tenantRepo.findById(o.tenant.value)
       )
       _ <- OptionT.liftF(
         otoroshiSynchronizerJob.run(KeyringId(o.itemId), tenant)
@@ -318,7 +317,7 @@ class QueueJob(
       apiSubscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(o.itemId),
+          .findById(o.itemId),
         AppError.EntityNotFound("api subscription")
       )
       _ <- settingsAndInfos match {
