@@ -1,8 +1,8 @@
 # Removing the Mongo-style query DSL from the storage layer
 
-Working document for a refactor that has landed. Everything below is done; what is left is the two
-open calls in [Indexes](#indexes) and the cross-cutting projects that outlive it (physical deletion,
-streaming export). Keep it until those are settled, then delete it.
+Working document for a refactor that has landed. The `JsObject` query DSL is gone; what remains is
+listed in [What is left](#what-is-left) — two decided items (a GIN index, a dead-index migration) and
+one that needs a conversation first (physical deletion). Delete this file once those are settled.
 
 ## Goal
 
@@ -41,6 +41,7 @@ code, and data access goes through named, typed methods backed by parameterised 
 | 4 | Repos the plan had not listed: `operationRepo`, `stepValidatorRepo`, `keyringRepo`, `apiDocumentationPageRepo`, `auditTrailRepo`, `translationRepo`, `apiIssueRepo`, `jobRepo`, `apiSubscriptionTransferRepo`, `apiPostRepo`, `emailVerificationRepo` | **Done** |
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** — `rowToJson` moved to `pgimplicits`, the file is gone |
 | Final B | Slim down / dedupe the `Repo` layer | **Done** — `find*` renaming, plus the index pass below |
+| Next | GIN on `teams.users` (+ rewrite the membership lookups), drop the dead `_id` indexes | See [What is left](#what-is-left) |
 
 ## The pattern to follow
 
@@ -145,17 +146,66 @@ request in `Hostname` mode) and `consumptions` (the largest table of a busy inst
 covers every login, and the `action.user` / `demand` / `subscription` / `keyring` paths of
 `notifications` join their siblings, which were already indexed.
 
-Two judgement calls left open:
+## What is left
 
-- **`teams`, GIN on `content->'users'`.** Membership lookups (`findByUser`, `isTenantAdmin`,
-  `findPersonalTeam`, and `myTeams` behind them) are written as
-  `EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') …)`, which a GIN index cannot serve.
-  Getting one to help means rewriting them as `content->'users' @> …`. Worth measuring first: a
-  tenant rarely has enough teams for it to matter.
-- **Dead weight.** The `((content->>'_id'))` indexes have been useless since phase 0 — id lookups hit
-  the `_id` PRIMARY KEY. Same for `((content->>'_tenant'))` on `users`, which is not tenant-scoped.
-  Dropping them costs nothing at read time and saves on every write, but it is a migration, not a
-  `CREATE INDEX IF NOT EXISTS`.
+Three items, in this order. The first two are decided; the third is not.
+
+### A. GIN on `teams.content->'users'` — **to do**
+
+Membership lookups scan today. `TeamRepo.isMemberSql` is written as
+
+```sql
+EXISTS (SELECT 1 FROM jsonb_array_elements(content->'users') AS u WHERE u->>'userId' = $n)
+```
+
+which **no index can serve** — the function unnests the array, so every row of the tenant's teams
+must be opened. The tenant predicate in front restricts it, but `myTeams` sits behind nearly every
+page (catalogue, notifications, subscriptions), so it is the hottest path of the app on a tenant
+with many teams.
+
+The fix is one method plus one index, and both are needed — the index alone would never be used:
+
+1. rewrite `isMemberSql` as a containment test a GIN index can serve:
+   `content->'users' @> jsonb_build_array(jsonb_build_object('userId', $n))`
+   (or a `$n::jsonb` parameter carrying `[{"userId": "…"}]`);
+2. add `CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));`
+
+Callers to re-check afterwards: `findPersonalTeam`, `findByUser`, `isTenantAdmin`,
+`findPersonalTeamsForAllTenants`, and `ApiController.search`, which spells the same `EXISTS` inline.
+`MessageRepo.containsUser` uses `@>` already and needs nothing.
+
+Verify with `EXPLAIN ANALYZE` on `findByUser` before and after, on the largest tenant available.
+
+### B. Drop the dead indexes — **to do**
+
+Every entity carries its id twice: the `_id` column (which holds the PRIMARY KEY) and the JSON key
+`content->>'_id'`. Since phase 0 the generic helpers query the *column*, so the 8
+`((content->>'_id'))` indexes are never read — only maintained, on every insert and every `save`.
+Same for `((content->>'_tenant'))` on `users`, which is not a tenant-scoped repo.
+
+This is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: it must run once, be reversible, and
+carry a version number. It belongs in the evolution mechanism, not in `createIndexes`.
+
+Confirm the list is complete before dropping — nothing must read `content->>'_id'` any more:
+
+```bash
+grep -rn "content->>'_id'" daikoku/app | grep -v createIndexes
+```
+
+### C. Physical deletion — **discuss first, do not start**
+
+Grey areas remain; this needs a conversation before any code. What we know:
+
+- It would retire `notDeletedSql`, the whole `deleteLogically*` family, the `_deleted` column, the
+  `_deleted` JSON key and the `idx_*_deleted` indexes.
+- It would also collapse `findById` / `findByIdIncludingDeleted` (and the `findByIds` / `findAll`
+  pairs). Those exist only because deletion happens in two steps: `DeletionService` flags the entity
+  and queues an `Operation`, then `QueueJob` re-reads it — already flagged — to carry the cascade
+  through. 14 call sites in `QueueJob` and `DeletionService` depend on that. Make deletion immediate
+  and the escape hatch loses every caller.
+- **Trap:** four entities are already physically deleted in practice, because their `Format.writes`
+  never emits `_deleted` — `Message`, `Operation`, `Translation`, `Asset`. They show none of the work
+  the others need, so validating on them would give a false sense of completion.
 
 ## Recipe per entity
 
