@@ -49,38 +49,49 @@ class KeyringService(env: Env) {
         OtoroshiApiKeyFormat.writes(keyring.apiKey)
       )
 
-  /** Logically delete the keyring and enqueue its physical deletion in the
-    * deletion queue. The operation is only enqueued when the keyring was not
-    * already flagged deleted, so callers can invoke this idempotently without
-    * piling up duplicate operations. The deletion of the underlying Otoroshi
-    * api key is the caller's responsibility. Returns true when the keyring was
-    * deleted.
+  /** Physically delete the keyring and enqueue the removal of its underlying
+    * Otoroshi api key on the deletion queue (self-contained: the operation
+    * carries the clientId and settings, since the row is gone). No-op when the
+    * keyring is already gone, so callers can invoke this idempotently. Returns
+    * true when the keyring was deleted.
     */
   def deleteKeyring(
       tenant: TenantId,
       keyring: KeyringId
   ): Future[Boolean] =
-    env.dataStore.keyringRepo
-      .forTenant(tenant)
-      .deleteByIdLogically(keyring)
-      .flatMap {
-        case true =>
-          env.dataStore.operationRepo
-            .forTenant(tenant)
-            .save(
-              Operation(
-                DatastoreId(IdGenerator.token(32)),
-                tenant = tenant,
-                itemId = keyring.value,
-                itemType = ItemType.Keyring,
-                action = OperationAction.Delete
-              )
-            )
-            .map(_ => true)
-        case false => Future.successful(false)
-      }
+    env.dataStore.keyringRepo.forTenant(tenant).findById(keyring).flatMap {
+      case None => Future.successful(false)
+      case Some(k) =>
+        env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.keyringRepo.forTenant(tenant).deleteById(keyring)
+            _ <- k.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) =>
+                env.dataStore.operationRepo
+                  .forTenant(tenant)
+                  .save(
+                    Operation(
+                      DatastoreId(IdGenerator.token(32)),
+                      tenant = tenant,
+                      itemId = k.id.value,
+                      itemType = ItemType.Keyring,
+                      action = OperationAction.Delete,
+                      payload = Some(
+                        Json.obj(
+                          "clientId" -> k.apiKey.clientId,
+                          "otoroshiSettings" -> id.value
+                        )
+                      )
+                    )
+                  )
+                  .map(_ => ())
+              case KeyringOtoroshiBinding.Internal => Future.successful(())
+            }
+          } yield true
+        }
+    }
 
-  /** Logically delete the keyring when no subscription references it anymore.
+  /** Physically delete the keyring when no subscription references it anymore.
     */
   def deleteKeyringIfEmpty(
       tenant: TenantId,
