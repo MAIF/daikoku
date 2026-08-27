@@ -1285,8 +1285,7 @@ class LoginController(
           env.dataStore.userRepo
             .queryOne(
               s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
-                "WHERE content->'twoFactorAuthentication'->>'token' = $1 " +
-                "AND content->>'_deleted' = 'false' LIMIT 1",
+                "WHERE content->'twoFactorAuthentication'->>'token' = $1 LIMIT 1",
               Seq(token)
             )
             .flatMap {
@@ -1340,8 +1339,7 @@ class LoginController(
           env.dataStore.userRepo
             .queryOne(
               s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
-                "WHERE content->'twoFactorAuthentication'->>'backupCodes' = $1 " +
-                "AND content->>'_deleted' = 'false' LIMIT 1",
+                "WHERE content->'twoFactorAuthentication'->>'backupCodes' = $1 LIMIT 1",
               Seq(backupCodes)
             )
             .flatMap {

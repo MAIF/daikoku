@@ -535,8 +535,7 @@ class TenantController(
         env.dataStore.userRepo
           .query(
             s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
-              "WHERE NOT (_id = ANY($1::text[])) " +
-              "AND content->>'_deleted' = 'false'",
+              "WHERE NOT (_id = ANY($1::text[]))",
             Seq(adminTeam.users.map(_.userId.value).toArray)
           )
           .map(addableAdmins =>

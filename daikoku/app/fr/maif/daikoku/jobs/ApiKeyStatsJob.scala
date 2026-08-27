@@ -460,7 +460,6 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       repo.query(
         s"SELECT content FROM ${repo.tableName} " +
           "WHERE content->>'_tenant' = $1 " +
-          "AND content->>'_deleted' = 'false' " +
           "AND content->>'clientId' = $2 " +
           "AND content->>'state' = 'completed' " +
           "AND (content->>'from')::bigint >= $3 " +

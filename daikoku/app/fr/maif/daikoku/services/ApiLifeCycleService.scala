@@ -38,7 +38,7 @@ class ApiLifeCycleService(
          (COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason')
            || '["$lifecycleReason"]'::jsonb
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
@@ -58,7 +58,7 @@ class ApiLifeCycleService(
          '{blockedBy}',
          COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason'
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )

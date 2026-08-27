@@ -280,7 +280,6 @@ object CommonServices {
        |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' = ANY ($$2::text[])) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
        |      END) AND
        |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
-       |  (_deleted = false) AND
        |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
        |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
        |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
@@ -318,15 +317,13 @@ object CommonServices {
            |           WHERE _id = $$1),
            |    my_teams as (SELECT *
            |                  FROM teams
-           |                  WHERE _deleted IS FALSE
-           |                    AND content->>'_tenant' = $$2
+           |                  WHERE content->>'_tenant' = $$2
            |                    AND content -> 'users' @> format('[{"userId": "%s"}]', $$1)::jsonb),
            |    api as (
            |        SELECT a.content FROM apis a
            |                                LEFT JOIN me ON TRUE
            |                       WHERE _id = $$3
            |            AND (
-           |                             a._deleted IS false AND
            |                             a.content ->> '_tenant' = $$2 AND
            |                             (CASE
            |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
@@ -451,8 +448,7 @@ object CommonServices {
           |     my_teams as (SELECT teams.*
           |                  FROM teams
           |                           LEFT JOIN me on true
-          |                  WHERE teams._deleted IS FALSE
-          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                  WHERE ((me.content ->> 'isDaikokuAdmin')::bool is true
           |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
           |                         FROM me))),
@@ -460,7 +456,6 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
-          |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' IN ('published','deprecated') OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
@@ -544,7 +539,6 @@ object CommonServices {
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis_no_team va
           |                                     JOIN teams t ON t._id = va.content ->> 'team'
-          |                            WHERE t._deleted IS FALSE
           |                            GROUP BY t.content ),
           |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
           |                  FROM visible_apis_no_tag va,
@@ -724,8 +718,7 @@ object CommonServices {
           |     my_teams as (SELECT teams.*
           |                  FROM teams
           |                           LEFT JOIN me on true
-          |                  WHERE teams._deleted IS FALSE
-          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                  WHERE ((me.content ->> 'isDaikokuAdmin')::bool is true
           |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
           |                         FROM me))),
@@ -733,7 +726,6 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
-          |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' = 'published' OR
           |                             a.content ->> 'state' = 'deprecated' OR
@@ -942,7 +934,6 @@ object CommonServices {
         teams <- repo.queryPaginated(
           s"SELECT content FROM ${repo.tableName} " +
             "WHERE content->>'_tenant' = $1 " +
-            "AND content->>'_deleted' = 'false' " +
             s"AND content->>'name' ~* $$2$organizationsOnly " +
             "ORDER BY content->>'_humanReadableId' ASC",
           Seq(ctx.tenant.id.value, research),
@@ -1177,11 +1168,9 @@ object CommonServices {
            |SELECT k.content AS content,
            |       count(*) OVER() AS total
            |FROM keyrings k
-           |WHERE k._deleted = false
-           |  AND EXISTS (
+           |WHERE EXISTS (
            |    SELECT 1 FROM api_subscriptions s
-           |    WHERE s._deleted = false
-           |      AND s.content ->> 'keyring' = k._id
+           |    WHERE s.content ->> 'keyring' = k._id
            |      AND s.content ->> 'api' = $$1
            |      AND s.content ->> 'team' = $$2
            |  )
@@ -1330,8 +1319,7 @@ object CommonServices {
       val CTE = s"""
                    |WITH my_teams as (SELECT *
                    |                  FROM teams
-                   |                  WHERE _deleted IS FALSE
-                   |                    AND content->>'_tenant' = '${ctx.tenant.id.value}'
+                   |                  WHERE content->>'_tenant' = '${ctx.tenant.id.value}'
                    |                    AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}", "teamPermission": "Administrator"}]')
                    |                  """
 
@@ -1370,9 +1358,9 @@ object CommonServices {
                |    n.content,
                |    count(1) OVER() AS total_filtered
                |  FROM notifications n
-               |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
-               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |  WHERE n._deleted IS FALSE AND n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |           LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |           LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |      OR n.content ->> 'team' = t._id::text)
                |    AND CASE
                |            WHEN array_length($$1::text[], 1) IS NULL THEN true
@@ -1423,7 +1411,7 @@ object CommonServices {
                |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
                |              FROM notifications n
                |                       LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |              WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |              WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |                  OR n.content ->> 'team' = t._id::text)
                |                AND ($$1 IS FALSE OR n.content -> 'status' ->> 'status' = 'Pending')),
                |     total AS (SELECT COUNT(*) AS total
@@ -1435,7 +1423,7 @@ object CommonServices {
                |     total_by_apis AS (SELECT a._id AS api, COUNT(*) AS total
                |                       FROM base n
                |                                LEFT JOIN apis a
-               |                                          ON a._deleted IS FALSE AND (
+               |                                          ON (
                |                                              a._id = n.content -> 'action' ->> 'api'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'

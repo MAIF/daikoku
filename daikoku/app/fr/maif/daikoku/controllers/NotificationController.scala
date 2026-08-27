@@ -864,7 +864,6 @@ class NotificationController(
             s"UPDATE ${repo.tableName} " +
               "SET content = jsonb_set(content, '{team}', to_jsonb($2::text)) " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND content->'action'->>'type' = 'ApiSubscription' " +
               "AND content->'status'->>'status' = 'Pending' " +
               "AND content->'action'->>'api' = ANY($3::text[])",

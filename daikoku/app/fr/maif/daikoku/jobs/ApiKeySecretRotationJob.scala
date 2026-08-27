@@ -100,11 +100,10 @@ class ApiKeySecretRotationJob(
          |                'plan', json_build_object('_id', usage_plans._id)
          |        )) FILTER (WHERE s._id IS NOT NULL AND apis._id IS NOT NULL AND usage_plans._id IS NOT NULL), '[]'::json) AS subscriptions
          |FROM keyrings k
-         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id AND (s.content ->> '_deleted')::bool IS NOT TRUE
+         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
          |LEFT JOIN apis ON apis._id = s.content ->> 'api'
          |LEFT JOIN usage_plans ON usage_plans._id = s.content ->> 'plan'
-         |WHERE (k.content ->> '_deleted')::bool IS NOT TRUE
-         |  AND k.content ->> '_tenant' = $$1
+         |WHERE k.content ->> '_tenant' = $$1
          |  AND (k.content -> 'rotation' ->> 'enabled') IS NOT NULL
          |  $cursorClause
          |GROUP BY k._id, k.content

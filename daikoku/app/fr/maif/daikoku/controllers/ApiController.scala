@@ -2759,7 +2759,6 @@ class ApiController(
             repo.query(
               s"SELECT content FROM ${repo.tableName} " +
                 "WHERE content->>'_tenant' = $1 " +
-                "AND content->>'_deleted' = 'false' " +
                 s"AND content->>'name' ~* $$2$memberOnly$notPersonal " +
                 "ORDER BY content->>'name' ASC LIMIT 5",
               Seq(ctx.tenant.id.value, searchPattern) ++
@@ -2773,7 +2772,6 @@ class ApiController(
               repo.query(
                 s"SELECT content FROM ${repo.tableName} " +
                   "WHERE content->>'_tenant' = $1 " +
-                  "AND content->>'_deleted' = 'false' " +
                   "AND content->>'name' ~* $2 " +
                   "AND (content->>'visibility' = 'Public' " +
                   "  OR content->'authorizedTeams' ?| $3::text[] " +
@@ -4258,53 +4256,42 @@ class ApiController(
               |SELECT
               |  (SELECT count(*)::int FROM api_subscriptions s
               |   WHERE s.content->>'_tenant' = $1
-              |     AND s._deleted = false
               |     AND s.content->>'team' = ANY($2)
               |     AND (s.content->>'enabled')::boolean IS NOT FALSE) AS active_count,
               |
               |  (SELECT count(*)::int FROM api_subscriptions s
               |   WHERE s.content->>'_tenant' = $1
-              |     AND s._deleted = false
               |     AND s.content->>'team' = ANY($2)
               |     AND s.content->>'validUntil' IS NOT NULL
               |     AND CASE WHEN (s.content->>'validUntil')::bigint > 9999999999 THEN to_timestamp((s.content->>'validUntil')::bigint / 1000) ELSE to_timestamp((s.content->>'validUntil')::bigint) END < now() + interval '30 days') AS expire_count,
               |
               |  (SELECT count(*)::int FROM apis a
-              |   WHERE a._deleted = false
-              |     AND a.content->>'_tenant' = $1
+              |   WHERE a.content->>'_tenant' = $1
               |     AND to_timestamp((a.content->>'createdAt')::bigint / 1000) > (now() - interval '30 days')) AS newly_created_count,
               |
               |  (SELECT count(*)::int FROM apis a
-              |   WHERE a._deleted = false
-              |     AND a.content->>'_tenant' = $1
-              |     AND a.content->>'team' = ANY($2)
-              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE) AS published_count,
+              |   WHERE a.content->>'_tenant' = $1
+              |     AND a.content->>'team' = ANY($2)) AS published_count,
               |
               |  (SELECT count(*)::int FROM apis a
-              |   WHERE a._deleted = false
-              |     AND a.content->>'_tenant' = $1
+              |   WHERE a.content->>'_tenant' = $1
               |     AND a.content->>'team' = ANY($2)
-              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
               |     AND a.content->>'state' = 'deprecated') AS deprecated_count,
               |
               |  (SELECT count(*)::int FROM apis a
-              |   WHERE a._deleted = false
-              |     AND a.content->>'_tenant' = $1
+              |   WHERE a.content->>'_tenant' = $1
               |     AND a.content->>'team' = ANY($2)
-              |     AND (a.content->>'_deleted')::boolean IS NOT TRUE
               |     AND a.content->>'state' = 'deprecated'
               |     AND EXISTS (
               |       SELECT 1 FROM api_subscriptions s
-              |       WHERE s._deleted = false
-              |         AND s.content->>'api' = a._id
+              |       WHERE s.content->>'api' = a._id
               |         AND s.content->>'team' = ANY($2)
               |         AND s.content->>'validUntil' IS NOT NULL
               |         AND CASE WHEN (s.content->>'validUntil')::bigint > 9999999999 THEN to_timestamp((s.content->>'validUntil')::bigint / 1000) ELSE to_timestamp((s.content->>'validUntil')::bigint) END < now() + interval '30 days'
               |     )) AS deprecated_expire_count,
               |
               |  (SELECT count(*)::int FROM notifications n
-              |   WHERE n._deleted = false
-              |     AND n.content->>'_tenant' = $1
+              |   WHERE n.content->>'_tenant' = $1
               |     AND n.content->'action'->>'type' = 'ApiSubscription'
               |     AND n.content->'status'->>'status' = 'Pending'
               |     AND n.content->>'team' = ANY($2)) AS waiting_count

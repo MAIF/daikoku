@@ -623,8 +623,7 @@ class DeletionService(
              |     WHERE u->>'userId' != $userParam)
              |)
              |WHERE $tenantFilter
-             |  _deleted = false
-             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
+             |  content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
              |""".stripMargin,
           tenantParams :+ user.id.value
         )
@@ -685,7 +684,6 @@ class DeletionService(
           repo.query(
             s"SELECT content FROM ${repo.tableName} " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND (content->>'team' = $2 " +
               "OR content->>'api' = ANY($3::text[]))",
             Seq(tenant.id.value, team.id.value, apis.map(_.id.value).toArray)

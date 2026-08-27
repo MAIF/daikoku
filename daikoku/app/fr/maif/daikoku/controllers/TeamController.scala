@@ -862,7 +862,7 @@ class TeamController(
           .asInstanceOf[PostgresDataStore]
           .queryOneRaw(
             query =
-              s"SELECT content FROM users WHERE _deleted = false AND $clause",
+              s"SELECT content FROM users WHERE $clause",
             name = "content",
             params = params
           )
