@@ -819,7 +819,6 @@ object json {
           UsagePlan(
             id = (json \ "_id").as(using UsagePlanIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             maxPerSecond = (json \ "maxPerSecond").asOpt(using LongFormat),
             maxPerDay = (json \ "maxPerDay").asOpt(using LongFormat),
             maxPerMonth = (json \ "maxPerMonth").asOpt(using LongFormat),
@@ -872,7 +871,6 @@ object json {
       Json.obj(
         "_id" -> UsagePlanIdFormat.writes(o.id),
         "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
         "maxPerSecond" -> o.maxPerSecond,
         "maxPerDay" -> o.maxPerDay,
         "maxPerMonth" -> o.maxPerMonth
@@ -1481,7 +1479,6 @@ object json {
           ApiDocumentationPage(
             id = (json \ "_id").as(using ApiDocumentationPageIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
             lastModificationAt = (json \ "lastModificationAt")
               .asOpt(using DateTimeFormat)
@@ -1508,7 +1505,6 @@ object json {
         "_id" -> ApiDocumentationPageIdFormat.writes(o.id),
         "_humanReadableId" -> ApiDocumentationPageIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
         "content" -> o.content,
@@ -1533,7 +1529,6 @@ object json {
               .asOpt(using ApiPostIdFormat)
               .getOrElse(ApiPostId(IdGenerator.token(32))),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
             lastModificationAt =
               (json \ "lastModificationAt").as(using DateTimeFormat),
@@ -1549,7 +1544,6 @@ object json {
         "_id" -> ApiPostIdFormat.writes(o.id),
         "_humanReadableId" -> o.humanReadableId,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
         "content" -> o.content
@@ -1565,7 +1559,6 @@ object json {
               .getOrElse(ApiIssueId(IdGenerator.token(32))),
             seqId = (json \ "seqId").asOpt[Int].getOrElse(0),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
             lastModificationAt = (json \ "lastModificationAt")
               .asOpt(using DateTimeFormat)
@@ -1601,7 +1594,6 @@ object json {
         "_humanReadableId" -> o.humanReadableId,
         "seqId" -> o.seqId,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
         "tags" -> o.tags.map(ApiIssueTagIdFormat.writes),
@@ -1782,7 +1774,6 @@ object json {
           Tenant(
             id = (json \ "_id").as(using TenantIdFormat),
             enabled = (json \ "enabled").as[Boolean],
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
@@ -1878,7 +1869,6 @@ object json {
       Json.obj(
         "_id" -> TenantIdFormat.writes(o.id),
         "_humanReadableId" -> o.name.urlPathSegmentSanitized,
-        "_deleted" -> o.deleted,
         "name" -> o.name,
         "domain" -> o.domain,
         "defaultLanguage" -> o.defaultLanguage
@@ -2050,7 +2040,6 @@ object json {
         JsSuccess(
           User(
             id = (json \ "_id").as(using UserIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             tenants = (json \ "tenants")
               .asOpt(using SeqTenantIdFormat)
               .map(_.toSet)
@@ -2105,7 +2094,6 @@ object json {
       Json.obj(
         "_id" -> UserIdFormat.writes(o.id),
         "_humanReadableId" -> o.email.urlPathSegmentSanitized,
-        "_deleted" -> o.deleted,
         "tenants" -> SeqTenantIdFormat.writes(o.tenants.toSeq),
         "origins" -> JsArray(o.origins.toSeq.map(o => JsString(o.name))),
         "name" -> o.name,
@@ -2147,7 +2135,6 @@ object json {
           Team(
             id = (json \ "_id").as(using TeamIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             `type` = (json \ "type").as(using TeamTypeFormat),
             name = (json \ "name").as[String],
             contact = (json \ "contact").as[String],
@@ -2181,7 +2168,6 @@ object json {
         "_id" -> TeamIdFormat.writes(o.id),
         "_humanReadableId" -> o.name.urlPathSegmentSanitized,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "type" -> TeamTypeFormat.writes(o.`type`),
         "name" -> o.name,
         "description" -> o.description,
@@ -2240,7 +2226,6 @@ object json {
             id = (json \ "_id").as(using ApiIdFormat),
             tenant = tenantId,
             team = (json \ "team").as(using TeamIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             lastUpdate = (json \ "lastUpdate")
               .asOpt(using DateTimeFormat)
@@ -2327,7 +2312,6 @@ object json {
         "_humanReadableId" -> o.name.urlPathSegmentSanitized,
         "_tenant" -> o.tenant.asJson,
         "team" -> TeamIdFormat.writes(o.team),
-        "_deleted" -> o.deleted,
         "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "name" -> o.name,
@@ -2460,7 +2444,6 @@ object json {
           ApiSubscription(
             id = (json \ "_id").as(using ApiSubscriptionIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
             api = (json \ "api").as(using ApiIdFormat),
@@ -2514,7 +2497,6 @@ object json {
       Json.obj(
         "_id" -> ApiSubscriptionIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "plan" -> UsagePlanIdFormat.writes(o.plan),
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
@@ -2596,7 +2578,6 @@ object json {
             id = (json \ "_id").as(using KeyringIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             customName = (json \ "customName")
               .asOpt[String]
               .getOrElse(
@@ -2638,7 +2619,6 @@ object json {
         "_id" -> KeyringIdFormat.writes(o.id),
         "_tenant" -> o.tenant.asJson,
         "team" -> TeamIdFormat.writes(o.team),
-        "_deleted" -> o.deleted,
         "customName" -> o.customName,
         "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
         "otoroshiSettings" -> KeyringOtoroshiBindingFormat.writes(
@@ -2735,7 +2715,6 @@ object json {
       Json.obj(
         "_id" -> o.id.asJson,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
         "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
@@ -2793,7 +2772,6 @@ object json {
           SubscriptionDemand(
             id = (json \ "_id").as(using SubscriptionDemandIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             api = (json \ "api").as(using ApiIdFormat),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
             steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
@@ -2853,7 +2831,6 @@ object json {
       Json.obj(
         "_id" -> o.id.asJson,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "token" -> o.token,
         "step" -> o.step.asJson,
         "subscriptionDemand" -> o.subscriptionDemand.asJson,
@@ -2866,7 +2843,6 @@ object json {
           StepValidator(
             id = (json \ "_id").as(using DatastoreIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
             token = (json \ "token").as[String],
             step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
             subscriptionDemand = (json \ "subscriptionDemand").as(using
@@ -3964,7 +3940,6 @@ object json {
           Notification(
             id = (json \ "_id").as(using NotificationIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(using TeamIdFormat),
             sender = (json \ "sender").as(using NotificationSenderFormat),
             date = (json \ "date")
@@ -3986,7 +3961,6 @@ object json {
       Json.obj(
         "_id" -> NotificationIdFormat.writes(o.id),
         "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
         "team" -> o.team
           .map(id => JsString(id.value))
           .getOrElse(JsNull)
@@ -4088,7 +4062,6 @@ object json {
           JsSuccess(
             ApiKeyConsumption(
               id = (json \ "_id").as(using DatastoreIdFormat),
-              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
               tenant = (json \ "_tenant").as(using TenantIdFormat),
               team = (json \ "team").as(using TeamIdFormat),
               api = (json \ "api").as(using ApiIdFormat),
@@ -4114,7 +4087,6 @@ object json {
       override def writes(o: ApiKeyConsumption): JsValue =
         Json.obj(
           "_id" -> DatastoreIdFormat.writes(o.id),
-          "_deleted" -> o.deleted,
           "_tenant" -> TenantIdFormat.writes(o.tenant),
           "team" -> TeamIdFormat.writes(o.team),
           "api" -> ApiIdFormat.writes(o.api),
@@ -4239,7 +4211,6 @@ object json {
         JsSuccess(
           PasswordReset(
             id = (json \ "_id").as(using DatastoreIdFormat),
-            deleted = (json \ "_deleted").as[Boolean],
             randomId = (json \ "randomId").as[String],
             email = (json \ "email").as[String],
             password = (json \ "password").as[String],
@@ -4255,7 +4226,6 @@ object json {
     override def writes(o: PasswordReset): JsValue =
       Json.obj(
         "_id" -> o.id.value,
-        "_deleted" -> o.deleted,
         "randomId" -> o.randomId,
         "email" -> o.email,
         "password" -> o.password,
@@ -4272,7 +4242,6 @@ object json {
           JsSuccess(
             AccountCreation(
               id = (json \ "_id").as(using SubscriptionDemandIdFormat),
-              deleted = (json \ "_deleted").as[Boolean],
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],
               name = (json \ "name").as[String],
@@ -4293,7 +4262,6 @@ object json {
       override def writes(o: AccountCreation): JsValue =
         Json.obj(
           "_id" -> o.id.value,
-          "_deleted" -> o.deleted,
           "randomId" -> o.randomId,
           "email" -> o.email,
           "name" -> o.name,
@@ -4315,7 +4283,6 @@ object json {
           JsSuccess(
             EmailVerification(
               id = (json \ "_id").as(using DatastoreIdFormat),
-              deleted = (json \ "_deleted").as[Boolean],
               randomId = (json \ "randomId").as[String],
               tenant = (json \ "_tenant").as(using TenantIdFormat),
               team = (json \ "teamId").as(using TeamIdFormat),
@@ -4330,7 +4297,6 @@ object json {
       override def writes(o: EmailVerification): JsValue =
         Json.obj(
           "_id" -> o.id.value,
-          "_deleted" -> o.deleted,
           "randomId" -> o.randomId,
           "_tenant" -> o.tenant.value,
           "teamId" -> o.team.value,
@@ -4620,7 +4586,6 @@ object json {
             JobInformation(
               id = (json \ "_id").as(using DatastoreIdFormat),
               tenant = (json \ "_tenant").as(using TenantIdFormat),
-              deleted = (json \ "_deleted").as[Boolean],
               jobName = JobName.valueOf((json \ "jobName").as[String]),
               lockedBy = (json \ "lockedBy").as[String],
               lockedAt = (json \ "lockedAt").as(using DateTimeFormat),
@@ -4641,7 +4606,6 @@ object json {
         Json.obj(
           "_id" -> o.id.asJson,
           "_tenant" -> o.tenant.asJson,
-          "_deleted" -> o.deleted,
           "jobName" -> o.jobName.value,
           "lockedBy" -> o.lockedBy,
           "lockedAt" -> DateTimeFormat.writes(o.lockedAt),
@@ -4914,7 +4878,6 @@ object json {
       Json.obj(
         "_id" -> o.id.value,
         "_tenant" -> o.tenant.value,
-        "_deleted" -> o.deleted,
         "visible" -> o.visible,
         "authenticated" -> o.authenticated,
         "name" -> o.name,
@@ -4939,7 +4902,6 @@ object json {
         CmsPage(
           id = (json \ "_id").as(using CmsPageIdFormat),
           tenant = (json \ "_tenant").as(using TenantIdFormat),
-          deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
           visible = (json \ "visible").asOpt[Boolean].getOrElse(false),
           authenticated =
             (json \ "authenticated").asOpt[Boolean].getOrElse(false),
@@ -5076,7 +5038,6 @@ object json {
         ApiSubscriptionTransfer(
           id = (json \ "_id").as(using DatastoreIdFormat),
           tenant = (json \ "_tenant").as(using TenantIdFormat),
-          deleted = (json \ "_deleted").as[Boolean],
           token = (json \ "token").as[String],
           subscription =
             (json \ "subscription").as(using ApiSubscriptionIdFormat),
@@ -5094,7 +5055,6 @@ object json {
       Json.obj(
         "_id" -> o.id.asJson,
         "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
         "token" -> o.token,
         "subscription" -> o.subscription.asJson,
         "by" -> o.by.asJson,

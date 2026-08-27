@@ -2400,6 +2400,67 @@ object evolution_1900_c extends EvolutionScript {
     }
 }
 
+object evolution_1900_d extends EvolutionScript {
+  override def version: String = "19.0.0_d"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - rebuild uniq_team_personal_user without its _deleted predicate"
+      )
+
+      // The entities stopped writing the `_deleted` key, so the column is left
+      // NULL on every new row. `NULL = false` is not true, so the partial index
+      // would silently stop covering new personal teams and the "one personal
+      // team per user" uniqueness would be lost without any error.
+      //
+      // Rebuilding cannot conflict: evolution_1900_c purged the rows the old
+      // predicate excluded, and every existing team row has the column set,
+      // so the new predicate covers exactly the same rows as the old one.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script:
+      //   DROP INDEX uniq_team_personal_user;
+      //   CREATE UNIQUE INDEX uniq_team_personal_user
+      //   ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+      //   WHERE _deleted = false AND content->>'type' = 'Personal';
+      val statements = Seq(
+        "DROP INDEX IF EXISTS uniq_team_personal_user;",
+        """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
+          |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+          |WHERE content->>'type' = 'Personal';""".stripMargin
+      )
+
+      statements
+        .foldLeft(Future.successful(())) { (acc, statement) =>
+          acc.flatMap { _ =>
+            dataStore.teamRepo
+              .forAllTenant()
+              .execute(query = statement)
+              .map(_ => ())
+          }
+        }
+        .map { _ =>
+          logger.info(
+            s"[evolution $version] :: rebuilt uniq_team_personal_user"
+          )
+          Done
+        }
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2429,7 +2490,8 @@ object evolutions {
       evolution_18110_b,
       evolution_1900,
       evolution_1900_b,
-      evolution_1900_c
+      evolution_1900_c,
+      evolution_1900_d
     )
   def run(
       dataStore: DataStore,

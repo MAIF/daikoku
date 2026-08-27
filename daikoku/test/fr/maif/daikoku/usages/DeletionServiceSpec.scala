@@ -1898,7 +1898,6 @@ class DeletionServiceSpec
         5.second
       )
       maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe false
 
       // otoroshi key must still exist with only parentRoute as authorized entity
       val respOto = httpJsonCallBlocking(
@@ -2024,7 +2023,6 @@ class DeletionServiceSpec
           repo.query(
             s"SELECT content FROM ${repo.tableName} " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND content->'action'->>'type' = 'ApiSubscriptionExpired'",
             Seq(tenant.id.value)
           )
@@ -2185,7 +2183,6 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.deleted) mustBe false
       // keyring model: child keeps its keyring, promotion no longer applies
       // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
@@ -3576,7 +3573,7 @@ class DeletionServiceSpec
           .findById(childSub.id),
         5.second
       )
-      maybeChildSub.forall(_.deleted) mustBe true
+      maybeChildSub mustBe empty
 
       // parent sub must still be alive
       val maybeParentSub = Await.result(

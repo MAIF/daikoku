@@ -3210,7 +3210,6 @@ class ApiController(
               env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)
                 .findByIds(api.issues)
-                .map(issues => issues.filter(!_.deleted))
                 .flatMap(issues =>
                   for {
                     creators <- Future.sequence(

@@ -916,7 +916,6 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           repo.query(
             s"SELECT content FROM ${repo.tableName} " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND content->>'api' = $2 AND content->>'team' = $3",
             Seq(
               tenant.id.value,

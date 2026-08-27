@@ -253,7 +253,6 @@ case class UsagePlan(
     id: UsagePlanId,
     tenant: TenantId,
     customName: String,
-    deleted: Boolean = false,
     maxPerSecond: Option[Long] = None,
     maxPerDay: Option[Long] = None,
     maxPerMonth: Option[Long] = None,
@@ -516,7 +515,6 @@ case class ApiDocumentation(
 case class ApiDocumentationPage(
     id: ApiDocumentationPageId,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     lastModificationAt: DateTime,
     content: String,
@@ -536,7 +534,6 @@ case class ApiDocumentationPage(
 case class ApiPost(
     id: ApiPostId,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     lastModificationAt: DateTime,
     content: String
@@ -558,7 +555,6 @@ case class ApiIssue(
     id: ApiIssueId,
     seqId: Int,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     tags: Set[ApiIssueTagId],
     open: Boolean,
@@ -657,7 +653,6 @@ object ApiState {
 case class Api(
     id: ApiId,
     tenant: TenantId,
-    deleted: Boolean = false,
     team: TeamId,
     name: String,
     smallDescription: String,

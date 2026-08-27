@@ -281,7 +281,6 @@ object SchemaDefinition {
           fields[(DataStore, DaikokuActionContext[JsValue]), Tenant](
             Field("id", StringType, resolve = ctx => ctx.value.id.value),
             Field("enabled", BooleanType, resolve = _.value.enabled),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field("domain", StringType, resolve = _.value.domain),
             Field("contact", StringType, resolve = _.value.contact),
@@ -1040,7 +1039,6 @@ object SchemaDefinition {
               OptionType(TenantType),
               resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field("type", StringType, resolve = _.value.`type`.name),
             Field("description", StringType, resolve = _.value.description),
@@ -1156,7 +1154,6 @@ object SchemaDefinition {
             OptionType(StringType),
             resolve = ctx => Some(ctx.value.tenant.value)
           ),
-          Field("_deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "costPerMonth",
             OptionType(BigDecimalType),
@@ -1518,7 +1515,6 @@ object SchemaDefinition {
         () =>
           fields[(DataStore, DaikokuActionContext[JsValue]), User](
             Field("id", StringType, resolve = _.value.id.value),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field(
               "tenants",
               ListType(OptionType(TenantType)),
@@ -1669,7 +1665,6 @@ object SchemaDefinition {
             OptionType(TenantType),
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
@@ -1738,7 +1733,6 @@ object SchemaDefinition {
             OptionType(TenantType),
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -1956,7 +1950,6 @@ object SchemaDefinition {
               OptionType(TenantType),
               resolve = ctx => tenantsFetcher.defer(ctx.ctx._2.tenant.id)
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field(
               "smallDescription",
@@ -2503,7 +2496,6 @@ object SchemaDefinition {
         fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
           Field("_id", StringType, resolve = _.value.id.value),
           Field("tenant", StringType, resolve = _.value.id.value),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "api",
             ApiType,
@@ -3842,7 +3834,6 @@ object SchemaDefinition {
                   case None      => None
                 }
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("visible", BooleanType, resolve = _.value.visible),
             Field(
               "authenticated",

@@ -29,10 +29,6 @@
           "enabled": {
             "type": "boolean"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "name": {
             "type": "string"
           },
@@ -673,9 +669,6 @@
           "_id": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean"
-          },
           "tenants": {
             "type": "array",
             "nullable": true,
@@ -819,10 +812,6 @@
           "_tenant": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "type": {
             "type": "string",
             "enum": [
@@ -921,10 +910,6 @@
           },
           "_tenant": {
             "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
           },
           "team": {
             "type": "string"
@@ -1307,10 +1292,6 @@
           "_tenant": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "apiKey": {
             "$ref": "#/components/schemas/OtoroshiApiKey"
           },
@@ -1473,10 +1454,6 @@
           "_tenant": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "title": {
             "type": "string"
           },
@@ -1520,10 +1497,6 @@
           },
           "_tenant": {
             "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
           },
           "team": {
             "type": "string"
@@ -2068,10 +2041,6 @@
           "_id": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "_tenant": {
             "type": "string"
           },
@@ -2329,10 +2298,6 @@
           "_tenant": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "title": {
             "type": "string"
           },
@@ -2417,10 +2382,6 @@
           "_tenant": {
             "type": "string"
           },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
           "title": {
             "type": "string"
           },
@@ -2480,10 +2441,6 @@
           },
           "_tenant": {
             "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
           },
           "currency": {
             "$ref": "#/components/schemas/Currency",
@@ -2792,9 +2749,6 @@
           },
           "_tenant": {
             "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean"
           },
           "api": {
             "type": "string"

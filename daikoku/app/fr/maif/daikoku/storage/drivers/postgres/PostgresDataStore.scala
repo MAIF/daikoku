@@ -889,7 +889,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));",
       """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
         |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
-        |WHERE _deleted = false AND content->>'type' = 'Personal';""".stripMargin
+        |WHERE content->>'type' = 'Personal';""".stripMargin
     )
     indexes.foldLeft(Future.successful(())) { (acc, query) =>
       acc.flatMap(_ => reactivePg.rawQuery(query).map(_ => ()))
@@ -1952,26 +1952,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   ): Future[Boolean] = {
     logger.debug(s"$tableName.saveRaw($id)")
 
-    (
-      if (payload.keys.contains("_deleted"))
-        reactivePg.query(
-          s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            s"set _deleted = $$2, content = $$3",
-          Seq(
-            id,
-            java.lang.Boolean.valueOf((payload \ "_deleted").as[Boolean]),
-            new JsonObject(Json.stringify(payload))
-          )
-        )
-      else
-        reactivePg.query(
-          s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            s"set content = $$2",
-          Seq(id, new JsonObject(Json.stringify(payload)))
-        )
-    ).map(_ => true)
+    reactivePg
+      .query(
+        s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          s"set content = $$2",
+        Seq(id, new JsonObject(Json.stringify(payload)))
+      )
+      .map(_ => true)
       .recover { e =>
         logger.error(s"$tableName.saveRaw($id) failed", e)
         false

@@ -5168,7 +5168,6 @@ class AdminApiControllerSpec
         )
         // subscription is now fully deleted
         _maybeSubscription mustBe empty
-        _maybeSubscription.forall(_.deleted) mustBe true
 
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo
