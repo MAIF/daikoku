@@ -100,7 +100,7 @@ async function bulkInsert(client, table, rows) {
     const values = chunk.map((_, idx) => `($${idx * 3 + 1}, $${idx * 3 + 2}::jsonb, $${idx * 3 + 3})`).join(", ");
     const params = chunk.flatMap(r => [r.id, JSON.stringify(r.content), false]);
     await client.query(
-      `INSERT INTO ${table} (_id, content, _deleted) VALUES ${values} ON CONFLICT (_id) DO NOTHING`,
+      `INSERT INTO ${table} (_id, content) VALUES ${values} ON CONFLICT (_id) DO NOTHING`,
       params
     );
   }
@@ -157,7 +157,6 @@ const teamRows = Array.from({ length: NB_TEAMS }, (_, i) => ({
     _id: `seed-team-${i}`,
     _humanReadableId: `seed-team-${i}`,
     _tenant: TENANT_ID,
-    _deleted: false,
     type: "Organization",
     name: `Seed Team ${i}`,
     description: "",
@@ -211,7 +210,6 @@ for (let i = 0; i < NB_APIS; i++) {
       content: {
         _id: planId,
         _tenant: TENANT_ID,
-        _deleted: false,
         customName: `plan-${p}`,
         customDescription: "",
         otoroshiTarget: {
@@ -245,7 +243,6 @@ for (let i = 0; i < NB_APIS; i++) {
       _id: apiId,
       _humanReadableId: apiId,
       _tenant: TENANT_ID,
-      _deleted: false,
       team: teamRows[i % NB_TEAMS].id,
       name: `Seed API ${i}`,
       smallDescription: "",
@@ -326,7 +323,6 @@ for (let t = 0; t < NB_TEAMS; t++) {
         _id: keyringId,
         _tenant: TENANT_ID,
         team: teamId,
-        _deleted: false,
         customName: `Keyring ${keyringId}`,
         apiKey: { clientName: `Key ${keyringId}`, clientId, clientSecret },
         otoroshiSettings: { type: "Otoroshi", id: OTOROSHI_SETTINGS_ID },
@@ -348,7 +344,6 @@ for (let t = 0; t < NB_TEAMS; t++) {
         content: {
           _id: subId,
           _tenant: TENANT_ID,
-          _deleted: false,
           api: apiId,
           plan: planEntry.planId,
           team: teamId,
