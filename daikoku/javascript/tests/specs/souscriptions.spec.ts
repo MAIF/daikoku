@@ -2,7 +2,7 @@ import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL, DWIGHT } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, updateUserRightForTeam, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, expectOtoroshiApiKeyGone, expectOtoroshiApiKeyEntities, updateUserRightForTeam, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
 
 
 test.beforeEach(async () => {
@@ -556,14 +556,7 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await page.getByRole('button', { name: 'Oui' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Souscription supprimée.');
   //test in otoroshi
-  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeKey.status).toBe(404);
+  await expectOtoroshiApiKeyGone(logistiqueCommandeProdApiKeyId);
 })
 
 test('[ASOAPI-10457 ASOAPI-10458] - [Consommateur] - desactiver/reactiver un clé', async ({ page, context }) => {
@@ -726,17 +719,7 @@ test('[ASOAPI-10602] - [Consommateur] - supprimer un extension de clé', async (
 
   // le trousseau ne porte plus de souscription API Commande -> plus de carte ici
   await expect(page.locator('.keyring-card')).toBeHidden();
-  const maybeDeletedKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeDeletedKey.status).toBe(200);
-  const deletedApikey = await maybeDeletedKey.json()
-  await expect(deletedApikey.enabled).toBe(true)
-  await expect(deletedApikey.authorizedEntities.length).toBe(1)
+  await expectOtoroshiApiKeyEntities(vendeursPapierExtendedDevApiKeyId, 1);
 })
 
 test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cascade', async ({ page, context }) => {
@@ -786,14 +769,7 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
 
   //plus aucune carte -> trousseau supprimé
   await expect(page.locator('.keyring-card')).toBeHidden();
-  const maybeDeletedKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeDeletedKey.status).toBe(404);
+  await expectOtoroshiApiKeyGone(vendeursPapierExtendedDevApiKeyId);
 })
 
 
@@ -828,14 +804,7 @@ test('[ASOAPI-10605] - [Consommateur] - supprimer un trousseau complet en une ac
   // no more keyring card -> keyring deleted
   await expect(page.locator('.keyring-card')).toBeHidden();
   // the otoroshi key is gone
-  const maybeDeletedKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  });
-  await expect(maybeDeletedKey.status).toBe(404);
+  await expectOtoroshiApiKeyGone(vendeursPapierExtendedDevApiKeyId);
 })
 
 test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre équipe', async ({ page, context }) => {
