@@ -97,8 +97,8 @@ async function bulkInsert(client, table, rows) {
   const CHUNK = 500;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
-    const values = chunk.map((_, idx) => `($${idx * 3 + 1}, $${idx * 3 + 2}::jsonb, $${idx * 3 + 3})`).join(", ");
-    const params = chunk.flatMap(r => [r.id, JSON.stringify(r.content), false]);
+    const values = chunk.map((_, idx) => `($${idx * 2 + 1}, $${idx * 2 + 2}::jsonb)`).join(", ");
+    const params = chunk.flatMap(r => [r.id, JSON.stringify(r.content)]);
     await client.query(
       `INSERT INTO ${table} (_id, content) VALUES ${values} ON CONFLICT (_id) DO NOTHING`,
       params
