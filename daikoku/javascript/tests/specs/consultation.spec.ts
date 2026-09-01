@@ -337,7 +337,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await logout(page)
 
   //user admin
-  await loginAs(MICHAEL, page)
+  await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
@@ -454,11 +454,10 @@ test('Voir ses notifications', async ({ page }) => {
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Tous les types/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Transfert de propriété d\'API' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.locator('article')).toHaveCount(2);
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
 
   await page.reload();
-
 
   await page.getByRole('checkbox', { name: 'tout sélectionner' }).check();
 
@@ -466,12 +465,13 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByText('56 lignes sélectionnées')).toBeVisible();
   await page.getByRole('button', { name: 'Marquer tout comme lu' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.locator('article')).toHaveCount(2);
   await page.getByRole('button', { name: 'Toutes' }).click();
-  await expect(page.getByText('59 notifications')).toBeVisible(); await expect(page.locator('article')).toHaveCount(25)
+  await expect(page.getByText('59 notifications')).toBeVisible();
+  await expect(page.locator('article')).toHaveCount(25);
   await page.getByRole('button', { name: 'À traiter' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.locator('article')).toHaveCount(2);
 });
 
 
