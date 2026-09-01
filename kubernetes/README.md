@@ -104,6 +104,52 @@ helm install daikoku ./helm/daikoku \
   --set daikoku.initTenant.s3.secret=...
 ```
 
+### Referencing an existing Secret (GitOps)
+
+The example above puts credentials in `values.yaml` (or on the command line),
+which is a problem as soon as that file is committed. Instead, create a Secret
+holding them and point `daikoku.initTenant.existingSecret` at it. The chart does
+**not** create that Secret — you own its lifecycle (`kubectl`, SOPS, External
+Secrets Operator, …):
+
+```sh
+kubectl -n daikoku create secret generic daikoku-credentials \
+  --from-literal=DAIKOKU_INIT_OTOROSHI_CLIENT_ID=admin-api-apikey-id \
+  --from-literal=DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET=... \
+  --from-literal=DAIKOKU_INIT_S3_SECRET=... \
+  --from-literal=DAIKOKU_INIT_MAILER_PASSWORD=...
+```
+
+```yaml
+daikoku:
+  initTenant:
+    existingSecret: daikoku-credentials
+    # …or a list, when credentials are split across several Secrets:
+    # existingSecret: [daikoku-otoroshi, daikoku-s3, daikoku-mailer]
+    otoroshi:
+      url: https://otoroshi-api.example.com   # non-secret, stays here
+      host: otoroshi-api.example.com
+      clientId: ""                            # empty: comes from the Secret
+      clientSecret: ""
+```
+
+Its **keys are the `DAIKOKU_INIT_*` variable names**, spelled out next to every
+secret-bearing field in [`values.yaml`](./helm/daikoku/values.yaml) (`mailer.password`
+→ `DAIKOKU_INIT_MAILER_PASSWORD`). Put only the fields you want to hide in there;
+the others keep coming from `values.yaml`.
+
+These Secrets are injected last, so their keys override both the ConfigMap and the
+chart-rendered `*-init-tenant` Secret. That also lets them carry values the chart
+does not classify as secret but you would rather keep out of git, such as
+`DAIKOKU_INIT_OTOROSHI_CLIENT_ID` or `DAIKOKU_INIT_S3_ACCESS`. With a list, the
+last Secret wins a duplicate key.
+
+Every referenced Secret must exist before the pod starts, otherwise the pod stays
+in `CreateContainerConfigError` until you create it. Editing the *content* of a
+Secret does not restart the pods — the deployment checksum only tracks the Secret
+*names* — so use [Reloader](https://github.com/stakater/Reloader) or roll the
+Deployment yourself.
+
 ### Optional in-cluster dependencies
 
 For demos/dev you can bundle a backend instead of wiring an external one. Each is
