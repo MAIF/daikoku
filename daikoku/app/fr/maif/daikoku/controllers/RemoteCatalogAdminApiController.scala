@@ -21,25 +21,33 @@ class RemoteCatalogAdminApiController(
 
   def list() =
     DaikokuApiAction.async { ctx =>
-      Future.successful(Ok(SeqRemoteCatalogFormat.writes(ctx.tenant.remoteCatalogs)))
+      Future.successful(
+        Ok(SeqRemoteCatalogFormat.writes(ctx.tenant.remoteCatalogs))
+      )
     }
 
   def get(id: String) =
     DaikokuApiAction.async { ctx =>
-      withCatalog(ctx.tenant, id)(catalog => Future.successful(Ok(RemoteCatalogFormat.writes(catalog))))
+      withCatalog(ctx.tenant, id)(catalog =>
+        Future.successful(Ok(RemoteCatalogFormat.writes(catalog)))
+      )
     }
 
   def deploy(id: String) =
     DaikokuApiAction.async(parse.json) { ctx =>
       withCatalog(ctx.tenant, id) { catalog =>
-        engine.deploy(ctx.tenant, catalog, argsOf(ctx.request.body)).map(toResult)
+        engine
+          .deploy(ctx.tenant, catalog, argsOf(ctx.request.body))
+          .map(toResult)
       }
     }
 
   def test(id: String) =
     DaikokuApiAction.async(parse.json) { ctx =>
       withCatalog(ctx.tenant, id) { catalog =>
-        engine.dryRun(ctx.tenant, catalog, argsOf(ctx.request.body)).map(toResult)
+        engine
+          .dryRun(ctx.tenant, catalog, argsOf(ctx.request.body))
+          .map(toResult)
       }
     }
 
@@ -54,7 +62,10 @@ class RemoteCatalogAdminApiController(
       f: RemoteCatalog => Future[Result]
   ): Future[Result] =
     tenant.remoteCatalogs.find(_.id == id) match {
-      case None          => Future.successful(NotFound(Json.obj("error" -> "Remote catalog not found")))
+      case None =>
+        Future.successful(
+          NotFound(Json.obj("error" -> "Remote catalog not found"))
+        )
       case Some(catalog) => f(catalog)
     }
 

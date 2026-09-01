@@ -166,7 +166,6 @@ export interface ITenant {
 }
 
 export interface ITenantFull extends ITenant {
-  _deleted: boolean;
   adminApi: string;
   adminSubscription: Array<string>;
   auditTrailConfig: IAuditTrailConfig;

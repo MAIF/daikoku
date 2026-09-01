@@ -216,7 +216,7 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         .result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(newSubId),
+            .findById(newSubId),
           5.seconds
         )
         .get

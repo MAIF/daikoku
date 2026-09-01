@@ -413,7 +413,6 @@ case object ThirdPartyPaymentSettings {
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
-    deleted: Boolean = false,
     name: String,
     domain: String,
     additionalDomains: Set[String] = Set.empty,

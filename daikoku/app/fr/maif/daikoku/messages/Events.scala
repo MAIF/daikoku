@@ -66,7 +66,7 @@ class MessageActor(implicit
   ): Future[Unit] = {
     implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     for {
-      sender <- env.dataStore.userRepo.findByIdIncludingDeleted(message.sender)
+      sender <- env.dataStore.userRepo.findById(message.sender)
       lastMessage <-
         env.dataStore.messageRepo
           .findLastOpenMessageBefore(

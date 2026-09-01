@@ -221,7 +221,7 @@ class TenantController(
     DaikokuAction.async { ctx =>
       DaikokuAdminOnly(
         AuditTrailEvent(
-          "@{user.name} has logically deleted tenant @{tenant.name} - @{tenant.id}"
+          "@{user.name} has deleted tenant @{tenant.name} - @{tenant.id}"
         )
       )(ctx) {
         env.dataStore.tenantRepo.findById(id).flatMap {
@@ -535,8 +535,7 @@ class TenantController(
         env.dataStore.userRepo
           .query(
             s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
-              "WHERE NOT (_id = ANY($1::text[])) " +
-              "AND content->>'_deleted' = 'false'",
+              "WHERE NOT (_id = ANY($1::text[]))",
             Seq(adminTeam.users.map(_.userId.value).toArray)
           )
           .map(addableAdmins =>
@@ -652,7 +651,7 @@ class TenantController(
           oldCmsPage <- EitherT.right[AppError](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .findByIdIncludingDeleted(s"${ctx.tenant.id.value}-color-theme")
+              .findById(s"${ctx.tenant.id.value}-color-theme")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.cmsRepo

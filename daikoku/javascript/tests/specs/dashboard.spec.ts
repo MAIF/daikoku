@@ -179,7 +179,6 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
   const apiGroup: IApi = {
     ...api,
     _tenant: api.tenant,
-    _deleted: false,
     _humanReadableId: 'apigroup',
     team: apiDivision,
     name: 'apigroup',

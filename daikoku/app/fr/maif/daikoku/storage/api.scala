@@ -93,9 +93,9 @@ trait Repo[Of, Id <: ValueType] {
     * `content` column into an entity of this repo. Intended for statements that
     * `RETURNING content` (e.g. an `UPDATE ... RETURNING content`). The tenant
     * scoping normally added by `forTenant` is NOT injected here: the caller
-    * owns the whole SQL, so any tenant/`_deleted` filter must be written
-    * explicitly. Always pass values through `params` ($1, $2, …) rather than
-    * interpolating them into `sql`.
+    * owns the whole SQL, so any tenant filter must be written explicitly.
+    * Always pass values through `params` ($1, $2, …) rather than interpolating
+    * them into `sql`.
     */
   def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
@@ -115,11 +115,6 @@ trait Repo[Of, Id <: ValueType] {
   /** Tenant this repo is scoped to, when it was obtained through `forTenant`.
     */
   protected def tenantScope: Option[String] = None
-
-  /** Matches the entities not logically deleted. Note an entity without a
-    * `_deleted` key does not match.
-    */
-  protected val notDeletedSql: String = "content->>'_deleted' = 'false'"
 
   /** Builds the ` WHERE …` clause (empty string when there is nothing to filter
     * on) of a generic helper. `predicates` must already reference `$1..$n`
@@ -148,7 +143,7 @@ trait Repo[Of, Id <: ValueType] {
       ec: ExecutionContext
   ): Future[Option[Of]] = {
     val (where, params) = scopedWhere(
-      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)", notDeletedSql),
+      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)"),
       Seq(id, hrid)
     )
     queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
@@ -188,27 +183,6 @@ trait Repo[Of, Id <: ValueType] {
   ): Future[Boolean] =
     deleteByIdOrHrId(id.value, hrid)
 
-  def deleteLogicallyByIdOrHrId(id: String, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    val (where, params) = scopedWhere(
-      Seq(s"(_id = $$1 OR content->>'_humanReadableId' = $$2)", notDeletedSql),
-      Seq(id, hrid)
-    )
-    execute(
-      s"UPDATE $tableName SET _deleted = true, " +
-        "content = content || '{ \"_deleted\" : true }'" + where,
-      params
-    ).map(_ > 0)
-  }
-
-  def deleteLogicallyByIdOrHrId(id: Id, hrid: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] =
-    deleteLogicallyByIdOrHrId(id.value, hrid)
-
   def existsByIdOrHrId(id: String, hrid: String)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
@@ -222,31 +196,12 @@ trait Repo[Of, Id <: ValueType] {
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  def deleteByIdLogically(id: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
-  def deleteByIdLogically(id: Id)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
-  def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean]
-
-  /** Every entity of the repo. Like the rest of the family, this is the
-    * not-deleted nominal case; `findAllIncludingDeleted` is the escape hatch.
-    */
+  /** Every entity of the repo. */
   def findAll()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(
-      Seq(s"($notDeletedSql OR content->>'_deleted' IS NULL)")
-    )
+    val (where, params) = scopedWhere(Seq.empty)
     query(s"SELECT content FROM $tableName$where", params)
   }
 
@@ -254,7 +209,7 @@ trait Repo[Of, Id <: ValueType] {
       id: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
     val (where, params) =
-      scopedWhere(Seq(s"_id = $$1", notDeletedSql), Seq(id))
+      scopedWhere(Seq(s"_id = $$1"), Seq(id))
     queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
   }
 
@@ -263,51 +218,13 @@ trait Repo[Of, Id <: ValueType] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
     findById(id.value)
 
-  /** Reaches an entity whatever its `_deleted` flag. The deletion pipeline
-    * needs it: `QueueJob` and `DeletionService` re-read entities they have just
-    * flagged, to carry the cascade through.
-    */
-  def findByIdIncludingDeleted(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    val (where, params) = scopedWhere(Seq(s"_id = $$1"), Seq(id))
-    queryOne(s"SELECT content FROM $tableName$where LIMIT 1", params)
-  }
-
-  def findByIdIncludingDeleted(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    findByIdIncludingDeleted(id.value)
-
   def findByIds(
-      ids: Seq[Id]
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(
-      Seq(s"_id = ANY($$1::text[])", notDeletedSql),
-      Seq(ids.map(_.value).toArray)
-    )
-    query(s"SELECT content FROM $tableName$where", params)
-  }
-
-  /** Batch counterpart of `findByIdIncludingDeleted`. The GraphQL Fetchers use
-    * it: Sangria fails the whole query when a batch does not resolve every id
-    * it was given, so a reference to a flagged entity must still come back.
-    */
-  def findByIdsIncludingDeleted(
       ids: Seq[Id]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
     val (where, params) = scopedWhere(
       Seq(s"_id = ANY($$1::text[])"),
       Seq(ids.map(_.value).toArray)
     )
-    query(s"SELECT content FROM $tableName$where", params)
-  }
-
-  def findAllIncludingDeleted()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[Of]] = {
-    val (where, params) = scopedWhere(Seq.empty)
     query(s"SELECT content FROM $tableName$where", params)
   }
 
@@ -320,7 +237,7 @@ trait Repo[Of, Id <: ValueType] {
       ids: Option[Seq[String]],
       team: Option[String]
   ): (String, Seq[AnyRef]) = {
-    val predicates = Seq.newBuilder[String] += notDeletedSql
+    val predicates = Seq.newBuilder[String]
     val params = Seq.newBuilder[AnyRef]
     var placeholder = 0
 
@@ -378,7 +295,7 @@ trait Repo[Of, Id <: ValueType] {
       order: SortingOrder = Asc
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     val (where, params) = scopedWhere(
-      Seq(s"_id = ANY($$1::text[])", notDeletedSql),
+      Seq(s"_id = ANY($$1::text[])"),
       Seq(ids.map(_.value).toArray)
     )
     queryPaginated(
@@ -438,8 +355,8 @@ trait Repo[Of, Id <: ValueType] {
     exists(id.value)
 
   /** Runs a parameterised `SELECT COUNT(*) AS count …` and returns the count.
-    * Like the other primitives it takes the SQL as written: no tenant or
-    * `_deleted` filter is injected.
+    * Like the other primitives it takes the SQL as written: no tenant filter is
+    * injected.
     */
   def queryCount(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
@@ -583,8 +500,7 @@ trait PasswordResetRepo extends Repo[PasswordReset, DatastoreId] {
   ): Future[Option[PasswordReset]] =
     queryOne(
       s"SELECT content FROM $tableName " +
-        "WHERE content->>'randomId' = $1 AND content->>'email' = $2 " +
-        s"AND $notDeletedSql LIMIT 1",
+        "WHERE content->>'randomId' = $1 AND content->>'email' = $2 LIMIT 1",
       Seq(randomId, email)
     )
 }
@@ -597,8 +513,8 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
       ec: ExecutionContext
   ): Future[Option[AccountCreation]] =
     queryOne(
-      s"SELECT content FROM $tableName WHERE content->>'randomId' = $$1 " +
-        s"AND $notDeletedSql LIMIT 1",
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'randomId' = $1 LIMIT 1",
       Seq(randomId)
     )
 }
@@ -610,8 +526,8 @@ trait TenantRepo extends Repo[Tenant, TenantId] {
       domain: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Tenant]] =
     queryOne(
-      s"SELECT content FROM $tableName WHERE (content->>'domain' = $$1 OR (content->'additionalDomains') ? $$1) " +
-        s"AND $notDeletedSql LIMIT 1",
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'domain' = $1 LIMIT 1",
       Seq(domain)
     )
 
@@ -622,7 +538,7 @@ trait TenantRepo extends Repo[Tenant, TenantId] {
   ): Future[Boolean] =
     queryExists(
       s"SELECT 1 FROM $tableName WHERE _id <> $$1 " +
-        s"AND (content->>'domain' = $$2 OR (content->'additionalDomains') ? $$2) AND $notDeletedSql LIMIT 1",
+        s"AND content->>'domain' = $$2 LIMIT 1",
       Seq(id.value, domain)
     )
 }
@@ -636,8 +552,8 @@ trait UserRepo extends Repo[User, UserId] {
       email: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[User]] =
     queryOne(
-      s"SELECT content FROM $tableName WHERE content->>'email' = $$1 " +
-        s"AND $notDeletedSql LIMIT 1",
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'email' = $1 LIMIT 1",
       Seq(email)
     )
 
@@ -648,7 +564,7 @@ trait UserRepo extends Repo[User, UserId] {
   ): Future[Boolean] =
     queryExists(
       s"SELECT 1 FROM $tableName WHERE _id <> $$1 " +
-        s"AND content->>'email' = $$2 AND $notDeletedSql LIMIT 1",
+        s"AND content->>'email' = $$2 LIMIT 1",
       Seq(id.value, email)
     )
 
@@ -658,8 +574,7 @@ trait UserRepo extends Repo[User, UserId] {
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[User]] =
     queryOne(
       s"SELECT content FROM $tableName " +
-        "WHERE content->'invitation'->>'token' = $1 " +
-        s"AND $notDeletedSql LIMIT 1",
+        "WHERE content->'invitation'->>'token' = $1 LIMIT 1",
       Seq(token)
     )
 }
@@ -686,7 +601,7 @@ trait ApiSubscriptionTransferRepo
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'token' = $2 LIMIT 1",
       Seq(tenant.value, token)
     )
@@ -716,7 +631,7 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
     * By convention it is bound to `$1`, and the other values follow.
     */
   private val teamScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   /** Membership predicate on the JSON `users` array — the SQL form of the
     * former `{"users.userId": …}` query.
@@ -724,9 +639,9 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
     * Written as a containment test rather than an unnesting `EXISTS`, because
     * `jsonb_array_elements` opens every row: only `@>` can be served by the
     * `idx_team_users` GIN index on `content->'users'`. Containment matches
-    * objects partially, so a `{"userId": …}` probe finds the full
-    * `{"userId", "teamPermission"}` entry. Public because `ApiController.search`
-    * needs the same predicate inside its own SQL.
+    * objects partially, so a `{"userId": …}` probe finds the full `{"userId",
+    * "teamPermission"}` entry. Public because `ApiController.search` needs the
+    * same predicate inside its own SQL.
     */
   def isMemberSql(placeholder: Int): String =
     s"content->'users' @> jsonb_build_array(jsonb_build_object('userId', $$$placeholder::text))"
@@ -788,8 +703,7 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
     val repo = forAllTenant()
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_deleted' = 'false' " +
-        s"AND content->>'type' = '${TeamType.Personal.name}' " +
+        s"WHERE content->>'type' = '${TeamType.Personal.name}' " +
         s"AND ${isMemberSql(1)}",
       Seq(user.value)
     )
@@ -849,7 +763,7 @@ trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId] {
     * `PostgresDataStore.createIndexes`.
     */
   private val notificationScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   private val pending: String =
     s"content->'status'->>'status' = '${NotificationStatus.Pending().status}'"
@@ -1006,7 +920,7 @@ trait ApiSubscriptionRepo
     * predicate is spelled out; it is bound to `$1` by convention.
     */
   private val subscriptionScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   private def select(tenant: TenantId, predicate: String, params: Seq[AnyRef])(
       implicit
@@ -1258,7 +1172,7 @@ trait ApiSubscriptionRepo
 trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId] {
 
   private val keyringScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   def findByIdAndTeam(tenant: TenantId, id: String, team: TeamId)(implicit
       dbConn: DbConn,
@@ -1312,8 +1226,7 @@ trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId] {
     val repo = forAllTenant()
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_deleted' = 'false' " +
-        "AND content->'apiKey'->>'clientId' = $1 LIMIT 1",
+        "WHERE content->'apiKey'->>'clientId' = $1 LIMIT 1",
       Seq(clientId)
     )
   }
@@ -1325,8 +1238,7 @@ trait KeyringRepo extends TenantCapableRepo[Keyring, KeyringId] {
     val repo = forAllTenant()
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_deleted' = 'false' " +
-        "AND content->>'integrationToken' = $1 LIMIT 1",
+        "WHERE content->>'integrationToken' = $1 LIMIT 1",
       Seq(token)
     )
   }
@@ -1374,7 +1286,7 @@ trait JobInformationRepo
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'jobName' = $2 AND content->>'status' = $3 " +
         "LIMIT 1",
       Seq(tenant.value, jobName, JobStatus.Running.value)
@@ -1392,7 +1304,7 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
     * original one and `isDefault` marks the version served by default.
     */
   private val apiScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   /** Matches an api by its id *or* its human readable id, both bound to `$n`.
     */
@@ -1711,19 +1623,6 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
     )
   }
 
-  def deleteLogicallyByIds(tenant: TenantId, ids: Seq[ApiId])(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long] = {
-    val repo = forTenant(tenant)
-    repo.execute(
-      s"UPDATE ${repo.tableName} SET _deleted = true, " +
-        "content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE $apiScope AND _id = ANY($$2::text[])",
-      Seq(tenant.value, ids.map(_.value).toArray)
-    )
-  }
-
   // -------------------------------------------------------------- catalogue
 
   /** The apis a user may see, by visibility. `Private` additionally requires
@@ -1906,7 +1805,7 @@ trait ConsumptionRepo
     * predicate is spelled out; it is bound to `$1` by convention.
     */
   private val consumptionScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   /** A consumption covers the window `[from, to]`. Both bounds inside `[start,
     * end]` is the same thing as `from >= start AND to <= end`, since `from <=
@@ -1999,7 +1898,7 @@ trait ConsumptionRepo
       ec: ExecutionContext
   ): Future[Seq[ApiKeyConsumption]] = {
     val repo = tenant.map(forTenant).getOrElse(forAllTenant())
-    val predicates = Seq.newBuilder[String] += "content->>'_deleted' = 'false'"
+    val predicates = Seq.newBuilder[String]
     val params = Seq.newBuilder[AnyRef]
     var placeholder = 0
 
@@ -2042,8 +1941,6 @@ trait ConsumptionRepo
 }
 
 trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId] {
-
-  // No `_deleted` predicate below: `TranslationFormat` never writes the key.
 
   /** A translation is keyed by (key, language). */
   def findByKeyAndLanguage(tenant: TenantId, key: String, language: String)(
@@ -2104,10 +2001,6 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId] {
 
   /** Raw SQL bypasses the tenant scoping of `forTenant`, so the `_tenant`
     * predicate is spelled out; it is bound to `$1` by convention.
-    */
-  /** No `_deleted` predicate here: `MessageFormat` never writes the key, so
-    * `content->>'_deleted'` is always NULL and filtering on it would match
-    * nothing. Chats are deleted physically.
     */
   private val messageScope: String = "content->>'_tenant' = $1"
 
@@ -2253,7 +2146,7 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
     * predicate is spelled out; it is bound to `$1` by convention.
     */
   private val cmsScope: String =
-    "content->>'_tenant' = $1 AND content->>'_deleted' = 'false'"
+    "content->>'_tenant' = $1"
 
   /** The page served at a given url path. */
   def findByPath(tenant: TenantId, path: String)(implicit
@@ -2327,33 +2220,15 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
     )
   }
 
-  /** The GraphQL `pages` / `page` fields let an admin list the *deleted* pages
-    * too, so `deleted` is an explicit filter here rather than the usual
-    * not-deleted default.
-    */
-  def findAllWithDeletedFlag(tenant: TenantId, deleted: Boolean)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[CmsPage]] = {
-    val repo = forTenant(tenant)
-    repo.query(
-      s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2",
-      Seq(tenant.value, deleted.toString)
-    )
-  }
-
   def findOneByNameOrPath(
       tenant: TenantId,
       name: Option[String],
-      path: Option[String],
-      deleted: Boolean
+      path: Option[String]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[CmsPage]] = {
     val repo = forTenant(tenant)
     val predicates = Seq.newBuilder[String]
-    val params = Seq.newBuilder[AnyRef]
-    var placeholder = 2
-    params += tenant.value += deleted.toString
+    val params = Seq.newBuilder[AnyRef] += tenant.value
+    var placeholder = 1
 
     name.foreach { value =>
       placeholder += 1
@@ -2368,7 +2243,7 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
 
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = $2 " +
+        s"WHERE $cmsScope " +
         predicates.result().map(p => s"AND $p ").mkString +
         "LIMIT 1",
       params.result()
@@ -2379,8 +2254,7 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId] {
 trait AssetRepo extends TenantCapableRepo[Asset, AssetId] {
 
   /** An asset is addressed by its slug in urls, not by its id. Raw SQL bypasses
-    * the tenant scoping of `forTenant`, so `_tenant` is spelled out — and no
-    * `_deleted` predicate, since `AssetFormat` never writes the key.
+    * the tenant scoping of `forTenant`, so `_tenant` is spelled out.
     */
   def findBySlug(tenant: TenantId, slug: String)(implicit
       dbConn: DbConn,
@@ -2465,8 +2339,7 @@ trait SubscriptionDemandRepo
       plan: Option[UsagePlanId]
   ): (String, Seq[AnyRef]) = {
     val predicates = Seq.newBuilder[String] +=
-      "content->>'_tenant' = $1" += "content->>'_deleted' = 'false'" +=
-      "content->>'state' = ANY($2::text[])"
+      "content->>'_tenant' = $1" += "content->>'state' = ANY($2::text[])"
     val params = Seq.newBuilder[AnyRef] +=
       tenant.value += states.map(_.name).toArray
     var placeholder = 2
@@ -2565,7 +2438,7 @@ trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId] {
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'token' = $2 LIMIT 1",
       Seq(tenant.value, token)
     )
@@ -2583,7 +2456,7 @@ trait StepValidatorRepo extends TenantCapableRepo[StepValidator, DatastoreId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'subscriptionDemand' = ANY($2::text[]) " +
         "AND content->>'step' = $3",
       Seq(tenant.value, demands.map(_.value).toArray, step)
@@ -2637,7 +2510,7 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->'otoroshiTarget'->>'otoroshiSettings' = " +
         "  ANY($2::text[])",
       Seq(tenant.value, settings.toArray)
@@ -2651,7 +2524,7 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->'paymentSettings'->>'thirdPartyPaymentSettingsId' = " +
         "  ANY($2::text[])",
       Seq(tenant.value, settings.toArray)
@@ -2669,7 +2542,7 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
     val repo = forTenant(tenant)
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'customName' = $2",
       Seq(tenant.value, customName)
     )
@@ -2690,7 +2563,7 @@ trait EmailVerificationRepo
     val repo = forTenant(tenant)
     repo.queryOne(
       s"SELECT content FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 AND content->>'_deleted' = 'false' " +
+        "WHERE content->>'_tenant' = $1 " +
         "AND content->>'randomId' = $2 LIMIT 1",
       Seq(tenant.value, randomId)
     )

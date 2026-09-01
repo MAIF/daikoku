@@ -100,7 +100,6 @@ case class TeamAuthorizedEntities(
 case class Team(
     id: TeamId,
     tenant: TenantId,
-    deleted: Boolean = false,
     `type`: TeamType,
     name: String,
     description: String,
@@ -161,7 +160,6 @@ sealed trait NotificationStatus {
 
 case class EmailVerification(
     id: DatastoreId,
-    deleted: Boolean = false,
     randomId: String,
     tenant: TenantId,
     team: TeamId,
@@ -354,7 +352,6 @@ case class NotificationSender(name: String, email: String, id: Option[UserId])
 case class Notification(
     id: NotificationId,
     tenant: TenantId,
-    deleted: Boolean = false,
     team: Option[TeamId],
     sender: NotificationSender,
     date: DateTime = DateTime.now(),

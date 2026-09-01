@@ -1392,7 +1392,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
       authorizedTeams.map((t) => t._id),
       props.subscriptions
         .filter((_) => !plan.allowMultipleKeys)
-        .filter((f) => !f._deleted)
         .map((s) => s.team)
     );
 
@@ -1439,7 +1438,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
                 pendingTeams={props.inProgressDemands.map((s) => s.team)}
                 acceptedTeams={props.subscriptions
-                  .filter((f) => !f._deleted)
                   .filter(s => s.plan === plan._id)
                   .map((subs) => subs.team)}
                 allowMultipleDemand={plan.allowMultipleKeys}

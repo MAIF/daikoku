@@ -157,7 +157,7 @@ object SchemaDefinition {
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
           tenants: Seq[TenantId]
-      ) => ctx._1.tenantRepo.findByIdsIncludingDeleted(tenants)
+      ) => ctx._1.tenantRepo.findByIds(tenants)
     )(using HasId[Tenant, TenantId](_.id))
     lazy val teamsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -165,21 +165,20 @@ object SchemaDefinition {
         (ctx: (DataStore, DaikokuActionContext[JsValue]), teams: Seq[TeamId]) =>
           ctx._1.teamRepo
             .forTenant(ctx._2.tenant)
-            .findByIdsIncludingDeleted(teams)
+            .findByIds(teams)
     )(using HasId[Team, TeamId](_.id))
     lazy val apisFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
           apis: Seq[ApiId]
-      ) =>
-        ctx._1.apiRepo.forTenant(ctx._2.tenant).findByIdsIncludingDeleted(apis)
+      ) => ctx._1.apiRepo.forTenant(ctx._2.tenant).findByIds(apis)
     )(using HasId[Api, ApiId](_.id))
     lazy val usersFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch =
         (ctx: (DataStore, DaikokuActionContext[JsValue]), users: Seq[UserId]) =>
-          ctx._1.userRepo.findByIdsIncludingDeleted(users)
+          ctx._1.userRepo.findByIds(users)
     )(using HasId[User, UserId](_.id))
     lazy val apiIssuesFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -189,7 +188,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.apiIssueRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(issues)
+          .findByIds(issues)
     )(using HasId[ApiIssue, ApiIssueId](_.id))
     lazy val apiPostsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -199,7 +198,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.apiPostRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(posts)
+          .findByIds(posts)
     )(using HasId[ApiPost, ApiPostId](_.id))
     lazy val apiDocumentationPagesFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -209,7 +208,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.apiDocumentationPageRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(pages)
+          .findByIds(pages)
     )(using HasId[ApiDocumentationPage, ApiDocumentationPageId](_.id))
     lazy val apiSubscriptionsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -219,7 +218,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.apiSubscriptionRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(subscriptions)
+          .findByIds(subscriptions)
     )(using HasId[ApiSubscription, ApiSubscriptionId](_.id))
     lazy val apiSubscriptionDemandsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -229,7 +228,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.subscriptionDemandRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(demands)
+          .findByIds(demands)
     )(using HasId[SubscriptionDemand, DemandId](_.id))
     lazy val keyringsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -239,7 +238,7 @@ object SchemaDefinition {
       ) =>
         ctx._1.keyringRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(keyrings)
+          .findByIds(keyrings)
     )(using HasId[Keyring, KeyringId](_.id))
     lazy val usagePlansFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
@@ -249,29 +248,28 @@ object SchemaDefinition {
       ) =>
         ctx._1.usagePlanRepo
           .forTenant(ctx._2.tenant)
-          .findByIdsIncludingDeleted(plans)
+          .findByIds(plans)
     )(using HasId[UsagePlan, UsagePlanId](_.id))
     lazy val accountCreationsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
           demands: Seq[DemandId]
-      ) => ctx._1.accountCreationRepo.findByIdsIncludingDeleted(demands)
+      ) => ctx._1.accountCreationRepo.findByIds(demands)
     )(using HasId[AccountCreation, DemandId](_.id))
     lazy val userSessionsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
           sessions: Seq[DatastoreId]
-      ) => ctx._1.userSessionRepo.findByIdsIncludingDeleted(sessions)
+      ) => ctx._1.userSessionRepo.findByIds(sessions)
     )(using HasId[UserSession, DatastoreId](_.id))
     lazy val cmsPagesFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
           pages: Seq[CmsPageId]
-      ) =>
-        ctx._1.cmsRepo.forTenant(ctx._2.tenant).findByIdsIncludingDeleted(pages)
+      ) => ctx._1.cmsRepo.forTenant(ctx._2.tenant).findByIds(pages)
     )(using HasId[CmsPage, CmsPageId](_.id))
 
     lazy val TenantType
@@ -283,7 +281,6 @@ object SchemaDefinition {
           fields[(DataStore, DaikokuActionContext[JsValue]), Tenant](
             Field("id", StringType, resolve = ctx => ctx.value.id.value),
             Field("enabled", BooleanType, resolve = _.value.enabled),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field("domain", StringType, resolve = _.value.domain),
             Field("additionalDomain", ListType(StringType), resolve = _.value.additionalDomains),
@@ -1043,7 +1040,6 @@ object SchemaDefinition {
               OptionType(TenantType),
               resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field("type", StringType, resolve = _.value.`type`.name),
             Field("description", StringType, resolve = _.value.description),
@@ -1159,7 +1155,6 @@ object SchemaDefinition {
             OptionType(StringType),
             resolve = ctx => Some(ctx.value.tenant.value)
           ),
-          Field("_deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "costPerMonth",
             OptionType(BigDecimalType),
@@ -1521,7 +1516,6 @@ object SchemaDefinition {
         () =>
           fields[(DataStore, DaikokuActionContext[JsValue]), User](
             Field("id", StringType, resolve = _.value.id.value),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field(
               "tenants",
               ListType(OptionType(TenantType)),
@@ -1648,7 +1642,7 @@ object SchemaDefinition {
       } else {
         dataStore.teamRepo
           .forTenant(actionCtx.tenant)
-          .findByIdIncludingDeleted(ctx.value.team.value)
+          .findById(ctx.value.team.value)
           .flatMap {
             case Some(team) if isTeamApiKeyVisible(team, actionCtx.user) =>
               Future.unit
@@ -1672,7 +1666,6 @@ object SchemaDefinition {
             OptionType(TenantType),
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
@@ -1741,7 +1734,6 @@ object SchemaDefinition {
             OptionType(TenantType),
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -1844,7 +1836,7 @@ object SchemaDefinition {
         plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
           env.dataStore.usagePlanRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(subscription.plan),
+            .findById(subscription.plan),
           None
         )
         otoroshi <-
@@ -1959,7 +1951,6 @@ object SchemaDefinition {
               OptionType(TenantType),
               resolve = ctx => tenantsFetcher.defer(ctx.ctx._2.tenant.id)
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
             Field(
               "smallDescription",
@@ -2506,7 +2497,6 @@ object SchemaDefinition {
         fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
           Field("_id", StringType, resolve = _.value.id.value),
           Field("tenant", StringType, resolve = _.value.id.value),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(
             "api",
             ApiType,
@@ -3413,7 +3403,7 @@ object SchemaDefinition {
                 ctx.value.impersonatorSessionId match {
                   case Some(imp) =>
                     ctx.ctx._1.userSessionRepo
-                      .findByIdIncludingDeleted(imp.value)
+                      .findById(imp.value)
                   case None => None
                 }
             ),
@@ -3845,7 +3835,6 @@ object SchemaDefinition {
                   case None      => None
                 }
             ),
-            Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("visible", BooleanType, resolve = _.value.visible),
             Field(
               "authenticated",
@@ -3956,12 +3945,6 @@ object SchemaDefinition {
       "selectedCategory",
       OptionInputType(StringType),
       description = "A category of an Api"
-    )
-    val DELETED: Argument[Boolean] = Argument(
-      "deleted",
-      BooleanType,
-      description = "If enabled, the page is considered deleted",
-      defaultValue = false
     )
     val IDS = Argument(
       "ids",
@@ -4480,16 +4463,11 @@ object SchemaDefinition {
         Field(
           "pages",
           ListType(CmsPageType),
-          arguments = DELETED :: Nil,
           resolve = ctx => {
             _TenantAdminAccessTenant(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
-              ctx.ctx._1.cmsRepo
-                .findAllWithDeletedFlag(
-                  ctx.ctx._2.tenant.id,
-                  ctx.arg(DELETED)
-                )
+              ctx.ctx._1.cmsRepo.forTenant(ctx.ctx._2.tenant.id).findAll()
             }.map {
               case Right(value) => value
               case Left(r)      => throw NotAuthorizedError(r.toString)
@@ -4504,7 +4482,7 @@ object SchemaDefinition {
         Field(
           "page",
           OptionType(CmsPageType),
-          arguments = DELETED :: NAME :: PATH :: Nil,
+          arguments = NAME :: PATH :: Nil,
           resolve = ctx => {
             _UberPublicUserAccess(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
@@ -4519,8 +4497,7 @@ object SchemaDefinition {
                     .findOneByNameOrPath(
                       ctx.ctx._2.tenant.id,
                       maybeName,
-                      maybePath,
-                      ctx.arg(DELETED)
+                      maybePath
                     )
               }
             }.map {

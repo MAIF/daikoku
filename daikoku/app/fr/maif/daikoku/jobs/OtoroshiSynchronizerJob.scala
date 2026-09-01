@@ -734,12 +734,12 @@ class OtoroshiSynchronizerJob(
          |        )) FILTER (WHERE s._id IS NOT NULL AND apis._id IS NOT NULL AND usage_plans._id IS NOT NULL), '[]'::json) AS subscriptions,
          |        teams.content AS team
          |FROM keyrings k
-         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id AND (s.content ->> '_deleted')::bool IS NOT TRUE
+         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
          |LEFT JOIN apis ON apis._id = s.content ->> 'api'
          |LEFT JOIN users ON users._id = s.content ->> 'by'
          |LEFT JOIN usage_plans ON usage_plans._id = s.content ->> 'plan'
          |LEFT JOIN teams ON teams._id = s.content ->> 'team'
-         |WHERE (k.content ->> '_deleted')::bool IS NOT TRUE
+         |WHERE TRUE
          |  $predicate
          |  $cursorClause
          |GROUP BY k._id, k.content, teams.content
@@ -786,87 +786,89 @@ class OtoroshiSynchronizerJob(
           skipped.incrementAndGet()
           Future.successful(createdAt)
         } else {
-        (for {
-          otoroshiSettings <- EitherT.fromOption[Future](
-            keyring.otoroshiSettings match {
-              case KeyringOtoroshiBinding.Otoroshi(id) =>
-                tenant.otoroshiSettings.find(_.id == id)
-              case KeyringOtoroshiBinding.Internal => None
-            },
-            AppError.EntityNotFound(
-              s"otoroshi settings not found for keyring ${keyring.id.value} (apikey $clientId)"
+          (for {
+            otoroshiSettings <- EitherT.fromOption[Future](
+              keyring.otoroshiSettings match {
+                case KeyringOtoroshiBinding.Otoroshi(id) =>
+                  tenant.otoroshiSettings.find(_.id == id)
+                case KeyringOtoroshiBinding.Internal => None
+              },
+              AppError.EntityNotFound(
+                s"otoroshi settings not found for keyring ${keyring.id.value} (apikey $clientId)"
+              )
             )
-          )
-          _ = logger.info(
-            s"[sync:$mode] processing apikey $clientId (keyring ${keyring.id.value}), subscriptions=${subscriptions.size}"
-          )
-          apikey <- EitherT(
-            client.getApikey(clientId)(using otoroshiSettings)
-          )
-          apk <- maybeTeam
-            .flatMap(team =>
-              mergeAggregation(keyring, subscriptions, team, tenant)
-            ) match {
-            case Some(apikeyFromSubscriptions) =>
-              // Active subscriptions remain — recalculate merged key (Sync and Delete)
-              val equals = isEqual(apikey, apikeyFromSubscriptions)
-              logger.info(
-                s"[sync:$mode] apikey $clientId — mergeAggregation=Some, equals=$equals"
-              )
-              if (!equals) {
-                val cleanApikey = clearApikey(apikey)
-                val computedKey = mergeOtoroshiApikeys(
-                  cleanApikey,
-                  apikeyFromSubscriptions,
-                  forceNewValue = true
-                )
+            _ = logger.info(
+              s"[sync:$mode] processing apikey $clientId (keyring ${keyring.id.value}), subscriptions=${subscriptions.size}"
+            )
+            apikey <- EitherT(
+              client.getApikey(clientId)(using otoroshiSettings)
+            )
+            apk <- maybeTeam
+              .flatMap(team =>
+                mergeAggregation(keyring, subscriptions, team, tenant)
+              ) match {
+              case Some(apikeyFromSubscriptions) =>
+                // Active subscriptions remain — recalculate merged key (Sync and Delete)
+                val equals = isEqual(apikey, apikeyFromSubscriptions)
                 logger.info(
-                  s"[sync:$mode] updating apikey $clientId (${subscriptions.size} subscriptions)"
+                  s"[sync:$mode] apikey $clientId — mergeAggregation=Some, equals=$equals"
                 )
-                EitherT(
-                  client.updateApiKey(key = computedKey)(using otoroshiSettings)
-                )
-              } else {
-                EitherT.pure[Future, AppError](apikey)
-              }
-            case None =>
-              mode match {
-                case SyncMode.Delete =>
-                  logger.info(
-                    s"[sync:Delete] DELETING apikey $clientId in Otoroshi"
+                if (!equals) {
+                  val cleanApikey = clearApikey(apikey)
+                  val computedKey = mergeOtoroshiApikeys(
+                    cleanApikey,
+                    apikeyFromSubscriptions,
+                    forceNewValue = true
                   )
-                  client
-                    .deleteApiKey(clientId)(using otoroshiSettings)
-                    .map(_ => apikey)
-                case SyncMode.Sync =>
-                  if (apikey.enabled) {
+                  logger.info(
+                    s"[sync:$mode] updating apikey $clientId (${subscriptions.size} subscriptions)"
+                  )
+                  EitherT(
+                    client.updateApiKey(key = computedKey)(using
+                      otoroshiSettings
+                    )
+                  )
+                } else {
+                  EitherT.pure[Future, AppError](apikey)
+                }
+              case None =>
+                mode match {
+                  case SyncMode.Delete =>
                     logger.info(
-                      s"[sync:Sync] disabling apikey $clientId in Otoroshi"
+                      s"[sync:Delete] DELETING apikey $clientId in Otoroshi"
                     )
-                    EitherT(
-                      client.updateApiKey(key = apikey.copy(enabled = false))(
-                        using otoroshiSettings
+                    client
+                      .deleteApiKey(clientId)(using otoroshiSettings)
+                      .map(_ => apikey)
+                  case SyncMode.Sync =>
+                    if (apikey.enabled) {
+                      logger.info(
+                        s"[sync:Sync] disabling apikey $clientId in Otoroshi"
                       )
-                    )
-                  } else {
-                    EitherT.pure[Future, AppError](apikey)
-                  }
-              }
-          }
-        } yield apk).value
-          .recover { case e =>
-            Left(AppError.InternalServerError(e.getMessage))
-          }
-          .map {
-            case Left(error) =>
-              errored.incrementAndGet()
-              logger.error(
-                s"Error synchronizing apikey $clientId: ${error.getErrorMessage()}"
-              )
-            case Right(_) =>
-              synced.incrementAndGet()
-          }
-          .map(_ => createdAt)
+                      EitherT(
+                        client.updateApiKey(key = apikey.copy(enabled = false))(
+                          using otoroshiSettings
+                        )
+                      )
+                    } else {
+                      EitherT.pure[Future, AppError](apikey)
+                    }
+                }
+            }
+          } yield apk).value
+            .recover { case e =>
+              Left(AppError.InternalServerError(e.getMessage))
+            }
+            .map {
+              case Left(error) =>
+                errored.incrementAndGet()
+                logger.error(
+                  s"Error synchronizing apikey $clientId: ${error.getErrorMessage()}"
+                )
+              case Right(_) =>
+                synced.incrementAndGet()
+            }
+            .map(_ => createdAt)
         }
       }
       // Ce stage s'exécute dans le thread downstream ordonné de mapAsync :

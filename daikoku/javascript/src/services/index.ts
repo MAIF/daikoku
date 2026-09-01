@@ -1417,7 +1417,6 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
-          deleted
           lastUpdate
           state
           currentVersion
@@ -1499,7 +1498,6 @@ export const graphql = {
     query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
       plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
         plans {
-          _deleted
           _id
           _tenant
           aggregationApiKeysSecurity

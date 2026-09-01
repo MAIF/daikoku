@@ -128,7 +128,7 @@ class CmsApiController(
     CmsApiAction.async { ctx =>
       env.dataStore.cmsRepo
         .forTenant(ctx.tenant)
-        .findByIdIncludingDeleted(id)
+        .findById(id)
         .map {
           case None       => NotFound(Json.obj("error" -> "cms page not found"))
           case Some(page) => Ok(page.asJson)
@@ -251,7 +251,7 @@ class CmsApiController(
         cssPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findByIdIncludingDeleted(tenantStyle.cssCmsPage)
+            .findById(tenantStyle.cssCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -267,7 +267,7 @@ class CmsApiController(
         colorThemePage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findByIdIncludingDeleted(tenantStyle.colorThemeCmsPage)
+            .findById(tenantStyle.colorThemeCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -282,7 +282,7 @@ class CmsApiController(
         jsPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findByIdIncludingDeleted(tenantStyle.jsCmsPage)
+            .findById(tenantStyle.jsCmsPage)
             .map(
               _.getOrElse(
                 getCustomizationCmsPage(
@@ -327,7 +327,7 @@ class CmsApiController(
 
   def getAllApis() =
     CmsApiAction.async { ctx =>
-      apiService.getApis(ctx, true)
+      apiService.getApis(ctx)
     }
 
   def getLoginToken() =

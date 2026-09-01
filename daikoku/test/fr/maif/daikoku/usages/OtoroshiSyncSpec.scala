@@ -2011,7 +2011,7 @@ class OtoroshiSyncSpec()
       val mayberNewConsumerSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(consumerChildDevSubscription.id),
+          .findById(consumerChildDevSubscription.id),
         10.seconds
       )
       mayberNewConsumerSub.nonEmpty mustBe true
@@ -2020,7 +2020,7 @@ class OtoroshiSyncSpec()
         .result(
           daikokuComponents.env.dataStore.keyringRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(newConsumerSub.keyring),
+            .findById(newConsumerSub.keyring),
           10.seconds
         )
         .get
@@ -2458,7 +2458,7 @@ class OtoroshiSyncSpec()
       val maybeSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted((resp.json \ "subscription" \ "_id").as[String]),
+          .findById((resp.json \ "subscription" \ "_id").as[String]),
         5.seconds
       )
       maybeSub.nonEmpty mustBe true
@@ -2467,7 +2467,7 @@ class OtoroshiSyncSpec()
         .result(
           daikokuComponents.env.dataStore.keyringRepo
             .forTenant(tenant)
-            .findByIdIncludingDeleted(sub.keyring),
+            .findById(sub.keyring),
           5.seconds
         )
         .get
@@ -2604,7 +2604,7 @@ class OtoroshiSyncSpec()
 //      val maybeSub = Await.result(
 //        daikokuComponents.env.dataStore.apiSubscriptionRepo
 //          .forTenant(tenant)
-//          .findByIdIncludingDeleted((resp.json \ "subscription" \ "_id").as[String]),
+//          .findById((resp.json \ "subscription" \ "_id").as[String]),
 //        5.seconds
 //      )
 //      maybeSub.nonEmpty mustBe true

@@ -28,9 +28,6 @@ class DeletionService(
 
   private val systemUser = User.system
 
-  /** Delete logically a team Add an operation in deletion queue to process
-    * complete deletion (delete user notifications & messages)
-    */
   /** Physically delete a user and the tenant-local traces the queue used to
     * clean up (team-invitation notifications, and their chat messages unless
     * they sit in the tenant admin team), in a single transaction. The broader
@@ -41,7 +38,9 @@ class DeletionService(
       user: User,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
-    AppLogger.debug(s"[deletion service] :: physically deleting user[${user.name}]")
+    AppLogger.debug(
+      s"[deletion service] :: physically deleting user[${user.name}]"
+    )
     EitherT.right[AppError](
       env.dataStore.withTransaction {
         val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
@@ -130,19 +129,19 @@ class DeletionService(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.plan),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.keyring),
+          .findById(subscription.keyring),
         AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
       )
       notif = Notification(
@@ -239,7 +238,7 @@ class DeletionService(
       orphanedKeyrings <- EitherT.liftF(
         env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdsIncludingDeleted(orphanedKeyringIds)
+          .findByIds(orphanedKeyringIds)
       )
       // Build the deletion notifications while api/plan/keyring are still
       // readable (reads only, no writes yet).
@@ -623,8 +622,7 @@ class DeletionService(
              |     WHERE u->>'userId' != $userParam)
              |)
              |WHERE $tenantFilter
-             |  _deleted = false
-             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
+             |  content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
              |""".stripMargin,
           tenantParams :+ user.id.value
         )
@@ -659,9 +657,8 @@ class DeletionService(
     )
   }
 
-  /** Flag a team as deleted and delete his subscriptions, apis and those apis
-    * subscriptions add team, subs and apis to deletion queue to process
-    * complete deletion
+  /** Physically delete a team with its apis, subscriptions and keyrings, and
+    * defer the Otoroshi and Stripe cleanup to the deletion queue.
     */
   def deleteTeamByQueue(
       id: TeamId,
@@ -685,7 +682,6 @@ class DeletionService(
           repo.query(
             s"SELECT content FROM ${repo.tableName} " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND (content->>'team' = $2 " +
               "OR content->>'api' = ANY($3::text[]))",
             Seq(tenant.id.value, team.id.value, apis.map(_.id.value).toArray)

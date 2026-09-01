@@ -59,7 +59,7 @@ class QueueJob(
   ): Future[Boolean] = {
     env.dataStore.keyringRepo
       .forTenant(subscription.tenant)
-      .findByIdIncludingDeleted(subscription.keyring)
+      .findById(subscription.keyring)
       .flatMap { maybeKeyring =>
         val repo =
           env.dataStore.notificationRepo.forTenant(subscription.tenant)
@@ -81,23 +81,14 @@ class QueueJob(
       }
   }
 
-//  private def deleteThirdPartyPaymentClient(team: Team) = {
-//    env.dataStore.tenantRepo.findByIdIncludingDeleted(team.tenant).flatMap {
-//      case Some(tenant) =>
-//        Future.sequence(tenant.thirdPartyPaymentSettings.map {
-//          case p: ThirdPartyPaymentSettings.StripeSettings =>
-//            paymentClient.deleteStripeClient(team)(p)
-//        })
-//      case None => FastFuture.successful(())
-//    }
-//  }
-
-  // Les DB writes finaux (deleteByIdLogically + deleteSubscriptionNotifications) sont atomiques.
-  // Les appels HTTP précédents (archiveApiKey, syncForSubscription, deleteThirdPartySubscription) restent
-  // non transactionnables : si l'un réussit et la transaction DB échoue, le retry repassera les HTTP.
-  // archiveApiKey et deleteThirdPartySubscription sont idempotents (Stripe ignore les 404).
-  // TODO(transactions): otoroshiSynchronisator.run (dans archiveApiKey) n'est pas idempotent —
-  // si le sync Otoroshi échoue sur retry, la subscription reste visible dans Otoroshi. Nécessite saga.
+  // The final DB writes (deleteById + deleteSubscriptionNotifications) are
+  // atomic. The HTTP calls before them (archiveApiKey, syncForSubscription,
+  // deleteThirdPartySubscription) are not transactional: if one succeeds and
+  // the transaction then fails, the retry replays them. archiveApiKey and
+  // deleteThirdPartySubscription tolerate that — Stripe treats a 404 as done.
+  // TODO(transactions): otoroshiSynchronisator.run, inside archiveApiKey, does
+  // not. If the Otoroshi sync fails on retry the subscription stays visible in
+  // Otoroshi; fixing it properly needs a saga.
   private def deleteSubscription(o: Operation): Future[Unit] = {
     val value: EitherT[Future, AppError, Unit] = for {
       _ <- EitherT.liftF(
@@ -106,25 +97,25 @@ class QueueJob(
           .save(o.copy(status = OperationStatus.InProgress))
       )
       tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant),
+        env.dataStore.tenantRepo.findById(o.tenant),
         AppError.TenantNotFound
       )
       subscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(o.itemId),
+          .findById(o.itemId),
         AppError.EntityNotFound("subscription")
       )
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdIncludingDeleted(subscription.plan),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       _ <- EitherT.liftF(
@@ -170,7 +161,6 @@ class QueueJob(
       }
       .map(_ => ())
   }
-
 
   // The keyring DB row is already gone — DeletionService removes it physically
   // in the request transaction. This operation only carries the deferred
@@ -227,7 +217,7 @@ class QueueJob(
   private def syncKeyring(o: Operation): Future[Unit] = {
     (for {
       tenant <- OptionT(
-        env.dataStore.tenantRepo.findByIdIncludingDeleted(o.tenant.value)
+        env.dataStore.tenantRepo.findById(o.tenant.value)
       )
       _ <- OptionT.liftF(
         otoroshiSynchronizerJob.run(KeyringId(o.itemId), tenant)
@@ -256,9 +246,10 @@ class QueueJob(
   // *** THIRD PARTY PAYMENT ***
   // ***************************
 
-  // TODO(transactions): syncWithThirdParty (Stripe usage records) est additif.
-  // Si deleteById échoue, l'opération est rejouée et Stripe reçoit un deuxième enregistrement de consommation.
-  // Fix complet nécessite un flag "synced" sur ApiKeyConsumption (modification de schéma).
+  // TODO(transactions): syncWithThirdParty (Stripe usage records) is additive.
+  // If deleteById fails the operation is replayed and Stripe receives a second
+  // consumption record. A complete fix needs a "synced" flag on
+  // ApiKeyConsumption, so a schema change.
   private def syncConsumption(o: Operation): Future[Unit] = {
     logger.debug("*** SYNC CONSUmPTION AS OPERATION***")
     logger.debug(Json.prettyPrint(o.asJson))
@@ -293,8 +284,9 @@ class QueueJob(
     } yield ()).value.map(_ => ())
   }
 
-  // deleteStripeSubscription ignore le status HTTP (EitherT.liftF) → Stripe 404 sur retry traité comme succès.
-  // Le retry résout donc automatiquement un échec de deleteById.
+  // deleteStripeSubscription ignores the HTTP status (EitherT.liftF), so a
+  // Stripe 404 on retry counts as a success: a failed deleteById resolves
+  // itself on the next attempt.
   private def deleteThirdPartySubscription(o: Operation): Future[Unit] = {
     logger.debug("*** DELETE THiRD PartY SubSCRIPTion AS OPERATION***")
     logger.debug(Json.prettyPrint(o.asJson))
@@ -318,7 +310,7 @@ class QueueJob(
       apiSubscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
-          .findByIdIncludingDeleted(o.itemId),
+          .findById(o.itemId),
         AppError.EntityNotFound("api subscription")
       )
       _ <- settingsAndInfos match {
@@ -350,9 +342,10 @@ class QueueJob(
       .map(_ => ())
   }
 
-  // archiveStripeProduct et archiveStripePrices traitent maintenant 404 comme succès → idempotent sur retry.
-  // TODO(transactions): si deleteById échoue après le payment, le retry appelle Stripe à nouveau.
-  // Stripe renvoie 404 (already archived) → traité comme succès → deleteById retentée → résolution automatique.
+  // archiveStripeProduct and archiveStripePrices treat a 404 as a success, so
+  // they are idempotent on retry: if deleteById fails after the payment call,
+  // the retry hits Stripe again, gets "already archived", and deleteById is
+  // attempted once more until it succeeds.
   private def deleteThirdPartyProduct(o: Operation): Future[Unit] = {
     logger.debug("*** DELETE THiRD PartY product AS OPERATION***")
     logger.debug(Json.prettyPrint(o.asJson))

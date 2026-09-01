@@ -80,7 +80,7 @@ class RemoteCatalogSpec
 
   private def reload(): Option[JobInformation] =
     Await.result(
-      jobRepo.findByIdIncludingDeleted(
+      jobRepo.findById(
         DatastoreId(s"${JobName.RemoteCatalog.value}-${tenant.id.value}")
       ),
       10.seconds
@@ -135,7 +135,7 @@ class RemoteCatalogSpec
 
   private def getTeam(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
-      path = s"/admin-api/teams/$id?notDeleted=true",
+      path = s"/admin-api/teams/$id",
       method = "GET",
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)

@@ -135,28 +135,24 @@ class TenantService(
 
   def deleteTenant(tenant: Tenant): EitherT[Future, AppError, Tenant] = {
     EitherT.liftF[Future, AppError, Tenant](for {
+      teams <- env.dataStore.teamRepo
+        .findAllTeams(tenant.id, excludePersonal = false)
+      _ <- Future.sequence(
+        teams.map(t => deletionService.deleteTeamByQueue(t.id, tenant.id).value)
+      )
       _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAll()
-      _ <-
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .deleteAll()
-      _ <-
-        env.dataStore.apiDocumentationPageRepo
-          .forTenant(tenant)
-          .deleteAll()
-      _ <-
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .deleteAll()
+      _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteAll()
+      _ <- env.dataStore.apiDocumentationPageRepo.forTenant(tenant).deleteAll()
+      _ <- env.dataStore.notificationRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()
-      _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
+      _ <- env.dataStore.tenantRepo.deleteById(tenant.id)
       _ <- env.dataStore.userRepo.execute(
         s"UPDATE ${env.dataStore.userRepo.tableName} " +
           "SET content = content || '{\"lastTenant\": null}' " +
           "WHERE content->>'lastTenant' = $1",
         Seq(tenant.id.value)
       )
-    } yield tenant.copy(deleted = true))
+    } yield tenant)
   }
 
   private def checkRemovedSettingsAreUnused(
@@ -175,40 +171,44 @@ class TenantService(
         if (removedOtoroshiSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            env.dataStore.usagePlanRepo
-              .findByOtoroshiSettings(
-                updatedTenant.id,
-                removedOtoroshiSettings.map(_.value).toSeq
-              )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              env.dataStore.usagePlanRepo
+                .findByOtoroshiSettings(
+                  updatedTenant.id,
+                  removedOtoroshiSettings.map(_.value).toSeq
+                )
+            )
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
       _ <-
         if (removedPaymentSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            env.dataStore.usagePlanRepo
-              .findByPaymentSettings(
-                updatedTenant.id,
-                removedPaymentSettings.map(_.value).toSeq
-              )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              env.dataStore.usagePlanRepo
+                .findByPaymentSettings(
+                  updatedTenant.id,
+                  removedPaymentSettings.map(_.value).toSeq
+                )
+            )
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
     } yield ()
   }
 

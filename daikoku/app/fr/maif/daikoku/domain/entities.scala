@@ -187,7 +187,6 @@ enum JobName(val value: String):
 case class JobInformation(
     id: DatastoreId,
     tenant: TenantId,
-    deleted: Boolean = false,
     jobName: JobName,
     lockedBy: String,
     lockedAt: DateTime,

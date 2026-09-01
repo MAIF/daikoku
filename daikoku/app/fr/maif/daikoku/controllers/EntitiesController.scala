@@ -384,7 +384,6 @@ class EntitiesController(
         Ok(
           User(
             id = UserId(IdGenerator.token(32)),
-            deleted = false,
             tenants = Set(ctx.tenant.id),
             origins = Set(AuthProvider.Local),
             name = "John Doe",

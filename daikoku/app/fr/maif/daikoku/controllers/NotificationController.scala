@@ -114,9 +114,10 @@ class NotificationController(
                 else "_id = ANY($3::text[])"
 
               repo.execute(
-                s"UPDATE ${repo.tableName} " +
-                  "SET content = jsonb_set(content, '{status}', $2::jsonb) " +
-                  s"WHERE content->>'_tenant' = $$1 AND $target",
+                s"""UPDATE ${repo.tableName}
+                   |SET content = jsonb_set(content, '{status}', $$2::text::jsonb)
+                   |WHERE content->>'_tenant' = $$1 AND $target
+                   |""".stripMargin,
                 Seq(ctx.tenant.id.value, accepted) ++
                   (if (selectAll) Seq.empty else Seq(notificationIdValues))
               )
@@ -864,7 +865,6 @@ class NotificationController(
             s"UPDATE ${repo.tableName} " +
               "SET content = jsonb_set(content, '{team}', to_jsonb($2::text)) " +
               "WHERE content->>'_tenant' = $1 " +
-              "AND content->>'_deleted' = 'false' " +
               "AND content->'action'->>'type' = 'ApiSubscription' " +
               "AND content->'status'->>'status' = 'Pending' " +
               "AND content->'action'->>'api' = ANY($3::text[])",

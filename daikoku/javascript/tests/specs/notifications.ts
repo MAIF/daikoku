@@ -58,7 +58,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -75,7 +74,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -91,7 +89,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -108,7 +105,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -129,7 +125,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -147,7 +142,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -164,7 +158,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -180,7 +173,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -196,7 +188,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -212,7 +203,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -229,7 +219,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -246,7 +235,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -263,7 +251,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -279,7 +266,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -295,7 +281,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,
@@ -312,7 +297,6 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
       return {
         _id: nanoid(),
         _tenant: tenant,
-        _deleted: false,
         date: Date.now().toString(),
         team: team!,
         sender,

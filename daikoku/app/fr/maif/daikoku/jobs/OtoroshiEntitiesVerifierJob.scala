@@ -231,17 +231,16 @@ class OtoroshiEntitiesVerifierJob(
     logger.info("Verifying if otoroshi groups still exists")
     val par = 10
     val apiRepo = env.dataStore.apiRepo.forAllTenant()
-    val (entryPointPredicate, entryPointParams) = entryPointFilter match {
+    val (entryPointWhere, entryPointParams) = entryPointFilter match {
       case Some((field, value)) =>
-        (s" AND content->>'$field' = $$1", Seq[AnyRef](value))
+        (s" WHERE content->>'$field' = $$1", Seq[AnyRef](value))
       case None => ("", Seq.empty[AnyRef])
     }
 
     Source
       .future(
         apiRepo.query(
-          s"SELECT content FROM ${apiRepo.tableName} " +
-            s"WHERE content->>'_deleted' = 'false'$entryPointPredicate",
+          s"SELECT content FROM ${apiRepo.tableName}$entryPointWhere",
           entryPointParams
         )
       )

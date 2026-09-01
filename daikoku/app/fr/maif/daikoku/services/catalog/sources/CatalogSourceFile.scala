@@ -22,16 +22,18 @@ class CatalogSourceFile extends CatalogSource {
 
   private def runPreCommand(catalog: RemoteCatalog): Either[String, Unit] = {
     val preCommand =
-      (catalog.source.config \ "pre_command").asOpt[Seq[String]].getOrElse(Seq.empty)
+      (catalog.source.config \ "pre_command")
+        .asOpt[Seq[String]]
+        .getOrElse(Seq.empty)
     if (preCommand.nonEmpty) {
       Try {
-        var stdout        = ""
-        var stderr        = ""
+        var stdout = ""
+        var stderr = ""
         val processLogger = ProcessLogger(
           out => { stdout = stdout + out + "\n" },
           err => { stderr = stderr + err + "\n" }
         )
-        val code          = preCommand.!(processLogger)
+        val code = preCommand.!(processLogger)
         if (code != 0) {
           Left(s"Pre-command failed with exit code $code. stderr: $stderr")
         } else {
@@ -51,20 +53,34 @@ class CatalogSourceFile extends CatalogSource {
 
     runPreCommand(catalog) match {
       case Left(err) =>
-        Future.successful(Left(Json.obj("error" -> err)): Either[JsValue, Seq[RemoteEntity]])
+        Future.successful(
+          Left(Json.obj("error" -> err)): Either[JsValue, Seq[RemoteEntity]]
+        )
       case Right(()) =>
         Try {
           val file = new File(path)
           if (file.isDirectory) {
             val entityFiles =
-              file.listFiles().filter(f => f.isFile && SourceUtils.isEntityFile(f.getName)).toSeq
-            val entities    = entityFiles.flatMap { f =>
-              val rawContent = new String(Files.readAllBytes(f.toPath), StandardCharsets.UTF_8)
-              SourceUtils.parseEntityContent(rawContent, s"file://${f.getAbsolutePath}")
+              file
+                .listFiles()
+                .filter(f => f.isFile && SourceUtils.isEntityFile(f.getName))
+                .toSeq
+            val entities = entityFiles.flatMap { f =>
+              val rawContent =
+                new String(Files.readAllBytes(f.toPath), StandardCharsets.UTF_8)
+              SourceUtils.parseEntityContent(
+                rawContent,
+                s"file://${f.getAbsolutePath}"
+              )
             }
-            Future.successful(Right(entities): Either[JsValue, Seq[RemoteEntity]])
+            Future.successful(
+              Right(entities): Either[JsValue, Seq[RemoteEntity]]
+            )
           } else {
-            val rawContent = new String(Files.readAllBytes(file.toPath), StandardCharsets.UTF_8)
+            val rawContent = new String(
+              Files.readAllBytes(file.toPath),
+              StandardCharsets.UTF_8
+            )
             SourceUtils.isDeployListing(rawContent) match {
               case Some(arr) =>
                 val basePath = file.getParentFile.getAbsolutePath
@@ -72,26 +88,37 @@ class CatalogSourceFile extends CatalogSource {
                   arr,
                   relativePath => {
                     Try {
-                      val relFile    = new File(basePath, relativePath)
+                      val relFile = new File(basePath, relativePath)
                       val relContent =
-                        new String(Files.readAllBytes(relFile.toPath), StandardCharsets.UTF_8)
-                      Future.successful(Right(relContent): Either[JsValue, String])
+                        new String(
+                          Files.readAllBytes(relFile.toPath),
+                          StandardCharsets.UTF_8
+                        )
+                      Future.successful(
+                        Right(relContent): Either[JsValue, String]
+                      )
                     }.getOrElse {
                       Future.successful(
-                        Left(Json.obj("error" -> s"Cannot read file $relativePath")): Either[JsValue, String]
+                        Left(
+                          Json.obj("error" -> s"Cannot read file $relativePath")
+                        ): Either[JsValue, String]
                       )
                     }
                   },
                   s"file://$path",
                   resolveGlob = Some(glob =>
                     Future.successful(
-                      Right(SourceUtils.resolveLocalGlob(new File(basePath), glob)): Either[JsValue, Seq[String]]
+                      Right(
+                        SourceUtils.resolveLocalGlob(new File(basePath), glob)
+                      ): Either[JsValue, Seq[String]]
                     )
                   )
                 )
-              case None      =>
+              case None =>
                 Future.successful(
-                  Right(SourceUtils.parseEntityContent(rawContent, s"file://$path")): Either[JsValue, Seq[
+                  Right(
+                    SourceUtils.parseEntityContent(rawContent, s"file://$path")
+                  ): Either[JsValue, Seq[
                     RemoteEntity
                   ]]
                 )
@@ -100,7 +127,9 @@ class CatalogSourceFile extends CatalogSource {
         }.recover { case e: Throwable =>
           logger.error(s"Error reading file $path", e)
           Future.successful(
-            Left(Json.obj("error" -> s"Error reading file: ${e.getMessage}")): Either[JsValue, Seq[RemoteEntity]]
+            Left(
+              Json.obj("error" -> s"Error reading file: ${e.getMessage}")
+            ): Either[JsValue, Seq[RemoteEntity]]
           )
         }.get
     }

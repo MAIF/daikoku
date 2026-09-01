@@ -169,7 +169,7 @@ class AccountCreationService {
 
     for {
       accountCreation <- EitherT.fromOptionF(
-        env.dataStore.accountCreationRepo.findByIdIncludingDeleted(demandId),
+        env.dataStore.accountCreationRepo.findById(demandId),
         AppError.EntityNotFound("Account creation")
       )
       _ <- EitherT.cond[Future][AppError, Unit](

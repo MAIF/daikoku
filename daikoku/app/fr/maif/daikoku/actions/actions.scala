@@ -36,7 +36,6 @@ object tenantSecurity {
               .query(
                 s"SELECT content FROM ${env.dataStore.teamRepo.forTenant(tenant).tableName} " +
                   "WHERE content->>'_tenant' = $1 " +
-                  "AND content->>'_deleted' = 'false' " +
                   "AND content->>'apisCreationPermission' = 'true'",
                 Seq(tenant.id.value)
               )

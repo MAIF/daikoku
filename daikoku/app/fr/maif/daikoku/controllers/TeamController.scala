@@ -425,7 +425,7 @@ class TeamController(
                   users = team.users.filterNot(_.userId.value == memberId)
                 )
               )
-              maybeTeam <- teamRepo.findByIdIncludingDeleted(team.id)
+              maybeTeam <- teamRepo.findById(team.id)
             } yield {
               maybeTeam match {
                 case Some(updatedTeam) =>
@@ -727,7 +727,7 @@ class TeamController(
                   )
                 )
               )
-              maybeTeam <- teamRepo.findByIdIncludingDeleted(team.id)
+              maybeTeam <- teamRepo.findById(team.id)
             } yield {
               maybeTeam match {
                 case Some(updatedTeam) =>
@@ -861,8 +861,7 @@ class TeamController(
         env.dataStore
           .asInstanceOf[PostgresDataStore]
           .queryOneRaw(
-            query =
-              s"SELECT content FROM users WHERE _deleted = false AND $clause",
+            query = s"SELECT content FROM users WHERE $clause",
             name = "content",
             params = params
           )
@@ -919,7 +918,7 @@ class TeamController(
         team.`type` match {
           case TeamType.Organization =>
             env.dataStore.userRepo
-              .findByIdIncludingDeleted(userId)
+              .findById(userId)
               .flatMap {
                 case Some(user) if user.invitation.isDefined =>
                   env.dataStore.userRepo.deleteById(userId).flatMap {

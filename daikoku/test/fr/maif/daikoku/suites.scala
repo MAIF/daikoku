@@ -94,7 +94,8 @@ object testUtils {
       while (pending && deadline.hasTimeLeft()) {
         pending = Await
           .result(
-            daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+            daikokuComponents.env.dataStore.operationRepo
+              .findPending(tenant.id),
             5.seconds
           )
           .nonEmpty
@@ -529,7 +530,7 @@ object testUtils {
           case Some(user) =>
             daikokuComponents.env.dataStore.teamRepo
               .forTenant(on)
-              .findAllIncludingDeleted()
+              .findAll()
               .map(_.headOption)
               .map {
                 case None =>
