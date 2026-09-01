@@ -411,7 +411,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         matrix.foreachEntry((session, response) => {
           val resp = httpJsonCallBlocking(
             path =
-              s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}/_rotation",
+              s"/api/teams/${teamConsumerId.value}/keyring/${keyring.id.value}/_rotation",
             method = "POST",
             body = Some(
               Json.obj(

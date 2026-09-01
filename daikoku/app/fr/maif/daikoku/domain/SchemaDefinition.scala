@@ -742,7 +742,9 @@ object SchemaDefinition {
     lazy val BillingTimeUnitEnumType = EnumType(
       "BillingTimeUnit",
       Some("Unit of a billing duration : hour, day, month or year"),
-      BillingTimeUnit.values.map(unit => EnumValue(unit.name, value = unit)).toList
+      BillingTimeUnit.values
+        .map(unit => EnumValue(unit.name, value = unit))
+        .toList
     )
 
     lazy val BillingDurationType = deriveObjectType[
@@ -1656,6 +1658,7 @@ object SchemaDefinition {
             resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
+          Field("team", StringType, resolve = _.value.team.value),
           Field("enabled", BooleanType, resolve = _.value.enabled),
           Field(
             "customName",
@@ -1711,6 +1714,22 @@ object SchemaDefinition {
                     .obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
                 )
                 .map(_.toInt)
+          ),
+          Field(
+            "autoRotation",
+            OptionType(BooleanType),
+            resolve = ctx =>
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
+                .flatMap {
+                  case sub :: nil =>
+                    env.dataStore.usagePlanRepo
+                      .forTenant(ctx.ctx._2.tenant)
+                      .findById(sub.plan.value)
+                      .map(_.flatMap(_.autoRotation))
+                  case _ => FastFuture.successful(None)
+                }
           )
         )
     )
@@ -3786,6 +3805,31 @@ object SchemaDefinition {
             Field("total", LongType, resolve = _.value._2)
           )
       )
+
+    lazy val KeyringSubscriptionListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[ApiSubscription], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[ApiSubscription], Long)
+      ](
+        "KeyringSubscriptions",
+        "Keyring Subscriptions as a collection of subscriptions and the total of",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[ApiSubscription], Long)
+          ](
+            Field(
+              "subscriptions",
+              ListType(ApiSubscriptionType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2)
+          )
+      )
+
     lazy val KeyringListType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       (Seq[Keyring], Long)
@@ -4175,6 +4219,30 @@ object SchemaDefinition {
         }
     }
 
+    def getKeyringSubscriptions(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        keyringId: String,
+        teamId: String,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
+    ) = {
+      CommonServices
+        .getKeyringSubscriptions(
+          teamId,
+          keyringId,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(using ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
+    }
+
     def getAuditTrail(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         from: Long,
@@ -4222,13 +4290,32 @@ object SchemaDefinition {
         )
       )
 
+    def keyringSubscriptionsQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          name = "keyringSubscriptions",
+          fieldType = KeyringSubscriptionListType,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getKeyringSubscriptions(
+              ctx,
+              ctx.arg(ID),
+              ctx.arg(TEAM_ID_NOT_OPT),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
+          }
+        )
+      )
+
     def getApiKeyrings(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         apiId: String,
         teamId: String,
-        version: String,
-        filter: JsArray,
-        sorting: JsArray,
         limit: Int,
         offset: Int
     ) = {
@@ -4236,9 +4323,6 @@ object SchemaDefinition {
         .getApiKeyrings(
           teamId,
           apiId,
-          version,
-          filter,
-          sorting,
           limit,
           offset
         )(using ctx.ctx._2, env, e)
@@ -4254,16 +4338,12 @@ object SchemaDefinition {
         Field(
           "keyrings",
           KeyringListType,
-          arguments =
-            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          arguments = ID :: TEAM_ID_NOT_OPT :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiKeyrings(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
-              ctx.arg(VERSION),
-              ctx.arg(FILTER_TABLE),
-              ctx.arg(SORTING_TABLE),
               ctx.arg(LIMIT),
               ctx.arg(OFFSET)
             )
@@ -4923,6 +5003,7 @@ object SchemaDefinition {
                 getAllCategoriesQueryFields() ++
                 apiConsumptionQuery() ++
                 apiSubscriptionsQueryFields() ++
+                keyringSubscriptionsQueryFields() ++
                 keyringsQueryFields() ++
                 teamIncomeQuery() ++
                 myNotificationQuery() ++

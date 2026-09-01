@@ -77,6 +77,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
       {selectedTeam && subscriptionsQuery.data && !isError(subscriptionsQuery.data) && (
         <ApiKeysListForApi
           team={selectedTeam}
+          keyringsTeams={props.subscribingTeams}
           api={props.api}
           ownerTeam={props.ownerTeam}
           linkToChildren={(api, team) => `/${team}/${api._humanReadableId}/${api!.currentVersion}/apikeys`} />

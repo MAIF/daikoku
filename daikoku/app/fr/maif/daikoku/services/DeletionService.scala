@@ -590,7 +590,7 @@ class DeletionService(
              |)
              |WHERE $tenantFilter
              |  _deleted = false
-             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
+             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam::text));
              |""".stripMargin,
           tenantParams :+ user.id.value
         )
