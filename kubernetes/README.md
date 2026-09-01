@@ -104,6 +104,66 @@ helm install daikoku ./helm/daikoku \
   --set daikoku.initTenant.s3.secret=...
 ```
 
+### Referencing an existing Secret (GitOps)
+
+The example above puts credentials in `values.yaml` (or on the command line),
+which is a problem as soon as that file is committed. Any `DAIKOKU_INIT_*` value
+can instead be injected from a Secret you own, through `daikoku.extraEnv`: leave
+the field empty under `initTenant`, and declare the variable with a `secretKeyRef`.
+
+```sh
+kubectl -n daikoku create secret generic daikoku-credentials \
+  --from-literal=otoroshi_client_id=admin-api-apikey-id \
+  --from-literal=otoroshi_client_secret=... \
+  --from-literal=s3_secret=... \
+  --from-literal=mailer_password=...
+```
+
+```yaml
+daikoku:
+  initTenant:
+    otoroshi:
+      url: https://otoroshi-api.example.com   # non-secret, stays here
+      host: otoroshi-api.example.com
+      # clientId / clientSecret: left empty, injected below
+    s3:
+      bucket: daikoku-assets
+      endpoint: https://s3.eu-west-1.amazonaws.com
+      access: AKIAIOSFODNN7EXAMPLE
+      # secret: left empty, injected below
+
+  extraEnv:
+    - name: DAIKOKU_INIT_OTOROSHI_CLIENT_ID
+      valueFrom:
+        secretKeyRef: { name: daikoku-credentials, key: otoroshi_client_id }
+    - name: DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef: { name: daikoku-credentials, key: otoroshi_client_secret }
+    - name: DAIKOKU_INIT_S3_SECRET
+      valueFrom:
+        secretKeyRef: { name: daikoku-credentials, key: s3_secret }
+    - name: DAIKOKU_INIT_MAILER_PASSWORD
+      valueFrom:
+        secretKeyRef: { name: daikoku-credentials, key: mailer_password }
+```
+
+The variable to declare is spelled out next to every secret-bearing field in
+[`values.yaml`](./helm/daikoku/values.yaml): `mailer.password` is marked
+`[DAIKOKU_INIT_MAILER_PASSWORD]`. The **key names inside your Secret are free**,
+since `secretKeyRef` maps them explicitly — which suits Secrets synced as-is from
+an external store.
+
+Leaving the matching field empty is what keeps the credential out of the cluster's
+plain-text objects: an empty value renders no key at all, so nothing lands in the
+ConfigMap, and the `*-init-tenant` Secret is not even created once no plain-text
+credential is left. `extraEnv` entries land in `env:`, which takes precedence over
+everything injected with `envFrom:`, so this works just as well for values the chart
+does not classify as secret, such as `DAIKOKU_INIT_OTOROSHI_CLIENT_ID`.
+
+The Secret must exist before the pod starts. Editing its *content* does not restart
+the pods — use [Reloader](https://github.com/stakater/Reloader) or roll the
+Deployment yourself.
+
 ### Optional in-cluster dependencies
 
 For demos/dev you can bundle a backend instead of wiring an external one. Each is
