@@ -244,14 +244,14 @@ export const makeUniqueApiKey = (
     method: 'POST',
   });
 
-export const toggleApiKeyRotation = (
+export const toggleKeyringRotation = (
   teamId: string,
-  subscriptionId: string,
+  keyringId: string,
   enabled: boolean,
   rotationEvery: number,
   gracePeriod: number
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+  customFetch(`/api/teams/${teamId}/keyring/${keyringId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
@@ -1878,48 +1878,76 @@ export const graphql = {
       }
     }
     `,
+  getKeyringSubscriptions: `
+    query getKeyringSubscriptions ($keyringId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyringSubscriptions (id: $keyringId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
+        subscriptions {
+          _id
+          lastUsage
+          plan {
+            _id
+            customName
+          }
+          team {
+            _id
+            name
+            type
+          }
+          createdAt
+          validUntil
+          api {
+            _id
+            name
+          }
+          customName
+          enabled
+          state
+          tags
+          metadata
+          customMetadata
+          customMaxPerSecond
+          customMaxPerDay
+          customMaxPerMonth
+          customReadOnly
+          adminCustomName
+          keyring {
+            _id
+            customName
+            subscriptionsCount
+            apiKey {
+              clientName
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
   getApiKeyrings: `
     query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
         keyrings {
-          _id
-          customName
-          enabled
-          integrationToken
-          bearerToken
-          subscriptionsCount
-          apiKey {
-            clientId
-            clientSecret
-            clientName
-          }
-          rotation {
-            enabled
-            rotationEvery
-            gracePeriod
-            pendingRotation
-          }
-          subscriptions {
+          keyring {
             _id
             customName
-            adminCustomName
             enabled
-            state
-            createdAt
-            validUntil
-            tags
-            plan {
-              _id
-              customName
-              autoRotation
+            integrationToken
+            bearerToken
+            subscriptionsCount
+            autoRotation
+            apiKey {
+              clientId
+              clientSecret
+              clientName
             }
-            api {
-              _id
-              _humanReadableId
-              name
-              currentVersion
+            rotation {
+              enabled
+              rotationEvery
+              gracePeriod
+              pendingRotation
             }
           }
+          teamName
         }
         total
       }

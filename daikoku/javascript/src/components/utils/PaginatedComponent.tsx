@@ -13,7 +13,8 @@ type Props<T> = {
   previousLabel?: string;
   nextLabel?: string;
   breakLabel?: string;
-  help?: any
+  help?: any;
+  classNames?: string;
 };
 
 export const PaginatedComponent = <T extends object>(props: Props<T>) => {
@@ -37,7 +38,7 @@ export const PaginatedComponent = <T extends object>(props: Props<T>) => {
   return (<div className="section">
     <div className="flex-column">
       {(props as any).help && (<CircleQuestionMark className="ms-1 cursor-pointer" style={{ fontSize: '20px' }} onClick={() => (props as any).help()} />)}
-      <div className={classNames('d-flex flex-wrap', {
+      <div className={classNames(`d-flex flex-wrap ${props.classNames ?? ''}`, {
         'flex-wrap': (props as any).wrap,
         'flex-column': props.columnMode,
         'flex-column-reverse': props.columnMode && props.reverse,
