@@ -23,7 +23,7 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  overflow: hidden;
+  //overflow: hidden;
   border: 1px solid color-mix(in srgb, variables.$level1_bg-color 90%, #000);
 
   background-color: variables.$level2_bg-color;
@@ -36,6 +36,7 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     padding: 1rem 1rem !important;
     font-size: 1rem !important;
     height: 3rem;
+    border-radius: 10px 10px 0 0;
 
     // In selection mode the row holds the checkbox, the count label and the
     // bulk-action buttons instead of column headers: lay them out as a free
@@ -62,6 +63,8 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     list-style: none;
     padding: 0;
     margin: 0;
+    border-radius: 0 0 10px 10px;
+
   }
 
   .table-header {
@@ -113,6 +116,10 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     align-items: center;
     font-size: 0.875rem;
     border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 50%, #000);
+
+    &:not(.select-all-row):last-of-type {
+      border-radius: 0 0 10px 10px;
+    }
 
     &:not(.select-all-row):hover {
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
