@@ -206,6 +206,82 @@ class StripeE2ESpec()
     }
   }
 
+  "The reconciliation job (#1150)" must {
+    "resend what Stripe acknowledged but never counted" in {
+      implicit val stripeKey: String = realStripeKey
+      val stripeSettings = stripeSettingsFor(stripeKey)
+      val stripeTenant = setupTenant(stripeSettings)
+
+      val settings = daikokuComponents.paymentClient
+        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .value
+        .futureValue
+        .toOption
+        .get
+        .asInstanceOf[PaymentSettings.Stripe]
+      val customerId = createCustomer()
+      val informations =
+        StripeSubscriptionInformations("sub_reconcile", customerId.some)
+
+      daikokuComponents.env.dataStore.usagePlanRepo
+        .forTenant(stripeTenant)
+        .save(meteredPlan.copy(paymentSettings = settings.some))
+        .futureValue
+
+      daikokuComponents.env.dataStore.apiSubscriptionRepo
+        .forTenant(stripeTenant)
+        .save(
+          ApiSubscription(
+            id = ApiSubscriptionId(s"reconcile-${UUID.randomUUID()}"),
+            tenant = stripeTenant.id,
+            apiKey = OtoroshiApiKey("e2e-client", "e2e-client", "e2e-secret"),
+            plan = meteredPlan.id,
+            createdAt = DateTime.now(),
+            team = teamConsumerId,
+            api = defaultApi.api.id,
+            by = userAdmin.id,
+            customName = None,
+            rotation = None,
+            integrationToken = "e2e-token",
+            thirdPartySubscriptionInformations = informations.some
+          )
+        )
+        .futureValue
+
+      val reported = consumption(stripeTenant.id, 250, lastReportedHits = 0)
+      daikokuComponents.paymentClient
+        .syncWithThirdParty(reported, settings.some, informations.some)
+        .futureValue mustBe Right(())
+
+      eventually(timeout(Span(120, Seconds)), interval(Span(5, Seconds))) {
+        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+          BigDecimal(250)
+      }
+
+      daikokuComponents.env.dataStore.consumptionRepo
+        .forTenant(stripeTenant)
+        .save(reported.copy(hits = 400, lastReportedHits = 400))
+        .futureValue
+
+      daikokuComponents.stripeReconciliationJob.reconcile().futureValue
+
+      eventually(timeout(Span(120, Seconds)), interval(Span(5, Seconds))) {
+        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+          BigDecimal(400)
+      }
+
+      daikokuComponents.stripeReconciliationJob.reconcile().futureValue
+
+      eventually(timeout(Span(60, Seconds)), interval(Span(5, Seconds))) {
+        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+          BigDecimal(400)
+      }
+
+      cleanUp(settings, stripeTenant.id)
+      stripe(s"/v1/customers/$customerId").delete().futureValue
+    }
+  }
+
   "Amounts sent to Stripe (#1152)" must {
     "carry no sub-unit for a zero-decimal currency" in {
       implicit val stripeKey: String = realStripeKey
