@@ -2526,9 +2526,6 @@
             "$ref": "#/components/schemas/OtoroshiTarget",
             "nullable": true
           },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
           "allowMultipleKeys": {
             "type": "boolean",
             "nullable": true
@@ -2601,7 +2598,6 @@
           "_id",
           "_tenant",
           "currency",
-          "billingDuration",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -2652,9 +2648,6 @@
             "$ref": "#/components/schemas/OtoroshiTarget",
             "nullable": true
           },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
           "allowMultipleKeys": {
             "type": "boolean",
             "nullable": true
@@ -2730,7 +2723,6 @@
           "maxPerDay",
           "maxPerMonth",
           "currency",
-          "billingDuration",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -2770,9 +2762,6 @@
             "type": "integer",
             "format": "float64"
           },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
           "currency": {
             "$ref": "#/components/schemas/Currency"
           },
@@ -2787,9 +2776,6 @@
           "otoroshiTarget": {
             "$ref": "#/components/schemas/OtoroshiTarget",
             "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
           },
           "allowMultipleKeys": {
             "type": "boolean",
@@ -2866,9 +2852,7 @@
           "maxPerDay",
           "maxPerMonth",
           "costPerMonth",
-          "trialPeriod",
           "currency",
-          "billingDuration",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -2912,9 +2896,6 @@
             "type": "integer",
             "format": "float64"
           },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
           "currency": {
             "$ref": "#/components/schemas/Currency"
           },
@@ -2929,9 +2910,6 @@
           "otoroshiTarget": {
             "$ref": "#/components/schemas/OtoroshiTarget",
             "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
           },
           "allowMultipleKeys": {
             "type": "boolean",
@@ -3016,10 +2994,8 @@
           "maxPerDay",
           "maxPerMonth",
           "costPerMonth",
-          "trialPeriod",
           "costPerAdditionalRequest",
           "currency",
-          "billingDuration",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -3050,12 +3026,6 @@
           "costPerRequest": {
             "type": "integer",
             "format": "float64"
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
           },
           "currency": {
             "$ref": "#/components/schemas/Currency"
@@ -3152,10 +3122,8 @@
           "_id",
           "_tenant",
           "costPerMonth",
-          "trialPeriod",
           "costPerRequest",
           "currency",
-          "billingDuration",
           "subscriptionProcess",
           "integrationProcess"
         ]

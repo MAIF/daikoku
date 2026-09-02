@@ -246,7 +246,6 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   autoRotation?: boolean;
   rotation: boolean;
   currency?: ICurrency;
-  billingDuration?: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerRequest?: number;
@@ -255,7 +254,6 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-  trialPeriod?: IBillingDuration;
 }
 
 export interface IAuthorizedEntities {

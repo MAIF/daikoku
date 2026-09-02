@@ -71,59 +71,6 @@ case class OtoroshiService(
   def asJson: JsValue = json.OtoroshiServiceFormat.writes(this)
 }
 
-trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
-  def name: String
-  def asJson: JsValue = JsString(name)
-}
-
-object BillingTimeUnit {
-  case object Hour extends BillingTimeUnit {
-    def name: String = "Hour"
-  }
-  case object Day extends BillingTimeUnit {
-    def name: String = "Day"
-  }
-  case object Month extends BillingTimeUnit {
-    def name: String = "Month"
-  }
-  case object Year extends BillingTimeUnit {
-    def name: String = "Year"
-  }
-  val values: Seq[BillingTimeUnit] =
-    Seq(Hour, Day, Month, Year)
-  def apply(name: String): Option[BillingTimeUnit] =
-    name.toLowerCase() match {
-      case "hour"   => Hour.some
-      case "hours"  => Hour.some
-      case "day"    => Day.some
-      case "days"   => Day.some
-      case "month"  => Month.some
-      case "months" => Month.some
-      case "year"   => Year.some
-      case "years"  => Year.some
-      case _        => None
-    }
-}
-
-case class BillingDuration(value: Long, unit: BillingTimeUnit)
-    extends CanJson[BillingDuration] {
-  def asJson: JsValue = json.BillingDurationFormat.writes(this)
-  def toDays: Long =
-    unit match {
-      case BillingTimeUnit.Day  => value
-      case BillingTimeUnit.Hour => 1L
-      case BillingTimeUnit.Month =>
-        Days
-          .daysBetween(
-            DateTime.now(),
-            DateTime.now().plusMonths(value.intValue)
-          )
-          .getDays
-          .longValue
-      case BillingTimeUnit.Year => 235L
-      case _                    => 0L
-    }
-}
 
 sealed trait ApiVisibility {
   def name: String
@@ -232,9 +179,7 @@ case object PaymentSettings {
 
 case class BasePaymentInformation(
     costPerMonth: BigDecimal,
-    billingDuration: BillingDuration,
-    currency: Currency,
-    trialPeriod: Option[BillingDuration]
+    currency: Currency
 ) extends CanJson[BasePaymentInformation] {
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
 }
@@ -249,9 +194,7 @@ case class UsagePlan(
     maxPerMonth: Option[Long] = None,
     costPerRequest: Option[BigDecimal] = None,
     costPerMonth: Option[BigDecimal] = None,
-    trialPeriod: Option[BillingDuration] = None,
     currency: Option[Currency] = None,
-    billingDuration: Option[BillingDuration] = None,
     customDescription: Option[String] = None,
     otoroshiTarget: Option[OtoroshiTarget] = None,
     allowMultipleKeys: Option[Boolean] = None,
@@ -287,9 +230,7 @@ case class UsagePlan(
   def mergeBase(a: BasePaymentInformation): UsagePlan =
     this.copy(
       costPerMonth = a.costPerMonth.some,
-      currency = a.currency.some,
-      trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration.some
+      currency = a.currency.some
     )
 
   def addSubscriptionStep(
@@ -388,11 +329,7 @@ case class UsagePlan(
     }
   }
 
-  def isPaymentDefined =
-    (costPerMonth, currency, billingDuration) match {
-      case (Some(_), Some(_), Some(_)) => true
-      case _                           => false
-    }
+  def isPaymentDefined = costPerMonth.isDefined && currency.isDefined
 
   override def asJson: JsValue = json.UsagePlanFormat.writes(this)
 }

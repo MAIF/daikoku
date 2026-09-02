@@ -700,26 +700,6 @@ object SchemaDefinition {
       )
     )
 
-    lazy val BillingTimeUnitInterfaceType = InterfaceType(
-      "BillingTimeUnit",
-      "Interface of billing Time : hour, day, month or year",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), BillingTimeUnit](
-          Field("name", StringType, resolve = _.value.name)
-        )
-    )
-
-    lazy val BillingDurationType = deriveObjectType[
-      (DataStore, DaikokuActionContext[JsValue]),
-      BillingDuration
-    ](
-      ObjectTypeDescription("A possible value of billing duration"),
-      ReplaceField(
-        "unit",
-        Field("unit", BillingTimeUnitInterfaceType, resolve = _.value.unit)
-      )
-    )
-
     lazy val ValidationStepInterfaceType = InterfaceType(
       "ValidationStep",
       "Interface of a validation step: email, admin or payment",
@@ -1150,16 +1130,6 @@ object SchemaDefinition {
             "otoroshiTarget",
             OptionType(OtoroshiTargetType),
             resolve = _.value.otoroshiTarget
-          ),
-          Field(
-            "trialPeriod",
-            OptionType(BillingDurationType),
-            resolve = _.value.trialPeriod
-          ),
-          Field(
-            "billingDuration",
-            OptionType(BillingDurationType),
-            resolve = _.value.billingDuration
           ),
           Field("visibility", StringType, resolve = _.value.visibility.name),
           Field(

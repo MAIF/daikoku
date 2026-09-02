@@ -398,15 +398,15 @@ class PaymentClient(
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, PaymentSettings] = {
-    (plan.costPerMonth, plan.currency, plan.billingDuration) match {
-      case (Some(costPerMonth), Some(currency), Some(billingDuration)) =>
+    (plan.costPerMonth, plan.currency) match {
+      case (Some(costPerMonth), Some(currency)) =>
         val body = Map(
           "product" -> productId,
           "unit_amount" -> toStripeAmount(costPerMonth, plan.currency),
           "currency" -> currency.code,
           "nickname" -> plan.customName,
           "metadata[plan]" -> plan.id.value,
-          "recurring[interval]" -> billingDuration.unit.name.toLowerCase
+          "recurring[interval]" -> "month"
         )
 
         val meteredBody = Map(
@@ -414,7 +414,7 @@ class PaymentClient(
           "currency" -> currency.code,
           "nickname" -> plan.customName,
           "metadata[plan]" -> plan.id.value,
-          "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
+          "recurring[interval]" -> "month",
           "recurring[usage_type]" -> "metered"
         )
 
@@ -583,16 +583,11 @@ class PaymentClient(
           .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
           .getOrElse(baseBody)
 
-        val trialPeriod: Long = plan.trialPeriod
-          .map(_.toDays)
-          .getOrElse(0)
-
-        val finalBody =
-          if (trialPeriod > 0)
-            body +
-              ("subscription_data[trial_settings][end_behavior][missing_payment_method]" -> "cancel") +
-              ("subscription_data[trial_period_days]" -> trialPeriod.toString)
-          else body
+        // Billing is monthly for everyone, anchored on the 1st. Stripe prorates
+        // the partial first month on its own, proration_behavior defaulting to
+        // create_prorations.
+        val finalBody = body +
+          ("subscription_data[billing_cycle_anchor_config][day_of_month]" -> "1")
 
         for {
           _ <- EitherT.liftF(

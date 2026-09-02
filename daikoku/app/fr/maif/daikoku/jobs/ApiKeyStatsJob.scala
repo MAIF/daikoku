@@ -3,7 +3,6 @@ package fr.maif.daikoku.jobs
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.PaymentClient
-import fr.maif.daikoku.domain.BillingTimeUnit.{Day, Hour, Year}
 import fr.maif.daikoku.domain._
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
@@ -449,12 +448,7 @@ class ApiKeyStatsJob(
       }
     }
 
-    val from = plan.billingDuration.map(_.unit) match {
-      case Some(Year) => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
-      case Some(Hour) => DateTime.now().withMinuteOfHour(1)
-      case Some(Day)  => DateTime.now().withTimeAtStartOfDay()
-      case _          => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
-    }
+    val from = periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
 
     val to = periodEnd.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay()
 

@@ -11,11 +11,6 @@ export const newPossibleUsagePlan = (customName: string, tenant: ITenant): IUsag
   maxPerSecond: 10,
   maxPerDay: 1000,
   maxPerMonth: 1000,
-
-  billingDuration: {
-    value: 1,
-    unit: 'Month',
-  },
   visibility: UsagePlanVisibility.public,
   subscriptionProcess: [],
   integrationProcess: 'ApiKey',

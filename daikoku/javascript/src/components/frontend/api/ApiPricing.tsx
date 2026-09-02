@@ -558,10 +558,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan
     },
     costPerMonth: {
       type: type.number,
-      label: ({ rawValues }) =>
-        translate(
-          `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
-        ),
+      label: translate('Cost per month'),
       placeholder: translate('Cost per billing period'),
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
@@ -589,91 +586,6 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan
         },
       },
     },
-    billingDuration: {
-      type: type.object,
-      format: format.form,
-      label: translate('Billing every'),
-      schema: {
-        value: {
-          type: type.number,
-          label: translate('Billing period'),
-          placeholder: translate('The Billing period'),
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [
-            constraints.positive(translate('constraints.positive')),
-            constraints.integer(translate('constraints.integer')),
-            constraints.required(
-              translate('constraints.required.billing.period')
-            ),
-          ],
-        },
-        unit: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: translate('Billing period unit'),
-          options: [
-            { label: translate('Hours'), value: 'Hour' },
-            { label: translate('Days'), value: 'Day' },
-            { label: translate('Months'), value: 'Month' },
-            { label: translate('Years'), value: 'Year' },
-          ],
-          constraints: [
-            constraints.required('constraints.required.billing.period'),
-            constraints.oneOf(
-              ['Hour', 'Day', 'Month', 'Year'],
-              translate('constraints.oneof.period')
-            ),
-          ],
-        },
-      },
-    },
-    trialPeriod: {
-      type: type.object,
-      format: format.form,
-      label: translate('Trial'),
-      schema: {
-        value: {
-          type: type.number,
-          label: translate('Trial period'),
-          placeholder: translate('The trial period'),
-          defaultValue: 0,
-          props: {
-            step: 1,
-            min: 0,
-          },
-          constraints: [
-            constraints.integer(translate('constraints.integer')),
-            constraints.test(
-              'positive',
-              translate('constraints.positive'),
-              (v) => v >= 0
-            ),
-          ],
-        },
-        unit: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: translate('Trial period unit'),
-          defaultValue: 'Month',
-          options: [
-            { label: translate('Hours'), value: 'Hour' },
-            { label: translate('Days'), value: 'Day' },
-            { label: translate('Months'), value: 'Month' },
-            { label: translate('Years'), value: 'Year' },
-          ],
-          constraints: [
-            constraints.oneOf(
-              ['Hour', 'Day', 'Month', 'Year'],
-              translate('constraints.oneof.period')
-            ),
-            // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
-          ],
-        },
-      },
-    },
   })
 
   return (
@@ -697,9 +609,10 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan
             type='button'
             onClick={() => props.savePlan({
               ...props.plan,
-              costPerMonth: undefined, costPerRequest: undefined,
-              trialPeriod: undefined, currency: undefined,
-              billingDuration: undefined, paymentSettings: undefined
+              costPerMonth: undefined,
+              costPerRequest: undefined,
+              currency: undefined,
+              paymentSettings: undefined
             })}>
             Save
           </button>

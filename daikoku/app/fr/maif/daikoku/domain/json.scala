@@ -30,40 +30,6 @@ object json {
     def r = new scala.util.matching.Regex(sc.parts.mkString)
   }
 
-  val BillingTimeUnitFormat = new Format[BillingTimeUnit] {
-    override def reads(json: JsValue): JsResult[BillingTimeUnit] =
-      Try {
-        json.asOpt[String].flatMap(BillingTimeUnit.apply) match {
-          case Some(tu) => JsSuccess(tu)
-          case None     => JsError("Bad time unit")
-        }
-      } recover { case e =>
-        JsError(e.getMessage)
-      } get
-
-    override def writes(o: BillingTimeUnit): JsValue = JsString(o.name)
-  }
-
-  val BillingDurationFormat = new Format[BillingDuration] {
-    override def reads(json: JsValue): JsResult[BillingDuration] =
-      Try {
-        JsSuccess(
-          BillingDuration(
-            value = (json \ "value").as(using LongFormat),
-            unit = (json \ "unit").as(using BillingTimeUnitFormat)
-          )
-        )
-      } recover { case e =>
-        JsError(e.getMessage)
-      } get
-
-    override def writes(o: BillingDuration): JsValue =
-      Json.obj(
-        "value" -> o.value,
-        "unit" -> o.unit.asJson
-      )
-  }
-
   val LongFormat = new Format[Long] {
     override def reads(json: JsValue): JsResult[Long] =
       Try {
@@ -755,10 +721,6 @@ object json {
         JsSuccess(
           BasePaymentInformation(
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-            trialPeriod =
-              (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").as(using BillingDurationFormat),
             currency = (json \ "currency").as(using CurrencyFormat)
           )
         )
@@ -770,11 +732,6 @@ object json {
     override def writes(o: BasePaymentInformation): JsValue =
       Json.obj(
         "costPerMonth" -> o.costPerMonth,
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "billingDuration" -> o.billingDuration.asJson,
         "currency" -> o.currency.asJson
       )
   }
@@ -792,10 +749,6 @@ object json {
             maxPerMonth = (json \ "maxPerMonth").asOpt(using LongFormat),
             costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
             costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
-            trialPeriod =
-              (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").asOpt(using BillingDurationFormat),
             currency = (json \ "currency").asOpt(using CurrencyFormat),
             customName = (json \ "customName").as[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -851,14 +804,6 @@ object json {
           .as[JsValue],
         "costPerRequest" -> o.costPerRequest
           .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "billingDuration" -> o.billingDuration
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
         "currency" -> o.currency.map(_.asJson).getOrElse(JsNull).as[JsValue],

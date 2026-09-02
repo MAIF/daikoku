@@ -2504,10 +2504,6 @@
             "$ref": "#/components/schemas/OtoroshiTarget",
             "nullable": true
           },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration",
-            "nullable": true
-          },
           "allowMultipleKeys": {
             "type": "boolean",
             "nullable": true
@@ -2595,10 +2591,6 @@
           "costPerRequest": {
             "type": "integer",
             "format": "float64",
-            "nullable": true
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration",
             "nullable": true
           },
           "paymentSettings": {
