@@ -160,19 +160,43 @@ Test / parallelExecution := false
 Test / javaOptions ++= Seq(
   "--enable-native-access=ALL-UNNAMED"
 )
-// Trust the self-signed certificate used by the mailpit testcontainer in
-// SimpleSMTPSenderSpec (validated STARTTLS / implicit TLS). Safe to set
-// JVM-wide here: no test performs outbound TLS to a public CA, and CI/local
-// Docker is reached over a unix socket (no Docker TLS).
-Test / javaOptions ++= {
-  val truststore =
-    (baseDirectory.value / "test" / "resources" / "smtp" / "truststore.p12").getAbsolutePath
-  Seq(
-    s"-Djavax.net.ssl.trustStore=$truststore",
-    "-Djavax.net.ssl.trustStorePassword=changeit",
-    "-Djavax.net.ssl.trustStoreType=PKCS12"
-  )
+// Trust store of the forked test JVM: the CA bundle of the JDK running sbt, plus the
+// self-signed certificate of the mailpit testcontainer used by SimpleSMTPSenderSpec
+// (validated STARTTLS / implicit TLS). Replacing the bundle outright would reject every
+// public CA, and the Stripe e2e specs reach api.stripe.com.
+lazy val testTrustStore =
+  taskKey[File]("Build the test trust store: JDK cacerts + mailpit certificate")
+testTrustStore := {
+  import scala.sys.process._
+  val javaHome = file(sys.props("java.home"))
+  val cacerts = javaHome / "lib" / "security" / "cacerts"
+  val smtpCert = baseDirectory.value / "test" / "resources" / "smtp" / "smtp.crt"
+  val out = target.value / "test-truststore.p12"
+  val stale = !out.exists() ||
+    out.lastModified() < cacerts.lastModified() ||
+    out.lastModified() < smtpCert.lastModified()
+  if (stale) {
+    IO.delete(out)
+    val keytool = (javaHome / "bin" / "keytool").getAbsolutePath
+    Seq(
+      keytool, "-importkeystore", "-noprompt",
+      "-srckeystore", cacerts.getAbsolutePath, "-srcstorepass", "changeit",
+      "-destkeystore", out.getAbsolutePath, "-deststorepass", "changeit",
+      "-deststoretype", "PKCS12"
+    ).!!
+    Seq(
+      keytool, "-importcert", "-noprompt", "-alias", "mailpit",
+      "-file", smtpCert.getAbsolutePath,
+      "-keystore", out.getAbsolutePath, "-storepass", "changeit", "-storetype", "PKCS12"
+    ).!!
+  }
+  out
 }
+Test / javaOptions ++= Seq(
+  s"-Djavax.net.ssl.trustStore=${testTrustStore.value.getAbsolutePath}",
+  "-Djavax.net.ssl.trustStorePassword=changeit",
+  "-Djavax.net.ssl.trustStoreType=PKCS12"
+)
 
 // Coverage (scoverage). On Scala 3 the `coverageExcluded*` settings only filter the generated
 // report; they do NOT prevent instrumentation. Once instrumented, the generated Play router
