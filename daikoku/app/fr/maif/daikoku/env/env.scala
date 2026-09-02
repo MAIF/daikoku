@@ -669,7 +669,7 @@ sealed trait Env {
       ec: ExecutionContext
   ): Seq[EssentialFilter]
 
-  def getDaikokuUrl(tenant: Tenant, path: String): String
+  def getDaikokuUrl(tenant: Tenant, path: String, domain: Option[String] = None): String
 
   def initDatastore(path: Option[String] = None)(implicit
       ec: ExecutionContext
@@ -1073,19 +1073,24 @@ class DaikokuEnv(
       case _ => Seq.empty
     }
 
-  def getDaikokuUrl(tenant: Tenant, path: String): String = {
+  def getDaikokuUrl(tenant: Tenant, path: String, domain: Option[String] = None): String = {
+    val _domain = domain match {
+      case Some(d) => if (tenant.additionalDomains.contains(d)) d else tenant.domain
+      case _ => tenant.domain
+    }
+
     (config.sslEnabled, config.exposedPort) match {
-      case (Some(true), 443) => s"https://${tenant.domain}$path"
+      case (Some(true), 443) => s"https://${_domain}$path"
       case (Some(true), exposedPort) =>
-        s"https://${tenant.domain}:$exposedPort$path"
-      case (Some(false), 80) => s"http://${tenant.domain}$path"
+        s"https://${_domain}:$exposedPort$path"
+      case (Some(false), 80) => s"http://${_domain}$path"
       case (Some(false), exposedPort) =>
-        s"http://${tenant.domain}:$exposedPort$path"
-      case (_, 80)  => s"http://${tenant.domain}$path"
-      case (_, 443) => s"https://${tenant.domain}$path"
+        s"http://${_domain}:$exposedPort$path"
+      case (_, 80)  => s"http://${_domain}$path"
+      case (_, 443) => s"https://${_domain}$path"
       case (_, exposedPort) if exposedPort == config.securePort =>
-        s"https://${tenant.domain}:$exposedPort$path"
-      case (_, exposedPort) => s"http://${tenant.domain}:$exposedPort$path"
+        s"https://${_domain}:$exposedPort$path"
+      case (_, exposedPort) => s"http://${_domain}:$exposedPort$path"
     }
 
   }

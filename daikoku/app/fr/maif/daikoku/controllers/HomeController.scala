@@ -248,7 +248,8 @@ class HomeController(
             ctx.tenant,
             fr.maif.daikoku.controllers.routes.GraphQLController
               .search()
-              .url
+              .url,
+            ctx.request.domain.some
           )
         )
       ).future

@@ -309,7 +309,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(using ec, env).map { _ =>
-            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
+            Results.Redirect(env.getDaikokuUrl(tenant, "/", request.domain.some))
           }
         }
       case _ =>
@@ -379,7 +379,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(using ec, env).map { _ =>
-            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
+            Results.Redirect(env.getDaikokuUrl(tenant, "/", request.domain.some))
           }
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
@@ -494,7 +494,7 @@ class DaikokuUnauthenticatedAction(
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(using ec, env).map { _ =>
-            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
+            Results.Redirect(env.getDaikokuUrl(tenant, "/", request.domain.some))
           }
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>

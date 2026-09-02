@@ -118,7 +118,7 @@ class ApiController(
               EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
-                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
+                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url, ctx.request.domain.some)
                 else url
               EitherT(Try {
                 env.wsClient
@@ -2528,7 +2528,7 @@ class ApiController(
                 "user" -> JsString(ctx.user.name),
                 "apiName" -> JsString(api.name),
                 "teamName" -> JsString(team.name),
-                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications")),
+                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications", ctx.request.domain.some)),
                 "api_data" -> api.asJson,
                 "consumer_team_data" -> team.asJson,
                 "producer_team_data" -> maybeOwnerteam.map(_.asJson).getOrElse(Json.obj()),
@@ -2969,7 +2969,8 @@ class ApiController(
                     "teamName" -> JsString(api.team.value), //not sure
                     "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
-                      "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news"
+                      "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news",
+                      ctx.request
                     )), //same
                     "user_data" -> ctx.user.asSimpleJson,
                     "api_data" -> api.asJson,
@@ -3366,7 +3367,8 @@ class ApiController(
                                                 "teamName" -> JsString(api.team.value), // not sure if it's okay
                                                 "link" -> JsString(env.getDaikokuUrl(
                                                   ctx.tenant,
-                                                  "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues"
+                                                  "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues",
+                                                  ctx.request.domain.some
                                                 )), //same
                                                 "user_data" -> ctx.user.asSimpleJson,
                                                 "api_data" -> api.asJson,
