@@ -130,6 +130,11 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
             constraints: [
               constraints.required()
             ]
+          },
+          webhookSecret: {
+            type: type.string,
+            label: translate('Webhook secret'),
+            help: translate('third-party.payment.webhook.secret.help')
           }
         })
     }

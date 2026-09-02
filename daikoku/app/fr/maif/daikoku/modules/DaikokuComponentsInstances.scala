@@ -53,6 +53,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val rotationVerifier = wire[ApiKeySecretRotationJob]
   lazy val deletor = wire[QueueJob]
   lazy val statsJob = wire[ApiKeyStatsJob]
+  lazy val stripeReconciliationJob = wire[StripeReconciliationJob]
   lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
   lazy val anonReportingJob = wire[AnonymousReportingJob]
   lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
@@ -91,6 +92,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val homeController = wire[HomeController]
   lazy val mockController = wire[MockController]
   lazy val apiController = wire[ApiController]
+  lazy val paymentWebhookController = wire[PaymentWebhookController]
   lazy val loginController = wire[LoginController]
   lazy val teamController = wire[TeamController]
   lazy val notificationController = wire[NotificationController]
@@ -251,6 +253,7 @@ class DaikokuComponentsInstances(context: Context)
   auditTrailPurgeJob.start()
   notificationPurgeJob.start()
   anonReportingJob.start()
+  stripeReconciliationJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>

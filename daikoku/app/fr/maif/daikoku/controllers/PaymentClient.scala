@@ -12,6 +12,7 @@ import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
+import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest, WSResponse}
@@ -142,6 +143,14 @@ class PaymentClient(
       )
     ) amount.longValue.toString
     else (amount * 100).longValue.toString
+
+  def fromStripeAmount(amount: Long, currency: Option[Currency]): BigDecimal =
+    if (
+      zeroDecimalCurrencies.contains(
+        currency.getOrElse(defaultCurrency).code.toUpperCase
+      )
+    ) BigDecimal(amount)
+    else BigDecimal(amount) / 100
 
   private def retryingOn429(
       call: => Future[WSResponse]
@@ -707,6 +716,33 @@ class PaymentClient(
     }
   }
 
+  /** `identifier` is what makes a redelivery harmless: Stripe keeps the first
+    * event carrying it and ignores the next ones.
+    */
+  private def postMeterEvent(
+      eventName: String,
+      customerId: String,
+      value: Long,
+      identifier: String
+  )(implicit
+      stripeSettings: StripeSettings
+  ): Future[Either[AppError, Unit]] = {
+    val body = Map(
+      "event_name" -> eventName,
+      "identifier" -> identifier,
+      "payload[value]" -> value.toString,
+      "payload[stripe_customer_id]" -> customerId,
+      "timestamp" -> (System.currentTimeMillis() / 1000).toString
+    )
+
+    retryingOn429(stripeClient("/v1/billing/meter_events").post(body))
+      .map {
+        case res if res.status == 200 || res.status == 201 =>
+          Right[AppError, Unit](())
+        case res => Left[AppError, Unit](stripeErrorMessage(res))
+      }
+  }
+
   private def syncConsumptionWithStripe(
       consumption: ApiKeyConsumption,
       informations: StripeSubscriptionInformations,
@@ -724,20 +760,12 @@ class PaymentClient(
     } else {
       (informations.customerId, settings.priceIds.meterEventName) match {
         case (Some(customerId), Some(eventName)) =>
-          val body = Map(
-            "event_name" -> eventName,
-            "identifier" -> s"${consumption.id.value}-${consumption.lastReportedHits}",
-            "payload[value]" -> delta.toString,
-            "payload[stripe_customer_id]" -> customerId,
-            "timestamp" -> (System.currentTimeMillis() / 1000).toString
+          postMeterEvent(
+            eventName,
+            customerId,
+            delta,
+            s"${consumption.id.value}-${consumption.lastReportedHits}"
           )
-
-          retryingOn429(stripeClient("/v1/billing/meter_events").post(body))
-            .map {
-              case res if res.status == 200 || res.status == 201 =>
-                Right[AppError, Unit](())
-              case res => Left[AppError, Unit](stripeErrorMessage(res))
-            }
         case _ =>
           AppLogger.warn(
             "[PAYMENT] metered sync skipped (legacy subscription without a meter)"
@@ -746,6 +774,102 @@ class PaymentClient(
       }
     }
   }
+
+  /** What Stripe actually counted on the meter for that customer, over the
+    * window. Meter events are aggregated asynchronously, so this lags behind
+    * what was reported by a few seconds. Stripe only accepts a window aligned
+    * on the hour, so the bounds are widened to the enclosing hours.
+    */
+  private def aggregatedUsageOnStripe(
+      meterId: String,
+      customerId: String,
+      from: DateTime,
+      to: DateTime
+  )(implicit
+      stripeSettings: StripeSettings
+  ): EitherT[Future, AppError, BigDecimal] =
+    EitherT(
+      retryingOn429(
+        stripeClient(s"/v1/billing/meters/$meterId/event_summaries")
+          .withQueryStringParameters(
+            "customer" -> customerId,
+            "start_time" -> (from.hourOfDay
+              .roundFloorCopy()
+              .getMillis / 1000).toString,
+            "end_time" -> (to.hourOfDay
+              .roundCeilingCopy()
+              .getMillis / 1000).toString
+          )
+          .get()
+      ).map {
+        case res if res.status == 200 =>
+          Right[AppError, BigDecimal](
+            (res.json \ "data")
+              .as[Seq[JsValue]]
+              .map(summary => (summary \ "aggregated_value").as[BigDecimal])
+              .sum
+          )
+        case res => Left[AppError, BigDecimal](stripeErrorMessage(res))
+      }
+    )
+
+  /** Compares what Daikoku believes it reported over the window with what
+    * Stripe counted, and sends back the difference. Stripe acknowledges meter
+    * events before aggregating them, so an accepted event can still be dropped
+    * afterwards; this is what closes that gap. Answers the number of hits
+    * resent.
+    */
+  def reconcileUsageWithThirdParty(
+      tenant: Tenant,
+      maybePaymentSettings: Option[PaymentSettings],
+      maybeInfos: Option[ThirdPartySubscriptionInformations],
+      reportedHits: Long,
+      from: DateTime,
+      to: DateTime
+  ): Future[Either[AppError, Long]] =
+    (maybePaymentSettings, maybeInfos) match {
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            FastFuture.successful(
+              Left[AppError, Long](AppError.ThirdPartyPaymentSettingsNotFound)
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            (p.priceIds.meterId, p.priceIds.meterEventName, i.customerId) match {
+              case (Some(meterId), Some(eventName), Some(customerId)) =>
+                (for {
+                  counted <- aggregatedUsageOnStripe(
+                    meterId,
+                    customerId,
+                    from,
+                    to
+                  )
+                  missing = reportedHits - counted.longValue
+                  _ <-
+                    if (missing <= 0) EitherT.pure[Future, AppError](())
+                    else
+                      EitherT(
+                        postMeterEvent(
+                          eventName,
+                          customerId,
+                          missing,
+                          s"reconcile-${i.subscriptionId}-${from.toString("yyyyMM")}-$reportedHits"
+                        )
+                      )
+                } yield Math.max(missing, 0L)).value
+              case _ =>
+                AppLogger.warn(
+                  "[PAYMENT] reconciliation skipped (legacy subscription without a meter)"
+                )
+                FastFuture.successful(Right[AppError, Long](0L))
+            }
+        }
+      case _ => FastFuture.successful(Right[AppError, Long](0L))
+    }
 
   def deleteThirdPartySubscription(
       subscription: ApiSubscription,

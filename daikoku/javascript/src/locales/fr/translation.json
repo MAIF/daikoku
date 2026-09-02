@@ -343,6 +343,8 @@
   "Hmac secret": "Secret Hmac",
   "hmac.secret.help": "Le secret Hmac",
   "Public key": "Clé publique",
+  "Webhook secret": "Secret du webhook",
+  "third-party.payment.webhook.secret.help": "Secret de signature de l'endpoint webhook Stripe pointant sur /api/payment/<id des settings>/_webhook. Vide : aucun événement n'est reçu.",
   "The RSA public key": "La clé RSA publique",
   "Private key": "Clé privée",
   "private.key.help": "La clé privée RSA peut être vide si elle n'est pas utilisée pour la signature de tokens JWT.",

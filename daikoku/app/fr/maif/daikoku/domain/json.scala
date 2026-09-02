@@ -4912,7 +4912,8 @@ object json {
           id = (json \ "_id").as(using ThirdPartyPaymentSettingsIdFormat),
           name = (json \ "name").as[String],
           publicKey = (json \ "publicKey").as[String],
-          secretKey = (json \ "secretKey").as[String]
+          secretKey = (json \ "secretKey").as[String],
+          webhookSecret = (json \ "webhookSecret").asOpt[String]
         )
       } match {
         case Failure(e) =>
@@ -4927,7 +4928,8 @@ object json {
         "_id" -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
         "name" -> o.name,
         "publicKey" -> o.publicKey,
-        "secretKey" -> o.secretKey
+        "secretKey" -> o.secretKey,
+        "webhookSecret" -> o.webhookSecret
       )
   }
 

@@ -454,6 +454,14 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.stripe.apiVersion")
     .getOrElse("2026-07-29.dahlia")
 
+  lazy val stripeReconciliationByCron: Boolean = underlying
+    .getOptional[Boolean]("daikoku.stripe.reconciliation.cron")
+    .getOrElse(false)
+
+  lazy val stripeReconciliationInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.stripe.reconciliation.interval")
+    .getOrElse(24 hours)
+
   lazy val signingKey: String =
     underlying.get[String]("daikoku.signingKey")
 

@@ -124,6 +124,7 @@ POST    /api/apis/:apiId/plan/:planId/team/:teamId/_subscribe           fr.maif.
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId           fr.maif.daikoku.controllers.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
 GET     /api/subscription/_validate                                     fr.maif.daikoku.controllers.ApiController.validateProcess()
 GET     /api/subscription/_abort                                        fr.maif.daikoku.controllers.ApiController.abortProcess()
+POST    /api/payment/:settingsId/_webhook                               fr.maif.daikoku.controllers.PaymentWebhookController.webhook(settingsId)
 GET     /api/subscription/_decline                                      fr.maif.daikoku.controllers.ApiController.declineProcess()
 GET     /api/subscription/team/:teamId/demands/:demandId                fr.maif.daikoku.controllers.ApiController.getSubscriptionDemand(teamId, demandId)
 GET     /api/subscription/team/:teamId/demands/:demandId/_run           fr.maif.daikoku.controllers.ApiController.runProcess(teamId, demandId)
