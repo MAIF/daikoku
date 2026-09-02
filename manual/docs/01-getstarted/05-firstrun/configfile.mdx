@@ -50,6 +50,25 @@ tenant administration page.
 |------|:----:|---------------|-------------|
 | `daikoku.stripe.url`<br />(`DAIKOKU_STRIPE_URL`) | string | "https://api.stripe.com" | Base URL of the Stripe API. Only change it to point Daikoku at a stub, for tests |
 | `daikoku.stripe.apiVersion`<br />(`DAIKOKU_STRIPE_API_VERSION`) | string | "2026-07-29.dahlia" | Value of the `Stripe-Version` header sent on every call. Pinning it keeps behaviour identical whatever default version each tenant's Stripe account is on |
+| `daikoku.stripe.reconciliation.cron`<br />(`DAIKOKU_STRIPE_RECONCILIATION_CRON`) | boolean | false | Whether the daily reconciliation job runs on this instance. Enable it on one instance only |
+| `daikoku.stripe.reconciliation.interval`<br />(`DAIKOKU_STRIPE_RECONCILIATION_INTERVAL`) | duration | 24 hours | How often reported usage is compared with what Stripe counted |
+
+### Webhooks
+
+Stripe reports what happens to the money: a failed charge, a paid invoice, a subscription
+cancelled from the Stripe dashboard. Each payment settings entry gets its own endpoint,
+`POST /api/payment/<payment settings id>/_webhook`, so Daikoku knows which signing secret
+to use before opening the message. Create the endpoint in the Stripe dashboard, subscribe
+it to `invoice.paid`, `invoice.payment_failed` and `customer.subscription.deleted`, then
+paste its signing secret into the payment settings of the tenant.
+
+Deliveries whose signature does not verify are rejected, and so are deliveries older than
+five minutes. Without a signing secret the endpoint accepts nothing.
+
+Webhooks alone are not enough: Stripe answers a meter event before aggregating it, so an
+accepted event can still be dropped. The reconciliation job compares, once a day, the
+usage Daikoku recorded as reported against what the Stripe meter actually counted, and
+sends back the difference.
 
 :::warning
 Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage).
