@@ -65,8 +65,6 @@ export const generatePlan = (overrides: Record<string, any> = {}) => ({
   maxPerDay: 1000,
   maxPerMonth: 1000,
   currency: { code: "EUR" },
-  billingDuration: { unit: "Month", value: 1 },
-  trialPeriod: null,
   costPerMonth: null,
   costPerRequest: null,
   paymentSettings: null,

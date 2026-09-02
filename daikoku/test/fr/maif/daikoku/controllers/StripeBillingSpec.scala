@@ -228,7 +228,6 @@ class StripeBillingSpec()
           ),
           "costPerMonth" -> 10,
           "costPerRequest" -> 0.02,
-          "billingDuration" -> Json.obj("value" -> 1, "unit" -> "Month"),
           "currency" -> Json.obj("code" -> currency)
         )
         .some
@@ -456,6 +455,25 @@ class StripeBillingSpec()
       verify(
         0,
         postRequestedFor(urlMatching("/v1/subscription_items/.*/usage_records"))
+      )
+    }
+
+    "anchor the billing cycle on the 1st and never open a trial" in {
+      subscribeAndPay()
+
+      val checkout = formBodies("/v1/checkout/sessions").head
+
+      checkout.get(
+        "subscription_data[billing_cycle_anchor_config][day_of_month]"
+      ) mustBe Some("1")
+      // Stripe prorates the partial first month by itself, so the absence of
+      // proration_behavior is the proration.
+      checkout.get("subscription_data[proration_behavior]") mustBe None
+      checkout.keys.filter(_.contains("trial")) mustBe empty
+      checkout.get("recurring[interval]") mustBe None
+
+      formBodies("/v1/prices").foreach(
+        _.get("recurring[interval]") mustBe Some("month")
       )
     }
 

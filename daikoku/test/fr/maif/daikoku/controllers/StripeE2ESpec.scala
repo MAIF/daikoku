@@ -282,6 +282,47 @@ class StripeE2ESpec()
     }
   }
 
+  "The monthly cycle anchored on the 1st" must {
+    "be accepted by real Stripe on a checkout session" in {
+      implicit val stripeKey: String = realStripeKey
+      val stripeSettings = stripeSettingsFor(stripeKey)
+      val stripeTenant = setupTenant(stripeSettings)
+
+      val settings = daikokuComponents.paymentClient
+        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .value
+        .futureValue
+        .toOption
+        .get
+        .asInstanceOf[PaymentSettings.Stripe]
+      val customerId = createCustomer()
+
+      val session = stripe("/v1/checkout/sessions")
+        .post(
+          Map(
+            "mode" -> "subscription",
+            "customer" -> customerId,
+            "line_items[0][price]" -> settings.priceIds.basePriceId,
+            "line_items[0][quantity]" -> "1",
+            "success_url" -> "https://example.com/ok",
+            "cancel_url" -> "https://example.com/ko",
+            "subscription_data[billing_cycle_anchor_config][day_of_month]" -> "1"
+          )
+        )
+        .futureValue
+
+      withClue(session.body) { session.status mustBe 200 }
+
+      val price = stripe(s"/v1/prices/${settings.priceIds.basePriceId}")
+        .get()
+        .futureValue
+      (price.json \ "recurring" \ "interval").as[String] mustBe "month"
+
+      cleanUp(settings, stripeTenant.id)
+      stripe(s"/v1/customers/$customerId").delete().futureValue
+    }
+  }
+
   "Amounts sent to Stripe (#1152)" must {
     "carry no sub-unit for a zero-decimal currency" in {
       implicit val stripeKey: String = realStripeKey
