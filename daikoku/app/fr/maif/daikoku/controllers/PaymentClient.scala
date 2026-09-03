@@ -22,6 +22,15 @@ import play.api.mvc.Results.Ok
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
+/** The oldest invoice Stripe still holds as unpaid for a subscription, which is
+  * where the grace period starts counting.
+  */
+case class UnpaidInvoice(
+    since: DateTime,
+    amount: BigDecimal,
+    currency: Currency
+)
+
 class PaymentClient(
     env: Env
 ) {
@@ -1005,6 +1014,113 @@ class PaymentClient(
           )
     } yield swapped
 
+  /** Stripe holds the truth about what is owed, so nothing about the grace
+    * period is stored on our side: the age of the oldest open invoice is
+    * recomputed at every pass.
+    */
+  def unpaidInvoiceOf(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan
+  ): EitherT[Future, AppError, Option[UnpaidInvoice]] =
+    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            EitherT.leftT[Future, Option[UnpaidInvoice]](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            EitherT(
+              stripeClient("/v1/invoices")
+                .withQueryStringParameters(
+                  "subscription" -> i.subscriptionId,
+                  "status" -> "open",
+                  "limit" -> "100"
+                )
+                .get()
+                .map {
+                  case res if res.status == 200 =>
+                    Right[AppError, Option[UnpaidInvoice]](
+                      (res.json \ "data")
+                        .as[Seq[JsValue]]
+                        .map(invoice =>
+                          UnpaidInvoice(
+                            since = new DateTime(
+                              (invoice \ "created").as[Long] * 1000
+                            ),
+                            amount = fromStripeAmount(
+                              (invoice \ "amount_due").asOpt[Long].getOrElse(0L),
+                              plan.currency
+                            ),
+                            currency = plan.currency.getOrElse(defaultCurrency)
+                          )
+                        )
+                        .sortBy(_.since.getMillis)
+                        .headOption
+                    )
+                  case res =>
+                    Left[AppError, Option[UnpaidInvoice]](
+                      stripeErrorMessage(res)
+                    )
+                }
+            )
+        }
+      case _ => EitherT.pure[Future, AppError](None)
+    }
+
+  /** Ends the subscription when the period the consumer has already paid for
+    * runs out, rather than at once: the key keeps working until the last paid
+    * day and the closing invoice still carries the usage. Passing false takes
+    * the cancellation back. Answers the day it takes effect.
+    */
+  def cancelAtPeriodEnd(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan,
+      cancel: Boolean
+  ): EitherT[Future, AppError, DateTime] =
+    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            EitherT.leftT[Future, DateTime](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            EitherT(
+              retryingOn429(
+                stripeClient(s"/v1/subscriptions/${i.subscriptionId}")
+                  .post(Map("cancel_at_period_end" -> cancel.toString))
+              ).map {
+                case res if res.status == 200 =>
+                  val endsAt = (res.json \ "cancel_at")
+                    .asOpt[Long]
+                    .orElse(
+                      (res.json \ "items" \ "data" \ 0 \ "current_period_end")
+                        .asOpt[Long]
+                    )
+                    .map(seconds => new DateTime(seconds * 1000))
+                    .getOrElse(DateTime.now())
+                  Right[AppError, DateTime](endsAt)
+                case res => Left[AppError, DateTime](stripeErrorMessage(res))
+              }
+            )
+        }
+      case _ =>
+        EitherT.leftT[Future, DateTime](
+          AppError.PaymentError("this subscription is not paid through Stripe")
+        )
+    }
+
   def deleteThirdPartySubscription(
       subscription: ApiSubscription,
       maybePaymentSettings: Option[PaymentSettings],
@@ -1216,35 +1332,21 @@ class PaymentClient(
 
   }
 
+  /** No configuration is created here: the merchant's default portal
+    * configuration applies, so their legal links, their branding and what a
+    * customer may change are managed from their own Stripe dashboard. Creating
+    * one per visit piled up objects on their account, and hardcoded example.com
+    * legal URLs along the way.
+    */
   def getStripeInvoices(team: Team, tenant: Tenant, callback: String)(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, String] = {
 
     for {
       customer <- getStripeCustomer(team)
-      bodyConf = Map(
-        "features[subscription_cancel][enabled]" -> "false",
-        "features[subscription_pause][enabled]" -> "false",
-        "features[invoice_history][enabled]" -> "true",
-        "features[payment_method_update][enabled]" -> "true",
-        "features[customer_update][enabled]" -> "true",
-        "features[customer_update][allowed_updates][0]" -> "name",
-        "features[customer_update][allowed_updates][1]" -> "email",
-        "features[customer_update][allowed_updates][2]" -> "address",
-        "features[customer_update][allowed_updates][3]" -> "phone",
-        "features[customer_update][allowed_updates][4]" -> "tax_id",
-        "business_profile[privacy_policy_url]" -> "https://example.com/privacy", // todo
-        "business_profile[terms_of_service_url]" -> "https://example.com/privacy" // todo
-      )
-      conf <- EitherT.liftF(
-        stripeClient("/v1/billing_portal/configurations")
-          .post(bodyConf)
-          .map(_.json)
-      )
       bodyPortal = Map(
         "customer" -> customer,
         "return_url" -> callback,
-        "configuration" -> (conf \ "id").as[String],
         "locale" -> tenant.defaultLanguage.map(_.toLowerCase).getOrElse("en")
       )
       r <- EitherT.liftF(
