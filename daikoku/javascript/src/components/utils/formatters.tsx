@@ -15,7 +15,7 @@ import {
   IFastPlan,
   isPayPerUse,
   isQuotasWitoutLimit,
-  IUsagePlan,
+  IUsagePlan, IUsagePlanGQL,
 } from '../../types';
 
 export const currency = (plan?: IBaseUsagePlan) => {
@@ -48,16 +48,16 @@ export const getCurrencySymbol = (code: any) => {
   const currency = currencies.find((currency) => currency.code === code);
   return currency ? currency.symbol : undefined;
 };
-export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: string | TranslateParams) => string) => {
+export const renderPricing = (plan: IFastPlan | IUsagePlanGQL , translate: (params: string | TranslateParams) => string) => {
   let pricing = translate('Free');
   const req = translate('req.');
   const month = translate('month');
 
   if (isQuotasWitoutLimit(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} + 
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} +
       ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`
   } else if (isPayPerUse(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} + 
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} +
     ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`;
   } else if (plan.costPerMonth) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month}`;
@@ -207,3 +207,12 @@ export const formatMessageDate = (date: number, language: string, translate: (pa
     return format(messageDate, translate("date.format.message.info.year"), { locale: getLanguageFns(language) });
   }
 };
+
+const roundToTwoDecimals = (n: number): string => Number(n.toFixed(2)).toString();
+
+export function humanReadableBigNumber(n: number, translate: (params: string | TranslateParams) => string): string {
+  if (n >= 1e12) return `${roundToTwoDecimals(n / 1e12)} ${translate('trillion')}${n / 1e12 > 1 ? 's' : ''}`;
+  if (n >= 1e9) return `${roundToTwoDecimals(n / 1e9)} ${translate('billion')}${n / 1e9 > 1 ? 's' : ''}`;
+  if (n >= 1e6) return `${roundToTwoDecimals(n / 1e6)} ${translate('million')}${n / 1e6 > 1 ? 's' : ''}`;
+  return `${n}`;
+}

@@ -24,3 +24,17 @@ When a user reaches the payment step in the subscription process, Daikoku facili
 
 ## Fast mode
 Daikoku offers a fast mode to display, for a selected team, only accessible APIs (and subscriptions plans with their informations). In this UI, you can subscribe to all plan without switching pages and get subscription credentials.
+
+## Deprecated and blocked APIs
+
+An API you rely on can change state over time (see the producer guide, *Managing the API lifecycle*):
+
+- **Deprecated** — the API still works and stays subscribable, but the producer signals it is on its
+  way out. You are asked to confirm before subscribing to a deprecated API, and teams that already
+  subscribed receive a deprecation notification and email. Plan your migration.
+- **Blocked** — the producer has suspended the API: it disappears from the catalog, its page returns
+  an error, and the API keys derived from your subscriptions stop working. Your subscriptions are not
+  deleted, so access is restored if the producer unblocks the API. Impacted teams are notified.
+
+A producer can also block a **single subscription** without blocking the whole API — in that case
+only that subscription's key is cut.

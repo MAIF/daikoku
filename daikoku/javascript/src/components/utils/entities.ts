@@ -13,6 +13,7 @@ export const newPossibleUsagePlan = (customName: string, tenant: ITenant): IUsag
   maxPerMonth: 1000,
   visibility: UsagePlanVisibility.public,
   subscriptionProcess: [],
+  subscriptionProcessChecksum: nanoid(32),
   integrationProcess: 'ApiKey',
   rotation: false,
   authorizedTeams: [],

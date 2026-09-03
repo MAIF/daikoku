@@ -10,7 +10,7 @@ import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
 import { isError } from "../../../types/api"
-import { DynamicTable, FetchData, FetchResult, FilterDef } from "../../inputs/DynamicTable"
+import { DynamicTable, FetchData, FetchResult, FilterDef, type DynamicTableFeatures } from "../../inputs/DynamicTable"
 import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
@@ -49,7 +49,7 @@ export const ApiList = (props: ApiListProps) => {
 
   // ─── Table columns ──────────────────────────────────────────────────────
 
-  const columnHelper = createColumnHelper<IApiWithAuthorization>()
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IApiWithAuthorization>()
 
   const columns = useMemo(() => {
     const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
@@ -101,7 +101,7 @@ export const ApiList = (props: ApiListProps) => {
         id: 'tags',
         meta: { className: 'tags-cell', title: translate('dashboard.apis.table.header.label.tags'), size: 15 },
         cell: (info) => (
-          <div className="d-flex gap-1 align-items-center">
+          <div className="d-flex gap-1">
             {info.getValue().map((tag, idx) => (
               <span key={`${tag}-${idx}`}
                 className="tag --primary"
@@ -129,6 +129,22 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
+          /*
+          * {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.deprecated.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
+          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.blocked.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
+          * */
           return (
             <div className="d-flex gap-1 status">
               {(apiState === 'created') && (

@@ -150,3 +150,13 @@ mail.billing.cancellation.title=Votre résiliation a été enregistrée
 mail.billing.cancellation.body=La souscription de l''équipe [teamName] au plan [planName] de l''API [apiName] prend fin le [effectiveAt]. </br>\
 La clé d''API continue de fonctionner jusqu''à cette date, et la dernière facture couvre la consommation jusque-là. </br>\
 <a href="[link]">Voir votre souscription</a>
+
+mail.api.depreciation.warning.title = l''API [apiName] a été dépréciée
+mail.api.depreciation.warning.body = Bonjour [recipientName], </br>\
+En tant qu''administrateur de l''équipe [teamName], nous vous informons que l''API [apiName]</br>\
+a été dépréciée.
+
+mail.api.blocking.warning.title = l''API [apiName] a été bloquée
+mail.api.blocking.warning.body = Bonjour [recipientName], </br>\
+En tant qu''administrateur de l''équipe [teamName], nous vous informons que l''API [apiName]</br>\
+a été bloquée.

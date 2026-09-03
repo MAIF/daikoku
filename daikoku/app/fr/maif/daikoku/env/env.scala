@@ -412,8 +412,14 @@ object CmsApiConfig {
   }
 }
 
-class Config(val underlying: Configuration) {
+case class DaikokuFlags(multiPlanSubscriptionEnabled: Boolean)
 
+class Config(val underlying: Configuration) {
+  lazy val flags: DaikokuFlags = {
+    DaikokuFlags(multiPlanSubscriptionEnabled =
+      underlying.get[Boolean]("daikoku.flags.multiPlanSubscriptionEnabled")
+    )
+  }
   lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
     .orElse(underlying.getOptional[Int]("http.port"))
@@ -531,6 +537,38 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.verifierJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
+
+  lazy val keyringExpirationJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
+    .getOrElse(false)
+  lazy val keyringExpirationJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.cronExpression")
+  lazy val keyringExpirationJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.keyringExpirationJob.interval")
+    .map(v => v.millis)
+    .getOrElse(24.hours)
+  lazy val keyringExpirationJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.keyringExpirationJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Cron)
+
+  lazy val remoteCatalogJobKey: String = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.key")
+    .getOrElse("secret")
+  lazy val remoteCatalogJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.enabled")
+    .getOrElse(false)
+  lazy val remoteCatalogJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.cronExpression")
+  lazy val remoteCatalogJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.remoteCatalogJob.interval")
+    .map(v => v.millis)
+    .getOrElse(1.minute)
+  lazy val remoteCatalogJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.remoteCatalogJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
+
 
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
@@ -874,7 +912,6 @@ class DaikokuEnv(
                   password = Some(
                     BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
                   ),
-                  personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
 
@@ -956,10 +993,16 @@ class DaikokuEnv(
                       .forTenant(tenant.id)
                       .save(jsPage)
                 } yield {
-                  AppLogger.warn("")
-                  AppLogger.warn(
-                    s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                  )
+                  val passwordEmpty = configuration
+                    .getOptional[String]("daikoku.init.admin.password")
+                    .isEmpty
+
+                  if (passwordEmpty) {
+                    AppLogger.warn("")
+                    AppLogger.warn(
+                      s"You can log in with ${config.init.admin.email} / ${config.init.admin.password}"
+                    )
+                  }
                   AppLogger.warn("")
                   AppLogger.warn(
                     "Please avoid using the default tenant for anything else than configuring Daikoku"

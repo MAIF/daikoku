@@ -7,6 +7,7 @@ import * as Services from '../../../services';
 import { IApi, isError, ITeamSimple } from '../../../types';
 import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Spinner } from '../../utils/Spinner';
+import { useSearchParams } from 'react-router-dom';
 
 type ApiSubscriptions = {
   api: IApi
@@ -18,8 +19,11 @@ type ApiSubscriptions = {
 export const ApiSubscriptions = (props: ApiSubscriptions) => {
 
   const { translate } = useContext(I18nContext);
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlTeamId = searchParams.get("team")
+  const urlTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(props.subscribingTeams[0])
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(urlTeam ?? props.subscribingTeams[0])
 
   const subscriptionsQuery = useQuery({
     queryKey: ["subscriptions", selectedTeam?._id],
@@ -41,7 +45,13 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
         classNamePrefix="reactSelect"
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
-        onChange={t => setSelectedTeam(t!.value)}
+        onChange={t => {
+          setSelectedTeam(t!.value)
+          setSearchParams((searchParams) => {
+            searchParams.set("team", t!.value!._id);
+            return searchParams;
+          });
+        }}
         value={{ label: selectedTeam?.name, value: selectedTeam }}
         styles={{
           valueContainer: (baseStyles) => ({

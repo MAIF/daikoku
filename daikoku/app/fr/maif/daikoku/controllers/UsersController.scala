@@ -2,19 +2,17 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.{
   DaikokuAction,
   DaikokuActionMaybeWithGuest,
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.controllers.authorizations.async.*
-import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.DeletionService
-import fr.maif.daikoku.utils.future.EnhancedObject
+import fr.maif.daikoku.services.{DeletionService, UserService}
 import fr.maif.daikoku.utils.IdGenerator
 import io.nayuki.qrcodegen.*
 import org.apache.commons.codec.binary.Base32
@@ -26,20 +24,16 @@ import play.api.mvc.{
   AbstractController,
   Action,
   AnyContent,
-  ControllerComponents,
-  Result
+  ControllerComponents
 }
 
-import java.awt.image.BufferedImage
-import java.io.File
 import java.time.Instant
-import java.util.{Base64, Objects}
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import javax.imageio.ImageIO
 
 class UsersController(
     DaikokuAction: DaikokuAction,
@@ -47,7 +41,8 @@ class UsersController(
     DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     cc: ControllerComponents,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    userService: UserService
 ) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -131,62 +126,16 @@ class UsersController(
                   case Some(user) =>
                     ctx.setCtxValue("u.email", user.email)
                     ctx.setCtxValue("u.id", user.id.value)
-                    val userToSave =
-                      if (ctx.user.isDaikokuAdmin) newUser
-                      else newUser.copy(metadata = user.metadata)
-                    val hash =
-                      if (user.password != newUser.password)
-                        newUser.password.map(maybePassword =>
-                          BCrypt.hashpw(maybePassword, BCrypt.gensalt())
-                        )
-                      else user.password
-                    for {
-                      maybePersonalTeam <-
-                        env.dataStore.teamRepo
-                          .forTenant(ctx.tenant)
-                          .findOneNotDeleted(
-                            Json.obj(
-                              "type" -> TeamType.Personal.name,
-                              "users.userId" -> userToSave.id.asJson
-                            )
-                          )
-                      _ <-
-                        env.dataStore.userRepo
-                          .save(userToSave.copy(password = hash))
-                      _ <-
-                        env.dataStore.teamRepo
-                          .forTenant(ctx.tenant)
-                          .save(
-                            maybePersonalTeam
-                              .map(team =>
-                                team.copy(
-                                  name = userToSave.name,
-                                  description =
-                                    s"The personal team of ${userToSave.name}",
-                                  avatar = Some(userToSave.picture),
-                                  contact = userToSave.email
-                                )
-                              )
-                              .getOrElse(
-                                Team(
-                                  id = TeamId(IdGenerator.token(32)),
-                                  tenant = ctx.tenant.id,
-                                  `type` = TeamType.Personal,
-                                  name = s"${userToSave.name}",
-                                  description =
-                                    s"The personal team of ${userToSave.name}",
-                                  users = Set(
-                                    UserWithPermission(user.id, Administrator)
-                                  ),
-                                  authorizedOtoroshiEntities = None,
-                                  contact = userToSave.email,
-                                  avatar = Some(userToSave.picture)
-                                )
-                              )
-                          )
-                    } yield {
-                      Ok(userToSave.asJson)
-                    }
+                    userService
+                      .updateUser(
+                        ctx.tenant,
+                        user,
+                        newUser,
+                        elevatedRights = ctx.user.isDaikokuAdmin
+                      )
+                      .map(userToSave => Ok(userToSave.asJson))
+                      .leftMap(_.render())
+                      .merge
                   case None =>
                     FastFuture.successful(
                       NotFound(Json.obj("error" -> "user not found"))
@@ -247,20 +196,11 @@ class UsersController(
           case JsSuccess(user, _) =>
             ctx.setCtxValue("u.email", user.email)
             ctx.setCtxValue("u.id", user.id.value)
-            env.dataStore.userRepo.findByIdNotDeleted(user.id).flatMap {
-              case Some(_) =>
-                FastFuture.successful(
-                  Conflict(Json.obj("error" -> "User id already exists"))
-                )
-              case None =>
-                val hash = user.password.map(maybePassword =>
-                  BCrypt.hashpw(maybePassword, BCrypt.gensalt())
-                )
-                val newUser = user.copy(password = hash)
-                env.dataStore.userRepo.save(newUser).map { _ =>
-                  Created(newUser.asJson)
-                }
-            }
+            userService
+              .createUser(user, hashPassword = true)
+              .map(newUser => Created(newUser.asJson))
+              .leftMap(_.render())
+              .merge
           case e: JsError =>
             FastFuture.successful(BadRequest(JsError.toJson(e)))
         }

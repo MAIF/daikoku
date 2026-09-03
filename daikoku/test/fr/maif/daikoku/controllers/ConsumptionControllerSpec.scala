@@ -31,18 +31,26 @@ class ConsumptionControllerSpec()
   }
 
   val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
+  val payperUserKeyring: Keyring = Keyring(
+    id = KeyringId("test-keyring"),
+    tenant = tenant.id,
+    team = teamConsumerId,
+    apiKey = OtoroshiApiKey("name", "id", "secret"),
+    otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+    createdAt = DateTime.now(),
+    customName = "teamConsumer-apiName-planName-firstKeyring",
+    integrationToken = "token"
+  )
   val payperUserSub: ApiSubscription = ApiSubscription(
     id = ApiSubscriptionId("test"),
     tenant = tenant.id,
-    apiKey = OtoroshiApiKey("name", "id", "secret"),
     plan = payPerUsePlanId,
     createdAt = DateTime.now(),
     team = teamConsumerId,
     api = defaultApi.api.id,
     by = userTeamAdminId,
     customName = None,
-    rotation = None,
-    integrationToken = "token"
+    keyring = payperUserKeyring.id
   )
 
   val yesterdayConsumption: ApiKeyConsumption = ApiKeyConsumption(
@@ -51,7 +59,7 @@ class ConsumptionControllerSpec()
     team = teamConsumerId,
     api = defaultApi.api.id,
     plan = payPerUsePlanId,
-    clientId = payperUserSub.apiKey.clientId,
+    clientId = payperUserKeyring.apiKey.clientId,
     hits = 1000L,
     globalInformations = ApiKeyGlobalConsumptionInformations(
       1000L,
@@ -86,6 +94,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -115,6 +124,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -144,6 +154,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -173,6 +184,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -195,6 +207,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -219,6 +232,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -232,9 +246,9 @@ class ConsumptionControllerSpec()
       val callPerMonth = 2000L
 
       val otoApiKey = ActualOtoroshiApiKey(
-        clientId = payperUserSub.apiKey.clientId,
-        clientSecret = payperUserSub.apiKey.clientSecret,
-        clientName = payperUserSub.apiKey.clientName,
+        clientId = payperUserKeyring.apiKey.clientId,
+        clientSecret = payperUserKeyring.apiKey.clientSecret,
+        clientName = payperUserKeyring.apiKey.clientName,
         authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = callPerSec,
         dailyQuota = callPerDay,
@@ -278,7 +292,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -342,6 +356,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -367,7 +382,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -430,6 +445,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -455,7 +471,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -516,6 +532,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -542,7 +559,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -608,6 +625,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -630,6 +648,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -652,6 +671,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -674,6 +694,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -695,6 +716,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -717,6 +739,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -743,7 +766,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -789,6 +812,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -815,7 +839,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -861,6 +885,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -887,7 +912,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -932,6 +957,7 @@ class ConsumptionControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
         consumptions = Seq(
           yesterdayConsumption
         )
@@ -958,7 +984,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserKeyring.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(

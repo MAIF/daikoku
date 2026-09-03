@@ -1,26 +1,23 @@
 package fr.maif.daikoku.services
 
 import cats.Monad
-import cats.data.{EitherT, OptionT}
+import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
-import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.actions.ApiActionContext
-import fr.maif.daikoku.controllers.PaymentClient
-import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain.UsagePlanVisibility.Admin
+import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
+import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{
-  ApiKeyStatsJob,
-  OtoroshiSynchronizerJob,
-  SyncInformation
-}
+import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.utils.{
   IdGenerator,
   JsonOperationsHelper,
@@ -33,8 +30,8 @@ import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc.Result
 import play.api.mvc.Results.Ok
+import play.api.mvc.{AnyContent, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -53,6 +50,12 @@ class ApiService(
   implicit val ev: Env = env
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
+
+  /** Name given to a keyring when the consumer did not provide one. Kept in
+    * sync with the placeholder displayed by the front (see ApiPricing.tsx).
+    */
+  def defaultKeyringName(api: Api, plan: UsagePlan): String =
+    s"${api.name} - ${plan.customName}"
 
   def jsonToOtoroshiMetadata(json: JsObject) = {
     json.fieldSet.map {
@@ -104,7 +107,7 @@ class ApiService(
       maybeOtoroshiApiKey.map(_.clientId).getOrElse(IdGenerator.token(32))
 
     val defaultClientName =
-      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-$createdAtMillis-${api.currentVersion.value}"
 
     val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
@@ -184,7 +187,13 @@ class ApiService(
       tags = processedTags,
       restrictions = plan.otoroshiTarget
         .map(_.apikeyCustomization.restrictions)
-        .getOrElse(ApiKeyRestrictions()),
+        .getOrElse(ApiKeyRestrictions())
+        .scopedTo(
+          plan.otoroshiTarget
+            .flatMap(_.authorizedEntities)
+            .getOrElse(AuthorizedEntities())
+            .asOtoroshiEntities
+        ),
       metadata = Map(
         "daikoku_created_by" -> user.email,
         "daikoku_created_from" -> "daikoku",
@@ -219,7 +228,8 @@ class ApiService(
       api: Api,
       plan: UsagePlan,
       team: Team,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      keyringCustomName: String,
+      keyringId: Option[KeyringId] = None,
       customMetadata: Option[JsObject] = None,
       customMaxPerSecond: Option[Long] = None,
       customMaxPerDay: Option[Long] = None,
@@ -237,36 +247,28 @@ class ApiService(
         plan: UsagePlan,
         team: Team,
         authorizedEntities: AuthorizedEntities,
-        parentSubscriptionId: Option[ApiSubscriptionId]
+        keyringId: Option[KeyringId]
     )(implicit
         otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits.*
 
-      val value: EitherT[
-        Future,
-        AppError,
-        (Option[ApiSubscription], Option[OtoroshiApiKey])
-      ] = parentSubscriptionId match {
-        case None =>
-          val error: EitherT[
-            Future,
-            AppError,
-            (Option[ApiSubscription], Option[OtoroshiApiKey])
-          ] = EitherT.pure[Future, AppError]((None, None))
-          error
-        case Some(id) =>
-          for {
-            sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant.id)
-                .findById(id.value),
-              AppError.SubscriptionNotFound
-            )
-          } yield (Some(sub), Some(sub.apiKey))
-
-      }
-      value.flatMap { case (maybeParentSub, otoroshiApiKey) =>
+      // Resolve the keyring to join, if any. None means a brand new keyring
+      // (with a brand new Otoroshi api key) will be created below.
+      val maybeKeyringF: EitherT[Future, AppError, Option[Keyring]] =
+        keyringId match {
+          case None => EitherT.pure[Future, AppError](None)
+          case Some(kid) =>
+            EitherT
+              .fromOptionF[Future, AppError, Keyring](
+                env.dataStore.keyringRepo
+                  .forTenant(tenant.id)
+                  .findByIdNotDeleted(kid.value),
+                AppError.EntityNotFound(s"Keyring ${kid.value}")
+              )
+              .map(_.some)
+        }
+      maybeKeyringF.flatMap { maybeKeyring =>
         val integrationToken = IdGenerator.token(64)
 
         val tunedApiKey = createOtoroshiApiKey(
@@ -281,7 +283,7 @@ class ApiService(
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
-          maybeOtoroshiApiKey = otoroshiApiKey
+          maybeOtoroshiApiKey = maybeKeyring.map(_.apiKey)
         )
 
         val automaticMetadata = tunedApiKey.metadata.filterNot(i =>
@@ -291,10 +293,29 @@ class ApiService(
           .getOrElse(Map.empty[String, String])
           .keys
 
+        // The keyring the subscription will reference: the joined one, or a
+        // brand new one (its Otoroshi key is created in keyringResult below).
+        val keyring = maybeKeyring.getOrElse(
+          Keyring(
+            id = KeyringId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = team.id,
+            customName = keyringCustomName,
+            apiKey = tunedApiKey.asOtoroshiApiKey,
+            otoroshiSettings =
+              KeyringOtoroshiBinding.Otoroshi(otoroshiSettings.id),
+            createdAt = DateTime.now(),
+            rotation = plan.autoRotation.map(rotation =>
+              ApiSubscriptionRotation(enabled = rotation)
+            ),
+            integrationToken = integrationToken,
+            bearerToken = None
+          )
+        )
+
         val apiSubscription = ApiSubscription(
           id = ApiSubscriptionId(IdGenerator.token(32)),
           tenant = tenant.id,
-          apiKey = tunedApiKey.asOtoroshiApiKey,
           plan = plan.id,
           createdAt = DateTime.now(),
           validUntil = None,
@@ -302,10 +323,6 @@ class ApiService(
           api = api.id,
           by = user.id,
           customName = customName,
-          rotation = plan.autoRotation.map(rotation =>
-            ApiSubscriptionRotation(enabled = rotation)
-          ),
-          integrationToken = integrationToken,
           metadata = Some(
             JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)
           ),
@@ -316,17 +333,16 @@ class ApiService(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
-          parent = parentSubscriptionId,
+          keyring = keyring.id,
           thirdPartySubscriptionInformations =
-            thirdPartySubscriptionInformations,
-          bearerToken = None
+            thirdPartySubscriptionInformations
         )
 
         val otoroshiApiKeyActionResult
             : EitherT[Future, AppError, ActualOtoroshiApiKey] =
-          maybeParentSub match {
-            case Some(subscription) =>
-              EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
+          maybeKeyring match {
+            case Some(_) =>
+              EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
                 .flatMap(otoApiKey =>
                   EitherT(
                     otoroshiClient.updateApiKey(
@@ -369,15 +385,23 @@ class ApiService(
                     )
                   )
                 )
-            case None => EitherT(otoroshiClient.createApiKey(tunedApiKey))
+            case None =>
+              for {
+                created <- EitherT(otoroshiClient.createApiKey(tunedApiKey))
+                _ <- EitherT.liftF[Future, AppError, Boolean](
+                  env.dataStore.keyringRepo
+                    .forTenant(tenant.id)
+                    .save(keyring.copy(bearerToken = created.bearer))
+                )
+              } yield created
           }
 
         for {
-          r <- otoroshiApiKeyActionResult
+          _ <- otoroshiApiKeyActionResult
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
-              .save(apiSubscription.copy(bearerToken = r.bearer))
+              .save(apiSubscription)
           )
         } yield apiSubscription
       }.value
@@ -387,17 +411,27 @@ class ApiService(
         api: Api,
         plan: UsagePlan
     ): Future[Either[AppError, ApiSubscription]] = {
-      import cats.implicits.*
       // TODO: verify if group is in authorized groups (if some)
 
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =
         s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
+      val adminApiKey = OtoroshiApiKey(clientName, clientId, clientSecret)
+      val keyring = Keyring(
+        id = KeyringId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        team = team.id,
+        apiKey = adminApiKey,
+        customName = keyringCustomName,
+        otoroshiSettings = KeyringOtoroshiBinding.Internal,
+        createdAt = DateTime.now(),
+        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
+        integrationToken = IdGenerator.token(64)
+      )
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(IdGenerator.token(32)),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
         plan = plan.id,
         createdAt = DateTime.now(),
         validUntil = None,
@@ -405,13 +439,15 @@ class ApiService(
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
-        integrationToken = IdGenerator.token(64)
+        keyring = keyring.id
       )
 
       val r: EitherT[Future, AppError, ApiSubscription] = EitherT.liftF(
         env.dataStore.withTransaction {
           for {
+            _ <- env.dataStore.keyringRepo
+              .forTenant(tenant.id)
+              .save(keyring)
             _ <- env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
               .save(apiSubscription)
@@ -457,7 +493,7 @@ class ApiService(
                 plan,
                 team,
                 authorizedEntities,
-                parentSubscriptionId
+                keyringId
               )
             } else {
               FastFuture.successful(Left(ApiKeyCustomMetadataNotPrivided))
@@ -465,261 +501,6 @@ class ApiService(
 
         }
     }
-  }
-
-  case class SyncInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      team: Team,
-      parentApi: Api,
-      apk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  case class ComputedInformation(
-      parent: ApiSubscription,
-      childs: Seq[ApiSubscription],
-      apk: ActualOtoroshiApiKey,
-      computedApk: ActualOtoroshiApiKey,
-      otoroshiSettings: OtoroshiSettings,
-      tenant: Tenant,
-      tenantAdminTeam: Team
-  )
-
-  def getListFromMeta(
-      key: String,
-      metadata: Map[String, String]
-  ): Set[String] = {
-    metadata
-      .get(key)
-      .map(_.split('|').toSeq.map(_.trim).toSet)
-      .getOrElse(Set.empty)
-  }
-
-  def mergeMetaValue(
-      key: String,
-      meta1: Map[String, String],
-      meta2: Map[String, String]
-  ): String = {
-    val list1 = getListFromMeta(key, meta1)
-    val list2 = getListFromMeta(key, meta2)
-    (list1 ++ list2).mkString(" | ")
-  }
-
-  private def computeAPIKey(
-      infos: SyncInformation
-  ): Future[Either[AppError, ComputedInformation]] = {
-    val seq = (infos.childs :+ infos.parent)
-      .map(subscription => {
-        for {
-          api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo
-              .forAllTenant()
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> subscription.api.value
-//                  "state" -> ApiState.publishedJsonFilter
-                )
-              ),
-            AppError.EntityNotFound(
-              s"Api ${subscription.api.value} (for subscription ${subscription.id.value})"
-            )
-          )
-          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo
-              .forTenant(infos.tenant)
-              .findById(subscription.plan),
-            AppError.EntityNotFound(
-              s"usage plan ${subscription.plan.value} (for subscription ${subscription.id.value})"
-            )
-          )
-          user <-
-            EitherT
-              .fromOptionF[Future, AppError, User](
-                env.dataStore.userRepo.findById(subscription.by),
-                AppError.UserNotFound(subscription.by.some)
-              )
-        } yield {
-          val ctx: Map[String, String] = Map(
-            "user.id" -> user.id.value,
-            "user.name" -> user.name,
-            "user.email" -> user.email,
-            "api.id" -> infos.parent.api.value,
-            "api.name" -> infos.parentApi.name,
-            "team.id" -> infos.parent.team.value,
-            "team.name" -> infos.team.name,
-            "tenant.id" -> infos.tenant.id.value,
-            "tenant.name" -> infos.tenant.name,
-            "client.id" -> infos.apk.clientId,
-            "client.name" -> infos.apk.clientName
-          ) ++ infos.team.metadata
-            .map(t => ("team.metadata." + t._1, t._2)) ++
-            user.metadata.map(t => ("user.metadata." + t._1, t._2))
-
-          // ********************
-          // process new tags
-          // ********************
-          val planTags = plan.otoroshiTarget
-            .flatMap(_.apikeyCustomization.tags.asOpt[Set[String]])
-            .getOrElse(Set.empty[String])
-
-//          val tagsFromDk =
-//            getListFromMeta("daikoku__tags", infos.apk.metadata)
-          val newTagsFromDk =
-            planTags.map(OtoroshiTarget.processValue(_, ctx))
-
-          // todo: unnecessary ??
-          // val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
-
-          // ********************
-          // process new metadata
-          // ********************
-          val planMeta = plan.otoroshiTarget
-            .map(_.apikeyCustomization.metadata.as[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
-
-          val metaFromDk = infos.apk.metadata
-            .get("daikoku__metadata")
-            .map(
-              _.split('|').toSeq
-                .map(_.trim)
-                .map(key => key -> infos.apk.metadata.get(key).orNull)
-            )
-            .getOrElse(planMeta.map { case (a, b) =>
-              a -> OtoroshiTarget.processValue(b, ctx)
-            })
-            .toMap
-
-          val customMetaFromSub = subscription.customMetadata
-            .flatMap(_.asOpt[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
-
-          val newMetaFromDk = (planMeta ++ customMetaFromSub).map {
-            case (a, b) => a -> OtoroshiTarget.processValue(b, ctx)
-          }
-          val newMeta = infos.apk.metadata
-            .removedAll(metaFromDk.keys) ++ newMetaFromDk ++ Map(
-            "daikoku__metadata" -> newMetaFromDk.keys
-              .mkString(" | "),
-            "daikoku__tags" -> newTagsFromDk.mkString(" | ")
-          )
-
-          // ********************
-          // process new metadata
-          // ********************
-
-          infos.apk.copy(
-            tags = newTagsFromDk,
-            enabled = subscription.enabled,
-            metadata = newMeta,
-            constrainedServicesOnly = plan.otoroshiTarget
-              .exists(_.apikeyCustomization.constrainedServicesOnly),
-            allowClientIdOnly =
-              plan.otoroshiTarget.exists(_.apikeyCustomization.clientIdOnly),
-            restrictions = plan.otoroshiTarget
-              .map(_.apikeyCustomization.restrictions)
-              .getOrElse(ApiKeyRestrictions()),
-            throttlingQuota = subscription.customMaxPerSecond
-              .orElse(plan.maxPerSecond)
-              .getOrElse(infos.apk.throttlingQuota),
-            dailyQuota = subscription.customMaxPerDay
-              .orElse(plan.maxPerDay)
-              .getOrElse(infos.apk.dailyQuota),
-            monthlyQuota = subscription.customMaxPerMonth
-              .orElse(plan.maxPerMonth)
-              .getOrElse(infos.apk.monthlyQuota),
-            authorizedEntities = plan.otoroshiTarget
-              .flatMap(_.authorizedEntities)
-              .getOrElse(AuthorizedEntities()),
-            readOnly = subscription.customReadOnly
-              .orElse(
-                plan.otoroshiTarget
-                  .map(_.apikeyCustomization.readOnly)
-              )
-              .getOrElse(infos.apk.readOnly),
-            rotation = infos.apk.rotation
-              .map(r =>
-                r.copy(enabled =
-                  r.enabled || subscription.rotation
-                    .exists(_.enabled) || plan.autoRotation
-                    .exists(e => e)
-                )
-              )
-              .orElse(
-                subscription.rotation.map(r =>
-                  ApiKeyRotation(
-                    enabled = r.enabled || plan.autoRotation.exists(e => e),
-                    rotationEvery = r.rotationEvery,
-                    gracePeriod = r.gracePeriod
-                  )
-                )
-              )
-              .orElse(
-                plan.autoRotation
-                  .map(enabled => ApiKeyRotation(enabled = enabled))
-              )
-          )
-
-        }
-      })
-
-    seq
-      .reduce((info1, info2) => {
-        for {
-          apikey1 <- info1
-          apikey2 <- info2
-        } yield apikey1.copy(
-          tags = apikey1.tags ++ apikey2.tags,
-          metadata = apikey1.metadata ++
-            apikey2.metadata ++
-            Map(
-              "daikoku__metadata" -> mergeMetaValue(
-                "daikoku__metadata",
-                apikey1.metadata,
-                apikey2.metadata
-              ),
-              "daikoku__tags" -> mergeMetaValue(
-                "daikoku__tags",
-                apikey1.metadata,
-                apikey2.metadata
-              )
-            ),
-          restrictions = ApiKeyRestrictions(
-            enabled =
-              apikey1.restrictions.enabled && apikey2.restrictions.enabled,
-            allowLast =
-              apikey1.restrictions.allowLast || apikey2.restrictions.allowLast,
-            allowed =
-              apikey1.restrictions.allowed ++ apikey2.restrictions.allowed,
-            forbidden =
-              apikey1.restrictions.forbidden ++ apikey2.restrictions.forbidden,
-            notFound =
-              apikey1.restrictions.notFound ++ apikey2.restrictions.notFound
-          ),
-          authorizedEntities = AuthorizedEntities(
-            groups =
-              apikey1.authorizedEntities.groups | apikey2.authorizedEntities.groups,
-            services =
-              apikey1.authorizedEntities.services | apikey2.authorizedEntities.services,
-            routes =
-              apikey1.authorizedEntities.routes | apikey2.authorizedEntities.routes
-          )
-        )
-      })
-      .map(computedApk => {
-        ComputedInformation(
-          parent = infos.parent,
-          childs = infos.childs,
-          apk = infos.apk,
-          computedApk = computedApk,
-          otoroshiSettings = infos.otoroshiSettings,
-          tenant = infos.tenant,
-          tenantAdminTeam = infos.tenantAdminTeam
-        )
-      })
-      .value
   }
 
   def updateSubscription(
@@ -735,7 +516,7 @@ class ApiService(
       }
 
     val r = for {
-      otoSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](
+      _ <- EitherT.fromOption[Future][AppError, OtoroshiSettings](
         maybeTarget,
         AppError.OtoroshiSettingsNotFound
       )
@@ -749,181 +530,70 @@ class ApiService(
         (),
         AppError.ApiNotLinked
       )
-      apiKey <- EitherT[Future, AppError, ActualOtoroshiApiKey](
-        otoroshiClient.getApikey(subscription.apiKey.clientId)(using
-          otoSettings
-        )
-      )
-
-      aggregatedSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
-      )
-      aggregatedPlan <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(aggregatedSubs.map(_.plan.asJson)))
-            )
-          )
-      )
-      aggregatedAuthorizedEntities <- EitherT.pure[Future, AppError](
-        aggregatedPlan
-          .map(
-            _.otoroshiTarget
-              .flatMap(_.authorizedEntities)
-              .getOrElse(AuthorizedEntities())
-          )
-      )
-
-      _authorizedEntities =
-        aggregatedAuthorizedEntities.fold(authorizedEntities)((acc, curr) => {
-          AuthorizedEntities(
-            services = acc.services ++ curr.services,
-            groups = acc.groups ++ curr.groups,
-            routes = acc.routes ++ curr.routes
-          )
-        })
-
-      _ <- EitherT[Future, AppError, ActualOtoroshiApiKey](
-        otoroshiClient.updateApiKey(
-          apiKey.copy(
-            authorizedEntities = _authorizedEntities,
-            throttlingQuota = subscription.customMaxPerSecond
-              .getOrElse(apiKey.throttlingQuota),
-            dailyQuota =
-              subscription.customMaxPerDay.getOrElse(apiKey.dailyQuota),
-            monthlyQuota = subscription.customMaxPerMonth
-              .getOrElse(apiKey.monthlyQuota),
-            metadata = apiKey.metadata ++ subscription.customMetadata
-              .flatMap(_.asOpt[Map[String, String]])
-              .getOrElse(Map.empty[String, String]),
-            readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly),
-            validUntil = subscription.validUntil.map(_.getMillis)
-          )
-        )(using otoSettings)
-      )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant.id)
           .save(subscription)
       )
-    } yield subscription.asSafeJson.as[JsObject]
+      // recompute the keyring's Otoroshi key from the updated subscription
+      _ <- EitherT.liftF[Future, AppError, Unit](
+        otoroshiSynchronisator.run(subscription.keyring, tenant)
+      )
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findById(subscription.keyring),
+        AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
+      )
+    } yield subscription.asSafeJson(keyring).as[JsObject]
 
     r.value
   }
 
-  def computeOtoroshiApiKey(
-      subscription: ApiSubscription
-  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    val r = for {
-      tenant <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
-        AppError.TenantNotFound
-      )
-      // get tenant team admin
-      tenantAdminTeam <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOne(Json.obj("type" -> "Admin")),
-        AppError.EntityNotFound(
-          s"Tenant admin team for tenant ${tenant.id.value}"
-        )
-      )
-
-      // GET parent API
-      parentApi <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo
-          .forAllTenant()
-          .findOneNotDeleted(
-            Json.obj(
-              "_id" -> subscription.api.value
-//              "state" -> ApiState.publishedJsonFilter
-            )
-          ),
-        AppError.ApiNotFound
-      )
-
-      // Get parent plan
-      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findById(subscription.plan),
-        AppError.PlanNotFound
-      )
-
-      // get ototoshi target from parent plan
-      otoroshiTarget <- EitherT.fromOption[Future](
-        plan.otoroshiTarget,
-        AppError.EntityNotFound(s"Otoroshi target for plan ${plan.id.value}")
-      )
-
-      // get otoroshi settings from parent plan
-      otoroshiSettings <- EitherT.fromOption[Future](
-        tenant.otoroshiSettings
-          .find(_.id == otoroshiTarget.otoroshiSettings),
-        AppError.EntityNotFound(
-          s"otoroshi settings (${otoroshiTarget.otoroshiSettings.value}"
-        )
-      )
-
-      // get previous apikey from otoroshi
-      apk <- EitherT(
-        otoroshiClient.getApikey(subscription.apiKey.clientId)(using
-          otoroshiSettings
-        )
-      )
-
-      // get subscription team
-      team <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findById(subscription.team),
-        AppError.TeamNotFound
-      )
-
-      childs <- EitherT.liftF(
+  def updateSubscriptionCustomization(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      updated: ApiSubscription
+  ): EitherT[Future, AppError, ApiSubscription] = {
+    val subToSave = subscription.copy(
+      customMetadata = updated.customMetadata,
+      customMaxPerSecond = updated.customMaxPerSecond,
+      customMaxPerDay = updated.customMaxPerDay,
+      customMaxPerMonth = updated.customMaxPerMonth,
+      customReadOnly = updated.customReadOnly,
+      adminCustomName = updated.adminCustomName,
+      validUntil = updated.validUntil
+    )
+    for {
+      _ <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forAllTenant()
-          .findNotDeleted(
-            Json.obj(
-              "parent" -> subscription.id.asJson,
-              "enabled" -> true
-            )
-          )
+          .forTenant(tenant.id)
+          .save(subToSave)
       )
-
-      computedInformation <- EitherT(
-        computeAPIKey(
-          SyncInformation(
-            parent = subscription,
-            childs = childs,
-            apk = apk,
-            otoroshiSettings = otoroshiSettings,
-            tenant = tenant,
-            team = team,
-            parentApi = parentApi,
-            tenantAdminTeam = tenantAdminTeam
-          )
-        )
+      _ <- EitherT.right[AppError](
+        otoroshiSynchronisator.run(subscription.id, tenant)
       )
-    } yield computedInformation.computedApk
-
-    r.value
+    } yield subToSave
   }
 
   def archiveApiKey(
       tenant: Tenant,
       subscription: ApiSubscription,
       plan: UsagePlan,
-      enabled: Boolean
+      enabled: Boolean,
+      byOwner: Boolean = false
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits.*
 
-    val updatedSubscription = subscription.copy(enabled = enabled)
+    val updatedSubscription =
+      if (byOwner)
+        subscription.copy(
+          blockedBy =
+            if (enabled) subscription.blockedBy - Owner
+            else subscription.blockedBy + Owner
+        )
+      else
+        subscription.copy(enabled = enabled)
 
     plan.otoroshiTarget
       .map(_.otoroshiSettings)
@@ -940,142 +610,172 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
-          _ <-
-            if (!enabled)
-              EitherT.liftF(
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant.id)
-                  .updateManyByQuery(
-                    Json.obj(
-                      "parent" -> subscription.id.asJson
-                    ),
-                    Json.obj(
-                      "$set" -> Json.obj(
-                        "enabled" -> enabled
-                      )
-                    )
-                  )
-              )
-            else EitherT.pure[Future, AppError](0)
-//          parentSubscription <- subscription.parent match {
-//            case Some(parentId) =>
-//              EitherT.fromOptionF(
-//                env.dataStore.apiSubscriptionRepo
-//                  .forTenant(tenant)
-//                  .findById(parentId),
-//                AppError.EntityNotFound(
-//                  s"Parent subscription (ID: ${parentId.value})"
-//                )
-//              )
-//            case None => EitherT.pure[Future, AppError](updatedSubscription)
-//          }
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-//          apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
-//          _ <- EitherT(otoroshiClient.updateApiKey(apk))
-          _ <-
-            paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
-        } yield updatedSubscription.asSafeJson.as[JsObject]
+          _ <- paymentClient.toggleStateThirdPartySubscription(
+            updatedSubscription
+          )
+          keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+            env.dataStore.keyringRepo
+              .forTenant(tenant.id)
+              .findById(updatedSubscription.keyring),
+            AppError.EntityNotFound(
+              s"Keyring ${updatedSubscription.keyring.value}"
+            )
+          )
+        } yield updatedSubscription.asSafeJson(keyring).as[JsObject]
 
         r.value
     }
   }
 
-  def regenerateApiKeySecret(
+  def regenerateKeyringSecret(
       tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      api: Api,
+      keyringId: KeyringId,
       team: Team,
       user: User
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits.*
 
-    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-      tenant.otoroshiSettings.find(_.id == id)
-    } match {
-      case None if api.visibility == ApiVisibility.AdminOnly =>
-        val newClientSecret = IdGenerator.token(64)
-        val updatedSubscription = subscription.copy(apiKey =
-          subscription.apiKey.copy(clientSecret = newClientSecret)
-        )
-        env.dataStore.apiSubscriptionRepo
+    (for {
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
           .forTenant(tenant.id)
-          .save(updatedSubscription)
+          .findByIdNotDeleted(keyringId.value),
+        AppError.EntityNotFound(s"Keyring ${keyringId.value}")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        keyring.team == team.id,
+        (),
+        AppError.ForbiddenAction
+      )
+      newClientSecret = IdGenerator.token(64)
+      updatedKeyring = keyring.copy(
+        apiKey = keyring.apiKey.copy(clientSecret = newClientSecret)
+      )
+      result <- EitherT(
+        regenerateOnBinding(
+          tenant,
+          keyring,
+          updatedKeyring,
+          newClientSecret,
+          user
+        )
+      )
+    } yield result).value
+  }
+
+  def toggleKeyringState(
+      tenant: Tenant,
+      keyringId: KeyringId,
+      team: Team,
+      enabled: Boolean
+  ): Future[Either[AppError, JsObject]] = {
+    import cats.implicits.*
+
+    (for {
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findByIdNotDeleted(keyringId.value),
+        AppError.EntityNotFound(s"Keyring ${keyringId.value}")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        keyring.team == team.id,
+        (),
+        AppError.ForbiddenAction
+      )
+      updatedKeyring = keyring.copy(enabled = enabled)
+      _ <- EitherT.liftF(
+        env.dataStore.keyringRepo.forTenant(tenant.id).save(updatedKeyring)
+      )
+      // reconcile the Otoroshi key from the persisted keyring state ; the sync
+      // job now honors keyring.enabled. Internal binding has no Otoroshi key.
+      _ <- EitherT.liftF[Future, AppError, Unit](
+        keyring.otoroshiSettings match {
+          case KeyringOtoroshiBinding.Otoroshi(_) =>
+            otoroshiSynchronisator.run(keyring.id, tenant)
+          case KeyringOtoroshiBinding.Internal =>
+            FastFuture.successful(())
+        }
+      )
+    } yield Json.obj(
+      "done" -> true,
+      "keyring" -> updatedKeyring.asJson
+    )).value
+  }
+
+  private def regenerateOnBinding(
+      tenant: Tenant,
+      keyring: Keyring,
+      updatedKeyring: Keyring,
+      newClientSecret: String,
+      user: User
+  ): Future[Either[AppError, JsObject]] = {
+    keyring.otoroshiSettings match {
+      case KeyringOtoroshiBinding.Internal =>
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .save(updatedKeyring)
           .map(_ =>
             Right(
               Json.obj(
                 "done" -> true,
-                "subscription" -> updatedSubscription.asJson
+                "keyring" -> updatedKeyring.asJson
               )
             )
           )
-      case None => Future.successful(Left(OtoroshiSettingsNotFound))
-      case Some(otoSettings) =>
+      case KeyringOtoroshiBinding.Otoroshi(otoSettingsId)
+          if !tenant.otoroshiSettings.exists(_.id == otoSettingsId) =>
+        Future.successful(Left(OtoroshiSettingsNotFound))
+      case KeyringOtoroshiBinding.Otoroshi(otoSettingsId) =>
+        val otoSettings =
+          tenant.otoroshiSettings.find(_.id == otoSettingsId).get
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        // implicit val language: String = tenant.defaultLanguage.getOrElse("en")
-
-        val newClientSecret = IdGenerator.token(64)
-        val updatedSubscription = subscription.copy(apiKey =
-          subscription.apiKey.copy(clientSecret = newClientSecret)
-        )
 
         val r: EitherT[Future, AppError, JsObject] = for {
-          subscriptionTeam <- EitherT.liftF(
-            env.dataStore.teamRepo
-              .forTenant(tenant.id)
-              .findById(subscription.team)
+          consumerTeam <- EitherT.fromOptionF[Future, AppError, Team](
+            env.dataStore.teamRepo.forTenant(tenant.id).findById(keyring.team),
+            AppError.TeamNotFound
           )
-          admins <- EitherT.liftF(
+          admins <- EitherT.liftF[Future, AppError, Seq[User]](
             env.dataStore.userRepo.find(
               Json.obj(
                 "_id" -> Json.obj(
                   "$in" -> JsArray(
-                    subscriptionTeam
-                      .map(
-                        _.users
-                          .filter(_.teamPermission == Administrator)
-                          .map(_.userId.asJson)
-                          .toSeq
-                      )
-                      .getOrElse(Seq.empty)
+                    consumerTeam.users
+                      .filter(_.teamPermission == Administrator)
+                      .map(_.userId.asJson)
+                      .toSeq
                   )
                 )
               )
             )
           )
-          apiKey <- EitherT(
-            otoroshiClient.getApikey(subscription.apiKey.clientId)
+          apiKey <- EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
+          otoApk <- EitherT(
+            otoroshiClient.updateApiKey(
+              apiKey.copy(clientSecret = newClientSecret)
+            )
           )
           _ <- EitherT.liftF(
-            otoroshiClient
-              .updateApiKey(apiKey.copy(clientSecret = newClientSecret))
-          )
-          _ <- EitherT.liftF(
-            env.dataStore.apiSubscriptionRepo
+            env.dataStore.keyringRepo
               .forTenant(tenant.id)
-              .save(updatedSubscription)
+              .save(updatedKeyring.copy(bearerToken = otoApk.bearer))
           )
           notification = Notification(
             id = NotificationId(IdGenerator.token(32)),
             tenant = tenant.id,
-            team = Some(subscription.team),
+            team = Some(keyring.team),
             sender = user.asNotificationSender,
-            action = NotificationAction
-              .ApiKeyRefreshV2(
-                subscription = subscription.id,
-                api = api.id,
-                plan = plan.id
-              ),
+            action = NotificationAction.ApiKeyRefreshV2(keyring = keyring.id),
             notificationType = NotificationType.AcceptOnly
           )
           _ <- EitherT.liftF(
             env.dataStore.notificationRepo
               .forTenant(tenant.id)
-              .save(
-                notification
-              )
+              .save(notification)
           )
           _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
             implicit val language: String = admin.defaultLanguage.getOrElse(
@@ -1087,14 +787,12 @@ class ApiService(
                 "mail.apikey.refresh.body",
                 tenant,
                 Map(
-                  "apiName" -> JsString(api.name),
-                  "planName" -> JsString(
-                    plan.customName
+                  "keyring_name" -> JsString(
+                    keyring.customName
                   ),
-                  "consumer_team_data" -> team.asJson,
+                  "apikey_client_name" -> JsString(keyring.apiKey.clientName),
+                  "consumer_team_data" -> consumerTeam.asJson,
                   "recipient_data" -> admin.asJson,
-                  "api_data" -> api.asJson,
-                  "usagePlan_data" -> plan.asJson,
                   "tenant_data" -> tenant.asJson
                 )
               )
@@ -1102,7 +800,10 @@ class ApiService(
               tenant.mailer.send(title, Seq(admin.email), body, tenant)
             }).flatten
           })))
-        } yield updatedSubscription.asSafeJson.as[JsObject]
+        } yield Json.obj(
+          "done" -> true,
+          "keyring" -> updatedKeyring.asJson
+        )
         r.value
     }
   }
@@ -1158,8 +859,14 @@ class ApiService(
           implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 
           val r: EitherT[Future, AppError, JsObject] = for {
+            keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+              env.dataStore.keyringRepo
+                .forTenant(tenant.id)
+                .findById(subscription.keyring),
+              AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
+            )
             apiKey <- EitherT(
-              otoroshiClient.getApikey(subscription.apiKey.clientId)
+              otoroshiClient.getApikey(keyring.apiKey.clientId)
             )
             _ <- EitherT.liftF(
               otoroshiClient.updateApiKey(
@@ -1175,11 +882,11 @@ class ApiService(
               )
             )
             _ <- EitherT.liftF(
-              env.dataStore.apiSubscriptionRepo
+              env.dataStore.keyringRepo
                 .forTenant(tenant.id)
                 .save(
-                  subscription.copy(rotation =
-                    subscription.rotation
+                  keyring.copy(rotation =
+                    keyring.rotation
                       .map(r =>
                         r.copy(
                           enabled = enabled,
@@ -1203,7 +910,8 @@ class ApiService(
                 .forTenant(tenant.id)
                 .findById(subscription.id)
             )
-          } yield Json.obj("subscription" -> updatedSubscription.get.asSafeJson)
+          } yield Json
+            .obj("subscription" -> updatedSubscription.get.asSafeJson(keyring))
           r.value
       }
     }
@@ -1234,184 +942,276 @@ class ApiService(
     * @return
     *   extracted otoroshi apikey (unsaved)
     */
-  def extractSubscriptionFromAggregation(
+  /** Detach a subscription from its (shared) keyring into a brand new keyring
+    * with its own Otoroshi api key, then recompute the former keyring's key
+    * without it. The subscription must currently share its keyring with at
+    * least one other subscription. Only the subscription's apiKey / keyring /
+    * bearerToken change; its metadata stays untouched.
+    */
+  def makeSubscriptionUnique(
       subscription: ApiSubscription,
       tenant: Tenant,
       user: User
-  )(implicit
-      o: OtoroshiSettings
-  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+  )(implicit o: OtoroshiSettings): Future[Either[AppError, JsObject]] = {
+    val oldKeyringId = subscription.keyring
     (for {
-      // get parent ApiSubscription
-      parentSubscriptionId <-
-        EitherT.fromOption[Future][AppError, ApiSubscriptionId](
-          subscription.parent,
-          MissingParentSubscription
-        )
-      parentSubscription <-
-        EitherT.fromOptionF[Future, AppError, ApiSubscription](
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .findByIdNotDeleted(parentSubscriptionId),
-          MissingParentSubscription
-        )
-
-      // get otoroshi aggregate apiKey
-      oldApiKey <- EitherT[Future, AppError, ActualOtoroshiApiKey](
-        otoroshiClient.getApikey(parentSubscription.apiKey.clientId)
+      oldKeyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo.forTenant(tenant).findById(oldKeyringId),
+        AppError.EntityNotFound(s"Keyring ${oldKeyringId.value}")
       )
-
-      // get all child subscriptions except subscription to extract
-      childsSubscription <-
-        EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "parent" -> parentSubscriptionId.asJson,
-                "_id" -> Json.obj("$ne" -> subscription.id.asJson)
-              )
-            )
-        )
-
-      // get team
-      team <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo
-          .forTenant(tenant.id)
-          .findById(parentSubscription.team),
-        TeamNotFound
-      )
-
-      // create new OtoroshiApiKey from parent sub
-      parentApi <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo
+      keyringSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+        env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findById(parentSubscription.api),
-        AppError.ApiNotFound
+          .findNotDeleted(Json.obj("keyring" -> oldKeyringId.asJson))
       )
-      parentPlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(parentSubscription.plan),
-        PlanNotFound
+      _ <- EitherT.cond[Future][AppError, Unit](
+        keyringSubs.size > 1,
+        (),
+        AppError.EntityConflict("Subscription is not part of an aggregation")
       )
-      newParentKey = createOtoroshiApiKey(
-        user = user,
-        api = parentApi,
-        plan = parentPlan,
-        team = team,
-        tenant = tenant,
-        integrationToken = IdGenerator.token(64),
-        customMetadata = parentSubscription.customMetadata
-      )
-
-      childsKeys <- condenseEitherT(childsSubscription.map(s => {
-        for {
-          api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo.forTenant(tenant).findById(s.api),
-            AppError.ApiNotFound
-          )
-          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-            env.dataStore.usagePlanRepo.forTenant(tenant).findById(s.plan),
-            AppError.PlanNotFound
-          )
-        } yield createOtoroshiApiKey(
-          user = user,
-          api = api,
-          plan = plan,
-          team = team,
-          tenant = tenant,
-          integrationToken = IdGenerator.token(64),
-          customMetadata = s.customMetadata
-        )
-      }))
-
-      // get api of subscription to extract
       api <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api),
         ApiNotFound
       )
-
-      // get plan of subscription to extract
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
           .findById(subscription.plan),
         PlanNotFound
       )
-
-      // compute new OtoroshiApiKey for subscription to extract
-      // FIXME: use sync compute instead of
+      team <- EitherT.fromOptionF[Future, AppError, Team](
+        env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team),
+        TeamNotFound
+      )
+      newIntegrationToken = IdGenerator.token(64)
+      // a fresh standalone Otoroshi key for the subscription
       apikey = createOtoroshiApiKey(
         user = user,
         api = api,
         plan = plan,
         team = team,
         tenant = tenant,
-        integrationToken = IdGenerator.token(64),
+        integrationToken = newIntegrationToken,
         customMetadata = subscription.customMetadata
       )
-
-      // compute new aggregation, copy from old OtoroshiApiKey to keep informations like quotas
-      computedMetadata =
-        newParentKey.metadata ++
-          childsKeys.foldLeft(Map.empty[String, String])((acc, curr) =>
-            acc ++ curr.metadata
-          )
-      computedTags = newParentKey.tags ++ childsKeys.foldLeft(
-        Set.empty[String]
-      )((acc, curr) => acc ++ curr.tags)
-
-      newAggApiKey <- EitherT.rightT[Future, AppError](
-        oldApiKey.copy(
-          authorizedEntities = AuthorizedEntities(
-            groups =
-              newParentKey.authorizedEntities.groups ++ childsKeys.foldLeft(
-                Set.empty[OtoroshiServiceGroupId]
-              )((acc, curr) => acc ++ curr.authorizedEntities.groups),
-            services =
-              newParentKey.authorizedEntities.services ++ childsKeys.foldLeft(
-                Set.empty[OtoroshiServiceId]
-              )((acc, curr) => acc ++ curr.authorizedEntities.services),
-            routes =
-              newParentKey.authorizedEntities.routes ++ childsKeys.foldLeft(
-                Set.empty[OtoroshiRouteId]
-              )((acc, curr) => acc ++ curr.authorizedEntities.routes)
-          ),
-          tags = computedTags,
-          restrictions = ApiKeyRestrictions(
-            enabled = newParentKey.restrictions.enabled && childsKeys
-              .foldLeft(false)((acc, curr) => acc && curr.restrictions.enabled),
-            allowLast =
-              newParentKey.restrictions.allowLast || childsKeys.foldLeft(true)(
-                (acc, curr) => acc || curr.restrictions.allowLast
-              ),
-            allowed = newParentKey.restrictions.allowed ++ childsKeys.foldLeft(
-              Seq.empty[ApiKeyRestrictionPath]
-            )((acc, curr) => acc ++ curr.restrictions.allowed),
-            forbidden =
-              newParentKey.restrictions.forbidden ++ childsKeys.foldLeft(
-                Seq.empty[ApiKeyRestrictionPath]
-              )((acc, curr) => acc ++ curr.restrictions.forbidden),
-            notFound =
-              newParentKey.restrictions.notFound ++ childsKeys.foldLeft(
-                Seq.empty[ApiKeyRestrictionPath]
-              )((acc, curr) => acc ++ curr.restrictions.notFound)
-          ),
-          metadata = computedMetadata +
-            ("daikoku__tags" -> computedTags.mkString(" | ")) +
-            ("daikoku__metadata" -> computedMetadata.keySet
-              .filterNot(_.startsWith("daikoku_"))
-              .mkString(" | "))
-        )
+      created <- EitherT(otoroshiClient.createApiKey(apikey))
+      newKeyring = Keyring(
+        id = KeyringId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        team = team.id,
+        customName = oldKeyring.customName,
+        apiKey = created.asOtoroshiApiKey,
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(o.id),
+        createdAt = DateTime.now(),
+        rotation = oldKeyring.rotation,
+        integrationToken = newIntegrationToken,
+        bearerToken = created.bearer
       )
-
-      // save new aggregate in otoroshi
-      _ <- EitherT(otoroshiClient.updateApiKey(newAggApiKey))
-
-      // return extracted OtoroshiApiKey
-    } yield apikey).value
+      _ <- EitherT.liftF(
+        env.dataStore.keyringRepo.forTenant(tenant).save(newKeyring)
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .save(subscription.copy(keyring = newKeyring.id))
+      )
+      // recompute the former keyring's key without this subscription
+      _ <- EitherT.liftF(otoroshiSynchronisator.run(oldKeyringId, tenant))
+    } yield Json.obj("created" -> true)).value
   }
+
+  /** Delete a single subscription then reconcile its keyring: recompute the
+    * keyring's Otoroshi key without it, or delete the key + the keyring when no
+    * subscription references it anymore.
+    */
+  private def deleteSubscriptionAndSyncKeyring(
+      subscription: ApiSubscription,
+      plan: UsagePlan,
+      tenant: Tenant
+  )(implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
+    val kid = subscription.keyring
+    for {
+      _ <- env.dataStore.apiSubscriptionRepo
+        .forTenant(tenant.id)
+        .deleteByIdLogically(subscription.id)
+      _ <- env.dataStore.apiSubscriptionRepo
+        .forTenant(tenant)
+        .count(Json.obj("keyring" -> kid.asJson, "_deleted" -> false))
+        .flatMap {
+          case 0L =>
+            otoroshiSynchronisator
+              .runForDeletion(kid, tenant)
+              .flatMap(_ =>
+                env.dataStore.keyringRepo
+                  .forTenant(tenant)
+                  .deleteByIdLogically(kid)
+              )
+              .map(_ => ())
+          case _ => otoroshiSynchronisator.run(kid, tenant)
+        }
+    } yield ()
+  }
+
+//  def deleteApiSubscriptionsAsFlow(
+//      tenant: Tenant,
+//      apiOrGroupId: ApiId,
+//      user: User
+//  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
+//    Flow[(UsagePlan, Seq[ApiSubscription])]
+//      .map { case (plan, subscriptions) =>
+//        subscriptions.map(subscription => (plan, subscription))
+//      }
+//      .flatMapConcat(seq => Source(seq.toList))
+//      .mapAsync(1) { case (plan, subscription) =>
+//        env.dataStore.keyringRepo
+//          .forTenant(tenant)
+//          .findById(subscription.keyring)
+//          .map { maybeKeyring =>
+//            val clientId = maybeKeyring.map(_.apiKey.clientId).getOrElse("")
+//            val notification = Notification(
+//              id = NotificationId(IdGenerator.token(32)),
+//              tenant = tenant.id,
+//              team = Some(subscription.team),
+//              sender = user.asNotificationSender,
+//              notificationType = NotificationType.AcceptOnly,
+//              action = NotificationAction.ApiKeyDeletionInformationV2(
+//                apiOrGroupId,
+//                clientId,
+//                subscription.id
+//              )
+//            )
+//            (plan, subscription, notification)
+//          }
+//      }
+//      .mapAsync(1) { case (plan, subscription, notification) =>
+//        AppLogger.info(
+//          s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}"
+//        )
+//
+//        (for {
+//          otoroshiSettings <- OptionT.fromOption[Future](
+//            plan.otoroshiTarget
+//              .map(_.otoroshiSettings)
+//              .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
+//          )
+//          _ <- OptionT.liftF(
+//            apiKeyStatsJob
+//              .syncForSubscription(subscription, tenant, completed = true)
+//          )
+//          _ <- OptionT.liftF(
+//            deleteSubscriptionAndSyncKeyring(subscription, plan, tenant)(using
+//              otoroshiSettings
+//            )
+//          )
+//          _ <- subscription.thirdPartySubscriptionInformations match {
+//            case Some(thirdPartySubscriptionInformations) =>
+//              OptionT.liftF(
+//                env.dataStore.operationRepo
+//                  .forTenant(tenant)
+//                  .save(
+//                    Operation(
+//                      DatastoreId(IdGenerator.token(24)),
+//                      tenant = tenant.id,
+//                      itemId = subscription.id.value,
+//                      itemType = ItemType.ThirdPartySubscription,
+//                      action = OperationAction.Delete,
+//                      payload = Json
+//                        .obj(
+//                          "paymentSettings" -> plan.paymentSettings
+//                            .map(_.asJson)
+//                            .getOrElse(JsNull)
+//                            .as[JsValue],
+//                          "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
+//                        )
+//                        .some
+//                    )
+//                  )
+//              )
+//            case None => OptionT.pure[Future](())
+//          }
+//          _ <- OptionT.liftF(
+//            env.dataStore.notificationRepo
+//              .forTenant(tenant)
+//              .save(notification)
+//          )
+//        } yield ()).value
+//          .map(_ => plan)
+//      }
+
+//  def deleteUsagePlan(
+//      plan: UsagePlan,
+//      api: Api,
+//      tenant: Tenant,
+//      user: User
+//  ): EitherT[Future, AppError, Api] = {
+//    val updatedApi = api.copy(possibleUsagePlans =
+//      api.possibleUsagePlans.filter(pp => pp != plan.id)
+//    )
+//    for {
+//      _ <-
+//        EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
+//      _ <-
+//        EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
+//      _ <- EitherT.liftF(
+//        env.dataStore.usagePlanRepo
+//          .forTenant(tenant)
+//          .deleteByIdLogically(plan.id)
+//      )
+//      _ <-
+//        if (plan.paymentSettings.isDefined)
+//          EitherT.liftF[Future, AppError, Boolean](
+//            env.dataStore.operationRepo
+//              .forTenant(tenant)
+//              .save(
+//                Operation(
+//                  DatastoreId(IdGenerator.token(24)),
+//                  tenant = tenant.id,
+//                  itemId = plan.id.value,
+//                  itemType = ItemType.ThirdPartyProduct,
+//                  action = OperationAction.Delete,
+//                  payload = Json
+//                    .obj(
+//                      "paymentSettings" -> plan.paymentSettings
+//                        .map(_.asJson)
+//                        .getOrElse(JsNull)
+//                        .as[JsValue]
+//                    )
+//                    .some
+//                )
+//              )
+//          )
+//        else EitherT.pure[Future, AppError](true)
+//    } yield updatedApi
+//  }
+
+//  def deleteApiPlansSubscriptions(
+//      plans: Seq[UsagePlan],
+//      api: Api,
+//      tenant: Tenant,
+//      user: User
+//  ): Future[Done] = {
+//    implicit val mat: Materializer = env.defaultMaterializer
+//
+//    Source(plans.toList)
+//      .mapAsync(1)(plan =>
+//        env.dataStore.apiSubscriptionRepo
+//          .forTenant(tenant)
+//          .findNotDeleted(
+//            Json.obj(
+//              "api" -> api.id.asJson,
+//              "plan" -> Json
+//                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
+//            )
+//          )
+//          .map(seq => (plan, seq))
+//      )
+//      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
+//      .runWith(Sink.ignore)
+//      .recover { case e =>
+//        AppLogger.error(s"Error while deleting api subscriptions", e)
+//        Done
+//      }
+//  }
 
   def notifyApiSubscription(
       demand: SubscriptionDemand,
@@ -1439,8 +1239,9 @@ class ApiService(
         AppError.UserNotFound()
       )
       formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
-        plan.subscriptionProcess.collectFirst { case s: ValidationStep.Form =>
-          s
+        plan.subscriptionProcess.steps.collectFirst {
+          case s: ValidationStep.Form =>
+            s
         },
         AppError.EntityNotFound("form step")
       )
@@ -1607,38 +1408,30 @@ class ApiService(
         env.dataStore.userRepo.findById(demand.from),
         AppError.UserNotFound()
       )
-      parentSubscription <-
-        EitherT.liftF[Future, AppError, Option[ApiSubscription]](
-          demand.parentSubscriptionId
-            .fold(Option.empty[ApiSubscription].future)(s =>
-              env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(s)
-            )
+      keyring <- EitherT.liftF[Future, AppError, Option[Keyring]](
+        demand.keyring.fold(
+          FastFuture.successful(Option.empty[Keyring])
+        )(kid =>
+          env.dataStore.keyringRepo.forTenant(tenant).findById(kid.value)
         )
-      parentApi <- EitherT.liftF[Future, AppError, Option[Api]](
-        parentSubscription.fold[Future[Option[Api]]](
-          FastFuture.successful(None)
-        )(s => env.dataStore.apiRepo.forTenant(tenant).findById(s.api))
       )
-      parentPlan <- EitherT.liftF[Future, AppError, Option[UsagePlan]](
-        parentSubscription.fold[Future[Option[UsagePlan]]](
-          FastFuture.successful(None)
-        )(s => env.dataStore.usagePlanRepo.forTenant(tenant).findById(s.plan))
-      )
-      aggregatedSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-        parentSubscription
-          .fold(FastFuture.successful(Seq.empty[ApiSubscription]))(s =>
+      keyringSubscriptions <-
+        EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+          demand.keyring.fold(
+            FastFuture.successful(Seq.empty[ApiSubscription])
+          )(kid =>
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj("parent" -> s.api.value))
+              .findNotDeleted(Json.obj("keyring" -> kid.asJson))
           )
-      )
+        )
       aggregatedApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
           .findNotDeleted(
             Json.obj(
               "_id" -> Json
-                .obj("$in" -> JsArray(aggregatedSubs.map(_.api.asJson)))
+                .obj("$in" -> JsArray(keyringSubscriptions.map(_.api.asJson)))
             )
           )
       )
@@ -1648,7 +1441,7 @@ class ApiService(
           .findNotDeleted(
             Json.obj(
               "_id" -> Json
-                .obj("$in" -> JsArray(aggregatedSubs.map(_.plan.asJson)))
+                .obj("$in" -> JsArray(keyringSubscriptions.map(_.plan.asJson)))
             )
           )
       )
@@ -1664,14 +1457,10 @@ class ApiService(
               "plan" -> plan.asJson,
               "user" -> user.asJson,
               "team" -> team.asJson,
-              "aggregate" -> parentSubscription.fold[JsValue](JsNull)(sub =>
+              "aggregate" -> keyring.fold[JsValue](JsNull)(k =>
                 Json.obj(
-                  "parent" -> Json.obj(
-                    "api" -> parentApi.get.asJson,
-                    "plan" -> parentPlan.get.asJson,
-                    "subscription" -> sub.asJson
-                  ),
-                  "subscriptions" -> aggregatedSubs.map(sub => {
+                  "keyring" -> k.asSafeJson,
+                  "subscriptions" -> keyringSubscriptions.map(sub => {
                     Json.obj(
                       "subscription" -> sub.asJson,
                       "api" -> aggregatedApis
@@ -1718,6 +1507,115 @@ class ApiService(
             (response._2 \ "message").asOpt[String]
           )
     } yield r
+  }
+
+  def validateProcessWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant,
+      maybeSessionId: Option[String] = None
+  )(implicit
+      language: String,
+      currentUser: User
+  ): EitherT[Future, AppError, Result] = {
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(demand.team),
+        AppError.TeamNotFound
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        AppError.ApiNotFound
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- step.check()
+      updatedDemand = demand.copy(steps =
+        demand.steps.map(s =>
+          if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted)
+          else s
+        )
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .save(updatedDemand)
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .updateManyByQuery(
+            Json.obj(
+              "action.type" -> "CheckoutForSubscription",
+              "action.demand" -> demand.id.asJson,
+              "action.step" -> step.id.asJson
+            ),
+            Json.obj(
+              "$set" -> Json.obj(
+                "status" -> json.NotificationStatusFormat
+                  .writes(NotificationStatus.Accepted())
+              )
+            )
+          )
+      )
+      result <- runSubscriptionProcess(
+        demand.id,
+        tenant,
+        maybeSessionId = maybeSessionId
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .delete(Json.obj("step" -> validator.step.value))
+      )
+    } yield result
+  }
+
+  def declineProcessWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant
+  ): EitherT[Future, AppError, Unit] = {
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      _ <- EitherT.fromOptionF(
+        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        AppError.ApiNotFound
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- step.check()
+      _ <- declineSubscriptionDemand(
+        tenant,
+        demand.id,
+        step.id,
+        NotificationSender(
+          (validator.metadata \ "email").as[String],
+          (validator.metadata \ "email").as[String],
+          None
+        )
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .delete(Json.obj("step" -> validator.step.value))
+      )
+    } yield ()
   }
 
   def runSubscriptionProcess(
@@ -2031,7 +1929,7 @@ class ApiService(
                 api = api,
                 plan = plan,
                 team = team,
-                parentSubscriptionId = demand.parentSubscriptionId,
+                keyringId = demand.keyring,
                 customMetadata = demand.customMetadata,
                 customMaxPerSecond = demand.customMaxPerSecond,
                 customMaxPerDay = demand.customMaxPerDay,
@@ -2041,6 +1939,10 @@ class ApiService(
                 thirdPartySubscriptionInformations =
                   maybeSubscriptionInformations,
                 customName = demand.customName,
+                keyringCustomName = demand.keyringCustomName
+                  .map(_.trim)
+                  .filter(_.nonEmpty)
+                  .getOrElse(defaultKeyringName(api, plan)),
                 tags = demand.tags
               )
             )
@@ -2053,7 +1955,7 @@ class ApiService(
                       "$in" -> JsArray(
                         team.users
                           .filter(_.teamPermission == Administrator)
-                          .map(_.userId.asJson)
+                          .map(u => JsString(u.userId.value))
                           .toSeq
                       )
                     )
@@ -2081,7 +1983,7 @@ class ApiService(
                 } yield ()
               }
             )
-            _ <- EitherT.liftF(
+            _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
                   .getOrElse(tenant.defaultLanguage.getOrElse("en"))
@@ -2114,10 +2016,16 @@ class ApiService(
                 }).flatten
               }))
             )
+            keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+              env.dataStore.keyringRepo
+                .forTenant(tenant.id)
+                .findById(subscription.keyring),
+              AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
+            )
           } yield Ok(
             Json.obj(
               "creation" -> "done",
-              "subscription" -> subscription.asSafeJson
+              "subscription" -> subscription.asSafeJson(keyring)
             )
           )
       }
@@ -2128,19 +2036,20 @@ class ApiService(
       apiId: String,
       planId: String,
       teamId: String,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+      keyringId: Option[KeyringId] = None,
       motivation: Option[JsObject] = None,
       customMetadata: Option[JsObject],
       customMaxPerSecond: Option[Long],
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: Option[String],
       adminCustomName: Option[String]
   )(implicit language: String, currentUser: User) = {
     import cats.implicits.*
 
     def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
-      if (!api.isPublished) {
+      if (!api.isSubscribable) {
         EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
       } else if (
         api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin
@@ -2184,41 +2093,58 @@ class ApiService(
         plan: UsagePlan,
         team: Team
     ): EitherT[Future, AppError, Unit] = {
-      parentSubscriptionId match {
-        case Some(subId) =>
+      keyringId match {
+        case None      => EitherT.pure[Future, AppError](())
+        case Some(kid) =>
+          // readOnly the joining subscription will have, to enforce uniformity
+          val joiningReadOnly = customReadOnly.getOrElse(
+            plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly)
+          )
           for {
-            subscription <- EitherT.fromOptionF(
+            keyring <- EitherT.fromOptionF(
+              env.dataStore.keyringRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(kid.value),
+              AppError.EntityNotFound(s"Keyring ${kid.value}")
+            )
+            members <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(subId.value),
-              AppError.SubscriptionNotFound
+                .findNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
             )
-            _ <- EitherT.cond[Future][AppError, Unit](
-              subscription.parent.isEmpty,
-              (),
-              AppError.SubscriptionParentExisted
+            memberPlans <- EitherT.liftF(
+              env.dataStore.usagePlanRepo
+                .forTenant(tenant)
+                .findByIdsNotDeleted(members.map(_.plan).distinct)
             )
+            plansById = memberPlans.map(p => p.id -> p).toMap
             _ <- EitherT.cond[Future][AppError, Unit](
-              plan.aggregationApiKeysSecurity.isDefined &&
-                plan.aggregationApiKeysSecurity.exists(identity),
+              plan.aggregationApiKeysSecurity.exists(identity),
               (),
               AppError.SecurityError("Subscription Aggregation")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
-              subscription.team == team.id,
+              members.forall(_.team == team.id),
               (),
               AppError.SubscriptionAggregationTeamConflict
             )
-            parentPlan <- EitherT.fromOptionF(
-              env.dataStore.usagePlanRepo
-                .forTenant(tenant)
-                .findById(subscription.plan),
-              AppError.PlanNotFound
+            keyringOtoroshiSettings = keyring.otoroshiSettings match {
+              case KeyringOtoroshiBinding.Otoroshi(id) => Some(id)
+              case KeyringOtoroshiBinding.Internal     => None
+            }
+            _ <- EitherT.cond[Future][AppError, Unit](
+              plan.otoroshiTarget
+                .map(_.otoroshiSettings) == keyringOtoroshiSettings,
+              (),
+              AppError.SubscriptionAggregationOtoroshiConflict
             )
             _ <- EitherT.cond[Future][AppError, Unit](
               tenant.display != TenantDisplay.Environment || (tenant.environmentAggregationApiKeysSecurity match {
-                case Some(true) => plan.customName == parentPlan.customName
-                case _          => true
+                case Some(true) =>
+                  members
+                    .flatMap(m => plansById.get(m.plan))
+                    .forall(_.customName == plan.customName)
+                case _ => true
               }),
               (),
               AppError.SecurityError(
@@ -2226,14 +2152,19 @@ class ApiService(
               )
             )
             _ <- EitherT.cond[Future][AppError, Unit](
-              parentPlan.otoroshiTarget
-                .map(_.otoroshiSettings) == plan.otoroshiTarget
-                .map(_.otoroshiSettings),
+              members.forall(m =>
+                m.customReadOnly.getOrElse(
+                  plansById
+                    .get(m.plan)
+                    .exists(
+                      _.otoroshiTarget.exists(_.apikeyCustomization.readOnly)
+                    )
+                ) == joiningReadOnly
+              ),
               (),
-              AppError.SubscriptionAggregationOtoroshiConflict
+              AppError.SubscriptionAggregationReadOnlyConflict
             )
           } yield ()
-        case None => EitherT.pure[Future, AppError](())
       }
     }
 
@@ -2277,24 +2208,31 @@ class ApiService(
         env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
         AppError.TeamNotFound
       )
+      keyringCustomNameValid = keyringCustomName
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .getOrElse(defaultKeyringName(api, plan))
       _ <- controlTeam(team, api, plan)
       _ <- controlDemand(team, api, plan)
       _ <- controlSubscriptionExtension(plan, team)
-      result <- applyProcessForApiSubscription(
-        tenant,
-        currentUser,
-        api,
-        plan,
-        team,
-        parentSubscriptionId,
-        motivation,
-        customMetadata,
-        customMaxPerSecond,
-        customMaxPerDay,
-        customMaxPerMonth,
-        customReadOnly,
-        adminCustomName
-      )
+      result <- {
+        applyProcessForApiSubscription(
+          tenant,
+          currentUser,
+          api,
+          plan,
+          team,
+          keyringId,
+          motivation,
+          customMetadata,
+          customMaxPerSecond,
+          customMaxPerDay,
+          customMaxPerMonth,
+          customReadOnly,
+          keyringCustomNameValid,
+          adminCustomName
+        )
+      }
     } yield result
 
     value.leftMap(_.render()).merge
@@ -2306,13 +2244,14 @@ class ApiService(
       api: Api,
       plan: UsagePlan,
       team: Team,
-      apiKeyId: Option[ApiSubscriptionId],
+      keyringId: Option[KeyringId],
       motivation: Option[JsObject],
       customMetadata: Option[JsObject],
       customMaxPerSecond: Option[Long],
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
+      keyringCustomName: String,
       adminCustomName: Option[String]
   )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2330,23 +2269,24 @@ class ApiService(
             .contains(team.id) && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](PlanUnauthorized)
       case _ =>
-        plan.subscriptionProcess match {
+        plan.subscriptionProcess.steps match {
           case Nil =>
             EitherT(
               subscribeToApi(
-                tenant,
-                user,
-                api,
-                plan,
-                team,
-                apiKeyId,
+                tenant = tenant,
+                user = user,
+                api = api,
+                plan = plan,
+                team = team,
+                keyringId = keyringId,
+                keyringCustomName = keyringCustomName,
                 thirdPartySubscriptionInformations = None
               )
-            ).map(s =>
+            ).map(s => {
               Ok(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
-            )
+            })
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
 
@@ -2389,7 +2329,8 @@ class ApiService(
                       team = team.id,
                       from = user.id,
                       motivation = motivation,
-                      parentSubscriptionId = apiKeyId,
+                      keyring = keyringId,
+                      keyringCustomName = Some(keyringCustomName),
                       customMetadata = JsonOperationsHelper
                         .mergeOptJson(customMetadata, metadataFromMotivation),
                       customMaxPerSecond = customMaxPerSecond,
@@ -2404,7 +2345,9 @@ class ApiService(
                 language,
                 user
               )
-            } yield result
+            } yield {
+              result
+            }
         }
     }
   }
@@ -2424,7 +2367,7 @@ class ApiService(
           .findByIdNotDeleted(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.withTransaction {
           val newNotification = Notification(
             id = NotificationId(IdGenerator.token(32)),
@@ -2489,7 +2432,7 @@ class ApiService(
           .findByIdNotDeleted(api.team),
         AppError.TeamNotFound
       )
-      administrators <- EitherT.liftF(
+      administrators <- EitherT.right[AppError](
         env.dataStore.userRepo
           .find(
             Json.obj(
@@ -2505,7 +2448,7 @@ class ApiService(
             )
           )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         Future.sequence((administrators ++ Seq(from)).map(admin => {
           implicit val language: String = admin.defaultLanguage
             .getOrElse(tenant.defaultLanguage.getOrElse("en"))
@@ -2600,8 +2543,19 @@ class ApiService(
           .findByIdNotDeleted(transfer.subscription),
         AppError.SubscriptionNotFound
       )
+      keyringSiblings <-
+        EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findNotDeleted(
+              Json.obj(
+                "keyring" -> subscription.keyring.asJson,
+                "_id" -> Json.obj("$ne" -> subscription.id.asJson)
+              )
+            )
+        )
       _ <- EitherT.cond[Future][AppError, Unit](
-        subscription.parent.isEmpty,
+        keyringSiblings.isEmpty,
         (),
         AppError.EntityConflict("Subscription is part of aggregation")
       )
@@ -2629,19 +2583,13 @@ class ApiService(
         (),
         AppError.Unauthorized
       )
-      childSubscriptions <-
-        EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
-        )
       childApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
           .findNotDeleted(
             Json.obj(
               "_id" -> Json
-                .obj("$in" -> JsArray(childSubscriptions.map(_.api.asJson)))
+                .obj("$in" -> JsArray(keyringSiblings.map(_.api.asJson)))
             )
           )
       )
@@ -2651,7 +2599,7 @@ class ApiService(
           .findNotDeleted(
             Json.obj(
               "_id" -> Json
-                .obj("$in" -> JsArray(childSubscriptions.map(_.plan.asJson)))
+                .obj("$in" -> JsArray(keyringSiblings.map(_.plan.asJson)))
             )
           )
       )
@@ -2686,7 +2634,7 @@ class ApiService(
         (),
         AppError.EntityConflict("plan not allow multiple subscription")
       )
-    } yield ExtractTransferLink(subscription, childSubscriptions, plan, api)
+    } yield ExtractTransferLink(subscription, keyringSiblings, plan, api)
 
   def transferSubscription(
       newTeam: Team,
@@ -2697,7 +2645,7 @@ class ApiService(
       plan: UsagePlan,
       api: Api,
       otoroshiSettings: OtoroshiSettings
-  ) =
+  ) = {
     for {
       result <- EitherT.liftF[Future, AppError, Long](
         env.dataStore.apiSubscriptionRepo
@@ -2716,8 +2664,19 @@ class ApiService(
             )
           )
       )
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findById(subscription.keyring),
+        AppError.EntityNotFound(s"Keyring ${subscription.keyring.value}")
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .save(keyring.copy(team = newTeam.id))
+      )
       apk <- EitherT[Future, AppError, ActualOtoroshiApiKey](
-        otoroshiClient.getApikey(subscription.apiKey.clientId)(using
+        otoroshiClient.getApikey(keyring.apiKey.clientId)(using
           otoroshiSettings
         )
       )
@@ -2750,4 +2709,49 @@ class ApiService(
           )
       )
     } yield result
+  }
+
+  def getAllAvailableEnvs(
+      apiId: String,
+      version: String
+  )(implicit
+      ctx: DaikokuActionContext[AnyContent]
+  ): Future[Either[AppError, JsArray]] = {
+    val query: String =
+      s"""
+         |SELECT coalesce(json_agg(p.content ->> 'customName'), '[]'::json) as result
+         |FROM usage_plans p
+         |    LEFT JOIN apis a ON (a.content -> 'possibleUsagePlans') ? p._id
+         |WHERE a._id = $$1
+         """.stripMargin
+
+    EitherT
+      .fromOptionF(
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            query,
+            "result",
+            Seq(
+              apiId // $$1
+            )
+          ),
+        AppError.InternalServerError(
+          "SQL Request for allAvailableEnvs failed"
+        )
+      )
+      .map(maybeResult => {
+        JsArray(
+          ctx.tenant.environments
+            .diff(
+              maybeResult.value
+                .flatMap(v => v.asOpt[String])
+                .toSet
+            )
+            .map(JsString(_))
+            .toSeq
+        )
+      })
+      .value
+  }
 }

@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import { addDays } from 'date-fns';
 import { IApi } from '../../src/types';
-import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
+import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { generateApi, saveApi } from './apis';
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
@@ -65,9 +65,10 @@ test('User producer can access to the dashboard', async ({ page }) => {
 
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
+  await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('I want it !!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
@@ -112,9 +113,10 @@ test('api list status', async ({ page }) => {
 
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  await page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Dwight Schrute').click();
-  await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
+  await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('i want it !!!!!!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();

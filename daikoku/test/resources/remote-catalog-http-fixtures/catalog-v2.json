@@ -1,0 +1,1 @@
+{"_id":"team-http","_humanReadableId":"http-team-renamed","_tenant":"default","_deleted":false,"type":"Organization","name":"Http Team Renamed","description":"","contact":"team-http@acme.io","avatar":"/assets/images/daikoku.svg","users":[],"authorizedOtoroshiEntities":null,"apiKeyVisibility":"User","metadata":{},"apisCreationPermission":null,"verified":false,"kind":"team"}

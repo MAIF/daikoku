@@ -2,6 +2,7 @@ import { nanoid } from "nanoid"
 import { INotification } from "../../src/types"
 import { IUser } from "./users"
 import { adminApikeyId, adminApikeySecret, exposedPort, tenant } from "./utils"
+import { Client } from 'pg'
 
 type NotificationActionType = "ApiAccess" |
   "ApiSubscriptionDemand" |
@@ -44,12 +45,13 @@ export type NotifProps = {
   plan?: string,
   clientId?: string,
   subscription?: string,
+  keyring?: string,
   user?: string,
   demand?: string
   step?: string,
   fromTeam?: string
 }
-const createNotif = ({ type, sender, team, api, message, plan, clientId, subscription, user, demand, step, fromTeam }: NotifProps): INotification | undefined => {
+const createNotif = ({ type, sender, team, api, message, plan, clientId, subscription, keyring, user, demand, step, fromTeam }: NotifProps): INotification | undefined => {
   switch (type) {
     case 'CheckoutForSubscription':
       //todo: create demand before ???
@@ -117,7 +119,7 @@ const createNotif = ({ type, sender, team, api, message, plan, clientId, subscri
           team: team!,
           demand: demand!,
           step: step!,
-          parentSubscriptionId: subscription!,
+          keyring: keyring!,
           motivation: message
         },
         notificationType: 'AcceptOrReject',

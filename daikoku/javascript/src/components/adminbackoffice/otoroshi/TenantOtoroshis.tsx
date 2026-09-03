@@ -1,6 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -9,7 +10,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import { I18nContext } from '../../../contexts/i18n-context';
 import * as Services from '../../../services';
 import { IOtoroshiSettings, isError } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import { Can, tenant as TENANT, manage } from '../../utils';
 import { Pen, Trash2 } from "lucide-react";
 import { FeedbackButton } from '../../utils/FeedbackButton';
@@ -23,7 +24,8 @@ export const TenantOtoroshis = () => {
   useTenantBackOffice();
 
   const [isTenantAdmin, setIsTenantAdmin] = useState(connectedUser.isDaikokuAdmin);
-  const table = useRef<TableRef>(undefined)
+  const queryClient = useQueryClient();
+  const queryKey = ['otoroshis', tenant._id];
 
   useEffect(() => {
     if (!isTenantAdmin)
@@ -35,19 +37,17 @@ export const TenantOtoroshis = () => {
         });
   }, []);
 
-  const columnHelper = createColumnHelper<IOtoroshiSettings>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IOtoroshiSettings>();
   const columns = [
     columnHelper.accessor("url", {
-      header: translate('Url'),
+      meta: { title: translate('Url'), size: 20 },
     }),
     columnHelper.accessor("host", {
-      header: translate('Host'),
+      meta: { title: translate('Host'), size: 20 },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'actions',
+      meta: { title: translate('Actions'), size: 8, className: 'action-cell' },
       cell: (info) => {
         const otoroshi = info.row.original;
         return (
@@ -78,6 +78,15 @@ export const TenantOtoroshis = () => {
     }),
   ];
 
+  const fetchData = clientFetchData<IOtoroshiSettings>(
+    () => Services.allOtoroshis(tenant._id),
+    { searchable: (o) => [o.url, o.host] }
+  );
+
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
+
   const onDelete = (id: string) => {
     return confirm({ message: translate('otoroshi.settings.delete.confirm') })
       .then((ok) => {
@@ -85,7 +94,7 @@ export const TenantOtoroshis = () => {
           Services.deleteOtoroshiSettings(tenant._id, id)
             .then(() => {
               toast.success(translate('otoroshi.settings.deleted.success'));
-              table.current?.update();
+              queryClient.invalidateQueries({ queryKey });
             });
         }
       });
@@ -114,11 +123,14 @@ export const TenantOtoroshis = () => {
           {translate('otoroshi.list.add.label')}
         </button>
         <div className="section p-2">
-          <Table
-            defaultSort="Url"
+          <DynamicTable<IOtoroshiSettings>
+            queryKey={queryKey}
             columns={columns}
-            fetchItems={() => Services.allOtoroshis(tenant._id)}
-            ref={table}
+            fetchData={fetchData}
+            filters={filters}
+            defaultSorting={[{ id: 'url', desc: false }]}
+            getRowId={row => row._id}
+            getRowAriaLabel={row => row.url}
           />
         </div>
       </div>

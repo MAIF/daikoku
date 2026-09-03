@@ -51,6 +51,9 @@ object AppError {
   case object SubscriptionParentExisted extends AppError
   case object SubscriptionAggregationTeamConflict extends AppError
   case object SubscriptionAggregationOtoroshiConflict extends AppError
+
+  case object SubscriptionAggregationReadOnlyConflict extends AppError
+
   case object SubscriptionAggregationDisabled extends AppError
   case object EnvironmentSubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
@@ -118,6 +121,7 @@ object AppError {
         BadRequest(toJson(error))
       case SubscriptionAggregationTeamConflict     => Conflict(toJson(error))
       case SubscriptionAggregationOtoroshiConflict => Conflict(toJson(error))
+      case SubscriptionAggregationReadOnlyConflict => Conflict(toJson(error))
       case MissingParentSubscription               => NotFound(toJson(error))
       case TranslationNotFound                     => NotFound(toJson(error))
       case Unauthorized => play.api.mvc.Results.Unauthorized(toJson(error))
@@ -153,7 +157,7 @@ object AppError {
       case ApiVersionConflict       => "This version already existed"
       case TeamNameAlreadyExists    => "The name of this team already exists"
       case ApiNotFound              => "API not found"
-      case ApiNotPublished          => "API not published"
+      case ApiNotPublished          => "API not subscribable"
       case PageNotFound             => "Page not found"
       case ApiGroupNotFound         => "API group not found"
       case TeamNotFound             => "Team not found"
@@ -193,6 +197,8 @@ object AppError {
         "The new subscription has another team of the parent subscription"
       case SubscriptionAggregationOtoroshiConflict =>
         "The subscribed plan has another otoroshi of the parent plan"
+      case SubscriptionAggregationReadOnlyConflict =>
+        "The subscribed plan has a different readOnly value than the keyring it extends"
       case MissingParentSubscription =>
         "The parent of this subscription is missing"
       case TranslationNotFound           => "Translation not found"

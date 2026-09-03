@@ -1,5 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -7,7 +8,7 @@ import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts'
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { Share, Trash2 } from "lucide-react";
@@ -25,14 +26,14 @@ export const TeamApis = () => {
       document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
   }, [currentTeam]);
 
-  let table = useRef<TableRef>(undefined);
+  const queryClient = useQueryClient();
 
-  const columnHelper = createColumnHelper<IApi>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IApi>();
 
   const columns = (currentTeam: ITeamSimple) => [
     columnHelper.accessor(api => api.apis ? api.name : `${api.name} - (${api.currentVersion})`, {
-      header: translate('Name'),
-      meta: { style: { textAlign: 'left' } },
+      id: 'name',
+      meta: { title: translate('Name'), size: 30 },
       cell: (info) => {
         const api = info.row.original;
         return (
@@ -50,12 +51,10 @@ export const TeamApis = () => {
       },
     }),
     columnHelper.accessor("smallDescription", {
-      header: translate('Description'),
-      meta: { style: { textAlign: 'left' } }
+      meta: { title: translate('Description'), size: 30 }
     }),
     columnHelper.accessor('state', {
-      header: translate('State'),
-      meta: { style: { textAlign: 'center', width: '60px' } },
+      meta: { title: translate('State'), size: 12 },
       cell: (info) => {
         const api = info.row.original
         const apiState = api.state
@@ -91,10 +90,8 @@ export const TeamApis = () => {
       },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'actions',
+      meta: { title: translate('Actions'), size: 10, className: 'action-cell' },
       cell: (info) => {
         const api = info.row.original;
         const viewUrl = api.apis
@@ -134,9 +131,14 @@ export const TeamApis = () => {
 
     Services.getAllApiVersions(team._id, api._id)
       .then(versions => deleteApi({
-        api, versions, team, translate, openFormModal, handleSubmit: () => table.current?.update()
+        api, versions, team, translate, openFormModal,
+        handleSubmit: () => queryClient.invalidateQueries({ queryKey: ['team-apis', team._id] })
       }))
   }
+
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
 
   if (isLoading) {
     return <Spinner />
@@ -150,10 +152,22 @@ export const TeamApis = () => {
         <div className="row">
           <div className="col">
             <div className="p-2">
-              <Table
+              <DynamicTable<IApi>
+                queryKey={['team-apis', currentTeam._id]}
                 columns={columns(currentTeam)}
-                fetchItems={() => Services.teamApis(currentTeam._id)}
-                ref={table}
+                fetchData={clientFetchData<IApi>(
+                  () => Services.teamApis(currentTeam._id),
+                  {
+                    searchable: (api) => [api.name, api.smallDescription, api.currentVersion],
+                    sortValues: {
+                      name: (api) => api.apis ? api.name : `${api.name} - (${api.currentVersion})`,
+                    },
+                  }
+                )}
+                filters={filters}
+                defaultSorting={[{ id: 'name', desc: false }]}
+                getRowId={row => row._id}
+                getRowAriaLabel={row => row.name}
               />
             </div>
           </div>

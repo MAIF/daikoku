@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import asciidoctor from 'asciidoctor';
+import { convert } from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
 import { ChevronLeft, ChevronRight, Feather, FileImage } from "lucide-react";
@@ -21,7 +21,6 @@ import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '.
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 
-//@ts-ignore
 import 'highlight.js/styles/monokai.css';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 
@@ -507,13 +506,12 @@ function Asciidoc(props: RenderProps) {
   if (!props.page.content && !content) {
     return null;
   }
-  const asciidoctorConverter = asciidoctor();
   return (
     <div
       className="api-description asciidoc"
       style={{ width: "66%", overflow: "scroll" }}
       dangerouslySetInnerHTML={{
-        __html: asciidoctorConverter.convert((props.page.remoteContentEnabled ? content : props.page.content) ?? '') as string,
+        __html: convert((props.page.remoteContentEnabled ? content : props.page.content) ?? '') as string,
       }}
     />
   );

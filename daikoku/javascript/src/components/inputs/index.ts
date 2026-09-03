@@ -1,5 +1,5 @@
+export * from './clientFetchData';
 export * from './DynamicTable';
 export * from './LinkDisplay';
-export * from './Table';
 export * from './TableFilters';
 export * from './Switch';

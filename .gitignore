@@ -1,4 +1,5 @@
 .DS_Store
+coverage-measurements
 .metals
 .vscode
 .bsp
@@ -44,5 +45,5 @@ daikoku/public/swagger-*
 daikoku/public/rolldown-runtime-*
 stats.html
 project/
-# local Stripe test credentials for the dev e2e (StripeE2ESpec + stripe_billing.spec.ts) — never committed
 .env.stripe*
+.vibe

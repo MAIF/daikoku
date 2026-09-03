@@ -24,7 +24,7 @@ const MotivationForm = (props: MotivationFormProps) => {
   );
   const [realSchema, setRealSchema] = useState<any>(props.value.schema || {});
   const [formatter, setFormatter] = useState(props.value.formatter || '');
-  const [formKeysToMetadata, setFormKeysToMetadata] = useState<Array<string>>()
+  const [formKeysToMetadata, setFormKeysToMetadata] = useState<Array<string>>(props.value.formKeysToMetadata || [])
   const [value, setValue] = useState<any>({});
   const [example, setExample] = useState('');
   const [info, setInfo] = useState(props.value.info)
@@ -32,7 +32,7 @@ const MotivationForm = (props: MotivationFormProps) => {
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
 
-  const childRef = useRef(null);
+  const childRef = useRef<WrapperError | null>(null);
   const codeInputRef = useRef(null);
 
   useEffect(() => {
@@ -42,8 +42,8 @@ const MotivationForm = (props: MotivationFormProps) => {
       try {
         maybeFormattedSchema =
           typeof schema === 'object' ? schema : JSON.parse(schema);
+        childRef?.current?.reset();
       } catch { }
-
       setRealSchema(maybeFormattedSchema || {});
     }
   }, [schema]);
@@ -131,7 +131,6 @@ const MotivationForm = (props: MotivationFormProps) => {
               <div>{example}</div>
             </div>
             <div className="flex-1 mt-1">
-              <div>{translate('motivation.form.formKeysToMetadata.title')}</div>
               <div>
                 <Form
                   schema={{
@@ -143,8 +142,10 @@ const MotivationForm = (props: MotivationFormProps) => {
                       label: translate('motivation.form.formKeysToMetadata.label')
                     }
                   }}
-                  onSubmit={d => setFormKeysToMetadata(d.formKeysToMetadata)}
-                  value={{ formKeysToMetadata: props.value.formKeysToMetadata }}
+                  onSubmit={d => {
+                      setFormKeysToMetadata(d.formKeysToMetadata);
+                  }}
+                  value={{ formKeysToMetadata: formKeysToMetadata }}
                   options={{ autosubmit: true, actions: { submit: { display: false } } }}
                 />
               </div>

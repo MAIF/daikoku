@@ -11,6 +11,8 @@ import fr.maif.daikoku.utils._
 import play.api.libs.json._
 import fr.maif.daikoku.services.CmsPage
 
+import scala.concurrent.duration.FiniteDuration
+
 object Tenant {
   val Default: TenantId = TenantId("default")
   val jsCmsPageId = "tenant-js"
@@ -233,6 +235,9 @@ object ItemType {
   case object UsagePlan extends ItemType {
     def name: String = "UsagePlan"
   }
+  case object Keyring extends ItemType {
+    def name: String = "Keyring"
+  }
   val values: Seq[ItemType] =
     Seq(User, Team, Api, Subscription)
   def apply(name: String): Option[ItemType] =
@@ -245,6 +250,7 @@ object ItemType {
       case "ThirdPartySubscription" => ThirdPartySubscription.some
       case "ThirdPartyProduct"      => ThirdPartyProduct.some
       case "UsagePlan"              => UsagePlan.some
+      case "Keyring"                => Keyring.some
       case _                        => None
     }
 }
@@ -367,6 +373,15 @@ object TenantDisplay {
     }
 }
 
+enum KeyringQuotaConflictStrategy(val value: String):
+  case LowestValue extends KeyringQuotaConflictStrategy("LowestValue")
+  case HighestValue extends KeyringQuotaConflictStrategy("HighestValue")
+
+object KeyringQuotaConflictStrategy {
+  def fromValue(v: String): Option[KeyringQuotaConflictStrategy] =
+    KeyringQuotaConflictStrategy.values.find(_.value == v)
+}
+
 sealed trait ThirdPartyPaymentSettings {
   def id: ThirdPartyPaymentSettingsId
 
@@ -423,6 +438,8 @@ case class Tenant(
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
     environmentAggregationApiKeysSecurity: Option[Boolean] = None,
+    keyringQuotaConflictStrategy: KeyringQuotaConflictStrategy =
+      KeyringQuotaConflictStrategy.LowestValue,
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
@@ -430,7 +447,8 @@ case class Tenant(
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
     defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
-      None
+      None,
+    remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -674,8 +692,26 @@ case class OtoroshiSettings(
   }
 }
 
-case class ApiKeyRestrictionPath(method: String, path: String)
-    extends CanJson[ApiKeyRestrictionPath] {
+enum OtoroshiEntityKind(val value: String):
+  case Api extends OtoroshiEntityKind("api")
+  case Group extends OtoroshiEntityKind("group")
+  case Route extends OtoroshiEntityKind("route")
+
+object OtoroshiEntityKind {
+  def fromValue(v: String): Option[OtoroshiEntityKind] =
+    OtoroshiEntityKind.values.find(_.value == v)
+}
+
+case class OtoroshiEntity(kind: OtoroshiEntityKind, id: String)
+    extends CanJson[OtoroshiEntity] {
+  def asJson: JsValue = json.OtoroshiEntityFormat.writes(this)
+}
+
+case class ApiKeyRestrictionPath(
+    method: String,
+    path: String,
+    authorizedEntity: Option[OtoroshiEntity] = None
+) extends CanJson[ApiKeyRestrictionPath] {
   def asJson: JsValue = json.ApiKeyRestrictionPathFormat.writes(this)
 }
 
@@ -687,6 +723,29 @@ case class ApiKeyRestrictions(
     notFound: Seq[ApiKeyRestrictionPath] = Seq.empty
 ) extends CanJson[ApiKeyRestrictions] {
   def asJson: JsValue = json.ApiKeyRestrictionsFormat.writes(this)
+
+  /** Scope every restriction line to the given Otoroshi entities: each line is
+    * duplicated once per entity, with its `authorizedEntity` set. This keeps a
+    * plan's restrictions confined to that plan's entities once several
+    * subscriptions share a single keyring api key. When no entity is scopable,
+    * the lines are left untouched.
+    */
+  def scopedTo(entities: Seq[OtoroshiEntity]): ApiKeyRestrictions = {
+    def scope(
+        paths: Seq[ApiKeyRestrictionPath]
+    ): Seq[ApiKeyRestrictionPath] =
+      if (entities.isEmpty) paths
+      else
+        paths.flatMap(p =>
+          entities.map(e => p.copy(authorizedEntity = Some(e)))
+        )
+
+    copy(
+      allowed = scope(allowed),
+      forbidden = scope(forbidden),
+      notFound = scope(notFound)
+    )
+  }
 }
 
 case class Asset(id: AssetId, tenant: TenantId, slug: String)
@@ -702,3 +761,23 @@ object SchedulingMode {
   def fromValue(v: String): Option[SchedulingMode] =
     SchedulingMode.values.find(_.value == v)
 }
+
+case class RemoteCatalogScheduling(
+    enabled: Boolean = false,
+    deployArgs: JsObject = Json.obj()
+)
+
+case class RemoteCatalogSource(
+    kind: String = "http",
+    config: JsObject = Json.obj()
+)
+
+case class RemoteCatalog(
+    id: String,
+    name: String,
+    enabled: Boolean = true,
+    source: RemoteCatalogSource = RemoteCatalogSource(),
+    scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
+    allowedKinds: Set[String] = Set.empty,
+    testDeployArgs: JsObject = Json.obj()
+)

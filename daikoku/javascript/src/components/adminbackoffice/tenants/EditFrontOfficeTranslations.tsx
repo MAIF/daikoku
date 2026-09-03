@@ -1,19 +1,21 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import { useContext } from 'react';
 import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
 import { type, format, constraints } from '@maif/react-forms';
 
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
+import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import { ITranslation } from '../../../types/tenant';
 import { ModalContext } from '../../../contexts';
+import { useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { isError, ResponseError } from '../../../types';
 
 
 export function EditFrontOfficeTranslations(props: any) {
-  const table = useRef<TableRef>(undefined);
+  const queryClient = useQueryClient();
+  const queryKey = ['front-office-translations'];
 
   const { alert } = useContext(ModalContext)
 
@@ -23,10 +25,6 @@ export function EditFrontOfficeTranslations(props: any) {
     translate,
   } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
-
-  useEffect(() => {
-    loadTranslations();
-  }, []);
 
   type MessageWithTranslations = { message: string, translations: Array<ITranslation> }
 
@@ -71,23 +69,19 @@ export function EditFrontOfficeTranslations(props: any) {
       });
   };
 
-  const columnHelper = createColumnHelper<MessageWithTranslations>()
+  const columnHelper = createColumnHelper<DynamicTableFeatures, MessageWithTranslations>()
   const columns = [
     columnHelper.accessor(row => row.translations[0].key, {
-      header: translate('mailing_internalization.message_key'),
-      meta: { style: { textAlign: 'left' } },
-      sortingFn: 'basic'
+      id: 'key',
+      meta: { title: translate('mailing_internalization.message_key'), size: 20 },
     }),
     columnHelper.accessor(row => translate(row.message), {
-      header: translate('mailing_internalization.message_text'),
-      meta: { style: { textAlign: 'left' } },
-      sortingFn: 'basic'
+      id: 'message',
+      meta: { title: translate('mailing_internalization.message_text'), size: 30 },
     }),
     columnHelper.display({
-      meta: { style: { textAlign: 'center', width: '120px' } },
-      header: translate('Translate'),
-      enableColumnFilter: false,
-      enableSorting: false,
+      id: 'translate',
+      meta: { title: translate('Translate'), size: 10, className: 'action-cell' },
       cell: (info) => {
         return (
           <div className='d-flex flex-row flex-wrap justify-content-end gap-2'>
@@ -116,7 +110,7 @@ export function EditFrontOfficeTranslations(props: any) {
                         updateTranslation(t)
                           .then(() => {
                             toast.success(translate('mailing_internalization.translation_updated'))
-                            table.current?.update()
+                            queryClient.invalidateQueries({ queryKey })
                           })
                       }
                     }
@@ -131,13 +125,31 @@ export function EditFrontOfficeTranslations(props: any) {
     })
   ]
 
+  const fetchData = clientFetchData<MessageWithTranslations>(
+    () => loadTranslations(),
+    {
+      searchable: (row) => [row.translations[0]?.key, translate(row.message)],
+      sortValues: {
+        key: (row) => row.translations[0]?.key,
+        message: (row) => translate(row.message),
+      },
+    }
+  );
+
+  const filters: FilterDef[] = [
+    { id: 'search', type: 'text', placeholder: translate('Search') },
+  ];
+
   return (
     <div>
-      <Table
-        defaultSort="message"
+      <DynamicTable<MessageWithTranslations>
+        queryKey={queryKey}
         columns={columns}
-        fetchItems={() => loadTranslations()}
-        injectTable={(t: any) => table.current = t}
+        fetchData={fetchData}
+        filters={filters}
+        defaultSorting={[{ id: 'message', desc: false }]}
+        getRowId={row => row.message}
+        getRowAriaLabel={row => row.message}
       />
     </div>
   );

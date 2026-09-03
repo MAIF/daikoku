@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 /**
  * Fast seed script for CI — bypasses Daikoku HTTP API entirely.
- * - Daikoku data (teams, plans, apis, subscriptions) → direct SQL bulk inserts
+ * - Daikoku data (teams, plans, apis, keyrings, subscriptions) → direct SQL bulk inserts
  * - Otoroshi data (routes, apikeys) → bulk import via /api/import
+ *
+ * Data model note (keyring aggregation):
+ *   Since the keyring change, an ApiSubscription no longer carries the Otoroshi
+ *   credentials nor a `parent` link. It points to a Keyring (`keyring: KeyringId`),
+ *   and the Keyring holds the real apiKey / otoroshiSettings / integrationToken.
+ *   The old aggregation (one Otoroshi apikey shared by a parent + its children) is
+ *   now expressed as N subscriptions sharing a single keyring.
  *
  * Runs in ~30s instead of ~14min.
  */
@@ -117,10 +124,11 @@ await client.connect();
 console.log("✓ Postgres connected");
 
 // 3. Wipe existing seed data
-await client.query(`DELETE FROM teams            WHERE _id LIKE 'seed-%'`);
-await client.query(`DELETE FROM usage_plans      WHERE _id LIKE 'seed-%'`);
-await client.query(`DELETE FROM apis             WHERE _id LIKE 'seed-%'`);
+await client.query(`DELETE FROM teams             WHERE _id LIKE 'seed-%'`);
+await client.query(`DELETE FROM usage_plans       WHERE _id LIKE 'seed-%'`);
+await client.query(`DELETE FROM apis              WHERE _id LIKE 'seed-%'`);
 await client.query(`DELETE FROM api_subscriptions WHERE _id LIKE 'seed-%'`);
+await client.query(`DELETE FROM keyrings          WHERE _id LIKE 'seed-%'`);
 console.log("✓ Previous seed data cleared");
 
 // 4. Fetch admin user id from DB
@@ -271,86 +279,103 @@ console.log(`✓ ${planRows.length} plans inserted`);
 await bulkInsert(client, "apis", apiRows);
 console.log(`✓ ${NB_APIS} APIs inserted`);
 
-// 8. Generate subscriptions
+// 8. Generate keyrings + subscriptions
+//
+// A "group" replaces the old parent/children aggregation: one Keyring (carrying
+// the shared Otoroshi apikey) + N subscriptions all pointing to that keyring.
+// TARGET_PARENTS is therefore the number of keyring groups; `pickChildrenCount`
+// gives the number of *extra* subscriptions on top of the first one in the group.
+const keyringRows = [];
 const subRows = [];
 let subCounter = 0;
-const parentsPerTeam = Math.ceil(TARGET_PARENTS / NB_TEAMS);
+let keyringCounter = 0;
+const groupsPerTeam = Math.ceil(TARGET_PARENTS / NB_TEAMS);
 
 for (let t = 0; t < NB_TEAMS; t++) {
   const teamId = teamRows[t].id;
-  const nbParents = t === 0
-    ? TARGET_PARENTS - parentsPerTeam * (NB_TEAMS - 1)  // last team gets remainder
-    : parentsPerTeam;
+  const nbGroups = t === 0
+    ? TARGET_PARENTS - groupsPerTeam * (NB_TEAMS - 1)  // last team gets remainder
+    : groupsPerTeam;
 
-  for (let p = 0; p < Math.max(1, nbParents); p++) {
-    const apiIdx = randInt(0, apiData.length - 1);
-    const planIdx = randInt(0, apiData[apiIdx].planEntries.length - 1);
-    const parentPlanEntry = apiData[apiIdx].planEntries[planIdx];
-    const parentId = `seed-sub-${++subCounter}`;
-    const clientId = `cid-${parentId}`;
-    const clientSecret = `sec-${parentId}`;
+  for (let g = 0; g < Math.max(1, nbGroups); g++) {
+    const now = Date.now();
+    const keyringId = `seed-keyring-${++keyringCounter}`;
+    const clientId = `cid-${keyringId}`;
+    const clientSecret = `sec-${keyringId}`;
 
-    const apikeyRouteIds = [parentPlanEntry.routeId];
-    const childIds = [];
+    // First subscription of the group.
+    const firstApiIdx = randInt(0, apiData.length - 1);
+    const firstPlanEntry = apiData[firstApiIdx].planEntries[randInt(0, apiData[firstApiIdx].planEntries.length - 1)];
 
-    const nbChildren = pickChildrenCount();
-    for (let c = 0; c < nbChildren; c++) {
-      const childApiIdx = randInt(0, apiData.length - 1);
-      const childPlanIdx = randInt(0, apiData[childApiIdx].planEntries.length - 1);
-      const childPlanEntry = apiData[childApiIdx].planEntries[childPlanIdx];
-      const childId = `seed-sub-${++subCounter}`;
-      apikeyRouteIds.push(childPlanEntry.routeId);
-      childIds.push({ childId, childApiIdx, childPlanEntry });
+    const apikeyRouteIds = [firstPlanEntry.routeId];
+    const groupSubs = [{ apiId: apiData[firstApiIdx].apiId, planEntry: firstPlanEntry }];
+
+    // Extra subscriptions sharing the same keyring (the "aggregated" ones).
+    const nbExtra = pickChildrenCount();
+    for (let c = 0; c < nbExtra; c++) {
+      const extraApiIdx = randInt(0, apiData.length - 1);
+      const extraPlanEntry = apiData[extraApiIdx].planEntries[randInt(0, apiData[extraApiIdx].planEntries.length - 1)];
+      apikeyRouteIds.push(extraPlanEntry.routeId);
+      groupSubs.push({ apiId: apiData[extraApiIdx].apiId, planEntry: extraPlanEntry });
     }
 
-    const now = Date.now();
-    const parentApiKey = { clientId, clientSecret, clientName: `Key ${parentId}` };
-
-    const baseSub = (id, apiId, planId, customName, extra = {}) => ({
-      _id: id,
-      _tenant: TENANT_ID,
-      _deleted: false,
-      api: apiId,
-      plan: planId,
-      tags: [],
-      team: teamId,
-      apiKey: parentApiKey,
-      parent: null,
-      by: USER_ID,
-      enabled: true,
-      metadata: {},
-      rotation: { enabled: false, gracePeriod: 168, rotationEvery: 744, pendingRotation: false },
-      createdAt: now,
-      customName,
-      validUntil: null,
-      bearerToken: null,
-      customMetadata: null,
-      customReadOnly: null,
-      adminCustomName: null,
-      customMaxPerDay: null,
-      integrationToken: `integ-${id}`,
-      customMaxPerMonth: null,
-      customMaxPerSecond: null,
-      thirdPartySubscriptionInformations: null,
-      ...extra,
+    // The keyring holds the real Otoroshi credentials + settings binding.
+    keyringRows.push({
+      id: keyringId,
+      content: {
+        _id: keyringId,
+        _tenant: TENANT_ID,
+        team: teamId,
+        _deleted: false,
+        customName: `Keyring ${keyringId}`,
+        apiKey: { clientName: `Key ${keyringId}`, clientId, clientSecret },
+        otoroshiSettings: { type: "Otoroshi", id: OTOROSHI_SETTINGS_ID },
+        createdAt: now,
+        rotation: null,
+        integrationToken: `integ-${keyringId}`,
+        bearerToken: null,
+        thirdPartySubscriptionInformations: null,
+        enabled: true,
+      }
     });
 
-    subRows.push({
-      id: parentId,
-      content: baseSub(parentId, apiData[apiIdx].apiId, parentPlanEntry.planId, `Parent ${parentId}`)
-    });
-
-    for (const { childId, childApiIdx, childPlanEntry } of childIds) {
+    // Subscriptions only carry the values needed to compute the key; the
+    // technical Otoroshi values live on the keyring.
+    for (const { apiId, planEntry } of groupSubs) {
+      const subId = `seed-sub-${++subCounter}`;
       subRows.push({
-        id: childId,
-        content: baseSub(childId, apiData[childApiIdx].apiId, childPlanEntry.planId, `Child ${childId}`, { parent: parentId, createdAt: now + 1 })
+        id: subId,
+        content: {
+          _id: subId,
+          _tenant: TENANT_ID,
+          _deleted: false,
+          api: apiId,
+          plan: planEntry.planId,
+          team: teamId,
+          by: USER_ID,
+          keyring: keyringId,
+          enabled: true,
+          createdAt: now,
+          validUntil: null,
+          customName: `Sub ${subId}`,
+          adminCustomName: null,
+          metadata: {},
+          customMetadata: null,
+          tags: [],
+          customMaxPerSecond: null,
+          customMaxPerDay: null,
+          customMaxPerMonth: null,
+          customReadOnly: null,
+          thirdPartySubscriptionInformations: null,
+        }
       });
     }
 
+    // One Otoroshi apikey per keyring, authorized on every route of the group.
     allApikeys.push({
       clientId,
       clientSecret,
-      clientName: `Key ${parentId}`,
+      clientName: `Key ${keyringId}`,
       _loc: { tenant: "default", teams: ["default"] },
       authorizedEntities: apikeyRouteIds.map(r => `route_${r}`),
       authorizations: apikeyRouteIds.map(r => ({ kind: "route", id: r })),
@@ -366,11 +391,12 @@ for (let t = 0; t < NB_TEAMS; t++) {
   }
 }
 
+await bulkInsert(client, "keyrings", keyringRows);
+console.log(`✓ ${keyringRows.length} keyrings inserted`);
 await bulkInsert(client, "api_subscriptions", subRows);
 await client.end();
-const nbParents = allApikeys.length;
-const nbChildren = subRows.length - nbParents;
-console.log(`✓ ${subRows.length} subscriptions inserted (${nbParents} parents, ${nbChildren} children)`);
+const nbKeyrings = keyringRows.length;
+console.log(`✓ ${subRows.length} subscriptions inserted (across ${nbKeyrings} keyrings)`);
 
 // 9. Otoroshi bulk import (routes + apikeys)
 // We use /api/import which accepts a full state patch
@@ -409,10 +435,12 @@ await runInParallel(allApikeys, async (apk) => {
 console.log(`✓ ${allApikeys.length} apikeys imported`);
 
 console.log(`\n=== Fast seed completed ===`);
-console.log(`Teams:       ${NB_TEAMS}`);
-console.log(`APIs:        ${NB_APIS}`);
-console.log(`Plans:       ${planRows.length}`);
-console.log(`Oto Routes:  ${allRoutes.length}`);
-console.log(`Subscriptions: ${subRows.length} (${nbParents} parents + ${nbChildren} children)`);
+console.log(`Teams:         ${NB_TEAMS}`);
+console.log(`APIs:          ${NB_APIS}`);
+console.log(`Plans:         ${planRows.length}`);
+console.log(`Oto Routes:    ${allRoutes.length}`);
+console.log(`Keyrings:      ${nbKeyrings}`);
+console.log(`Oto Apikeys:   ${allApikeys.length}`);
+console.log(`Subscriptions: ${subRows.length} (across ${nbKeyrings} keyrings)`);
 if (otoErrors > 0) console.warn(`Otoroshi errors: ${otoErrors}`);
 console.log();

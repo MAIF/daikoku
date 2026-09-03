@@ -2,11 +2,7 @@ package fr.maif.daikoku.controllers
 
 import cats.syntax.option.*
 import com.google.common.base.Charsets
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  tenantSecurity
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, tenantSecurity}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.sync.PublicUserAccess
 import fr.maif.daikoku.domain.*
@@ -21,6 +17,7 @@ import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.*
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.DurationInt
@@ -34,20 +31,10 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
   private val logger = Logger("daikoku-action-or-apikey")
 
-  private val systemUser = User(
-    id = UserId("admin-api-user"),
-    tenants = Set.empty,
-    origins = Set(AuthProvider.Local),
-    name = "Admin API User",
-    email = "admin-api@daikoku.io",
-    isDaikokuAdmin = true,
-    lastTenant = None,
-    defaultLanguage = None,
-    personalToken = Some(IdGenerator.token(32))
-  )
+  private val systemUser = User.system
 
   private def decodeBase64(encoded: String): String =
-    new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
+    new String(Base64.getUrlDecoder.decode(encoded), StandardCharsets.UTF_8)
 
   private def extractUsernamePassword(
       header: String
@@ -408,7 +395,6 @@ class EntitiesController(
             isDaikokuAdmin = false,
             password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
             lastTenant = Some(ctx.tenant.id),
-            personalToken = Some(IdGenerator.token(32)),
             defaultLanguage = None
             // lastTeams = Map(ctx.tenant.id -> Team.Default)
           ).asJson
@@ -469,7 +455,6 @@ class EntitiesController(
             customDescription = None,
             otoroshiTarget = None,
             allowMultipleKeys = Some(false),
-            subscriptionProcess = Seq.empty,
             integrationProcess = IntegrationProcess.ApiKey,
             autoRotation = Some(false),
             documentation =

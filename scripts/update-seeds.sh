@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SEED_FILES=(
-    "dev/config/daikoku_state_light.ndjson"
+    "dev/config/daikoku_state_local.ndjson"
     "dev/config/daikoku_state_ldap.ndjson"
     "dev/config/daikoku_state_oidc.ndjson"
     "daikoku/javascript/tests/config/daikoku/daikoku_state_ldap.ndjson"
@@ -20,7 +20,7 @@ SEED_FILES=(
 )
 
 # admin_key_client_id:admin_key_client_secret — présent dans tous les seeds
-ADMIN_API_AUTH="Authorization: Basic $(echo -n 'admin_key_client_id:admin_key_client_secret' | base64 | tr -d '\n')"
+ADMIN_API_AUTH="Authorization: Basic $(echo 'admin_key_client_id:admin_key_client_secret' | base64 | tr -d '\n')"
 
 COOKIE_JAR="$(mktemp)"
 EXPORT_TMP="$(mktemp)"

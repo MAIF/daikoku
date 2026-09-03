@@ -44,9 +44,6 @@ const init: TModalContext = {
   openApiSelectModal: () => {
     console.error('ModalProvider is missing in the tree: openApiSelectModal is a no-op');
   },
-  openApiKeySelectModal: () => {
-    console.error('ModalProvider is missing in the tree: openApiKeySelectModal is a no-op');
-  },
   openCustomModal: () => {
     console.error('ModalProvider is missing in the tree: openCustomModal is a no-op');
   },
@@ -58,6 +55,9 @@ const init: TModalContext = {
   },
   closeRightPanel: () => {
     console.error('ModalProvider is missing in the tree: closeRightPanel is a no-op');
+  },
+  openKeyringSelectModal: () => {
+    console.error('ModalProvider is missing in the tree: openKeyringSelectModal is a no-op');
   },
   rightPanelContent: undefined,
 };

@@ -8,6 +8,6 @@ case class ApiSubscriptionAccessibleResource(
 
 case class ApiSubscriptionDetail(
     apiSubscription: ApiSubscription,
-    parentSubscription: Option[ApiSubscription],
+    keyring: Option[Keyring],
     accessibleResources: Seq[ApiSubscriptionAccessibleResource]
 )

@@ -25,6 +25,9 @@ type TGlobalContext = IStateContext & {
   customGraphQLClient: GraphQLClient
 };
 const initContext: TGlobalContext = {
+  flags: {
+    multiPlanSubscriptionEnabled: false
+  },
   connectedUser: {
     _id: '',
     _humanReadableId: '',
@@ -35,6 +38,7 @@ const initContext: TGlobalContext = {
     starredApis: [],
     twoFactorAuthentication: null,
     name: 'fifou',
+    metadata: []
   },
   tenant: {
     _humanReadableId: 'string',
@@ -200,7 +204,7 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
         toggleExpertMode,
         theme,
         toggleTheme,
-        unreadNotificationsCount: notificationCountQuery.data?.count || 0,
+        unreadNotificationsCount: notificationCountQuery.data?.toValidateCount || 0,
         reloadUnreadNotificationsCount,
         customGraphQLClient
       }}

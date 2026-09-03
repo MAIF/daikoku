@@ -7,17 +7,21 @@ import fr.maif.daikoku.controllers.AppError.OtoroshiError
 import fr.maif.daikoku.audit.ElasticReadsAnalytics
 import fr.maif.daikoku.audit.ElasticAnalyticsConfig
 import fr.maif.daikoku.domain.json.ActualOtoroshiApiKeyFormat
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import play.api.libs.json._
+import org.apache.pekko.stream.scaladsl.{Source, Sink}
+import org.apache.pekko.util.ByteString
+import play.api.libs.json.*
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.mvc._
+import play.api.libs.ws.WSBodyWritables.writeableOf_String
+import play.api.mvc.*
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class OtoroshiExpositionFilter(
     stateHeaderName: String,
@@ -57,6 +61,7 @@ class OtoroshiClient(env: Env) {
         otoroshiSettings.clientSecret,
         WSAuthScheme.BASIC
       )
+
   }
 
   def getServiceGroups()(implicit
@@ -282,6 +287,88 @@ class OtoroshiClient(env: Env) {
       }
   }
 
+  def patchApiKey(clientId: String, patch: JsValue)(implicit
+      otoroshiSettings: OtoroshiSettings
+  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+    client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId")
+      .patch(patch)
+      .map { resp =>
+        if (resp.status == 200) {
+          resp.json.validate(using ActualOtoroshiApiKeyFormat) match {
+            case JsSuccess(k, _) => Right(k)
+            case JsError(e) =>
+              Left(
+                OtoroshiError(
+                  Json.obj("error" -> s"Error while reading otoroshi apikey $e")
+                )
+              )
+          }
+        } else
+          Left(
+            OtoroshiError(
+              Json.obj(
+                "error" -> s"Error while updating otoroshi apikey: ${resp.status} - ${resp.body}"
+              )
+            )
+          )
+      }
+  }
+
+  // FIXME: update Unit to ActualOtoroshiApikey
+  def patchApiKeyBulk(clientIds: Seq[String], patch: JsValue)(implicit
+      otoroshiSettings: OtoroshiSettings,
+      mat: Materializer
+  ): Future[Either[AppError, Unit]] = {
+
+    val otoroshiApiKeys = clientIds
+      .map(id =>
+        Json.obj(
+          "clientId" -> id,
+          "patch" -> patch
+        )
+      )
+      .map(Json.stringify) // Convertir chaque objet JSON en String
+      .mkString("\n")
+
+    val clientInstance = client(s"/apis/apim.otoroshi.io/v1/apikeys/_bulk")
+      .addHttpHeaders(
+        "Content-Type" -> "application/x-ndjson"
+      )
+
+    Source
+      .single(
+        otoroshiApiKeys
+      ) // Source.single car otoroshiApiKeys est déjà une String complète
+      .map(bulk => ByteString(bulk))
+      .mapAsync(1) { bulk => // 1 seule requête bulk
+        val req = bulk.utf8String
+        val patch = clientInstance.patch(req)
+
+        patch.onComplete {
+          case Success(resp) =>
+            if (resp.status >= 400) {
+              AppLogger.error(
+                s"Error patching otoroshi apikeys: ${resp.status}, ${resp.body} --- apikeys: $otoroshiApiKeys"
+              )
+            } else {
+              AppLogger.info(Json.stringify(resp.json))
+            }
+          case Failure(e) =>
+            AppLogger.error(s"Error patching otoroshi apikeys", e)
+        }
+        patch
+      }
+      .runWith(Sink.head) // Récupérer le résultat
+      .map(_ => Right(())) // Retourner Either[AppError, Unit]
+      .recover { case e: Exception =>
+        Left(
+          AppError.OtoroshiError(
+            Json.obj("message" -> s"Error patching apikeys: ${e.getMessage}")
+          )
+        )
+      }
+  }
+
   def deleteApiKey(
       clientId: String
   )(implicit
@@ -406,93 +493,111 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings,
       tenant: Tenant
   ): EitherT[Future, JsArray, JsArray] = {
-    otoroshiSettings.elasticConfig match {
-      case Some(config) =>
-        new ElasticReadsAnalytics(config, env)
-          .query(
-            Json.obj(
-              "query" -> Json.obj(
-                "bool" -> Json.obj(
-                  "filter" -> Json.arr(
-                    Json.obj(
-                      "terms" -> Json.obj(
-                        "identity.identity.keyword" -> JsArray(
-                          subscriptions
-                            .map(_.apiKey.clientId)
-                            .map(JsString.apply)
-                        )
-                      )
-                    )
-                  )
-                )
-              ),
-              "aggs" -> Json.obj(
-                "lastUsages" -> Json.obj(
-                  "terms" -> Json.obj(
-                    "field" -> "identity.identity.keyword"
-                  ),
-                  "aggs" -> Json.obj(
-                    "latest" -> Json.obj(
-                      "top_hits" -> Json.obj(
-                        "size" -> 1,
-                        "sort" -> Json.arr(
-                          Json.obj(
-                            "@timestamp" -> Json.obj(
-                              "order" -> "desc"
+    val keyringIds = subscriptions.map(_.keyring).distinct
+    val keyringsF = env.dataStore.keyringRepo
+      .forTenant(tenant.id)
+      .findNotDeleted(
+        Json.obj("_id" -> Json.obj("$in" -> JsArray(keyringIds.map(_.asJson))))
+      )
+    EitherT
+      .liftF[Future, JsArray, Seq[Keyring]](keyringsF)
+      .flatMap { keyrings =>
+        val keyringById = keyrings.map(k => k.id -> k).toMap
+        val subByClientId = subscriptions
+          .flatMap(s =>
+            keyringById.get(s.keyring).map(k => k.apiKey.clientId -> s)
+          )
+          .toMap
+        otoroshiSettings.elasticConfig match {
+          case Some(config) =>
+            new ElasticReadsAnalytics(config, env)
+              .query(
+                Json.obj(
+                  "query" -> Json.obj(
+                    "bool" -> Json.obj(
+                      "filter" -> Json.arr(
+                        Json.obj(
+                          "terms" -> Json.obj(
+                            "identity.identity.keyword" -> JsArray(
+                              subByClientId.keys.toSeq.distinct
+                                .map(JsString.apply)
                             )
                           )
                         )
                       )
                     )
-                  )
+                  ),
+                  "aggs" -> Json.obj(
+                    "lastUsages" -> Json.obj(
+                      "terms" -> Json.obj(
+                        "field" -> "identity.identity.keyword"
+                      ),
+                      "aggs" -> Json.obj(
+                        "latest" -> Json.obj(
+                          "top_hits" -> Json.obj(
+                            "size" -> 1,
+                            "sort" -> Json.arr(
+                              Json.obj(
+                                "@timestamp" -> Json.obj(
+                                  "order" -> "desc"
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  ),
+                  "size" -> 0
                 )
-              ),
-              "size" -> 0
-            )
-          )
-          .map(resp => {
-            AppLogger.warn(Json.stringify(resp))
-            val buckets =
-              (resp \ "aggregations" \ "lastUsages" \ "buckets")
-                .asOpt[JsArray]
-                .getOrElse(Json.arr())
-            JsArray(buckets.value.map(agg => {
-              val key = (agg \ "key").as[String]
-              val lastUsage =
-                (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
-              val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
-
-              Json.obj(
-                "clientName" -> key,
-                "date" -> date,
-                "subscription" -> subscriptions
-                  .find(_.apiKey.clientId == key)
-                  .map(_.id.asJson)
-                  .getOrElse(JsNull)
-                  .as[JsValue]
               )
-            }))
-          })
-          .leftMap(e => {
-            AppLogger.error(e.getErrorMessage())
-            Json.arr()
-          })
-      case None =>
-        for {
-          elasticConfig <- EitherT.fromOptionF(getElasticConfig(), Json.arr())
-          updatedSettings =
-            otoroshiSettings.copy(elasticConfig = elasticConfig.some)
-          updatedTenant = tenant.copy(
-            otoroshiSettings = tenant.otoroshiSettings
-              .filter(_.id != otoroshiSettings.id) + updatedSettings
-          )
-          _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
-          r <- getSubscriptionLastUsage(subscriptions)(using
-            updatedSettings,
-            updatedTenant
-          )
-        } yield r
-    }
+              .map(resp => {
+                AppLogger.warn(Json.stringify(resp))
+                val buckets =
+                  (resp \ "aggregations" \ "lastUsages" \ "buckets")
+                    .asOpt[JsArray]
+                    .getOrElse(Json.arr())
+                JsArray(buckets.value.map(agg => {
+                  val key = (agg \ "key").as[String]
+                  val lastUsage =
+                    (agg \ "latest" \ "hits" \ "hits").as[JsArray].value.head
+                  val date = (lastUsage \ "_source" \ "@timestamp").as[JsValue]
+
+                  Json.obj(
+                    "clientName" -> key,
+                    "date" -> date,
+                    "subscription" -> subByClientId
+                      .get(key)
+                      .map(_.id.asJson)
+                      .getOrElse(JsNull)
+                      .as[JsValue]
+                  )
+                }))
+              })
+              .leftMap(e => {
+                AppLogger.error(e.getErrorMessage())
+                Json.arr()
+              })
+          case None =>
+            for {
+              elasticConfig <- EitherT.fromOptionF(
+                getElasticConfig(),
+                Json.arr()
+              )
+              updatedSettings =
+                otoroshiSettings.copy(elasticConfig = elasticConfig.some)
+              updatedTenant = tenant.copy(
+                otoroshiSettings = tenant.otoroshiSettings
+                  .filter(_.id != otoroshiSettings.id) + updatedSettings
+              )
+              _ <- EitherT.liftF(env.dataStore.tenantRepo.save(updatedTenant))
+              r <- getSubscriptionLastUsage(subscriptions)(using
+                updatedSettings,
+                updatedTenant
+              )
+            } yield r
+        }
+      }
   }
 
   private def getElasticConfig()(implicit

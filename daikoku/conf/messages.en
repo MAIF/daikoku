@@ -153,3 +153,13 @@ mail.billing.cancellation.title=Your cancellation has been recorded
 mail.billing.cancellation.body=The subscription of the team [teamName] to the plan [planName] of the API [apiName] ends on [effectiveAt]. </br>\
 The api key keeps working until that date, and the last invoice covers the usage up to it. </br>\
 <a href="[link]">See your subscription</a>
+
+mail.api.depreciation.warning.title = the API [apiName] has been deprecated
+mail.api.depreciation.warning.body = Hello [recipientName], </br>\
+As team administrator of [teamName], we inform you that the API [apiName]</br>\
+has been deprecated.
+
+mail.api.blocking.warning.title = the API [apiName] has been blocked
+mail.api.blocking.warning.body = Hello [recipientName], </br>\
+                                 As team administrator of [teamName], we inform you that the API [apiName]</br>\
+                                 has been blocked.

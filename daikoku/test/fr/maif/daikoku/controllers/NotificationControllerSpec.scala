@@ -2,12 +2,12 @@ package fr.maif.daikoku.controllers
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.daikoku.domain.NotificationAction._
+import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationStatus.{Accepted, Pending}
-import fr.maif.daikoku.domain.NotificationType.AcceptOrReject
+import fr.maif.daikoku.domain.NotificationType.{AcceptOnly, AcceptOrReject}
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain._
-import fr.maif.daikoku.domain.json._
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.IdGenerator
@@ -16,7 +16,7 @@ import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -47,84 +47,13 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId)
   )
 
-  val ApiSubscriptionSafeFormat: Format[ApiSubscription] =
-    new Format[ApiSubscription] {
-      override def reads(json: JsValue): JsResult[ApiSubscription] =
-        Try {
-          JsSuccess(
-            ApiSubscription(
-              id = (json \ "_id").as(using ApiSubscriptionIdFormat),
-              tenant = (json \ "_tenant").as(using TenantIdFormat),
-              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-              apiKey = OtoroshiApiKey("***", "***", "***"),
-              plan = (json \ "plan").as(using UsagePlanIdFormat),
-              team = (json \ "team").as(using TeamIdFormat),
-              api = (json \ "api").as(using ApiIdFormat),
-              createdAt = (json \ "createdAt").as(using DateTimeFormat),
-              by = (json \ "by").as(using UserIdFormat),
-              customName = (json \ "customName").asOpt[String],
-              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-              rotation =
-                (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
-              integrationToken = "***",
-              customMetadata = (json \ "customMetadata").asOpt[JsObject],
-              customMaxPerSecond =
-                (json \ "customMaxPerSecond").asOpt(using LongFormat),
-              customMaxPerDay =
-                (json \ "customMaxPerDay").asOpt(using LongFormat),
-              customMaxPerMonth =
-                (json \ "customMaxPerMonth").asOpt(using LongFormat),
-              customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
-            )
-          )
-        } recover { case e =>
-          JsError(e.getMessage)
-        } get
-      override def writes(o: ApiSubscription): JsValue =
-        Json.obj(
-          "_id" -> ApiSubscriptionIdFormat.writes(o.id),
-          "_tenant" -> o.tenant.asJson,
-          "_deleted" -> o.deleted,
-          "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
-          "plan" -> UsagePlanIdFormat.writes(o.plan),
-          "team" -> TeamIdFormat.writes(o.team),
-          "api" -> ApiIdFormat.writes(o.api),
-          "createdAt" -> DateTimeFormat.writes(o.createdAt),
-          "by" -> UserIdFormat.writes(o.by),
-          "customName" -> o.customName
-            .map(id => JsString(id))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "enabled" -> o.enabled,
-          "rotation" -> o.rotation
-            .map(ApiSubscriptionyRotationFormat.writes)
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "integrationToken" -> o.integrationToken,
-          "customMetadata" -> o.customMetadata,
-          "customMaxPerSecond" -> o.customMaxPerSecond
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customMaxPerDay" -> o.customMaxPerDay
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customMaxPerMonth" -> o.customMaxPerMonth
-            .map(JsNumber(_))
-            .getOrElse(JsNull)
-            .as[JsValue],
-          "customReadOnly" -> o.customReadOnly
-            .map(JsBoolean.apply)
-            .getOrElse(JsNull)
-            .as[JsValue]
-        )
-    }
-  val SeqApiSubscriptionSafeFormat: Format[Seq[ApiSubscription]] =
-    Format(
-      Reads.seq(using ApiSubscriptionSafeFormat),
-      Writes.seq(using ApiSubscriptionSafeFormat)
+  val untreatedNotifications: Seq[Notification] = Seq(
+    untreatedNotification,
+    untreatedNotification.copy(
+      id = NotificationId("second-untreated-notification"),
+      notificationType = AcceptOnly
     )
+  )
 
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
@@ -209,7 +138,7 @@ class NotificationControllerSpec()
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
+        notifications = Seq(treatedNotification) ++ untreatedNotifications
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp =
@@ -218,8 +147,10 @@ class NotificationControllerSpec()
           session
         )
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      (resp.json \ "count").as[Long] mustBe 2
+      (resp.json \ "toValidateCount").as[Long] mustBe 1
     }
+
     "read his notifications" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -336,18 +267,27 @@ class NotificationControllerSpec()
         .as[String] mustBe "NewIssueOpenV2"
     }
     "reveive a notification - post created" in {
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = UsagePlanId("1"),
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -361,7 +301,8 @@ class NotificationControllerSpec()
         apis = Seq(defaultApi.api),
         subscriptions = Seq(
           sub
-        )
+        ),
+        keyrings = Seq(keyring)
       )
       val userAdminSession = loginWithBlocking(userAdmin, tenant)
       val post = httpJsonCallBlocking(
@@ -489,11 +430,13 @@ class NotificationControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.TeamAdmin(
-            id = "step_1",
-            team = defaultApi.api.team,
-            title = "Admin"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin(
+              id = "step_1",
+              team = defaultApi.api.team,
+              title = "Admin"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
@@ -521,7 +464,7 @@ class NotificationControllerSpec()
         from = userAdmin.id,
         date = DateTime.now().minusDays(1),
         motivation = Json.obj("motivation" -> "test").some,
-        parentSubscriptionId = None,
+        keyring = None,
         customReadOnly = None,
         customMetadata = None,
         customMaxPerSecond = None,
@@ -563,17 +506,16 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 1
+      respVerif.json.as[JsArray].value.size mustBe 1
     }
     "reject notification - api subscription" in {
-      val process = Seq(
-        ValidationStep.TeamAdmin(
-          id = IdGenerator.token,
-          team = defaultApi.api.team,
-          title = "Admin"
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.TeamAdmin(
+            id = IdGenerator.token,
+            team = defaultApi.api.team,
+            title = "Admin"
+          )
         )
       )
       val plan = UsagePlan(
@@ -605,7 +547,7 @@ class NotificationControllerSpec()
         tenant = tenant.id,
         api = defaultApi.api.id,
         plan = plan.id,
-        steps = process.map(s =>
+        steps = process.steps.map(s =>
           SubscriptionDemandStep(
             SubscriptionDemandStepId(s.id),
             SubscriptionDemandState.InProgress,
@@ -652,10 +594,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 0
+      respVerif.json.as[JsArray].value.size mustBe 0
     }
   }
 
@@ -671,7 +610,7 @@ class NotificationControllerSpec()
 //      )
 //      val session = loginWithBlocking(daikokuAdmin, tenant)
 //
-//      val resp = graphQLNotificationCallBlocking(Json.obj(
+//      val resp    = graphQLNotificationCallBlocking(Json.obj(
 //        "filterTable" -> Json.stringify(
 //          Json.arr(
 //            Json.obj("id" -> "unreadOnly", "value" -> true),
@@ -693,7 +632,7 @@ class NotificationControllerSpec()
 //        notifications = Seq(treatedNotification, untreatedNotification)
 //      )
 //      val session = loginWithBlocking(daikokuAdmin, tenant)
-//      val resp = httpJsonCallBlocking(
+//      val resp    = httpJsonCallBlocking(
 //        s"/api/teams/${teamOwnerId.value}/notifications/all"
 //      )(tenant, session)
 //      resp.status mustBe 200
@@ -708,8 +647,8 @@ class NotificationControllerSpec()
 //        apis = Seq(defaultApi.api),
 //        notifications = Seq(treatedNotification, untreatedNotification)
 //      )
-//      val session = loginWithBlocking(daikokuAdmin, tenant)
-//      val resp = httpJsonCallBlocking(
+//      val session               = loginWithBlocking(daikokuAdmin, tenant)
+//      val resp                  = httpJsonCallBlocking(
 //        s"/api/teams/${teamOwnerId.value}/notifications"
 //      )(tenant, session)
 //      resp.status mustBe 200
@@ -787,11 +726,13 @@ class NotificationControllerSpec()
       eventualApi.get.authorizedTeams.contains(teamConsumerId) mustBe false
     }
     "accept notification - api subscription" in {
-      val process = Seq(
-        ValidationStep.TeamAdmin(
-          id = IdGenerator.token,
-          team = defaultApi.api.team,
-          title = "Admin"
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.TeamAdmin(
+            id = IdGenerator.token,
+            team = defaultApi.api.team,
+            title = "Admin"
+          )
         )
       )
       val plan = UsagePlan(
@@ -822,7 +763,7 @@ class NotificationControllerSpec()
         tenant = tenant.id,
         api = defaultApi.api.id,
         plan = plan.id,
-        steps = process.map(s =>
+        steps = process.steps.map(s =>
           SubscriptionDemandStep(
             SubscriptionDemandStepId(s.id),
             SubscriptionDemandState.InProgress,
@@ -870,10 +811,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 1
+      respVerif.json.as[JsArray].value.size mustBe 1
     }
     "reject notification - api subscription" in {
       val process = Seq(
@@ -902,11 +840,13 @@ class NotificationControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(
-          ValidationStep.TeamAdmin(
-            id = IdGenerator.token,
-            team = defaultApi.api.team,
-            title = "Admin"
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin(
+              id = IdGenerator.token,
+              team = defaultApi.api.team,
+              title = "Admin"
+            )
           )
         ),
         integrationProcess = IntegrationProcess.ApiKey,
@@ -963,10 +903,7 @@ class NotificationControllerSpec()
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions"
         )(using tenant, session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
-        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
-      eventualApiSubs.isSuccess mustBe true
-      eventualApiSubs.get.size mustBe 0
+      respVerif.json.as[JsArray].value.size mustBe 0
     }
     "create issue that notify subscribers of api" in {
       val issues = Seq(
@@ -993,18 +930,27 @@ class NotificationControllerSpec()
         )
       )
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = daikokuAdminId,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1012,7 +958,8 @@ class NotificationControllerSpec()
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub)
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
       )
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
@@ -1060,7 +1007,6 @@ class NotificationControllerSpec()
         name = "other",
         email = "other@gmail.com",
         lastTenant = None,
-        personalToken = Some(IdGenerator.token(32)),
         password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
         defaultLanguage = None
       )
@@ -1087,18 +1033,27 @@ class NotificationControllerSpec()
       )
 
       val planSubId = UsagePlanId("1")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test"
+      )
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = teamConsumerId,
         api = defaultApi.api.id,
         by = user.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test"
+        keyring = keyring.id
       )
       val thirdTeam = teamConsumer.copy(
         id = TeamId("third"),
@@ -1107,18 +1062,27 @@ class NotificationControllerSpec()
         users = Set(UserWithPermission(userApiEditor.id, Administrator))
       )
 
+      val keyringThird = Keyring(
+        id = KeyringId("test-keyring-3"),
+        tenant = tenant.id,
+        team = thirdTeam.id,
+        apiKey = OtoroshiApiKey("name", "id3", "secret3"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test3"
+      )
       val subThird = ApiSubscription(
         id = ApiSubscriptionId("test-3"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id3", "secret3"),
         plan = planSubId,
         createdAt = DateTime.now(),
         team = thirdTeam.id,
         api = defaultApi.api.id,
         by = userApiEditor.id,
         customName = Some("custom name"),
-        rotation = None,
-        integrationToken = "test3"
+        keyring = keyringThird.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1148,7 +1112,8 @@ class NotificationControllerSpec()
             )
           )
         ),
-        subscriptions = Seq(sub, subThird)
+        subscriptions = Seq(sub, subThird),
+        keyrings = Seq(keyring, keyringThird)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1752,7 +1717,7 @@ class NotificationControllerSpec()
               api = defaultApi.api.id,
               plan = defaultApi.api.defaultUsagePlan.get,
               team = teamConsumerId,
-              parentSubscriptionId = None,
+              keyring = None,
               motivation = Some("please"),
               demand = demand.id,
               step = demand.steps.head.id

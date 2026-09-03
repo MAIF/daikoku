@@ -200,17 +200,19 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <Can I={manage} a={team} team={currentTeam}>
-        <button className="btn --primary" type="button" onClick={() => {
-          openInvitationTeamModal({
-            team: currentTeam,
-            searchLdapMember: searchLdapMember,
-            members: filteredMembers,
-            invitUser: invitUser,
-            pendingUsers: filteredPending,
-          });
-        }}>
-          {translate('team_member.invit_user')}
-        </button>
+        { currentTeam.type !== 'Admin' && 
+          <button className="btn --primary" type="button" onClick={() => {
+            openInvitationTeamModal({
+              team: currentTeam,
+              searchLdapMember: searchLdapMember,
+              members: filteredMembers,
+              invitUser: invitUser,
+              pendingUsers: filteredPending,
+            });
+          }}>
+            {translate('team_member.invit_user')}
+          </button>
+        }
       </Can>
       <div className="row">
         <div className="col mt-3 onglets">

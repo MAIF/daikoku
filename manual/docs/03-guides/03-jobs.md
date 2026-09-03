@@ -12,6 +12,16 @@ Daikoku includes several background jobs designed to ensure data consistency and
 
 These jobs play a critical role in maintaining Daikoku’s stability, performance, and data hygiene over time.
 
+## Otoroshi Synchronizer Job
+
+This job reconciles Daikoku with Otoroshi. For each keyring it recomputes the shared Otoroshi API key
+from its **still-active** subscriptions only — a subscription takes part when it is enabled and not
+blocked (`enabled && blockedBy` empty). This is how API lifecycle changes take effect on real keys:
+when a producer blocks an API (or an individual subscription), the corresponding subscriptions are
+flagged as blocked and the synchronizer disables their contribution to the shared key; unblocking
+restores it. A keyring whose members are all blocked ends up disabled rather than deleted, so the
+change can be rolled back.
+
 ## Notifications Purge Job
 
 The `NotificationsPurgeJob` is an automated job responsible for periodically deleting obsolete notifications in the Daikoku system. It helps maintain database cleanliness by removing old notifications based on specific criteria.

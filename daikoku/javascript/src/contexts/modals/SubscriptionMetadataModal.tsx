@@ -192,11 +192,9 @@ export const SubscriptionMetadataModal = (
     (!props.api && planQuery.data) ||
     (apiQuery.data && !isError(apiQuery.data))
   ) {
-    const plan = props.plan
-      ? !isError(planQuery.data)
-        ? planQuery.data
-        : undefined
-      : undefined;
+    const planData = planQuery.data;
+    const plan: IUsagePlan | undefined =
+      props.plan && planData && !isError(planData) ? planData : undefined;
 
     const maybeSubMetadata = Option(props.subscription?.customMetadata)
       .orElse(props.config?.customMetadata)

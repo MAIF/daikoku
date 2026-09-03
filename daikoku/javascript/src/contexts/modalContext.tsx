@@ -6,8 +6,8 @@ import { IWithTesting } from "../types";
 import { ModalContext } from "./modalContextInstance";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
-import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
-import { ApiSelectModal, IApiSelectModalProps } from "./modals/ApiSelectModal";
+import { KeyringSelectModal, IKeyringSelectModalProps } from "./modals/KeyringSelectModal";
+import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiSelectModal";
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
@@ -37,6 +37,7 @@ import {
   TeamSelectorModalProps,
   TestingApiKeyModalProps,
 } from "./modals/types";
+
 
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();
@@ -97,7 +98,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const openContactModal = (props: IContactModalComponentProps) => open(<ContactModal {...props} close={close} />)
   const openAssetSelectorModal = (props: IAssetSelectorModalProps) => open(<AssetSelectorModal {...props} close={close} />)
   const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
-  const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
+  const openKeyringSelectModal = (props: IKeyringSelectModalProps) => open(<KeyringSelectModal {...props} close={close} />)
   const openCustomModal = (props: ICustomModalProps) => open(<CustomModal {...props} close={close} />)
 
 
@@ -118,7 +119,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
       openContactModal,
       openAssetSelectorModal,
       openApiSelectModal,
-      openApiKeySelectModal,
+      openKeyringSelectModal,
       openCustomModal,
       close,
       closeRightPanel,

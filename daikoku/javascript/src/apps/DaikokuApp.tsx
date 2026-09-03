@@ -21,7 +21,6 @@ import {
   AuditTrailList,
   CMSOffice,
   ImportExport,
-  InitializeFromOtoroshi,
   MailingInternalization,
   SessionList,
   LoggersList,
@@ -40,7 +39,6 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { Signup } from '../components/frontend/account/signup';
 import { Dashboard } from '../components/frontend/dashboard/Dashboard';
-import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { ColorThemeMigrationAlert } from '../components/utils/ColorThemeMigrationAlert';
@@ -252,18 +250,6 @@ export const DaikokuApp = () => {
                       </FrontOfficeRoute>
                     }
                   />
-                  <Route
-                    path="/apis/fast"
-                    element={
-                      <RouteWithTitle title={
-                        translate({
-                          key: "fastMode.title.page",
-                          replacements: [tenant.title || tenant.name]
-                        })}>
-                        <FastMode />
-                      </RouteWithTitle>
-                    }
-                  />
                 </Route>
                 <Route
                   path="/atomicDesign"
@@ -407,14 +393,6 @@ export const DaikokuApp = () => {
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
                       <TenantAdminList />
-                    </RouteWithTitle>
-                  }
-                />
-                <Route
-                  path="/settings/init"
-                  element={
-                    <RouteWithTitle title={`${tenant.title} - ${translate('Init')}`}>
-                      <InitializeFromOtoroshi />
                     </RouteWithTitle>
                   }
                 />

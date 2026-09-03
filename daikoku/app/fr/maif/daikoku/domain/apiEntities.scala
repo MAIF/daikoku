@@ -1,22 +1,27 @@
 package fr.maif.daikoku.domain
 
 import cats.data.EitherT
-import cats.syntax.option._
+import cats.syntax.option.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.json.{
+  BillingTimeUnitFormat,
+  LongFormat,
   SeqIssueIdFormat,
   SeqPostIdFormat,
   SeqTeamIdFormat,
-  SetApiTagFormat
+  SetApiTagFormat,
+  SubscriptionProcessFormat
 }
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils.{IdGenerator, ReplaceAllWith}
+import fr.maif.daikoku.utils.SubscriptionUtil.processChecksum
+import fr.maif.daikoku.utils.{IdGenerator, ReplaceAllWith, SubscriptionUtil}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, Days}
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object OtoroshiTarget {
   val expressionReplacer = ReplaceAllWith("\\$\\{([^}]*)\\}")
@@ -71,6 +76,13 @@ case class OtoroshiService(
   def asJson: JsValue = json.OtoroshiServiceFormat.writes(this)
 }
 
+
+case class SubscriptionProcess(
+    steps: Seq[ValidationStep] = Seq.empty
+) extends CanJson[SubscriptionProcess] {
+  val checksum: Option[String] = processChecksum(steps)
+  def asJson: JsValue = SubscriptionProcessFormat.writes(this)
+}
 
 sealed trait ApiVisibility {
   def name: String
@@ -205,7 +217,7 @@ case class UsagePlan(
     swagger: Option[SwaggerAccess] = None,
     testing: Option[Testing] = None,
     documentation: Option[ApiDocumentation] = None,
-    subscriptionProcess: Seq[ValidationStep] = Seq.empty,
+    subscriptionProcess: SubscriptionProcess = SubscriptionProcess(),
     visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     formKeysToMetadata: Option[Seq[String]] = None,
@@ -217,6 +229,14 @@ case class UsagePlan(
         _costPerMonth + (requests * _costPerRequest)
       case (_, _) => 0
     }
+
+  def ensureFormStep(): UsagePlan =
+    if (subscriptionProcess.steps.exists(_.name == "form")) this
+    else
+      addSubscriptionStep(
+        ValidationStep.Form(IdGenerator.token(32), title = "Motivation"),
+        0.some
+      )
 
   def addAutorizedTeam(teamId: TeamId): UsagePlan =
     this.copy(authorizedTeams = authorizedTeams :+ teamId)
@@ -233,16 +253,37 @@ case class UsagePlan(
       currency = a.currency.some
     )
 
+  /** Drop every pricing information, turning the plan back into a free one. The
+    * payment validation step is removed as well, as it would otherwise refer to
+    * a product that is no longer billed.
+    */
+  def clearPayment: UsagePlan =
+    this.copy(
+      costPerMonth = None,
+      costPerRequest = None,
+      currency = None,
+      paymentSettings = None,
+      subscriptionProcess = SubscriptionProcess(steps =
+        subscriptionProcess.steps.filterNot(_.name == "payment")
+      )
+    )
+
   def addSubscriptionStep(
       step: ValidationStep,
       idx: Option[Int] = None
   ): UsagePlan = {
     idx match {
       case Some(value) =>
-        val (front, back) = this.subscriptionProcess.splitAt(value)
-        this.copy(subscriptionProcess = front ++ List(step) ++ back)
+        val (front, back) = this.subscriptionProcess.steps.splitAt(value)
+        this.copy(subscriptionProcess =
+          SubscriptionProcess(
+            steps = front ++ List(step) ++ back
+          )
+        )
       case None =>
-        this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+        this.copy(subscriptionProcess =
+          SubscriptionProcess(steps = this.subscriptionProcess.steps :+ step)
+        )
     }
   }
 
@@ -540,22 +581,39 @@ case class Testing(
     )
 }
 
+enum ApiSubscriptionState(val name: String) {
+  case Active extends ApiSubscriptionState("active")
+  case Blocked extends ApiSubscriptionState("blocked")
+}
+
 sealed trait ApiState {
   def name: String
+  def checkPreviousState(previousState: ApiState): Boolean
 }
 
 object ApiState {
   case object Created extends ApiState {
     override def name: String = "created"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState == Created || previousState == Published
   }
   case object Published extends ApiState {
     override def name: String = "published"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Blocked
+
   }
   case object Blocked extends ApiState {
     override def name: String = "blocked"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Created
+
   }
   case object Deprecated extends ApiState {
     override def name: String = "deprecated"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState != Created
+
   }
 
   def publishedJsonFilter: JsObject =
@@ -631,24 +689,6 @@ case class Api(
       "isDefault" -> isDefault,
       "state" -> json.ApiStateFormat.writes(state)
     )
-  def asIntegrationJson(teams: Seq[Team]): JsValue = {
-    val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
-    Json.obj(
-      "id" -> s"${t}/${name.urlPathSegmentSanitized}",
-      "team" -> t,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "currentVersion" -> currentVersion.asJson,
-      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
-      "stars" -> stars,
-      "metadata" -> JsObject(
-        metadata.view.mapValues(JsString.apply).toSeq
-      )
-    )
-  }
   def asPublicWithAuthorizationsJson(): JsValue =
     Json.obj(
       "_id" -> id.value,
@@ -667,7 +707,7 @@ case class Api(
       "stars" -> stars,
       "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
     )
-  def isPublished: Boolean =
+  def isSubscribable: Boolean =
     state match {
       case ApiState.Published  => true
       case ApiState.Deprecated => true
@@ -691,6 +731,17 @@ case class AuthorizedEntities(
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
+
+  /** The authorized entities as a flat list of [[OtoroshiEntity]], used to
+    * scope api key restrictions. Legacy `services` have no matching kind and
+    * are ignored.
+    */
+  def asOtoroshiEntities: Seq[OtoroshiEntity] =
+    groups.toSeq.map(g =>
+      OtoroshiEntity(OtoroshiEntityKind.Group, g.value)
+    ) ++ routes.toSeq.map(r =>
+      OtoroshiEntity(OtoroshiEntityKind.Route, r.value)
+    )
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
       a.groups.contains(g)
@@ -774,6 +825,7 @@ object ValidationStep {
           "motivation" -> Json.obj(
             "type" -> "string",
             "format" -> "textarea",
+            "defaultValue" -> "",
             "constraints" -> Json.arr(Json.obj("type" -> "required"))
           )
         )

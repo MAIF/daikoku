@@ -1,8 +1,9 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
-import { ThirdPartyPaymentType } from './tenant';
+import { ITenant, ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
+import { SubscriptionReturn } from '../services';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
 
@@ -66,6 +67,9 @@ export interface IApiWithTeam extends IApiGQL {
 
 export interface IApi extends IBaseApi, IWithSwagger {
   team: string;
+  // Total subscription count, only set by the backend for API editors of the
+  // owning team (see ApiController.getApi).
+  subscriptionCount?: number;
 }
 
 /*export interface IApiWithAuthorization extends IApiWithSimpleTeam {
@@ -101,6 +105,12 @@ export type IApiAuthoWithCount = {
   producers: Array<{ team: ITeamSimple; total: number }>;
   tags: Array<{ value: string; total: number }>;
   categories: Array<{ value: string; total: number }>;
+  total: number;
+  totalFiltered: number;
+};
+
+export type IPlansWithCount = {
+  plans: Array<IUsagePlanGQL>;
   total: number;
   totalFiltered: number;
 };
@@ -236,35 +246,32 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   _id: string;
   _tenant: string;
   _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string;
+  allowMultipleKeys?: boolean;
+  authorizedTeams: string[];
+  autoRotation?: boolean;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
   customDescription?: string;
   customName: string;
-  subscriptionProcess: Array<IValidationStep>;
-  otoroshiTarget?: IOtoroshiTarget;
-  allowMultipleKeys?: boolean;
-  aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
-  autoRotation?: boolean;
-  rotation: boolean;
-  currency?: ICurrency;
-  visibility: UsagePlanVisibility;
-  authorizedTeams: Array<string>;
-  costPerRequest?: number;
-  costPerMonth?: number;
+  maxPerDay?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
-  maxPerDay?: number;
+  otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>;
+  subscriptionProcessChecksum: string;
+  visibility: UsagePlanVisibility;
 }
 
 export interface IAuthorizedEntities {
   groups: Array<string>;
   services: Array<string>;
   routes: Array<string>;
-}
-
-interface IBillingDuration {
-  value: number;
-  unit: 'Hour' | 'Day' | 'Month' | 'Year';
 }
 
 export interface ICurrency {
@@ -276,6 +283,7 @@ export interface IOtoroshiTarget {
   authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization?: {
     clientIdOnly: boolean;
+    readOnly?: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;
     metadata: { [key: string]: string };
@@ -366,7 +374,11 @@ export interface IBaseSubscription {
   by: string;
   customName: string | null;
   enabled: boolean;
-  rotation: IRotation;
+  // `state` is derived from `blockedBy` on the backend: 'blocked' as soon as
+  // there is at least one reason ('owner' set by the API producer and/or
+  // 'lifecycle' set when the whole API is blocked), 'active' otherwise.
+  state: 'active' | 'blocked';
+  blockedBy: Array<'owner' | 'lifecycle'>;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -375,19 +387,18 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent: string | null;
-  parentUp: boolean;
+  keyring: string | null;
 }
 
-export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
+export const isPayPerUse = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
-export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan) => {
+export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
-export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan) => {
+export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
@@ -416,10 +427,18 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
   apiKey: { clientName: string };
 }
 
-export interface ISubscription extends IBaseSubscription {
+export interface IKeyring {
+  _id: string;
+  customName: string | null;
   apiKey: IApiKey;
   integrationToken: string;
   bearerToken?: string;
+  rotation?: IRotation;
+  enabled: boolean;
+}
+
+export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
+  keyring: IKeyring | null;
 }
 
 export interface ISubscriptionCustomization {
@@ -433,7 +452,6 @@ export interface ISubscriptionCustomization {
 }
 
 export interface ISubscriptionExtended extends ISubscription {
-  parentUp: boolean;
   planType: string;
   planName: string;
   apiName: string;
@@ -519,12 +537,7 @@ export interface IApiPost {
 }
 
 export type ISubscriptionDemandState =
-  | 'accepted'
-  | 'refused'
-  | 'canceled'
-  | 'inProgress'
-  | 'waiting'
-  | 'blocked';
+  'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked';
 
 export interface SubscriptionDemandStep {
   id: string;
@@ -545,7 +558,7 @@ export interface ISubscriptionDemand {
   from: string;
   date: string;
   motivation?: object;
-  parentSubscriptionId?: string;
+  keyring?: string;
   customReadOnly?: boolean;
   customMetadata?: object;
   customMaxPerSecond?: number;
@@ -601,3 +614,68 @@ export type Issue = {
   by: IUserSimple;
   tags: Array<IIssuesTag>;
 };
+
+export interface ApiPricingProps {
+  api: IApi;
+  myTeams: Array<ITeamSimple>;
+  ownerTeam: ITeamSimple;
+  subscriptions: Array<ISubscription>;
+  inProgressDemands: Array<ISubscriptionDemand>;
+  askForApikeys: (x: {
+    team: string;
+    plan: IUsagePlan;
+    apiKey?: ISubscription;
+    motivation?: object;
+    /** only meaningful when creating a new keyring ; a joined keyring keeps its own name */
+    keyringCustomName?: string;
+    redirect?: boolean;
+  }) => Promise<SubscriptionReturn>;
+}
+
+export interface ITeamSelector {
+  teams: Array<ITeamSimple>;
+  pendingTeams: Array<string>;
+  acceptedTeams: Array<string>;
+  allowMultipleDemand?: boolean;
+  showKeyringSelectModal: (teamId: string) => void;
+  plan: IUsagePlanGQL;
+}
+export interface OtoroshiEntitiesSelectorProps {
+  rawValues: IOtoroshiTarget;
+  onChange: (item: any) => void;
+  translate: (x: string) => string;
+  ownerTeam: ITeamSimple;
+}
+export interface OtoroshiEntity {
+  label: string;
+  value: string;
+  type: 'route' | 'group' | 'service';
+  enabled: boolean;
+}
+
+export interface IUsagePlanGQL
+  extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  aggregationApiKeysSecurity?: boolean;
+  allowMultipleDemand?: string;
+  allowMultipleKeys?: boolean;
+  authorizedTeams: { _id: string; name: string }[];
+  autoRotation?: boolean;
+  costPerMonth?: number;
+  costPerRequest?: number;
+  currency?: ICurrency;
+  customDescription?: string;
+  customName: string;
+  integrationProcess: 'Automatic' | 'ApiKey';
+  maxPerDay?: number;
+  maxPerMonth?: number;
+  maxPerSecond?: number;
+  otoroshiTarget?: IOtoroshiTarget;
+  paymentSettings?: IPaymentSettings;
+  rotation: boolean;
+  subscriptionProcess: Array<IValidationStep>;
+  subscriptionProcessChecksum: string;
+  visibility: UsagePlanVisibility;
+}

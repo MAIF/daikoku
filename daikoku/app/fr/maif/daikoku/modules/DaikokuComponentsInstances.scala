@@ -7,18 +7,10 @@ import fr.maif.daikoku.controllers.*
 import fr.maif.daikoku.env.{DaikokuEnv, DaikokuMode, Env}
 import fr.maif.daikoku.jobs.*
 import fr.maif.daikoku.login.LocalLoginSupport
-import fr.maif.daikoku.services.{
-  AccountCreationService,
-  ApiService,
-  AssetsService,
-  BillingNotificationService,
-  DeletionService,
-  TranslationsService,
-  UserService
-}
+import fr.maif.daikoku.services.*
+import fr.maif.daikoku.services.catalog.RemoteCatalogEngine
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
-import io.vertx.core.Vertx
 import io.vertx.core.Vertx.vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.net.{ClientSSLOptions, PemKeyCertOptions, PemTrustOptions}
@@ -57,10 +49,12 @@ class DaikokuComponentsInstances(context: Context)
   lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
   lazy val anonReportingJob = wire[AnonymousReportingJob]
   lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
+  lazy val keyringExpirationJob = wire[KeyringSubscriptionExpirationJob]
 
   lazy val otoroshiClient = wire[OtoroshiClient]
   lazy val paymentClient = wire[PaymentClient]
 
+  lazy val keyringService = wire[KeyringService]
   lazy val apiService = wire[ApiService]
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
@@ -69,6 +63,12 @@ class DaikokuComponentsInstances(context: Context)
   lazy val localLoginSupport = wire[LocalLoginSupport]
   lazy val deletionService = wire[DeletionService]
   lazy val billingNotificationService = wire[BillingNotificationService]
+  lazy val mailService = wire[MailService]
+  lazy val apiLifeCycleService = wire[ApiLifeCycleService]
+  lazy val apiCrudService = wire[ApiCrudService]
+  lazy val usagePlanService = wire[UsagePlanService]
+  lazy val teamService = wire[TeamService]
+  lazy val tenantService = wire[TenantService]
 
   lazy val translator = wire[Translator]
 
@@ -125,7 +125,6 @@ class DaikokuComponentsInstances(context: Context)
   lazy val apiKeyConsumptionAdminApiController =
     wire[ApiKeyConsumptionAdminApiController]
   lazy val auditEventAdminApiController = wire[AuditEventAdminApiController]
-  lazy val integrationApiController = wire[IntegrationApiController]
   lazy val translationController = wire[TranslationController]
   lazy val adminApiSwaggerController = wire[AdminApiSwaggerController]
   lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]
@@ -139,6 +138,11 @@ class DaikokuComponentsInstances(context: Context)
   lazy val usagePlansAdminApiController = wire[UsagePlansAdminApiController]
   lazy val subscriptionDemandsAdminApiController =
     wire[SubscriptionDemandsAdminApiController]
+  lazy val remoteCatalogEngine = wire[RemoteCatalogEngine]
+  lazy val remoteCatalogJob = wire[RemoteCatalogJob]
+  lazy val remoteCatalogAdminApiController =
+    wire[RemoteCatalogAdminApiController]
+  lazy val remoteCatalogController = wire[RemoteCatalogController]
   lazy val graphQLController = wire[GraphQLController]
   lazy val cmsApiController = wire[CmsApiController]
   lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
@@ -250,19 +254,25 @@ class DaikokuComponentsInstances(context: Context)
   //    statsJob.start()
   deletor.start()
   verifier.start()
+  rotationVerifier.start()
   auditTrailPurgeJob.start()
   notificationPurgeJob.start()
   anonReportingJob.start()
   stripeReconciliationJob.start()
+  keyringExpirationJob.start()
+  remoteCatalogJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>
     deletor.stop()
     verifier.stop()
+    rotationVerifier.stop()
     statsJob.stop()
     auditTrailPurgeJob.stop()
     notificationPurgeJob.stop()
     anonReportingJob.stop()
+    remoteCatalogJob.stop()
+    keyringExpirationJob.stop()
     env.onShutdown()
     pgPool.close()
     FastFuture.successful(())

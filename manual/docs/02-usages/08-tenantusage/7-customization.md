@@ -76,7 +76,7 @@ You have three options:
 
 ### What changed
 
-Older Daikoku versions used a flat, ad-hoc list of variables (e.g. `--body_bg-color`, `--level2_bg-color`, `--error-color`) with no palette scales and no `--primary-color`. Since __v18.12.2__ Daikoku introduces:
+Older Daikoku versions used a flat, ad-hoc list of variables (e.g. `--body_bg-color`, `--level2_bg-color`, `--error-color`) with no palette scales and no `--primary-color`. Since __v19.0.0-rc.1__ Daikoku introduces:
 
 - the **primitive scales** (`--primitive-*`) as the single source of the palette,
 - **semantic tokens** layered on top (`--primary-color`, `--danger-color`, `--neutral-color`, …),

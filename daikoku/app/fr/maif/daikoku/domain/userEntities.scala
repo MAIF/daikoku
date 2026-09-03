@@ -14,6 +14,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
+
+  val system: User = User(
+    id = UserId("daikoku-system"),
+    tenants = Set.empty,
+    origins = Set.empty,
+    name = "Daikoku",
+    email = "system@daikoku.io",
+    isDaikokuAdmin = true,
+    lastTenant = None,
+    defaultLanguage = None
+  )
 }
 
 case class User(
@@ -25,7 +36,6 @@ case class User(
     email: String,
     picture: String = User.DEFAULT_IMAGE,
     pictureFromProvider: Boolean = true,
-    personalToken: Option[String],
     isDaikokuAdmin: Boolean = false,
     password: Option[String] = None,
     hardwareKeyRegistrations: Seq[JsObject] = Seq.empty,
@@ -89,7 +99,6 @@ object GuestUser {
       email = "",
       lastTenant = None,
       defaultLanguage = None,
-      personalToken = None,
       isGuest = true
     )
 }

@@ -21,6 +21,7 @@ import {
   ITenantAdministration,
   ITenantFull,
   ITranslation,
+  IUsagePlanGQL,
   IUser,
   IUserSimple,
   OAuthSettings,
@@ -101,13 +102,13 @@ export const getTeamVisibleApi = (
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
 
-export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
+export const myUnreadNotificationsCount = (): Promise<{ toValidateCount: number; count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(
-      (r) => (r.status === 200 ? r.json() : { count: 0 }),
-      () => ({ count: 0 })
+      (r) => (r.status === 200 ? r.json() : { toValidateCount: 0, count: 0 }),
+      () => ({ toValidateCount: 0, count: 0 })
     )
-    .catch(() => ({ count: 0 }));
+    .catch(() => ({ toValidateCount: 0, count: 0 }));
 
 export const myDashboard = (): PromiseWithError<TDashboardData> => customFetch('/api/me/dashboard');
 
@@ -179,28 +180,33 @@ type CreationWaiting = { creation: 'waiting' };
 type CheckoutUrl = { checkoutUrl: string };
 
 export function isCheckoutUrl(obj: any): obj is CheckoutUrl {
-  return (<CheckoutUrl>obj).checkoutUrl !== undefined;
+  return (<CheckoutUrl>obj)?.checkoutUrl !== undefined;
 }
 
 export function isCreationDone(obj: any): obj is CreationDone {
-  return (<CreationDone>obj).creation === 'done';
+  return (<CreationDone>obj)?.creation === 'done';
 }
 
 export function isCreationWaiting(obj: any): obj is CreationWaiting {
-  return (<CreationWaiting>obj).creation === 'waiting';
+  return (<CreationWaiting>obj)?.creation === 'waiting';
 }
 
-type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
+export function isResponseError(obj: any): obj is ResponseError {
+  return obj && 'error' in obj;
+}
+
+export type SubscriptionReturn = ResponseError | CreationWaiting | CreationDone | CheckoutUrl;
 
 export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
-    body: JSON.stringify({ motivation }),
+    body: JSON.stringify({ motivation, keyringCustomName }),
   });
 };
 
@@ -219,17 +225,6 @@ export const apisInit = (apis: any) =>
       'Content-type': 'application/json',
     },
     body: JSON.stringify(apis),
-  });
-
-export const subscriptionsInit = (subscriptions: any) =>
-  customFetch('/api/subscriptions/_init', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify(subscriptions),
   });
 
 export const archiveApiKey = (
@@ -274,10 +269,34 @@ export const toggleApiKeyRotation = (
 
 export const regenerateApiKeySecret = (
   teamId: string,
-  subscriptionId: string
+  keyringId: string
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_refresh`, {
     method: 'POST',
+  });
+
+export const updateKeyringCustomName = (
+  teamId: string,
+  keyringId: string,
+  customName: string
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/name`, {
+    method: 'PUT',
+    body: JSON.stringify({ customName }),
+  });
+
+export const deleteKeyring = (teamId: string, keyringId: string): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}`, {
+    method: 'DELETE',
+  });
+
+export const toggleKeyring = (
+  teamId: string,
+  keyringId: string,
+  enabled: boolean
+): PromiseWithError<unknown> =>
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_enable?enabled=${enabled}`, {
+    method: 'PUT',
   });
 
 export const member = (teamId: string, userId: string) =>
@@ -581,7 +600,7 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (): Promise<IUsagePlan> => customFetch('/api/entities/plan');
+export const fetchNewPlan = (): Promise<IUsagePlanGQL> => customFetch('/api/entities/plan');
 
 export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
@@ -686,7 +705,11 @@ export const apiSubscriptions = (
 ): Promise<Array<ISafeSubscription>> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
-export const archiveSubscriptionByOwner = (ownerId: any, subscriptionId: any, enabled: any) =>
+export const archiveSubscriptionByOwner = (
+  ownerId: string,
+  subscriptionId: string,
+  enabled: boolean
+) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
     {
@@ -1060,8 +1083,6 @@ export const login = (
 
   const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
 
-  console.debug({ url, action, redirect });
-
   return fetch(url, {
     method: 'POST',
     headers: {
@@ -1193,27 +1214,23 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 
 export const deleteApiSubscription = (
   teamId: string,
-  subscriptionId: string,
-  action: string,
-  childId?: string
+  subscriptionId: string
 ): Promise<ResponseError | any> =>
-  customFetch(
-    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}`, {
+    method: 'DELETE',
+  });
 
 export const extendApiKey = (
   apiId: string,
   apiKeyId: string,
   teamId: string,
   planId: string,
+  keyringCustomName?: string,
   motivation?: object
 ): Promise<SubscriptionReturn> =>
   customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/${apiKeyId}/_extends`, {
     method: 'PUT',
-    body: JSON.stringify({ motivation }),
+    body: JSON.stringify({ motivation, keyringCustomName }),
   });
 
 export const getAllTeamSubscriptions = (teamId: string): Promise<Array<ISubscriptionWithApiInfo>> =>
@@ -1323,6 +1340,12 @@ export const removeCmsPage = (id: any) =>
     method: 'DELETE',
   });
 
+export const getAllAvailableEnvs = (teamId: string, apiId: string, version: string) => {
+  return customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/available_envs`, {
+    method: 'GET',
+  }).then((r) => (r.ok ? r.json() : r));
+};
+
 export const graphql = {
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
@@ -1391,6 +1414,9 @@ export const graphql = {
             customName
             otoroshiTarget {
               otoroshiSettings
+              apikeyCustomization {
+                readOnly
+              }
             }
             aggregationApiKeysSecurity
           }
@@ -1479,6 +1505,135 @@ export const graphql = {
         }
       }
     `,
+
+  plansByApi: `
+    query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
+      plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
+        plans {
+          _deleted
+          _id
+          _tenant
+          aggregationApiKeysSecurity
+          allowMultipleKeys
+          authorizedTeams {
+            _id
+            name
+          }
+          autoRotation
+          costPerMonth
+          costPerRequest
+          currency {
+            code
+          }
+          customDescription
+          customName
+          integrationProcess
+          maxPerDay
+          maxPerMonth
+          maxPerSecond
+          otoroshiTarget {
+            otoroshiSettings
+            authorizedEntities {
+              services
+              groups
+              routes
+            }
+            apikeyCustomization {
+              tags
+              metadata
+              readOnly
+              clientIdOnly
+              constrainedServicesOnly
+              customMetadata {
+                key
+                possibleValues
+              }
+              restrictions {
+                enabled
+                allowLast
+                forbidden {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                notFound {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+                allowed {
+                  method
+                  path
+                  authorizedEntity {
+                    kind
+                    id
+                  }
+                }
+              }
+            }
+          }
+          paymentSettings {
+            thirdPartyPaymentSettingsId
+            ... on Stripe {
+              thirdPartyPaymentSettingsId
+              productId
+              priceIds {
+                basePriceId
+                additionalPriceId
+              }
+            }
+          }
+          subscriptionProcess {
+            name
+            ... on Form {
+              id
+              title
+              schema
+              formatter
+              type
+              formKeysToMetadata
+            }
+            ... on Email {
+              id
+              title
+              emails
+              type
+            }
+            ... on TeamAdmin {
+              id
+              title
+              team
+              type
+            }
+            ... on Payment {
+              id
+              title
+              thirdPartyPaymentSettingsId
+              type
+            }
+            ... on HttpRequest {
+              id
+              title
+              url
+              headers
+              type
+            }
+          }
+          subscriptionProcessChecksum
+          visibility
+        }
+        total
+        totalFiltered
+      }
+    }
+  `,
+
   myVisibleApis: `
     query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, groupId: $groupId) {
@@ -1683,11 +1838,6 @@ export const graphql = {
         subscriptions {
           _id
           lastUsage
-          apiKey {
-            clientName
-            clientId
-            clientSecret
-          }
           plan {
             _id
             customName
@@ -1705,6 +1855,7 @@ export const graphql = {
           }
           customName
           enabled
+          state
           tags
           metadata
           customMetadata
@@ -1713,21 +1864,70 @@ export const graphql = {
           customMaxPerMonth
           customReadOnly
           adminCustomName
-          parent {
+          keyring {
             _id
-            adminCustomName
-            enabled
-            validUntil
-            api {
-              _id
-              name
-            }
-            plan {
-              _id
-              customName
+            customName
+            subscriptionsCount
+            apiKey {
+              clientName
             }
           }
         }
+        total
+      }
+    }
+    `,
+  getApiKeyrings: `
+    query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        keyrings {
+          _id
+          customName
+          enabled
+          integrationToken
+          bearerToken
+          subscriptionsCount
+          apiKey {
+            clientId
+            clientSecret
+            clientName
+          }
+          rotation {
+            enabled
+            rotationEvery
+            gracePeriod
+            pendingRotation
+          }
+          subscriptions {
+            _id
+            customName
+            adminCustomName
+            enabled
+            state
+            createdAt
+            validUntil
+            tags
+            plan {
+              _id
+              customName
+              autoRotation
+              costPerMonth
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+              currentVersion
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
+  getApiSubscriptionsTotal: `
+    query getApiSubscriptionsTotal ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
         total
       }
     }
@@ -1749,6 +1949,22 @@ export const graphql = {
             name
           }
           action {
+            ... on ApiDepreciationWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion
+              }
+            }
+            ... on ApiBlockingWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion
+              }
+            }
             ... on ApiAccess {
               __typename
               api {
@@ -1787,8 +2003,9 @@ export const graphql = {
                 _id
                 customName
               }
-              parentSubscriptionId {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId
@@ -1852,31 +2069,43 @@ export const graphql = {
             }
             ... on ApiKeyRefreshV2 {
             __typename
-              subscription {
+              keyring {
                 _id
+                customName
                 apiKey {
                   clientName
                   clientId
                   clientSecret
                 }
-                createdAt
-                validUntil
-                by {
-                  id
-                  name
-                  email
-                }
-                customName
-                adminCustomName
-                enabled
+                integrationToken
+                bearerToken
                 rotation {
                   enabled
                   rotationEvery
                   gracePeriod
                   pendingRotation
                 }
-                integrationToken
+                subscriptions {
+                  _id
+                  api {
+                    _humanReadableId
+                    currentVersion
+                  }
+                  team {
+                    _humanReadableId
+                  }
+                }
               }
+              message
+            }
+            ... on ApiKeyDeletionInformation {
+            __typename
+              apiName
+              clientId
+            }
+            ... on ApiKeyDeletionInformationV2 {
+            __typename
+              clientId
               api {
                 _id
                 _humanReadableId
@@ -1887,18 +2116,8 @@ export const graphql = {
                   name
                 }
               }
-              plan {
-                _id
-                customName
-              }
-              message
             }
-            ... on ApiKeyDeletionInformation {
-            __typename
-              apiName
-              clientId
-            }
-            ... on ApiKeyDeletionInformationV2 {
+            ... on ApiSubscriptionExpired {
             __typename
               clientId
               api {
@@ -1927,10 +2146,12 @@ export const graphql = {
             __typename
               team {
                 _id
+                _humanReadableId
                 name
               }
               api {
                 _id
+                _humanReadableId
                 name
                 currentVersion
               }
@@ -1978,11 +2199,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -1997,13 +2213,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId
@@ -2024,11 +2247,6 @@ export const graphql = {
             __typename
               subscription {
                 _id
-                apiKey {
-                  clientName
-                  clientId
-                  clientSecret
-                }
                 plan {
                   _id
                   customName
@@ -2043,13 +2261,20 @@ export const graphql = {
                 customName
                 adminCustomName
                 enabled
-                rotation {
-                  enabled
-                  rotationEvery
-                  gracePeriod
-                  pendingRotation
+                keyring {
+                  apiKey {
+                    clientName
+                    clientId
+                    clientSecret
+                  }
+                  rotation {
+                    enabled
+                    rotationEvery
+                    gracePeriod
+                    pendingRotation
+                  }
+                  integrationToken
                 }
-                integrationToken
               }
               api {
                 _humanReadableId
@@ -2511,3 +2736,14 @@ export const fetchOAuthConfiguration = (
     body: JSON.stringify({ url, clientId, clientSecret }),
   });
 };
+
+export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
+export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_deploy`, { method: 'POST' });
+export const testRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_test`, { method: 'POST' });
+export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, {
+    method: 'POST',
+  });

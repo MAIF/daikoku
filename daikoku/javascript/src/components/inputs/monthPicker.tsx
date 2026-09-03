@@ -1,7 +1,7 @@
-import { DatePicker } from 'antd';
 import { useContext } from 'react';
-import dateFnsGenerateConfig from 'rc-picker/es/generate/dateFns'
+import dateFnsGenerateConfig from '@rc-component/picker/generate/dateFns'
 import { endOfMonth } from 'date-fns';
+import generatePicker from 'antd/es/date-picker/generatePicker';
 
 import { I18nContext } from '../../contexts';
 import { getLanguageAntd } from '../utils';
@@ -27,12 +27,12 @@ export const MonthPicker = ({
 
   const dateFormat = getDateFormat(language);
 
-  const onChange = (newMonth: Date) => {
+  const onChange = (newMonth: Date | null) => {
     if (newMonth && updateDate && value.getTime() !== newMonth.getTime())
       updateDate(endOfMonth(newMonth));
   };
 
-  const MyDatePicker = DatePicker.generatePicker<Date>(dateFnsGenerateConfig)
+  const MyDatePicker = generatePicker<Date>(dateFnsGenerateConfig)
   const locale = getLanguageAntd(language)
 
   return (

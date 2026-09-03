@@ -1,13 +1,15 @@
 import { type } from "@maif/react-forms";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import Pagination from '../../utils/Pagination';
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { createColumnHelper } from "@tanstack/react-table";
+import { Link, Menu, RefreshCcw } from "lucide-react";
 import { I18nContext, ModalContext } from "../../../contexts";
+import { GlobalContext } from "../../../contexts/globalContext";
 import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import * as Services from "../../../services";
 import {
   IApi,
@@ -17,17 +19,14 @@ import {
   IUsagePlan,
   ResponseError
 } from "../../../types";
-import { Filter, SwitchButton, TableRef } from "../../inputs";
+import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   api as API,
   BeautifulTitle,
   Can,
   formatDate,
-  manage,
-  Spinner
+  manage
 } from "../../utils";
-import { GlobalContext } from "../../../contexts/globalContext";
-import { Pen, RefreshCcw, RefreshCw, Trash2 } from "lucide-react";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -40,11 +39,6 @@ type SubscriptionsFilter = {
 };
 export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string;
-  apiKey: {
-    clientName: string;
-    clientId: string;
-    clientSecret: string;
-  };
   plan: IUsagePlan;
   team: {
     _id: string;
@@ -56,6 +50,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   api: IApiGQL;
   customName: string;
   enabled: boolean;
+  state: 'active' | 'blocked';
   customMetadata?: JSON;
   adminCustomName?: string;
   customMaxPerSecond?: number;
@@ -64,19 +59,12 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  parent?: {
+  keyring?: {
     _id: string;
-    adminCustomName: string;
-    enabled: boolean;
-    validUntil: number;
-    api: {
-      _id: string;
-      name: string;
-    };
-    plan: {
-      _id: string;
-      customName: string;
-      type: string;
+    customName: string | null;
+    subscriptionsCount: number;
+    apiKey: {
+      clientName: string;
     };
   };
 }
@@ -92,60 +80,58 @@ export const TeamApiSubscriptions = ({
   const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<SubscriptionsFilter>();
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  )
-  const tableRef = useRef<TableRef>(undefined);
+  const pageSize = 20;
 
   const { translate, Translation } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
   const { confirm, openFormModal, openSubMetadataModal } =
     useContext(ModalContext);
 
-  const subscriptionsQuery = useQuery({
-    queryKey: ["subscriptions", filters, columnFilters, sorting, pagination],
-    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: { subscriptions: Array<IApiSubscriptionGql>, total: number } }>(Services.graphql.getApiSubscriptions, {
+  const queryKey = QUERY_KEYS.apiSubscriptions(api._id, currentTeam._id);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+
+  type IApiSubscriptionListGQL = { subscriptions: Array<IApiSubscriptionGql>, total: number }
+  const fetchData: FetchData<IApiSubscriptionGql> = ({ limit, offset, filters, sorting }) =>
+    customGraphQLClient.request<{ apiApiSubscriptions: IApiSubscriptionListGQL }>(Services.graphql.getApiSubscriptions, {
       apiId: api._id,
       teamId: currentTeam._id,
       version: api.currentVersion,
-      filterTable: JSON.stringify([...(columnFilters ?? []), ...Object.entries(filters ?? {}).map(([id, value]) => ({ id, value }))]),
-      sortingTable: JSON.stringify(sorting ?? []),
-      limit: pagination.pageSize,
-      offset: pagination.pageIndex * pagination.pageSize,
-    }),
-    select: d => d.apiApiSubscriptions
-  });
+      filterTable: JSON.stringify(filters),
+      sortingTable: JSON.stringify(sorting),
+      limit: limit,
+      offset: offset,
+    })
+      .then(({ apiApiSubscriptions }): FetchResult<IApiSubscriptionGql> => {
+        return {
+          items: apiApiSubscriptions.subscriptions,
+          total: apiApiSubscriptions.total,
+        }
+      })
 
-  const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
+  const columnHelper = createColumnHelper<DynamicTableFeatures, IApiSubscriptionGqlWithUsage>();
   const columns = [
     columnHelper.accessor(
-      (row) => row.adminCustomName || row.apiKey.clientName,
+      (row) => row.adminCustomName || row.keyring?.apiKey.clientName || '',
       {
         id: "subscription",
-        header: translate("Name"),
-        meta: { style: { textAlign: "left" } },
+        meta: { title: translate("Name"), size: 25 },
         enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
-          if (sub.parent) {
+          if ((sub.keyring?.subscriptionsCount ?? 0) > 1) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
-              <li>${translate("Api")}: ${sub.parent.api.name}</li>
-              <li>${translate("Plan")}: ${sub.parent.plan.customName}</li>
-              <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
+              <li>${translate("aggregated.apikey.badge.keyring.name")}: ${sub.keyring?.customName ?? sub.keyring?.apiKey.clientName ?? ''}</li>
             </ul>
           </div>`;
             return (
               <div className="d-flex flex-row justify-content-between align-items-center">
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
-                  <div className="badge --primary">A</div>
+                  <div className="badge --primary">
+                    <Link />
+                  </div>
                 </BeautifulTitle>
               </div>
             );
@@ -159,47 +145,37 @@ export const TeamApiSubscriptions = ({
     ),
     columnHelper.accessor(row => row.plan.customName, {
       id: "plan",
-      header: translate("Plan"),
-      meta: { style: { textAlign: "left" } },
+      meta: { title: translate("Plan"), size: 15 },
       cell: (info) => info.getValue(),
       enableColumnFilter: true,
     }),
     columnHelper.accessor(row => row.team.name, {
       id: "team",
-      header: translate("Team"),
-      meta: { style: { textAlign: "left" } },
+      meta: { title: translate("Team"), size: 15 },
       cell: (info) => info.getValue(),
       enableColumnFilter: true,
     }),
-    columnHelper.accessor("enabled", {
-      header: translate("Enabled"),
+    columnHelper.display({
+      id: "state",
       enableColumnFilter: false,
       enableSorting: false,
-      meta: { style: { textAlign: "center" } },
+      meta: { title: translate("State"), size: 10 },
       cell: (info) => {
         const sub = info.row.original;
-        return (
-          <SwitchButton
-            disabled={sub.parent && !sub.parent?.enabled}
-            ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-            onSwitch={(value) => {
-              return Services.archiveSubscriptionByOwner(
-                currentTeam._id,
-                sub._id,
-                value
-              )
-                .then(() => queryClient.invalidateQueries({ queryKey: ["subscriptions"] }))
-                .then(() => tableRef.current?.update())
-            }}
-            checked={sub.enabled}
-          />
-        );
+        return <span className={classNames("badge --state d-flex align-items-center gap-2", {
+          "--success": sub.enabled && sub.state === 'active',
+          "--danger": !sub.enabled || sub.state === 'blocked',
+        })}>
+          {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
+          {(sub.state === "blocked") && translate('subscription.blocked.label')}
+          {(!sub.enabled && sub.state === "active") && translate('subscription.disable.label')}
+
+        </span>
       },
     }),
     columnHelper.accessor("createdAt", {
       enableColumnFilter: false,
-      header: translate("Created at"),
-      meta: { style: { textAlign: "left" } },
+      meta: { title: translate("Created at"), size: 12, className: 'date-cell' },
       cell: (info) => {
         const date = info.getValue();
         if (date) {
@@ -210,8 +186,7 @@ export const TeamApiSubscriptions = ({
     }),
     columnHelper.accessor("lastUsage", {
       enableColumnFilter: false,
-      header: translate("apisubscription.lastUsage.label"),
-      meta: { style: { textAlign: "left" } },
+      meta: { title: translate("apisubscription.lastUsage.label"), size: 12, className: 'date-cell' },
       cell: (info) => {
         const date = info.getValue();
         if (date) {
@@ -221,90 +196,82 @@ export const TeamApiSubscriptions = ({
       },
     }),
     columnHelper.display({
-      header: translate("Actions"),
-      meta: { style: { textAlign: "center", width: "120px" } },
+      id: "actions",
+      meta: { title: translate("Actions"), size: 8, className: 'action-cell' },
       cell: (info) => {
         const sub = info.row.original;
+
         return (
-          <div className="btn-group gap-1">
-            <BeautifulTitle title={translate("Update metadata")}>
+          <Can I={manage} a={API} team={currentTeam}>
+            <div className="dropdown">
               <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("Update metadata")}
-                onClick={() => updateMeta(sub)}
-              >
-                <Pen />
+                className="btn --ghost --small --icon-only"
+                aria-label={translate('subscription.actions.aria.label')}
+                type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                id={`dropdown-${sub._id}`}>
+                <Menu
+                  className="cursor-pointer dropdown-menu-button"
+                  style={{ fontSize: '18px' }}
+                />
               </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("Refresh secret")}>
-              <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("Refresh secret")}
-                onClick={() => regenerateSecret(sub)}
+              <div
+                className="dropdown-menu dropdown-menu-end"
+                aria-labelledby={`dropdown-${sub._id}`}
+                style={{ zIndex: 1 }}
               >
-                <RefreshCw />
-              </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("api.delete.subscription")}>
-              <button
-                key={`edit-meta-${sub._id}`}
-                type="button"
-                className="btn --tertiary --small --icon-only"
-                aria-label={translate("api.delete.subscription")}
-                onClick={() => deleteSubscription(sub)}
-              >
-                <Trash2 />
-              </button>
-            </BeautifulTitle>
-          </div>
-        );
+                <button
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => updateMeta(sub)
+                  }
+                >
+                  {translate("Update metadata")}
+                </button>
+                <div className="dropdown-divider" />
+                {api.state !== 'blocked' && <button
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => toggleApiSubscriptionState(sub)}
+                >
+                  {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
+                </button>}
+                {api.state !== 'blocked' && <button
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => regenerateSecret(sub)}
+                >
+                  {translate("Refresh secret")}
+                </button>}
+                <button
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => deleteSubscription(sub)}
+                >
+                  {translate("api.delete.subscription")}
+                </button>
+              </div>
+            </div>
+          </Can>
+        )
       },
     }),
   ];
-
-
-  const defaultData = useMemo(() => [], [])
-  const table = useReactTable({
-    data: subscriptionsQuery.data?.subscriptions ?? defaultData,
-    columns: columns,
-    rowCount: subscriptionsQuery.data?.total,
-    state: {
-      pagination,
-      columnFilters,
-      sorting
-    },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    onColumnFiltersChange: (updater) => {
-      const newFilters = typeof updater === 'function' ? updater(columnFilters) : updater
-      setColumnFilters(newFilters)
-      setPagination(prev => ({ ...prev, pageIndex: 0 })) // 👈 reset
-    },
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate("Subscriptions")}`;
   }, [currentTeam.name, translate]);
 
+  const updateSubscription = useMutation({
+    mutationFn: ({ sub, updates }: { sub: IApiSubscriptionGql; updates: CustomSubscriptionData }) =>
+      Services.updateSubscription(currentTeam, { ...sub, ...updates }),
+    onSuccess: () => {
+      invalidate();
+    },
+  });
+
   const updateMeta = (sub: IApiSubscriptionGql) => {
     return openSubMetadataModal({
       save: (updates: CustomSubscriptionData) => {
         const toastId = toast.loading(translate("loading"));
-        Services.updateSubscription(currentTeam, { ...sub, ...updates })
-          .then(
-            () => {
-              queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
-            }
-          ).
-          then(() => toast.success(translate("api.subscription.update.success"), { id: toastId }));
+        updateSubscription.mutateAsync({ sub, updates })
+          .then(() => toast.success(translate("api.subscription.update.success"), { id: toastId }))
+          .catch((e: ResponseError) => toast.error(translate(e.error), { id: toastId }));
       },
       api: sub.api._id,
       plan: sub.plan._id,
@@ -316,20 +283,31 @@ export const TeamApiSubscriptions = ({
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.regenerateApiKeySecret(currentTeam._id, sub._id),
+      Services.regenerateApiKeySecret(currentTeam._id, sub.keyring!._id),
     onSuccess: () => {
-      tableRef.current?.update();
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      invalidate();
     },
     // onError: (e: ResponseError) => {
     //   toast.error(translate(e.error));
     // },
   });
 
+  const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
+    if (api.state !== 'blocked')
+      return Services.archiveSubscriptionByOwner(
+        currentTeam._id,
+        sub._id,
+        sub.state !== 'active'
+      )
+        .then(() => invalidate())
+  }
+
   const regenerateSecret = (sub: IApiSubscriptionGql) => {
     const plan = sub.plan;
+    if (api.state === 'blocked')
+      return
 
-    confirm({
+    return confirm({
       message: translate({
         key: "secret.refresh.confirm",
         replacements: [
@@ -352,10 +330,9 @@ export const TeamApiSubscriptions = ({
 
   const deleteApiSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
+      Services.deleteApiSubscription(sub.team._id, sub._id),
     onSuccess: () => {
-      tableRef.current?.update();
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      invalidate();
     },
     // onError: (e: ResponseError) => {
     //   toast.error(translate(e.error));
@@ -393,7 +370,7 @@ export const TeamApiSubscriptions = ({
               actionLabel: translate("Filter"),
               onSubmit: (data) => {
                 setFilters(data);
-                queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
+                invalidate()
               },
               schema: {
                 metadata: {
@@ -429,78 +406,17 @@ export const TeamApiSubscriptions = ({
         )}
       </div>
       <div className="col-12">
-        <table className="reactTableV7">
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  return (
-                    <th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={classNames({
-                        '--sort-asc': header.column.getIsSorted() === 'asc',
-                        '--sort-desc': header.column.getIsSorted() === 'desc',
-                      })}>
-                      {header.isPlaceholder ? null : (
-                        <div onClick={header.column.getToggleSortingHandler()}>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </div>
-                      )}
-                      {header.column.getCanFilter() && <div className='my-2'>
-                        <Filter column={header.column} table={table} />
-                      </div>}
-                    </th>
-                  )
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {subscriptionsQuery.isLoading && (
-              <tr>
-                <td colSpan={1000}>
-                  <Spinner />
-                </td>
-              </tr>
-            )
-            }
-            {!subscriptionsQuery.isLoading && table.getRowModel().rows.map(row => {
-              return (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map(cell => {
-                    return (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        <Pagination
-          previousLabel={translate('Previous')}
-          nextLabel={translate('Next')}
-          breakLabel={'...'}
-          breakClassName={'break'}
-          pageCount={table.getPageCount()}
-          marginPagesDisplayed={1}
-          pageRangeDisplayed={5}
-          onPageChange={(page) => table.setPageIndex(page.selected)}
-          containerClassName={'pagination'}
-          pageClassName={'page-selector'}
-          forcePage={table.getState().pagination.pageIndex}
-          // forcePage={page => table.setPageIndex(page)}
-          activeClassName={'active'} />
+        <DynamicTable<IApiSubscriptionGql>
+          queryKey={queryKey}
+          columns={columns}
+          fetchData={fetchData}
+          pageSize={pageSize}
+          getRowId={row => row._id}
+          getRowAriaLabel={row => row.adminCustomName || row.keyring?.apiKey.clientName || ''}
+          countLabelKey="API subscription"
+        />
       </div>
     </Can>
   );
 };
+

@@ -31,24 +31,26 @@ let SEED_CLIENT_ID: string
 
 async function resolveSeedIds(): Promise<void> {
   await withDb(async client => {
+    // Since the keyring change, an ApiSubscription no longer carries the Otoroshi
+    // apiKey (nor a `parent` link): it points to a Keyring (content->>'keyring'),
+    // and the keyring holds the apiKey/clientId. We join the keyrings table to
+    // recover the clientId.
     const res = await client.query(`
       SELECT
         best_plan.api_id,
         best_plan.plan_id,
         best_plan.cnt,
         s._id                            AS sub_id,
-        s.content->'apiKey'->>'clientId' AS client_id
+        k.content->'apiKey'->>'clientId' AS client_id
       FROM (
         SELECT content->>'api' AS api_id, content->>'plan' AS plan_id, count(*) AS cnt
         FROM api_subscriptions
-        WHERE content->>'parent' IS NULL
-          AND (content->>'_deleted')::boolean IS NOT TRUE
+        WHERE (content->>'_deleted')::boolean IS NOT TRUE
           AND _id LIKE 'seed-%'
           AND content->>'api' = (
             SELECT content->>'api'
             FROM api_subscriptions
-            WHERE content->>'parent' IS NULL
-              AND (content->>'_deleted')::boolean IS NOT TRUE
+            WHERE (content->>'_deleted')::boolean IS NOT TRUE
               AND _id LIKE 'seed-%'
             GROUP BY content->>'api'
             ORDER BY count(*) DESC, content->>'api' ASC
@@ -61,9 +63,11 @@ async function resolveSeedIds(): Promise<void> {
       JOIN api_subscriptions s
         ON  s.content->>'plan' = best_plan.plan_id
         AND s.content->>'api'  = best_plan.api_id
-        AND s.content->>'parent' IS NULL
         AND (s.content->>'_deleted')::boolean IS NOT TRUE
         AND s._id LIKE 'seed-%'
+      JOIN keyrings k
+        ON  k._id = s.content->>'keyring'
+        AND (k.content->>'_deleted')::boolean IS NOT TRUE
       LIMIT 1
     `)
 
@@ -83,7 +87,7 @@ async function withDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   const client = new Client({
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: parseInt(process.env.POSTGRES_PORT ?? '5432'),
-    database: process.env.POSTGRES_DB ?? 'daikoku',
+    database: process.env.POSTGRES_DB ?? 'dk_perf',
     user: process.env.POSTGRES_USER ?? 'postgres',
     password: process.env.POSTGRES_PASSWORD ?? 'postgres',
   })
