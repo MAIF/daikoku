@@ -137,6 +137,7 @@ GET     /api/apis/:apiId/plan/:planId/pages/:pageId             fr.maif.daikoku.
 POST    /api/teams/:teamId/subscriptions/:id/name               fr.maif.daikoku.controllers.ApiController.updateApiSubscriptionCustomName(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive           fr.maif.daikoku.controllers.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
 PUT		  /api/teams/:teamId/subscriptions/:id/_archiveByOwner    fr.maif.daikoku.controllers.ApiController.toggleApiSubscriptionByApiOwner(teamId, id, enabled: Option[Boolean] ?= Some(false))
+PUT		  /api/teams/:teamId/subscriptions/:id/_cancel            fr.maif.daikoku.controllers.ApiController.cancelApiSubscription(teamId, id, cancel: Option[Boolean] ?= Some(true))
 GET		  /api/teams/:teamId/subscriptions/:id/_transfer          fr.maif.daikoku.controllers.ApiController.getTransferLink(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id/_retrieve          fr.maif.daikoku.controllers.ApiController.transferSubscription(teamId, id)
 POST	  /api/teams/:teamId/subscriptions/:id/_makeUnique        fr.maif.daikoku.controllers.ApiController.makeUniqueSubscription(teamId, id)

@@ -2063,6 +2063,59 @@ class ApiController(
       }
     }
 
+  /** The consumer ends their own subscription, effective when the period they
+    * have paid for runs out. Nothing is destroyed and passing cancel=false
+    * takes it back, so this stays reversible until the last paid day.
+    */
+  def cancelApiSubscription(
+      teamId: String,
+      subscriptionId: String,
+      cancel: Option[Boolean]
+  ) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has @{action} the cancellation of api subscription @{subscription.id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        val cancelling = cancel.getOrElse(true)
+        ctx.setCtxValue(
+          "@action",
+          if (cancelling) "scheduled" else "withdrawn"
+        )
+
+        apiSubscriptionAction(
+          ctx.tenant,
+          team,
+          subscriptionId,
+          (_: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+            ctx.setCtxValue("subscription", subscription)
+
+            (for {
+              endsAt <- paymentClient.cancelAtPeriodEnd(
+                ctx.tenant,
+                subscription,
+                plan,
+                cancelling
+              )
+              _ <- EitherT.liftF[Future, AppError, Unit](
+                if (cancelling)
+                  billingNotificationService.cancellationScheduled(
+                    ctx.tenant,
+                    subscription,
+                    endsAt
+                  )
+                else FastFuture.successful(())
+              )
+            } yield subscription.asSafeJson.as[JsObject] ++ Json.obj(
+              "cancelAtPeriodEnd" -> cancelling,
+              "endsAt" -> endsAt.getMillis
+            )).value
+          }
+        )
+      }
+    }
+
   def checkTransferLink() =
     DaikokuActionMaybeWithGuest.async { ctx =>
       PublicUserAccess(
