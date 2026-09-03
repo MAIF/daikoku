@@ -1,4 +1,6 @@
 import { expect, Page } from '@playwright/test';
+import { createHmac } from 'node:crypto';
+
 import { ACCUEIL, adminApi, exposedPort } from './utils';
 
 const STRIPE_KEY = process.env.STRIPE_TEST_SECRET_KEY;
@@ -18,6 +20,10 @@ export const stripe = (path: string, init: RequestInit = {}) =>
     },
   });
 
+/** Stripe cannot reach a local Daikoku, so the tests sign the deliveries
+ * themselves with this secret. It is the same one the endpoint verifies. */
+export const WEBHOOK_SECRET = 'whsec_daikoku_e2e';
+
 export const configureTenantStripe = async (tenantId: string, settingsId: string) => {
   const tenantData: any = await adminApi(`/tenants/${tenantId}`).then((r) => r.json());
   tenantData.thirdPartyPaymentSettings = [
@@ -27,6 +33,7 @@ export const configureTenantStripe = async (tenantId: string, settingsId: string
       name: settingsId,
       publicKey: STRIPE_PUBLIC_KEY,
       secretKey: STRIPE_KEY,
+      webhookSecret: WEBHOOK_SECRET,
     },
   ];
   const res = await adminApi(`/tenants/${tenantId}`, {
@@ -60,6 +67,20 @@ export const setupStripePaymentOnPlan = async (
   return meterId;
 };
 
+/** Goes through the real producer route, so the amounts are rebuilt into new
+ * Stripe prices exactly as they would be in production. */
+export const updatePlanAsProducer = async (
+  page: Page,
+  teamId: string,
+  api: any,
+  planId: string,
+  plan: any
+) =>
+  page.request.put(
+    `http://localhost:${exposedPort}/api/teams/${teamId}/apis/${api._id}/${api.currentVersion}/plan/${planId}`,
+    { data: plan }
+  );
+
 export const subscribeViaStripeCheckout = async (
   page: Page,
   opts: { apiName: string; teamName: string }
@@ -83,6 +104,77 @@ export const subscribeViaStripeCheckout = async (
   await page.waitForURL(new RegExp(`localhost:${exposedPort}`), { timeout: 60_000 });
 };
 
+const form = (data: Record<string, string>) =>
+  new URLSearchParams(data).toString();
+
+/** A test clock lets Stripe really close a billing period: it aggregates the
+ * meter, issues the invoice and finalises it. Without it the cycle turn is
+ * unobservable short of waiting a month. */
+export const createTestClock = async (frozenAt: Date): Promise<string> => {
+  const res = await stripe('/v1/test_helpers/test_clocks', {
+    method: 'POST',
+    body: form({ frozen_time: String(Math.floor(frozenAt.getTime() / 1000)) }),
+  });
+  const clock = await res.json();
+  expect(res.ok, `create test clock failed: ${JSON.stringify(clock)}`).toBeTruthy();
+  return clock.id;
+};
+
+export const advanceTestClock = async (clockId: string, to: Date): Promise<void> => {
+  const res = await stripe(`/v1/test_helpers/test_clocks/${clockId}/advance`, {
+    method: 'POST',
+    body: form({ frozen_time: String(Math.floor(to.getTime() / 1000)) }),
+  });
+  expect(res.ok, `advance test clock failed: ${await res.text()}`).toBeTruthy();
+
+  await expect
+    .poll(
+      async () =>
+        (await stripe(`/v1/test_helpers/test_clocks/${clockId}`).then((r) => r.json()))
+          .status,
+      { timeout: 300_000, intervals: [5_000] }
+    )
+    .toBe('ready');
+};
+
+export const deleteTestClock = (clockId: string) =>
+  stripe(`/v1/test_helpers/test_clocks/${clockId}`, { method: 'DELETE' });
+
+/** Created before the checkout, carrying the metadata Daikoku searches on, so
+ * the subscription flow reuses this customer instead of creating a clock-less
+ * one. A clock can only be attached at customer creation. */
+export const createClockedCustomer = async (
+  clockId: string,
+  daikokuId: string,
+  email: string
+): Promise<string> => {
+  const res = await stripe('/v1/customers', {
+    method: 'POST',
+    body: form({
+      email,
+      test_clock: clockId,
+      'metadata[daikoku_id]': daikokuId,
+    }),
+  });
+  const customer = await res.json();
+  expect(res.ok, `create clocked customer failed: ${JSON.stringify(customer)}`).toBeTruthy();
+  return customer.id;
+};
+
+export const stripeSubscription = (subscriptionId: string) =>
+  stripe(`/v1/subscriptions/${subscriptionId}`).then((r) => r.json());
+
+export const stripeInvoice = (invoiceId: string) =>
+  stripe(`/v1/invoices/${invoiceId}`).then((r) => r.json());
+
+export const findStripeSubscriptionId = async (customerId: string): Promise<string> => {
+  const res = await stripe(`/v1/subscriptions?customer=${customerId}&limit=1`).then((r) =>
+    r.json()
+  );
+  expect(res.data?.length, 'no stripe subscription for that customer').toBeGreaterThan(0);
+  return res.data[0].id;
+};
+
 export const findStripeCustomerId = async (daikokuId: string): Promise<string> => {
   const query = `/v1/customers/search?query=${encodeURIComponent(
     `metadata['daikoku_id']:'${daikokuId}'`
@@ -94,6 +186,33 @@ export const findStripeCustomerId = async (daikokuId: string): Promise<string> =
     })
     .toBeGreaterThan(0);
   return (await stripe(query).then((r) => r.json())).data[0].id;
+};
+
+/** Signs and posts an event the way Stripe would: HMAC-SHA256 over
+ * "<timestamp>.<raw body>", carried in Stripe-Signature. */
+export const deliverWebhook = async (
+  settingsId: string,
+  type: string,
+  object: any
+): Promise<Response> => {
+  const body = JSON.stringify({
+    id: `evt_${Date.now()}`,
+    type,
+    data: { object },
+  });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = createHmac('sha256', WEBHOOK_SECRET)
+    .update(`${timestamp}.${body}`)
+    .digest('hex');
+
+  return fetch(`http://localhost:${exposedPort}/api/payment/${settingsId}/_webhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': `t=${timestamp},v1=${signature}`,
+    },
+    body,
+  });
 };
 
 export const stripeMeterTotal = async (

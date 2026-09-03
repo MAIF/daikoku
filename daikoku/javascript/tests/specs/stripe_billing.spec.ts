@@ -18,12 +18,21 @@ import {
   vendeurs,
 } from './utils';
 import {
+  advanceTestClock,
   configureTenantStripe,
+  createClockedCustomer,
+  createTestClock,
+  deleteTestClock,
+  deliverWebhook,
   findStripeCustomerId,
+  findStripeSubscriptionId,
   setupStripePaymentOnPlan,
   stripeConfigured,
+  stripeInvoice,
   stripeMeterTotal,
+  stripeSubscription,
   subscribeViaStripeCheckout,
+  updatePlanAsProducer,
 } from './stripe';
 
 test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => {
@@ -59,6 +68,14 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     const settingsId = 'stripe-e2e';
     log('configuring the tenant with the Stripe test key');
     await configureTenantStripe(tenant, settingsId);
+
+    // 1b. A test clock, and the consumer team's customer attached to it. A clock
+    //     can only be attached at customer creation, and Daikoku looks a customer
+    //     up by metadata['daikoku_id'] before creating one, so the checkout below
+    //     reuses this one and the whole billing cycle becomes controllable.
+    log('creating the stripe test clock and the clocked customer');
+    const clockId = await createTestClock(new Date());
+    await createClockedCustomer(clockId, vendeurs, 'jim@daikoku.io');
 
     // 2. Seed a pay-per-use plan + an API owned by the producer team (apiDivision).
     const planId = nanoid(32);
@@ -171,5 +188,65 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await expect
       .poll(syncAndReadMeter, { timeout: 180_000, intervals: [10_000] })
       .toBeGreaterThan(reported);
+
+    // 10. The producer raises the price. New Stripe prices are built on the same
+    //     product and the same meter, so usage keeps being reported to the counter
+    //     that has been accumulating.
+    log('logging back in as the producer and raising the price');
+    await page.getByRole('img', { name: 'user menu' }).click();
+    await page.getByRole('link', { name: 'Déconnexion' }).click();
+    await loginAs(MICHAEL, page);
+
+    const before: any = await adminApi(`/usage-plans/${planId}`).then((r) => r.json());
+    const raise = await updatePlanAsProducer(page, apiDivision, api, planId, {
+      ...before,
+      costPerMonth: 9,
+      costPerRequest: 0.05,
+    });
+    expect(raise.ok(), `raising the price failed: ${await raise.text()}`).toBeTruthy();
+
+    const after: any = await adminApi(`/usage-plans/${planId}`).then((r) => r.json());
+    expect(after.paymentSettings.productId).toBe(before.paymentSettings.productId);
+    expect(after.paymentSettings.priceIds.meterId).toBe(meterId);
+    expect(after.paymentSettings.priceIds.basePriceId).not.toBe(
+      before.paymentSettings.priceIds.basePriceId
+    );
+    log(`plan now priced by ${after.paymentSettings.priceIds.basePriceId}`);
+
+    // 11. The subscriber has not moved: their items still carry the old prices.
+    const subId = await findStripeSubscriptionId(cus);
+    const priceIdsOnStripe = async () =>
+      (await stripeSubscription(subId)).items.data.map((i: any) => i.price.id).sort();
+    expect(await priceIdsOnStripe()).toContain(before.paymentSettings.priceIds.basePriceId);
+
+    // 12. Advance the clock past the end of the period: Stripe really closes it,
+    //     aggregates the meter, issues the invoice and finalises it.
+    const periodEnd: number = (await stripeSubscription(subId)).items.data[0]
+      .current_period_end;
+    log(`advancing the test clock past the period end (${periodEnd})`);
+    await advanceTestClock(clockId, new Date((periodEnd + 2 * 3600) * 1000));
+
+    const invoice = await stripeInvoice((await stripeSubscription(subId)).latest_invoice);
+    log(`invoice ${invoice.id} is ${invoice.status}, total ${invoice.total}`);
+    expect(invoice.status).not.toBe('draft');
+    expect(invoice.total).toBeGreaterThan(0);
+
+    // 13. The finalised invoice is what allows the swap. Delivering the real event
+    //     must move the items in place: a second item on the same meter would have
+    //     Stripe bill the same usage twice.
+    log('delivering a signed invoice.finalized to the local webhook');
+    const delivery = await deliverWebhook(settingsId, 'invoice.finalized', invoice);
+    expect(delivery.ok, `webhook refused: ${await delivery.text()}`).toBeTruthy();
+
+    await expect
+      .poll(priceIdsOnStripe, { timeout: 60_000, intervals: [3_000] })
+      .toEqual(
+        [
+          after.paymentSettings.priceIds.basePriceId,
+          after.paymentSettings.priceIds.additionalPriceId,
+        ].sort()
+      );
+
+    await deleteTestClock(clockId);
   });
 });

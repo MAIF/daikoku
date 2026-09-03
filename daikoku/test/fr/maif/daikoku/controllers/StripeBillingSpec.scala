@@ -477,6 +477,39 @@ class StripeBillingSpec()
       )
     }
 
+    "let the amounts of a priced plan change, but never its currency" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+
+      def savePlan(plan: UsagePlan): WSResponse =
+        httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}",
+          method = "PUT",
+          body = plan.asJson.some
+        )(using stripeTenant, session)
+
+      val priced = currentPlan()
+
+      val raised = savePlan(priced.copy(costPerMonth = BigDecimal(42).some))
+      withClue(raised.body) { raised.status mustBe 200 }
+
+      val otherCurrency = savePlan(priced.copy(currency = Currency("USD").some))
+      otherCurrency.status mustBe 400
+
+      // the raise rebuilt the prices on the product and the meter the plan
+      // already owned, so usage keeps being reported to the same counter
+      val settings =
+        currentPlan().paymentSettings.get.asInstanceOf[PaymentSettings.Stripe]
+      settings.productId mustBe productId
+      settings.priceIds.meterId mustBe meterId.some
+      currentPlan().currency mustBe Currency("EUR").some
+    }
+
     "pin the Stripe API version on every call, so accounts cannot drift apart" in {
       subscribeAndPay()
 
