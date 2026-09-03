@@ -1431,5 +1431,7 @@
   "account.creation.form.confirm.password.label": "Confirm password",
   "trillion": "trillion",
   "billion": "billion",
-  "million": "million"
+  "million": "million",
+  "tenant.edit.additional.domains.label": "Additional domains",
+  "tenant.edit.additional.domains.help": "Other hostnames served by this tenant. Emails use the primary domain unless the recipient last used one of these."
 }

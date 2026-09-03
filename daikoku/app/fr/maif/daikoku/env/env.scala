@@ -7,33 +7,11 @@ import fr.maif.daikoku.audit.AuditActorSupervizer
 import fr.maif.daikoku.domain.SchedulingMode.Interval
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.Tenant.getCustomizationCmsPage
-import fr.maif.daikoku.domain.{
-  DatastoreId,
-  SchedulingMode,
-  ReportsInfo,
-  TeamApiKeyVisibility,
-  Tenant
-}
+import fr.maif.daikoku.domain.{AuditTrailConfig, ConsoleMailerSettings, DatastoreId, MailerSettings, MailgunSettings, MailjetSettings, OtoroshiSettings, OtoroshiSettingsId, ReportsInfo, SchedulingMode, SendgridSettings, SimpleSMTPSettings, TeamApiKeyVisibility, Tenant, User}
 import fr.maif.daikoku.audit.ElasticAnalyticsConfig
-import fr.maif.daikoku.domain.{
-  AuditTrailConfig,
-  ConsoleMailerSettings,
-  MailerSettings,
-  MailgunSettings,
-  MailjetSettings,
-  OtoroshiSettings,
-  OtoroshiSettingsId,
-  SendgridSettings,
-  SimpleSMTPSettings
-}
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider.Local
-import fr.maif.daikoku.login.{
-  AuthProvider,
-  LdapConfig,
-  LoginFilter,
-  OAuth2Config
-}
+import fr.maif.daikoku.login.{AuthProvider, LdapConfig, LoginFilter, OAuth2Config}
 import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.storage.DataStore
 import fr.maif.daikoku.utils.*
@@ -46,7 +24,7 @@ import org.apache.pekko.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
-import play.api.mvc.EssentialFilter
+import play.api.mvc.{EssentialFilter, RequestHeader}
 import play.api.{Configuration, Environment}
 
 import java.nio.file.Paths
@@ -669,7 +647,12 @@ sealed trait Env {
       ec: ExecutionContext
   ): Seq[EssentialFilter]
 
-  def getDaikokuUrl(tenant: Tenant, path: String, domain: Option[String] = None): String
+  def requestHost(request: RequestHeader): String
+  
+  def getDaikokuUrl(tenant: Tenant, path: String): String
+  def getDaikokuUrl(tenant: Tenant, path: String, host: Option[String]): String
+  def getDaikokuUrl(tenant: Tenant, path: String, request: RequestHeader): String
+  def getDaikokuUrl(tenant: Tenant, path: String, user: User): String
 
   def initDatastore(path: Option[String] = None)(implicit
       ec: ExecutionContext
@@ -1073,25 +1056,37 @@ class DaikokuEnv(
       case _ => Seq.empty
     }
 
-  def getDaikokuUrl(tenant: Tenant, path: String, domain: Option[String] = None): String = {
-    val _domain = domain match {
-      case Some(d) => if (tenant.additionalDomains.contains(d)) d else tenant.domain
-      case _ => tenant.domain
-    }
-
-    (config.sslEnabled, config.exposedPort) match {
-      case (Some(true), 443) => s"https://${_domain}$path"
-      case (Some(true), exposedPort) =>
-        s"https://${_domain}:$exposedPort$path"
-      case (Some(false), 80) => s"http://${_domain}$path"
-      case (Some(false), exposedPort) =>
-        s"http://${_domain}:$exposedPort$path"
-      case (_, 80)  => s"http://${_domain}$path"
-      case (_, 443) => s"https://${_domain}$path"
-      case (_, exposedPort) if exposedPort == config.securePort =>
-        s"https://${_domain}:$exposedPort$path"
-      case (_, exposedPort) => s"http://${_domain}:$exposedPort$path"
-    }
-
+  def requestHost(request: RequestHeader): String = {
+    val host = request.headers
+      .get(config.tenantHostHeaderKey)
+      .orElse(request.headers.get("X-Forwarded-Host"))
+      .getOrElse(request.host)
+    if (host.contains(":")) host.split(":").apply(0) else host
   }
+
+  def getDaikokuUrl(tenant: Tenant, path: String): String =
+    getDaikokuUrl(tenant, path, None)
+
+  def getDaikokuUrl(tenant: Tenant, path: String, request: RequestHeader): String =
+    getDaikokuUrl(tenant, path, Some(requestHost(request)))
+
+  override def getDaikokuUrl(tenant: Tenant, path: String, user: User): String =
+    getDaikokuUrl(tenant, path, user.preferredDomains.get(tenant.id))
+
+  def getDaikokuUrl(tenant: Tenant, path: String, host: Option[String]): String = {
+    val domain = tenant.hostFor(host)
+    (config.sslEnabled, config.exposedPort) match {
+      case (Some(true), 443) => s"https://$domain$path"
+      case (Some(true), exposedPort) => s"https://$domain:$exposedPort$path"
+      case (Some(false), 80) => s"http://$domain$path"
+      case (Some(false), exposedPort) => s"http://$domain:$exposedPort$path"
+      case (_, 80) => s"http://$domain$path"
+      case (_, 443) => s"https://$domain$path"
+      case (_, exposedPort) if exposedPort == config.securePort =>
+        s"https://$domain:$exposedPort$path"
+      case (_, exposedPort) => s"http://$domain:$exposedPort$path"
+    }
+  }
+
+  
 }

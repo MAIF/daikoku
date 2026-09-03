@@ -89,7 +89,8 @@ class AccountCreationService {
         password = Some(accountCreation.password),
         defaultLanguage = None,
         metadata =
-          metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
+          metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]],
+        preferredDomains = accountCreation.preferredDomains
       )
 
       _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -224,10 +225,10 @@ class AccountCreationService {
     val mailData = Map(
       "tenant" -> JsString(tenant.name),
       "urlAccept" -> JsString(
-        env.getDaikokuUrl(tenant, pathAccept)
+        env.getDaikokuUrl(tenant, pathAccept, accountCreation.preferredDomains.get(tenant.id))
       ),
       "urlDecline" -> JsString(
-        env.getDaikokuUrl(tenant, pathDecline)
+        env.getDaikokuUrl(tenant, pathDecline, accountCreation.preferredDomains.get(tenant.id))
       ),
       "userName" -> JsString(accountCreation.name),
       "userEmail" -> JsString(accountCreation.email),
@@ -412,7 +413,6 @@ class AccountCreationService {
       )
 
       tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-      notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
 
       _ <- EitherT.liftF(
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
@@ -423,6 +423,8 @@ class AccountCreationService {
       _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
         implicit val language: String =
           admin.defaultLanguage.getOrElse(tenantLanguage)
+
+        val notificationUrl = env.getDaikokuUrl(tenant, "/notifications", admin)
         val mailData = Map(
           "tenant" -> JsString(tenant.name),
           "userName" -> JsString(accountCreation.name),

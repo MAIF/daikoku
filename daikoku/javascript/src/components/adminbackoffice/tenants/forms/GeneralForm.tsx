@@ -35,7 +35,8 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
     additionalDomains: {
       type: type.string,
       array: true,
-      label: translate('additional Domain names'),
+      label: translate('tenant.edit.additional.domains.label'),
+      help: translate('tenant.edit.additional.domains.help'),
       //todo: check if not already setup by another
     },
     defaultLanguage: {

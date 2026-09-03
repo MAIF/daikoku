@@ -294,7 +294,8 @@ class TeamController(
                     "link" -> JsString(
                       env.getDaikokuUrl(
                         ctx.tenant,
-                        s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
+                        s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken",
+                        ctx.request
                       )
                     ),
                     "team_data" -> team.asJson,
@@ -511,7 +512,7 @@ class TeamController(
           "user" -> JsString(ctx.user.name),
           "teamName" -> JsString(team.name),
           "link" -> JsString(
-            env.getDaikokuUrl(ctx.tenant, "/notifications")
+            env.getDaikokuUrl(ctx.tenant, "/notifications", user)
           ),
           "recipient_data" -> user.asSimpleJson,
           "sender_data" -> ctx.user.asSimpleJson,
@@ -582,6 +583,7 @@ class TeamController(
           Some(BCrypt.hashpw("invited-user-password", BCrypt.gensalt())),
         lastTenant = Some(ctx.tenant.id),
         defaultLanguage = None,
+        preferredDomains = Map(ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some)),
         invitation = Some(
           UserInvitation(
             registered = false,
@@ -608,7 +610,8 @@ class TeamController(
           val invitedUser = createInvitedUser(team.name, notificationId.value)
           val link = env.getDaikokuUrl(
             ctx.tenant,
-            s"/informations?invitation-token=${invitedUser.invitation.get.token}"
+            s"/informations?invitation-token=${invitedUser.invitation.get.token}",
+            invitedUser
           )
 
           val notification = Notification(

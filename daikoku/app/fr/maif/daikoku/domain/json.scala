@@ -2085,7 +2085,11 @@ object json {
             failedLoginAttempts =
               (json \ "failedLoginAttempts").asOpt[Int].getOrElse(0),
             lastFailedLogin =
-              (json \ "lastFailedLogin").asOpt(using DateTimeFormat)
+              (json \ "lastFailedLogin").asOpt(using DateTimeFormat),
+            preferredDomains = (json \ "preferredDomains")
+              .asOpt[Map[String, String]]
+              .map(_.map { case (k, v) => TenantId(k) -> v })
+              .getOrElse(Map.empty)
           )
         )
       } recover { case e =>
@@ -2126,7 +2130,8 @@ object json {
         "lastFailedLogin" -> o.lastFailedLogin
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
       )
   }
 
@@ -4254,7 +4259,11 @@ object json {
               steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
               state = (json \ "state").as(using SubscriptionDemandStateFormat),
               value = (json \ "value").as[JsObject],
-              fromTenant = (json \ "fromTenant").as(using TenantIdFormat)
+              fromTenant = (json \ "fromTenant").as(using TenantIdFormat),
+              preferredDomains = (json \ "preferedDomains")
+                .asOpt[Map[String, String]]
+                .map(_.map { case (k, v) => TenantId(k) -> v })
+                .getOrElse(Map.empty)
             )
           )
         } recover { case e =>
@@ -4274,7 +4283,8 @@ object json {
           "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
           "state" -> SubscriptionDemandStateFormat.writes(o.state),
           "value" -> o.value,
-          "fromTenant" -> o.fromTenant.value
+          "fromTenant" -> o.fromTenant.value,
+          "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
         )
     }
 

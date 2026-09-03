@@ -189,7 +189,8 @@ class PaymentClient(
       tenant: Tenant,
       subscriptionDemand: SubscriptionDemand,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String],
+      host: Option[String]
   ): EitherT[Future, AppError, Result] = {
     for {
       api <- EitherT.fromOptionF(
@@ -237,7 +238,8 @@ class PaymentClient(
         settings,
         user,
         step,
-        from
+        from,
+        host
       )
     } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
@@ -252,7 +254,8 @@ class PaymentClient(
       settings: PaymentSettings,
       user: User,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String] = None,
+      host: Option[String] = None
   ) = {
     settings match {
       case p: PaymentSettings.Stripe =>
@@ -271,7 +274,8 @@ class PaymentClient(
           p,
           user,
           step,
-          from
+          from,
+          host
         )
     }
   }
@@ -427,7 +431,8 @@ class PaymentClient(
       settings: PaymentSettings.Stripe,
       user: User,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String] = None,
+      host: Option[String] = None
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, String] = {
@@ -448,7 +453,8 @@ class PaymentClient(
         val callback = from.getOrElse(
           env.getDaikokuUrl(
             tenant,
-            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
+            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing",
+            host
           )
         )
 
@@ -469,11 +475,13 @@ class PaymentClient(
             .toLowerCase,
           "success_url" -> env.getDaikokuUrl(
             tenant,
-            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" // todo: add callback
+            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}",
+            host
           ),
           "cancel_url" -> env.getDaikokuUrl(
             tenant,
-            s"/api/subscription/_abort?token=$cipheredValidationToken&callback=$callback"
+            s"/api/subscription/_abort?token=$cipheredValidationToken&callback=$callback",
+            host
           )
         )
 

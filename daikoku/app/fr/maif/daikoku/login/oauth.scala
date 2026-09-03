@@ -9,12 +9,7 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.utils.{
-  AlgoSettings,
-  IdGenerator,
-  InputMode,
-  getFilteredMetadataFromOauth
-}
+import fr.maif.daikoku.utils.{AlgoSettings, IdGenerator, InputMode, getFilteredMetadataFromOauth}
 import org.apache.commons.codec.binary.Base64 as ApacheBase64
 import play.api.Logger
 import play.api.libs.json.*
@@ -22,7 +17,7 @@ import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.{WSRequest, WSResponse}
-import play.api.mvc.RequestHeader
+import play.api.mvc.{Request, RequestHeader}
 
 import java.security.{MessageDigest, SecureRandom}
 import java.util.Base64
@@ -526,7 +521,8 @@ object OAuth2Support {
       tenant: Tenant
   )(implicit
       executionContext: ExecutionContext,
-      env: Env
+      env: Env,
+      request: Request[JsValue]
   ): EitherT[Future, AppError, OAuth2Config] = {
     val config = OAuth2Config()
 
@@ -566,7 +562,7 @@ object OAuth2Support {
           userInfoUrl = userInfoUrl,
           loginUrl = loginUrl,
           logoutUrl = logoutUrl,
-          callbackUrl = env.getDaikokuUrl(tenant, "/auth/oauth2/callback"),
+          callbackUrl = env.getDaikokuUrl(tenant, "/auth/oauth2/callback", request),
           scope = scope,
           accessTokenField = "access_token",
           useJson = false,
@@ -606,7 +602,6 @@ object OAuth2Support {
           )
           .get()
       )
-      log = AppLogger.info(config.body)
 
       // todo: tester les different endpoint...
 //      head <- EitherT.liftF[Future, AppError, WSResponse](_env.wsClient.url(s"${authConfig.authorizeUrl}?client_id=${authConfig.clientId}&redirect=${authConfig.callbackUrl}").head())

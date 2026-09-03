@@ -1431,5 +1431,7 @@
   "Creating subscription requests": "Création des demandes de souscription",
   "trillion": "billion",
   "billion": "milliard",
-  "million": "million"
+  "million": "million",
+  "tenant.edit.additional.domains.label": "Domaines supplémentaires",
+  "tenant.edit.additional.domains.help": "Autres noms d'hôte servis par ce tenant. Les mails utilisent le domaine principal sauf si le destinataire a utilisé l'un de ceux-ci en dernier."
 }

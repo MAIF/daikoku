@@ -1,18 +1,20 @@
 package fr.maif.daikoku.login
 
-import cats.syntax.option._
+import cats.data.EitherT
+import cats.syntax.option.*
+import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.TeamPermission.Administrator
-import fr.maif.daikoku.domain._
 import fr.maif.daikoku.env.{Env, TenantProvider}
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.{Errors, IdGenerator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.joda.time.DateTime
 import play.api.libs.json.{JsString, JsValue, Json}
-import play.api.libs.typedmap._
-import play.api.mvc._
-import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
+import play.api.libs.typedmap.*
+import play.api.mvc.*
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -77,6 +79,29 @@ object TenantHelper {
       .getOrElse(Tenant.Default)
   }
 
+  def validateDomains(tenant: Tenant)(implicit
+                                      env: Env,
+                                      ec: ExecutionContext
+  ): EitherT[Future, AppError, Tenant] = {
+    val selfDuplicate = tenant.additionalDomains.contains(tenant.domain)
+
+    if (selfDuplicate) {
+      EitherT.leftT[Future, Tenant](
+        AppError.ParsingPayloadError("tenant.domain already used")
+      )
+    } else {
+      val conflictExists: Future[Boolean] =
+        Future.traverse(tenant.allDomains)(d => env.dataStore.tenantRepo.existsAnotherWithDomain(tenant.id, d))
+          .map(_.exists(identity))
+
+      EitherT(
+        conflictExists.map { conflict =>
+          Either.cond(!conflict, tenant, AppError.ParsingPayloadError("tenant.domain already used"))
+        }
+      )
+    }
+  }
+
   def withTenant(request: RequestHeader, env: Env)(
       f: Tenant => Future[Result]
   )(implicit ec: ExecutionContext): Future[Result] = {
@@ -99,17 +124,13 @@ object TenantHelper {
         }
       }
       case TenantProvider.Hostname =>
-        val host = request.headers
-          .get(env.config.tenantHostHeaderKey)
-          .orElse(request.headers.get("X-Forwarded-Host"))
-          .getOrElse(request.host)
-        val domain = if (host.contains(":")) host.split(":").apply(0) else host
+        val domain = env.requestHost(request)
         env.dataStore.tenantRepo
           .findByDomain(domain)
           .flatMap {
             case None =>
               AppLogger.info(
-                s"Tenant does not exists - host $host - domain $domain - None"
+                s"Tenant does not exists - domain $domain - None"
               )
               Errors.craftResponseResultF(
                 s"Tenant does not exists (3)",
@@ -117,7 +138,7 @@ object TenantHelper {
               )
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
-                s"Tenant does not exists - host $host - domain $domain - tenant disabled"
+                s"Tenant does not exists - domain $domain - tenant disabled"
               )
               Errors.craftResponseResultF(
                 "Tenant does not exists (4)",
@@ -237,7 +258,7 @@ class LoginFilter(env: Env)(implicit
     ec: ExecutionContext
 ) extends Filter {
 
-  import fr.maif.daikoku.utils.RequestImplicits._
+  import fr.maif.daikoku.utils.RequestImplicits.*
   implicit class RegexOps(sc: StringContext) {
     def r = new util.matching.Regex(sc.parts.mkString)
   }

@@ -1079,7 +1079,6 @@ class ApiService(
       )
 
       tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-      notificationUrl = env.getDaikokuUrl(tenant, "/notifications")
 
       _ <- EitherT.liftF(
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
@@ -1102,6 +1101,8 @@ class ApiService(
       _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
         implicit val language: String =
           admin.defaultLanguage.getOrElse(tenantLanguage)
+
+        val notificationUrl = env.getDaikokuUrl(tenant, "/notifications", admin)
         (for {
           title <- translator.translate("mail.apikey.demand.title", tenant)
           body <- translator.translate(
@@ -1306,7 +1307,8 @@ class ApiService(
   def validateProcessWithStepValidator(
       validator: StepValidator,
       tenant: Tenant,
-      maybeSessionId: Option[String] = None
+      maybeSessionId: Option[String] = None,
+      host: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -1369,7 +1371,8 @@ class ApiService(
       result <- runSubscriptionProcess(
         demand.id,
         tenant,
-        maybeSessionId = maybeSessionId
+        maybeSessionId = maybeSessionId,
+        host = host
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
@@ -1420,8 +1423,9 @@ class ApiService(
   def runSubscriptionProcess(
       demandId: DemandId,
       tenant: Tenant,
+      maybeSessionId: Option[String] = None,
       from: Option[String] = None,
-      maybeSessionId: Option[String] = None
+      host: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -1489,10 +1493,10 @@ class ApiService(
                   tenant,
                   Map(
                     "urlAccept" -> JsString(
-                      env.getDaikokuUrl(tenant, pathAccept)
+                      env.getDaikokuUrl(tenant, pathAccept, host = host)
                     ),
                     "urlDecline" -> JsString(
-                      env.getDaikokuUrl(tenant, pathDecline)
+                      env.getDaikokuUrl(tenant, pathDecline, host = host)
                     ),
                     "user" -> JsString(user.name),
                     "team" -> JsString(team.name),
@@ -1531,7 +1535,8 @@ class ApiService(
             tenant = tenant,
             subscriptionDemand = demand,
             step = step,
-            from = from
+            from = from,
+            host = host
           )
         case s: ValidationStep.HttpRequest =>
           callHttpRequestStep(s, step, demand, tenant)
@@ -1643,38 +1648,33 @@ class ApiService(
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
             )
-            body <- EitherT.liftF[Future, AppError, String](
-              translator.translate(
-                "mail.checkout.body",
-                tenant,
-                Map(
-                  "api.name" -> JsString(api.name),
-                  "api.plan" -> JsString(
-                    plan.customName
-                  ),
-                  "link" -> JsString(
-                    env.getDaikokuUrl(
-                      tenant,
-                      s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
-                    )
-                  ),
-                  "producer_team_data" -> ownerTeam.asJson,
-                  "consumer_team_data" -> team.asJson,
-                  "user_data" -> user.asSimpleJson,
-                  "api_data" -> api.asJson,
-                  "usagePlan_data" -> plan.asJson,
-                  "subscriptionDemand_data" -> demand.asJson
+            
+            _ <- EitherT.right[AppError](Future.sequence(
+              recipent
+                .map(recipient => translator.translate(
+                  "mail.checkout.body",
+                  tenant,
+                  Map(
+                    "api.name" -> JsString(api.name),
+                    "api.plan" -> JsString(
+                      plan.customName
+                    ),
+                    "link" -> JsString(
+                      env.getDaikokuUrl(
+                        tenant,
+                        s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
+                        recipient
+                      )
+                    ),
+                    "producer_team_data" -> ownerTeam.asJson,
+                    "consumer_team_data" -> team.asJson,
+                    "user_data" -> user.asSimpleJson,
+                    "api_data" -> api.asJson,
+                    "usagePlan_data" -> plan.asJson,
+                    "subscriptionDemand_data" -> demand.asJson
+                  )
                 )
-              )
-            )
-            _ <- EitherT.liftF[Future, AppError, Unit](
-              tenant.mailer.send(
-                title = title,
-                to = recipent.map(_.email),
-                body = body,
-                tenant = tenant
-              )
-            )
+                .flatMap(body => tenant.mailer.send(title, Seq(recipient.email), body, tenant)))))
           } yield (step.some, demand)
         case tuple =>
           EitherT.pure[Future, AppError](tuple)
@@ -1782,7 +1782,8 @@ class ApiService(
                       "link" -> JsString(
                         env.getDaikokuUrl(
                           tenant,
-                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}",
+                          admin
                         )
                       ), // todo => better url
                       "team" -> JsString(team.name),

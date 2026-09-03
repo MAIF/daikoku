@@ -11,6 +11,7 @@ import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.{DaikokuMode, Env}
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.login.TenantHelper
 import fr.maif.daikoku.services.*
 import fr.maif.daikoku.storage.{DataStore, Repo}
 import fr.maif.daikoku.utils.*
@@ -301,16 +302,9 @@ class TenantAdminApiController(
   override def validate(
       entity: Tenant,
       updateOrCreate: UpdateOrCreate
-  ): EitherT[Future, AppError, Tenant] =
-    EitherT(
-      env.dataStore.tenantRepo
-        .existsAnotherWithDomain(entity.id, entity.domain)
-        .map {
-          case true =>
-            Left(AppError.ParsingPayloadError("tenant.domain already used"))
-          case false => Right(entity)
-        }
-    )
+  ): EitherT[Future, AppError, Tenant] = {
+    TenantHelper.validateDomains(tenant = entity)
+  }
 
   override def getId(entity: Tenant): TenantId = entity.id
 

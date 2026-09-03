@@ -1497,6 +1497,8 @@ object testUtils {
       adminSubscriptions = Seq.empty,
       contact = "contactII@test-corp.foo.bar"
     )
+    
+    val aliasTenant = tenant.copy(additionalDomains = Set("daikoku.oto.tools"))
 
     val envModeDev = "dev"
     val envModeProd = "prod"

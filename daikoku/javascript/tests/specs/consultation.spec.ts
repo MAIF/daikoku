@@ -424,7 +424,6 @@ test('Voir ses notifications', async ({ page }) => {
 
   await Promise.all(notifs.map(n => postNewNotif(n)))
 
-
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
 
   await expect(page.getByText('58 notifications')).toBeVisible();
