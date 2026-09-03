@@ -65,7 +65,7 @@ test('User producer can access to the dashboard', async ({ page }) => {
 
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
@@ -113,7 +113,7 @@ test('api list status', async ({ page }) => {
 
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  await page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Dwight Schrute').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
@@ -135,13 +135,13 @@ test('api list favorite', async ({ page }) => {
   await loginAs(MICHAEL, page)
 
 
-  await page.getByRole('article', { name: 'admin-api-tenant-default' }).getByLabel('Ajouter cette API aux favoris').click();
-  await expect(page.getByRole('article', { name: 'admin-api-tenant-default' })
+  await page.getByRole('listitem', { name: 'admin-api-tenant-default' }).getByLabel('Ajouter cette API aux favoris').click();
+  await expect(page.getByRole('listitem', { name: 'admin-api-tenant-default' })
     .getByRole('button', { name: 'retirer cette API des favoris' })).toBeVisible();
 
   await page.reload();
 
-  await expect(page.getByRole('article').first()).toContainText('admin-api-tenant-default');
+  await expect(page.getByRole('listitem').first()).toContainText('admin-api-tenant-default');
 });
 
 test('apilist pagination', async ({ page }) => {
@@ -160,7 +160,7 @@ test('apilist pagination', async ({ page }) => {
   await loginAs(MICHAEL, page)
 
   await page.getByRole('button', { name: 'Page 2' }).click();
-  await expect(page.getByRole('article', { name: 'New API-24' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'New API-24' })).toBeVisible();
   // await page.getByRole('button', { name: 'Page 3' }).click();
   // await expect(page.getByRole('article', { name: 'New API-12' })).toBeVisible();
 });
@@ -206,8 +206,8 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
 
   await page.getByRole('link', { name: 'apigroup' }).click();
   await expect(page.getByText('2 APIs')).toBeVisible();
-  await expect(page.getByRole('article', { name: 'API Commande' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'API Papier' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'API Commande' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'API Papier' })).toBeVisible();
   await page.getByRole('link', { name: 'API Commande' }).click();
   await expect(page.locator('h3').filter({ hasText: 'API Commande' })).toBeVisible();
 

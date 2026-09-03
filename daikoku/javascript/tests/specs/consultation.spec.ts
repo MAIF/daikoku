@@ -175,7 +175,14 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
   await page.getByRole('navigation').getByText('Clés d\'API').click();
-  await expect(page.locator('.api-subscription')).toBeVisible();
+  await page
+      .getByRole('listitem', { name: 'api papier - dev' })
+      .getByLabel("deploy")
+      .click()
+  await page
+      .getByRole('listitem', { name: 'api papier - dev' })
+      .getByRole('listitem').filter({ hasText: 'API Commande' }).click();
+  
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
@@ -194,7 +201,6 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
   await page.getByRole('navigation').getByText('Clés d\'API').click();
-  await expect(page.locator('.api-subscription')).toBeVisible();
 
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
@@ -429,7 +435,7 @@ test('Voir ses notifications', async ({ page }) => {
 
   await expect(page.getByText('58 notifications')).toBeVisible();
   // await expect(page.getByLabel('notifications', { exact: true })).toContainText('58');
-  await expect(page.getByRole('article')).toHaveCount(25);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25);
 
   await expect(page.getByRole('button', { name: "page 3" })).toBeEnabled();
   // await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
@@ -443,22 +449,21 @@ test('Voir ses notifications', async ({ page }) => {
   await page.getByRole('option', { name: 'Logistique' }).click();
   await page.getByRole('heading', { name: 'Notifications' }).click();
   await expect(page.getByText('27 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(25)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
   await page.getByRole('option', { name: 'API Papier' }).click();
   await page.getByRole('heading', { name: 'Notifications' }).click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(1)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(1)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Tous les types/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Transfert de propriété d\'API' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
 
   await page.reload();
-
 
   await page.getByRole('checkbox', { name: 'tout sélectionner' }).check();
 
@@ -466,12 +471,13 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByText('56 lignes sélectionnées')).toBeVisible();
   await page.getByRole('button', { name: 'Marquer tout comme lu' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
   await page.getByRole('button', { name: 'Toutes' }).click();
-  await expect(page.getByText('59 notifications')).toBeVisible(); await expect(page.locator('article')).toHaveCount(25)
+  await expect(page.getByText('59 notifications')).toBeVisible(); 
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25)
   await page.getByRole('button', { name: 'À traiter' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
 });
 
 
