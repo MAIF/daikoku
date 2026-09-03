@@ -344,6 +344,8 @@
   "hmac.secret.help": "Le secret Hmac",
   "Public key": "Clé publique",
   "Webhook secret": "Secret du webhook",
+  "Disable the key after 30 unpaid days": "Couper la clé après 30 jours d'impayé",
+  "third-party.payment.cut.on.unpaid.help": "Au bout de 30 jours sans paiement, la clé d'API ne passe plus, jusqu'au règlement de la facture. Rien n'est supprimé et la clé revient avec les mêmes identifiants. Décochez pour ne jamais couper.",
   "third-party.payment.webhook.secret.help": "Secret de signature de l'endpoint webhook Stripe pointant sur /api/payment/<id des settings>/_webhook. Vide : aucun événement n'est reçu.",
   "The RSA public key": "La clé RSA publique",
   "Private key": "Clé privée",

@@ -135,6 +135,12 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
             type: type.string,
             label: translate('Webhook secret'),
             help: translate('third-party.payment.webhook.secret.help')
+          },
+          cutOnUnpaid: {
+            type: type.bool,
+            defaultValue: true,
+            label: translate('Disable the key after 30 unpaid days'),
+            help: translate('third-party.payment.cut.on.unpaid.help')
           }
         })
     }

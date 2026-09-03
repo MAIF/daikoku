@@ -4858,7 +4858,8 @@ object json {
           name = (json \ "name").as[String],
           publicKey = (json \ "publicKey").as[String],
           secretKey = (json \ "secretKey").as[String],
-          webhookSecret = (json \ "webhookSecret").asOpt[String]
+          webhookSecret = (json \ "webhookSecret").asOpt[String],
+          cutOnUnpaid = (json \ "cutOnUnpaid").asOpt[Boolean].getOrElse(true)
         )
       } match {
         case Failure(e) =>
@@ -4874,7 +4875,8 @@ object json {
         "name" -> o.name,
         "publicKey" -> o.publicKey,
         "secretKey" -> o.secretKey,
-        "webhookSecret" -> o.webhookSecret
+        "webhookSecret" -> o.webhookSecret,
+        "cutOnUnpaid" -> o.cutOnUnpaid
       )
   }
 

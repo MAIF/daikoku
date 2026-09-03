@@ -385,7 +385,8 @@ case object ThirdPartyPaymentSettings {
       name: String,
       publicKey: String,
       secretKey: String,
-      webhookSecret: Option[String] = None
+      webhookSecret: Option[String] = None,
+      cutOnUnpaid: Boolean = true
   ) extends ThirdPartyPaymentSettings {
     override def typeName: String = "Stripe"
 

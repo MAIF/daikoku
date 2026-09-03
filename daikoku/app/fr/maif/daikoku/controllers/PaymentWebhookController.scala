@@ -1,9 +1,8 @@
 package fr.maif.daikoku.controllers
 
-import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuUnauthenticatedAction
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
-import fr.maif.daikoku.domain.{ApiSubscription, Currency, Tenant}
+import fr.maif.daikoku.domain.{ApiSubscription, Tenant}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.services.{ApiService, BillingNotificationService}
@@ -43,7 +42,6 @@ class PaymentWebhookController(
   implicit val me: MessagesApi = messagesApi
 
   private val signatureToleranceSeconds = 300L
-  private val gracePeriodDays = 30
 
   def webhook(settingsId: String) =
     DaikokuUnauthenticatedAction.async(parse.byteString) { ctx =>
@@ -134,8 +132,6 @@ class PaymentWebhookController(
   private def handle(tenant: Tenant, event: JsValue): Future[Unit] = {
     val payload = (event \ "data" \ "object").getOrElse(Json.obj())
     (event \ "type").asOpt[String] match {
-      case Some("invoice.payment_failed") =>
-        onInvoicePaymentFailed(tenant, payload)
       case Some("invoice.paid") =>
         onInvoicePaid(tenant, payload)
       case Some("customer.subscription.deleted") =>
@@ -149,32 +145,6 @@ class PaymentWebhookController(
         FastFuture.successful(())
     }
   }
-
-  private def onInvoicePaymentFailed(
-      tenant: Tenant,
-      invoice: JsValue
-  ): Future[Unit] =
-    subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
-      case None =>
-        ignored("invoice.payment_failed", subscriptionOfInvoice(invoice))
-      case Some(subscription) =>
-        val currency = Currency(
-          (invoice \ "currency").asOpt[String].getOrElse("eur").toUpperCase
-        )
-        val amount = paymentClient.fromStripeAmount(
-          (invoice \ "amount_due").asOpt[Long].getOrElse(0L),
-          currency.some
-        )
-        val failedAt = DateTime.now()
-        billingNotificationService.paymentFailed(
-          tenant,
-          subscription,
-          amount,
-          currency,
-          failedAt,
-          failedAt.plusDays(gracePeriodDays)
-        )
-    }
 
   private def onInvoicePaid(tenant: Tenant, invoice: JsValue): Future[Unit] =
     subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
