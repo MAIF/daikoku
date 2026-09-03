@@ -137,7 +137,8 @@ After review, we are pleased to inform you that your account creation request ha
 
 mail.billing.price.change.title=The price of one of your plans is changing
 mail.billing.price.change.body=The price of the plan [planName] of the API [apiName] changes on [effectiveAt]. </br>\
-From that date, the team [teamName] is charged [costPerMonth] [currency] per month and [costPerRequest] [currency] per call. </br>\
+From that date, the calls of the team [teamName] are charged [costPerRequest] [currency] each. </br>\
+The monthly subscription moves to [costPerMonth] [currency] on the invoice that follows, the current month having already been billed. </br>\
 Until then, nothing changes. </br>\
 <a href="[link]">See your subscription</a>
 mail.billing.payment.failed.title=A payment for your subscription has failed

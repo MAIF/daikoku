@@ -391,10 +391,16 @@ class PaymentClient(
     )
   }
 
+  /** `existingMeter` is passed when the prices of an already priced plan are
+    * rebuilt after an amount change. Several prices may sit on one meter, and
+    * reusing it keeps the event name stable, so usage keeps being reported
+    * while subscribers still sit on the previous price.
+    */
   def createStripePrice(
       plan: UsagePlan,
       productId: ProductId,
-      operationKey: String
+      operationKey: String,
+      existingMeter: Option[(String, String)] = None
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, PaymentSettings] = {
@@ -444,10 +450,12 @@ class PaymentClient(
           case Some(pricing) =>
             for {
               baseprice <- postStripePrice(body, s"$operationKey-price-base")
-              meter <- createStripeMeter(
-                s"${plan.customName} usage",
-                s"$operationKey-meter"
-              )
+              meter <- existingMeter.fold(
+                createStripeMeter(
+                  s"${plan.customName} usage",
+                  s"$operationKey-meter"
+                )
+              )(EitherT.pure[Future, AppError](_))
               (meterId, eventName) = meter
               payperUsePrice <- postStripePrice(
                 pricing + ("recurring[meter]" -> meterId),
@@ -481,6 +489,39 @@ class PaymentClient(
     }
 
   }
+
+  /** Builds the prices carrying the new amounts, on the product and the meter
+    * the plan already owns. The plan then points at them, so a new checkout
+    * pays the new amount at once; subscribers keep the price attached to their
+    * Stripe subscription until their cycle turns.
+    */
+  def renewStripePrices(
+      tenant: Tenant,
+      plan: UsagePlan,
+      settings: PaymentSettings.Stripe
+  ): EitherT[Future, AppError, PaymentSettings] =
+    stripeSettingsOf(tenant, settings) match {
+      case None =>
+        EitherT.leftT[Future, PaymentSettings](
+          AppError.ThirdPartyPaymentSettingsNotFound
+        )
+      case Some(s) =>
+        implicit val stripeSettings: StripeSettings = s
+        val existingMeter = (
+          settings.priceIds.meterId,
+          settings.priceIds.meterEventName
+        ) match {
+          case (Some(meterId), Some(eventName)) => (meterId, eventName).some
+          case _                                => None
+        }
+
+        createStripePrice(
+          plan,
+          settings.productId,
+          s"${plan.id.value}-${IdGenerator.token(16)}",
+          existingMeter
+        )
+    }
 
   def createStripeProduct(
       api: Api,
@@ -865,6 +906,104 @@ class PaymentClient(
         }
       case _ => FastFuture.successful(Right[AppError, Long](0L))
     }
+
+  /** Moves a subscription onto the prices its plan now carries. Items are
+    * updated in place: a second item sitting on the same meter would have
+    * Stripe read the same usage twice. Answers whether anything was swapped.
+    */
+  def applyPlanPricesToSubscription(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan
+  ): EitherT[Future, AppError, Boolean] =
+    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            EitherT.leftT[Future, Boolean](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            swapStripePrices(i.subscriptionId, p)
+        }
+      case _ => EitherT.pure[Future, AppError](false)
+    }
+
+  private def swapStripePrices(
+      stripeSubscriptionId: String,
+      settings: PaymentSettings.Stripe
+  )(implicit
+      stripeSettings: StripeSettings
+  ): EitherT[Future, AppError, Boolean] =
+    for {
+      response <- EitherT.liftF(
+        stripeClient(s"/v1/subscriptions/$stripeSubscriptionId").get()
+      )
+      items <- EitherT.fromEither[Future](
+        if (response.status == 200)
+          Right[AppError, Seq[JsValue]](
+            (response.json \ "items" \ "data").as[Seq[JsValue]]
+          )
+        else Left[AppError, Seq[JsValue]](stripeErrorMessage(response))
+      )
+      // a metered item is the one whose price reads a meter; the other one is
+      // the flat monthly subscription
+      changes = items.flatMap { item =>
+        val itemId = (item \ "id").as[String]
+        val priceId = (item \ "price" \ "id").as[String]
+        val metered = (item \ "price" \ "recurring" \ "meter").asOpt[String]
+        val expected =
+          if (metered.isDefined) settings.priceIds.additionalPriceId
+          else settings.priceIds.basePriceId.some
+
+        expected.filter(_ != priceId).map(itemId -> _)
+      }
+      // Stripe holds the invoice of the period that just closed as a draft for
+      // about an hour. Swapping then would change the amounts being computed,
+      // so the swap waits, whether it was asked by the webhook or by the
+      // nightly reconciliation.
+      onDraft <-
+        if (changes.isEmpty) EitherT.pure[Future, AppError](false)
+        else
+          (response.json \ "latest_invoice").asOpt[String] match {
+            case None => EitherT.pure[Future, AppError](false)
+            case Some(invoiceId) =>
+              EitherT
+                .liftF(stripeClient(s"/v1/invoices/$invoiceId").get())
+                .map(invoice =>
+                  (invoice.json \ "status").asOpt[String].contains("draft")
+                )
+          }
+      swapped <-
+        if (changes.isEmpty || onDraft) EitherT.pure[Future, AppError](false)
+        else
+          EitherT(
+            retryingOn429(
+              stripeClient(
+                s"/v1/subscriptions/$stripeSubscriptionId",
+                s"swap-$stripeSubscriptionId-${changes.map(_._2).mkString("-")}".some
+              ).post(
+                changes.zipWithIndex.flatMap {
+                  case ((itemId, priceId), index) =>
+                    Map(
+                      s"items[$index][id]" -> itemId,
+                      s"items[$index][price]" -> priceId
+                    )
+                }.toMap ++
+                  // the swap happens right after the period closed, so there is
+                  // nothing to prorate and Stripe must not invent a line
+                  Map("proration_behavior" -> "none")
+              )
+            ).map {
+              case res if res.status == 200 => Right[AppError, Boolean](true)
+              case res => Left[AppError, Boolean](stripeErrorMessage(res))
+            }
+          )
+    } yield swapped
 
   def deleteThirdPartySubscription(
       subscription: ApiSubscription,

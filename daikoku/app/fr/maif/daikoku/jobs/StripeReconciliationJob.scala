@@ -96,6 +96,22 @@ class StripeReconciliationJob(env: Env, paymentClient: PaymentClient) {
           )
         )
       reportedHits = consumptions.map(_.lastReportedHits).sum
+      _ <- maybePlan.fold(FastFuture.successful(()))(plan =>
+        paymentClient
+          .applyPlanPricesToSubscription(tenant, subscription, plan)
+          .value
+          .map {
+            case Right(true) =>
+              logger.warn(
+                s"[reconciliation] subscription ${subscription.id.value} was still on a former price, moved onto the current one"
+              )
+            case Right(false) => ()
+            case Left(error) =>
+              logger.error(
+                s"[reconciliation] unable to check the price of subscription ${subscription.id.value}: ${error.getErrorMessage()}"
+              )
+          }
+      )
       _ <- (maybePlan, reportedHits) match {
         case (Some(plan), hits) if hits > 0 =>
           paymentClient

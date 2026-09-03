@@ -134,7 +134,8 @@ Après examen, nous sommes heureux de vous informer que votre demande de créati
 
 mail.billing.price.change.title=Le tarif d''un de vos plans change
 mail.billing.price.change.body=Le tarif du plan [planName] de l''API [apiName] change le [effectiveAt]. </br>\
-À partir de cette date, l''équipe [teamName] est facturée [costPerMonth] [currency] par mois et [costPerRequest] [currency] par appel. </br>\
+À partir de cette date, les appels de l''équipe [teamName] sont facturés [costPerRequest] [currency] l''unité. </br>\
+L''abonnement mensuel passe à [costPerMonth] [currency] sur la facture suivante, le mois en cours étant déjà réglé. </br>\
 D''ici là, rien ne change. </br>\
 <a href="[link]">Voir votre souscription</a>
 mail.billing.payment.failed.title=Un paiement de votre souscription a échoué

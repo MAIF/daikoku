@@ -23,7 +23,11 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiService, DeletionService}
+import fr.maif.daikoku.services.{
+  ApiService,
+  BillingNotificationService,
+  DeletionService
+}
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.daikoku.utils.*
@@ -37,7 +41,7 @@ import org.apache.pekko.util.ByteString
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.http.HttpEntity
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
@@ -58,13 +62,15 @@ class ApiController(
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
     translator: Translator,
     paymentClient: PaymentClient,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    billingNotificationService: BillingNotificationService
 ) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
+  implicit val m: MessagesApi = messagesApi
 
   val logger: Logger = Logger("ApiController")
 
@@ -4642,14 +4648,15 @@ class ApiController(
                   _.otoroshiSettings
                 ) =>
               EitherT.leftT(AppError.ForbiddenAction)
-            //Handle prices changes or payment settings deletion (addition is really forbidden)
+            //payment settings carry the Stripe ids, they are never edited by hand
             case _ if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan
-              .costPerRequest =>
-              EitherT.leftT(AppError.ForbiddenAction)
+            //amounts may change, the currency may not: Stripe freezes it on a price,
+            //so changing it would mean cancelling every subscriber and having them subscribe anew
+            case _ if oldPlan.paymentSettings.isDefined && oldPlan.currency != newPlan.currency =>
+              EitherT.leftT(AppError.PaymentError(
+                "the currency of a priced plan cannot be changed"
+              ))
             case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
               newPlan.aggregationApiKeysSecurity.exists(identity) =>
               EitherT.leftT(AppError.SubscriptionAggregationDisabled)
@@ -4903,6 +4910,72 @@ class ApiController(
           value
         }
 
+        def amountsChanged(oldPlan: UsagePlan, newPlan: UsagePlan): Boolean =
+          oldPlan.costPerMonth != newPlan.costPerMonth ||
+            oldPlan.costPerRequest != newPlan.costPerRequest ||
+            oldPlan.maxPerMonth != newPlan.maxPerMonth
+
+        def renewPrices(
+            oldPlan: UsagePlan,
+            newPlan: UsagePlan
+        ): EitherT[Future, AppError, UsagePlan] =
+          newPlan.paymentSettings match {
+            case Some(settings: PaymentSettings.Stripe)
+                if amountsChanged(oldPlan, newPlan) =>
+              paymentClient
+                .renewStripePrices(ctx.tenant, newPlan, settings)
+                .map(renewed => newPlan.copy(paymentSettings = renewed.some))
+            case _ => EitherT.pure[Future, AppError](newPlan)
+          }
+
+        /** The new price is live at once for the site and for new
+          * subscriptions. Current subscribers keep paying the old one until the
+          * 1st, when the cycle turns, so they are told the date rather than the
+          * change.
+          */
+        def notifyPriceChange(
+            oldPlan: UsagePlan,
+            updatedPlan: UsagePlan,
+            api: Api
+        ): EitherT[Future, AppError, Unit] = {
+          if (
+            updatedPlan.paymentSettings.isEmpty ||
+            !amountsChanged(oldPlan, updatedPlan)
+          )
+            EitherT.pure[Future, AppError](())
+          else
+            EitherT.liftF(
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant)
+                .findNotDeleted(
+                  Json.obj(
+                    "api" -> api.id.asJson,
+                    "plan" -> updatedPlan.id.asJson
+                  )
+                )
+                .flatMap(subscriptions =>
+                  Future
+                    .sequence(
+                      subscriptions.map(subscription =>
+                        billingNotificationService.priceChangeScheduled(
+                          ctx.tenant,
+                          subscription,
+                          updatedPlan.costPerMonth.getOrElse(BigDecimal(0)),
+                          updatedPlan.costPerRequest,
+                          updatedPlan.currency.getOrElse(Currency("EUR")),
+                          DateTime
+                            .now()
+                            .plusMonths(1)
+                            .withDayOfMonth(1)
+                            .withTimeAtStartOfDay()
+                        )
+                      )
+                    )
+                    .map(_ => ())
+                )
+            )
+        }
+
         val value: EitherT[Future, AppError, Result] = for {
           _ <- updatedPlan.checkAuthorizedEntities(team)
           api <- EitherT.fromOptionF(
@@ -4943,13 +5016,15 @@ class ApiController(
           updatedPlan <- getPlanAndCheckIt(oldPlan, updatedPlan)
           handledUpdatedPlan <-
             handleVisibilityToggling(oldPlan, updatedPlan, api)
-          updatedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
+          processedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
+          updatedPlan <- renewPrices(oldPlan, processedPlan)
           _ <- EitherT.liftF(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
           )
           _ <- EitherT.liftF(
             otoroshiSynchronisator.run(updatedPlan.id, ctx.tenant)
           )
+          _ <- notifyPriceChange(oldPlan, updatedPlan, api)
           _ <- runDemandUpdate(oldPlan, updatedPlan, api)
           //FIXME: attention, peut etre il y en a qui sont blocked de base
           _ <- EitherT.liftF(

@@ -140,6 +140,8 @@ class PaymentWebhookController(
         onInvoicePaid(tenant, payload)
       case Some("customer.subscription.deleted") =>
         onSubscriptionDeleted(tenant, payload)
+      case Some("invoice.finalized") =>
+        onInvoiceFinalized(tenant, payload)
       case eventType =>
         AppLogger.debug(
           s"[stripe webhook] event ${eventType.getOrElse("?")} ignored"
@@ -181,6 +183,41 @@ class PaymentWebhookController(
         FastFuture.successful(())
       case Some(subscription) =>
         setEnabled(tenant, subscription, enabled = true)
+    }
+
+  /** The invoice for the period that just closed is now locked, so moving the
+    * subscription onto the plan's current prices only affects the next one.
+    * Swapping earlier, while Stripe still holds the invoice as a draft, would
+    * change the amounts being billed.
+    */
+  private def onInvoiceFinalized(
+      tenant: Tenant,
+      invoice: JsValue
+  ): Future[Unit] =
+    subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
+      case None => ignored("invoice.finalized", subscriptionOfInvoice(invoice))
+      case Some(subscription) =>
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(subscription.plan)
+          .flatMap {
+            case None => FastFuture.successful(())
+            case Some(plan) =>
+              paymentClient
+                .applyPlanPricesToSubscription(tenant, subscription, plan)
+                .value
+                .map {
+                  case Right(true) =>
+                    AppLogger.info(
+                      s"[stripe webhook] subscription ${subscription.id.value} moved onto the current prices of its plan"
+                    )
+                  case Right(false) => ()
+                  case Left(error) =>
+                    AppLogger.error(
+                      s"[stripe webhook] unable to move subscription ${subscription.id.value} onto the current prices of its plan: ${error.getErrorMessage()}"
+                    )
+                }
+          }
     }
 
   private def onSubscriptionDeleted(
