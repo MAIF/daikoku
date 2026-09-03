@@ -2,41 +2,22 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuUnauthenticatedAction
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.ApiSubscriptionState.Blocked
-import fr.maif.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{
-  ApiCrudService,
-  ApiLifeCycleService,
-  ApiService,
-  DeletionService,
-  KeyringService,
-  MailService,
-  UsagePlanService
-}
+import fr.maif.daikoku.services.{ApiCrudService, ApiLifeCycleService, ApiService, DeletionService, KeyringService, MailService, UsagePlanService}
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
-import fr.maif.daikoku.utils.RequestImplicits.{
-  EnhancedRequestBody,
-  EnhancedRequestHeader
-}
+import fr.maif.daikoku.utils.RequestImplicits.{EnhancedRequestBody, EnhancedRequestHeader}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -2143,38 +2124,33 @@ class ApiController(
       }
     }
 
-  def toggleApiKeyRotation(teamId: String, subscriptionId: String): Action[JsValue] =
+  def toggleKeyringRotation(teamId: String, keyringId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}"
+          s"@{user.name} has toggle keyring rotation @{keyringId} of @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        apiSubscriptionAction(
+        ctx.setCtxValue("keyringId", keyringId)
+        val enabled =
+          (ctx.request.body.as[JsObject] \ "enabled").as[Boolean]
+        val rotationEvery =
+          (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
+        val gracePeriod =
+          (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
+        keyringService.toggleKeyringRotation(
           ctx.tenant,
-          team,
-          subscriptionId,
-          (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-            ctx.setCtxValue("subscription", subscription)
-            val enabled =
-              (ctx.request.body.as[JsObject] \ "enabled").as[Boolean]
-            val rotationEvery =
-              (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
-            val gracePeriod =
-              (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
-            apiService.toggleApiKeyRotation(
-              ctx.tenant,
-              subscription,
-              plan,
-              api,
-              enabled,
-              rotationEvery,
-              gracePeriod
-            )
-          }
+          keyringId,
+          enabled,
+          rotationEvery,
+          gracePeriod
         )
+          .map(r => Ok(r))
+          .leftMap(AppError.render(_))
+          .merge
+        
       }
-    }
+      }
 
   def regenerateKeyringSecret(teamId: String, keyringId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>

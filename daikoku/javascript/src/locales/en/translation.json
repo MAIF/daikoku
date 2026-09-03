@@ -999,6 +999,7 @@
   "documentation.import.page.clone.btn.label": "Clone page",
   "DisplayMode": "Display mode",
   "display.environment.label": "Environment",
+  "display.creation.label": "Creation",
   "display.default.label": "Default",
   "display-mode.label": "Display mode",
   "display-mode.help": "The environment mode will force you to create available environments. The api usage plans needs to match one of the available environments.",

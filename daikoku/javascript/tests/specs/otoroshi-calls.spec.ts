@@ -145,15 +145,17 @@ test("Disabling one key from keyring should prevent keyring to call associated r
     status: 200,
   });
   await page.goto("/logistique/settings/apikeys/api-commande/1.0.0");
-
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
-    .getByRole("button", { name: "Actions de la souscription" })
-    .click();
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByLabel("deploy")
+        .click()
+  
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
-    .getByRole("button", { name: "Désactiver la souscription" })
-    .click();
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByRole('listitem').filter({ hasText: 'API Commande' })
+        .getByLabel('Actions de la souscription')
+        .click();
+  await page.getByRole('button', { name: 'Désactiver la souscription' }).click();
   await expect(page.getByText("Votre souscription a été dé")).toBeVisible();
 
   await checkOtoroshiCall({
@@ -170,11 +172,13 @@ test("Disabling one key from keyring should prevent keyring to call associated r
   });
 
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByRole('listitem').filter({ hasText: 'API Commande' })
     .getByLabel("Actions de la souscription")
     .click();
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByRole('listitem').filter({ hasText: 'API Commande' })
     .getByRole("button", { name: "Activer la souscription" })
     .click();
   await expect(
@@ -210,14 +214,21 @@ test("Removing one key from keyring should prevent keyring to call associated ro
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
+  await page.getByText('Activée').nth(1).click();
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
-    .getByLabel("Actions de la souscription")
-    .click();
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByLabel("deploy")
+        .click()
   await page
-    .getByRole("row", { name: "Commande:1.0.0/dev" })
-    .getByRole('button', { name: "Détacher du trousseau" })
-    .click();
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByRole('listitem').filter({ hasText: 'API Commande' })
+        .getByLabel('Actions de la souscription')
+        .click();
+  await page
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByRole('listitem').filter({ hasText: 'API Commande' })
+        .getByRole('button', { name: 'Détacher du trousseau' })
+        .click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .fill("API Commande/dev");
@@ -256,11 +267,7 @@ test("Disabling keyring should prevent calling all associated routes", async ({
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
-  const keyringCard = page
-    .locator('.keyring-card')
-    .filter({ hasText: COMMAND_DEV_KEYRING });
-
-  await keyringCard.getByLabel('Actions du trousseau').click();
+  await page.getByRole('listitem', { name: COMMAND_DEV_KEYRING }).getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Désactiver le trousseau" }).click();
   await expect(page.getByText("Trousseau désactivé")).toBeVisible();
   await checkOtoroshiCall({
@@ -275,7 +282,7 @@ test("Disabling keyring should prevent calling all associated routes", async ({
     authHeader,
     status: 401,
   });
-  await keyringCard.getByLabel('Actions du trousseau').click();
+  await page.getByRole('listitem', { name: COMMAND_DEV_KEYRING }).getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Activer le trousseau" }).click();
   await expect(page.getByText("Trousseau activé")).toBeVisible();
   await checkOtoroshiCall({
@@ -307,13 +314,23 @@ test("Removing a key from keyring should prevent calling associated route with k
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
 
+
+   await page
+    .getByRole('listitem', { name: 'api commande - dev' })
+    .getByLabel('deploy')
+    .click();
+
   await page
-    .getByRole("row", { name: "API Commande:1.0.0/dev" })
-    .getByLabel("Actions de la souscription")
+    .getByRole('listitem', { name: 'api commande - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
     .click();
   await page
-    .getByRole("row", { name: "API Commande:1.0.0/dev" })
-    .getByRole("button", { name: "Détacher du trousseau" }).click();
+    .getByRole('listitem', { name: 'api commande - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Détacher du trousseau' })
+  .click();  
+  
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .fill("API Commande/dev");
@@ -363,15 +380,15 @@ test("Deleting a key from keyring should prevent calling associated route with k
     status: 200,
   });
   await page.goto("logistique/settings/apikeys/api-commande/1.0.0");
+  await page
+        .getByRole('listitem', { name: 'api commande - dev' })
+        .getByLabel("deploy")
+        .click()
+  await page
+        .getByRole('listitem', { name: 'api commande - dev' }).getByRole('listitem').filter({ hasText: 'API Commande' }).getByLabel('Actions de la souscription').click();
+  await page.getByRole('button', { name: 'Supprimer' }).click();  
+  
 
-  await page
-    .getByRole("row", { name: "API Commande:1.0.0/dev" })
-    .getByLabel("Actions de la souscription")
-    .click();
-  await page
-    .getByRole("row", { name: "API Commande:1.0.0/dev" })
-    .getByRole("button", { name: "Supprimer" })
-    .click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .click();
@@ -414,12 +431,9 @@ test("Deleting a keyring should prevent all call using its key", async ({
 
   // the keyring extended above now carries both the command/dev and the
   // paper/dev subscriptions: deleting it must kill both calls
-  await page
-    .locator('.keyring-card')
-    .filter({ hasText: COMMAND_DEV_KEYRING })
-    .getByLabel('Actions du trousseau')
-    .click();
-  await page.getByRole("button", { name: "Supprimer le trousseau" }).click();
+
+  await page.getByRole('listitem', { name: 'api commande - dev' }).getByLabel('Actions du trousseau').click();
+  await page.getByRole('button', { name: 'Supprimer le trousseau' }).click();
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })
     .fill(COMMAND_DEV_KEYRING);

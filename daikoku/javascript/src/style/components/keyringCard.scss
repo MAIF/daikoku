@@ -1,0 +1,92 @@
+@use "../variables";
+
+.keyring-card-new {
+  display: grid;
+  grid-template: 1.7fr 1.2fr 0px 2fr/ 69px 1fr 1fr 1fr 50px;
+  border: 1px solid variables.$neutral-color-400;
+  border-radius: 8px;
+  width: 45%;
+  transition: grid-template-rows 0.3s ease;
+  height: 152px;
+  max-height: 152px;
+  min-width:570px;
+}
+
+.keyring-card-new.deployed {
+  grid-template: 1.7fr 1.2fr auto 2fr/ 69px 1fr 1fr 1fr 50px;
+  height: inherit;
+  max-height: inherit;
+}
+
+.keyring-card-subscriptions {
+  grid-column: 1 / 6;
+  grid-row: 3 / 4;
+  border-top: 1px solid variables.$neutral-color-400;
+
+}
+
+.keyring-card-ico {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.keyring-card-ico--icon{
+  background-color: variables.$primary-color-bg;
+  height : 48px;
+  width : 48px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyring-card-name {
+  grid-column: 2 / span 2;
+  grid-row: 1 / 2;
+  padding-top: 16px;
+  margin: 0;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.keyring-card-badge {
+  grid-column: 4 / 5;
+  grid-row: 1 / 2;
+  padding-top: 16px;
+}
+
+.keyring-card-count {
+  padding-right: 16px
+}
+
+.keyring-card-env {
+  border-left: variables.$neutral-color-100 1px solid;
+  padding-left: 16px;
+}
+
+.keyring-card-count-env {
+  grid-column: 2 / 5;
+  grid-row: 2 / 3;
+  color: variables.$text-color-secondary
+}
+
+.keyring-card-actions {
+  border-top: 1px solid variables.$neutral-color-400;
+  grid-row: 4 / 5;
+  grid-column: 1 / 6;
+  padding: 16px 16px 16px 16px ;
+  color : variables.$text-color-black !important;
+}
+
+.keyring-card-ico-deploy {
+  grid-column: 5 / 6;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

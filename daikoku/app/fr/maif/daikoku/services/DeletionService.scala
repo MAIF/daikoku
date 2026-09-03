@@ -575,6 +575,7 @@ class DeletionService(
     val tenantParams: Seq[AnyRef] =
       tenant.map(t => Seq(t.id.value)).getOrElse(Seq.empty)
     val userParam = "$" + (tenantParams.size + 1)
+    val userParam2 = "$" + (tenantParams.size + 2)
 
     EitherT.liftF(
       env.dataStore.teamRepo
@@ -590,9 +591,9 @@ class DeletionService(
              |)
              |WHERE $tenantFilter
              |  _deleted = false
-             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam));
+             |  AND content->'users' @> jsonb_build_array(jsonb_build_object('userId', $userParam2));
              |""".stripMargin,
-          tenantParams :+ user.id.value
+          tenantParams :+ user.id.value :+ user.id.value
         )
     )
   }

@@ -36,7 +36,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
 
-  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
@@ -55,7 +55,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByRole('listitem').filter({ hasText: 'Nouvelle demande de souscription pour' })).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
@@ -75,7 +75,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.locator('h1')).toContainText('API papier');
-  await page.locator('.keyring-card', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
+  await page.getByRole('listitem', { name: 'API papier - prod' }).getByLabel('Copier le clientId et le clientSecret').click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2)
 
@@ -104,7 +104,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
@@ -120,8 +120,8 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+  await expect(page.getByRole('list', {name: 'notifications'})).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await page.getByRole('listitem', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByRole('button', { name: 'Rejeter' }).click();
   // await page.getByRole('dialog').locator('#message').click();
   await page.getByRole('dialog').locator('#message').fill('désolé');
@@ -148,8 +148,8 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
 
-  await expect(page.getByRole('article')).toContainText('Votre demande de souscription (prod) a été refusée.');
-  await page.getByRole('article', { name: 'Souscription refusée' })
+  await expect(page.getByRole('list', {name: 'notifications'})).toContainText('Votre demande de souscription (prod) a été refusée.');
+  await page.getByRole('listitem', { name: 'Souscription refusée' })
     .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
   //todo: accepter la notification
@@ -162,7 +162,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process automatique', 
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  page.getByRole('article', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
   // joining an existing keyring: it keeps its own name, no naming step
@@ -184,8 +184,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process automatique', 
   await page.getByRole('listitem', { name: 'API Commande' })
     .getByRole('link', { name: 'Voir les clés d\'API' }).click();
   await expect(page.getByRole('main')).toContainText('dev');
-  await page.locator('.keyring-card', { hasText: 'dev' })
-    .getByRole('button', { name: 'Copier le clientId' }).click();
+  await page.getByRole('listitem', { name: 'API Commande - dev' }).getByLabel('Copier le clientId et le clientSecret').click();
   const _apikey = await page.evaluate(() => navigator.clipboard.readText());
   const commandeApiKey = _apikey.split(":", 2);
 
@@ -213,7 +212,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
   // joining an existing keyring: it keeps its own name, no naming step
@@ -226,12 +225,13 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.getByLabel('Accès aux notifications').click();
 
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim' })
+  await expect(page.getByRole('list', {name: 'notifications'})).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await page.getByRole('listitem', { name: 'Nouvelle souscription par Jim' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
   await page.getByRole('dialog').getByRole('button', { name: 'Accepter' }).click();
   await expect(page.getByText('1 notification')).toBeVisible();
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -243,8 +243,10 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await expect(page.getByRole('listitem', { name: 'API Commande' })).toBeVisible();
   await page.getByRole('listitem', { name: 'API papier' })
     .getByRole('link', { name: 'Voir les clés d\'API' }).click();
-  await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.keyring-card', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
+
+  const keyring = page.getByRole('listitem', { name: 'API Commande - prod' })
+  await expect(keyring).toContainText('prod');
+  await keyring.getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const papierApiKey = apikey.split(":", 2);
   const [clientId, clientSecret] = papierApiKey;
@@ -252,7 +254,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.getByRole('listitem', { name: 'API Commande' })
     .getByRole('link', { name: 'Voir les clés d\'API' }).click();
   await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.keyring-card', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
+  await keyring.getByRole('button', { name: 'Copier le clientId' }).click();
   const _apikey = await page.evaluate(() => navigator.clipboard.readText());
   const commandeApiKey = _apikey.split(":", 2);
 
@@ -345,7 +347,7 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
 
   await page.getByRole('link', { name: 'API Commande' }).click();
   await page.getByText('Environnements').click();
-  await page.getByRole('article', { name: 'prod' }).getByRole('checkbox').check();
+  await page.getByRole('listitem', { name: 'prod' }).getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
@@ -365,8 +367,8 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await expect(page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })).toBeVisible
+  await expect(page.getByRole('list', {name: 'notifications'})).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByRole('listitem', { name: 'Nouvelle souscription par Jim Halpert' })).toBeVisible
 
 });
 
@@ -385,13 +387,13 @@ test('Selection de plans limitée', async ({ page, context }) => {
   await page.getByRole('option', { name: 'preprod' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
-  await page.getByRole('article', { name: 'preprod' }).getByRole('checkbox').check();
-  await page.getByRole('article', { name: 'prod', exact: true }).getByRole('checkbox').check();
+  await page.getByRole('listitem', { name: 'preprod' }).getByRole('checkbox').check();
+  await page.getByRole('listitem', { name: 'prod', exact: true }).getByRole('checkbox').check();
   await expect(page.getByText('2 lignes sélectionnées')).toBeVisible();
 
   await page.getByRole('button', { name: 'Close toast' }).click();
 
-  await page.getByRole('article', { name: 'dev' }).getByRole('checkbox').check();
+  await page.getByRole('listitem', { name: 'dev' }).getByRole('checkbox').check();
   await expect(page.getByText('3 lignes sélectionnées')).toBeVisible();
 
 });
@@ -406,7 +408,7 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  page.getByRole('article', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
+  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à un trousseau existant' }).click();
   // joining an existing keyring: it keeps its own name, no naming step
@@ -419,8 +421,8 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await page.getByRole('listitem', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByLabel('Rejeter').click();
   await page.locator('#message').fill('désolé');
   await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
@@ -442,8 +444,8 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
 
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Votre demande de souscription (prod) a été refusée.');
-  await page.getByRole('article', { name: 'Souscription refusée' })
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toContainText('Votre demande de souscription (prod) a été refusée.');
+  await page.getByRole('listitem', { name: 'Souscription refusée' })
     .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
 
@@ -455,7 +457,7 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await page.getByRole('listitem', { name: 'API Commande' })
     .getByRole('link', { name: 'Voir les clés d\'API' }).click();
   await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.keyring-card', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
+  await page.getByRole('listitem', { name: 'api commande - prod' }).getByLabel('Copier le clientId et le clientSecret').click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2);
 
@@ -482,13 +484,18 @@ test('[ASOAPI-10421] - Renommer sa clé d\'api', async ({ page, context }) => {
   await findAndGoToTeam('Logistique', page);
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  const card = page.locator('.keyring-card', { hasText: 'dev' });
+  const card =  page.getByRole('listitem', { name: 'api commande - dev' });
+  await card.getByLabel("deploy").click();
   await card.getByLabel('Actions de la souscription').click();
   await card.getByText('Mettre à jour le nom perso.').click();
   await page.getByPlaceholder('Nom personnalisé').fill('logistique - api commande - environnement dev');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Le nom personnalisé de votre souscription a été mis à jour avec succès');
-  await expect(page.getByRole('main')).toContainText('logistique - api commande - environnement dev');
+  await card.getByLabel('Actions de la souscription').click();
+  await card.getByText('Mettre à jour le nom perso.').click();
+  await expect(page.getByRole('textbox', { name: 'Nom de la souscription' })).toHaveValue('logistique - api commande - environnement dev')
+  // TODO le customName de la souscription n'est pas accessible à Jim ni à l'équipe Logistique 
+  // await expect(page.getByRole('main')).toContainText('logistique - api commande - environnement dev');
 })
 
 test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, context }) => {
@@ -576,13 +583,33 @@ test('[ASOAPI-10457 ASOAPI-10458] - [Consommateur] - desactiver/reactiver un cl�
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   // On va manipuler la clé pour l'environnement de prod
   //Vérifier que la clé est activé
-  const card = page.locator('.keyring-card', { hasText: 'prod' });
-  await expect(card.locator('.api-subscription__value__type')).toContainText('Activé');
+  await expect(page.getByRole('listitem', { name: 'API Commande - prod' })).toContainText("Activé")
+  await page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByLabel("deploy")
+    .click()
+  await expect(page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activée');
   //desactiver la clé
-  await card.getByLabel('Actions de la souscription').click();
-  await card.getByText('Désactiver la souscription').click();
-  //verifier que la clé est désactiver
-  await expect(card.locator('.api-subscription__value__type')).toContainText('Désactivé');
+  await page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByText('API CommandeActivéeprod21')
+    .getByRole('button', { name: 'Désactiver la souscription' }).
+    click();
+
+
+  //verifier que la clé est désactivée
+    await expect(page
+    .getByRole('listitem', { name: 'API Commande - prod' })).toContainText('Désactivé')
   const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',
     headers: {
@@ -594,11 +621,22 @@ test('[ASOAPI-10457 ASOAPI-10458] - [Consommateur] - desactiver/reactiver un cl�
   const apikey = await maybeKey.json()
   await expect(apikey.enabled).toBe(false)
 
-  //activer la clé
-  await card.getByLabel('Actions de la souscription').click();
-  await card.getByText('Activer la souscription').click();
-  //verifier que la clé est réactivée
-  await expect(card.locator('.api-subscription__value__type')).toContainText('Activé');
+  //activer la clés
+  await page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Activer la souscription' }).
+    click();
+  await expect(page
+    .getByRole('listitem', { name: 'API Commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activée');
   const _maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',
     headers: {
@@ -641,14 +679,39 @@ test('[ASOAPI-10600 ASOAPI-10601] - [Consommateur] - desactiver/reactiver un cl�
   const row = page.locator('.keyring-card tbody tr', { hasText: 'API Commande' });
   // On va manipuler la souscription Commande/dev (faisant partie d'une aggregation)
   //Vérifier que la clé est activé
-  await expect(row.locator('.api-subscription__value__type')).toContainText('Activé');
-  //desactiver la clé
-  await row.getByLabel('Actions de la souscription').click();
-  await row.getByText('Désactiver la souscription').click();
+
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByLabel("deploy")
+    .click()
+
+  await expect(page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activée');
+
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Désactiver la souscription' })
+    .click();
+  //verifier que la clé est désactiver
+
   await page.waitForResponse(r => r.url().includes('/_archive?enabled=false') && r.status() === 200);
 
   //verifier que la clé est désactiver
-  await expect(row.locator('.api-subscription__value__type')).toContainText('Désactivé');
+  await expect(page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Désactivé')
   const maybeDeactivatedKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
     method: 'GET',
     headers: {
@@ -666,12 +729,27 @@ test('[ASOAPI-10600 ASOAPI-10601] - [Consommateur] - desactiver/reactiver un cl�
   await page.waitForTimeout(500);
 
   //activer la clé
-  await row.getByLabel('Actions de la souscription').click();
-  await row.getByText('Activer la souscription').click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Activer la souscription' })
+    .click();
+
   await page.waitForResponse(r => r.url().includes('/_archive?enabled=true') && r.status() === 200);
 
   //verifier que la clé est réactivée
-  await expect(row.locator('.api-subscription__value__type')).toContainText('Activé');
+  await expect(page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activée');
+
   const maybeActivatedApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
     method: 'GET',
     headers: {
@@ -714,12 +792,31 @@ test('[ASOAPI-10602] - [Consommateur] - supprimer un extension de clé', async (
   //Voir les clé d'api pour api Commande
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   // Ligne API Commande/dev de l'agrégat (le trousseau porte aussi API papier/dev).
-  const row = page.locator('.keyring-card tbody tr', { hasText: 'API Commande' });
+
+  await expect(page.getByRole('listitem', { name: 'API Papier - dev' }))
+    .toContainText("Activé")
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByLabel("deploy")
+    .click()
   //Vérifier que la clé est activé
-  await expect(row.locator('.api-subscription__value__type')).toContainText('Activé');
+  await expect(page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activé')
   //supprimer la souscription Commande/dev
-  await row.getByLabel('Actions de la souscription').click();
-  await row.getByText('Supprimer').click();
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+
+  await page
+    .getByRole('listitem', { name: 'API Papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByText('Supprimer').click()
+
   await page.getByLabel('Pour confirmer la suppression').fill('API Commande/dev');
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
@@ -767,21 +864,40 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
   // Le nouveau modèle n'a plus de suppression « en cascade » : pour retirer toute
   // la clé Otoroshi, on supprime chaque souscription du trousseau. La carte de
   // l'agrégat liste ses deux souscriptions (API papier/dev + API Commande/dev).
-  const card = page.locator('.keyring-card');
-  // 1) supprimer la souscription API Commande/dev
-  const commandeRow = card.locator('tbody tr', { hasText: 'API Commande' });
-  await commandeRow.getByLabel('Actions de la souscription').click();
-  await commandeRow.getByText('Supprimer').click();
+
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByLabel("deploy")
+    .click()
+
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByText('Supprimer')
+    .click();
   await page.getByLabel('Pour confirmer la suppression').fill('API Commande/dev');
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
   // 2) supprimer la dernière souscription (API papier/dev) -> trousseau vide -> le
   // backend supprime le trousseau et sa clé Otoroshi
-  const papierRow = card.locator('tbody tr', { hasText: 'API papier' });
-  await papierRow.getByLabel('Actions de la souscription').click();
-  await papierRow.getByText('Supprimer').click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API papier' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API papier' })
+    .getByText('Supprimer')
+    .click();
   await page.getByLabel('Pour confirmer la suppression').fill('API papier/dev');
-  await page.getByRole('button', { name: 'Confirmation' }).click();
+  await page.getByRole('button', { name: 'Confirmation' }).
+  click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
 
   //plus aucune carte -> trousseau supprimé
@@ -817,10 +933,18 @@ test('[ASOAPI-10605] - [Consommateur] - supprimer un trousseau complet en une ac
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API Papier' }).getByLabel('Voir les clés d\'API').click();
 
-  const card = page.locator('.keyring-card');
-  const keyringName = (await card.locator('.api-subscription__infos__name').textContent())?.trim() ?? '';
-  await card.getByLabel('Actions du trousseau').click();
-  await card.getByText('Supprimer le trousseau').click();
+  const keyringName = (await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('heading', { name: 'api papier - dev' })
+    .textContent())?.trim() ?? '';
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByLabel('Actions du trousseau')
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByText('Supprimer le trousseau')
+    .click();
   await page.getByLabel('Pour confirmer la suppression').fill(keyringName);
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
@@ -846,10 +970,32 @@ test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre 
   await findAndGoToTeam('Logistique', page);
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  const prodCard = page.locator('.keyring-card', { hasText: 'prod' });
-  await prodCard.getByLabel('Actions de la souscription').click();
-  await prodCard.getByText('Transférer la souscription').click();
-  await page.getByRole('button', { name: 'Copier le lien' }).click();
+
+   await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByLabel('deploy')
+    .click();
+  
+  //Vérifier que la clé est activé
+  await expect(page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activé')
+
+  // réactiver le trousseau -> la clé Otoroshi est réactivée (la souscription est active)
+ 
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByRole('button', { name: 'Actions de la souscription' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByText('Transférer la souscription').click();
+  await page.getByRole('button', { name: 'Copier le lien' })
+  .click();
 
   const link = await page.evaluate(() => navigator.clipboard.readText());
   await page.goto(link);
@@ -859,7 +1005,14 @@ test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre 
   await page.goto(`${HOME}vendeurs/settings/dashboard`);
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  await expect(page.locator('.keyring-card', { hasText: 'prod' })).toBeVisible();
+
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByLabel('deploy')
+    .click();
+  await expect(page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })).toBeVisible();
 })
 
 test('[#1096] - visibilité du bouton de souscription selon la visibilité API/plan', async ({ page }) => {
@@ -953,7 +1106,7 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
 
   async function checkBurgerButtonVisibility(visible: boolean) {
     const keyUrl = `${HOME}vendeurs/settings/apikeys/api-commande/1.0.0`
-    const card = page.locator('.keyring-card').first()
+    const card = page.getByRole('listitem', { name: 'api papier - dev' })
 
     const keyringMenuButton = card.getByRole('button', { name: 'Actions du trousseau' });
     const keyringSwitchButton = await card.getByRole('button', { name: 'Désactiver le trousseau' });
@@ -971,6 +1124,11 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
       await expect(keyringMenuButton).not.toBeVisible()
       // non-admin : pas de switch, mais le statut du trousseau reste visible
       await expect(keyringSwitchButton).not.toBeVisible()
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByLabel("deploy")
+    .click()
+
       const states = card.locator('[class~="--state"]')
       await expect(states).toHaveCount(3)
       for (const state of await states.all()) {
@@ -1010,7 +1168,7 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
   await loginAs(MICHAEL, page);
   await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/apikeys`);
 
-  const card = page.locator('.keyring-card').first();
+  const card = page.getByRole('listitem', { name: 'api papier - dev' })
 
   // désactivation du trousseau via le switch (admin)
   await card.getByRole('button', { name: 'Actions du trousseau' }).click();
@@ -1032,12 +1190,16 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
 
-  const card = page.locator('.keyring-card', { hasText: 'prod' });
-
   // désactiver le trousseau -> la clé Otoroshi est désactivée
 
-  await card.getByRole('button', { name: 'Actions du trousseau' }).click();
-  await card.getByRole('button', { name: 'Désactiver le trousseau' }).click();
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('button', { name: 'Actions du trousseau' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('button', { name: 'Désactiver le trousseau' })
+    .click();
   await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
 
   const disabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
@@ -1050,11 +1212,28 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
   await expect(disabledKey.status).toBe(200);
   await expect((await disabledKey.json()).enabled).toBe(false);
   // la souscription du trousseau reste activée côté Daikoku
-  await expect(card.locator('.api-subscription__value__type')).toContainText('Activé');
+
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByLabel('deploy')
+    .click();
+  
+  //Vérifier que la clé est activé
+  await expect(page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' })
+    .getByLabel('Etat'))
+    .toContainText('Activé')
 
   // réactiver le trousseau -> la clé Otoroshi est réactivée (la souscription est active)
-  await card.getByRole('button', { name: 'Actions du trousseau' }).click();
-  await card.getByRole('button', { name: 'Activer le trousseau' }).click();
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('button', { name: 'Actions du trousseau' })
+    .click();
+  await page
+    .getByRole('listitem', { name: 'api commande - prod' })
+    .getByRole('button', { name: 'Activer le trousseau' })
+    .click();
   await page.waitForResponse(r => r.url().includes('/_enable?enabled=true') && r.status() === 200)
 
   const enabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {

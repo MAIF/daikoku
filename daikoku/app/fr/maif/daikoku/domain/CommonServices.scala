@@ -1230,6 +1230,137 @@ object CommonServices {
     }
   }
 
+  def getKeyringSubscriptions(
+      teamId: String,
+      keyringId: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ) = {
+    _TeamApiEditorOnly(
+      AuditTrailEvent(
+        s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
+      )
+    )(teamId, ctx) { _ =>
+      val defaultOrderClause =
+        "ORDER BY COALESCE(s.content ->> 'api', s.content ->> 'adminCustomName') ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _                                                => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "subscription" =>
+              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') $desc"
+            case Some(id) if id == "plan" =>
+              s"ORDER BY p.content ->> 'customName' $desc"
+            case Some(id) if id == "team" =>
+              s"ORDER BY t.content ->> 'name' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+
+      val queryCount = s"""
+                     |SELECT count(1) as count
+                     |from api_subscriptions s
+                     |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+                     |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+                     |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
+                     |WHERE s.content ->> 'keyring' = $$1
+                     |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+                     |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+                     |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+                     |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+                     |  AND CASE
+                     |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+                     |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+                     |    END
+                     |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb);
+                     |""".stripMargin
+      val query = s"""
+           |SELECT s.content
+           |from api_subscriptions s
+           |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+           |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
+           |WHERE s.content ->> 'keyring' = $$1
+           |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+           |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+           |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+           |  AND CASE
+           |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |    END
+           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
+           |$sortClause
+           |LIMIT $$8 OFFSET $$9;
+           |""".stripMargin
+
+      (for {
+        count <- EitherT.fromOptionF[Future, AppError, Long](
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              query = queryCount,
+              name = "count",
+              params = Seq(
+                keyringId,
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray](filters, "clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject](filters, "metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String]
+              )
+            ),
+          AppError.UnexpectedError
+        )
+        subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .query(
+              query,
+              Seq(
+                keyringId,
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray](filters, "clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject](filters, "metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
+        )
+      } yield {
+        ctx.setCtxValue("keyringId", keyringId)
+        (subs, count)
+      }).value
+    }
+  }
+
   /** The keyrings owned by the consuming team that aggregate at least one
     * subscription on the given api. Keyring-centric counterpart of
     * [[getApiSubscriptions]]: the consumer view lists keyrings (each carrying
@@ -1260,9 +1391,11 @@ object CommonServices {
       // total before pagination in the same single query
       val query = s"""
            |SELECT k.content AS content,
+           |       t.content ->> 'name' AS teamname,
            |       count(*) OVER() AS total
-           |FROM keyrings k
+           |FROM keyrings k, teams t
            |WHERE k._deleted = false
+           |  AND t.content ->> '_id' = $$2
            |  AND EXISTS (
            |    SELECT 1 FROM api_subscriptions s
            |    WHERE s._deleted = false
@@ -1278,7 +1411,7 @@ object CommonServices {
         .asInstanceOf[PostgresDataStore]
         .queryRawMapped(
           query,
-          Seq(Col.json("content"), Col.long("total")),
+          Seq(Col.json("content"), Col.str("teamname"), Col.long("total")),
           Seq(
             apiId,
             team.id.value,
@@ -1291,12 +1424,19 @@ object CommonServices {
             (row \ "content")
               .asOpt[JsValue]
               .flatMap(json.KeyringFormat.reads(_).asOpt)
+              .map { keyring =>
+                val teamName = (row \ "teamname").asOpt[String].getOrElse("")
+                (keyring, teamName)
+              }
           )
           val total =
             rows.headOption
               .flatMap(row => (row \ "total").asOpt[Long])
               .getOrElse(0L)
-          Right[AppError, (Seq[Keyring], Long)]((keyrings, total))
+
+          Right[AppError, (Seq[(Keyring, String)], Long)](
+            (keyrings, total)
+          )
         }
     }
   }
