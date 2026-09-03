@@ -4,7 +4,6 @@ import cats.data.EitherT
 import cats.syntax.option.*
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.json.{
-  BillingTimeUnitFormat,
   LongFormat,
   SeqIssueIdFormat,
   SeqPostIdFormat,

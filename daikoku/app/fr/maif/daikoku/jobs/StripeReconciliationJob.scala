@@ -2,7 +2,12 @@ package fr.maif.daikoku.jobs
 
 import fr.maif.daikoku.controllers.PaymentClient
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
-import fr.maif.daikoku.domain.{ApiSubscription, Tenant, UsagePlan}
+import fr.maif.daikoku.domain.{
+  ApiKeyConsumption,
+  ApiSubscription,
+  Tenant,
+  UsagePlan
+}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.{ApiService, BillingNotificationService}
 import fr.maif.daikoku.utils.Translator
@@ -181,14 +186,23 @@ class StripeReconciliationJob(
       maybePlan <- env.dataStore.usagePlanRepo
         .forTenant(tenant)
         .findByIdNotDeleted(subscription.plan)
-      consumptions <- env.dataStore.consumptionRepo
+      // the api key lives on the keyring, and consumptions are still recorded
+      // under its clientId
+      maybeKeyring <- env.dataStore.keyringRepo
         .forTenant(tenant)
-        .findNotDeleted(
-          Json.obj(
-            "clientId" -> subscription.apiKey.clientId,
-            "from" -> Json.obj("$gte" -> from.getMillis)
+        .findByIdNotDeleted(subscription.keyring)
+      consumptions <- maybeKeyring.fold(
+        FastFuture.successful(Seq.empty[ApiKeyConsumption])
+      )(keyring =>
+        env.dataStore.consumptionRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "clientId" -> keyring.apiKey.clientId,
+              "from" -> Json.obj("$gte" -> from.getMillis)
+            )
           )
-        )
+      )
       reportedHits = consumptions.map(_.lastReportedHits).sum
       _ <- maybePlan.fold(FastFuture.successful(()))(plan =>
         paymentClient

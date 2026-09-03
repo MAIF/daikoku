@@ -2026,7 +2026,7 @@ class ApiController(
                   )
                 else FastFuture.successful(())
               )
-            } yield subscription.asSafeJson.as[JsObject] ++ Json.obj(
+            } yield subscription.asJson.as[JsObject] ++ Json.obj(
               "cancelAtPeriodEnd" -> cancelling,
               "endsAt" -> endsAt.getMillis
             )).value
