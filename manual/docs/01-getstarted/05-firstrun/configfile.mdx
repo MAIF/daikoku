@@ -55,20 +55,35 @@ tenant administration page.
 
 ### Webhooks
 
-Stripe reports what happens to the money: a failed charge, a paid invoice, a subscription
-cancelled from the Stripe dashboard. Each payment settings entry gets its own endpoint,
-`POST /api/payment/<payment settings id>/_webhook`, so Daikoku knows which signing secret
-to use before opening the message. Create the endpoint in the Stripe dashboard, subscribe
-it to `invoice.paid`, `invoice.payment_failed` and `customer.subscription.deleted`, then
-paste its signing secret into the payment settings of the tenant.
+Stripe reports what happens to the money: a paid invoice, an invoice that has just been
+finalized, a subscription cancelled from the Stripe dashboard. Each payment settings entry
+gets its own endpoint, `POST /api/payment/<payment settings id>/_webhook`, so Daikoku knows
+which signing secret to use before opening the message. Create the endpoint in the Stripe
+dashboard, subscribe it to `invoice.paid`, `invoice.finalized` and
+`customer.subscription.deleted`, then paste its signing secret into the payment settings of
+the tenant.
 
 Deliveries whose signature does not verify are rejected, and so are deliveries older than
 five minutes. Without a signing secret the endpoint accepts nothing.
 
 Webhooks alone are not enough: Stripe answers a meter event before aggregating it, so an
-accepted event can still be dropped. The reconciliation job compares, once a day, the
-usage Daikoku recorded as reported against what the Stripe meter actually counted, and
-sends back the difference.
+accepted event can still be dropped. Once a day the reconciliation job compares the usage
+Daikoku recorded as reported against what the Stripe meter actually counted and sends back
+the difference, checks that each subscription sits on the price its plan now carries, and
+follows unpaid invoices.
+
+### Unpaid invoices
+
+An unpaid invoice is never tracked on Daikoku's side: the age of the oldest open invoice is
+read from Stripe at every pass. The subscribing team is notified on day 1, on day 7, then
+every day from day 15. On day 30 the api key stops working until the invoice is paid;
+nothing is deleted and `invoice.paid` restores the very same credentials. A tenant that
+should never have a key cut can turn that off in its payment settings.
+
+Consumers end their own subscription from Daikoku, effective when the period they have paid
+for runs out, so the key works until the last paid day and the closing invoice still carries
+their usage. The billing portal uses the merchant's own default configuration, so its legal
+links, its branding and what a customer may change there belong to the Stripe dashboard.
 
 :::warning
 Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage).

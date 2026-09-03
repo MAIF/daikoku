@@ -293,33 +293,6 @@ class StripeWebhookSpec()
       ).status mustBe 200
     }
 
-    "tell the team a payment failed, with the end of the grace period" in {
-      implicit val stripeKey: String = realStripeKey
-      val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant, stripeKey)
-      val (customerId, stripeSubscriptionId) =
-        stripeSubscription(paymentSettings.priceIds.basePriceId)
-      val subscription =
-        daikokuSubscription(stripeTenant, stripeSubscriptionId, customerId)
-
-      deliver(
-        stripeTenant,
-        event("invoice.payment_failed", invoice(stripeSubscriptionId, 1000))
-      ).status mustBe 200
-
-      val failed = notifications(stripeTenant).map(_.action).collectFirst {
-        case action: NotificationAction.SubscriptionPaymentFailed => action
-      }.get
-      failed.subscription mustBe subscription.id
-      failed.amount mustBe BigDecimal(10)
-      failed.currency mustBe Currency("EUR")
-      failed.gracePeriodEndsAt.toLocalDate mustBe
-        failed.failedAt.plusDays(30).toLocalDate
-      currentSubscription(stripeTenant, subscription.id).enabled mustBe true
-
-      cleanUp(stripeTenant, paymentSettings, customerId)
-    }
-
     "cut the key when the subscription is cancelled on Stripe's side" in {
       implicit val stripeKey: String = realStripeKey
       val stripeTenant = setupTenant(stripeKey)
