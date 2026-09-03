@@ -137,6 +137,44 @@ export const advanceTestClock = async (clockId: string, to: Date): Promise<void>
     .toBe('ready');
 };
 
+/** The clock's own time, which is what Stripe dated the invoices with. The
+ * reconciliation pass is run against it rather than the machine clock. */
+export const testClockNow = async (clockId: string): Promise<number> => {
+  const clock = await stripe(`/v1/test_helpers/test_clocks/${clockId}`).then((r) =>
+    r.json()
+  );
+  return clock.frozen_time * 1000;
+};
+
+/** `tok_visa` pays, `tok_chargeCustomerFail` attaches but never pays, which is
+ * how an invoice is left open without touching the subscription itself. */
+export const useCard = async (customerId: string, token: string): Promise<void> => {
+  const method = await stripe('/v1/payment_methods', {
+    method: 'POST',
+    body: form({ type: 'card', 'card[token]': token }),
+  }).then((r) => r.json());
+  expect(method.id, `create payment method failed: ${JSON.stringify(method)}`).toBeTruthy();
+
+  await stripe(`/v1/payment_methods/${method.id}/attach`, {
+    method: 'POST',
+    body: form({ customer: customerId }),
+  });
+  await stripe(`/v1/customers/${customerId}`, {
+    method: 'POST',
+    body: form({ 'invoice_settings[default_payment_method]': method.id }),
+  });
+};
+
+export const openInvoiceOf = async (subscriptionId: string): Promise<any | undefined> => {
+  const res = await stripe(
+    `/v1/invoices?subscription=${subscriptionId}&status=open&limit=100`
+  ).then((r) => r.json());
+  return (res.data ?? []).sort((a: any, b: any) => a.created - b.created)[0];
+};
+
+export const payInvoice = (invoiceId: string) =>
+  stripe(`/v1/invoices/${invoiceId}/pay`, { method: 'POST' }).then((r) => r.json());
+
 export const deleteTestClock = (clockId: string) =>
   stripe(`/v1/test_helpers/test_clocks/${clockId}`, { method: 'DELETE' });
 

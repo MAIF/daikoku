@@ -14,6 +14,7 @@ import {
   otoroshiAdminApikeySecret,
   paperApiCall,
   tenant,
+  triggerStripeReconciliation,
   triggerTeamBillingSync,
   vendeurs,
 } from './utils';
@@ -26,13 +27,17 @@ import {
   deliverWebhook,
   findStripeCustomerId,
   findStripeSubscriptionId,
+  openInvoiceOf,
+  payInvoice,
   setupStripePaymentOnPlan,
   stripeConfigured,
   stripeInvoice,
   stripeMeterTotal,
   stripeSubscription,
   subscribeViaStripeCheckout,
+  testClockNow,
   updatePlanAsProducer,
+  useCard,
 } from './stripe';
 
 test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => {
@@ -246,6 +251,50 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
           after.paymentSettings.priceIds.additionalPriceId,
         ].sort()
       );
+
+    // 14. Unpaid: the card stops paying, so the next invoice is left open.
+    log('switching the customer to a card that never pays');
+    await useCard(cus, 'tok_chargeCustomerFail');
+
+    const nextPeriodEnd: number = (await stripeSubscription(subId)).items.data[0]
+      .current_period_end;
+    log('advancing past the next period, whose invoice will fail');
+    await advanceTestClock(clockId, new Date((nextPeriodEnd + 2 * 3600) * 1000));
+
+    const unpaid = await openInvoiceOf(subId);
+    expect(unpaid, 'no open invoice after the failed charge').toBeTruthy();
+    log(`invoice ${unpaid.id} left open, ${unpaid.amount_due} due`);
+
+    // 15. Thirty days later the key stops passing. The pass is measured against the
+    //     clock, which is the time Stripe dated that invoice with.
+    log('advancing thirty more days, then running the reconciliation pass');
+    await advanceTestClock(clockId, new Date((unpaid.created + 31 * 86_400) * 1000));
+    await triggerStripeReconciliation(page, await testClockNow(clockId));
+
+    await expect
+      .poll(async () => (await paperApiCall(page, clientId, clientSecret)).status(), {
+        timeout: 120_000,
+        intervals: [5_000],
+      })
+      .not.toBe(200);
+    log('the api key no longer passes');
+
+    // 16. Paying brings back the very same credentials.
+    log('paying the invoice, then delivering invoice.paid');
+    await useCard(cus, 'tok_visa');
+    const paid = await payInvoice(unpaid.id);
+    expect(paid.status, `paying the invoice failed: ${JSON.stringify(paid)}`).toBe('paid');
+
+    const paidDelivery = await deliverWebhook(settingsId, 'invoice.paid', paid);
+    expect(paidDelivery.ok, `webhook refused: ${await paidDelivery.text()}`).toBeTruthy();
+
+    await expect
+      .poll(async () => (await paperApiCall(page, clientId, clientSecret)).status(), {
+        timeout: 120_000,
+        intervals: [5_000],
+      })
+      .toBe(200);
+    log('the api key passes again, with the same credentials');
 
     await deleteTestClock(clockId);
   });

@@ -200,6 +200,22 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     );
   };
 
+  const cancelSubscription = (subscription: ISubscription) => {
+    return confirm({
+      title: translate('subscription.cancel.confirm.title'),
+      message: translate('subscription.cancel.confirm.message'),
+      okLabel: translate('subscription.cancel.confirm.ok')
+    }).then((ok) => {
+      if (ok) {
+        return Services.cancelApiSubscription(props.team._id, subscription._id, true)
+          .then(() => {
+            toast.success(translate('subscription.cancel.successful'));
+            queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
+          });
+      }
+    });
+  };
+
   const makeUniqueApiKey = (subscription: ISubscription, details: IApiSubscriptionDetails) => {
 
     openFormModal(
@@ -550,6 +566,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                     )
                   }
                   regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                  cancelSubscription={() => cancelSubscription(subscription)}
                   transferKey={() => transferApiKey(subscription)}
                   handleTagClick={(tag) => setSearched(tag)}
                   linkToChildren={props.linkToChildren}
@@ -583,6 +600,7 @@ type ApiKeyCardProps = {
     graceperiod: number
   ) => Promise<void>;
   regenerateSecret: () => void;
+  cancelSubscription: () => void;
   currentTeam?: ITeamSimple;
   transferKey: () => void;
   handleTagClick: (tag: string) => void
@@ -599,6 +617,7 @@ export const ApiKeyCard = ({
   makeUniqueApiKey,
   toggleRotation,
   regenerateSecret,
+  cancelSubscription,
   deleteApiKey,
   transferKey,
   currentTeam,
@@ -632,6 +651,7 @@ export const ApiKeyCard = ({
           plan {
             customName
             autoRotation
+            costPerMonth
           }
           parent { _id }
           customName
@@ -1005,6 +1025,12 @@ export const ApiKeyCard = ({
                 onClick={() => withLoader(() => makeUniqueApiKey(detailQuery.data))}
               >
                 {translate("subscription.extract.button.label")}
+              </span>}
+              {!subscription.parent && !!plan.costPerMonth && <span
+                className="dropdown-item cursor-pointer danger"
+                onClick={() => withLoader(cancelSubscription)}
+              >
+                {translate("subscription.cancel.button.label")}
               </span>}
               <span
                 className="dropdown-item cursor-pointer danger"

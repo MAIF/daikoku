@@ -71,10 +71,14 @@ class StripeReconciliationJob(
 
   /** The window is the running billing period: usage is billed monthly, and a
     * meter event cannot be dated more than 35 days back anyway.
+    *
+    * `now` is the instant everything is measured against. It defaults to the
+    * machine clock; the e2e passes the frozen time of a Stripe test clock, so
+    * that a period it moved forward is read the way Stripe sees it.
     */
-  def reconcile(): Future[Done] = {
-    val from = DateTime.now().withDayOfMonth(1).withTimeAtStartOfDay()
-    val to = DateTime.now()
+  def reconcile(now: DateTime = DateTime.now()): Future[Done] = {
+    val from = now.withDayOfMonth(1).withTimeAtStartOfDay()
+    val to = now
 
     env.dataStore.tenantRepo
       .findAllNotDeleted()
@@ -86,7 +90,7 @@ class StripeReconciliationJob(
               .streamAllRawFormatted(Json.obj("_deleted" -> false))
               .filter(_.thirdPartySubscriptionInformations.isDefined)
               .mapAsync(4)(subscription =>
-                reconcileSubscription(tenant, subscription, from, to)
+                reconcileSubscription(tenant, subscription, from, to, now)
               )
           )
           .runWith(Sink.ignore)
@@ -100,7 +104,8 @@ class StripeReconciliationJob(
   private def handleUnpaid(
       tenant: Tenant,
       subscription: ApiSubscription,
-      plan: UsagePlan
+      plan: UsagePlan,
+      now: DateTime
   ): Future[Unit] =
     paymentClient.unpaidInvoiceOf(tenant, subscription, plan).value.flatMap {
       case Left(error) =>
@@ -110,7 +115,7 @@ class StripeReconciliationJob(
         FastFuture.successful(())
       case Right(None) => FastFuture.successful(())
       case Right(Some(unpaid)) =>
-        val days = Days.daysBetween(unpaid.since, DateTime.now()).getDays
+        val days = Days.daysBetween(unpaid.since, now).getDays
         val cutsOnUnpaid = plan.paymentSettings
           .flatMap(settings =>
             tenant.thirdPartyPaymentSettings.collectFirst {
@@ -169,7 +174,8 @@ class StripeReconciliationJob(
       tenant: Tenant,
       subscription: ApiSubscription,
       from: DateTime,
-      to: DateTime
+      to: DateTime,
+      now: DateTime
   ): Future[Unit] =
     for {
       maybePlan <- env.dataStore.usagePlanRepo
@@ -201,7 +207,7 @@ class StripeReconciliationJob(
           }
       )
       _ <- maybePlan.fold(FastFuture.successful(()))(plan =>
-        handleUnpaid(tenant, subscription, plan)
+        handleUnpaid(tenant, subscription, plan, now)
       )
       _ <- (maybePlan, reportedHits) match {
         case (Some(plan), hits) if hits > 0 =>

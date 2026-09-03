@@ -137,6 +137,17 @@ export const paperApiCall = (page: Page, clientId: string, clientSecret: string)
     },
   });
 
+/** Runs the daily Stripe pass once, measured against `at` rather than the
+ * machine clock, so a period a test clock moved forward is read as Stripe sees
+ * it. */
+export const triggerStripeReconciliation = async (page: Page, at: number) => {
+  const res = await page.request.post(
+    `http://localhost:${exposedPort}/api/jobs/stripe/_reconcile?at=${at}`,
+    { timeout: 120_000 }
+  );
+  expect(res.ok(), `stripe reconciliation failed: ${await res.text()}`).toBeTruthy();
+};
+
 export const triggerTeamBillingSync = async (page: Page, teamId: string) => {
   const res = await page.request.post(
     `http://localhost:${exposedPort}/api/teams/${teamId}/billing/_sync`,

@@ -241,6 +241,17 @@ export const archiveApiKey = (
     method: 'PUT',
   });
 
+/** Ends the subscription when the paid period runs out. Passing false takes the
+ * cancellation back, which is possible until that last paid day. */
+export const cancelApiSubscription = (
+  teamId: string,
+  subscriptionId: string,
+  cancel: boolean
+): PromiseWithError<ISafeSubscription> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_cancel?cancel=${cancel}`, {
+    method: 'PUT',
+  });
+
 export const makeUniqueApiKey = (
   teamId: string,
   subscriptionId: string
