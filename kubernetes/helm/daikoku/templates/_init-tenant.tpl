@@ -64,7 +64,11 @@ Both templates are called with the root context `.`.
   "DAIKOKU_INIT_TENANT_DEFAULT_MESSAGE" $it.defaultMessage
   "DAIKOKU_INIT_OTOROSHI_URL" $it.otoroshi.url
   "DAIKOKU_INIT_OTOROSHI_HOST" $it.otoroshi.host
-  "DAIKOKU_INIT_OTOROSHI_CLIENT_ID" $it.otoroshi.clientId
+-}}
+{{- if not (include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "otoroshiClientId")) -}}
+{{- $_ := set $s "DAIKOKU_INIT_OTOROSHI_CLIENT_ID" $it.otoroshi.clientId -}}
+{{- end -}}
+{{- $s := merge $s (dict
   "DAIKOKU_INIT_S3_BUCKET" $s3Bucket
   "DAIKOKU_INIT_S3_ENDPOINT" $s3Endpoint
   "DAIKOKU_INIT_S3_REGION" $s3Region
@@ -137,21 +141,26 @@ Both templates are called with the root context `.`.
 {{- define "daikoku.initTenant.secretData" -}}
 {{- $it := .Values.daikoku.initTenant -}}
 {{- $sec := dict
-  "DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET" $it.otoroshi.clientSecret
   "DAIKOKU_INIT_MAILER_KEY" $it.mailer.key
   "DAIKOKU_INIT_MAILER_API_KEY_PRIVATE" $it.mailer.apiKeyPrivate
-  "DAIKOKU_INIT_MAILER_PASSWORD" $it.mailer.password
   "DAIKOKU_INIT_MAILER_SENDGRID_APIKEY" $it.mailer.sendgridApiKey
   "DAIKOKU_INIT_AUTH_OAUTH2_CLIENT_SECRET" $it.auth.oauth2.clientSecret
   "DAIKOKU_INIT_AUDIT_ELASTIC_PASSWORD" $it.audit.elastic.password
 -}}
+{{- if not (include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "otoroshiClientSecret")) -}}
+{{- $_ := set $sec "DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET" $it.otoroshi.clientSecret -}}
+{{- end -}}
+{{- if not (include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "mailerPassword")) -}}
+{{- $_ := set $sec "DAIKOKU_INIT_MAILER_PASSWORD" $it.mailer.password -}}
+{{- end -}}
 {{/* LDAP admin password is only user-provided when the bundled OpenLDAP is OFF
      (otherwise it comes from the OpenLDAP Secret, wired in the Deployment). */}}
 {{- if not .Values.openldap.enabled -}}
 {{- $_ := set $sec "DAIKOKU_INIT_AUTH_LDAP_ADMIN_PASSWORD" $it.auth.ldap.adminPassword -}}
 {{- end -}}
-{{/* S3 secret comes from the Garage-generated Secret when the bundle is on. */}}
-{{- if not .Values.garage.enabled -}}
+{{/* S3 secret comes from the Garage-generated Secret when the bundle is on,
+     or from secrets.initTenant.existingSecret when mapped there. */}}
+{{- if and (not .Values.garage.enabled) (not (include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "s3Secret"))) -}}
 {{- $_ := set $sec "DAIKOKU_INIT_S3_SECRET" $it.s3.secret -}}
 {{- end -}}
 {{- range $k, $v := $sec }}

@@ -19,7 +19,7 @@ spec:
       annotations:
         # Roll pods when configuration or provided secret values change.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        checksum/secrets: {{ printf "%v|%v|%v|%v" .Values.secrets .Values.postgresql.auth.password .Values.externalDatabase.existingSecret (include "daikoku.initTenant.secretData" .) | sha256sum }}
+        checksum/secrets: {{ printf "%v|%v|%v|%v|%v" .Values.secrets .Values.postgresql.auth.password .Values.externalDatabase.existingSecret (include "daikoku.initTenant.secretData" .) .Values.secrets.initTenant | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -103,11 +103,43 @@ spec:
                 secretKeyRef:
                   name: {{ include "daikoku.garage.fullname" . }}-keys
                   key: accessKeyId
+            {{- end }}
+            {{- if include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "s3Secret") }}
+            - name: DAIKOKU_INIT_S3_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.initTenant.existingSecret }}
+                  key: {{ include "daikoku.initTenant.externalKey" (dict "ctx" . "field" "s3Secret") }}
+            {{- else if .Values.garage.enabled }}
             - name: DAIKOKU_INIT_S3_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "daikoku.garage.fullname" . }}-keys
                   key: secretAccessKey
+            {{- end }}
+            {{- $its := .Values.secrets.initTenant -}}
+            {{- if $its.existingSecret }}
+            {{- with $its.keys.otoroshiClientId }}
+            - name: DAIKOKU_INIT_OTOROSHI_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $its.existingSecret }}
+                  key: {{ . }}
+            {{- end }}
+            {{- with $its.keys.otoroshiClientSecret }}
+            - name: DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $its.existingSecret }}
+                  key: {{ . }}
+            {{- end }}
+            {{- with $its.keys.mailerPassword }}
+            - name: DAIKOKU_INIT_MAILER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $its.existingSecret }}
+                  key: {{ . }}
+            {{- end }}
             {{- end }}
             {{- if .Values.openldap.enabled }}
             # Bind password for the bundled OpenLDAP.

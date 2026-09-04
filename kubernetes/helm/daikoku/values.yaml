@@ -58,12 +58,12 @@ daikoku:
   # Extra raw env vars for any other DAIKOKU_* setting, e.g.:
   #   - name: DAIKOKU_NOTIFICATIONS_PURGE_CRON
   #     value: "true"
-  # This is also how you feed a value from a Secret you own rather than writing it
-  # here in clear text — key names in the Secret are yours to choose. See
-  # "Referencing an existing Secret" in the README.
-  #   - name: DAIKOKU_INIT_MAILER_PASSWORD
+  # For init-tenant credentials (Otoroshi, S3, mailer password), prefer
+  # `secrets.initTenant.existingSecret` — see "Referencing an existing Secret" in
+  # the README. Use extraEnv for other secret-bearing DAIKOKU_INIT_* vars, e.g.:
+  #   - name: DAIKOKU_INIT_MAILER_KEY
   #     valueFrom:
-  #       secretKeyRef: { name: daikoku-credentials, key: mailer_password }
+  #       secretKeyRef: { name: daikoku-credentials, key: mailer_key }
   extraEnv: []
 
   # ===========================================================================
@@ -76,9 +76,9 @@ daikoku:
   #
   # Leave a value as "" (string) or null (bool/int) to skip it. Fields marked
   # [DAIKOKU_INIT_*] are rendered into a Kubernetes Secret under that key; the
-  # rest into a ConfigMap. To keep a credential out of this file entirely, leave it
-  # empty here and inject its variable from a Secret you own via `daikoku.extraEnv`
-  # — see "Referencing an existing Secret" in the README.
+  # rest into a ConfigMap. For Otoroshi client id/secret, S3 secret and mailer
+  # password, prefer `secrets.initTenant.existingSecret` so credentials never
+  # appear in Helm-managed objects — see the README.
   # ===========================================================================
   initTenant:
     # --- Identity & locale -----------------------------------------------------
@@ -104,8 +104,8 @@ daikoku:
     otoroshi:
       url: ""                      # e.g. https://otoroshi-api.your-domain.com
       host: ""                     # Host header Otoroshi expects, e.g. otoroshi-api.your-domain.com
-      clientId: ""                 # Otoroshi admin-api apikey client id. Empty -> "admin-api-apikey-id"
-      clientSecret: ""             # [DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET] Empty -> "admin-api-apikey-secret"
+      clientId: ""                 # [DAIKOKU_INIT_OTOROSHI_CLIENT_ID] Empty -> app default. Prefer secrets.initTenant.keys.otoroshiClientId for GitOps.
+      clientSecret: ""             # [DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET] Empty -> app default. Prefer secrets.initTenant.keys.otoroshiClientSecret for GitOps.
 
     # --- S3 bucket for asset storage -------------------------------------------
     # Set `bucket` to enable. For an in-cluster bucket, enable the bundled Garage
@@ -116,7 +116,7 @@ daikoku:
       endpoint: ""                 # S3 endpoint URL, e.g. https://s3.eu-west-1.amazonaws.com
       region: ""                   # e.g. eu-west-1. Empty -> "us-east-1"
       access: ""                   # access key id
-      secret: ""                   # [DAIKOKU_INIT_S3_SECRET] secret access key
+      secret: ""                   # [DAIKOKU_INIT_S3_SECRET] secret access key. Prefer secrets.initTenant.keys.s3Secret for GitOps.
       chunkSize: null              # multipart chunk size in bytes (int). null -> 8388608 (8MiB)
       v4auth: null                 # true (AWS SigV4, default) | false (legacy v2). null -> true
 
@@ -140,7 +140,7 @@ daikoku:
       host: ""                     # SMTP server host
       port: ""                     # SMTP port as a string, e.g. "25" | "587" | "465". Empty -> "25"
       username: ""                 # SMTP username (optional)
-      password: ""                 # [DAIKOKU_INIT_MAILER_PASSWORD] SMTP password (optional)
+      password: ""                 # [DAIKOKU_INIT_MAILER_PASSWORD] SMTP password (optional). Prefer secrets.initTenant.keys.mailerPassword for GitOps.
       # type=sendgrid:
       sendgridApiKey: ""           # [DAIKOKU_INIT_MAILER_SENDGRID_APIKEY] sendgrid api key
 
@@ -199,6 +199,14 @@ daikoku:
 # Secrets. Leave a value empty to auto-generate it on first install and KEEP it
 # stable across upgrades (rotating cypherSecret would make stored data unreadable).
 # Provide `existingSecret` to bring your own (must hold all DAIKOKU_* keys below).
+#
+# Init-tenant credentials (Otoroshi client id/secret, S3 secret, mailer password)
+# can likewise be supplied via `initTenant.existingSecret` pointing at a standard
+# Kubernetes Secret you create yourself (YAML file, Sealed Secrets, SOPS, …).
+# Set `existingSecret` to that Secret's name, then map each credential to the key
+# name it holds. Mapped values are wired with secretKeyRef and never rendered into
+# Helm-managed objects. Leave a key mapping empty to keep the usual fallback
+# (values.yaml -> *-init-tenant Secret, or bundled Garage for S3).
 # ---------------------------------------------------------------------------
 secrets:
   existingSecret: ""
@@ -207,6 +215,13 @@ secrets:
   cypherSecret: ""       # DAIKOKU_CYPHER_SECRET (data encryption)
   adminPassword: ""      # DAIKOKU_INIT_ADMIN_PASSWORD
   healthAccessKey: ""    # DAIKOKU_HEALTH_ACCESS_KEY (guards /health/details)
+  initTenant:
+    existingSecret: ""
+    keys:
+      otoroshiClientId: ""       # -> DAIKOKU_INIT_OTOROSHI_CLIENT_ID
+      otoroshiClientSecret: ""   # -> DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET
+      s3Secret: ""               # -> DAIKOKU_INIT_S3_SECRET
+      mailerPassword: ""         # -> DAIKOKU_INIT_MAILER_PASSWORD
 
 # ---------------------------------------------------------------------------
 # Embedded PostgreSQL (StatefulSet + PVC). Set enabled:false to use externalDatabase.

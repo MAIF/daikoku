@@ -177,6 +177,18 @@ Falls back to a user-provided existing Secret.
 {{- end }}
 
 {{/*
+External Secret holding init-tenant credentials (Otoroshi / S3 / mailer).
+Call with: (dict "ctx" $ "field" <keys field name, e.g. "otoroshiClientId">)
+Returns the key name in the external Secret when wired, empty otherwise.
+*/}}
+{{- define "daikoku.initTenant.externalKey" -}}
+{{- $its := .ctx.Values.secrets.initTenant -}}
+{{- if and $its.existingSecret (index $its.keys .field) -}}
+{{- index $its.keys .field -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Secret holding the PostgreSQL password.
 - embedded Postgres  -> the Secret this chart creates
 - external database  -> the user-provided existing Secret

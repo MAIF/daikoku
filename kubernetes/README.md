@@ -107,62 +107,87 @@ helm install daikoku ./helm/daikoku \
 ### Referencing an existing Secret (GitOps)
 
 The example above puts credentials in `values.yaml` (or on the command line),
-which is a problem as soon as that file is committed. Any `DAIKOKU_INIT_*` value
-can instead be injected from a Secret you own, through `daikoku.extraEnv`: leave
-the field empty under `initTenant`, and declare the variable with a `secretKeyRef`.
+which is a problem as soon as that file is committed. Create a standard
+Kubernetes `Secret` yourself (a YAML file applied with `kubectl apply`, Sealed
+Secrets, SOPS, …) and point the chart at it with `secrets.initTenant.existingSecret`.
+
+**1. Your Secret** (`daikoku-init-credentials.yaml` — keep this file out of git,
+or encrypt it):
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: daikoku-init-credentials
+  namespace: daikoku
+type: Opaque
+stringData:
+  otoroshi_client_id: admin-api-apikey-id
+  otoroshi_client_secret: your-otoroshi-secret
+  s3_secret: your-s3-secret-key
+  mailer_password: your-smtp-password
+```
+
+```sh
+kubectl apply -f daikoku-init-credentials.yaml
+```
+
+**2. Helm values** — tell the chart which Secret to read and how keys map to env
+vars:
+
+```yaml
+secrets:
+  initTenant:
+    existingSecret: daikoku-init-credentials
+    keys:
+      otoroshiClientId: otoroshi_client_id
+      otoroshiClientSecret: otoroshi_client_secret
+      s3Secret: s3_secret
+      mailerPassword: mailer_password
+```
+
+The key names under `keys` are the **key names inside your Secret** — they map to
+the `DAIKOKU_INIT_*` environment variables listed in the table below. Leave a
+mapping empty to keep the usual fallback for that credential (values.yaml →
+`*-init-tenant` Secret, or bundled Garage for S3).
+
+| `keys` field | Environment variable |
+|---|---|
+| `otoroshiClientId` | `DAIKOKU_INIT_OTOROSHI_CLIENT_ID` |
+| `otoroshiClientSecret` | `DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET` |
+| `s3Secret` | `DAIKOKU_INIT_S3_SECRET` |
+| `mailerPassword` | `DAIKOKU_INIT_MAILER_PASSWORD` |
+
+Non-secret init-tenant settings (Otoroshi URL, S3 bucket, mailer host, …) stay
+under `daikoku.initTenant` in `values.yaml`. Mapped credentials are wired with
+`secretKeyRef` and never rendered into Helm-managed ConfigMaps or Secrets.
+
+The Secret must exist **before** the Daikoku pod starts. Editing its *content*
+does not restart the pods — use [Reloader](https://github.com/stakater/Reloader)
+or roll the Deployment yourself.
+
+#### Alternative: `daikoku.extraEnv`
+
+Any `DAIKOKU_INIT_*` value can also be injected through `daikoku.extraEnv` with
+a `secretKeyRef` — useful for credentials not covered by `secrets.initTenant`
+(mailer API keys, OAuth2 client secret, LDAP password, …):
 
 ```sh
 kubectl -n daikoku create secret generic daikoku-credentials \
-  --from-literal=otoroshi_client_id=admin-api-apikey-id \
-  --from-literal=otoroshi_client_secret=... \
-  --from-literal=s3_secret=... \
-  --from-literal=mailer_password=...
+  --from-literal=mailer_key=...
 ```
 
 ```yaml
 daikoku:
-  initTenant:
-    otoroshi:
-      url: https://otoroshi-api.example.com   # non-secret, stays here
-      host: otoroshi-api.example.com
-      # clientId / clientSecret: left empty, injected below
-    s3:
-      bucket: daikoku-assets
-      endpoint: https://s3.eu-west-1.amazonaws.com
-      access: AKIAIOSFODNN7EXAMPLE
-      # secret: left empty, injected below
-
   extraEnv:
-    - name: DAIKOKU_INIT_OTOROSHI_CLIENT_ID
+    - name: DAIKOKU_INIT_MAILER_KEY
       valueFrom:
-        secretKeyRef: { name: daikoku-credentials, key: otoroshi_client_id }
-    - name: DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET
-      valueFrom:
-        secretKeyRef: { name: daikoku-credentials, key: otoroshi_client_secret }
-    - name: DAIKOKU_INIT_S3_SECRET
-      valueFrom:
-        secretKeyRef: { name: daikoku-credentials, key: s3_secret }
-    - name: DAIKOKU_INIT_MAILER_PASSWORD
-      valueFrom:
-        secretKeyRef: { name: daikoku-credentials, key: mailer_password }
+        secretKeyRef: { name: daikoku-credentials, key: mailer_key }
 ```
 
-The variable to declare is spelled out next to every secret-bearing field in
-[`values.yaml`](./helm/daikoku/values.yaml): `mailer.password` is marked
-`[DAIKOKU_INIT_MAILER_PASSWORD]`. The **key names inside your Secret are free**,
-since `secretKeyRef` maps them explicitly — which suits Secrets synced as-is from
-an external store.
-
-Leaving the matching field empty is what keeps the credential out of the cluster's
-plain-text objects: an empty value renders no key at all, so nothing lands in the
-ConfigMap, and the `*-init-tenant` Secret is not even created once no plain-text
-credential is left. `extraEnv` entries land in `env:`, which takes precedence over
-everything injected with `envFrom:`, so this works just as well for values the chart
-does not classify as secret, such as `DAIKOKU_INIT_OTOROSHI_CLIENT_ID`.
-
-The Secret must exist before the pod starts. Editing its *content* does not restart
-the pods — use [Reloader](https://github.com/stakater/Reloader) or roll the
-Deployment yourself.
+Leaving the matching field empty under `initTenant` keeps the credential out of
+plain-text Helm objects. `extraEnv` entries land in `env:`, which takes precedence
+over everything injected with `envFrom:`.
 
 ### Optional in-cluster dependencies
 
