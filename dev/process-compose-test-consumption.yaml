@@ -2,27 +2,64 @@ version: "0.5"
 
 log_level: debug
 
-# Local stack (Daikoku from source + Otoroshi + ElasticSearch + pg) running only
-# consumption_sync.spec.ts, to validate the Otoroshi -> ES -> Daikoku consumption path.
+# Consumption pipeline e2e: real calls through Otoroshi, events shipped to
+# ElasticSearch, then read back by Daikoku. No Stripe. See mise task test:consumption.
+#
+# Same blocks as process-compose-test-stripe.yaml, without the Stripe cron and running
+# the consumption spec instead.
 processes:
+  Postgres:
+    command: |
+      if nc -z localhost 5432 > /dev/null 2> /dev/null ;
+      then echo Database is already running, wont start one ;
+      else mise run pg:clean --name tmp-daikoku-postgres ;
+      mise run pg --name tmp-daikoku-postgres ;
+      fi
+    shutdown:
+      command: |
+        mise run pg:clean --name tmp-daikoku-postgres
+
+  # `down -v` and not `rm -f`: Elasticsearch must start empty. Otoroshi applies its
+  # index template at startup, and Elasticsearch refuses to remap a field of an index
+  # that already exists, so a leftover otoroshi-events-<today> from an earlier run, or
+  # from another Otoroshi version, makes every bulk fail on a mapping conflict.
   Containers:
-    command: "mise run test:es:containers"
+    working_dir: "daikoku/javascript/tests"
+    command: |
+      docker-compose -f docker-compose-local.yml -f docker-compose-es.yml down -v ;
+      docker-compose --ansi=always -f docker-compose-local.yml -f docker-compose-es.yml up faker smtp redis elastic otoroshi
+    # Elasticsearch first: Otoroshi answers its own API while its data exporter is
+    # still retrying against an absent ES, and the events of the run would be lost.
     readiness_probe:
-      # Wait for BOTH postgres and Otoroshi to be up. Otoroshi now waits for ES to be
-      # healthy (so its ES index template gets applied) and therefore starts late, so
-      # gating only on postgres would let the tests hit a not-yet-started Otoroshi.
       exec:
-        command: "docker inspect daikoku-ldap-test-postgres 2>/dev/null | grep -q '\"Running\": true' && curl -sf -o /dev/null http://otoroshi-api.oto.tools:8080/api/routes -H 'Otoroshi-Client-Id: admin-api-apikey-id' -H 'Otoroshi-Client-Secret: admin-api-apikey-secret'"
+        command: "curl -sf -o /dev/null http://localhost:9200/_cluster/health && curl -sf -o /dev/null http://otoroshi-api.oto.tools:8080/api/routes -H 'Otoroshi-Client-Id: admin-api-apikey-id' -H 'Otoroshi-Client-Secret: admin-api-apikey-secret'"
       initial_delay_seconds: 5
       period_seconds: 5
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 60
     shutdown:
-      command: "mise run test:es:clean"
+      command: |
+        docker-compose -f daikoku/javascript/tests/docker-compose-local.yml -f daikoku/javascript/tests/docker-compose-es.yml down -v
+
   Backend:
-    command: "mise run test:stack:backend"
+    working_dir: "daikoku"
     is_tty: true
+    command: |
+      DAIKOKU_INIT_ADMIN_PASSWORD=password \
+      DAIKOKU_POSTGRES_DATABASE=daikoku_test \
+      DAIKOKU_OTOROSHI_SYNC_CRON=true \
+      DAIKOKU_TENANT_PROVIDER=hostname \
+      DAIKOKU_EXPOSED_ON=5173 \
+      DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson \
+      DAIKOKU_MODE=dev \
+      DAIKOKU_HEALTH_ACCESS_KEY=secret \
+      sbt "~run" --color=true
+    depends_on:
+      Containers:
+        condition: process_healthy
+      Postgres:
+        condition: process_started
     readiness_probe:
       http_get:
         host: localhost
@@ -33,12 +70,11 @@ processes:
       period_seconds: 5
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 100
-    depends_on:
-      Containers:
-        condition: process_healthy
+      failure_threshold: 1000000
+
   Frontend:
-    command: "mise run dev:front"
+    working_dir: "daikoku/javascript"
+    command: "FORCE_COLOR=1 npm run dev"
     depends_on:
       Containers:
         condition: process_healthy
@@ -52,10 +88,14 @@ processes:
       period_seconds: 5
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 20
+      failure_threshold: 100
+
   Tests:
     command: "mise run test:consumption:run"
     depends_on:
+      Backend:
+        condition: process_healthy
       Frontend:
         condition: process_healthy
-    exit_on_end: true
+    availability:
+      exit_on_end: true

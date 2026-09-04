@@ -1,6 +1,8 @@
 # ES overlay for the consumption/stripe stacks only. Layered on top of
-# docker-compose-local-pg.yml:
-#   docker-compose -f docker-compose-local-pg.yml -f docker-compose-es.yml up
+# docker-compose-local.yml, which those stacks start without its daikoku service since
+# they run Daikoku from source:
+#   docker-compose -f docker-compose-local.yml -f docker-compose-es.yml up \
+#     faker smtp redis elastic otoroshi
 # Adds Elasticsearch, makes Otoroshi wait for it to be healthy (so Otoroshi applies its
 # ES index template before indexing any event), and points Otoroshi at the ES-enabled
 # state. The base stack (front tests) stays ES-free.
@@ -25,6 +27,10 @@ services:
       start_period: 20s
 
   otoroshi:
+    # Pinned here rather than in the shared compose file: the front tests stay on
+    # latest, while the billing runs need a version whose behaviour does not move
+    # under them between two runs.
+    image: maif/otoroshi:17.17.0
     environment:
       - OTOROSHI_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state-es.json
     depends_on:
