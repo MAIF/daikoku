@@ -531,3 +531,30 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.getByRole('button', { name: 'Clear selection' }).click();
   expect(page.getByText('6 notifications')).toBeVisible
 });
+
+
+
+test("subscription page filtering by clientId should work",  async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('link', { name: 'API Commande' }).click();
+  await page.getByText('Souscriptions').click();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Filtrer' }).click();
+  await page.getByRole('button', { name: 'Add' }).nth(1).click();
+  await page.locator('input[name="clientIds.0.value"]').fill('5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl');
+  await page.getByLabel('Filtrer les données').getByRole('button', { name: 'Filtrer' }).click();
+
+  await expect(page.getByText('daikoku-api-key-api-commande-dev-logistique')).toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).not.toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).not.toBeVisible();
+
+  await page.getByRole('button', { name: 'supprimer les filtres' }).click();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+
+})
