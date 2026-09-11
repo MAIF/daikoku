@@ -510,7 +510,7 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await loginAs(MICHAEL, page)
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  expect(page.getByRole('button', { name: 'Demandes à valider 3' })).toBeVisible
+  await expect(page.getByRole('button', { name: 'Demandes à valider 3' })).toBeVisible();
   await page.getByRole('button', { name: 'Demandes à valider' }).click();
 
   const parsedUrl = new URL(page.url());
@@ -526,10 +526,10 @@ test('Notification Count différencie les notifications à valider et a consulte
       'ApiSubscriptionDemand',
     ])
   );
-  expect(page.getByText('3 notifications (sur 6)')).toBeVisible
+  await expect(page.getByText('3 notifications (sur 6)')).toBeVisible();
   await page.getByRole('button', { name: 'À traiter' }).click();
   await page.getByRole('button', { name: 'Clear selection' }).click();
-  expect(page.getByText('6 notifications')).toBeVisible
+  await expect(page.getByText('6 notifications')).toBeVisible();
 });
 
 
