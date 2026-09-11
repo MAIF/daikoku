@@ -15,6 +15,14 @@ run='''
 docker run -e POSTGRES_PASSWORD="postgres" -e POSTGRES_USER="postgres" -p 5432:5432 --volume ./postgres:/docker-entrypoint-initdb.d --name ${usage_name} postgres
 '''
 
+[tasks."pg:restore"]
+description="load pg dump located in dev/dumps/dump.sql into docker postgres db"
+dir="dev/dumps"
+run='''
+docker cp ./dump.sql tmp-daikoku-postgres:/tmp/dump.sql
+docker exec -i tmp-daikoku-postgres psql -U postgres -d daikoku -f /tmp/dump.sql
+'''
+
 [tasks."pg:clean"]
 usage='''
 flag "--name <name>" help="postgres docker container name" default="daikoku-postgres"
@@ -89,20 +97,23 @@ Start daikoku instance.
 '''
 usage = '''
 flag "--mode <mode>" help="Initialization mode" default="local" {
-  choices "ldap" "oidc" "local" "empty"
+  choices "ldap" "oidc" "local" "empty" "dump"
 }
 flag "--test" help="Display playwright test ui, only for oidc and local modes"
 '''
 
 run = '''
-if [[ $usage_test = 'true' ]] && ( [[ $usage_mode = 'empty' ]] ) ;
-then echo "--test flag and --mode empty are not compatible" ;
+if [[ $usage_test = 'true' ]] && ( [[ $usage_mode = 'empty' ]] || [[ $usage_mode = 'dump' ]] ) ;
+then echo "--test flag and --mode empty or --mode dump are not compatible" ;
 exit 1;
 fi;
 
 if [[ $usage_test = 'true' ]] ;
 then echo '--test is specified, starting playwright test ui' ;
-else PC_DISABLED_PROCESSES="Test" ;
+PC_DISABLED_PROCESSES="PostgresRestore" ;
+elif [[ $usage_mode = 'dump' ]] ;
+then PC_DISABLED_PROCESSES="Test" ;
+else PC_DISABLED_PROCESSES="Test,PostgresRestore" ;
 fi ;
 
 TEST=$usage_test MODE=$usage_mode PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose --hide-disabled -f ./dev/process-compose.yaml -p 9999;

@@ -46,3 +46,5 @@ daikoku/public/rolldown-runtime-*
 stats.html
 project/
 .vibe
+dev/dumps/*
+!dev/dumps/.gitkeep

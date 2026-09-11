@@ -7,19 +7,25 @@ processes:
   Postgres:
     command: |
       if nc -z localhost 5432 > /dev/null 2> /dev/null ;
-      then echo Database is already running, wont start one ;
+      then if [[ $MODE = "dump" ]] ; then echo "dump mode can't be applied on already started database"; exit 1 ; else echo "Database is already running, wont start one"; fi ;
       else mise run pg:clean --name tmp-daikoku-postgres ;
       mise run pg --name tmp-daikoku-postgres ;
       fi
     shutdown:
       command: |
         mise run pg:clean --name tmp-daikoku-postgres
+  PostgresRestore:
+    command: |
+      mise run "pg:restore"
+    depends_on:
+      Backend:
+        condition: process_healthy
   Containers:
     working_dir: "dev"
     command: |
       if [[ $MODE = "ldap" ]] ;
       then docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up ;
-      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
       then docker-compose -f docker-compose-local.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml up ;
       else docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up ;
       fi
@@ -38,7 +44,7 @@ processes:
       command: |
         if [[ $MODE = "ldap" ]] ;
         then docker-compose -f dev/docker-compose-ldap.yml down && docker-compose -f dev/docker-compose-ldap.yml rm -f ;
-        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
         then docker-compose -f dev/docker-compose-local.yml down && docker-compose -f dev/docker-compose-local.yml rm -f ;
         else docker-compose -f dev/docker-compose-oidc.yml down && docker-compose -f dev/docker-compose-oidc.yml rm -f ;
         fi
@@ -54,9 +60,11 @@ processes:
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_ldap.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "local" ]] ;
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_local.ndjson sbt $sbt_args $sbt_params ;
+      elif [[ $MODE = "oidc" ]] ;
+      then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "empty" ]] ;
-      then DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params
-      else DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
+      then DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params ;
+      else DAIKOKU_POSTGRES_SCHEMA=daikoku DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params ;
       fi
     is_tty: true
     depends_on:
