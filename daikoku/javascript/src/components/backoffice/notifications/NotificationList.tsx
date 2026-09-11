@@ -1011,6 +1011,7 @@ export const NotificationList = () => {
         {translate('notifications.page.table.title')}
       </h1>
       <DynamicTable<NotificationGQL>
+        ariaLabel={translate("notifications.page.list.aria-label")}
         queryKey={['notifications']}
         columns={buildColumns}
         fetchData={fetchData}

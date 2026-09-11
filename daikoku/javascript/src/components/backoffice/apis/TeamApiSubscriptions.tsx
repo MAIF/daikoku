@@ -130,7 +130,7 @@ export const TeamApiSubscriptions = ({
                 <span>{info.getValue()}</span>
                 <BeautifulTitle title={title} html>
                   <div className="badge --primary">
-                    <Link />
+                    A
                   </div>
                 </BeautifulTitle>
               </div>
@@ -206,7 +206,7 @@ export const TeamApiSubscriptions = ({
             <div className="dropdown">
               <button
                 className="btn --ghost --small --icon-only"
-                aria-label={translate('subscription.actions.aria.label')}
+                aria-label={translate('subscription.actions')}
                 type="button" data-bs-toggle="dropdown" aria-expanded="false"
                 id={`dropdown-${sub._id}`}>
                 <Menu

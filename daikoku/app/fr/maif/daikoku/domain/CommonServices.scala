@@ -1145,14 +1145,12 @@ object CommonServices {
                      |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
                      |WHERE s.content ->> 'api' = $$1
                      |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
-                     |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
-                     |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
-                     |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+                     |  AND (s.content -> 'tags') @> COALESCE($$3::text::jsonb, '[]'::jsonb)
                      |  AND CASE
-                     |          WHEN array_length($$6::text[], 1) IS NULL THEN true
-                     |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+                     |          WHEN array_length($$4::text[], 1) IS NULL THEN true
+                     |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$4::text[])
                      |    END
-                     |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb);
+                     |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$5::text::jsonb, '{}'::jsonb);
                      |""".stripMargin
       val query = s"""
            |SELECT s.content
@@ -1162,16 +1160,14 @@ object CommonServices {
            |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
            |WHERE s.content ->> 'api' = $$1
            |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
-           |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
-           |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
-           |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+           |  AND (s.content -> 'tags') @> COALESCE($$3::text::jsonb, '[]'::jsonb)
            |  AND CASE
-           |          WHEN array_length($$6::text[], 1) IS NULL THEN true
-           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |          WHEN array_length($$4::text[], 1) IS NULL THEN true
+           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$4::text[])
            |    END
-           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
+           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$5::text::jsonb, '{}'::jsonb)
            |$sortClause
-           |LIMIT $$8 OFFSET $$9;
+           |LIMIT $$6 OFFSET $$7;
            |""".stripMargin
 
       (for {
@@ -1184,8 +1180,6 @@ object CommonServices {
               params = Seq(
                 apiId,
                 getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[String](filters, "plan").orNull[String],
-                getFiltervalue[String](filters, "team").orNull[String],
                 getFiltervalue[JsArray](filters, "tags")
                   .map(Json.stringify(_))
                   .orNull[String],
@@ -1207,8 +1201,6 @@ object CommonServices {
               Seq(
                 apiId,
                 getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[String](filters, "plan").orNull[String],
-                getFiltervalue[String](filters, "team").orNull[String],
                 getFiltervalue[JsArray](filters, "tags")
                   .map(Json.stringify(_))
                   .orNull[String],
@@ -1230,6 +1222,110 @@ object CommonServices {
     }
   }
 
+  def getKeyringSubscriptions(
+      teamId: String,
+      keyringId: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ) = {
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        s"@{user.name} has acceeded to team (@{team.id}) keyring subscriptions for api @{api.id}"
+      )
+    )(ctx) { _ =>
+      val defaultOrderClause =
+        "ORDER BY COALESCE(a.content ->> 'apiName', s.content ->> 'adminCustomName') ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _                                                => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "subscription" =>
+              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') $desc"
+            case Some(id) if id == "plan" =>
+              s"ORDER BY p.content ->> 'customName' $desc"
+            case Some(id) if id == "team" =>
+              s"ORDER BY t.content ->> 'name' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+      val query = s"""
+           |SELECT s.content AS content, count(*) OVER() AS total
+           |from api_subscriptions s
+           |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+           |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
+           |         LEFT JOIN apis a ON a._id = s.content ->> 'api'
+           |WHERE s.content ->> 'keyring' = $$1
+           |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+           |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+           |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+           |  AND CASE
+           |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |    END
+           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
+           |$sortClause
+           |LIMIT $$8 OFFSET $$9;
+           |""".stripMargin
+
+      (for {
+        subs <- EitherT.liftF[Future, AppError, (Seq[ApiSubscription], Long)](
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryRawMapped(
+              query = query,
+              columns = Seq(Col.json("content"), Col.long("total")),
+              params = Seq(
+                keyringId,
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray](filters, "clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject](filters, "metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
+            .map { rows =>
+              val subscriptions = rows.flatMap(row =>
+                (row \ "content")
+                  .asOpt[JsValue]
+                  .flatMap(json.ApiSubscriptionFormat.reads(_).asOpt)
+              )
+              val total =
+                rows.headOption
+                  .flatMap(row => (row \ "total").asOpt[Long])
+                  .getOrElse(0L)
+              (subscriptions, total)
+            }
+        )
+      } yield {
+        ctx.setCtxValue("keyringId", keyringId)
+        subs
+      }).value
+    }
+  }
+
   /** The keyrings owned by the consuming team that aggregate at least one
     * subscription on the given api. Keyring-centric counterpart of
     * [[getApiSubscriptions]]: the consumer view lists keyrings (each carrying
@@ -1238,9 +1334,6 @@ object CommonServices {
   def getApiKeyrings(
       teamId: String,
       apiId: String,
-      version: String,
-      filters: JsArray,
-      sorting: JsArray,
       limit: Int,
       offset: Int
   )(implicit
@@ -1258,7 +1351,8 @@ object CommonServices {
       // a keyring is kept when at least one of the team's non-deleted
       // subscriptions on this api references it ; count(*) OVER() gives the
       // total before pagination in the same single query
-      val query = s"""
+      val query =
+        s"""
            |SELECT k.content AS content,
            |       count(*) OVER() AS total
            |FROM keyrings k
