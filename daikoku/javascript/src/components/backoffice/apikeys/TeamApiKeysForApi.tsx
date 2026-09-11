@@ -278,7 +278,10 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       }
     });
 
-  const transferApiKey = (subscription: IKeyringSubscriptionGql) =>
+  const transferApiKey = (
+    subscription: IKeyringSubscriptionGql,
+    callback: () => void
+  ) =>
     Services.getSubscriptionTransferLink(props.team._id, subscription._id).then(
       (response) => {
         if (!isError(response)) {
@@ -293,6 +296,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                     .writeText(response.link)
                     .then(() => {
                       toast.info(translate('credential.copy.success'));
+                      callback();
                       close();
                     })
                     .catch(() =>
@@ -375,7 +379,8 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   const deleteApiKey = (
     subscription: IKeyringSubscriptionGql,
-    keyring: IKeyringForApiGql
+    keyring: IKeyringForApiGql,
+    callback: () => void
   ) => {
     openFormModal({
       title: translate('apikeys.delete.confirm.modal.title'),
@@ -403,6 +408,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         Services.deleteApiSubscription(props.team._id, subscription._id).then(
           () => {
             invalidate();
+            callback();
             toast.success(translate('apikeys.delete.success.message'));
           }
         ),
@@ -411,7 +417,8 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   const makeUniqueApiKey = (
     subscription: IKeyringSubscriptionGql,
-    keyring: IKeyringForApiGql
+    keyring: IKeyringForApiGql,
+    callback: () => void
   ) => {
     openFormModal({
       title: translate('apikeys.delete.confirm.modal.title'),
@@ -438,6 +445,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       onSubmit: () =>
         Services.makeUniqueApiKey(props.team._id, subscription._id).then(() => {
           invalidate();
+          callback();
           toast.success(
             translate('team_apikey_for_api.ask_for_make_unique.success_message')
           );
@@ -466,7 +474,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     ]);
 
     const apiLink = `/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/description`;
-
     return (
       <Can I={read} a={apikey} team={props.team} dispatchError>
         <div className="col-6 mt-4 mb-2">
@@ -498,10 +505,11 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 toggleRotation={toggleApiKeyRotation}
                 regenerateSecret={() => regenerateSecret(keyring)}
                 deleteKeyring={() => deleteKeyring(keyring)}
-                transferKey={transferApiKey}
-                deleteApiKey={(sub) => deleteApiKey(sub, keyring)}
-                makeUniqueApiKey={(sub) => makeUniqueApiKey(sub, keyring)}
-                keyringsTeams ={props.keyringsTeams}
+                transferKey={(sub, callback) => transferApiKey(sub, callback)}
+                deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
+                makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
+                keyringTeam ={ props.keyringsTeams?.find(team => team._id === keyring.team)
+                }
               />
             )}
           />
@@ -530,10 +538,10 @@ type KeyringCardProps = {
   ) => Promise<void>;
   regenerateSecret: () => void;
   deleteKeyring: () => void;
-  transferKey: (subscription: IKeyringSubscriptionGql) => void;
-  deleteApiKey: (subscription: IKeyringSubscriptionGql) => void;
-  makeUniqueApiKey: (subscription: IKeyringSubscriptionGql) => void;
-  keyringsTeams?: ITeamSimple[]
+  transferKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
+  deleteApiKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
+  makeUniqueApiKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
+  keyringTeam?: ITeamSimple
 };
 
 export const KeyringCard = ({
@@ -550,14 +558,15 @@ export const KeyringCard = ({
                               transferKey,
                               deleteApiKey,
                               makeUniqueApiKey,
-                              keyringsTeams
+                              keyringTeam
                             }: KeyringCardProps) => {
   const {translate} = useContext(I18nContext);
   const {openFormModal} = useContext(ModalContext);
   const {customGraphQLClient} = useContext(GlobalContext);
+
+  //TODO isPending Ask to UX
   const [isPending, setIsPending] = useState(false);
 
-  //TODO Ask to UX
   const withLoader = (fn: () => Promise<any> | void) => {
     setIsPending(true);
     const result = fn();
@@ -571,7 +580,6 @@ export const KeyringCard = ({
   const aggregated = keyring.subscriptionsCount > 1;
   const isApiCMS =
     api.visibility === 'AdminOnly' && api.name.includes('cms');
-  const title = keyring.customName ?? keyring.apiKey.clientName;
   // rotation is a keyring-level concern ; it is only offered when the keyring
   // is not aggregated (a single subscription carries it)
   const disableRotation =
@@ -765,7 +773,6 @@ export const KeyringCard = ({
                         onSubmit: (data) => {
                           updateCustomName(sub._id, data.customName ?? '')
                             .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                            .then(r => undefined)
                         },
                         value: {customName: sub.customName},
                       })
@@ -777,8 +784,9 @@ export const KeyringCard = ({
                     <span
                       className="dropdown-item cursor-pointer"
                       onClick={() => withLoader(() => {
-                        transferKey(sub)
-                        queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}).then(r => undefined);
+                        transferKey(
+                          sub,
+                          () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
                       })}
                     >
                       {translate('subscription.transfer.label')}
@@ -790,7 +798,6 @@ export const KeyringCard = ({
                       onClick={() => withLoader(() => {
                         toggle(sub)
                           .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                          .then(r => undefined)
                         ;
                       })}
                     >
@@ -803,8 +810,10 @@ export const KeyringCard = ({
                     <button
                       className="dropdown-item cursor-pointer danger"
                       onClick={() => withLoader(() => {
-                        makeUniqueApiKey(sub)
-                        queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}).then(r => undefined);
+                        makeUniqueApiKey(
+                          sub,
+                          () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)})
+                        );
                       })}
                     >
                       {translate('subscription.extract.button.label')}
@@ -814,8 +823,7 @@ export const KeyringCard = ({
                   <button
                     className="dropdown-item cursor-pointer danger"
                     onClick={() => withLoader(() => {
-                      deleteApiKey(sub)
-                      queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}).then(r => undefined);
+                      deleteApiKey(sub, () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}));
                     })}
                   >
                     {translate('subscription.delete.button.label')}
@@ -863,7 +871,7 @@ export const KeyringCard = ({
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
-          {keyringsTeams?.find(team => team._id === keyring.team)?.name}
+          {keyringTeam?.name}
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
