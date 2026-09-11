@@ -1351,27 +1351,28 @@ object CommonServices {
       // a keyring is kept when at least one of the team's non-deleted
       // subscriptions on this api references it ; count(*) OVER() gives the
       // total before pagination in the same single query
-      val query = s"""
-         |SELECT k.content AS content,
-       |        p.content -> 'autoRotation' AS autoRotation,
-         |      count(*) OVER() AS total
-         |FROM keyrings k, api_subscriptions s, usage_plans p
-         |WHERE k._deleted = false
-         |AND s._deleted = false
-         |AND p._deleted = false
-         |AND s.content ->> 'keyring' = k._id
-         |AND s.content ->> 'api' = $$1
-         |AND s.content ->> 'team' = $$2
-         |AND s.content ->> 'plan' = p._id
-         |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
-         |LIMIT $$3 OFFSET $$4;
-         |""".stripMargin
+      val query =
+        s"""
+           |SELECT k.content AS content,
+           |       count(*) OVER() AS total
+           |FROM keyrings k
+           |WHERE k._deleted = false
+           |  AND EXISTS (
+           |    SELECT 1 FROM api_subscriptions s
+           |    WHERE s._deleted = false
+           |      AND s.content ->> 'keyring' = k._id
+           |      AND s.content ->> 'api' = $$1
+           |      AND s.content ->> 'team' = $$2
+           |  )
+           |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
+           |LIMIT $$3 OFFSET $$4;
+           |""".stripMargin
 
       env.dataStore
         .asInstanceOf[PostgresDataStore]
         .queryRawMapped(
           query,
-          Seq(Col.json("content"), Col.bool("autoRotation"), Col.long("total")),
+          Seq(Col.json("content"), Col.long("total")),
           Seq(
             apiId,
             team.id.value,

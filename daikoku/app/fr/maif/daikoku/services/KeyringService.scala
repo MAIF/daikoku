@@ -144,15 +144,6 @@ class KeyringService(
 
       autorotation = planOpt.flatMap(_.autoRotation).getOrElse(false)
 
-//      autorotation <- EitherT.right[AppError](subscriptions match {
-//        case sub :: nil =>
-//          env.dataStore.usagePlanRepo
-//            .forTenant(tenant)
-//            .findById(sub.plan)
-//            .map(_.flatMap(_.autoRotation).getOrElse(false))
-//        case _ => Future.successful(false)
-//      })
-
       _ <- EitherT.cond[Future](
         !autorotation,
         (),
