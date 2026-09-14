@@ -53,8 +53,8 @@ processes:
       DAIKOKU_OTOROSHI_SYNC_CRON: " [ $TEST ] && echo 'false' || echo 'true' "
     working_dir: "daikoku"
     command: |
-      echo $DAIKOKU_POSTGRES_DATABASE
-      echo $DUMPDBSCHEMA
+      echo "Picked database $DAIKOKU_POSTGRES_DATABASE"
+      echo "Picked up schema $DUMPDBSCHEMA"
       export sbt_args=$( [ ${COVERAGE} ] && echo "coverage run" || echo "~run" );
       sbt_params=" -Dconfig.resource=local.conf --color=true -jvm-debug 5005"
       if [[ $MODE = "ldap" ]] ;
