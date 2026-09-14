@@ -18,7 +18,7 @@ processes:
     command: |
       mise run "pg:restore"
     depends_on:
-      Backend:
+      Containers:
         condition: process_healthy
   Containers:
     working_dir: "dev"
@@ -54,6 +54,7 @@ processes:
     working_dir: "daikoku"
     command: |
       echo $DAIKOKU_POSTGRES_DATABASE
+      echo $DUMPDBSCHEMA
       export sbt_args=$( [ ${COVERAGE} ] && echo "coverage run" || echo "~run" );
       sbt_params=" -Dconfig.resource=local.conf --color=true -jvm-debug 5005"
       if [[ $MODE = "ldap" ]] ;
@@ -64,7 +65,7 @@ processes:
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "empty" ]] ;
       then DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params ;
-      else DAIKOKU_POSTGRES_SCHEMA=daikoku DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params ;
+      else DAIKOKU_POSTGRES_SCHEMA=$DUMPDBSCHEMA DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params ;
       fi
     is_tty: true
     depends_on:

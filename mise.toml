@@ -20,6 +20,7 @@ description="load pg dump located in dev/dumps/dump.sql into docker postgres db"
 dir="dev/dumps"
 run='''
 docker cp ./dump.sql tmp-daikoku-postgres:/tmp/dump.sql
+docker exec tmp-daikoku-postgres psql -U postgres -d daikoku -c "DROP ROLE IF EXISTS $DUMPDBUSER; CREATE ROLE $DUMPDBUSER LOGIN PASSWORD 'postgres'; ALTER DATABASE daikoku OWNER TO $DUMPDBUSER ;"
 docker exec -i tmp-daikoku-postgres psql -U postgres -d daikoku -f /tmp/dump.sql
 '''
 
@@ -100,6 +101,8 @@ flag "--mode <mode>" help="Initialization mode" default="local" {
   choices "ldap" "oidc" "local" "empty" "dump"
 }
 flag "--test" help="Display playwright test ui, only for oidc and local modes"
+flag "--dumpuser <user>" help="Dump user" default="daikoku"
+flag "--dumpschema <schema>" help="Dump schema" default="public"
 '''
 
 run = '''
@@ -116,7 +119,7 @@ then PC_DISABLED_PROCESSES="Test" ;
 else PC_DISABLED_PROCESSES="Test,PostgresRestore" ;
 fi ;
 
-TEST=$usage_test MODE=$usage_mode PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose --hide-disabled -f ./dev/process-compose.yaml -p 9999;
+DUMPDBSCHEMA=$usage_dumpschema DUMPDBUSER=$usage_dumpuser TEST=$usage_test MODE=$usage_mode PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose --hide-disabled -f ./dev/process-compose.yaml -p 9999;
 '''
 
 [tasks.doc]
