@@ -133,7 +133,6 @@ GET     /api/subscriptions/teams/:teamId                        fr.maif.daikoku.
 GET     /api/apis/:apiId/pages/:id/content                      fr.maif.daikoku.controllers.ApiController.getDocumentationPageRemoteContent(apiId, id)
 GET     /api/apis/:apiId/pages/:id                              fr.maif.daikoku.controllers.ApiController.getDocumentationPage(apiId, id)
 GET     /api/apis/:apiId/plan/:planId/pages/:pageId             fr.maif.daikoku.controllers.ApiController.getPlanDocumentationPage(apiId, planId, pageId)
-POST    /api/teams/:teamId/subscriptions/:id/name               fr.maif.daikoku.controllers.ApiController.updateApiSubscriptionCustomName(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive           fr.maif.daikoku.controllers.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
 PUT		  /api/teams/:teamId/subscriptions/:id/_archiveByOwner    fr.maif.daikoku.controllers.ApiController.toggleApiSubscriptionByApiOwner(teamId, id, enabled: Option[Boolean] ?= Some(false))
 GET		  /api/teams/:teamId/subscriptions/:id/_transfer          fr.maif.daikoku.controllers.ApiController.getTransferLink(teamId, id)
