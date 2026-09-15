@@ -929,6 +929,7 @@
   "login.btn.label": "Login",
   "issue.comments.number": " (%s) comments",
   "secret.refresh.success": "Refresh secret success",
+  "refresh.secret.label": "Refresh secret",
   "Payment": "Payment",
   "third-party.payment.list.add.label": "Add new settings",
   "third-party.payment.settings.delete.confirm.message": "Are your sure to delete this settings?",
