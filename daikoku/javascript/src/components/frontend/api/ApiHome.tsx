@@ -32,19 +32,14 @@ export const ApiHome = () => {
   const { translate } = useContext(I18nContext);
 
   const queryClient = useQueryClient();
-  //todo: ???
+
   const apiQuery = useQuery({
     queryKey: ["api", params.apiId, params.versionId],
     queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
   })
 
-  const visibleApisQuery = useQuery({
-    queryKey: ["api", "visibleApis"],
-    queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
-  })
-
   const mySubscriptionQuery = useQuery({
-    queryKey: ["mySubscription"],
+    queryKey: ["mySubscription", params.apiId, params.versionId],
     queryFn: () => Services.getMySubscriptions(params.apiId, params.versionId)
   })
 
@@ -159,7 +154,7 @@ export const ApiHome = () => {
     mySubscriptionQuery.isLoading ||
     ownerTeamQuery.isLoading ||
     myTeamsQuery.isLoading ||
-    visibleApisQuery.isLoading
+    apiQuery.isLoading
   ) {
     return (
       <Spinner />
@@ -169,7 +164,7 @@ export const ApiHome = () => {
     mySubscriptionQuery.data &&
     ownerTeamQuery.data && !isError(ownerTeamQuery.data) &&
     myTeamsQuery.data &&
-    visibleApisQuery.data && !isError(visibleApisQuery.data)
+    apiQuery.data && !isError(apiQuery.data)
   ) {
     const api = apiQuery.data as IApi;
     const ownerTeam = ownerTeamQuery.data as ITeamSimple;
