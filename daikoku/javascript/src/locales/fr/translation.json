@@ -392,6 +392,7 @@
     "s": "Clé d'API",
     "p": "Clés d'API"
   },
+  "navbar.keyrings.label": "Trousseaux",
   "See Stats": "Statistiques",
   "credential.copy.success": "Informations d'identification copiées",
   "credential.copy.error": "Echec de la copie des informations d'identification",
