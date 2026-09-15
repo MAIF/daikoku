@@ -929,6 +929,7 @@
   "password.label": "Mot de passe",
   "issue.comments.number": " (%s) commentaires",
   "secret.refresh.success": "Succès du rafraîchissement du secret",
+  "refresh.secret.label": "Rafraîchir secret",
   "login.btn.label": "Se connecter",
   "Payment": "Paiement",
   "third-party.payment.list.add.label": "Ajouter un tiers de paiement",

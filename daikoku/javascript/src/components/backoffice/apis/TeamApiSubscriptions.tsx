@@ -229,7 +229,7 @@ export const TeamApiSubscriptions = ({
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => regenerateSecret(sub)}
                 >
-                  {translate("Refresh secret")}
+                  {translate("refresh.secret.label")}
                 </button>}
                 <button
                   className="dropdown-item cursor-pointer danger"
