@@ -1132,6 +1132,8 @@ object CommonServices {
               s"ORDER BY p.content ->> 'customName' $desc"
             case Some(id) if id == "team" =>
               s"ORDER BY t.content ->> 'name' $desc"
+            case Some(id) if id == "createdAt" =>
+              s"ORDER BY s.content ->> 'createdAt' $desc"
             case _ => defaultOrderClause
           }
         case None => defaultOrderClause
