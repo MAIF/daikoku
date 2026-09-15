@@ -29,7 +29,7 @@ export const ApiList = (props: ApiListProps) => {
 
   const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
-  const navigate = useNavigate()
+
   const queryClient = useQueryClient()
 
   const myTeamsRequest = useQuery({
@@ -275,15 +275,18 @@ export const ApiList = (props: ApiListProps) => {
       labelKey: 'dashboard.filters.tag.label',
       labelKeyAll: 'dashboard.filters.all.tags.label',
       options: arrayStringToTOps(tags),
-    },
-    {
+    }
+  ]
+
+  if(!connectedUser.isGuest) {
+    filters.push(    {
       id: 'subscribedOnly',
       type: 'boolean',
       style: 'checkbox',
       onLabel: translate('dashboard.filters.subscribe.apis.only.label'),
       offLabel: translate('dashboard.filters.all.apis.label'),
-    },
-  ]
+    })
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
