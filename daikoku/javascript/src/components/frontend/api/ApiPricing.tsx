@@ -1770,7 +1770,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const columnHelper = createColumnHelper<DynamicTableFeatures, IUsagePlanGQL>();
   const columns = useMemo(() => {
     return [
-      columnHelper.display({
+      ...(connectedUser.isGuest ? [] : [columnHelper.display({
         meta: {
           hidden: !multiPlanSubscriptionEnabled
         },
@@ -1790,7 +1790,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             onChange={row.getToggleSelectedHandler()}
           />
         ),
-      }),
+      })]),
       columnHelper.display({
         id: 'plan',
         meta: {
