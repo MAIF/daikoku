@@ -2232,7 +2232,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
         ]}
-        toolbar={!connectedUser.isGuest && <>
+        toolbar={userCanUpdatePlan && <>
             <button
               type='button'
               onClick={() => createNewPlan()}
