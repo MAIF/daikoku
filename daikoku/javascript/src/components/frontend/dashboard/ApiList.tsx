@@ -155,7 +155,7 @@ export const ApiList = (props: ApiListProps) => {
           )
         },
       }),
-      columnHelper.display({
+      ...(connectedUser.isGuest ? [] : [columnHelper.display({
         id: translate('dashboard.apis.table.header.label.subscriptions'),
         meta: { className: 'subscription-cell d-flex gap-2 align-items-center', title: translate('dashboard.apis.table.header.label.subscriptions'), size: 15 },
         cell: (info) => {
@@ -222,7 +222,7 @@ export const ApiList = (props: ApiListProps) => {
             )
           }
         },
-      }),
+      })]),
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTeamsRequest.data, connectedUser.starredApis])
