@@ -2232,8 +2232,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
         ]}
-        toolbar={
-          <>
+        toolbar={!connectedUser.isGuest && <>
             <button
               type='button'
               onClick={() => createNewPlan()}
@@ -2243,10 +2242,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
                   translate('api.pricings.creation.plan.button.label'
-                  )}</p>
+                )
+              }</p>
             </button>
           </>
-        }
+          }
       />
     </>
   );
