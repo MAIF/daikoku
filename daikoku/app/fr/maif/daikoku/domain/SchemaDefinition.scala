@@ -11,15 +11,11 @@ import fr.maif.daikoku.controllers.authorizations.async.{
   _UberPublicUserAccess
 }
 import fr.maif.daikoku.controllers.authorizations.isTeamApiKeyVisible
+import fr.maif.daikoku.domain.CommonServices.KeyringForGraphql
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.{
-  OtoroshiClient,
-  S3Configuration,
-  Time,
-  SubscriptionUtil
-}
+import fr.maif.daikoku.utils.{OtoroshiClient, S3Configuration, Time}
 import fr.maif.daikoku.storage.{DataStore, Repo, TenantCapableRepo}
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.storage.graphql.{
@@ -1620,6 +1616,29 @@ object SchemaDefinition {
       ExcludeFields("nextSecret", "nextBearer")
     )
 
+    def requireApiKeyAccessCustom(
+        ctx: Context[
+          (DataStore, DaikokuActionContext[JsValue]),
+          (Keyring, Long, Boolean)
+        ]
+    ): Future[Unit] = {
+      val actionCtx = ctx.ctx._2
+      val dataStore = ctx.ctx._1
+      if (actionCtx.user.isDaikokuAdmin) {
+        Future.unit
+      } else {
+        dataStore.teamRepo
+          .forTenant(actionCtx.tenant)
+          .findById(ctx.value._1.team.value)
+          .flatMap {
+            case Some(team) if isTeamApiKeyVisible(team, actionCtx.user) =>
+              Future.unit
+            case _ =>
+              Future.failed(AuthorizationException("Access to API key denied"))
+          }
+      }
+    }
+
     def requireApiKeyAccess(
         ctx: Context[
           (DataStore, DaikokuActionContext[JsValue]),
@@ -1646,93 +1665,71 @@ object SchemaDefinition {
     lazy val KeyringType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       Keyring
-    ] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Keyring](
-      "KeyringType",
-      "A keyring: the entity owning the Otoroshi api key shared by aggregated subscriptions",
-      () =>
-        fields[(DataStore, DaikokuActionContext[JsValue]), Keyring](
-          Field("_id", StringType, resolve = _.value.id.value),
-          Field(
-            "tenant",
-            OptionType(TenantType),
-            resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
-          ),
-          Field("deleted", BooleanType, resolve = _.value.deleted),
-          Field("team", StringType, resolve = _.value.team.value),
-          Field("enabled", BooleanType, resolve = _.value.enabled),
-          Field(
-            "customName",
-            StringType,
-            resolve = _.value.customName
-          ),
-          Field(
-            "apiKey",
-            OtoroshiApiKeyType,
-            resolve = ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
-          ),
-          Field(
-            "otoroshiSettings",
-            OptionType(StringType),
-            resolve = _.value.otoroshiSettings match {
-              case KeyringOtoroshiBinding.Otoroshi(id) => Some(id.value)
-              case KeyringOtoroshiBinding.Internal     => None
-            }
-          ),
-          Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
-          Field(
-            "rotation",
-            OptionType(ApiSubscriptionRotationType),
-            resolve = _.value.rotation
-          ),
-          Field(
-            "bearerToken",
-            OptionType(StringType),
-            resolve =
-              ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
-          ),
-          Field(
-            "integrationToken",
-            StringType,
-            resolve = _.value.integrationToken
-          ),
-          Field(
-            "subscriptions",
-            ListType(ApiSubscriptionType),
-            resolve = ctx =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
-          ),
-          Field(
-            "subscriptionsCount",
-            IntType,
-            resolve = ctx =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .count(
-                  Json
-                    .obj("keyring" -> ctx.value.id.asJson, "_deleted" -> false)
-                )
-                .map(_.toInt)
-          ),
-          Field(
-            "autoRotation",
-            OptionType(BooleanType),
-            resolve = ctx =>
-              env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
-                .flatMap {
-                  case sub :: nil =>
-                    env.dataStore.usagePlanRepo
-                      .forTenant(ctx.ctx._2.tenant)
-                      .findById(sub.plan.value)
-                      .map(_.flatMap(_.autoRotation))
-                  case _ => FastFuture.successful(None)
-                }
+    ] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+        "KeyringType",
+        "A keyring: the entity owning the Otoroshi api key shared by aggregated subscriptions",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), Keyring](
+            Field("_id", StringType, resolve = _.value.id.value),
+            Field(
+              "tenant",
+              TenantType,
+              resolve = ctx => tenantsFetcher.defer(ctx.value.tenant)
+            ),
+            Field("deleted", BooleanType, resolve = _.value.deleted),
+            Field(
+              "team",
+              TeamObjectType,
+              resolve = ctx => teamsFetcher.defer(ctx.value.team)
+            ),
+            Field("enabled", BooleanType, resolve = _.value.enabled),
+            Field(
+              "customName",
+              StringType,
+              resolve = _.value.customName
+            ),
+            Field(
+              "apiKey",
+              OtoroshiApiKeyType,
+              resolve =
+                ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.apiKey)
+            ),
+            Field(
+              "otoroshiSettings",
+              OptionType(StringType),
+              resolve = _.value.otoroshiSettings match {
+                case KeyringOtoroshiBinding.Otoroshi(id) => Some(id.value)
+                case KeyringOtoroshiBinding.Internal     => None
+              }
+            ),
+            Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
+            Field(
+              "rotation",
+              OptionType(ApiSubscriptionRotationType),
+              resolve = _.value.rotation
+            ),
+            Field(
+              "bearerToken",
+              OptionType(StringType),
+              resolve =
+                ctx => requireApiKeyAccess(ctx).map(_ => ctx.value.bearerToken)
+            ),
+            Field(
+              "integrationToken",
+              StringType,
+              resolve = _.value.integrationToken
+            ),
+            Field(
+              "subscriptions",
+              ListType(ApiSubscriptionType),
+              resolve = ctx =>
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.ctx._2.tenant)
+                  .findNotDeleted(Json.obj("keyring" -> ctx.value.id.asJson))
+            )
           )
-        )
-    )
+      )
 
     lazy val ApiSubscriptionType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
@@ -3862,24 +3859,103 @@ object SchemaDefinition {
           )
       )
 
-    lazy val KeyringListType: ObjectType[
+    lazy val KeyringsWithSubCountAndRotationType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      (Seq[Keyring], Long)
+      (Keyring, Long, Boolean)
     ] =
       ObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
-        (Seq[Keyring], Long)
+        (Keyring, Long, Boolean)
+      ](
+        "KeyringCountRotation",
+        "Keyring with subscriptionsCount and canUpdateRotation",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Keyring, Long, Boolean)
+          ](
+            Field("_id", StringType, resolve = _.value._1.id.value),
+            Field(
+              "tenant",
+              TenantType,
+              resolve = ctx => tenantsFetcher.defer(ctx.value._1.tenant)
+            ),
+            Field("deleted", BooleanType, resolve = _.value._1.deleted),
+            Field(
+              "team",
+              TeamObjectType,
+              resolve = ctx => teamsFetcher.defer(ctx.value._1.team)
+            ),
+            Field("enabled", BooleanType, resolve = _.value._1.enabled),
+            Field(
+              "customName",
+              StringType,
+              resolve = _.value._1.customName
+            ),
+            Field(
+              "apiKey",
+              OtoroshiApiKeyType,
+              resolve = ctx =>
+                requireApiKeyAccessCustom(ctx).map(_ => ctx.value._1.apiKey)
+            ),
+            Field(
+              "otoroshiSettings",
+              OptionType(StringType),
+              resolve = _.value._1.otoroshiSettings match {
+                case KeyringOtoroshiBinding.Otoroshi(id) => Some(id.value)
+                case KeyringOtoroshiBinding.Internal     => None
+              }
+            ),
+            Field("createdAt", DateTimeUnitype, resolve = _.value._1.createdAt),
+            Field(
+              "rotation",
+              OptionType(ApiSubscriptionRotationType),
+              resolve = _.value._1.rotation
+            ),
+            Field(
+              "bearerToken",
+              OptionType(StringType),
+              resolve = ctx =>
+                requireApiKeyAccessCustom(ctx).map(_ =>
+                  ctx.value._1.bearerToken
+                )
+            ),
+            Field(
+              "integrationToken",
+              StringType,
+              resolve = _.value._1.integrationToken
+            ),
+            Field(
+              "subscriptions",
+              ListType(ApiSubscriptionType),
+              resolve = ctx =>
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.ctx._2.tenant)
+                  .findNotDeleted(Json.obj("keyring" -> ctx.value._1.id.asJson))
+            ),
+            Field("subscriptionsCount", LongType, resolve = _.value._2),
+            Field("canUpdateRotation", BooleanType, resolve = _.value._3)
+          )
+      )
+
+    lazy val KeyringListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[KeyringForGraphql], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[KeyringForGraphql], Long)
       ](
         "Keyrings",
         "Keyrings as a collection of keyrings and the total of",
         () =>
           fields[
             (DataStore, DaikokuActionContext[JsValue]),
-            (Seq[Keyring], Long)
+            (Seq[KeyringForGraphql], Long)
           ](
             Field(
-              "keyrings",
-              ListType(KeyringType),
+              "keyringsWithSubCountAndRotation",
+              ListType(KeyringsWithSubCountAndRotationType),
               resolve = _.value._1
             ),
             Field("total", LongType, resolve = _.value._2)

@@ -842,8 +842,6 @@ class ApiService(
     }
   }
 
-
-
   def condenseEitherT[F[_], E, A](
       seq: Seq[EitherT[F, E, A]]
   )(implicit F: Monad[F]): EitherT[F, E, Seq[A]] = {
