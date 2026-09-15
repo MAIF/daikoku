@@ -1588,7 +1588,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 "no-dot-in-metadata",
                 translate("constraints.test.no.dot.in.metadata.key"),
                 (metadata) => {
-                  return Object.keys(metadata).every(key => !key.includes('.'))
+                  return Object.keys(metadata || {}).every(key => !key.includes('.'))
                 })
             ]
           },
