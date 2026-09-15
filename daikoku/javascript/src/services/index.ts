@@ -865,16 +865,6 @@ export const uploadExportFile = (file: any) =>
     body: file,
   });
 
-export const updateSubscriptionCustomName = (
-  team: ITeamSimple,
-  subscription: ISubscription,
-  customName: string
-): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
-    method: 'POST',
-    body: JSON.stringify({ customName }),
-  });
-
 export const updateSubscription = (
   team: ITeamSimple,
   subscription: ISafeSubscription | any

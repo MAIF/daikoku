@@ -2,22 +2,41 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuUnauthenticatedAction
+}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.ApiSubscriptionState.Blocked
-import fr.maif.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiCrudService, ApiLifeCycleService, ApiService, DeletionService, KeyringService, MailService, UsagePlanService}
+import fr.maif.daikoku.services.{
+  ApiCrudService,
+  ApiLifeCycleService,
+  ApiService,
+  DeletionService,
+  KeyringService,
+  MailService,
+  UsagePlanService
+}
 import fr.maif.daikoku.storage.Desc
 import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
-import fr.maif.daikoku.utils.RequestImplicits.{EnhancedRequestBody, EnhancedRequestHeader}
+import fr.maif.daikoku.utils.RequestImplicits.{
+  EnhancedRequestBody,
+  EnhancedRequestHeader
+}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -1461,44 +1480,6 @@ class ApiController(
                   )
               }
           })
-      }
-    }
-
-  def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String): Action[JsValue] =
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has update custom name for subscription @{subscription._id}"
-        )
-      )(teamId, ctx) { _ =>
-        val customName =
-          (ctx.request.body.as[JsObject] \ "customName").as[String].trim
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant)
-          .findOneNotDeleted(
-            Json.obj("_id" -> subscriptionId, "team" -> teamId)
-          )
-          .flatMap {
-            case None =>
-              FastFuture.successful(
-                NotFound(Json.obj("error" -> "apiSubscription not found"))
-              )
-            case Some(subscription) =>
-              val updatedSubscription =
-                subscription.copy(customName = Some(customName))
-              for {
-                _ <- env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant)
-                  .save(updatedSubscription)
-                maybeKeyring <- env.dataStore.keyringRepo
-                  .forTenant(ctx.tenant)
-                  .findById(updatedSubscription.keyring)
-              } yield maybeKeyring match {
-                case Some(keyring) => Ok(updatedSubscription.asSafeJson(keyring))
-                case None =>
-                  NotFound(Json.obj("error" -> "keyring not found"))
-              }
-          }
       }
     }
 

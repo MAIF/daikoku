@@ -202,16 +202,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const invalidate = () =>
     queryClient.invalidateQueries({queryKey: ['data', 'keyrings']});
 
-  const updateCustomName = (subscriptionId: string, customName: string) =>
-    Services.updateSubscriptionCustomName(
-      props.team,
-      {_id: subscriptionId} as ISubscription,
-      customName
-    ).then(() => {
-      toast.success(translate('subscription.custom.name.successfuly.updated'));
-      invalidate();
-    });
-
   const updateKeyringName = (keyringId: string, customName: string) =>
     Services.updateKeyringCustomName(props.team._id, keyringId, customName).then(
       () => {
@@ -499,7 +489,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 api={props.api}
                 currentTeam={props.team}
                 keyring={keyring}
-                updateCustomName={updateCustomName}
                 updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
                 toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
                 toggle={toggleApiKey}
@@ -524,7 +513,6 @@ type KeyringCardProps = {
   api: IApi;
   keyring: IKeyringForApiGql;
   currentTeam?: ITeamSimple;
-  updateCustomName: (subscriptionId: string, name: string) => Promise<void>;
   updateKeyringName: (name: string) => Promise<void>;
   toggleKeyring: (enabled: boolean) => Promise<void>;
   toggle: (subscription: IKeyringSubscriptionGql) => Promise<void>;
@@ -546,7 +534,6 @@ export const KeyringCard = ({
                               api,
                               keyring,
                               currentTeam,
-                              updateCustomName,
                               updateKeyringName,
                               toggleKeyring,
                               toggle,
@@ -754,29 +741,6 @@ export const KeyringCard = ({
                   aria-labelledby={`dropdown-${sub._id}`}
                   style={{zIndex: 1}}
                 >
-                  <button
-                    className="dropdown-item cursor-pointer"
-                    onClick={() =>
-                      openFormModal({
-                        title: translate('subscription.custom.name.update.label'),
-                        actionLabel: translate('Save'),
-                        schema: {
-                          customName: {
-                            type: type.string,
-                            placeholder: translate('subscription.custom.name.update.placeholder'),
-                            label: translate('subscription.custom.name.update.message'),
-                          },
-                        },
-                        onSubmit: (data) => {
-                          updateCustomName(sub._id, data.customName ?? '')
-                            .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                        },
-                        value: {customName: sub.customName},
-                      })
-                    }
-                  >
-                    {translate('subscription.custom.name.update.label')}
-                  </button>
                   {!aggregated && (
                     <span
                       className="dropdown-item cursor-pointer"
