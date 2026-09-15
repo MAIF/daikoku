@@ -391,6 +391,7 @@
     "s": "API key",
     "p": "API keys"
   },
+  "navbar.keyrings.label": "Keyrings",
   "See Stats": "See stats",
   "credential.copy.success": "Credentials copied",
   "credential.copy.error": "Failed to copy credentials",
