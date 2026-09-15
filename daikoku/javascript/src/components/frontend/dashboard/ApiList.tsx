@@ -129,50 +129,26 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
-          /*
-          * {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
-              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({
-              key: 'dashboard.api.list.deprecated.subscription.tag.label',
-              replacements: [activeCount.toString()]}
-            )}
-          </span>}
-          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
-              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({
-              key: 'dashboard.api.list.blocked.subscription.tag.label',
-              replacements: [activeCount.toString()]}
-            )}
-          </span>}
-          * */
           return (
             <div className="d-flex gap-1 status">
               {(apiState === 'created') && (
-                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.created')}</span>
+                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.created')}
                 </span>
               )}
               {(apiState === 'published') && (
-                <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.published')}</span>
+                <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.published')}
                 </span>
               )}
               {apiState === 'deprecated' && (
-                <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.deprecated')}</span>
+                <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.deprecated')}
                 </span>
               )}
               {(apiState === 'blocked') && (
                 <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
-                  <span>{translate('api.blocked')}</span>
-                </span>
-              )}
-              {!apiState && (
-                <span className="badge --info --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
-                  <span>{'Stateless'}</span>
+                  {translate('api.blocked')}
                 </span>
               )}
             </div>
