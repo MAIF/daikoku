@@ -1868,7 +1868,6 @@ export const graphql = {
           keyring {
             _id
             customName
-            subscriptionsCount
             apiKey {
               clientName
             }
@@ -1913,7 +1912,6 @@ export const graphql = {
           keyring {
             _id
             customName
-            subscriptionsCount
             apiKey {
               clientName
             }
@@ -1926,27 +1924,28 @@ export const graphql = {
   getApiKeyrings: `
     query getApiKeyrings ($apiId: String!, $teamId: String!, $limit: Int!, $offset: Int!) {
       keyrings (id: $apiId, teamId: $teamId, limit: $limit, offset: $offset) {
-        keyrings {
+        keyringsWithSubCountAndRotation {
           _id
           customName
           enabled
           integrationToken
           bearerToken
-          subscriptionsCount
-          autoRotation
           apiKey {
             clientId
             clientSecret
             clientName
           }
-          team
+          team {
+            name
+          }
           rotation {
             enabled
             rotationEvery
             gracePeriod
             pendingRotation
           }
-          autoRotation
+          subscriptionsCount
+          canUpdateRotation
         }
         total
       }

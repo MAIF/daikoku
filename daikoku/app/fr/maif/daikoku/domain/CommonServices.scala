@@ -1328,6 +1328,8 @@ object CommonServices {
     }
   }
 
+  type KeyringForGraphql = (Keyring, Long, Boolean)
+
   /** The keyrings owned by the consuming team that aggregate at least one
     * subscription on the given api. Keyring-centric counterpart of
     * [[getApiSubscriptions]]: the consumer view lists keyrings (each carrying
@@ -1355,17 +1357,17 @@ object CommonServices {
       // total before pagination in the same single query
       val query =
         s"""
-           |SELECT k.content AS content,
-           |       count(*) OVER() AS total
-           |FROM keyrings k
+           |SELECT
+           |       k.content AS content,
+           |       (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = k._id) AS "subscriptionsCount",
+           |       (p.content ->> 'autoRotation')::boolean AS "canUpdateRotation",
+           |       count(*) OVER() AS "total"
+           |FROM keyrings k, api_subscriptions s, usage_plans p
            |WHERE k._deleted = false
-           |  AND EXISTS (
-           |    SELECT 1 FROM api_subscriptions s
-           |    WHERE s._deleted = false
-           |      AND s.content ->> 'keyring' = k._id
-           |      AND s.content ->> 'api' = $$1
-           |      AND s.content ->> 'team' = $$2
-           |  )
+           |  AND s.content ->> 'keyring' = k._id
+           |  AND s.content ->> 'api' = $$1
+           |  AND s.content ->> 'team' = $$2
+           |  AND s.content ->> 'plan' = p._id
            |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
            |LIMIT $$3 OFFSET $$4;
            |""".stripMargin
@@ -1374,7 +1376,12 @@ object CommonServices {
         .asInstanceOf[PostgresDataStore]
         .queryRawMapped(
           query,
-          Seq(Col.json("content"), Col.long("total")),
+          Seq(
+            Col.json("content"),
+            Col.long("subscriptionsCount"),
+            Col.bool("canUpdateRotation"),
+            Col.long("total")
+          ),
           Seq(
             apiId,
             team.id.value,
@@ -1383,16 +1390,27 @@ object CommonServices {
           )
         )
         .map { rows =>
-          val keyrings = rows.flatMap(row =>
-            (row \ "content")
-              .asOpt[JsValue]
-              .flatMap(json.KeyringFormat.reads(_).asOpt)
-          )
+          val keyrings =
+            rows.flatMap(row =>
+              val keyring = (row \ "content")
+                .asOpt[JsValue]
+                .flatMap(json.KeyringFormat.reads(_).asOpt)
+              val subscriptionCount =
+                (row \ "subscriptionsCount").as[Long]
+              val autoRotation =
+                (row \ "canUpdateRotation")
+                  .asOpt[Boolean]
+                  .getOrElse(false)
+              keyring.map(k => (k, subscriptionCount, autoRotation))
+            )
           val total =
             rows.headOption
               .flatMap(row => (row \ "total").asOpt[Long])
               .getOrElse(0L)
-          Right[AppError, (Seq[Keyring], Long)]((keyrings, total))
+
+          Right[AppError, (Seq[KeyringForGraphql], Long)](
+            (keyrings, total)
+          )
         }
     }
   }

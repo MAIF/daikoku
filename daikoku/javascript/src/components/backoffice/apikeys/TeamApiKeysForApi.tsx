@@ -164,12 +164,13 @@ export interface IKeyringForApiGql {
   enabled: boolean;
   integrationToken: string;
   bearerToken?: string;
-  subscriptionsCount: number;
   apiKey: { clientId: string; clientSecret: string; clientName: string };
   rotation?: IRotation;
   subscriptions: Array<IKeyringSubscriptionGql>;
   autoRotation: boolean;
   team: string;
+  subscriptionsCount: number;
+  canUpdateRotation: boolean;
 }
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
@@ -184,14 +185,14 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     queryKey: ['data', 'keyrings', props.team._id, props.api._id],
     queryFn: () =>
       customGraphQLClient.request<{
-        keyrings: { keyrings: Array<IKeyringForApiGql>; total: number };
+        keyrings: { keyringsWithSubCountAndRotation: Array<IKeyringForApiGql>; total: number };
       }>(Services.graphql.getApiKeyrings, {
         apiId: props.api._id,
         teamId: props.team._id,
-        limit: 100,
+        limit: 6,
         offset: 0,
       }),
-    select: (d) => d.keyrings.keyrings,
+    select: (d) => d.keyrings.keyringsWithSubCountAndRotation
   });
 
   useEffect(() => {
@@ -508,8 +509,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 transferKey={(sub, callback) => transferApiKey(sub, callback)}
                 deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
                 makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
-                keyringTeam ={ props.keyringsTeams?.find(team => team._id === keyring.team)
-                }
               />
             )}
           />
@@ -541,7 +540,6 @@ type KeyringCardProps = {
   transferKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
   deleteApiKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
   makeUniqueApiKey: (subscription: IKeyringSubscriptionGql, callback: () => void) => void;
-  keyringTeam?: ITeamSimple
 };
 
 export const KeyringCard = ({
@@ -558,7 +556,6 @@ export const KeyringCard = ({
                               transferKey,
                               deleteApiKey,
                               makeUniqueApiKey,
-                              keyringTeam
                             }: KeyringCardProps) => {
   const {translate} = useContext(I18nContext);
   const {openFormModal} = useContext(ModalContext);
@@ -871,7 +868,7 @@ export const KeyringCard = ({
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
-          {keyringTeam?.name}
+          teamName
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
