@@ -3101,8 +3101,10 @@ object json {
           case "ApiDepreciationWarning" =>
             ApiDepreciationWarningFormat.reads(json)
           case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
+          case "NewSubscription"    => NewSubscriptionFormat.reads(json)
           case str                  => JsError(s"Bad notification value: $str")
         }
+
 
       override def writes(o: NotificationAction) =
         o match {
@@ -3219,6 +3221,10 @@ object json {
           case p: ApiBlockingWarning =>
             ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiBlockingWarning"
+            )
+          case p: NewSubscription =>
+            NewSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "NewSubscription"
             )
         }
     }
@@ -3450,6 +3456,27 @@ object json {
         "api" -> ApiIdFormat.writes(o.api),
         "team" -> TeamIdFormat.writes(o.team)
       )
+  }
+  val NewSubscriptionFormat = new Format[NewSubscription] {
+    override def reads(json: JsValue): JsResult[NewSubscription] =
+      Try {
+        JsSuccess(
+          NewSubscription(
+            api = (json \ "api").as(using ApiIdFormat),
+            team = (json \ "team").as(using TeamIdFormat),
+            plan = (json \ "plan").as(using UsagePlanIdFormat),
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewSubscription): JsValue = Json.obj(
+      "api" -> ApiIdFormat.writes(o.api),
+      "team" -> TeamIdFormat.writes(o.team),
+      "plan" -> UsagePlanIdFormat.writes(o.plan),
+    )
   }
   val ApiSubscriptionDemandFormat = new Format[ApiSubscriptionDemand] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionDemand] =

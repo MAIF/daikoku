@@ -1569,6 +1569,7 @@ object CommonServices {
           )
         )
       } yield {
+        AppLogger.warn(Json.prettyPrint(notifications))
         NotificationWithCount(
           notifications = (notifications \ "notifications")
             .asOpt(using json.SeqNotificationFormat)

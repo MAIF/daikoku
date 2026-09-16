@@ -2662,6 +2662,37 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val NewSubscriptionType = new PossibleObject(
+      ObjectType(
+        "NewSubscription",
+        "A notification triggered when a when someone subscribe to an api",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          NewSubscription
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          NewSubscription
+        ](
+          Field(
+            "team",
+            OptionType(TeamObjectType),
+            resolve = ctx => teamsFetcher.defer(ctx.value.team)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          )
+        )
+      )
+    )
+
     lazy val ApiSubscriptionAcceptType = new PossibleObject(
       ObjectType(
         "ApiSubscriptionAccept",
@@ -3315,7 +3346,7 @@ object SchemaDefinition {
         Field(
           "action",
           NotificationActionType,
-          resolve = _.value.action,
+          resolve = ctx => ctx.value.action,
           possibleTypes = List(
             ApiAccessType,
             TeamInvitationType,
@@ -3340,6 +3371,7 @@ object SchemaDefinition {
             TransferApiOwnershipType,
             ApiSubscriptionRejectType,
             ApiSubscriptionAcceptType,
+            NewSubscriptionType,
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,

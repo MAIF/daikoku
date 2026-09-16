@@ -225,6 +225,12 @@ object NotificationAction {
       motivation: Option[String]
   ) extends NotificationAction
 
+  case class NewSubscription(
+   api: ApiId,
+   plan: UsagePlanId,
+   team: TeamId
+  ) extends NotificationAction
+
   case class AccountCreationAttempt(
       demand: DemandId,
       step: SubscriptionDemandStepId,

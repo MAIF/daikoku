@@ -1987,6 +1987,23 @@ export const graphql = {
                 name
               }
             }
+            ... on NewSubscription {
+            __typename
+              api {
+                _id
+                name
+                currentVersion
+              }
+              team {
+                _id
+                name
+                type
+              }
+              plan {
+                _id
+                customName
+              }
+            }
             ... on ApiSubscription {
             __typename
               api {

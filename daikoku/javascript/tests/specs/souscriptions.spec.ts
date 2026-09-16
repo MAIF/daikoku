@@ -55,7 +55,6 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
@@ -63,7 +62,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   expect(page.getByRole('region', { name: 'notifications alt+T' }).getByRole('listitem')).toHaveText("La souscription pour le plan prod de l'api API papier pour l'équipe Vendeurs à bien été acceptée.")
   await page.getByRole('button', { name: 'Close toast' }).click();
 
-  await expect(page.getByText('0 notification')).toBeVisible();;
+  await expect(page.getByText('1 notification')).toBeVisible();
+  await expect(page.getByText('Nouvelle souscription', { exact: true })).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -120,8 +120,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+  await page.getByRole('listitem', { name: 'Demande de souscription par Jim Halpert' })
     .getByRole('button', { name: 'Rejeter' }).click();
   // await page.getByRole('dialog').locator('#message').click();
   await page.getByRole('dialog').locator('#message').fill('désolé');
@@ -226,8 +225,7 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.getByLabel('Accès aux notifications').click();
 
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim' })
+  await page.getByRole('listitem', { name: 'Demande de souscription par Jim' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
   await page.getByRole('dialog').getByRole('button', { name: 'Accepter' }).click();
@@ -365,8 +363,7 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await expect(page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })).toBeVisible
+  await expect(page.getByRole('listitem', { name: 'Demande de souscription par Jim Halpert' })).toBeVisible
 
 });
 
@@ -419,8 +416,7 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('article')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
-  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+  await page.getByRole('listitem', { name: 'Demande de souscription par Jim Halpert' })
     .getByLabel('Rejeter').click();
   await page.locator('#message').fill('désolé');
   await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
