@@ -31,6 +31,23 @@ case class UnpaidInvoice(
     currency: Currency
 )
 
+object UnpaidInvoice {
+  val gracePeriodDays = 30
+}
+
+/** Where a subscription stands with the money, read from Stripe each time it
+  * is shown. `nextCharge` is an estimate: usage keeps adding up until the
+  * period closes.
+  */
+case class BillingStatus(
+    cancelAt: Option[DateTime],
+    periodEnd: Option[DateTime],
+    nextCharge: Option[BigDecimal],
+    unpaid: Option[UnpaidInvoice],
+    cutAt: Option[DateTime],
+    pricesOutdated: Boolean
+)
+
 class PaymentClient(
     env: Env
 ) {
@@ -621,7 +638,7 @@ class PaymentClient(
             .toLowerCase,
           "success_url" -> env.getDaikokuUrl(
             tenant,
-            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" // todo: add callback
+            "/informations?message=subscription-payment-received"
           ),
           "cancel_url" -> env.getDaikokuUrl(
             tenant,
@@ -762,7 +779,8 @@ class PaymentClient(
   }
 
   /** `identifier` is what makes a redelivery harmless: Stripe keeps the first
-    * event carrying it and ignores the next ones.
+    * event carrying it and rejects the next ones with a 400 that has no error
+    * code, only this message.
     */
   private def postMeterEvent(
       eventName: String,
@@ -783,6 +801,11 @@ class PaymentClient(
     retryingOn429(stripeClient("/v1/billing/meter_events").post(body))
       .map {
         case res if res.status == 200 || res.status == 201 =>
+          Right[AppError, Unit](())
+        case res
+            if res.status == 400 && (res.json \ "error" \ "message")
+              .asOpt[String]
+              .exists(_.startsWith("An event already exists with identifier")) =>
           Right[AppError, Unit](())
         case res => Left[AppError, Unit](stripeErrorMessage(res))
       }
@@ -942,6 +965,25 @@ class PaymentClient(
       case _ => EitherT.pure[Future, AppError](false)
     }
 
+  /** The items of a Stripe subscription whose price is no longer the one of the
+    * plan, paired with the price they should carry. A metered item is the one
+    * whose price reads a meter; the other one is the flat monthly subscription.
+    */
+  private def outdatedItems(
+      items: Seq[JsValue],
+      settings: PaymentSettings.Stripe
+  ): Seq[(String, String)] =
+    items.flatMap { item =>
+      val itemId = (item \ "id").as[String]
+      val priceId = (item \ "price" \ "id").as[String]
+      val metered = (item \ "price" \ "recurring" \ "meter").asOpt[String]
+      val expected =
+        if (metered.isDefined) settings.priceIds.additionalPriceId
+        else settings.priceIds.basePriceId.some
+
+      expected.filter(_ != priceId).map(itemId -> _)
+    }
+
   private def swapStripePrices(
       stripeSubscriptionId: String,
       settings: PaymentSettings.Stripe
@@ -959,18 +1001,7 @@ class PaymentClient(
           )
         else Left[AppError, Seq[JsValue]](stripeErrorMessage(response))
       )
-      // a metered item is the one whose price reads a meter; the other one is
-      // the flat monthly subscription
-      changes = items.flatMap { item =>
-        val itemId = (item \ "id").as[String]
-        val priceId = (item \ "price" \ "id").as[String]
-        val metered = (item \ "price" \ "recurring" \ "meter").asOpt[String]
-        val expected =
-          if (metered.isDefined) settings.priceIds.additionalPriceId
-          else settings.priceIds.basePriceId.some
-
-        expected.filter(_ != priceId).map(itemId -> _)
-      }
+      changes = outdatedItems(items, settings)
       // Stripe holds the invoice of the period that just closed as a draft for
       // about an hour. Swapping then would change the amounts being computed,
       // so the swap waits, whether it was asked by the webhook or by the
@@ -1069,6 +1100,85 @@ class PaymentClient(
                     )
                 }
             )
+        }
+      case _ => EitherT.pure[Future, AppError](None)
+    }
+
+  private def nextChargeOf(
+      stripeSubscriptionId: String,
+      currency: Option[Currency]
+  )(implicit stripeSettings: StripeSettings): Future[Option[BigDecimal]] =
+    retryingOn429(
+      stripeClient("/v1/invoices/create_preview")
+        .post(Map("subscription" -> stripeSubscriptionId))
+    ).map {
+      case res if res.status == 200 =>
+        (res.json \ "amount_due")
+          .asOpt[Long]
+          .map(fromStripeAmount(_, currency))
+      case res =>
+        AppLogger.warn(
+          s"[PAYMENT] no invoice preview for stripe subscription $stripeSubscriptionId: ${stripeErrorMessage(res).getErrorMessage()}"
+        )
+        None
+    }
+
+  def billingStatusOf(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan
+  ): EitherT[Future, AppError, Option[BillingStatus]] =
+    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            EitherT.leftT[Future, Option[BillingStatus]](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
+            for {
+              response <- EitherT.liftF(
+                stripeClient(s"/v1/subscriptions/${i.subscriptionId}").get()
+              )
+              stripeSubscription <- EitherT.fromEither[Future](
+                if (response.status == 200)
+                  Right[AppError, JsValue](response.json)
+                else Left[AppError, JsValue](stripeErrorMessage(response))
+              )
+              nextCharge <- EitherT.liftF(
+                nextChargeOf(i.subscriptionId, plan.currency)
+              )
+              unpaid <- unpaidInvoiceOf(tenant, subscription, plan)
+            } yield {
+              val items =
+                (stripeSubscription \ "items" \ "data").as[Seq[JsValue]]
+              val periodEnd = items
+                .flatMap(item => (item \ "current_period_end").asOpt[Long])
+                .headOption
+                .map(seconds => new DateTime(seconds * 1000))
+              val cancelAt =
+                if ((stripeSubscription \ "cancel_at_period_end").asOpt[Boolean].contains(true))
+                  (stripeSubscription \ "cancel_at")
+                    .asOpt[Long]
+                    .map(seconds => new DateTime(seconds * 1000))
+                    .orElse(periodEnd)
+                else None
+
+              BillingStatus(
+                cancelAt = cancelAt,
+                periodEnd = periodEnd,
+                nextCharge = nextCharge,
+                unpaid = unpaid,
+                cutAt = unpaid
+                  .filter(_ => s.cutOnUnpaid)
+                  .map(_.since.plusDays(UnpaidInvoice.gracePeriodDays)),
+                pricesOutdated = outdatedItems(items, p).nonEmpty
+              ).some
+            }
         }
       case _ => EitherT.pure[Future, AppError](None)
     }

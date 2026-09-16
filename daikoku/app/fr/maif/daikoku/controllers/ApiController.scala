@@ -1222,8 +1222,6 @@ class ApiController(
       implicit val language: String = ctx.request.getLanguage(ctx.tenant)
       implicit val currentUser: User = ctx.user.getOrElse(GuestUser(ctx.tenant.id))
 
-      val maybeSessionId = ctx.request.getQueryString("session_id")
-
       (for {
         encryptedToken <- EitherT.fromOption[Future](
           ctx.request.getQueryString("token"),
@@ -1238,12 +1236,22 @@ class ApiController(
             .findOneNotDeleted(Json.obj("token" -> token)),
           AppError.EntityNotFound("token")
         )
-
-        _ <- apiService.validateProcessWithStepValidator(
-          validator,
-          ctx.tenant,
-          maybeSessionId
+        demand <- EitherT.fromOptionF(
+          env.dataStore.subscriptionDemandRepo
+            .forTenant(ctx.tenant)
+            .findByIdNotDeleted(validator.subscriptionDemand),
+          AppError.SubscriptionDemandNotFound
         )
+        // a payment step is only ever validated by the signed Stripe webhook
+        _ <- EitherT.cond[Future](
+          !demand.steps.exists(step =>
+            step.id == validator.step && step.step.isInstanceOf[ValidationStep.Payment]
+          ),
+          (),
+          AppError.ForbiddenAction
+        )
+
+        _ <- apiService.validateProcessWithStepValidator(validator, ctx.tenant)
       } yield
         Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-accept")))
         .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))

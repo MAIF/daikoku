@@ -128,7 +128,11 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await loginAs(JIM, page);
 
     log('subscribing as the consumer -> real Stripe Checkout, paying with the test card');
-    await subscribeViaStripeCheckout(page, { apiName: api.name, teamName: 'Vendeurs' });
+    await subscribeViaStripeCheckout(page, {
+      apiName: api.name,
+      teamName: 'Vendeurs',
+      settingsId,
+    });
 
     // 5. Read the subscription's Otoroshi key (prod_paper_route -> paper.oto.tools).
     log('reading the Otoroshi apikey of the subscription from the UI');

@@ -2,23 +2,16 @@ package fr.maif.daikoku.controllers
 
 import fr.maif.daikoku.actions.DaikokuUnauthenticatedAction
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
-import fr.maif.daikoku.domain.{ApiSubscription, Tenant}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.services.{ApiService, BillingNotificationService}
-import fr.maif.daikoku.utils.Translator
+import fr.maif.daikoku.services.StripeWebhookService
+import fr.maif.daikoku.utils.StripeSignature
+import fr.maif.daikoku.utils.StripeSignature.Rejection
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.util.ByteString
-import org.joda.time.DateTime
-import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.security.MessageDigest
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 /** Receives what Stripe pushes about the money behind a subscription. Every
@@ -29,19 +22,10 @@ class PaymentWebhookController(
     DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     cc: ControllerComponents,
-    apiService: ApiService,
-    paymentClient: PaymentClient,
-    billingNotificationService: BillingNotificationService,
-    translator: Translator
-) extends AbstractController(cc)
-    with I18nSupport {
+    stripeWebhookService: StripeWebhookService
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
-  implicit val ev: Env = env
-  implicit val tr: Translator = translator
-  implicit val me: MessagesApi = messagesApi
-
-  private val signatureToleranceSeconds = 300L
 
   def webhook(settingsId: String) =
     DaikokuUnauthenticatedAction.async(parse.byteString) { ctx =>
@@ -61,206 +45,40 @@ class PaymentWebhookController(
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "webhook secret not configured"))
           )
-        case Some(Some(secret))
-            if !isSignedWith(
-              secret,
-              ctx.request.headers.get("Stripe-Signature"),
-              ctx.request.body
-            ) =>
-          AppLogger.warn(
-            s"[stripe webhook] invalid signature for settings $settingsId, event dropped"
-          )
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "invalid signature"))
-          )
-        case Some(Some(_)) =>
-          Try(Json.parse(ctx.request.body.toArray)).toOption match {
-            case None =>
+        case Some(Some(secret)) =>
+          ctx.request.headers
+            .get("Stripe-Signature")
+            .toRight(Rejection.Malformed)
+            .flatMap(
+              StripeSignature.verify(_, ctx.request.body.utf8String, secret)
+            ) match {
+            case Left(rejection) =>
+              AppLogger.warn(
+                s"[stripe webhook] $rejection signature for settings $settingsId, event dropped"
+              )
               FastFuture.successful(
-                BadRequest(Json.obj("error" -> "invalid payload"))
+                BadRequest(Json.obj("error" -> "invalid signature"))
               )
-            case Some(event) =>
-              handle(ctx.tenant, event).map(_ =>
-                Ok(Json.obj("received" -> true))
-              )
+            case Right(()) =>
+              Try(Json.parse(ctx.request.body.toArray)).toOption match {
+                case None =>
+                  FastFuture.successful(
+                    BadRequest(Json.obj("error" -> "invalid payload"))
+                  )
+                case Some(event) =>
+                  stripeWebhookService
+                    .handle(ctx.tenant, event)
+                    .fold(
+                      error => {
+                        AppLogger.error(
+                          s"[stripe webhook] ${(event \ "type").asOpt[String].getOrElse("?")} on settings $settingsId not applied, Stripe will retry: ${error.getErrorMessage()}"
+                        )
+                        error.render()
+                      },
+                      _ => Ok(Json.obj("received" -> true))
+                    )
+              }
           }
       }
     }
-
-  /** `Stripe-Signature: t=<unix seconds>,v1=<hex>[,v1=<hex>]`, each v1 being
-    * HMAC-SHA256 over `"<t>.<raw body>"`. Several v1 coexist while the secret
-    * is being rolled.
-    */
-  private def isSignedWith(
-      secret: String,
-      header: Option[String],
-      body: ByteString
-  ): Boolean = {
-    val fields = header.toSeq
-      .flatMap(_.split(","))
-      .map(_.trim)
-      .flatMap(field =>
-        field.indexOf('=') match {
-          case -1    => None
-          case index => Some(field.take(index) -> field.drop(index + 1))
-        }
-      )
-    val timestamp = fields
-      .collectFirst { case ("t", value) => value }
-      .flatMap(value => Try(value.toLong).toOption)
-    val signatures = fields.collect { case ("v1", value) => value }
-
-    timestamp.exists { t =>
-      val fresh =
-        Math.abs(System.currentTimeMillis() / 1000 - t) <= signatureToleranceSeconds
-      val mac = Mac.getInstance("HmacSHA256")
-      mac.init(new SecretKeySpec(secret.getBytes(UTF_8), "HmacSHA256"))
-      val expected = mac
-        .doFinal((ByteString(s"$t.") ++ body).toArray)
-        .map("%02x".format(_))
-        .mkString
-
-      fresh && signatures.exists(signature =>
-        MessageDigest.isEqual(
-          expected.getBytes(UTF_8),
-          signature.getBytes(UTF_8)
-        )
-      )
-    }
-  }
-
-  private def handle(tenant: Tenant, event: JsValue): Future[Unit] = {
-    val payload = (event \ "data" \ "object").getOrElse(Json.obj())
-    (event \ "type").asOpt[String] match {
-      case Some("invoice.paid") =>
-        onInvoicePaid(tenant, payload)
-      case Some("customer.subscription.deleted") =>
-        onSubscriptionDeleted(tenant, payload)
-      case Some("invoice.finalized") =>
-        onInvoiceFinalized(tenant, payload)
-      case eventType =>
-        AppLogger.debug(
-          s"[stripe webhook] event ${eventType.getOrElse("?")} ignored"
-        )
-        FastFuture.successful(())
-    }
-  }
-
-  private def onInvoicePaid(tenant: Tenant, invoice: JsValue): Future[Unit] =
-    subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
-      case None => ignored("invoice.paid", subscriptionOfInvoice(invoice))
-      case Some(subscription) if subscription.enabled =>
-        FastFuture.successful(())
-      case Some(subscription) =>
-        setEnabled(tenant, subscription, enabled = true)
-    }
-
-  /** The invoice for the period that just closed is now locked, so moving the
-    * subscription onto the plan's current prices only affects the next one.
-    * Swapping earlier, while Stripe still holds the invoice as a draft, would
-    * change the amounts being billed.
-    */
-  private def onInvoiceFinalized(
-      tenant: Tenant,
-      invoice: JsValue
-  ): Future[Unit] =
-    subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
-      case None => ignored("invoice.finalized", subscriptionOfInvoice(invoice))
-      case Some(subscription) =>
-        env.dataStore.usagePlanRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(subscription.plan)
-          .flatMap {
-            case None => FastFuture.successful(())
-            case Some(plan) =>
-              paymentClient
-                .applyPlanPricesToSubscription(tenant, subscription, plan)
-                .value
-                .map {
-                  case Right(true) =>
-                    AppLogger.info(
-                      s"[stripe webhook] subscription ${subscription.id.value} moved onto the current prices of its plan"
-                    )
-                  case Right(false) => ()
-                  case Left(error) =>
-                    AppLogger.error(
-                      s"[stripe webhook] unable to move subscription ${subscription.id.value} onto the current prices of its plan: ${error.getErrorMessage()}"
-                    )
-                }
-          }
-    }
-
-  private def onSubscriptionDeleted(
-      tenant: Tenant,
-      stripeSubscription: JsValue
-  ): Future[Unit] = {
-    val stripeSubscriptionId = (stripeSubscription \ "id").asOpt[String]
-    subscriptionOf(tenant, stripeSubscriptionId).flatMap {
-      case None =>
-        ignored("customer.subscription.deleted", stripeSubscriptionId)
-      case Some(subscription) if !subscription.enabled =>
-        FastFuture.successful(())
-      case Some(subscription) =>
-        setEnabled(tenant, subscription, enabled = false).flatMap(_ =>
-          billingNotificationService.cancellationScheduled(
-            tenant,
-            subscription,
-            DateTime.now()
-          )
-        )
-    }
-  }
-
-  private def setEnabled(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      enabled: Boolean
-  ): Future[Unit] =
-    env.dataStore.usagePlanRepo
-      .forTenant(tenant)
-      .findByIdNotDeleted(subscription.plan)
-      .flatMap {
-        case None =>
-          AppLogger.error(
-            s"[stripe webhook] plan ${subscription.plan.value} of subscription ${subscription.id.value} not found, enabled left to ${subscription.enabled}"
-          )
-          FastFuture.successful(())
-        case Some(plan) =>
-          apiService.archiveApiKey(tenant, subscription, plan, enabled).map {
-            case Left(error) =>
-              AppLogger.error(
-                s"[stripe webhook] unable to set enabled=$enabled on subscription ${subscription.id.value}: ${error.getErrorMessage()}"
-              )
-            case Right(_) => ()
-          }
-      }
-
-  private def subscriptionOf(
-      tenant: Tenant,
-      stripeSubscriptionId: Option[String]
-  ): Future[Option[ApiSubscription]] =
-    stripeSubscriptionId match {
-      case None => FastFuture.successful(None)
-      case Some(id) =>
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(
-            Json.obj("thirdPartySubscriptionInformations.subscriptionId" -> id)
-          )
-    }
-
-  private def subscriptionOfInvoice(invoice: JsValue): Option[String] =
-    (invoice \ "parent" \ "subscription_details" \ "subscription")
-      .asOpt[String]
-
-  private def ignored(
-      eventType: String,
-      stripeSubscriptionId: Option[String]
-  ): Future[Unit] = {
-    AppLogger.info(
-      s"[stripe webhook] $eventType for stripe subscription ${stripeSubscriptionId
-          .getOrElse("?")} matches no subscription, ignored"
-    )
-    FastFuture.successful(())
-  }
 }

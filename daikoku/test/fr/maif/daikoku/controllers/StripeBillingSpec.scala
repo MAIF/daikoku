@@ -12,10 +12,13 @@ import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscript
 import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.Cypher.encrypt
+import fr.maif.daikoku.utils.{IdGenerator, StripeSignature}
+import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsNull, JsNumber, JsObject, JsValue, Json}
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_String
 import play.api.libs.ws.WSResponse
 
 import java.net.URLDecoder
@@ -48,11 +51,14 @@ class StripeBillingSpec()
 
   private val stripeSettingsId = ThirdPartyPaymentSettingsId("stripe-test")
 
+  private val webhookSecret = "whsec_test"
+
   private val stripeSettings = StripeSettings(
     id = stripeSettingsId,
     name = "stripe",
     publicKey = "pk_test_public",
-    secretKey = "sk_test_secret"
+    secretKey = "sk_test_secret",
+    webhookSecret = webhookSecret.some
   )
 
   private val stripeTenant =
@@ -151,6 +157,14 @@ class StripeBillingSpec()
     stubFor(
       post(urlEqualTo(s"/v1/billing/meters/$meterId/deactivate"))
         .willReturn(okJson(fixture("meters")))
+    )
+    stubFor(
+      post(urlEqualTo("/v1/invoices/create_preview"))
+        .willReturn(okJson(Json.stringify(Json.obj("amount_due" -> 1234))))
+    )
+    stubFor(
+      get(urlPathEqualTo("/v1/invoices"))
+        .willReturn(okJson(Json.stringify(Json.obj("data" -> Json.arr()))))
     )
   }
 
@@ -251,26 +265,89 @@ class StripeBillingSpec()
     )(using stripeTenant, session)
   }
 
-  private def payCheckout(): WSResponse = {
-    implicit val session: UserSession =
-      loginWithBlocking(userAdmin, stripeTenant)
-
-    val validator = daikokuComponents.env.dataStore.stepValidatorRepo
+  private def pendingDemandId(): String =
+    daikokuComponents.env.dataStore.subscriptionDemandRepo
       .forTenant(stripeTenant)
       .findAllNotDeleted()
       .futureValue
       .head
-    val token = encrypt(
-      daikokuComponents.env.config.cypherSecret,
-      validator.token,
-      stripeTenant
+      .id
+      .value
+
+  private def payCheckout(demandId: String = pendingDemandId()): WSResponse = {
+    val body = Json.stringify(
+      Json.obj(
+        "id" -> s"evt_${IdGenerator.token(16)}",
+        "type" -> "checkout.session.completed",
+        "data" -> Json.obj(
+          "object" -> Json.obj(
+            "id" -> checkoutSessionId,
+            "metadata" -> Json.obj("subscription_demand" -> demandId)
+          )
+        )
+      )
+    )
+    val at = System.currentTimeMillis() / 1000
+
+    daikokuComponents.env.wsClient
+      .url(
+        s"http://127.0.0.1:$port/api/payment/${stripeSettingsId.value}/_webhook"
+      )
+      .withHttpHeaders(
+      "Host" -> stripeTenant.domain,
+      "Content-Type" -> "application/json",
+      "Stripe-Signature" ->
+        s"t=$at,v1=${StripeSignature.sign(webhookSecret, s"$at.$body")}"
+    ).post(body)
+      .futureValue
+  }
+
+  private val periodEnd = 1790812800L
+
+  private def stripeSubscription(
+      itemPrice: String = "price_test123",
+      cancelAtPeriodEnd: Boolean = false
+  ): JsObject =
+    Json.obj(
+      "id" -> subscriptionId,
+      "object" -> "subscription",
+      "customer" -> customerId,
+      "status" -> "active",
+      "cancel_at_period_end" -> cancelAtPeriodEnd,
+      "cancel_at" -> (if (cancelAtPeriodEnd) JsNumber(periodEnd) else JsNull),
+      "items" -> Json.obj(
+        "data" -> Json.arr(
+          Json.obj(
+            "id" -> "si_base",
+            "price" -> Json.obj("id" -> itemPrice),
+            "current_period_end" -> periodEnd
+          )
+        )
+      )
     )
 
-    httpJsonCallBlocking(
-      path =
-        s"/api/subscription/_validate?token=$token&session_id=$checkoutSessionId"
+  private def stripeSubscriptionIs(subscription: JsObject): Unit =
+    stubFor(
+      get(urlEqualTo(s"/v1/subscriptions/$subscriptionId"))
+        .willReturn(okJson(Json.stringify(subscription)))
+    )
+
+  private def billingState(): JsValue = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+    val response = httpJsonCallBlocking(
+      path = s"/api/teams/${teamConsumerId.value}/billing/subscriptions"
     )(using stripeTenant, session)
+
+    withClue(response.body) { response.status mustBe 200 }
+    response.json.as[Seq[JsValue]].head
   }
+
+  private def subscriptions(): Seq[ApiSubscription] =
+    daikokuComponents.env.dataStore.apiSubscriptionRepo
+      .forTenant(stripeTenant)
+      .findAllNotDeleted()
+      .futureValue
 
   private def currentSubscription(): ApiSubscription =
     daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -298,7 +375,7 @@ class StripeBillingSpec()
     stubOtoroshi(hits = 0)
     makePlanPayable()
     subscribeToPlan().status mustBe 200
-    payCheckout()
+    payCheckout().status mustBe 200
     currentSubscription()
   }
 
@@ -316,6 +393,146 @@ class StripeBillingSpec()
     daikokuComponents.statsJob
       .syncForSubscription(currentSubscription(), stripeTenant)
       .futureValue
+  }
+
+  "confirming a checkout (#1221)" must {
+    "materialise the subscription only once Stripe says the checkout is paid" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+      subscriptions() mustBe empty
+
+      payCheckout().status mustBe 200
+
+      subscriptions().map(_.thirdPartySubscriptionInformations) mustBe Seq(
+        StripeSubscriptionInformations(subscriptionId, customerId.some).some
+      )
+    }
+
+    "apply a redelivered confirmation only once" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+      val demandId = pendingDemandId()
+
+      payCheckout(demandId).status mustBe 200
+      payCheckout(demandId).status mustBe 200
+
+      subscriptions().size mustBe 1
+    }
+
+    "never materialise a paid subscription from the validation link alone" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+
+      val validator = daikokuComponents.env.dataStore.stepValidatorRepo
+        .forTenant(stripeTenant)
+        .findAllNotDeleted()
+        .futureValue
+        .head
+      val token = encrypt(
+        daikokuComponents.env.config.cypherSecret,
+        validator.token,
+        stripeTenant
+      )
+
+      httpJsonCallBlocking(
+        path =
+          s"/api/subscription/_validate?token=$token&session_id=$checkoutSessionId"
+      )(using stripeTenant, session)
+
+      subscriptions() mustBe empty
+    }
+
+    "acknowledge a checkout that matches no pending payment" in {
+      setupTenantWithStripeAccount()
+
+      payCheckout(demandId = "unknown-demand").status mustBe 200
+
+      subscriptions() mustBe empty
+    }
+  }
+
+  "the billing state of a subscription (#1231)" must {
+    "carry the next charge Stripe previews and the end of the running period" in {
+      subscribeAndPay()
+      stripeSubscriptionIs(stripeSubscription())
+
+      val state = billingState()
+
+      (state \ "legacy").as[Boolean] mustBe false
+      (state \ "nextCharge").as[BigDecimal] mustBe BigDecimal("12.34")
+      (state \ "periodEnd").as[Long] mustBe periodEnd * 1000
+      (state \ "cancelAt").get mustBe JsNull
+      (state \ "unpaid").get mustBe JsNull
+      (state \ "priceChange").get mustBe JsNull
+    }
+
+    "carry a cancellation that takes effect at the end of the period" in {
+      subscribeAndPay()
+      stripeSubscriptionIs(stripeSubscription(cancelAtPeriodEnd = true))
+
+      (billingState() \ "cancelAt").as[Long] mustBe periodEnd * 1000
+    }
+
+    "count an unpaid invoice from the day it was issued, and cut the key thirty days later" in {
+      subscribeAndPay()
+      stripeSubscriptionIs(stripeSubscription())
+      val issuedAt = DateTime.now().minusDays(5).getMillis / 1000
+      stubFor(
+        get(urlPathEqualTo("/v1/invoices")).willReturn(
+          okJson(
+            Json.stringify(
+              Json.obj(
+                "data" -> Json.arr(
+                  Json.obj("created" -> issuedAt, "amount_due" -> 1000)
+                )
+              )
+            )
+          )
+        )
+      )
+
+      val unpaid = billingState() \ "unpaid"
+
+      (unpaid \ "since").as[Long] mustBe issuedAt * 1000
+      (unpaid \ "amount").as[BigDecimal] mustBe BigDecimal(10)
+      (unpaid \ "cutAt").as[Long] mustBe
+        new DateTime(issuedAt * 1000).plusDays(30).getMillis
+    }
+
+    "announce the amounts of the plan while the subscription still carries the old prices" in {
+      subscribeAndPay()
+      stripeSubscriptionIs(stripeSubscription(itemPrice = "price_old"))
+
+      val change = billingState() \ "priceChange"
+
+      (change \ "costPerMonth").as[BigDecimal] mustBe BigDecimal(10)
+      (change \ "costPerRequest").as[BigDecimal] mustBe BigDecimal("0.02")
+      (change \ "effectiveAt").as[Long] mustBe periodEnd * 1000
+    }
+
+    "show a subscription without a Stripe customer as legacy, without asking Stripe" in {
+      val subscription = subscribeAndPay()
+      daikokuComponents.env.dataStore.apiSubscriptionRepo
+        .forTenant(stripeTenant)
+        .save(
+          subscription.copy(thirdPartySubscriptionInformations =
+            StripeSubscriptionInformations(subscriptionId, None).some
+          )
+        )
+        .futureValue
+      wireMockServer.resetRequests()
+
+      (billingState() \ "legacy").as[Boolean] mustBe true
+      verify(0, getRequestedFor(urlPathMatching("/v1/subscriptions/.*")))
+    }
   }
 
   "setting up payment on a pay-per-use plan" must {
@@ -402,6 +619,23 @@ class StripeBillingSpec()
         s"$consumptionId-0",
         s"$consumptionId-250"
       )
+    }
+
+    "count a delta Stripe already holds as reported" in {
+      subscribeAndPay()
+      stubFor(
+        post(urlEqualTo("/v1/billing/meter_events")).willReturn(
+          aResponse()
+            .withStatus(400)
+            .withBody(
+              """{"error":{"message":"An event already exists with identifier e2e-250.","type":"invalid_request_error"}}"""
+            )
+        )
+      )
+
+      consume(hits = 250)
+
+      currentConsumption().lastReportedHits mustBe 250
     }
 
     "stay silent when nothing new was consumed" in {

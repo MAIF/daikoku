@@ -63,6 +63,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val localLoginSupport = wire[LocalLoginSupport]
   lazy val deletionService = wire[DeletionService]
   lazy val billingNotificationService = wire[BillingNotificationService]
+  lazy val stripeWebhookService = wire[StripeWebhookService]
   lazy val mailService = wire[MailService]
   lazy val apiLifeCycleService = wire[ApiLifeCycleService]
   lazy val apiCrudService = wire[ApiCrudService]
