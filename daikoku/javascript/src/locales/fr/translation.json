@@ -271,6 +271,8 @@
   "Created at": "Créé le",
   "Valid until": "Valide jusqu'à",
   "keyring.card": "Trousseau %s",
+  "keyring.card.environment": "Multiples environnements",
+  "keyring.card.plan": "Multiples plans",
   "keyring.details": "Contenu du trousseau",
   "keyring.actions": "Actions du trousseau",
   "keyring.successfully.enabled": "Trousseau activé",

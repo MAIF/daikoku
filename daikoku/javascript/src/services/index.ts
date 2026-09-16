@@ -1936,6 +1936,7 @@ export const graphql = {
           }
           subscriptionsCount
           canUpdateRotation
+          environments
         }
         total
       }

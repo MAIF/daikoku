@@ -1328,7 +1328,7 @@ object CommonServices {
     }
   }
 
-  type KeyringForGraphql = (Keyring, Long, Boolean)
+  type KeyringForGraphql = (Keyring, Long, Boolean, Seq[String])
 
   /** The keyrings owned by the consuming team that aggregate at least one
     * subscription on the given api. Keyring-centric counterpart of
@@ -1359,8 +1359,9 @@ object CommonServices {
         s"""
            |SELECT
            |       k.content AS content,
+           |       bool_or((p.content ->> 'autoRotation')::boolean) AS "canUpdateRotation",
+           |       jsonb_agg(DISTINCT p.content ->> 'customName') FILTER (WHERE p.content ->> 'customName' IS NOT NULL) AS "environments",
            |       (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = k._id) AS "subscriptionsCount",
-           |       (p.content ->> 'autoRotation')::boolean AS "canUpdateRotation",
            |       count(*) OVER() AS "total"
            |FROM keyrings k, api_subscriptions s, usage_plans p
            |WHERE k._deleted = false
@@ -1368,6 +1369,7 @@ object CommonServices {
            |  AND s.content ->> 'api' = $$1
            |  AND s.content ->> 'team' = $$2
            |  AND s.content ->> 'plan' = p._id
+           |GROUP BY k._id, k.content
            |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
            |LIMIT $$3 OFFSET $$4;
            |""".stripMargin
@@ -1380,6 +1382,7 @@ object CommonServices {
             Col.json("content"),
             Col.long("subscriptionsCount"),
             Col.bool("canUpdateRotation"),
+            Col.array("environments"),
             Col.long("total")
           ),
           Seq(
@@ -1392,17 +1395,25 @@ object CommonServices {
         .map { rows =>
           val keyrings =
             rows.flatMap(row =>
-              val keyring = (row \ "content")
-                .asOpt[JsValue]
-                .flatMap(json.KeyringFormat.reads(_).asOpt)
+              val keyring =
+                (row \ "content")
+                  .asOpt[JsValue]
+                  .flatMap(json.KeyringFormat.reads(_).asOpt)
               val subscriptionCount =
-                (row \ "subscriptionsCount").as[Long]
+                (row \ "subscriptionsCount")
+                  .as[Long]
               val autoRotation =
                 (row \ "canUpdateRotation")
                   .asOpt[Boolean]
                   .getOrElse(false)
-              keyring.map(k => (k, subscriptionCount, autoRotation))
+              val environments =
+                (row \ "environments")
+                  .asOpt[Seq[String]]
+                  .getOrElse(Seq.empty)
+              keyring
+                .map(k => (k, subscriptionCount, autoRotation, environments))
             )
+
           val total =
             rows.headOption
               .flatMap(row => (row \ "total").asOpt[Long])
