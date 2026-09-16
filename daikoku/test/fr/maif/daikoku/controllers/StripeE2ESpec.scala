@@ -221,11 +221,30 @@ class StripeE2ESpec()
         .asInstanceOf[PaymentSettings.Stripe]
       val customerId = createCustomer()
       val informations =
-        StripeSubscriptionInformations("sub_reconcile", customerId.some)
+        StripeSubscriptionInformations(
+          s"sub_reconcile_${UUID.randomUUID()}",
+          customerId.some
+        )
 
       daikokuComponents.env.dataStore.usagePlanRepo
         .forTenant(stripeTenant)
         .save(meteredPlan.copy(paymentSettings = settings.some))
+        .futureValue
+
+      val keyring = Keyring(
+        id = KeyringId(s"reconcile-${UUID.randomUUID()}"),
+        tenant = stripeTenant.id,
+        team = teamConsumerId,
+        customName = "reconcile",
+        apiKey = OtoroshiApiKey("e2e-client", "e2e-client", "e2e-secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(wiremockedOtoroshi),
+        createdAt = DateTime.now(),
+        rotation = None,
+        integrationToken = "e2e-token"
+      )
+      daikokuComponents.env.dataStore.keyringRepo
+        .forTenant(stripeTenant)
+        .save(keyring)
         .futureValue
 
       daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -234,15 +253,13 @@ class StripeE2ESpec()
           ApiSubscription(
             id = ApiSubscriptionId(s"reconcile-${UUID.randomUUID()}"),
             tenant = stripeTenant.id,
-            apiKey = OtoroshiApiKey("e2e-client", "e2e-client", "e2e-secret"),
             plan = meteredPlan.id,
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
             by = userAdmin.id,
             customName = None,
-            rotation = None,
-            integrationToken = "e2e-token",
+            keyring = keyring.id,
             thirdPartySubscriptionInformations = informations.some
           )
         )

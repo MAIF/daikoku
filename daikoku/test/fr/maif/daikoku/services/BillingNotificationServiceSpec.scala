@@ -29,18 +29,28 @@ class BillingNotificationServiceSpec
   private val eur = Currency("EUR")
   private val effectiveAt = new DateTime(2026, 9, 1, 0, 0)
 
+  private val keyring = Keyring(
+    id = KeyringId("billing-keyring"),
+    tenant = tenant.id,
+    team = teamConsumer.id,
+    customName = "billing",
+    apiKey = OtoroshiApiKey("billing-key", "client-id", "client-secret"),
+    otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+    createdAt = DateTime.now(),
+    rotation = None,
+    integrationToken = IdGenerator.token(64)
+  )
+
   private val subscription = ApiSubscription(
     id = ApiSubscriptionId("billing-sub"),
     tenant = tenant.id,
-    apiKey = OtoroshiApiKey("billing-key", "client-id", "client-secret"),
     plan = plan.id,
     createdAt = DateTime.now(),
     team = teamConsumer.id,
     api = defaultApi.api.id,
     by = userAdmin.id,
     customName = None,
-    rotation = None,
-    integrationToken = IdGenerator.token(64)
+    keyring = keyring.id
   )
 
   override def beforeEach(): Unit = {
@@ -50,7 +60,8 @@ class BillingNotificationServiceSpec
       teams = Seq(teamOwner, teamConsumer),
       apis = Seq(defaultApi.api),
       usagePlans = defaultApi.plans,
-      subscriptions = Seq(subscription)
+      subscriptions = Seq(subscription),
+      keyrings = Seq(keyring)
     )
   }
 

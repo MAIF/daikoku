@@ -187,14 +187,25 @@ class StripeWebhookSpec()
       customerId: String,
       enabled: Boolean = true
   ): ApiSubscription = {
-    val subscription = ApiSubscription(
-      id = ApiSubscriptionId(s"webhook-${UUID.randomUUID()}"),
+    val keyring = Keyring(
+      id = KeyringId(s"webhook-${UUID.randomUUID()}"),
       tenant = tenant.id,
+      team = teamConsumerId,
+      customName = "webhook",
       apiKey = OtoroshiApiKey(
         clientName = "webhook-key",
         clientId = "webhook-client-id",
         clientSecret = "webhook-client-secret"
       ),
+      otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(wiremockedOtoroshi),
+      createdAt = DateTime.now(),
+      rotation = None,
+      integrationToken = "webhook-token",
+      enabled = enabled
+    )
+    val subscription = ApiSubscription(
+      id = ApiSubscriptionId(s"webhook-${UUID.randomUUID()}"),
+      tenant = tenant.id,
       plan = plan.id,
       createdAt = DateTime.now(),
       team = teamConsumerId,
@@ -202,13 +213,16 @@ class StripeWebhookSpec()
       by = userAdmin.id,
       customName = None,
       enabled = enabled,
-      rotation = None,
-      integrationToken = "webhook-token",
+      keyring = keyring.id,
       thirdPartySubscriptionInformations = StripeSubscriptionInformations(
         stripeSubscriptionId,
         customerId.some
       ).some
     )
+    daikokuComponents.env.dataStore.keyringRepo
+      .forTenant(tenant)
+      .save(keyring)
+      .futureValue
     daikokuComponents.env.dataStore.apiSubscriptionRepo
       .forTenant(tenant)
       .save(subscription)
@@ -363,7 +377,9 @@ class StripeWebhookSpec()
       (metered.json \ "recurring" \ "meter").as[String] mustBe
         before.priceIds.meterId.get
 
-      savePlan(priced.copy(currency = Currency("USD").some)).status mustBe 400
+      savePlan(
+        currentPlan(stripeTenant).copy(currency = Currency("USD").some)
+      ).status mustBe 400
       currentPlan(stripeTenant).currency mustBe Currency("EUR").some
 
       daikokuComponents.paymentClient
