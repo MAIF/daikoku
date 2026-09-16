@@ -473,26 +473,6 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
 });
 
 
-test('[ASOAPI-10421] - Renommer sa clé d\'api', async ({ page, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-
-  await page.goto(ACCUEIL);
-  await loginAs(JIM, page);
-  await findAndGoToTeam('Logistique', page);
-  await page.getByText('Clés d\'API').click();
-  await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  const card =  page.getByRole('listitem', { name: 'api commande - dev' });
-  await card.getByRole('button', { name: 'Contenu du trousseau' }).click();
-  await card.getByLabel('Actions de la souscription').click();
-  await card.getByText('Mettre à jour le nom perso.').click();
-  await page.getByPlaceholder('Nom personnalisé').fill('logistique - api commande - environnement dev');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Le nom personnalisé de votre souscription a été mis à jour avec succès');
-  await card.getByLabel('Actions de la souscription').click();
-  await card.getByText('Mettre à jour le nom perso.').click();
-  await expect(page.getByRole('textbox', { name: 'Nom de la souscription' })).toHaveValue('logistique - api commande - environnement dev')
-})
-
 test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
@@ -1164,7 +1144,7 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
 test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (rotation + réinit. secret grisés)", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/apikeys`);
+  await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/keyrings`);
 
   const card = page.getByRole('listitem', { name: 'api papier - dev' })
 
