@@ -62,7 +62,20 @@ class StripeBillingSpec()
   )
 
   private val stripeTenant =
-    tenant.copy(thirdPartyPaymentSettings = Seq(stripeSettings))
+    tenant.copy(
+      thirdPartyPaymentSettings = Seq(stripeSettings),
+      mailerSettings = SimpleSMTPSettings(
+        host = "localhost",
+        port = "1025",
+        fromTitle = "Daikoku",
+        fromEmail = "noreply@daikoku.io",
+        template = None,
+        username = None,
+        password = None,
+        starttls = false.some,
+        ssl = false.some
+      ).some
+    )
 
   private val verifiedConsumer = teamConsumer.copy(verified = true)
 
@@ -265,6 +278,30 @@ class StripeBillingSpec()
     )(using stripeTenant, session)
   }
 
+  private def resumePayment(): WSResponse = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+
+    httpJsonCallBlocking(
+      path =
+        s"/api/subscription/team/${teamConsumerId.value}/demands/${pendingDemandId()}/_run"
+    )(using stripeTenant, session)
+  }
+
+  private def checkoutNotifications(): Seq[Notification] =
+    daikokuComponents.env.dataStore.notificationRepo
+      .forTenant(stripeTenant)
+      .findNotDeleted(Json.obj("action.type" -> "CheckoutForSubscription"))
+      .futureValue
+
+  private def sentMails(): Seq[JsValue] =
+    daikokuComponents.env.wsClient
+      .url("http://localhost:1080/api/emails")
+      .get()
+      .futureValue
+      .json
+      .as[Seq[JsValue]]
+
   private def pendingDemandId(): String =
     daikokuComponents.env.dataStore.subscriptionDemandRepo
       .forTenant(stripeTenant)
@@ -294,11 +331,12 @@ class StripeBillingSpec()
         s"http://127.0.0.1:$port/api/payment/${stripeSettingsId.value}/_webhook"
       )
       .withHttpHeaders(
-      "Host" -> stripeTenant.domain,
-      "Content-Type" -> "application/json",
-      "Stripe-Signature" ->
-        s"t=$at,v1=${StripeSignature.sign(webhookSecret, s"$at.$body")}"
-    ).post(body)
+        "Host" -> stripeTenant.domain,
+        "Content-Type" -> "application/json",
+        "Stripe-Signature" ->
+          s"t=$at,v1=${StripeSignature.sign(webhookSecret, s"$at.$body")}"
+      )
+      .post(body)
       .futureValue
   }
 
@@ -421,6 +459,63 @@ class StripeBillingSpec()
       payCheckout(demandId).status mustBe 200
 
       subscriptions().size mustBe 1
+    }
+
+    "open a fresh checkout session when the payment is resumed" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+
+      val resumed = resumePayment()
+      withClue(resumed.body) { resumed.status mustBe 200 }
+
+      val checkouts = requestsTo("/v1/checkout/sessions")
+      checkouts.size mustBe 2
+      checkouts.map(_.getHeader("Idempotency-Key")).distinct.size mustBe 2
+      formBodies("/v1/checkout/sessions")
+        .map(_.get("cancel_url"))
+        .distinct
+        .size mustBe 2
+    }
+
+    "leave the requester of a single-step demand a way back to the payment, until it is paid" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      cleanMailerServer(1080).futureValue
+      subscribeToPlan().status mustBe 200
+      resumePayment().status mustBe 200
+
+      sentMails() mustBe empty
+
+      val pending = checkoutNotifications()
+      pending.map(_.team) mustBe Seq(teamConsumerId.some)
+      pending.map(_.status.status) mustBe Seq("Pending")
+
+      payCheckout().status mustBe 200
+
+      checkoutNotifications().map(_.status.status) mustBe Seq("Accepted")
+    }
+
+    "send the acceptation once to a requester who administers the team, with a link to its api keys" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+      cleanMailerServer(1080).futureValue
+
+      payCheckout().status mustBe 200
+
+      val link =
+        s"/${teamOwner.humanReadableId}/${defaultApi.api.humanReadableId}/${defaultApi.api.currentVersion.value}/apikeys?team=${teamConsumerId.value}"
+      eventually {
+        val mails = sentMails()
+        mails.map(mail => (mail \ "to" \ "text").as[String]) mustBe Seq(
+          userAdmin.email
+        )
+        (mails.head \ "html").as[String] must include(link)
+      }
     }
 
     "never materialise a paid subscription from the validation link alone" in {

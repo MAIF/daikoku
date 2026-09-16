@@ -160,6 +160,14 @@ dependencyOverrides ++= Seq(
 
 Test / fork := true
 Test / parallelExecution := false
+// Stripe integration specs rely on the local stack (fake SMTP, real Stripe test account, stripe listen)
+Test / testOptions += Tests.Filter(name =>
+  !(sys.env.contains("CI") && Set(
+    "fr.maif.daikoku.controllers.StripeBillingSpec",
+    "fr.maif.daikoku.controllers.StripeWebhookSpec",
+    "fr.maif.daikoku.controllers.StripeE2ESpec"
+  ).contains(name))
+)
 Test / javaOptions ++= Seq(
   "--enable-native-access=ALL-UNNAMED"
 )

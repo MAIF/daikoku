@@ -1338,7 +1338,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future][AppError, Unit](
-            api.team == team.id,
+            api.team == team.id || demand.team == team.id,
             (),
             AppError.EntityNotFound("Subscription demand")
           )
@@ -1369,6 +1369,15 @@ class ApiController(
               .findByIdNotDeleted(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api),
+            AppError.ApiNotFound
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            api.team == team.id || demand.team == team.id,
+            (),
+            AppError.ForbiddenAction
+          )
           result <-
             apiService.runSubscriptionProcess(demand.id, ctx.tenant, from.some)
         } yield result).value
@@ -1390,6 +1399,15 @@ class ApiController(
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(demandId),
             AppError.EntityNotFound("Subscription demand")
+          )
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api),
+            AppError.ApiNotFound
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            api.team == team.id || demand.team == team.id,
+            (),
+            AppError.ForbiddenAction
           )
           _ <- EitherT.right[AppError](
             env.dataStore.subscriptionDemandRepo

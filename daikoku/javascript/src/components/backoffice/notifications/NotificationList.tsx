@@ -537,7 +537,7 @@ export const NotificationList = () => {
   ) => {
     switch (notification.action.__typename) {
       case 'CheckoutForSubscription':
-        return translate("notif.CheckoutForSubscription");
+        return translate({ key: "notif.CheckoutForSubscription", replacements: [notification.action.plan.customName] });
       case 'ApiDepreciationWarning':
         return translate({ key: "notif.ApiDepreciationWarning", replacements: [notification.action.api.name] });
       case 'ApiBlockingWarning':

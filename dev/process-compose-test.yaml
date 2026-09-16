@@ -23,10 +23,29 @@ processes:
         mise run pg:clean ;
         else echo "disconnecting from container logs..." ;
         fi
+  Smtp:
+    working_dir: "daikoku/javascript/tests"
+    command: |
+      if nc -z localhost 1080 > /dev/null 2> /dev/null ;
+      then echo Smtp is already running, wont start one ;
+      else docker-compose --ansi=always -f docker-compose-local.yml up smtp ;
+      fi
+    readiness_probe:
+      exec:
+        command: "nc -z localhost 1080 > /dev/null 2> /dev/null"
+      initial_delay_seconds: 3
+      period_seconds: 5
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    shutdown:
+      command: docker-compose -f docker-compose-local.yml stop smtp
   Tests:
     command: sbt --color=true test
     depends_on:
       Postgres:
+        condition: process_healthy
+      Smtp:
         condition: process_healthy
     working_dir: "daikoku"
     availability:

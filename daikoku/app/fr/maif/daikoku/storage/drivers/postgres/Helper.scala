@@ -154,33 +154,30 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$options" =>
               ("1 = 1", params)
 
-            case Some((key: String, _: JsValue)) if key == "$gte" =>
+            case Some((key: String, _: JsValue))
+                if Set("$gte", "$lte", "$lt", "$gt").contains(key) =>
               val (a, b) = _convertTuple(value.fields.head, params)
-              (
-                s"(content->>${getParam(b.size)})::bigint >= $a",
-                b ++ Seq(field._1)
-              )
-
-            case Some((key: String, _: JsValue)) if key == "$lte" =>
-              val (a, b) = _convertTuple(value.fields.head, params)
-              (
-                s"(content->>${getParam(b.size)})::bigint <= $a",
-                b ++ Seq(field._1)
-              )
-
-            case Some((key: String, _: JsValue)) if key == "$lt" =>
-              val (a, b) = _convertTuple(value.fields.head, params)
-              (
-                s"(content->>${getParam(b.size)})::bigint < $a",
-                b ++ Seq(field._1)
-              )
-
-            case Some((key: String, _: JsValue)) if key == "$gt" =>
-              val (a, b) = _convertTuple(value.fields.head, params)
-              (
-                s"(content->>${getParam(b.size)})::bigint > $a",
-                b ++ Seq(field._1)
-              )
+              val op = key match {
+                case "$gte" => ">="
+                case "$lte" => "<="
+                case "$lt"  => "<"
+                case "$gt"  => ">"
+              }
+              val parts = field._1.split("\\.")
+              if (parts.length > 2)
+                throw new UnsupportedOperationException(
+                  "Queries with three dots in the property are not supported"
+                )
+              else if (parts.length == 2)
+                (
+                  s"(content->${getParam(b.size)}->>${getParam(b.size + 1)})::bigint $op $a",
+                  b ++ Seq(parts(0), parts(1))
+                )
+              else
+                (
+                  s"(content->>${getParam(b.size)})::bigint $op $a",
+                  b ++ Seq(field._1)
+                )
 
             case Some((key: String, _: JsValue)) if key == "$and" =>
               _convertTuple(value.fields.head, params)

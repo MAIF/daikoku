@@ -1783,7 +1783,7 @@ class ApiService(
       .flatMap {
         // generate notification to checkout
         case (Some(step), demand)
-            if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
+            if step.step.name == "payment" && step.state.name == "waiting" =>
           for {
             _ <- EitherT.liftF[Future, AppError, Boolean](
               env.dataStore.notificationRepo
@@ -1870,13 +1870,16 @@ class ApiService(
                 )
               )
             )
+            // a single-step demand redirects its requester to Stripe right away
             _ <- EitherT.liftF[Future, AppError, Unit](
-              tenant.mailer.send(
-                title = title,
-                to = recipent.map(_.email),
-                body = body,
-                tenant = tenant
-              )
+              if (demand.steps.size > 1)
+                tenant.mailer.send(
+                  title = title,
+                  to = recipent.map(_.email),
+                  body = body,
+                  tenant = tenant
+                )
+              else FastFuture.successful(())
             )
           } yield (step.some, demand)
         case tuple =>
@@ -1984,37 +1987,41 @@ class ApiService(
               }
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
-              Future.sequence((administrators ++ Seq(from)).map(admin => {
-                implicit val language: String = admin.defaultLanguage
-                  .getOrElse(tenant.defaultLanguage.getOrElse("en"))
-                (for {
-                  title <-
-                    translator.translate("mail.acceptation.title", tenant)
-                  body <- translator.translate(
-                    "mail.api.subscription.acceptation.body",
-                    tenant,
-                    Map(
-                      "user" -> JsString(from.name),
-                      "apiName" -> JsString(api.name),
-                      "link" -> JsString(
-                        env.getDaikokuUrl(
-                          tenant,
-                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+              Future.sequence(
+                (administrators :+ from)
+                  .distinctBy(_.id)
+                  .map(admin => {
+                    implicit val language: String = admin.defaultLanguage
+                      .getOrElse(tenant.defaultLanguage.getOrElse("en"))
+                    (for {
+                      title <-
+                        translator.translate("mail.acceptation.title", tenant)
+                      body <- translator.translate(
+                        "mail.api.subscription.acceptation.body",
+                        tenant,
+                        Map(
+                          "user" -> JsString(from.name),
+                          "apiName" -> JsString(api.name),
+                          "link" -> JsString(
+                            env.getDaikokuUrl(
+                              tenant,
+                              s"/${ownerTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/apikeys?team=${team.id.value}"
+                            )
+                          ),
+                          "team" -> JsString(team.name),
+                          "producer_team_data" -> ownerTeam.asJson,
+                          "consumer_team_data" -> team.asJson,
+                          "user_data" -> from.asSimpleJson,
+                          "api_data" -> api.asJson,
+                          "usagePlan_data" -> plan.asJson,
+                          "subscription_data" -> subscription.asJson
                         )
-                      ), // todo => better url
-                      "team" -> JsString(team.name),
-                      "producer_team_data" -> ownerTeam.asJson,
-                      "consumer_team_data" -> team.asJson,
-                      "user_data" -> from.asSimpleJson,
-                      "api_data" -> api.asJson,
-                      "usagePlan_data" -> plan.asJson,
-                      "subscription_data" -> subscription.asJson
-                    )
-                  )
-                } yield {
-                  tenant.mailer.send(title, Seq(admin.email), body, tenant)
-                }).flatten
-              }))
+                      )
+                    } yield {
+                      tenant.mailer.send(title, Seq(admin.email), body, tenant)
+                    }).flatten
+                  })
+              )
             )
             keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
               env.dataStore.keyringRepo

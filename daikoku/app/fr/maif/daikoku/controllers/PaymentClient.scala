@@ -35,9 +35,9 @@ object UnpaidInvoice {
   val gracePeriodDays = 30
 }
 
-/** Where a subscription stands with the money, read from Stripe each time it
-  * is shown. `nextCharge` is an estimate: usage keeps adding up until the
-  * period closes.
+/** Where a subscription stands with the money, read from Stripe each time it is
+  * shown. `nextCharge` is an estimate: usage keeps adding up until the period
+  * closes.
   */
 case class BillingStatus(
     cancelAt: Option[DateTime],
@@ -638,7 +638,7 @@ class PaymentClient(
             .toLowerCase,
           "success_url" -> env.getDaikokuUrl(
             tenant,
-            "/informations?message=subscription-payment-received"
+            s"/informations?message=subscription-payment-received&team=${subscriptionDemand.team.value}&demand=${subscriptionDemand.id.value}"
           ),
           "cancel_url" -> env.getDaikokuUrl(
             tenant,
@@ -667,7 +667,7 @@ class PaymentClient(
               .liftF(
                 stripeClient(
                   "/v1/checkout/sessions",
-                  s"checkout-${subscriptionDemand.id.value}-${step.id.value}".some
+                  s"checkout-${subscriptionDemand.id.value}-${step.id.value}-${stepValidator.id.value}".some
                 )
                   .post(finalBody)
               )
@@ -805,7 +805,9 @@ class PaymentClient(
         case res
             if res.status == 400 && (res.json \ "error" \ "message")
               .asOpt[String]
-              .exists(_.startsWith("An event already exists with identifier")) =>
+              .exists(
+                _.startsWith("An event already exists with identifier")
+              ) =>
           Right[AppError, Unit](())
         case res => Left[AppError, Unit](stripeErrorMessage(res))
       }
@@ -907,7 +909,11 @@ class PaymentClient(
             )
           case Some(s) =>
             implicit val stripeSettings: StripeSettings = s
-            (p.priceIds.meterId, p.priceIds.meterEventName, i.customerId) match {
+            (
+              p.priceIds.meterId,
+              p.priceIds.meterEventName,
+              i.customerId
+            ) match {
               case (Some(meterId), Some(eventName), Some(customerId)) =>
                 (for {
                   counted <- aggregatedUsageOnStripe(
@@ -948,7 +954,10 @@ class PaymentClient(
       subscription: ApiSubscription,
       plan: UsagePlan
   ): EitherT[Future, AppError, Boolean] =
-    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+    (
+      plan.paymentSettings,
+      subscription.thirdPartySubscriptionInformations
+    ) match {
       case (
             Some(p: PaymentSettings.Stripe),
             Some(i: StripeSubscriptionInformations)
@@ -1054,7 +1063,10 @@ class PaymentClient(
       subscription: ApiSubscription,
       plan: UsagePlan
   ): EitherT[Future, AppError, Option[UnpaidInvoice]] =
-    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+    (
+      plan.paymentSettings,
+      subscription.thirdPartySubscriptionInformations
+    ) match {
       case (
             Some(p: PaymentSettings.Stripe),
             Some(i: StripeSubscriptionInformations)
@@ -1085,7 +1097,9 @@ class PaymentClient(
                               (invoice \ "created").as[Long] * 1000
                             ),
                             amount = fromStripeAmount(
-                              (invoice \ "amount_due").asOpt[Long].getOrElse(0L),
+                              (invoice \ "amount_due")
+                                .asOpt[Long]
+                                .getOrElse(0L),
                               plan.currency
                             ),
                             currency = plan.currency.getOrElse(defaultCurrency)
@@ -1128,7 +1142,10 @@ class PaymentClient(
       subscription: ApiSubscription,
       plan: UsagePlan
   ): EitherT[Future, AppError, Option[BillingStatus]] =
-    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+    (
+      plan.paymentSettings,
+      subscription.thirdPartySubscriptionInformations
+    ) match {
       case (
             Some(p: PaymentSettings.Stripe),
             Some(i: StripeSubscriptionInformations)
@@ -1161,7 +1178,11 @@ class PaymentClient(
                 .headOption
                 .map(seconds => new DateTime(seconds * 1000))
               val cancelAt =
-                if ((stripeSubscription \ "cancel_at_period_end").asOpt[Boolean].contains(true))
+                if (
+                  (stripeSubscription \ "cancel_at_period_end")
+                    .asOpt[Boolean]
+                    .contains(true)
+                )
                   (stripeSubscription \ "cancel_at")
                     .asOpt[Long]
                     .map(seconds => new DateTime(seconds * 1000))
@@ -1194,7 +1215,10 @@ class PaymentClient(
       plan: UsagePlan,
       cancel: Boolean
   ): EitherT[Future, AppError, DateTime] =
-    (plan.paymentSettings, subscription.thirdPartySubscriptionInformations) match {
+    (
+      plan.paymentSettings,
+      subscription.thirdPartySubscriptionInformations
+    ) match {
       case (
             Some(p: PaymentSettings.Stripe),
             Some(i: StripeSubscriptionInformations)

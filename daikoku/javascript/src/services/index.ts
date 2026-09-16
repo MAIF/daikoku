@@ -2322,6 +2322,10 @@ export const graphql = {
                   name
                 }
               }
+              plan {
+                _id
+                customName
+              }
               api {
                 _id
                 name
