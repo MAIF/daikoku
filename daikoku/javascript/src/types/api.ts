@@ -592,6 +592,27 @@ export interface IConsumption {
   state: 'inProgress' | 'completed';
 }
 
+export interface ISubscriptionBillingState {
+  subscription: string;
+  api: string;
+  apiName: string | null;
+  plan: string;
+  planName: string;
+  enabled: boolean;
+  currency: string;
+  legacy?: boolean;
+  error?: string;
+  cancelAt?: number | null;
+  periodEnd?: number | null;
+  nextCharge?: number | null;
+  unpaid?: { since: number; amount: number; cutAt: number | null } | null;
+  priceChange?: {
+    costPerMonth: number | null;
+    costPerRequest: number | null;
+    effectiveAt: number | null;
+  } | null;
+}
+
 export type Comment = {
   by: IUserSimple;
   createdAt: number;

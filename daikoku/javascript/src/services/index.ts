@@ -32,6 +32,7 @@ import {
   IApiPost,
   IApiPostCursor,
   IConsumption,
+  ISubscriptionBillingState,
   IDocDetail,
   IDocPage,
   IDocumentation,
@@ -743,6 +744,11 @@ export const getTeamBillings = (
   to: number
 ): Promise<Array<IConsumption> | ResponseError> =>
   customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`);
+
+export const getTeamBillingStates = (
+  teamId: string
+): PromiseWithError<Array<ISubscriptionBillingState>> =>
+  customFetch(`/api/teams/${teamId}/billing/subscriptions`);
 
 /*export const getTeamIncome = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`);

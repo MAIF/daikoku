@@ -115,6 +115,7 @@ GET     /api/teams/:teamId/apis/:apiId/consumption              fr.maif.daikoku.
 GET     /api/teams/:teamId/consumptions                         fr.maif.daikoku.controllers.ConsumptionController.consumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/billings                             fr.maif.daikoku.controllers.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/apis/:apiId/plan/:planId/invoices    fr.maif.daikoku.controllers.ConsumptionController.invoices(teamId, apiId, planId)
+GET     /api/teams/:teamId/billing/subscriptions                fr.maif.daikoku.controllers.ConsumptionController.billingSubscriptions(teamId)
 GET     /api/teams/:teamId/income                               fr.maif.daikoku.controllers.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/subscription/:subscriptionId/quotas  fr.maif.daikoku.controllers.ConsumptionController.getApiKeyQuotasWithSubscriptionId(teamId, subscriptionId)
 

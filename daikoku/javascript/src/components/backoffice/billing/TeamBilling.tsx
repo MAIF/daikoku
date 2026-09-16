@@ -17,6 +17,7 @@ import {
   stat
 } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
+import { SubscriptionBillingStates } from './SubscriptionBillingStates';
 import { CircleX, RefreshCw } from "lucide-react";
 import { FeedbackButton } from '../../utils/FeedbackButton';
 
@@ -122,7 +123,10 @@ export const TeamBilling = () => {
   }
 
   const BillingCartridge = (props: { api: IApi, planId: string, total: number, currentTeam: ITeamSimple }) => {
-    const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId) })
+    const planQuery = useQuery({
+      queryKey: ['plan', props.api._id, props.planId],
+      queryFn: () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId)
+    })
 
     if (planQuery.isLoading) {
       return <Spinner />
@@ -221,6 +225,7 @@ export const TeamBilling = () => {
             <h1>
               <Translation i18nkey="Billing">Billing</Translation>
             </h1>
+            <SubscriptionBillingStates team={currentTeam} />
             <div className="row">
               <div className="col apis">
                 <div className="row month__and__total">

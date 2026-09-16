@@ -131,7 +131,7 @@ type PlanInformationsProps = {
 
 const PlanInformations = (props: PlanInformationsProps) => {
   const planRequest = useQuery({
-    queryKey: ['plan'],
+    queryKey: ['plan', props.api._id, props.version, props.planId],
     queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId)
   })
 

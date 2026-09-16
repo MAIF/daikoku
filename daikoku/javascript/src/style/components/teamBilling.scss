@@ -35,6 +35,64 @@
   }
 }
 
+.subscription-billing {
+  margin-bottom: 20px;
+
+  .subscription-billing__title {
+    font-size: 20px;
+    color: variables.$level3_text-color;
+  }
+
+  .subscription-billing__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+
+  .subscription-billing__card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: variables.$level3_bg-color;
+    color: variables.$level3_text-color;
+    border: 1px solid variables.$neutral-color-200;
+    border-radius: 4px;
+  }
+
+  .subscription-billing__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .subscription-billing__api {
+    font-weight: bold;
+  }
+
+  .subscription-billing__plan {
+    font-size: 14px;
+  }
+
+  .subscription-billing__line {
+    margin: 0;
+    font-size: 14px;
+
+    &.--warning {
+      color: variables.$warning-color;
+    }
+
+    &.--info {
+      color: variables.$info-color;
+    }
+  }
+
+  .subscription-billing__invoices {
+    align-self: flex-start;
+  }
+}
+
 .api__billing__card__container {
   // background-color: #ececec;
   margin-left: 6px;

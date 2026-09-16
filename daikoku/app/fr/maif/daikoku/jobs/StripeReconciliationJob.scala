@@ -1,6 +1,7 @@
 package fr.maif.daikoku.jobs
 
 import fr.maif.daikoku.controllers.PaymentClient
+import fr.maif.daikoku.controllers.UnpaidInvoice.gracePeriodDays
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.{
   ApiKeyConsumption,
@@ -50,8 +51,6 @@ class StripeReconciliationJob(
   implicit val mat: Materializer = env.defaultMaterializer
   implicit val tr: Translator = translator
   implicit val m: MessagesApi = messagesApi
-
-  private val gracePeriodDays = 30
 
   def start(): Unit = {
     logger.info(

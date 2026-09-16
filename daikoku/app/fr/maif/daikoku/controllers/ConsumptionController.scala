@@ -8,7 +8,15 @@ import fr.maif.daikoku.controllers.authorizations.async.{
   TeamAdminOnly,
   TeamApiKeyAction
 }
-import fr.maif.daikoku.domain.OtoroshiSettings
+import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
+import fr.maif.daikoku.domain.{
+  Api,
+  ApiSubscription,
+  Currency,
+  OtoroshiSettings,
+  Tenant,
+  UsagePlan
+}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.OtoroshiClient
 import fr.maif.daikoku.jobs.ApiKeyStatsJob
@@ -537,6 +545,122 @@ class ConsumptionController(
           .flatten
       }
     }
+
+  def billingSubscriptions(teamId: String): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to the billing state of the subscriptions of @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        for {
+          subscriptions <- env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(Json.obj("team" -> team.id.value))
+            .map(_.filter(_.thirdPartySubscriptionInformations.isDefined))
+          plans <- env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(subscriptions.map(_.plan.asJson).distinct)
+                )
+              )
+            )
+          apis <- env.dataStore.apiRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(subscriptions.map(_.api.asJson).distinct)
+                )
+              )
+            )
+          states <- Future.sequence(
+            subscriptions.flatMap(subscription =>
+              plans
+                .find(_.id == subscription.plan)
+                .map(plan =>
+                  billingStateOf(
+                    ctx.tenant,
+                    subscription,
+                    plan,
+                    apis.find(_.id == subscription.api)
+                  )
+                )
+            )
+          )
+        } yield Ok(JsArray(states))
+      }
+    }
+
+  private def billingStateOf(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan,
+      api: Option[Api]
+  ): Future[JsObject] = {
+    val identity = Json.obj(
+      "subscription" -> subscription.id.asJson,
+      "api" -> subscription.api.asJson,
+      "apiName" -> api.map(a => JsString(a.name)).getOrElse(JsNull),
+      "plan" -> plan.id.asJson,
+      "planName" -> plan.customName,
+      "enabled" -> subscription.enabled,
+      "currency" -> plan.currency.getOrElse(Currency("EUR")).code
+    )
+
+    subscription.thirdPartySubscriptionInformations match {
+      case Some(StripeSubscriptionInformations(_, None)) =>
+        FastFuture.successful(identity ++ Json.obj("legacy" -> true))
+      case _ =>
+        paymentClient.billingStatusOf(tenant, subscription, plan).value.map {
+          case Left(error) =>
+            identity ++ Json.obj("error" -> error.getErrorMessage())
+          case Right(None) =>
+            identity ++ Json.obj("legacy" -> true)
+          case Right(Some(status)) =>
+            identity ++ Json.obj(
+              "legacy" -> false,
+              "cancelAt" -> status.cancelAt
+                .map(date => JsNumber(date.getMillis))
+                .getOrElse(JsNull),
+              "periodEnd" -> status.periodEnd
+                .map(date => JsNumber(date.getMillis))
+                .getOrElse(JsNull),
+              "nextCharge" -> status.nextCharge
+                .map(JsNumber(_))
+                .getOrElse(JsNull),
+              "unpaid" -> status.unpaid
+                .map(unpaid =>
+                  Json.obj(
+                    "since" -> unpaid.since.getMillis,
+                    "amount" -> unpaid.amount,
+                    "cutAt" -> status.cutAt
+                      .map(date => JsNumber(date.getMillis))
+                      .getOrElse(JsNull)
+                  )
+                )
+                .getOrElse(JsNull),
+              "priceChange" -> Option
+                .when(status.pricesOutdated)(
+                  Json.obj(
+                    "costPerMonth" -> plan.costPerMonth
+                      .map(JsNumber(_))
+                      .getOrElse(JsNull),
+                    "costPerRequest" -> plan.costPerRequest
+                      .map(JsNumber(_))
+                      .getOrElse(JsNull),
+                    "effectiveAt" -> status.periodEnd
+                      .map(date => JsNumber(date.getMillis))
+                      .getOrElse(JsNull)
+                  )
+                )
+                .getOrElse(JsNull)
+            )
+        }
+    }
+  }
 
   def income(
       teamId: String,
