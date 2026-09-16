@@ -1221,7 +1221,7 @@
   "notifications.page.filters.all.type.label": "Tous les types",
   "notifications.page.filters.type.ApiAccess.label": "Accès à une API",
   "notifications.page.filters.type.NewSubscription.label": "Nouvelle souscription",
-  "notifications.page.filters.type.ApiSubscription.label": "Nouvelle demande de souscription",
+  "notifications.page.filters.type.ApiSubscription.label": "Demande de souscription",
   "notifications.page.filters.type.ApiSubscriptionReject.label": "Souscription refusée",
   "notifications.page.filters.type.ApiSubscriptionAccept.label": "Souscription acceptée",
   "notifications.page.filters.type.OtoroshiSyncSubscriptionError.label": "Erreur de synchro (souscription)",
