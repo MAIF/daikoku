@@ -7,7 +7,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -49,7 +49,8 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPricing
+  renderPricing,
+  Spinner
 } from '../../utils';
 import { CmsViewerByPath } from "../CmsViewer";
 
@@ -1052,6 +1053,30 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
   }
 
+  const stripeCallRunning = useRef(false);
+
+  /** Pricing a plan makes Daikoku create products, meters and prices in Stripe:
+    * a few seconds during which the form must not be sent again. */
+  const whileStripeWorks = <T,>(message: string, call: () => Promise<T>): Promise<T | undefined> => {
+    if (stripeCallRunning.current) {
+      return Promise.resolve(undefined);
+    }
+    stripeCallRunning.current = true;
+    openCustomModal({
+      content: (
+        <div className="d-flex align-items-center gap-3">
+          <Spinner width="30" height="30" />
+          <span>{message}</span>
+        </div>
+      )
+    });
+
+    return call().finally(() => {
+      stripeCallRunning.current = false;
+      close();
+    });
+  };
+
   const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
     // Convertire IUsagePlanGQL en IUsagePlan
     const planToUse = plan
@@ -1371,13 +1396,45 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
 
   const actions = (plan: IUsagePlanGQL) => {
-    const setupPayment = (plan: IUsagePlanGQL) => {
-      return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(plan))
+    const setupPayment = (updated: IUsagePlanGQL) => {
+      return whileStripeWorks(
+        translate('plan.payment.setup.pending'),
+        () => Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(updated))
+      )
         .then((response) => {
-          if (isError(response)) {
+          if (!response) {
+            return;
+          } else if (isError(response)) {
             toast.error(translate(response.error));
           } else {
             toast.success(translate('plan.payment.setup.successful'));
+            closeRightPanel();
+            queryClient.invalidateQueries({ queryKey: ['plans'] })
+          }
+        });
+    }
+
+    /** A plan already backed by Stripe keeps its product and its meter: only the
+      * amounts move, through the plan update. Going through _payment again would
+      * be refused, it only sets payment up. */
+    const savePricing = (updated: IUsagePlanGQL) => {
+      const stillPriced = updated.costPerMonth !== undefined && updated.costPerMonth !== null;
+
+      if (!plan.paymentSettings || !stillPriced) {
+        return setupPayment(updated);
+      }
+
+      return whileStripeWorks(
+        translate('plan.payment.update.pending'),
+        () => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(updated))
+      )
+        .then((response) => {
+          if (!response) {
+            return;
+          } else if (isError(response)) {
+            toast.error(translate(response.error));
+          } else {
+            toast.success(translate('update.plan.successful.toast.label'));
             closeRightPanel();
             queryClient.invalidateQueries({ queryKey: ['plans'] })
           }
@@ -1647,7 +1704,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             content: <BillingForm
               ownerTeam={props.ownerTeam}
               plan={plan}
-              savePlan={setupPayment} />
+              savePlan={savePricing} />
           })
       },
       editOtoroshiTarget: () => openRightPanel({

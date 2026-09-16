@@ -239,22 +239,24 @@ class UsagePlanService(
       oldPlan: UsagePlan,
       newPlan: UsagePlan
   ): EitherT[Future, AppError, UsagePlan] = {
+    //payment settings carry the Stripe ids, they are never edited by hand: the
+    //stored ones win over whatever the client sends back
+    val candidate = oldPlan.paymentSettings.fold(newPlan)(settings =>
+      newPlan.copy(paymentSettings = settings.some)
+    )
+
     oldPlan match {
       //it's forbidden to update otoroshi target, must use migration API instead
       case _
           if oldPlan.otoroshiTarget.isDefined && oldPlan.otoroshiTarget
-            .map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(
+            .map(_.otoroshiSettings) != candidate.otoroshiTarget.map(
             _.otoroshiSettings
           ) =>
-        EitherT.leftT(AppError.ForbiddenAction)
-      //payment settings carry the Stripe ids, they are never edited by hand
-      case _
-          if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
         EitherT.leftT(AppError.ForbiddenAction)
       //amounts may change, the currency may not: Stripe freezes it on a price,
       //so changing it would mean cancelling every subscriber and having them subscribe anew
       case _
-          if oldPlan.paymentSettings.isDefined && oldPlan.currency != newPlan.currency =>
+          if oldPlan.paymentSettings.isDefined && oldPlan.currency != candidate.currency =>
         EitherT.leftT(
           AppError.PaymentError(
             "the currency of a priced plan cannot be changed"
@@ -262,17 +264,17 @@ class UsagePlanService(
         )
       case _
           if !tenant.aggregationApiKeysSecurity.exists(identity) &&
-            newPlan.aggregationApiKeysSecurity.exists(identity) =>
+            candidate.aggregationApiKeysSecurity.exists(identity) =>
         EitherT.leftT(AppError.SubscriptionAggregationDisabled)
       case _ if oldPlan.visibility == UsagePlanVisibility.Admin =>
         EitherT.pure(
           oldPlan.copy(
-            otoroshiTarget = newPlan.otoroshiTarget,
-            allowMultipleKeys = newPlan.allowMultipleKeys,
-            autoRotation = newPlan.autoRotation
+            otoroshiTarget = candidate.otoroshiTarget,
+            allowMultipleKeys = candidate.allowMultipleKeys,
+            autoRotation = candidate.autoRotation
           )
         )
-      case _ => EitherT.pure(newPlan)
+      case _ => EitherT.pure(candidate)
     }
   }
 

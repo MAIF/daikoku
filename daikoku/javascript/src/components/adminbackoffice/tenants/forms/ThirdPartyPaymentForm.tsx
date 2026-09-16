@@ -166,16 +166,25 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
 
   const editSettings = (paymentType: ThirdPartyPaymentType, paymentSetttings?: IThirdPartyPaymentSettings) => {
     const schema = getSettingsSchema(paymentType);
+    // known before saving: Stripe asks for the endpoint URL before it hands out the signing secret
+    const settingsId = paymentSetttings?._id ?? nanoid(32);
+    const webhookUrl = `${window.location.origin}/api/payment/${settingsId}/_webhook`;
 
     openFormModal<IThirdPartyPaymentSettings>({
       title: translate('Creation'),
       schema: schema,
       value: paymentSetttings,
+      description: (
+        <div className="mb-3">
+          <label className="form-label">{translate('third-party.payment.webhook.url')}</label>
+          <input className="form-control" readOnly value={webhookUrl} onFocus={(e) => e.target.select()} />
+        </div>
+      ),
       onSubmit: (data) => {
         const thirdPartyPaymentSettings = !paymentSetttings ?
           [
             ...props.tenant.thirdPartyPaymentSettings,
-            { ...data, type: paymentType, _id: nanoid(32) }
+            { ...data, type: paymentType, _id: settingsId }
           ] :
           [
             ...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== data._id),
