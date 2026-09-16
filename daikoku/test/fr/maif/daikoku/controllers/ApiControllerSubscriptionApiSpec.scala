@@ -310,6 +310,103 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
 
       respCreationUser.status mustBe 401
     }
+
+    "trigger a 'NewSubscription' notification, regardless of the usage plan process" in {
+      val process = ValidationStep.TeamAdmin(
+        id = IdGenerator.token,
+        team = defaultApi.api.team,
+        title = "Admin"
+      )
+      val planWithProcess = UsagePlan(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        customName = "planWithProcess",
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            OtoroshiSettingsId("default"),
+            Some(
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
+            )
+          )
+        ),
+        subscriptionProcess = SubscriptionProcess(
+          Seq(
+            ValidationStep.Form(id = IdGenerator.token, title = "form"),
+            process
+          )
+        ),
+      )
+      val planWithoutProcess = planWithProcess.copy(
+        id = UsagePlanId(IdGenerator.token),
+        customName = "planWithoutProcess",
+        subscriptionProcess = SubscriptionProcess()
+      )
+
+      val api = defaultApi.api.copy(
+        possibleUsagePlans = Seq(planWithoutProcess.id, planWithProcess.id),
+        defaultUsagePlan = None
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, daikokuAdmin, tenantAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(planWithoutProcess, planWithProcess, adminApiPlan),
+        apis = Seq(api, adminApi)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${planWithoutProcess.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+      val notifs1 = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      notifs1.length mustBe 1
+      val notif1 = notifs1.head
+      notif1.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
+      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteById(notif1.id), 5.seconds)
+
+      val resp2 = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${planWithProcess.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+      val notifs2 = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      notifs2.length mustBe 1
+      val notifToAccept = notifs2.head
+      val respAcceptation = httpJsonCallBlocking(
+        path =
+          s"/api/notifications/${notifToAccept.id.value}/accept",
+        method = "PUT",
+        body = Json.obj().some
+      )(using tenant, session)
+      respAcceptation.status mustBe 200
+      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteById(notifToAccept.id), 5.seconds)
+      val notifs2bis = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+
+      notifs2bis.head.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
+      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteAll(), 5.seconds)
+
+      val adminSession = loginWithBlocking(daikokuAdmin, tenant)
+      val respAdminSub = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${adminApi.id.value}/plan/${adminApiPlan.id.value}/team/${defaultAdminTeam.id.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(using tenant, adminSession)
+      logger.info(Json.stringify(respAdminSub.json))
+      respAdminSub.status mustBe 200
+      val notifsAdmin = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      notifsAdmin.length mustBe 1
+      val notifadmin = notifsAdmin.head
+      notifadmin.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
+    }
   }
 
   "an api" can {

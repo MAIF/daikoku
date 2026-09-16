@@ -466,6 +466,15 @@ class ApiService(
                 tenant.adminSubscriptions :+ apiSubscription.id
               )
             )
+            _ <- env.dataStore.notificationRepo.forTenant(tenant).save(
+              Notification(
+                id = NotificationId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                team = api.team.some,
+                sender = user.asNotificationSender,
+                action = NotificationAction.NewSubscription(api = api.id, plan = plan.id, team = team.id),
+                notificationType = NotificationType.AcceptOnly
+              ))
           } yield apiSubscription
         }
       )

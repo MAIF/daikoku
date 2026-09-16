@@ -3058,8 +3058,7 @@ object json {
 
   val NotificationActionFormat: Format[NotificationAction] =
     new Format[NotificationAction] {
-      override def reads(json: JsValue) = {
-        AppLogger.info(Json.stringify(json))
+      override def reads(json: JsValue) =
         (json \ "type").as[String] match {
           case "ApiAccess" => ApiAccessFormat.reads(json)
           case "AccountCreationAttempt" =>
@@ -3105,7 +3104,7 @@ object json {
           case "NewSubscription"    => NewSubscriptionFormat.reads(json)
           case str                  => JsError(s"Bad notification value: $str")
         }
-      }
+
 
       override def writes(o: NotificationAction) =
         o match {

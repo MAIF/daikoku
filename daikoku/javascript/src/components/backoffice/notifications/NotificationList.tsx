@@ -532,7 +532,7 @@ export const NotificationList = () => {
       case 'TransferApiOwnership':
         return translate({ key: 'notif.api.transfer', replacements: [notification.action.api.name] });
       case 'NewSubscription':
-        return translate({ key: 'notif.new.subscription', replacements: [notification.action.api.name] });
+        return translate({ key: 'notif.NewSubscription', replacements: [notification.action.team.name] });
       case 'ApiSubscription': {
         const desc = translate({ key: `notif.api.subscription.${tenant.display}`, replacements: [notification.action.plan.customName] });
         const _api = notification.action.api;

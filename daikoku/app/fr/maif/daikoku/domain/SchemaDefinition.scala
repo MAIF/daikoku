@@ -2677,11 +2677,7 @@ object SchemaDefinition {
           Field(
             "team",
             OptionType(TeamObjectType),
-            resolve = ctx => {
-              println("??????")
-              println(ctx.value)
-              teamsFetcher.defer(ctx.value.team)
-            }
+            resolve = ctx => teamsFetcher.defer(ctx.value.team)
           ),
           Field(
             "api",
@@ -3350,7 +3346,7 @@ object SchemaDefinition {
         Field(
           "action",
           NotificationActionType,
-          resolve = _.value.action,
+          resolve = ctx => ctx.value.action,
           possibleTypes = List(
             ApiAccessType,
             TeamInvitationType,
