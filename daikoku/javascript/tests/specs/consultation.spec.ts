@@ -160,7 +160,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
 
   await page.goto(HOME)
 
@@ -174,7 +174,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
+  await page.getByRole('navigation').getByText('Trousseaux').click();
   await page
       .getByRole('listitem', { name: 'api papier - dev' })
       .getByRole('button', { name: 'Contenu du trousseau' })
@@ -200,7 +200,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
+  await page.getByRole('navigation').getByText('Trousseaux').click();
 
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
@@ -324,7 +324,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
   await page.goto(HOME)
 
 
@@ -339,7 +339,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
   await logout(page)
 
   //user admin
@@ -353,7 +353,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
 })
 
 test('Voir ses notifications', async ({ page }) => {
@@ -545,9 +545,9 @@ test("subscription page filtering by clientId should work",  async ({ page }) =>
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
   await page.getByText('Souscriptions').click();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Filtrer' }).click();
   await page.getByRole('button', { name: 'Add' }).nth(1).click();
@@ -555,12 +555,12 @@ test("subscription page filtering by clientId should work",  async ({ page }) =>
   await page.getByLabel('Filtrer les données').getByRole('button', { name: 'Filtrer' }).click();
 
   await expect(page.getByText('daikoku-api-key-api-commande-dev-logistique')).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).not.toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).not.toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).not.toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).not.toBeVisible();
 
   await page.getByRole('button', { name: 'supprimer les filtres' }).click();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
 
 })
