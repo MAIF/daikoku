@@ -1,38 +1,36 @@
+# ─── OS ───────────────────────────────────────────────────────
 .DS_Store
-coverage-measurements
-.metals
-.vscode
-.bsp
-.jvmopts
-.sbtopts
-.bloop
-*.swp
-node_modules
+
+# ─── Editors & IDE ────────────────────────────────────────────
 .idea
-target
-.java-version
-*.patch
+.vscode
+*.swp
 .settings
 .project
 *.iml
-es-data
-s3-data
-pg-data
-mongo-data
-/demo/config/mongo-data/
-/demo/config/redis-data/
-daikoku/javascript/cypress/videos
-daikoku/javascript/cypress/results
-daikoku/javascript/cypress/screenshots
-daikoku/javascript/index.json
+
+# ─── JVM / Scala / SBT ────────────────────────────────────────
+.jvmopts
+.sbtopts
+.java-version
+.metals
+.bsp
+.bloop
+target
+project/
+out/
+
+# ─── Node / JS ────────────────────────────────────────────────
+node_modules
 .yalc
 yalc.lock
-daikoku/javascript/yarn-error.log
-manual/.docusaurus
-cli/cms
-cli/cms2
-cli/testcms
-cli/coucou
+
+# ─── Build output & coverage ──────────────────────────────────
+coverage-measurements
+stats.html
+*.patch
+
+# ─── Daikoku – frontend / public (generated) ─────────────────
 daikoku/public/assets/
 daikoku/public/index.html
 daikoku/public/index*
@@ -43,8 +41,30 @@ daikoku/public/backofffice-*
 daikoku/public/highlight-*
 daikoku/public/swagger-*
 daikoku/public/rolldown-runtime-*
-stats.html
-project/
-.vibe
+daikoku/javascript/index.json
+daikoku/javascript/yarn-error.log
+
+# ─── Daikoku – Cypress (test artifacts) ──────────────────────
+daikoku/javascript/cypress/videos
+daikoku/javascript/cypress/results
+daikoku/javascript/cypress/screenshots
+
+# ─── Docs ─────────────────────────────────────────────────────
+manual/.docusaurus
+
+# ─── Local data (never commit) ────────────────────────────────
+es-data
+s3-data
+pg-data
+mongo-data
+/demo/config/mongo-data/
+/demo/config/redis-data/
 dev/dumps/*
 !dev/dumps/.gitkeep
+
+# ─── Misc / local CLI ─────────────────────────────────────────
+.vibe
+cli/cms
+cli/cms2
+cli/testcms
+cli/coucou
