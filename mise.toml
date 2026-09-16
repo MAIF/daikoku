@@ -88,8 +88,8 @@ Start daikoku instance.
 --mode parameter indicate auth provider to use, --test flag indicate to start playwright test UI (ldap/oidc mode only)
 '''
 usage = '''
-flag "--mode <mode>" help="Initialization mode" default="local" {
-  choices "ldap" "oidc" "local" "empty"
+flag "--mode <mode>" help="Initialization mode, stripe needs daikoku/.env.stripe and the Stripe CLI" default="local" {
+  choices "ldap" "oidc" "local" "empty" "stripe"
 }
 flag "--test" help="Display playwright test ui, only for oidc and local modes"
 '''

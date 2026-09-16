@@ -7,6 +7,7 @@ import fr.maif.daikoku.audit.AuditActorSupervizer
 import fr.maif.daikoku.domain.SchedulingMode.Interval
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.Tenant.getCustomizationCmsPage
+import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.{
   DatastoreId,
   SchedulingMode,
@@ -1049,6 +1050,7 @@ class DaikokuEnv(
       .toMat(Sink.ignore)(Keep.right)
       .run()(using materializer)
       .map(_ => {
+        logStripeListenCommands()
         dataStore.reportsInfoRepo.count().map {
           case 0 =>
             dataStore.reportsInfoRepo.save(
@@ -1058,6 +1060,27 @@ class DaikokuEnv(
         }
       })
   }
+
+  /** Stripe cannot reach a Daikoku running locally, so in dev the command that
+    * forwards its events is printed for every Stripe settings.
+    */
+  private def logStripeListenCommands()(implicit
+      ec: ExecutionContext
+  ): Future[Unit] =
+    if (!config.isDev) FastFuture.successful(())
+    else
+      dataStore.tenantRepo
+        .findAllNotDeleted()
+        .map(tenants =>
+          for {
+            tenant <- tenants
+            settings <- tenant.thirdPartyPaymentSettings.collect {
+              case s: StripeSettings => s
+            }
+          } AppLogger.warn(
+            s"[stripe] ${tenant.name} / ${settings.name}: stripe listen --forward-to ${getDaikokuUrl(tenant, s"/api/payment/${settings.id.value}/_webhook")}"
+          )
+        )
 
   override def onShutdown(): Unit = {
     AppLogger.debug("onShutdown called")

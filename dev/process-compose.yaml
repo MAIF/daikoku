@@ -19,7 +19,7 @@ processes:
     command: |
       if [[ $MODE = "ldap" ]] ;
       then docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up ;
-      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "stripe" ]] ;
       then docker-compose -f docker-compose-local.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml up ;
       else docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up ;
       fi
@@ -38,7 +38,7 @@ processes:
       command: |
         if [[ $MODE = "ldap" ]] ;
         then docker-compose -f dev/docker-compose-ldap.yml down && docker-compose -f dev/docker-compose-ldap.yml rm -f ;
-        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] ;
+        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "stripe" ]] ;
         then docker-compose -f dev/docker-compose-local.yml down && docker-compose -f dev/docker-compose-local.yml rm -f ;
         else docker-compose -f dev/docker-compose-oidc.yml down && docker-compose -f dev/docker-compose-oidc.yml rm -f ;
         fi
@@ -54,6 +54,8 @@ processes:
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_ldap.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "local" ]] ;
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_local.ndjson sbt $sbt_args $sbt_params ;
+      elif [[ $MODE = "stripe" ]] ;
+      then ../scripts/dev-stripe-seed.sh && DAIKOKU_STRIPE_RECONCILIATION_CRON=true DAIKOKU_INIT_DATA_FROM=target/daikoku_state_stripe.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "empty" ]] ;
       then DAIKOKU_INIT_ADMIN_PASSWORD=password sbt ~run $sbt_params
       else DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
@@ -90,6 +92,16 @@ processes:
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 1000000
+  Stripe-listen:
+    working_dir: "daikoku"
+    command: |
+      if [[ $MODE != "stripe" ]] ;
+      then echo "only used by --mode stripe" ;
+      else . ./.env.stripe && stripe listen --api-key "$STRIPE_TEST_SECRET_KEY" --forward-to localhost:9000/api/payment/stripe-dev/_webhook ;
+      fi
+    depends_on:
+      Backend:
+        condition: process_healthy
   Database-shell:
     command: |
       mise run pg:cli -d ${DAIKOKU_POSTGRES_DATABASE}
