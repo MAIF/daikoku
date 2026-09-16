@@ -270,6 +270,8 @@
   "Created at": "Created at",
   "Valid until": "Valid until",
   "keyring.card": "Keyring %s",
+  "keyring.card.environment": "Multiple environments",
+  "keyring.card.plan": "Multiples plans",
   "keyring.details": "Keyring contents",
   "keyring.actions": "Keyring actions",
   "keyring.successfully.enabled": "Keyring enabled",

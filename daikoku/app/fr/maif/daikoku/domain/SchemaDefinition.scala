@@ -1619,7 +1619,7 @@ object SchemaDefinition {
     def requireApiKeyAccessCustom(
         ctx: Context[
           (DataStore, DaikokuActionContext[JsValue]),
-          (Keyring, Long, Boolean)
+          (Keyring, Long, Boolean, Seq[String])
         ]
     ): Future[Unit] = {
       val actionCtx = ctx.ctx._2
@@ -3861,18 +3861,18 @@ object SchemaDefinition {
 
     lazy val KeyringsWithSubCountAndRotationType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      (Keyring, Long, Boolean)
+      (Keyring, Long, Boolean, Seq[String])
     ] =
       ObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
-        (Keyring, Long, Boolean)
+        (Keyring, Long, Boolean, Seq[String])
       ](
         "KeyringCountRotation",
         "Keyring with subscriptionsCount and canUpdateRotation",
         () =>
           fields[
             (DataStore, DaikokuActionContext[JsValue]),
-            (Keyring, Long, Boolean)
+            (Keyring, Long, Boolean, Seq[String])
           ](
             Field("_id", StringType, resolve = _.value._1.id.value),
             Field(
@@ -3934,7 +3934,8 @@ object SchemaDefinition {
                   .findNotDeleted(Json.obj("keyring" -> ctx.value._1.id.asJson))
             ),
             Field("subscriptionsCount", LongType, resolve = _.value._2),
-            Field("canUpdateRotation", BooleanType, resolve = _.value._3)
+            Field("canUpdateRotation", BooleanType, resolve = _.value._3),
+            Field("environments", ListType(StringType), resolve = _.value._4)
           )
       )
 

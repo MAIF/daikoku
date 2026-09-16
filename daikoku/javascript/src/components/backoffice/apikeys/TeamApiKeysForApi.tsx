@@ -168,9 +168,10 @@ export interface IKeyringForApiGql {
   rotation?: IRotation;
   subscriptions: Array<IKeyringSubscriptionGql>;
   autoRotation: boolean;
-  team: string;
+  team: ITeamSimple;
   subscriptionsCount: number;
   canUpdateRotation: boolean;
+  environments: Array<string>;
 }
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
@@ -546,7 +547,9 @@ export const KeyringCard = ({
                             }: KeyringCardProps) => {
   const {translate} = useContext(I18nContext);
   const {openFormModal} = useContext(ModalContext);
-  const {customGraphQLClient} = useContext(GlobalContext);
+  const {customGraphQLClient, tenant} = useContext(GlobalContext);
+  const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
+
 
   //TODO isPending Ask to UX
   const [isPending, setIsPending] = useState(false);
@@ -832,11 +835,11 @@ export const KeyringCard = ({
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
-          teamName
+          {keyring.team.name}
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
-          Nom de l'environnement
+          { keyring.environments.length > 1 ? translate(`keyring.card.${displayType}`) : keyring.environments}
         </small>
       </div>
       <div className="keyring-card-ico-folding">
