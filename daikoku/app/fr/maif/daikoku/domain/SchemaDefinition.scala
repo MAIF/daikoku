@@ -32,7 +32,9 @@ import sangria.execution.deferred.{
   DeferredResolver,
   Fetcher,
   FetcherConfig,
-  HasId
+  HasId,
+  Relation,
+  RelationIds
 }
 import sangria.macros.derive.*
 import sangria.schema.{Context, *}
@@ -255,6 +257,34 @@ object SchemaDefinition {
           pages: Seq[CmsPageId]
       ) => ctx._1.cmsRepo.forTenant(ctx._2.tenant).findByIds(pages)
     )(using HasId[CmsPage, CmsPageId](_.id))
+    val subsByKeyring =
+      Relation[ApiSubscription, KeyringId]("byKeyring", sub => Seq(sub.keyring))
+
+    lazy val apiKeyringSubscriptionsFetcher = Fetcher.rel(
+      config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
+      fetch = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          subscriptions: Seq[ApiSubscriptionId]
+      ) =>
+        ctx._1.apiSubscriptionRepo
+          .forTenant(ctx._2.tenant)
+          .findByIds(subscriptions),
+      fetchRel = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          rels: RelationIds[ApiSubscription]
+      ) =>
+        ctx._1.apiSubscriptionRepo
+          .forTenant(ctx._2.tenant)
+          .findNotDeleted(
+            Json.obj(
+              "keyring" -> Json.obj(
+                "$in" -> JsArray(
+                  rels(subsByKeyring).map(id => JsString(id.value))
+                )
+              )
+            )
+          )
+    )(using HasId[ApiSubscription, ApiSubscriptionId](_.id))
 
     lazy val TenantType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant] =
@@ -3868,7 +3898,7 @@ object SchemaDefinition {
         (Keyring, Long, Boolean, Seq[String])
       ](
         "KeyringCountRotation",
-        "Keyring with subscriptionsCount and canUpdateRotation",
+        "Keyring with subscriptionsCount and isRotationLocked",
         () =>
           fields[
             (DataStore, DaikokuActionContext[JsValue]),
@@ -3929,12 +3959,11 @@ object SchemaDefinition {
               "subscriptions",
               ListType(ApiSubscriptionType),
               resolve = ctx =>
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.ctx._2.tenant)
-                  .findNotDeleted(Json.obj("keyring" -> ctx.value._1.id.asJson))
+                apiKeyringSubscriptionsFetcher
+                  .deferRelSeq(subsByKeyring, ctx.value._1.id)
             ),
             Field("subscriptionsCount", LongType, resolve = _.value._2),
-            Field("canUpdateRotation", BooleanType, resolve = _.value._3),
+            Field("isRotationLocked", BooleanType, resolve = _.value._3),
             Field("environments", ListType(StringType), resolve = _.value._4)
           )
       )

@@ -2007,7 +2007,11 @@ object evolution_1900 extends EvolutionScript {
                 |         'team', s.content->>'team',
                 |         '_deleted', false,
                 |         'apiKey', s.content->'apiKey',
-                |         'otoroshiSettings', jsonb_build_object('type', 'Otoroshi', 'id', p.content->'otoroshiTarget'->>'otoroshiSettings'),
+                |         'otoroshiSettings', CASE
+                |           WHEN p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL
+                |             THEN jsonb_build_object('type', 'Otoroshi', 'id', p.content->'otoroshiTarget'->>'otoroshiSettings')
+                |             ELSE jsonb_build_object('type', 'Internal')
+                |           END,
                 |         'createdAt', s.content->'createdAt',
                 |         'rotation', s.content->'rotation',
                 |         'integrationToken', s.content->>'integrationToken',
@@ -2022,50 +2026,6 @@ object evolution_1900 extends EvolutionScript {
                 |  AND s.content->>'parent' IS NULL
                 |  AND s.content->>'keyring' IS NULL
                 |  AND p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL;
-                |""".stripMargin
-            )
-          // 1b. every subscription must carry a keyring ; root subscriptions that
-          // did not get an otoroshi-bound keyring above (keyless plans, e.g. the
-          // admin api) get one bound to KeyringOtoroshiBinding.Internal
-          _ <- dataStore.keyringRepo
-            .forAllTenant()
-            .execute(
-              query = """
-                |INSERT INTO keyrings (_id, _deleted, content)
-                |SELECT s._id,
-                |       false,
-                |       jsonb_build_object(
-                |         '_id', s._id,
-                |         '_tenant', s.content->>'_tenant',
-                |         'team', s.content->>'team',
-                |         '_deleted', false,
-                |         'apiKey', s.content->'apiKey',
-                |         'otoroshiSettings', jsonb_build_object('type', 'Internal'),
-                |         'createdAt', s.content->'createdAt',
-                |         'rotation', s.content->'rotation',
-                |         'integrationToken', s.content->>'integrationToken',
-                |         'bearerToken', s.content->'bearerToken',
-                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
-                |         'customName', coalesce(
-                |             CASE
-                |               WHEN s.content->>'parent' IS NOT NULL THEN
-                |                 coalesce((pa.content->>'name') || ' - ' || (pp.content->>'customName'), ps.content->'apiKey'->>'clientName')
-                |               ELSE
-                |                 (a.content->>'name') || ' - ' || (p.content->>'customName')
-                |             END,
-                |             s.content->'apiKey'->>'clientName'
-                |         )
-                |       )
-                |FROM api_subscriptions s
-                |LEFT JOIN apis a           ON a.content->>'_id' = s.content->>'api'
-                |LEFT JOIN usage_plans p    ON p.content->>'_id' = s.content->>'plan'
-                |LEFT JOIN api_subscriptions ps ON ps.content->>'_id' = s.content->>'parent' AND ps._deleted = false
-                |LEFT JOIN apis pa          ON pa.content->>'_id' = ps.content->>'api'
-                |LEFT JOIN usage_plans pp   ON pp.content->>'_id' = ps.content->>'plan'
-                |WHERE s._deleted = false
-                |  AND s.content->>'keyring' IS NULL
-                |  AND s.content->'apiKey' IS NOT NULL
-                |  AND NOT EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s._id);
                 |""".stripMargin
             )
           // 2. attach root subscriptions to their keyring (= own id), drop 'parent'

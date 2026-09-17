@@ -1239,11 +1239,11 @@ object CommonServices {
     _TeamMemberOnly(
       teamId,
       AuditTrailEvent(
-        s"@{user.name} has acceeded to team (@{team.id}) keyring subscriptions for api @{api.id}"
+        s"@{user.name} has acceeded to team (@{team.id}) keyring subscriptions"
       )
     )(ctx) { _ =>
       val defaultOrderClause =
-        "ORDER BY COALESCE(a.content ->> 'apiName', s.content ->> 'adminCustomName') ASC"
+        "ORDER BY COALESCE(a.content ->> 'name', s.content ->> 'adminCustomName') ASC"
       val sortClause = sorting.head.asOpt[JsObject] match {
         case Some(value) =>
           val desc = value.value.get("desc") match {
@@ -1267,7 +1267,7 @@ object CommonServices {
            |from api_subscriptions s
            |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
            |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
-           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
+           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring' AND k.content ->> 'team' = $$10
            |         LEFT JOIN apis a ON a._id = s.content ->> 'api'
            |WHERE s.content ->> 'keyring' = $$1
            |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
@@ -1278,6 +1278,7 @@ object CommonServices {
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
            |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
+           |  AND s._deleted = false
            |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
            |LIMIT $$8 OFFSET $$9;
@@ -1305,7 +1306,8 @@ object CommonServices {
                   .map(Json.stringify(_))
                   .orNull[String],
                 java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
+                java.lang.Integer.valueOf(offset),
+                teamId
               )
             )
             .map { rows =>
@@ -1359,9 +1361,9 @@ object CommonServices {
         s"""
            |SELECT
            |       k.content AS content,
-           |       bool_or((p.content ->> 'autoRotation')::boolean) AS "canUpdateRotation",
+           |       bool_or((p.content ->> 'autoRotation')::boolean) AS "isRotationLocked",
            |       jsonb_agg(DISTINCT p.content ->> 'customName') FILTER (WHERE p.content ->> 'customName' IS NOT NULL) AS "environments",
-           |       (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = k._id) AS "subscriptionsCount",
+           |       (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = k._id AND s2._deleted = false) AS "subscriptionsCount",
            |       count(*) OVER() AS "total"
            |FROM keyrings k, api_subscriptions s, usage_plans p
            |WHERE k._deleted = false
@@ -1381,7 +1383,7 @@ object CommonServices {
           Seq(
             Col.json("content"),
             Col.long("subscriptionsCount"),
-            Col.bool("canUpdateRotation"),
+            Col.bool("isRotationLocked"),
             Col.array("environments"),
             Col.long("total")
           ),
@@ -1403,7 +1405,7 @@ object CommonServices {
                 (row \ "subscriptionsCount")
                   .as[Long]
               val autoRotation =
-                (row \ "canUpdateRotation")
+                (row \ "isRotationLocked")
                   .asOpt[Boolean]
                   .getOrElse(false)
               val environments =

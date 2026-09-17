@@ -9,6 +9,7 @@ import fr.maif.daikoku.actions.{
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.AppError.renderF
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.ApiSubscriptionState.Blocked
@@ -37,6 +38,7 @@ import fr.maif.daikoku.utils.RequestImplicits.{
   EnhancedRequestBody,
   EnhancedRequestHeader
 }
+import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -2119,16 +2121,24 @@ class ApiController(
           (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
         val gracePeriod =
           (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
-        keyringService.toggleKeyringRotation(
-          ctx.tenant,
-          keyringId,
-          enabled,
-          rotationEvery,
-          gracePeriod
-        )
-          .map(r => Ok(r))
-          .leftMap(AppError.render)
-          .merge
+
+        env.dataStore.keyringRepo.forTenant(ctx.tenant).findById(keyringId).flatMap{
+          case Some(keyring) =>
+            if (keyring.team.value == teamId){
+              keyringService.toggleKeyringRotation(
+                ctx.tenant,
+                keyring,
+                enabled,
+                rotationEvery,
+                gracePeriod
+              ) .map(k => Ok(k.asJson))
+                .leftMap(AppError.render)
+                .merge
+            } else {
+              renderF(AppError.Forbidden("You're not allowed to toggle the rotation of this keyring"))
+            }
+          case None => NotFound(Json.obj("error" -> "keyring not found")).future
+        }
       }
     }
 

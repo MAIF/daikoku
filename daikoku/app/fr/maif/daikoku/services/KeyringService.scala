@@ -7,10 +7,12 @@ import fr.maif.daikoku.controllers.AppError.{
   ApiKeyRotationError,
   OtoroshiSettingsNotFound
 }
+import fr.maif.daikoku.domain
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.OtoroshiApiKeyFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -112,40 +114,34 @@ class KeyringService(
 
   def toggleKeyringRotation(
       tenant: Tenant,
-      keyringId: String,
+      keyring: Keyring,
       enabled: Boolean,
       rotationEvery: Long,
       gracePeriod: Long
-  ): EitherT[Future, AppError, JsObject] = {
+  ): EitherT[Future, AppError, Keyring] = {
     import cats.implicits.*
+
+    val keyringId = keyring.id;
 
     for {
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findNotDeleted(Json.obj("keyring" -> keyringId))
+          .findNotDeleted(Json.obj("keyring" -> keyringId.asJson))
       )
 
-      subscription <- EitherT.fromOption[Future](
-        subscriptions.headOption,
-        AppError.EntityNotFound(s"Subscription for keyring $keyringId")
-      )
+      planIds = subscriptions.map(_.plan).distinct
 
-      planOpt <- EitherT.right[AppError](
+      plans <- EitherT.right[AppError](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findById(subscription.plan)
+          .findByIds(planIds)
       )
 
-      plan <- EitherT.fromOption[Future](
-        planOpt,
-        AppError.EntityNotFound(s"Plan ${subscription.plan}")
-      )
-
-      autorotation = planOpt.flatMap(_.autoRotation).getOrElse(false)
+      isRotationLocked = plans.exists(_.autoRotation.getOrElse(false))
 
       _ <- EitherT.cond[Future](
-        !autorotation,
+        !isRotationLocked,
         (),
         ApiKeyRotationConflict
       )
@@ -154,7 +150,7 @@ class KeyringService(
         (),
         ApiKeyRotationError(
           Json.obj(
-            "error" -> "Rotation period can't ben less or equal to grace period"
+            "error" -> "Rotation period can't be less or equal to grace period"
           )
         )
       )
@@ -179,18 +175,21 @@ class KeyringService(
         )
       )
       otoSettings <- EitherT.fromOption[Future](
-        plan.otoroshiTarget
-          .map(_.otoroshiSettings)
-          .flatMap(id => tenant.otoroshiSettings.find(_.id == id)),
+        keyring.otoroshiSettings match {
+          case domain.KeyringOtoroshiBinding.Otoroshi(id) =>
+            tenant.otoroshiSettings.find(_.id == id)
+          case domain.KeyringOtoroshiBinding.Internal =>
+            None
+        },
         OtoroshiSettingsNotFound
       )
 
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
-          .findById(subscription.keyring),
+          .findById(keyringId),
         AppError.EntityNotFound(
-          s"Keyring ${subscription.keyring.value}"
+          s"Keyring ${keyringId.value}"
         )
       )
       apiKey <- EitherT(
@@ -210,39 +209,33 @@ class KeyringService(
           )
         )(using otoSettings)
       )
+
+      updatedKeyring = keyring.copy(rotation =
+        keyring.rotation
+          .map(r =>
+            r.copy(
+              enabled = enabled,
+              rotationEvery = rotationEvery,
+              gracePeriod = gracePeriod
+            )
+          )
+          .orElse(
+            Some(
+              ApiSubscriptionRotation(
+                rotationEvery = rotationEvery,
+                gracePeriod = gracePeriod
+              )
+            )
+          )
+      )
       _ <- EitherT.liftF(
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
           .save(
-            keyring.copy(rotation =
-              keyring.rotation
-                .map(r =>
-                  r.copy(
-                    enabled = enabled,
-                    rotationEvery = rotationEvery,
-                    gracePeriod = gracePeriod
-                  )
-                )
-                .orElse(
-                  Some(
-                    ApiSubscriptionRotation(
-                      rotationEvery = rotationEvery,
-                      gracePeriod = gracePeriod
-                    )
-                  )
-                )
-            )
+            updatedKeyring
           )
       )
-      updatedSubscription <- EitherT.right[AppError](
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant.id)
-          .findById(subscription.id)
-      )
 
-    } yield Json
-      .obj(
-        "subscription" -> updatedSubscription.get.asSafeJson(keyring)
-      )
+    } yield updatedKeyring
   }
 }

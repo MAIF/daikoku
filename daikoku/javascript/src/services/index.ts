@@ -251,7 +251,7 @@ export const toggleKeyringRotation = (
   rotationEvery: number,
   gracePeriod: number
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/keyring/${keyringId}/_rotation`, {
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
@@ -1935,7 +1935,7 @@ export const graphql = {
             pendingRotation
           }
           subscriptionsCount
-          canUpdateRotation
+          isRotationLocked
           environments
         }
         total

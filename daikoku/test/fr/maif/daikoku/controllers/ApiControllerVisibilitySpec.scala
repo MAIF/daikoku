@@ -313,6 +313,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         })
       })
     }
+
     "restrict rotation setup for a subscription" in {
       val payPerUsePlanId = UsagePlanId("5")
       val subId = ApiSubscriptionId("test")
@@ -321,8 +322,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         team = teamConsumerId,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
-        otoroshiSettings =
-          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(defaultOtoroshi),
         createdAt = DateTime.now(),
         customName = "teamConsumer-apiName-planName-firstKeyring",
         integrationToken = "test"
@@ -375,7 +375,6 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
       )
 
       val path = otoroshiUpdateApikeyPath(keyring.apiKey.clientId)
-
       val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
 
       val matrixOfMatrix = Map(
@@ -409,23 +408,138 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
         resp.status mustBe 200
 
         matrix.foreachEntry((session, response) => {
+          val gracePeriod = Random.nextLong(100L) + 1
+          val rotationEvery = gracePeriod + 10
           val resp = httpJsonCallBlocking(
             path =
-              s"/api/teams/${teamConsumerId.value}/keyring/${keyring.id.value}/_rotation",
+              s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}/_rotation",
             method = "POST",
             body = Some(
               Json.obj(
                 "enabled" -> true,
-                "rotationEvery" -> 24,
-                "gracePeriod" -> 12
+                "rotationEvery" -> rotationEvery,
+                "gracePeriod" -> gracePeriod
               )
             )
           )(using tenant, session)
+          logger.info(Json.stringify(resp.json))
           resp.status mustBe response
+          if (response == 200) {
+            (resp.json \ "rotation" \ "enabled").as[Boolean] mustBe true
+            (resp.json \ "rotation" \ "rotationEvery")
+              .as[Long] mustBe rotationEvery
+            (resp.json \ "rotation" \ "gracePeriod").as[Long] mustBe gracePeriod
+          }
         })
       })
     }
-    
+
+    "return 404 when the keyring does not exist" in {
+      val payPerUsePlanId = UsagePlanId("5")
+      val subId = ApiSubscriptionId("test-404")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring-404"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test"
+      )
+      val sub = ApiSubscription(
+        id = subId,
+        tenant = tenant.id,
+        plan = payPerUsePlanId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
+      )
+      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/keyrings/unknown-keyring-id/_rotation",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "enabled" -> true,
+            "rotationEvery" -> 24,
+            "gracePeriod" -> 12
+          )
+        )
+      )(using tenant, sessionAdmin)
+
+      resp.status mustBe 404
+      (resp.json \ "error").as[String] mustBe "keyring not found"
+    }
+
+    "return 403 (Forbidden) when the keyring does not belong to the targeted team" in {
+      val payPerUsePlanId = UsagePlanId("5")
+      val subId = ApiSubscriptionId("test-mismatch")
+      val keyring = Keyring(
+        id = KeyringId("test-keyring-mismatch"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test"
+      )
+      val sub = ApiSubscription(
+        id = subId,
+        tenant = tenant.id,
+        plan = payPerUsePlanId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
+      )
+      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+
+      // le keyring appartient à teamConsumer, on tente de le piloter via teamOwner
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/keyring/${keyring.id.value}/_rotation",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "enabled" -> true,
+            "rotationEvery" -> 24,
+            "gracePeriod" -> 12
+          )
+        )
+      )(using tenant, sessionAdmin)
+
+      resp.status mustBe 403
+    }
+
     //    "restrict the activation/deactivation of a subscription" in {
     //      val payPerUsePlanId = UsagePlanId("1")
     //      val subId = ApiSubscriptionId("test")

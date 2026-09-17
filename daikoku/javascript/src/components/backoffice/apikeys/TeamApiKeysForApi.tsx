@@ -4,11 +4,11 @@ import classNames from 'classnames';
 import {formatDistanceToNow, isBefore} from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import {
-  ChevronDown, ChevronUp, CircleQuestionMark, Copy,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleQuestionMark, Copy, Ellipsis,
   EllipsisVertical, FileKey, Key, KeyRound, Link as LucideLink, Menu, Smile, Terminal,
   Users
 } from "lucide-react";
-import {useContext, useEffect, useState, type ReactNode} from 'react';
+import React, {useContext, useEffect, useState, type ReactNode} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {toast} from 'sonner';
 
@@ -49,6 +49,7 @@ import {
 } from "../../inputs";
 import {createColumnHelper} from "@tanstack/react-table";
 import {QUERY_KEYS} from "../../../constants/queryKeys";
+import Pagination from "../../utils/Pagination";
 
 
 const DisplayLink = ({value}: { value: string }) => {
@@ -141,7 +142,6 @@ type ApiKeysListForApiProps = {
   api: IApi,
   ownerTeam: ITeamSimple,
   linkToChildren?: (api: IApi, teamHrId: string) => string,
-  keyringsTeams?: ITeamSimple[]
 }
 
 export interface IKeyringSubscriptionGql {
@@ -154,7 +154,7 @@ export interface IKeyringSubscriptionGql {
   validUntil?: number;
   tags: Array<string>;
   lastUsage?: number;
-  plan: { _id: string; customName: string; autoRotation?: boolean };
+  plan: { _id: string; customName: string; isRotationLocked?: boolean };
   api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
 }
 
@@ -167,33 +167,36 @@ export interface IKeyringForApiGql {
   apiKey: { clientId: string; clientSecret: string; clientName: string };
   rotation?: IRotation;
   subscriptions: Array<IKeyringSubscriptionGql>;
-  autoRotation: boolean;
   team: ITeamSimple;
   subscriptionsCount: number;
-  canUpdateRotation: boolean;
+  isRotationLocked: boolean;
   environments: Array<string>;
 }
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
 
+  const pageNumber = 6;
+  const [page, setPage] = useState(0);
+
   const {customGraphQLClient} = useContext(GlobalContext);
   const {translate} = useContext(I18nContext);
   const {confirm, openFormModal, openCustomModal} = useContext(ModalContext);
   const queryClient = useQueryClient();
 
+
   const keyringsQuery = useQuery({
-    queryKey: ['data', 'keyrings', props.team._id, props.api._id],
+    queryKey: [...QUERY_KEYS.apiKeyrings(props.team._id, props.api._id), pageNumber, page],
     queryFn: () =>
       customGraphQLClient.request<{
         keyrings: { keyringsWithSubCountAndRotation: Array<IKeyringForApiGql>; total: number };
       }>(Services.graphql.getApiKeyrings, {
         apiId: props.api._id,
         teamId: props.team._id,
-        limit: 6,
-        offset: 0,
+        limit: pageNumber,
+        offset: pageNumber * page,
       }),
-    select: (d) => d.keyrings.keyringsWithSubCountAndRotation
+    // select: (d) => d.keyrings.keyringsWithSubCountAndRotation
   });
 
   useEffect(() => {
@@ -244,9 +247,9 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     enabled: boolean,
     rotationEvery: number,
     gracePeriod: number,
-    autoRotation: boolean
+    isRotationLocked: boolean
   ) => {
-    if (autoRotation) {
+    if (isRotationLocked) {
       toast.error(translate('rotation.error.message'));
       return Promise.resolve();
     }
@@ -450,7 +453,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   if (keyringsQuery.isLoading) {
     return <Spinner/>;
   } else if (keyringsQuery.data && !isError(keyringsQuery.data)) {
-    const keyrings = keyringsQuery.data;
+    const keyrings = keyringsQuery.data.keyrings.keyringsWithSubCountAndRotation;
     const search = searched.trim().toLowerCase();
 
     const filtered =
@@ -482,28 +485,54 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         </div>
 
         <div className="col-12">
-          <PaginatedComponent
-            items={sorted}
-            count={5}
-            classNames="gap-2"
-            formatter={(keyring: IKeyringForApiGql) => (
-              <KeyringCard
-                key={keyring._id}
-                api={props.api}
-                currentTeam={props.team}
-                keyring={keyring}
-                updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
-                toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
-                toggle={toggleApiKey}
-                toggleRotation={toggleApiKeyRotation}
-                regenerateSecret={() => regenerateSecret(keyring)}
-                deleteKeyring={() => deleteKeyring(keyring)}
-                transferKey={(sub, callback) => transferApiKey(sub, callback)}
-                deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
-                makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
+          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+            {
+              sorted.map((keyring) => {
+                return (
+                  <KeyringCard
+                    key={keyring._id}
+                    api={props.api}
+                    currentTeam={props.team}
+                    keyring={keyring}
+                    updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
+                    toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
+                    toggle={toggleApiKey}
+                    toggleRotation={toggleApiKeyRotation}
+                    regenerateSecret={() => regenerateSecret(keyring)}
+                    deleteKeyring={() => deleteKeyring(keyring)}
+                    transferKey={(sub, callback) => transferApiKey(sub, callback)}
+                    deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
+                    makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
+                  />
+                )
+              })
+            }
+          </div>
+
+          <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
+              <Pagination
+                containerClassName="pagination pagination--ds"
+                previousLabel={<ChevronLeft />}
+                nextLabel={<ChevronRight />}
+                breakLabel={<Ellipsis />}
+                breakClassName="break"
+                breakLinkClassName="btn --ghost"
+                pageCount={Math.ceil(keyringsQuery.data.keyrings.total / pageNumber)}
+                forcePage={page}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={3}
+                onPageChange={(data) => setPage(data.selected)}
+                pageClassName="page-selector"
+                pageLinkClassName="btn --ghost"
+                previousLinkClassName="btn --tertiary --icon"
+                nextLinkClassName="btn --tertiary --icon"
+                disabledLinkClassName="--disabled"
+                activeClassName="active"
               />
-            )}
-          />
+            </div>
+
+          </div>
         </div>
       </Can>
     );
@@ -524,7 +553,7 @@ type KeyringCardProps = {
     enabled: boolean,
     rotationEvery: number,
     gracePeriod: number,
-    autoRotation: boolean
+    isRotationLocked: boolean
   ) => Promise<void>;
   regenerateSecret: () => void;
   deleteKeyring: () => void;
@@ -572,14 +601,14 @@ export const KeyringCard = ({
   // rotation is a keyring-level concern ; it is only offered when the keyring
   // is not aggregated (a single subscription carries it)
   const disableRotation =
-    api.visibility === 'AdminOnly' || !!keyring.autoRotation;
+    api.visibility === 'AdminOnly' || !!keyring.isRotationLocked;
 
   const settingsSchema = {
     enabled: {
       type: type.bool,
       label: translate('Enabled'),
       help: translate('help.apikey.rotation'),
-      disabled: keyring.autoRotation,
+      disabled: keyring.isRotationLocked,
     },
     rotationEvery: {
       type: type.number,
@@ -643,8 +672,7 @@ export const KeyringCard = ({
       })
       .then(({keyringSubscriptions}): FetchResult<IKeyringSubscriptionGql> => ({
             items: keyringSubscriptions.subscriptions,
-            total: keyringSubscriptions.total,
-            totalFiltered: keyringSubscriptions.totalFiltered,
+            total: keyringSubscriptions.total
           }
         )
       );
@@ -655,7 +683,7 @@ export const KeyringCard = ({
       meta: {className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 20},
       cell: (info) => {
         const sub = info.cell.row.original
-        const statsLink = `/${currentTeam?._humanReadableId}/settings/apikeys/${api._id}/${api.currentVersion}/subscription/${sub._id}/consumptions`;
+        const statsLink = `/${currentTeam?._humanReadableId}/settings/apikeys/${sub.api._id}/${sub.api.currentVersion}/subscription/${sub._id}/consumptions`;
         return (
           <div className="d-flex flex-column">
             <Link className="underline" to={statsLink}>
@@ -912,7 +940,7 @@ export const KeyringCard = ({
         }
         {isApiCMS &&
           <span>
-          "CLI Auth."
+          CLI Auth.
             {credentialButton(
               translate('subscription.copy.cli.auth.help'),
               translate('subscription.copy.cli.auth.aria.label'),
@@ -989,7 +1017,7 @@ export const KeyringCard = ({
                               data.enabled,
                               data.rotationEvery,
                               data.gracePeriod,
-                              keyring.autoRotation
+                              keyring.isRotationLocked
                             )
                           );
                         }
