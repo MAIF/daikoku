@@ -23,6 +23,7 @@ class JobsController(
     rotationJob: ApiKeySecretRotationJob,
     verifierJob: OtoroshiEntitiesVerifierJob,
     remoteCatalogJob: RemoteCatalogJob,
+    notificationsPurgeJob: NotificationsPurgeJob,
     apiKeyStatsJob: ApiKeyStatsJob,
     auditTrailPurgeJob: AuditTrailPurgeJob,
     env: Env,
@@ -109,12 +110,22 @@ class JobsController(
       }
     }
 
-  def auditTrailPurgeRunJob(): Action[AnyContent] =
-    Action.async { req =>
-      if (env.config.auditTrailPurgeByCron) {
-        auditTrailPurgeJob.purge().map(_ => Ok(Json.obj("done" -> true)))
-      } else {
-        FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
+  def auditTrailPurgeRunJob(parallelism: Int = 25): Action[AnyContent] =
+    Action.async { ctx =>
+      TenantHelper.withTenant(ctx, env) { tenant =>
+        ctx
+          .getQueryString("access_key")
+          .orElse(ctx.getQueryString("key")) match {
+          case Some(key) if env.config.auditTrailPurgeJobKey == key =>
+            auditTrailPurgeJob
+              .run(
+                tenant = tenant,
+                runBy = Runner.Api,
+                parallelism = parallelism
+              )
+              .map(_ => Ok(Json.obj("done" -> true)))
+          case _ => AppError.Unauthorized.renderF()
+        }
       }
     }
 
@@ -126,6 +137,25 @@ class JobsController(
           .orElse(ctx.getQueryString("key")) match {
           case Some(key) if env.config.remoteCatalogJobKey == key =>
             remoteCatalogJob
+              .run(
+                tenant = tenant,
+                runBy = Runner.Api,
+                parallelism = parallelism
+              )
+              .map(_ => Ok(Json.obj("done" -> true)))
+          case _ => AppError.Unauthorized.renderF()
+        }
+      }
+    }
+
+  def notificationsPurgeRunJob(parallelism: Int = 25): Action[AnyContent] =
+    Action.async { ctx =>
+      TenantHelper.withTenant(ctx, env) { tenant =>
+        ctx
+          .getQueryString("access_key")
+          .orElse(ctx.getQueryString("key")) match {
+          case Some(key) if env.config.notificationsPurgeJobKey == key =>
+            notificationsPurgeJob
               .run(
                 tenant = tenant,
                 runBy = Runner.Api,

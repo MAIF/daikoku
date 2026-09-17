@@ -183,6 +183,8 @@ enum JobName(val value: String):
   case KeyringSubscriptionExpiration
       extends JobName("KeyringSubscriptionExpiration")
   case RemoteCatalog extends JobName("RemoteCatalog")
+  case NotificationPurge extends JobName("NotificationPurge")
+  case AuditTrailPurge extends JobName("AuditTrailPurge")
 
 case class JobInformation(
     id: DatastoreId,
