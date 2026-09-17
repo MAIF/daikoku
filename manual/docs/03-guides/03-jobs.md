@@ -32,7 +32,7 @@ The job starts automatically when the application launches if the `daikoku.notif
 
 ### Job lifecycle
 
-The job runs continuously until the application is shut down. It cannot be stopped individually - it only stops when the entire application terminates.
+The job runs continuously until the application is shut down. It cannot be stopped individually - it only stops when the entire application terminates. It can be run occasionally by calling `/api/jobs/notifications-purge/_sync` with the dedicated key in params.
 
 ## Purge criteria
 
@@ -85,7 +85,7 @@ The job starts automatically when the application launches if the `daikoku.audit
 
 ### Job lifecycle
 
-The job runs continuously until the application is shut down. It cannot be stopped individually - it only stops when the entire application terminates. It can be run occasionally by calling `/api/jobs/purge/_sync` with the dedicated key in params.
+The job runs continuously until the application is shut down. It cannot be stopped individually - it only stops when the entire application terminates. It can be run occasionally by calling `/api/jobs/audit-trail-purge/_sync` with the dedicated key in params.
 
 ## Configuration
 

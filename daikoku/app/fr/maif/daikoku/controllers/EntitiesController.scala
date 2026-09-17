@@ -109,17 +109,29 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case Some((clientId, clientSecret)) =>
-                  env.dataStore.apiSubscriptionRepo
+                  logger.info(s"$clientId")
+                  logger.info(s"$clientSecret")
+                  env.dataStore.keyringRepo
                     .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "apiKey.clientId" -> clientId,
-                        "apiKey.clientSecret" -> clientSecret
+                    .queryOne(
+                      query =
+                        s"""
+                           |SELECT k.content AS content
+                           |FROM api_subscriptions s
+                           |         JOIN apis     a ON a._id = s.content ->> 'api'
+                           |         JOIN keyrings k ON k._id = s.content ->> 'keyring'
+                           |WHERE a.content ->> 'visibility' = 'AdminOnly'
+                           |  AND (k.content ->> '_tenant') = $$1
+                           |  AND (k.content -> 'apiKey') ->> 'clientId'     = $$2
+                           |  AND (k.content -> 'apiKey') ->> 'clientSecret' = $$3;""".stripMargin,
+                      params = Seq(
+                        tenant.id.value,
+                        clientId,
+                        clientSecret
                       )
                     )
-                    .map(_.length == 1)
                     .flatMap {
-                      case true => block(buildContext(request, tenant))
+                      case Some(keyring) => block(buildContext(request, tenant))
                       case _ =>
                         Errors.craftResponseResultF(
                           "Invalid api key",
