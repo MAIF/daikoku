@@ -193,6 +193,36 @@ class TenantController(
       }
     }
 
+  def paymentEnabled() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has checked whether payment is enabled on tenant @{tenant.name}"
+        )
+      )(ctx) {
+        val missing =
+          Seq(
+            "DAIKOKU_STATS_SYNC_CRON" -> env.config.apikeysStatsByCron,
+            "DAIKOKU_STRIPE_RECONCILIATION_CRON" -> env.config.stripeReconciliationByCron
+          ).collect { case (variable, false) => variable }
+
+        FastFuture.successful(
+          if (missing.isEmpty) Ok(Json.obj())
+          else if (ctx.isTenantAdmin || ctx.user.isDaikokuAdmin)
+            BadRequest(
+              Json.obj(
+                "error" -> "payment is not enabled on this tenant",
+                "missing" -> missing
+              )
+            )
+          else
+            BadRequest(
+              Json.obj("error" -> "payment is not enabled on this tenant")
+            )
+        )
+      }
+    }
+
   def createTenant() =
     DaikokuAction.async(parse.json) { ctx =>
       DaikokuAdminOnly(

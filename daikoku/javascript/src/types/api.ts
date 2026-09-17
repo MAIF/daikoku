@@ -259,6 +259,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   integrationProcess: 'Automatic' | 'ApiKey';
   maxPerDay?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   maxPerSecond?: number;
   otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
@@ -390,14 +391,6 @@ export interface IBaseSubscription {
   keyring: string | null;
 }
 
-export const isPayPerUse = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
-  return !!plan.costPerRequest && !plan.maxPerMonth;
-};
-
-export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
-  return !!plan.costPerRequest && !!plan.maxPerMonth;
-};
-
 export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
 };
@@ -487,6 +480,7 @@ export interface ISubscriptionInformation {
 export interface IFastPlan extends IBaseUsagePlan {
   maxPerSecond?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   costPerMonth?: number;
   costPerAdditionalRequest?: number;
   costPerRequest?: number;
@@ -692,6 +686,7 @@ export interface IUsagePlanGQL
   integrationProcess: 'Automatic' | 'ApiKey';
   maxPerDay?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   maxPerSecond?: number;
   otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;

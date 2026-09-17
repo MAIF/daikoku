@@ -228,18 +228,27 @@ class StripeBillingSpec()
         .futureValue must be > 0L
     }
 
-  private def setupTenantWithStripeAccount(): Unit = {
+  private def setupTenantWithStripeAccount(
+      withAdminApi: Boolean = false
+  ): Unit = {
     startupSeedingSettled
     setupEnvBlocking(
       tenants = Seq(stripeTenant),
       users = Seq(userAdmin),
-      teams = Seq(teamOwner, verifiedConsumer),
+      teams = Seq(teamOwner, verifiedConsumer) ++
+        (if (withAdminApi) Seq(defaultAdminTeam) else Seq.empty),
       apis = Seq(defaultApi.api),
-      usagePlans = plans
+      usagePlans = plans,
+      subscriptions =
+        if (withAdminApi) Seq(adminApiSubscription) else Seq.empty,
+      keyrings = if (withAdminApi) Seq(adminApiKeyring) else Seq.empty
     )
   }
 
-  private def makePlanPayable(currency: String = "EUR"): WSResponse = {
+  private def makePlanPayable(
+      currency: String = "EUR",
+      pricing: JsObject = Json.obj()
+  ): WSResponse = {
     implicit val session: UserSession =
       loginWithBlocking(userAdmin, stripeTenant)
     val api = defaultApi.api
@@ -248,22 +257,42 @@ class StripeBillingSpec()
       path =
         s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan/${payPerUsePlan.id.value}/_payment",
       method = "PUT",
-      body = Json
-        .obj(
-          "paymentSettings" -> Json.obj(
-            "thirdPartyPaymentSettingsId" -> stripeSettingsId.value
-          ),
-          "costPerMonth" -> 10,
-          "costPerRequest" -> 0.02,
-          "currency" -> Json.obj("code" -> currency)
-        )
-        .some
+      body = (Json.obj(
+        "paymentSettings" -> Json.obj(
+          "thirdPartyPaymentSettingsId" -> stripeSettingsId.value
+        ),
+        "costPerMonth" -> 10,
+        "costPerRequest" -> 0.02,
+        "currency" -> Json.obj("code" -> currency)
+      ) ++ pricing).some
     )(using stripeTenant, session)
 
     withClue(s"_payment answered ${response.status}: ${response.body}") {
       response.status mustBe 200
     }
     response
+  }
+
+  private def producerPlan(): JsObject = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+    val response = httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plans/${payPerUsePlan.id.value}"
+    )(using stripeTenant, session)
+    withClue(response.body) { response.status mustBe 200 }
+    response.json.as[JsObject]
+  }
+
+  private def saveProducerPlan(plan: JsObject): WSResponse = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+    httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}",
+      method = "PUT",
+      body = plan.some
+    )(using stripeTenant, session)
   }
 
   private def subscribeToPlan(): WSResponse = {
@@ -839,6 +868,120 @@ class StripeBillingSpec()
       currentPlan().currency mustBe Currency("EUR").some
     }
 
+    "keep the payment as the last step of a priced plan" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+
+      def saveSteps(steps: Seq[ValidationStep]): WSResponse =
+        httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}",
+          method = "PUT",
+          body = currentPlan()
+            .copy(subscriptionProcess = SubscriptionProcess(steps))
+            .asJson
+            .some
+        )(using stripeTenant, session)
+
+      val steps = currentPlan().subscriptionProcess.steps
+      val teamAdmin =
+        ValidationStep.TeamAdmin(IdGenerator.token(32), teamOwnerId)
+
+      saveSteps(steps :+ teamAdmin).status mustBe 400
+      saveSteps(steps.filterNot(_.name == "payment")).status mustBe 400
+
+      currentPlan().subscriptionProcess.steps.last.name mustBe "payment"
+    }
+
+    "never let a priced plan go back to free" in {
+      setupTenantWithStripeAccount(withAdminApi = true)
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+      val backToFree = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}/_payment",
+        method = "PUT",
+        body = Json.obj().some
+      )(using stripeTenant, session)
+      backToFree.status mustBe 400
+
+      val plan = httpJsonCallWithoutSessionBlocking(
+        path = s"/admin-api/usage-plans/${payPerUsePlan.id.value}",
+        headers = adminApiAuthorization
+      )(using stripeTenant)
+      withClue(plan.body) { plan.status mustBe 200 }
+      (plan.json \ "paymentSettings" \ "productId").as[String] mustBe productId
+      (plan.json \ "costPerMonth").as[BigDecimal] mustBe BigDecimal(10)
+    }
+
+    "tell whether payment is enabled, with the details for a tenant admin only" in {
+      startupSeedingSettled
+      setupEnvBlocking(
+        tenants = Seq(stripeTenant),
+        users = Seq(userAdmin, tenantAdmin),
+        teams = Seq(teamOwner, verifiedConsumer, defaultAdminTeam)
+      )
+
+      def paymentEnabledAs(user: User): WSResponse = {
+        val session = loginWithBlocking(user, stripeTenant)
+        httpJsonCallBlocking(path = "/api/payment/_enabled")(using
+          stripeTenant,
+          session
+        )
+      }
+
+      val asTenantAdmin = paymentEnabledAs(tenantAdmin)
+      asTenantAdmin.status mustBe 400
+      (asTenantAdmin.json \ "missing").as[Seq[String]] mustBe Seq(
+        "DAIKOKU_STATS_SYNC_CRON",
+        "DAIKOKU_STRIPE_RECONCILIATION_CRON"
+      )
+
+      val asProducer = paymentEnabledAs(userAdmin)
+      asProducer.status mustBe 400
+      (asProducer.json \ "missing").toOption mustBe None
+    }
+
+    "price a plan only through a payment account of the tenant" in {
+      setupTenantWithStripeAccount(withAdminApi = true)
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+      def pricePlan(paymentSettings: JsObject): WSResponse =
+        httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}/_payment",
+          method = "PUT",
+          body = (Json.obj(
+            "costPerMonth" -> 10,
+            "currency" -> Json.obj("code" -> "EUR")
+          ) ++ paymentSettings).some
+        )(using stripeTenant, session)
+
+      pricePlan(Json.obj()).status mustBe 400
+      pricePlan(
+        Json.obj(
+          "paymentSettings" -> Json.obj("thirdPartyPaymentSettingsId" -> "unknown")
+        )
+      ).status mustBe 400
+
+      val plan = httpJsonCallWithoutSessionBlocking(
+        path = s"/admin-api/usage-plans/${payPerUsePlan.id.value}",
+        headers = adminApiAuthorization
+      )(using stripeTenant)
+      withClue(plan.body) { plan.status mustBe 200 }
+      (plan.json \ "paymentSettings").asOpt[JsObject] mustBe None
+      (plan.json \ "costPerMonth").as[BigDecimal] mustBe BigDecimal(0.02)
+      requestsTo("/v1/products") mustBe empty
+    }
+
     "pin the Stripe API version on every call, so accounts cannot drift apart" in {
       subscribeAndPay()
 
@@ -854,6 +997,87 @@ class StripeBillingSpec()
         _.getHeader("Stripe-Version") mustBe
           daikokuComponents.env.config.stripeApiVersion
       )
+    }
+  }
+
+  "separating the included requests from the monthly limit" must {
+    def usagePrice(): Map[String, String] =
+      formBodies("/v1/prices").find(_.contains("recurring[meter]")).get
+
+    "charge only the requests beyond the included ones" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable(pricing = Json.obj("includedRequestsPerMonth" -> 1000))
+
+      usagePrice().get("tiers[0][up_to]") mustBe Some("1000")
+      usagePrice().get("tiers[0][unit_amount]") mustBe Some("0")
+      usagePrice().get("tiers[1][up_to]") mustBe Some("inf")
+      usagePrice().get("tiers[1][unit_amount]") mustBe Some("2")
+    }
+
+    "price the usage at zero rather than leave it out, so a cost per request can come later" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable(pricing = Json.obj("costPerRequest" -> JsNull))
+
+      requestsTo("/v1/billing/meters").size mustBe 1
+      usagePrice().get("unit_amount") mustBe Some("0")
+    }
+
+    "keep the included requests within the monthly limit" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      saveProducerPlan(producerPlan() ++ Json.obj("maxPerMonth" -> 500)).status mustBe 200
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+      val aboveLimit = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${payPerUsePlan.id.value}/_payment",
+        method = "PUT",
+        body = Json
+          .obj(
+            "paymentSettings" -> Json.obj(
+              "thirdPartyPaymentSettingsId" -> stripeSettingsId.value
+            ),
+            "costPerMonth" -> 10,
+            "costPerRequest" -> 0.02,
+            "includedRequestsPerMonth" -> 1000,
+            "currency" -> Json.obj("code" -> "EUR")
+          )
+          .some
+      )(using stripeTenant, session)
+      aboveLimit.status mustBe 400
+
+      makePlanPayable(pricing = Json.obj("includedRequestsPerMonth" -> 500))
+
+      saveProducerPlan(
+        producerPlan() ++ Json.obj("includedRequestsPerMonth" -> 800)
+      ).status mustBe 400
+    }
+
+    "retire the previous prices at once while nobody is subscribed" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+
+      val raised = saveProducerPlan(producerPlan() ++ Json.obj("costPerMonth" -> 42))
+      withClue(raised.body) { raised.status mustBe 200 }
+
+      formBodies("/v1/prices/price_test123").map(_.get("active")) mustBe Seq(
+        Some("false"),
+        Some("false")
+      )
+      requestsTo(s"/v1/billing/meters/$meterId/deactivate") mustBe empty
+    }
+
+    "keep the previous prices while a team is subscribed" in {
+      subscribeAndPay()
+
+      val raised = saveProducerPlan(producerPlan() ++ Json.obj("costPerMonth" -> 42))
+      withClue(raised.body) { raised.status mustBe 200 }
+
+      requestsTo("/v1/prices/price_test123") mustBe empty
     }
   }
 

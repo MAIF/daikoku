@@ -501,6 +501,12 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       type: type.number,
       label: translate('Max. per month'),
       placeholder: translate('Max. requests per month'),
+      help: props.plan.includedRequestsPerMonth
+        ? translate({
+          key: 'usage.plan.form.quotas.included.requests.help',
+          replacements: [props.plan.includedRequestsPerMonth.toString()],
+        })
+        : undefined,
       props: {
         step: 1,
         min: 0,
@@ -508,6 +514,17 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       constraints: [
         constraints.positive(translate('constraints.positive')),
         constraints.integer(translate('constraints.integer')),
+        ...(props.plan.includedRequestsPerMonth
+          ? [
+            constraints.min(
+              props.plan.includedRequestsPerMonth,
+              translate({
+                key: 'usage.plan.form.quotas.below.included.requests',
+                replacements: [props.plan.includedRequestsPerMonth.toString()],
+              })
+            ),
+          ]
+          : []),
       ],
     },
   })
@@ -550,6 +567,15 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
   const { tenant } = useContext(GlobalContext);
 
   const hasPricing = props.plan.costPerMonth != null || props.plan.costPerRequest != null;
+  const isBilledByStripe = !!props.plan.paymentSettings;
+  const paymentEnabledQuery = useQuery({
+    queryKey: QUERY_KEYS.paymentEnabled(),
+    queryFn: () => Services.getPaymentEnabled(),
+  });
+  const paymentAvailable =
+    tenant.thirdPartyPaymentSettings.length > 0 &&
+    !!paymentEnabledQuery.data &&
+    !isError(paymentEnabledQuery.data);
   const isPaymentDefined = props.plan.costPerMonth != null
     && props.plan.currency != null;
 
@@ -559,19 +585,18 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     paymentSettings: {
       type: type.object,
       format: format.form,
-      label: translate('payment settings'),
+      label: null,
       schema: {
         thirdPartyPaymentSettingsId: {
           type: type.string,
           format: format.select,
-          label: translate('Type'),
-          help: 'If no type is selected, use Daikoku APIs to get billing informations',
+          label: translate('usage.plan.form.pricing.payment.settings.label'),
           options: tenant.thirdPartyPaymentSettings,
           transformer: (s: IThirdPartyPaymentSettings) => ({
             label: s.name,
             value: s._id,
           }),
-          props: { isClearable: true },
+          constraints: [constraints.required(translate('constraints.required.value'))],
           onChange: ({ setValue, value }) => {
             const settings = tenant.thirdPartyPaymentSettings;
             setValue(
@@ -585,17 +610,10 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     costPerMonth: {
       type: type.number,
       label: translate('Cost per month'),
-      placeholder: translate('Cost per billing period'),
+      placeholder: translate('Cost per month'),
       constraints: [
         constraints.positive(translate('constraints.positive')),
-        // costPerRequest is a surcharge on top of costPerMonth, never a pricing
-        // on its own: the backend rejects such a plan and the billing job would
-        // bill it 0
-        constraints.when(
-          'costPerRequest',
-          (costPerRequest) => costPerRequest !== undefined && costPerRequest !== null,
-          [constraints.required(translate('constraints.required.cost.per.period'))]
-        ),
+        constraints.required(translate('constraints.required.value')),
       ],
     },
     costPerRequest: {
@@ -604,6 +622,39 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       placeholder: translate('Cost per request'),
       props: { step: 0.01 },
       constraints: [constraints.positive(translate('constraints.positive'))],
+    },
+    includedRequestsPerMonth: {
+      type: type.number,
+      label: translate('usage.plan.form.pricing.included.requests.label'),
+      visible: ({ rawValues }) =>
+        rawValues.costPerRequest !== undefined && rawValues.costPerRequest !== null,
+      help: translate({
+        key: 'usage.plan.form.pricing.included.requests.help',
+        replacements: [
+          props.plan.maxPerMonth
+            ? translate({
+              key: 'usage.plan.form.pricing.monthly.limit',
+              replacements: [props.plan.maxPerMonth.toString()],
+            })
+            : translate('usage.plan.form.pricing.no.monthly.limit'),
+        ],
+      }),
+      props: { step: 1, min: 0 },
+      constraints: [
+        constraints.integer(translate('constraints.integer')),
+        constraints.positive(translate('constraints.positive')),
+        ...(props.plan.maxPerMonth
+          ? [
+            constraints.max(
+              props.plan.maxPerMonth,
+              translate({
+                key: 'usage.plan.form.pricing.included.requests.above.limit',
+                replacements: [props.plan.maxPerMonth.toString()],
+              })
+            ),
+          ]
+          : []),
+      ],
     },
     currency: {
       type: type.object,
@@ -628,13 +679,24 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     <>
       <ToggleFormPartButton
         value={billingDisplayed}
-        // disabledTrue={true}
+        disabledTrue={!isBilledByStripe && !paymentAvailable}
         action={(value) => setBillingDisplayed(value)}
+        disabledFalse={isBilledByStripe}
         falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
         falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
         trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
         trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
       />
+      {!isBilledByStripe && !paymentAvailable && (
+        <div className='alert alert-info mt-3'>
+          {translate('usage.plan.form.pricing.payment.unavailable')}
+        </div>
+      )}
+      {isBilledByStripe && (
+        <div className='alert alert-info mt-3'>
+          {translate('usage.plan.form.pricing.stripe.locked')}
+        </div>
+      )}
       {billingDisplayed && <Form
         schema={billingSchema}
         value={props.plan}
@@ -1414,13 +1476,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
         });
     }
 
-    /** A plan already backed by Stripe keeps its product and its meter: only the
-      * amounts move, through the plan update. Going through _payment again would
-      * be refused, it only sets payment up. */
     const savePricing = (updated: IUsagePlanGQL) => {
       const stillPriced = updated.costPerMonth !== undefined && updated.costPerMonth !== null;
 
-      if (!plan.paymentSettings || !stillPriced) {
+      if (!plan.paymentSettings) {
+        if (stillPriced && updated.paymentSettings?.thirdPartyPaymentSettingsId) {
+          return confirm({
+            title: translate('plan.payment.setup.confirm.title'),
+            message: translate('plan.payment.setup.confirm.message'),
+          }).then((ok) => (ok ? setupPayment(updated) : undefined));
+        }
         return setupPayment(updated);
       }
 

@@ -30,6 +30,7 @@ import fr.maif.daikoku.services.CmsPage
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.*
 import scala.concurrent.impl.Promise
@@ -1012,6 +1013,13 @@ object testUtils {
         .withMethod("DELETE")
         .execute()
     }
+
+    def adminApiAuthorization: Map[String, String] =
+      Map(
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
+          )}"
+      )
 
     def cleanOtoroshiServer(
         otoroshiPort: Int,

@@ -203,6 +203,7 @@ case class UsagePlan(
     maxPerSecond: Option[Long] = None,
     maxPerDay: Option[Long] = None,
     maxPerMonth: Option[Long] = None,
+    includedRequestsPerMonth: Option[Long] = None,
     costPerRequest: Option[BigDecimal] = None,
     costPerMonth: Option[BigDecimal] = None,
     currency: Option[Currency] = None,

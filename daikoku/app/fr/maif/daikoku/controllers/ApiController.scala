@@ -4478,8 +4478,10 @@ class ApiController(
             case Some(b) =>
               plan
                 .mergeBase(b)
-                .copy(costPerRequest =
-                  (body \ "costPerRequest").asOpt[BigDecimal]
+                .copy(
+                  costPerRequest = (body \ "costPerRequest").asOpt[BigDecimal],
+                  includedRequestsPerMonth =
+                    (body \ "includedRequestsPerMonth").asOpt[Long]
                 )
           }
 
@@ -4501,40 +4503,40 @@ class ApiController(
             AppError.PlanNotFound
           )
           base <- EitherT.fromEither[Future](maybeBase)
-          // Setting up a new pricing on a plan already backed by a third party
-          // product would leave that product orphaned, so it is rejected.
-          // Going back to a free plan is allowed: the product is archived
-          // asynchronously by the queue job.
+          _ <- EitherT.cond[Future][AppError, Unit](
+            base.isEmpty || paymentSettingsId.exists(id =>
+              ctx.tenant.thirdPartyPaymentSettings.exists(_.id == id)
+            ),
+            (),
+            AppError.PaymentError(
+              "a priced plan requires a payment account of the tenant"
+            )
+          )
           _ <- (plan.paymentSettings, base) match {
             case (Some(_), Some(_)) =>
               EitherT.leftT[Future, Unit](
                 AppError.EntityConflict("payment, already setup")
               )
-            case (Some(paymentSettings), None) =>
-              EitherT.liftF[Future, AppError, Unit](
-                env.dataStore.operationRepo
-                  .forTenant(ctx.tenant)
-                  .save(
-                    Operation(
-                      DatastoreId(IdGenerator.token(24)),
-                      tenant = ctx.tenant.id,
-                      itemId = plan.id.value,
-                      itemType = ItemType.ThirdPartyProduct,
-                      action = OperationAction.Delete,
-                      payload = Json
-                        .obj("paymentSettings" -> paymentSettings.asJson)
-                        .some
-                    )
-                  )
-                  .map(_ => ())
+            case (Some(_), None) =>
+              EitherT.leftT[Future, Unit](
+                AppError.PaymentError(
+                  "a priced plan cannot go back to free: change its price or delete it"
+                )
               )
             case (None, _) => EitherT.pure[Future, AppError](())
           }
           ratedPlan = applyPayment(plan, base)
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !ratedPlan.includedRequestsPerMonth.exists(included =>
+              ratedPlan.maxPerMonth.exists(_ < included)
+            ),
+            (),
+            AppError.PaymentError(
+              "the included requests of a plan cannot exceed its monthly limit"
+            )
+          )
 
           ratedPlanwithSettings <- (ratedPlan.isPaymentDefined, paymentSettingsId) match {
-            // a third party provider bills the plan: create the product and add
-            // the matching step to the subscription process
             case (true, Some(id)) =>
               paymentClient
                 .createProduct(ctx.tenant, api, ratedPlan, id)
@@ -4548,8 +4550,6 @@ class ApiController(
                       )
                     )
                 }
-            // no provider: Daikoku computes the billing itself from the plan
-            // pricing (see ApiKeyStatsJob), there is nothing to set up
             case _ => EitherT.pure[Future, AppError](ratedPlan)
           }
           _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -4562,32 +4562,6 @@ class ApiController(
         value.leftMap(_.render()).merge
       }
     }
-  def stopPayment(
-      teamId: String,
-      apiId: String,
-      version: String,
-      planId: String
-  ): Action[JsValue] =
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}"
-        )
-      )(teamId, ctx) { team =>
-        val value: EitherT[Future, Result, Result] = for {
-          api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId),
-            AppError.ApiNotFound.render()
-          )
-          //todo: save api
-          //todo: run job to "close payment"
-          //todo: close pricing in stripe ?
-        } yield Ok(Json.obj())
-
-        value.merge
-      }
-    }
-
   def getApiSubscriptionsUsage(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(

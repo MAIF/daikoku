@@ -494,32 +494,17 @@ class ApiKeyStatsJob(
         )
       )
       .map(consumptions => {
-        (plan.costPerMonth, plan.costPerRequest, plan.maxPerMonth) match {
-          // todo: consider trial period
-          case (None, None, Some(_)) =>
-            ApiKeyBilling(
-              hits = hits + consumptions.map(_.hits).sum,
-              total = 0
-            )
-          case (Some(costPerMonth), None, Some(_)) =>
+        (plan.costPerMonth, plan.costPerRequest) match {
+          case (Some(costPerMonth), None) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
               total = costPerMonth
             )
-          case (Some(costPerMonth), Some(costPerRequest), Some(maxPerMonth)) =>
+          case (Some(costPerMonth), Some(costPerRequest)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
               total = costPerMonth + computeAdditionalHitsCost(
-                maxPerMonth,
-                hits + consumptions.map(_.hits).sum,
-                costPerRequest
-              )
-            )
-          case (Some(costPerMonth), Some(costPerRequest), None) =>
-            ApiKeyBilling(
-              hits = hits + consumptions.map(_.hits).sum,
-              total = costPerMonth + computeAdditionalHitsCost(
-                0,
+                plan.includedRequestsPerMonth.getOrElse(0L),
                 hits + consumptions.map(_.hits).sum,
                 costPerRequest
               )

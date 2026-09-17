@@ -2579,6 +2579,11 @@
             "format": "int64",
             "nullable": true
           },
+          "includedRequestsPerMonth": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
           "costPerMonth": {
             "type": "integer",
             "format": "float64",

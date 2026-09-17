@@ -487,6 +487,10 @@ export const allTenants = () => customFetch('/api/tenants');
 export const oneTenant = (tenantId: string): Promise<ResponseError | ITenantFull> =>
   customFetch(`/api/tenants/${tenantId}`);
 
+export const getPaymentEnabled = (): Promise<
+  {} | (ResponseError & { missing?: Array<string> })
+> => customFetch('/api/payment/_enabled');
+
 export const getConsummedQuotasWithSubscriptionId = (
   teamId: string,
   subscriptionId: string
@@ -1536,6 +1540,7 @@ export const graphql = {
           integrationProcess
           maxPerDay
           maxPerMonth
+          includedRequestsPerMonth
           maxPerSecond
           otoroshiTarget {
             otoroshiSettings

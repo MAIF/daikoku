@@ -1149,6 +1149,11 @@ object SchemaDefinition {
             resolve = _.value.maxPerMonth
           ),
           Field(
+            "includedRequestsPerMonth",
+            OptionType(LongType),
+            resolve = _.value.includedRequestsPerMonth
+          ),
+          Field(
             "allowMultipleKeys",
             OptionType(BooleanType),
             resolve = _.value.allowMultipleKeys

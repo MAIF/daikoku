@@ -1,5 +1,4 @@
 import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
-import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lucide-react';
@@ -194,7 +193,6 @@ const ValidationStep = (props: ValidationStepProps) => {
           </span>
           <div className="d-flex flex-row validation-step__infos">
             <span>{thirdPartyPaymentSettings?.name}</span>
-            <span>{thirdPartyPaymentSettings?.type}</span>
           </div>
         </div>
       );
@@ -599,6 +597,17 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           }
           className="flex-grow-1"
           renderItem={(item, idx) => {
+            if (item.type === 'payment') {
+              return (
+                <FixedItem id={item.id} className="validation-step-container">
+                  <ValidationStep
+                    index={idx + 1}
+                    step={item}
+                    tenant={props.tenant}
+                  />
+                </FixedItem>
+              );
+            }
             if (item.type === 'form') {
               return (
                 <FixedItem
@@ -643,12 +652,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   <SortableItem
                     className="validation-step-container"
                     action={
-                      <div
-                        className={classNames('d-flex flex-row', {
-                          'justify-content-between': item.type !== 'payment',
-                          'justify-content-end': item.type === 'payment',
-                        })}
-                      >
+                      <div className="d-flex flex-row justify-content-between">
                         {item.type === 'email' && (
                           <button
                             className="btn --secondary --small --icon-only"

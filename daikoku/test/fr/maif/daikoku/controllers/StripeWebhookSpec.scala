@@ -143,22 +143,27 @@ class StripeWebhookSpec()
       .findAllNotDeleted()
       .futureValue
 
-  private def payablePlan(
-      tenant: Tenant,
-      key: String
-  ): PaymentSettings.Stripe = {
-    val paymentSettings = daikokuComponents.paymentClient
-      .createStripeProduct(defaultApi.api, plan)(stripeSettings(key))
-      .value
-      .futureValue
-      .toOption
-      .get
+  private def payablePlan(tenant: Tenant): PaymentSettings.Stripe = {
+    implicit val session: UserSession = loginWithBlocking(userAdmin, tenant)
+    val response = httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${plan.id.value}/_payment",
+      method = "PUT",
+      body = Json
+        .obj(
+          "paymentSettings" -> Json.obj(
+            "thirdPartyPaymentSettingsId" -> settingsId.value
+          ),
+          "costPerMonth" -> plan.costPerMonth.get,
+          "costPerRequest" -> plan.costPerRequest.get,
+          "currency" -> Json.obj("code" -> plan.currency.get.code)
+        )
+        .some
+    )(using tenant, session)
+    withClue(response.body) { response.status mustBe 200 }
+
+    currentPlan(tenant).paymentSettings.get
       .asInstanceOf[PaymentSettings.Stripe]
-    daikokuComponents.env.dataStore.usagePlanRepo
-      .forTenant(tenant)
-      .save(plan.copy(paymentSettings = paymentSettings.some))
-      .futureValue
-    paymentSettings
   }
 
   private def stripeSubscription(
@@ -310,7 +315,7 @@ class StripeWebhookSpec()
     "cut the key when the subscription is cancelled on Stripe's side" in {
       implicit val stripeKey: String = realStripeKey
       val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant, stripeKey)
+      val paymentSettings = payablePlan(stripeTenant)
       val (customerId, stripeSubscriptionId) =
         stripeSubscription(paymentSettings.priceIds.basePriceId)
       val subscription =
@@ -341,7 +346,7 @@ class StripeWebhookSpec()
     "have real Stripe carry the new amounts, on the same product and meter" in {
       implicit val stripeKey: String = realStripeKey
       val stripeTenant = setupTenant(stripeKey)
-      val before = payablePlan(stripeTenant, stripeKey)
+      val before = payablePlan(stripeTenant)
 
       implicit val session: UserSession =
         loginWithBlocking(userAdmin, stripeTenant)
@@ -392,7 +397,7 @@ class StripeWebhookSpec()
     "move a subscription onto the new prices when its invoice is finalized" in {
       implicit val stripeKey: String = realStripeKey
       val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant, stripeKey)
+      val paymentSettings = payablePlan(stripeTenant)
       val (customerId, stripeSubscriptionId) =
         stripeSubscription(paymentSettings.priceIds.basePriceId)
       daikokuSubscription(stripeTenant, stripeSubscriptionId, customerId)
@@ -440,7 +445,7 @@ class StripeWebhookSpec()
     "reactivate a cut key once an invoice is paid" in {
       implicit val stripeKey: String = realStripeKey
       val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant, stripeKey)
+      val paymentSettings = payablePlan(stripeTenant)
       val (customerId, stripeSubscriptionId) =
         stripeSubscription(paymentSettings.priceIds.basePriceId)
       val subscription = daikokuSubscription(

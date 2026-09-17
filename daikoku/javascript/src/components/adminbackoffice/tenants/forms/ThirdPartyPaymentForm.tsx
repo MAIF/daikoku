@@ -1,11 +1,13 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect } from 'react';
 
+import { QUERY_KEYS } from '../../../../constants/queryKeys';
 import { I18nContext, ModalContext } from '../../../../contexts';
-import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
+import * as Services from '../../../../services';
+import { isError, ITenantFull, IThirdPartyPaymentSettings, ResponseError, ThirdPartyPaymentType } from '../../../../types';
 import { clientFetchData, DynamicTable, DynamicTableFeatures } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { Edit, Trash2 } from "lucide-react";
@@ -15,6 +17,15 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   const { openFormModal, confirm } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
+
+  const paymentEnabledQuery = useQuery({
+    queryKey: QUERY_KEYS.paymentEnabled(),
+    queryFn: () => Services.getPaymentEnabled(),
+  });
+  const paymentNotEnabled: (ResponseError & { missing?: Array<string> }) | undefined =
+    paymentEnabledQuery.data && isError(paymentEnabledQuery.data)
+      ? paymentEnabledQuery.data
+      : undefined;
 
   const queryKey = ['third-party-payment-settings', props.tenant._id];
 
@@ -218,6 +229,18 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   return (
     <Can I={manage} a={TENANT} dispatchError>
       <div>
+        {paymentNotEnabled && (
+          <div className="alert alert-warning" role="alert">
+            <p>{translate('third-party.payment.not.enabled')}</p>
+            <ul className="mb-0">
+              {paymentNotEnabled.missing?.map((variable) => (
+                <li key={variable}>
+                  <code>{variable}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <button
           type="button"
           className="btn --primary m-1"

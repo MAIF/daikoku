@@ -171,12 +171,8 @@ class UsagePlanService(
   private def amountsChanged(oldPlan: UsagePlan, newPlan: UsagePlan): Boolean =
     oldPlan.costPerMonth != newPlan.costPerMonth ||
       oldPlan.costPerRequest != newPlan.costPerRequest ||
-      oldPlan.maxPerMonth != newPlan.maxPerMonth
+      oldPlan.includedRequestsPerMonth != newPlan.includedRequestsPerMonth
 
-  /** New Stripe prices are built on the product and the meter the plan already
-    * owns, so a new checkout pays the new amount at once while usage keeps being
-    * reported to the counter that has been accumulating.
-    */
   private def renewPrices(
       tenant: Tenant,
       oldPlan: UsagePlan,
@@ -185,9 +181,34 @@ class UsagePlanService(
     newPlan.paymentSettings match {
       case Some(settings: PaymentSettings.Stripe)
           if amountsChanged(oldPlan, newPlan) =>
-        paymentClient
-          .renewStripePrices(tenant, newPlan, settings)
-          .map(renewed => newPlan.copy(paymentSettings = renewed.some))
+        for {
+          renewed <- paymentClient.renewStripePrices(tenant, newPlan, settings)
+          subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findNotDeleted(Json.obj("plan" -> newPlan.id.asJson))
+          )
+          openDemands <- EitherT.liftF[Future, AppError, Seq[SubscriptionDemand]](
+            env.dataStore.subscriptionDemandRepo
+              .forTenant(tenant)
+              .findNotDeleted(
+                Json.obj(
+                  "plan" -> newPlan.id.asJson,
+                  "state" -> Json.obj(
+                    "$in" -> Json.arr(
+                      SubscriptionDemandState.InProgress.name,
+                      SubscriptionDemandState.Waiting.name,
+                      SubscriptionDemandState.Blocked.name
+                    )
+                  )
+                )
+              )
+          )
+          _ <-
+            if (subscriptions.isEmpty && openDemands.isEmpty)
+              paymentClient.retireStripePrices(tenant, settings)
+            else EitherT.pure[Future, AppError](())
+        } yield newPlan.copy(paymentSettings = renewed.some)
       case _ => EitherT.pure[Future, AppError](newPlan)
     }
 
@@ -260,6 +281,24 @@ class UsagePlanService(
         EitherT.leftT(
           AppError.PaymentError(
             "the currency of a priced plan cannot be changed"
+          )
+        )
+      case _
+          if candidate.paymentSettings.isDefined &&
+            !candidate.subscriptionProcess.steps.lastOption
+              .exists(_.name == "payment") =>
+        EitherT.leftT(
+          AppError.PaymentError(
+            "the payment step of a priced plan must be the last one"
+          )
+        )
+      case _
+          if candidate.includedRequestsPerMonth.exists(included =>
+            candidate.maxPerMonth.exists(_ < included)
+          ) =>
+        EitherT.leftT(
+          AppError.PaymentError(
+            "the included requests of a plan cannot exceed its monthly limit"
           )
         )
       case _

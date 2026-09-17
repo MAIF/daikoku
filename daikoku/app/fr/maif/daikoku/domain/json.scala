@@ -780,6 +780,8 @@ object json {
             maxPerSecond = (json \ "maxPerSecond").asOpt(using LongFormat),
             maxPerDay = (json \ "maxPerDay").asOpt(using LongFormat),
             maxPerMonth = (json \ "maxPerMonth").asOpt(using LongFormat),
+            includedRequestsPerMonth =
+              (json \ "includedRequestsPerMonth").asOpt(using LongFormat),
             costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
             costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
             currency = (json \ "currency").asOpt(using CurrencyFormat),
@@ -829,6 +831,10 @@ object json {
         "maxPerSecond" -> o.maxPerSecond,
         "maxPerDay" -> o.maxPerDay,
         "maxPerMonth" -> o.maxPerMonth
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "includedRequestsPerMonth" -> o.includedRequestsPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],

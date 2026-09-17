@@ -450,63 +450,48 @@ class PaymentClient(
           "recurring[usage_type]" -> "metered"
         )
 
-        val usagePricing: Option[Map[String, String]] =
-          (plan.costPerRequest, plan.maxPerMonth) match {
-            case (Some(costPerRequest), Some(maxPerMonth)) =>
-              (meteredBody ++ Map(
+        val costPerRequest = toStripeAmount(
+          plan.costPerRequest.getOrElse(BigDecimal(0)),
+          plan.currency
+        )
+
+        val usagePricing: Map[String, String] =
+          plan.includedRequestsPerMonth match {
+            case Some(includedRequests) =>
+              meteredBody ++ Map(
                 "tiers_mode" -> "graduated",
                 "billing_scheme" -> "tiered",
                 "tiers[0][unit_amount]" -> "0",
-                "tiers[0][up_to]" -> maxPerMonth.toString,
-                "tiers[1][unit_amount]" -> toStripeAmount(
-                  costPerRequest,
-                  plan.currency
-                ),
+                "tiers[0][up_to]" -> includedRequests.toString,
+                "tiers[1][unit_amount]" -> costPerRequest,
                 "tiers[1][up_to]" -> "inf"
-              )).some
-            case (Some(costPerRequest), None) =>
-              (meteredBody + ("unit_amount" -> toStripeAmount(
-                costPerRequest,
-                plan.currency
-              ))).some
-            case _ => None
+              )
+            case None => meteredBody + ("unit_amount" -> costPerRequest)
           }
 
-        usagePricing match {
-          case Some(pricing) =>
-            for {
-              baseprice <- postStripePrice(body, s"$operationKey-price-base")
-              meter <- existingMeter.fold(
-                createStripeMeter(
-                  s"${plan.customName} usage",
-                  s"$operationKey-meter"
-                )
-              )(EitherT.pure[Future, AppError](_))
-              (meterId, eventName) = meter
-              payperUsePrice <- postStripePrice(
-                pricing + ("recurring[meter]" -> meterId),
-                s"$operationKey-price-usage"
-              )
-            } yield PaymentSettings.Stripe(
-              stripeSettings.id,
-              productId,
-              StripePriceIds(
-                basePriceId = baseprice,
-                additionalPriceId = payperUsePrice.some,
-                meterId = meterId.some,
-                meterEventName = eventName.some
-              )
+        for {
+          baseprice <- postStripePrice(body, s"$operationKey-price-base")
+          meter <- existingMeter.fold(
+            createStripeMeter(
+              s"${plan.customName} usage",
+              s"$operationKey-meter"
             )
-          case None =>
-            postStripePrice(body, s"$operationKey-price-base")
-              .map(priceId =>
-                PaymentSettings.Stripe(
-                  stripeSettings.id,
-                  productId,
-                  StripePriceIds(basePriceId = priceId)
-                )
-              )
-        }
+          )(EitherT.pure[Future, AppError](_))
+          (meterId, eventName) = meter
+          payperUsePrice <- postStripePrice(
+            usagePricing + ("recurring[meter]" -> meterId),
+            s"$operationKey-price-usage"
+          )
+        } yield PaymentSettings.Stripe(
+          stripeSettings.id,
+          productId,
+          StripePriceIds(
+            basePriceId = baseprice,
+            additionalPriceId = payperUsePrice.some,
+            meterId = meterId.some,
+            meterEventName = eventName.some
+          )
+        )
       case _ =>
         EitherT.leftT[Future, PaymentSettings](
           AppError.PaymentError("Basic payment information is not setted up")
@@ -547,6 +532,33 @@ class PaymentClient(
           s"${plan.id.value}-${IdGenerator.token(16)}",
           existingMeter
         )
+    }
+
+  def retireStripePrices(
+      tenant: Tenant,
+      settings: PaymentSettings.Stripe
+  ): EitherT[Future, AppError, Unit] =
+    stripeSettingsOf(tenant, settings) match {
+      case None =>
+        EitherT.leftT[Future, Unit](
+          AppError.ThirdPartyPaymentSettingsNotFound
+        )
+      case Some(s) =>
+        implicit val stripeSettings: StripeSettings = s
+        for {
+          _ <- retireOnStripe(
+            s"/v1/prices/${settings.priceIds.basePriceId}",
+            "already_inactive"
+          )
+          _ <- settings.priceIds.additionalPriceId.fold(
+            EitherT.pure[Future, AppError](Json.obj().as[JsValue])
+          )(additionalPriceId =>
+            retireOnStripe(
+              s"/v1/prices/$additionalPriceId",
+              "already_inactive"
+            )
+          )
+        } yield ()
     }
 
   def createStripeProduct(
