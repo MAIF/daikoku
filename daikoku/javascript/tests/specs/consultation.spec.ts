@@ -538,6 +538,7 @@ test("subscription page filtering by clientId should work",  async ({ page }) =>
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
+  await expect(page).toHaveURL("/api-division/api-commande/1.0.0/description");
   await page.getByText('Souscriptions').click();
   await expect(page).toHaveURL("/api-division/api-commande/1.0.0/subscriptions")
   await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
