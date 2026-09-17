@@ -141,7 +141,6 @@ type ApiKeysListForApiProps = {
   api: IApi,
   ownerTeam: ITeamSimple,
   linkToChildren?: (api: IApi, teamHrId: string) => string,
-  keyringsTeams?: ITeamSimple[]
 }
 
 export interface IKeyringSubscriptionGql {
@@ -482,7 +481,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         <div className="col-12">
           <PaginatedComponent
             items={sorted}
-            count={5}
+            count={6}
             classNames="gap-2"
             formatter={(keyring: IKeyringForApiGql) => (
               <KeyringCard
