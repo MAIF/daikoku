@@ -244,14 +244,14 @@ export const makeUniqueApiKey = (
     method: 'POST',
   });
 
-export const toggleApiKeyRotation = (
+export const toggleKeyringRotation = (
   teamId: string,
-  subscriptionId: string,
+  keyringId: string,
   enabled: boolean,
   rotationEvery: number,
   gracePeriod: number
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+  customFetch(`/api/teams/${teamId}/keyring/${keyringId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
@@ -863,16 +863,6 @@ export const uploadExportFile = (file: any) =>
       'Content-Type': 'application/x-ndjson',
     },
     body: file,
-  });
-
-export const updateSubscriptionCustomName = (
-  team: ITeamSimple,
-  subscription: ISubscription,
-  customName: string
-): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
-    method: 'POST',
-    body: JSON.stringify({ customName }),
   });
 
 export const updateSubscription = (
@@ -1868,7 +1858,50 @@ export const graphql = {
           keyring {
             _id
             customName
-            subscriptionsCount
+            apiKey {
+              clientName
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
+  getKeyringSubscriptions: `
+    query getKeyringSubscriptions ($keyringId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyringSubscriptions (id: $keyringId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
+        subscriptions {
+          _id
+          lastUsage
+          plan {
+            _id
+            customName
+          }
+          team {
+            _id
+            name
+            type
+          }
+          createdAt
+          validUntil
+          api {
+            _id
+            name
+          }
+          customName
+          enabled
+          state
+          tags
+          metadata
+          customMetadata
+          customMaxPerSecond
+          customMaxPerDay
+          customMaxPerMonth
+          customReadOnly
+          adminCustomName
+          keyring {
+            _id
+            customName
             apiKey {
               clientName
             }
@@ -1879,19 +1912,21 @@ export const graphql = {
     }
     `,
   getApiKeyrings: `
-    query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
-      keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
-        keyrings {
+    query getApiKeyrings ($apiId: String!, $teamId: String!, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, limit: $limit, offset: $offset) {
+        keyringsWithSubCountAndRotation {
           _id
           customName
           enabled
           integrationToken
           bearerToken
-          subscriptionsCount
           apiKey {
             clientId
             clientSecret
             clientName
+          }
+          team {
+            name
           }
           rotation {
             enabled
@@ -1899,27 +1934,9 @@ export const graphql = {
             gracePeriod
             pendingRotation
           }
-          subscriptions {
-            _id
-            customName
-            adminCustomName
-            enabled
-            state
-            createdAt
-            validUntil
-            tags
-            plan {
-              _id
-              customName
-              autoRotation
-            }
-            api {
-              _id
-              _humanReadableId
-              name
-              currentVersion
-            }
-          }
+          subscriptionsCount
+          canUpdateRotation
+          environments
         }
         total
       }

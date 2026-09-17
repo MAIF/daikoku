@@ -124,7 +124,7 @@ export const ApiHome = () => {
           toast.success(translate('subscription.created.success'));
           const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
           if (teamHrId && needRedirection) {
-            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
+            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/keyrings`);
           }
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
@@ -212,7 +212,7 @@ export const ApiHome = () => {
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
           {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
-          {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
+          {params.tab === 'keyrings' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
         </div>
       </main>);
   }

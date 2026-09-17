@@ -2046,13 +2046,23 @@ object evolution_1900 extends EvolutionScript {
                 |         'integrationToken', s.content->>'integrationToken',
                 |         'bearerToken', s.content->'bearerToken',
                 |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
-                |         'customName', coalesce((a.content->>'name') || ' - ' || (p.content->>'customName'), s.content->'apiKey'->>'clientName')
+                |         'customName', coalesce(
+                |             CASE
+                |               WHEN s.content->>'parent' IS NOT NULL THEN
+                |                 coalesce((pa.content->>'name') || ' - ' || (pp.content->>'customName'), ps.content->'apiKey'->>'clientName')
+                |               ELSE
+                |                 (a.content->>'name') || ' - ' || (p.content->>'customName')
+                |             END,
+                |             s.content->'apiKey'->>'clientName'
+                |         )
                 |       )
                 |FROM api_subscriptions s
-                |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
-                |LEFT JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
+                |LEFT JOIN apis a           ON a.content->>'_id' = s.content->>'api'
+                |LEFT JOIN usage_plans p    ON p.content->>'_id' = s.content->>'plan'
+                |LEFT JOIN api_subscriptions ps ON ps.content->>'_id' = s.content->>'parent' AND ps._deleted = false
+                |LEFT JOIN apis pa          ON pa.content->>'_id' = ps.content->>'api'
+                |LEFT JOIN usage_plans pp   ON pp.content->>'_id' = ps.content->>'plan'
                 |WHERE s._deleted = false
-                |  AND s.content->>'parent' IS NULL
                 |  AND s.content->>'keyring' IS NULL
                 |  AND s.content->'apiKey' IS NOT NULL
                 |  AND NOT EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s._id);
