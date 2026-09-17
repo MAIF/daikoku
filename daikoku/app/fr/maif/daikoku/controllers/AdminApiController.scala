@@ -524,7 +524,6 @@ class ApiAdminApiController(
       stars = existing.stars
     )
 
-
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant, ds: DataStore): Repo[Api, ApiId] =
     ds.apiRepo.forTenant(tenant)

@@ -2,7 +2,11 @@ package fr.maif.daikoku.controllers
 
 import cats.syntax.option.*
 import com.google.common.base.Charsets
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext, tenantSecurity}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  tenantSecurity
+}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.sync.PublicUserAccess
 import fr.maif.daikoku.domain.*

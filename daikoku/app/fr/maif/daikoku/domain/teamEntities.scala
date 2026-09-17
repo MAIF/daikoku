@@ -226,9 +226,9 @@ object NotificationAction {
   ) extends NotificationAction
 
   case class NewSubscription(
-   api: ApiId,
-   plan: UsagePlanId,
-   team: TeamId
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId
   ) extends NotificationAction
 
   case class AccountCreationAttempt(

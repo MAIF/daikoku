@@ -105,7 +105,9 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
       val result = resolve(
         Json.arr("teams/*.json"),
         path => Future.successful(Right(contents(path))),
-        resolveGlob = Some(_ => Future.successful(Right(Seq("teams/a.json", "teams/b.json"))))
+        resolveGlob = Some(_ =>
+          Future.successful(Right(Seq("teams/a.json", "teams/b.json")))
+        )
       )
 
       result.value.map(_.id) mustBe Seq("team-a", "team-b")
@@ -144,8 +146,13 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
 
     "resolve a remote glob against a listing of files, relative to a base path" in {
       val files = Seq("base/teams/a.json", "base/teams/b.yml", "other/c.json")
-      SourceUtils.resolveRemoteGlob(files, "base", "teams/*.json") mustBe Seq("teams/a.json")
-      SourceUtils.resolveRemoteGlob(files, "", "**/*.json") mustBe Seq("base/teams/a.json", "other/c.json")
+      SourceUtils.resolveRemoteGlob(files, "base", "teams/*.json") mustBe Seq(
+        "teams/a.json"
+      )
+      SourceUtils.resolveRemoteGlob(files, "", "**/*.json") mustBe Seq(
+        "base/teams/a.json",
+        "other/c.json"
+      )
     }
 
     "recognize entity files and file extensions" in {

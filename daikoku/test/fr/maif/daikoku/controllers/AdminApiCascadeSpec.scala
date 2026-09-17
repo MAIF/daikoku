@@ -324,7 +324,7 @@ class AdminApiCascadeSpec
             target.apikeyCustomization
               .copy(metadata = Json.obj("region" -> "eu-west"))
           )
-        ),
+        )
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(

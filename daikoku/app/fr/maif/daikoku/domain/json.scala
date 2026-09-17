@@ -3105,7 +3105,6 @@ object json {
           case str                  => JsError(s"Bad notification value: $str")
         }
 
-
       override def writes(o: NotificationAction) =
         o match {
           case p: ApiAccess =>
@@ -3464,7 +3463,7 @@ object json {
           NewSubscription(
             api = (json \ "api").as(using ApiIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
-            plan = (json \ "plan").as(using UsagePlanIdFormat),
+            plan = (json \ "plan").as(using UsagePlanIdFormat)
           )
         )
       } recover { case e =>
@@ -3475,7 +3474,7 @@ object json {
     override def writes(o: NewSubscription): JsValue = Json.obj(
       "api" -> ApiIdFormat.writes(o.api),
       "team" -> TeamIdFormat.writes(o.team),
-      "plan" -> UsagePlanIdFormat.writes(o.plan),
+      "plan" -> UsagePlanIdFormat.writes(o.plan)
     )
   }
   val ApiSubscriptionDemandFormat = new Format[ApiSubscriptionDemand] {

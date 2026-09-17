@@ -6,7 +6,11 @@ import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
-import fr.maif.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, TestingConfigFormat}
+import fr.maif.daikoku.domain.json.{
+  AuthorizedEntitiesFormat,
+  OtoroshiSettingsFormat,
+  TestingConfigFormat
+}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger

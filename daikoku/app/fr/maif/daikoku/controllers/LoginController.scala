@@ -5,7 +5,12 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext, DaikokuUnauthenticatedAction}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext,
+  DaikokuUnauthenticatedAction
+}
 import fr.maif.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.daikoku.controllers.AppError.getErrorMessage
 import fr.maif.daikoku.domain.*

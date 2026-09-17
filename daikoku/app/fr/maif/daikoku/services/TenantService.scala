@@ -192,48 +192,52 @@ class TenantService(
         if (removedOtoroshiSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            referencingPlans(
-              Json.obj(
-                "otoroshiTarget.otoroshiSettings" -> Json.obj(
-                  "$in" -> JsArray(
-                    removedOtoroshiSettings.map(_.asJson).toSeq
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              referencingPlans(
+                Json.obj(
+                  "otoroshiTarget.otoroshiSettings" -> Json.obj(
+                    "$in" -> JsArray(
+                      removedOtoroshiSettings.map(_.asJson).toSeq
+                    )
                   )
                 )
               )
             )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"otoroshi settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
       _ <-
         if (removedPaymentSettings.isEmpty)
           EitherT.pure[Future, AppError](())
         else
-          EitherT.liftF[Future, AppError, Seq[UsagePlan]](
-            referencingPlans(
-              Json.obj(
-                "paymentSettings.thirdPartyPaymentSettingsId" -> Json.obj(
-                  "$in" -> JsArray(
-                    removedPaymentSettings.map(_.asJson).toSeq
+          EitherT
+            .liftF[Future, AppError, Seq[UsagePlan]](
+              referencingPlans(
+                Json.obj(
+                  "paymentSettings.thirdPartyPaymentSettingsId" -> Json.obj(
+                    "$in" -> JsArray(
+                      removedPaymentSettings.map(_.asJson).toSeq
+                    )
                   )
                 )
               )
             )
-          ).flatMap(plans =>
-            EitherT.cond[Future][AppError, Unit](
-              plans.isEmpty,
-              (),
-              AppError.EntityConflict(
-                s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+            .flatMap(plans =>
+              EitherT.cond[Future][AppError, Unit](
+                plans.isEmpty,
+                (),
+                AppError.EntityConflict(
+                  s"payment settings still used by plans ${plans.map(_.id.value).mkString(", ")}"
+                )
               )
             )
-          )
     } yield ()
   }
 

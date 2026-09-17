@@ -15,7 +15,9 @@ class RemoteContentParserSpec extends PlaySpec {
       val raw = """{"kind":"team","_id":"team-a","name":"A"}"""
 
       val entities = RemoteContentParser.parseRawContent(raw, "src")
-      entities.map(e => (e.id, e.kind, e.source)) mustBe Seq(("team-a", "team", "src"))
+      entities.map(e => (e.id, e.kind, e.source)) mustBe Seq(
+        ("team-a", "team", "src")
+      )
       (entities.head.content \ "name").as[String] mustBe "A"
     }
 
@@ -51,16 +53,18 @@ class RemoteContentParserSpec extends PlaySpec {
     "keep a namespaced spec.kind when it refines the outer kind" in {
       val namespaced = Json.obj(
         "apiVersion" -> "daikoku.io/v1",
-        "kind"       -> "team",
-        "spec"       -> Json.obj("_id" -> "team-a", "kind" -> "daikoku/team")
+        "kind" -> "team",
+        "spec" -> Json.obj("_id" -> "team-a", "kind" -> "daikoku/team")
       )
-      RemoteContentParser.parse(namespaced, "src").map(_.kind) mustBe Seq("daikoku/team")
+      RemoteContentParser.parse(namespaced, "src").map(_.kind) mustBe Seq(
+        "daikoku/team"
+      )
 
       // an unrelated spec.kind does not override the outer kind
       val unrelated = Json.obj(
         "apiVersion" -> "daikoku.io/v1",
-        "kind"       -> "team",
-        "spec"       -> Json.obj("_id" -> "team-a", "kind" -> "api")
+        "kind" -> "team",
+        "spec" -> Json.obj("_id" -> "team-a", "kind" -> "api")
       )
       RemoteContentParser.parse(unrelated, "src").map(_.kind) mustBe Seq("team")
     }
@@ -99,11 +103,17 @@ class RemoteContentParserSpec extends PlaySpec {
           |_id: team-b
           |""".stripMargin
 
-      RemoteContentParser.parseRawContent(yaml, "test").map(_.id) mustBe Seq("team-a", "team-b")
+      RemoteContentParser.parseRawContent(yaml, "test").map(_.id) mustBe Seq(
+        "team-a",
+        "team-b"
+      )
     }
 
     "ignore content that is neither a JSON nor a YAML entity" in {
-      RemoteContentParser.parseRawContent("just a plain scalar", "test") mustBe empty
+      RemoteContentParser.parseRawContent(
+        "just a plain scalar",
+        "test"
+      ) mustBe empty
     }
   }
 }

@@ -14,14 +14,14 @@ class CatalogSourceGitlab extends CatalogSource {
 
   private val logger = Logger("daikoku-remote-catalog-source-gitlab")
 
-  override def sourceKind: String       = "gitlab"
+  override def sourceKind: String = "gitlab"
   override def supportsWebhook: Boolean = true
 
   private def parseProjectPath(repoUrl: String): Option[String] = Some(repoUrl)
 
   private def gitlabHeaders(token: String): Seq[(String, String)] = {
     Seq("User-Agent" -> "Daikoku-Remote-Catalogs") ++
-    (if (token.nonEmpty) Seq("PRIVATE-TOKEN" -> token) else Seq.empty)
+      (if (token.nonEmpty) Seq("PRIVATE-TOKEN" -> token) else Seq.empty)
   }
 
   private def fetchFileContent(
@@ -32,7 +32,8 @@ class CatalogSourceGitlab extends CatalogSource {
       token: String,
       env: Env
   )(implicit ec: ExecutionContext): Future[Either[JsValue, String]] = {
-    val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/files/$filePath/raw"
+    val apiUrl =
+      s"$baseUrl/api/v4/projects/$encodedProject/repository/files/$filePath/raw"
     env.wsClient
       .url(apiUrl)
       .withQueryStringParameters("ref" -> branch)
@@ -43,11 +44,19 @@ class CatalogSourceGitlab extends CatalogSource {
         if (resp.status == 200) {
           Right(resp.body): Either[JsValue, String]
         } else {
-          Left(Json.obj("error" -> s"GitLab API returned ${resp.status} for $filePath")): Either[JsValue, String]
+          Left(
+            Json.obj(
+              "error" -> s"GitLab API returned ${resp.status} for $filePath"
+            )
+          ): Either[JsValue, String]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error fetching $filePath from GitLab: ${e.getMessage}")): Either[JsValue, String]
+        Left(
+          Json.obj(
+            "error" -> s"Error fetching $filePath from GitLab: ${e.getMessage}"
+          )
+        ): Either[JsValue, String]
       }
   }
 
@@ -61,7 +70,11 @@ class CatalogSourceGitlab extends CatalogSource {
     val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/tree"
     env.wsClient
       .url(apiUrl)
-      .withQueryStringParameters("ref" -> branch, "recursive" -> "true", "per_page" -> "100")
+      .withQueryStringParameters(
+        "ref" -> branch,
+        "recursive" -> "true",
+        "per_page" -> "100"
+      )
       .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
       .get()
@@ -75,21 +88,31 @@ class CatalogSourceGitlab extends CatalogSource {
                 if (itemType == "blob") Some(itemPath) else None
               }
               Right(files.toSeq): Either[JsValue, Seq[String]]
-            case _            =>
-              Left(Json.obj("error" -> "GitLab API did not return an array for recursive tree listing")): Either[
+            case _ =>
+              Left(
+                Json.obj(
+                  "error" -> "GitLab API did not return an array for recursive tree listing"
+                )
+              ): Either[
                 JsValue,
                 Seq[String]
               ]
           }
         } else {
-          Left(Json.obj("error" -> s"GitLab API returned ${resp.status} for recursive tree listing")): Either[
+          Left(
+            Json.obj(
+              "error" -> s"GitLab API returned ${resp.status} for recursive tree listing"
+            )
+          ): Either[
             JsValue,
             Seq[String]
           ]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(
+          Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")
+        ): Either[JsValue, Seq[String]]
       }
   }
 
@@ -104,7 +127,11 @@ class CatalogSourceGitlab extends CatalogSource {
     val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/tree"
     env.wsClient
       .url(apiUrl)
-      .withQueryStringParameters("ref" -> branch, "path" -> dirPath, "per_page" -> "100")
+      .withQueryStringParameters(
+        "ref" -> branch,
+        "path" -> dirPath,
+        "per_page" -> "100"
+      )
       .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
@@ -116,43 +143,66 @@ class CatalogSourceGitlab extends CatalogSource {
                 val itemType = (item \ "type").asOpt[String].getOrElse("")
                 val itemName = (item \ "name").asOpt[String].getOrElse("")
                 val itemPath = (item \ "path").asOpt[String].getOrElse("")
-                if (itemType == "blob" && SourceUtils.isEntityFile(itemName)) Some(itemPath) else None
+                if (itemType == "blob" && SourceUtils.isEntityFile(itemName))
+                  Some(itemPath)
+                else None
               }
               Right(files.toSeq): Either[JsValue, Seq[String]]
-            case _            =>
-              Left(Json.obj("error" -> "GitLab API did not return an array for tree listing")): Either[JsValue, Seq[
+            case _ =>
+              Left(
+                Json.obj(
+                  "error" -> "GitLab API did not return an array for tree listing"
+                )
+              ): Either[JsValue, Seq[
                 String
               ]]
           }
         } else {
-          Left(Json.obj("error" -> s"GitLab API returned ${resp.status} for tree listing")): Either[JsValue, Seq[
+          Left(
+            Json.obj(
+              "error" -> s"GitLab API returned ${resp.status} for tree listing"
+            )
+          ): Either[JsValue, Seq[
             String
           ]]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(
+          Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")
+        ): Either[JsValue, Seq[String]]
       }
   }
 
-  override def webhookDeploySelect(possibleCatalogs: Seq[RemoteCatalog], payload: JsValue)(implicit
+  override def webhookDeploySelect(
+      possibleCatalogs: Seq[RemoteCatalog],
+      payload: JsValue
+  )(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[JsValue, Seq[RemoteCatalog]]] = {
-    val projectWebUrl = (payload \ "project" \ "web_url").asOpt[String].getOrElse("")
-    val ref           = (payload \ "ref").asOpt[String].getOrElse("")
-    val branch        = ref.replace("refs/heads/", "")
-    val matched       = possibleCatalogs.filter { catalog =>
+    val projectWebUrl =
+      (payload \ "project" \ "web_url").asOpt[String].getOrElse("")
+    val ref = (payload \ "ref").asOpt[String].getOrElse("")
+    val branch = ref.replace("refs/heads/", "")
+    val matched = possibleCatalogs.filter { catalog =>
       catalog.source.kind == "gitlab" && {
-        val configRepo   = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
-        val configBranch = (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
-        configRepo.stripSuffix(".git") == projectWebUrl.stripSuffix(".git") && configBranch == branch
+        val configRepo =
+          (catalog.source.config \ "repo").asOpt[String].getOrElse("")
+        val configBranch =
+          (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
+        configRepo.stripSuffix(".git") == projectWebUrl.stripSuffix(
+          ".git"
+        ) && configBranch == branch
       }
     }
     Future.successful(Right(matched))
   }
 
-  override def webhookDeployExtractArgs(catalog: RemoteCatalog, payload: JsValue)(implicit
+  override def webhookDeployExtractArgs(
+      catalog: RemoteCatalog,
+      payload: JsValue
+  )(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[JsValue, JsObject]] = Future.successful(Right(Json.obj()))
@@ -162,14 +212,22 @@ class CatalogSourceGitlab extends CatalogSource {
     !cleaned.contains("/")
   }
 
-  private def listGroupProjects(baseUrl: String, group: String, token: String, env: Env)(implicit
+  private def listGroupProjects(
+      baseUrl: String,
+      group: String,
+      token: String,
+      env: Env
+  )(implicit
       ec: ExecutionContext
   ): Future[Either[JsValue, Seq[String]]] = {
     val encodedGroup = java.net.URLEncoder.encode(group, "UTF-8")
-    val apiUrl       = s"$baseUrl/api/v4/groups/$encodedGroup/projects"
+    val apiUrl = s"$baseUrl/api/v4/groups/$encodedGroup/projects"
     env.wsClient
       .url(apiUrl)
-      .withQueryStringParameters("per_page" -> "100", "include_subgroups" -> "true")
+      .withQueryStringParameters(
+        "per_page" -> "100",
+        "include_subgroups" -> "true"
+      )
       .withHttpHeaders(gitlabHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
@@ -177,23 +235,37 @@ class CatalogSourceGitlab extends CatalogSource {
         if (resp.status == 200) {
           resp.json match {
             case arr: JsArray =>
-              val projects = arr.value.flatMap(item => (item \ "path_with_namespace").asOpt[String])
+              val projects = arr.value.flatMap(item =>
+                (item \ "path_with_namespace").asOpt[String]
+              )
               Right(projects.toSeq): Either[JsValue, Seq[String]]
-            case _            =>
-              Left(Json.obj("error" -> "GitLab API did not return an array for group projects")): Either[
+            case _ =>
+              Left(
+                Json.obj(
+                  "error" -> "GitLab API did not return an array for group projects"
+                )
+              ): Either[
                 JsValue,
                 Seq[String]
               ]
           }
         } else {
-          Left(Json.obj("error" -> s"GitLab API returned ${resp.status} for group projects")): Either[
+          Left(
+            Json.obj(
+              "error" -> s"GitLab API returned ${resp.status} for group projects"
+            )
+          ): Either[
             JsValue,
             Seq[String]
           ]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing GitLab group projects: ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(
+          Json.obj(
+            "error" -> s"Error listing GitLab group projects: ${e.getMessage}"
+          )
+        ): Either[JsValue, Seq[String]]
       }
   }
 
@@ -204,52 +276,91 @@ class CatalogSourceGitlab extends CatalogSource {
       path: String,
       token: String,
       env: Env
-  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[RemoteEntity]]] = {
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
     val encodedProject = java.net.URLEncoder.encode(projectPath, "UTF-8")
     if (SourceUtils.hasFileExtension(path)) {
-      fetchFileContent(baseUrl, encodedProject, path, branch, token, env).flatMap {
-        case Left(err)         => Future.successful(Left(err))
-        case Right(rawContent) =>
-          SourceUtils.isDeployListing(rawContent) match {
-            case Some(arr) =>
-              val basePath = if (path.contains("/")) path.substring(0, path.lastIndexOf('/')) else ""
-              SourceUtils.resolveDeployListing(
-                arr,
-                relativePath => {
-                  val fullPath = if (basePath.nonEmpty) s"$basePath/$relativePath" else relativePath
-                  fetchFileContent(baseUrl, encodedProject, fullPath, branch, token, env)
-                },
-                s"gitlab://$projectPath/$path@$branch",
-                resolveGlob = Some(glob =>
-                  listAllFilesRecursive(baseUrl, encodedProject, branch, token, env).map {
-                    case Left(err)    => Left(err)
-                    case Right(files) => Right(SourceUtils.resolveRemoteGlob(files, basePath, glob))
-                  }
+      fetchFileContent(baseUrl, encodedProject, path, branch, token, env)
+        .flatMap {
+          case Left(err) => Future.successful(Left(err))
+          case Right(rawContent) =>
+            SourceUtils.isDeployListing(rawContent) match {
+              case Some(arr) =>
+                val basePath =
+                  if (path.contains("/"))
+                    path.substring(0, path.lastIndexOf('/'))
+                  else ""
+                SourceUtils.resolveDeployListing(
+                  arr,
+                  relativePath => {
+                    val fullPath =
+                      if (basePath.nonEmpty) s"$basePath/$relativePath"
+                      else relativePath
+                    fetchFileContent(
+                      baseUrl,
+                      encodedProject,
+                      fullPath,
+                      branch,
+                      token,
+                      env
+                    )
+                  },
+                  s"gitlab://$projectPath/$path@$branch",
+                  resolveGlob = Some(glob =>
+                    listAllFilesRecursive(
+                      baseUrl,
+                      encodedProject,
+                      branch,
+                      token,
+                      env
+                    ).map {
+                      case Left(err) => Left(err)
+                      case Right(files) =>
+                        Right(
+                          SourceUtils.resolveRemoteGlob(files, basePath, glob)
+                        )
+                    }
+                  )
                 )
-              )
-            case None      =>
-              Future.successful(
-                Right(
-                  SourceUtils.parseEntityContent(rawContent, s"gitlab://$projectPath/$path@$branch")
-                ): Either[JsValue, Seq[RemoteEntity]]
-              )
-          }
-      }
+              case None =>
+                Future.successful(
+                  Right(
+                    SourceUtils.parseEntityContent(
+                      rawContent,
+                      s"gitlab://$projectPath/$path@$branch"
+                    )
+                  ): Either[JsValue, Seq[RemoteEntity]]
+                )
+            }
+        }
     } else {
       listDirectory(baseUrl, encodedProject, path, branch, token, env).flatMap {
-        case Left(err)    => Future.successful(Left(err))
+        case Left(err) => Future.successful(Left(err))
         case Right(files) =>
           Future
             .sequence(files.map { filePath =>
-              fetchFileContent(baseUrl, encodedProject, filePath, branch, token, env).map {
-                case Left(err)         =>
+              fetchFileContent(
+                baseUrl,
+                encodedProject,
+                filePath,
+                branch,
+                token,
+                env
+              ).map {
+                case Left(err) =>
                   logger.warn(s"Error fetching $filePath: ${err.toString}")
                   Seq.empty[RemoteEntity]
                 case Right(rawContent) =>
-                  SourceUtils.parseEntityContent(rawContent, s"gitlab://$projectPath/$filePath@$branch")
+                  SourceUtils.parseEntityContent(
+                    rawContent,
+                    s"gitlab://$projectPath/$filePath@$branch"
+                  )
               }
             })
-            .map(entities => Right(entities.flatten): Either[JsValue, Seq[RemoteEntity]])
+            .map(entities =>
+              Right(entities.flatten): Either[JsValue, Seq[RemoteEntity]]
+            )
       }
     }
   }
@@ -258,17 +369,25 @@ class CatalogSourceGitlab extends CatalogSource {
       ec: ExecutionContext,
       env: Env
   ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
-    val repoUrl      = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
-    val branch       = (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
-    val path         = (catalog.source.config \ "path").asOpt[String].getOrElse("/").stripPrefix("/")
-    val token        = (catalog.source.config \ "token").asOpt[String].getOrElse("")
-    val baseUrl      = (catalog.source.config \ "base_url").asOpt[String].getOrElse("https://gitlab.com")
+    val repoUrl = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
+    val branch =
+      (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
+    val path = (catalog.source.config \ "path")
+      .asOpt[String]
+      .getOrElse("/")
+      .stripPrefix("/")
+    val token = (catalog.source.config \ "token").asOpt[String].getOrElse("")
+    val baseUrl = (catalog.source.config \ "base_url")
+      .asOpt[String]
+      .getOrElse("https://gitlab.com")
     val repoPatterns =
-      (catalog.source.config \ "repo_patterns").asOpt[Seq[String]].getOrElse(Seq.empty)
+      (catalog.source.config \ "repo_patterns")
+        .asOpt[Seq[String]]
+        .getOrElse(Seq.empty)
 
     if (isGroup(repoUrl)) {
       listGroupProjects(baseUrl, repoUrl, token, env).flatMap {
-        case Left(err)       => Future.successful(Left(err))
+        case Left(err) => Future.successful(Left(err))
         case Right(projects) =>
           val filtered = if (repoPatterns.nonEmpty) {
             projects.filter { p =>
@@ -276,10 +395,19 @@ class CatalogSourceGitlab extends CatalogSource {
               repoPatterns.exists(pat => SourceUtils.matchesGlob(name, pat))
             }
           } else projects
-          logger.info(s"Scanning ${filtered.size} projects in group '$repoUrl' for path '$path'")
+          logger.info(
+            s"Scanning ${filtered.size} projects in group '$repoUrl' for path '$path'"
+          )
           Future
             .sequence(filtered.map { projectPath =>
-              fetchFromSingleProject(baseUrl, projectPath, branch, path, token, env).map {
+              fetchFromSingleProject(
+                baseUrl,
+                projectPath,
+                branch,
+                path,
+                token,
+                env
+              ).map {
                 case Left(_)         => Seq.empty[RemoteEntity]
                 case Right(entities) => entities
               }
@@ -288,8 +416,14 @@ class CatalogSourceGitlab extends CatalogSource {
       }
     } else {
       parseProjectPath(repoUrl) match {
-        case None              =>
-          Future.successful(Left(Json.obj("error" -> s"Cannot parse GitLab project path from: $repoUrl")))
+        case None =>
+          Future.successful(
+            Left(
+              Json.obj(
+                "error" -> s"Cannot parse GitLab project path from: $repoUrl"
+              )
+            )
+          )
         case Some(projectPath) =>
           fetchFromSingleProject(baseUrl, projectPath, branch, path, token, env)
       }

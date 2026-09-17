@@ -742,7 +742,9 @@ object SchemaDefinition {
     lazy val BillingTimeUnitEnumType = EnumType(
       "BillingTimeUnit",
       Some("Unit of a billing duration : hour, day, month or year"),
-      BillingTimeUnit.values.map(unit => EnumValue(unit.name, value = unit)).toList
+      BillingTimeUnit.values
+        .map(unit => EnumValue(unit.name, value = unit))
+        .toList
     )
 
     lazy val BillingDurationType = deriveObjectType[

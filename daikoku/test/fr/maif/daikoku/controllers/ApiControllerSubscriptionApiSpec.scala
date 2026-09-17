@@ -334,7 +334,7 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
             ValidationStep.Form(id = IdGenerator.token, title = "form"),
             process
           )
-        ),
+        )
       )
       val planWithoutProcess = planWithProcess.copy(
         id = UsagePlanId(IdGenerator.token),
@@ -364,11 +364,21 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         body = Json.obj().some
       )(using tenant, session)
       resp.status mustBe 200
-      val notifs1 = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      val notifs1 = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findAll(),
+        5.seconds
+      )
       notifs1.length mustBe 1
       val notif1 = notifs1.head
       notif1.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
-      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteById(notif1.id), 5.seconds)
+      Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .deleteById(notif1.id),
+        5.seconds
+      )
 
       val resp2 = httpJsonCallBlocking(
         path =
@@ -377,21 +387,41 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         body = Json.obj().some
       )(using tenant, session)
       resp.status mustBe 200
-      val notifs2 = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      val notifs2 = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findAll(),
+        5.seconds
+      )
       notifs2.length mustBe 1
       val notifToAccept = notifs2.head
       val respAcceptation = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${notifToAccept.id.value}/accept",
+        path = s"/api/notifications/${notifToAccept.id.value}/accept",
         method = "PUT",
         body = Json.obj().some
       )(using tenant, session)
       respAcceptation.status mustBe 200
-      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteById(notifToAccept.id), 5.seconds)
-      val notifs2bis = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .deleteById(notifToAccept.id),
+        5.seconds
+      )
+      val notifs2bis = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findAll(),
+        5.seconds
+      )
 
-      notifs2bis.head.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
-      Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).deleteAll(), 5.seconds)
+      notifs2bis.head.action
+        .isInstanceOf[NotificationAction.NewSubscription] mustBe true
+      Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .deleteAll(),
+        5.seconds
+      )
 
       val adminSession = loginWithBlocking(daikokuAdmin, tenant)
       val respAdminSub = httpJsonCallBlocking(
@@ -402,10 +432,16 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
       )(using tenant, adminSession)
       logger.info(Json.stringify(respAdminSub.json))
       respAdminSub.status mustBe 200
-      val notifsAdmin = Await.result(daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant).findAll(), 5.seconds)
+      val notifsAdmin = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findAll(),
+        5.seconds
+      )
       notifsAdmin.length mustBe 1
       val notifadmin = notifsAdmin.head
-      notifadmin.action.isInstanceOf[NotificationAction.NewSubscription] mustBe true
+      notifadmin.action
+        .isInstanceOf[NotificationAction.NewSubscription] mustBe true
     }
   }
 
