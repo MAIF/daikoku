@@ -230,7 +230,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
     <Can I={manage} a={TENANT} dispatchError>
       <div>
         {paymentNotEnabled && (
-          <div className="alert alert-warning" role="alert">
+          <div className="alert alert-warning mt-3" role="alert">
             <p>{translate('third-party.payment.not.enabled')}</p>
             <ul className="mb-0">
               {paymentNotEnabled.missing?.map((variable) => (

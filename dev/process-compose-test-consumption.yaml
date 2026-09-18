@@ -26,13 +26,13 @@ processes:
   Containers:
     working_dir: "daikoku/javascript/tests"
     command: |
-      docker-compose -f docker-compose-local.yml -f docker-compose-es.yml down -v ;
-      docker-compose --ansi=always -f docker-compose-local.yml -f docker-compose-es.yml up faker smtp redis elastic otoroshi
+      docker-compose -f docker-compose-ldap.yml -f docker-compose-es.yml down -v ;
+      docker-compose --ansi=always -f docker-compose-ldap.yml -f docker-compose-es.yml up faker smtp redis elastic otoroshi openldap
     # Elasticsearch first: Otoroshi answers its own API while its data exporter is
     # still retrying against an absent ES, and the events of the run would be lost.
     readiness_probe:
       exec:
-        command: "curl -sf -o /dev/null http://localhost:9200/_cluster/health && curl -sf -o /dev/null http://otoroshi-api.oto.tools:8080/api/routes -H 'Otoroshi-Client-Id: admin-api-apikey-id' -H 'Otoroshi-Client-Secret: admin-api-apikey-secret'"
+        command: "curl -sf -o /dev/null http://localhost:9200/_cluster/health && curl -sf -o /dev/null http://otoroshi-api.oto.tools:8080/api/routes -H 'Otoroshi-Client-Id: admin-api-apikey-id' -H 'Otoroshi-Client-Secret: admin-api-apikey-secret' && nc -z localhost 389"
       initial_delay_seconds: 5
       period_seconds: 5
       timeout_seconds: 5
@@ -40,7 +40,7 @@ processes:
       failure_threshold: 60
     shutdown:
       command: |
-        docker-compose -f daikoku/javascript/tests/docker-compose-local.yml -f daikoku/javascript/tests/docker-compose-es.yml down -v
+        docker-compose -f daikoku/javascript/tests/docker-compose-ldap.yml -f daikoku/javascript/tests/docker-compose-es.yml down -v
 
   Backend:
     working_dir: "daikoku"

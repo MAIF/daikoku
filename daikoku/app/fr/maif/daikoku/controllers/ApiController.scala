@@ -1284,7 +1284,18 @@ class ApiController(
               .forTenant(ctx.tenant)
               .deleteById(validator.id)
           )
-        } yield Redirect("/apis"))
+          demand <- EitherT.fromOptionF(
+            env.dataStore.subscriptionDemandRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(validator.subscriptionDemand),
+            AppError.EntityNotFound("Subscription demand")
+          )
+        } yield Redirect(
+          env.getDaikokuUrl(
+            ctx.tenant,
+            s"/informations?message=subscription-payment-canceled&team=${demand.team.value}&demand=${demand.id.value}"
+          )
+        ))
           .leftMap(_.render())
           .merge
       }

@@ -490,6 +490,34 @@ class StripeBillingSpec()
       subscriptions().size mustBe 1
     }
 
+    "bring the requester back to a resumable demand when the checkout is abandoned" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable()
+      subscribeToPlan().status mustBe 200
+
+      val cancelUrl = formBodies("/v1/checkout/sessions").head("cancel_url")
+
+      implicit val session: UserSession =
+        loginWithBlocking(userAdmin, stripeTenant)
+      val abandoned = httpJsonCallBlocking(
+        path = cancelUrl.substring(cancelUrl.indexOf("/api/subscription/_abort"))
+      )(using stripeTenant, session)
+
+      abandoned.status mustBe 303
+      val location = abandoned.header("Location").get
+      location must include(
+        s"/informations?message=subscription-payment-canceled&team=${teamConsumerId.value}&demand="
+      )
+
+      val demandId = location.substring(location.indexOf("&demand=") + "&demand=".length)
+      val demand = httpJsonCallBlocking(
+        path = s"/api/subscription/team/${teamConsumerId.value}/demands/$demandId"
+      )(using stripeTenant, session)
+      withClue(demand.body) { demand.status mustBe 200 }
+      (demand.json \ "state").as[String] mustBe "inProgress"
+    }
+
     "open a fresh checkout session when the payment is resumed" in {
       setupTenantWithStripeAccount()
       stubOtoroshi(hits = 0)

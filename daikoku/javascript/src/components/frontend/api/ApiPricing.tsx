@@ -2123,9 +2123,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   });
 
                   const plansWithPendingDemands = plans.filter(p => !p.allowMultipleDemand)
-                    .filter(plan => {
+                    .filter(plan =>
                       props.inProgressDemands.some(demand => demand.plan === plan._id && demand.team === team._id)
-                    });
+                    );
 
                   let disableCauses: Array<string> = []
 

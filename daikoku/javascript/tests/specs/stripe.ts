@@ -84,19 +84,33 @@ export const updatePlanAsProducer = async (
 /** Stripe cannot reach a local Daikoku, so once the card is accepted the test
  * delivers checkout.session.completed itself: that event, not the redirect,
  * is what materialises the subscription. */
-export const subscribeViaStripeCheckout = async (
+export const openStripeCheckout = async (
   page: Page,
-  opts: { apiName: string; teamName: string; settingsId: string }
-) => {
+  opts: { apiName: string; teamName: string }
+): Promise<string> => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: opts.apiName }).click();
   await page.getByText('Environnements').click();
   await page.getByRole('button', { name: "Demander une clé d'API" }).click();
   await page.getByText(opts.teamName).click();
+  await page
+    .getByRole('dialog', { name: 'Choisissez le nom du trousseau' })
+    .getByRole('button', { name: 'Envoyer' })
+    .click();
 
   await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
   const sessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0];
   expect(sessionId, `no checkout session id in ${page.url()}`).toBeTruthy();
+
+  return sessionId!;
+};
+
+export const subscribeViaStripeCheckout = async (
+  page: Page,
+  opts: { apiName: string; teamName: string; settingsId: string }
+) => {
+  const sessionId = await openStripeCheckout(page, opts);
+
   await page.getByRole('radio', { name: 'Carte' }).check({ force: true });
   await page.locator('#cardNumber').fill('4242 4242 4242 4242');
   await page.locator('#cardExpiry').fill('02 / 42');
@@ -107,6 +121,7 @@ export const subscribeViaStripeCheckout = async (
   await page.locator('#billingLocality').fill('Paris');
   await page.getByTestId('hosted-payment-submit-button').click();
   await page.waitForURL(new RegExp(`localhost:${exposedPort}`), { timeout: 60_000 });
+  await expect(page.getByRole('heading', { name: 'Paiement reçu' })).toBeVisible();
 
   const session = await stripe(`/v1/checkout/sessions/${sessionId}`).then((r) => r.json());
   expect(session.status, `checkout session not complete: ${JSON.stringify(session)}`).toBe(
@@ -114,6 +129,11 @@ export const subscribeViaStripeCheckout = async (
   );
   const delivery = await deliverWebhook(opts.settingsId, 'checkout.session.completed', session);
   expect(delivery.ok, `webhook refused: ${await delivery.text()}`).toBeTruthy();
+
+  await expect(page.getByRole('heading', { name: 'Souscription active' })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByRole('button', { name: "Voir ma clé d'API" })).toBeVisible();
 };
 
 const form = (data: Record<string, string>) =>

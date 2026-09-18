@@ -28,8 +28,10 @@ import {
   findStripeCustomerId,
   findStripeSubscriptionId,
   openInvoiceOf,
+  openStripeCheckout,
   payInvoice,
   setupStripePaymentOnPlan,
+  stripe,
   stripeConfigured,
   stripeInvoice,
   stripeMeterTotal,
@@ -138,7 +140,7 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     log('reading the Otoroshi apikey of the subscription from the UI');
     await findAndGoToTeam('Vendeurs', page);
     await page.getByText("Clés d'API").click();
-    await page.getByRole('row', { name: api.name }).getByLabel("Voir les clés d'API").click();
+    await page.getByRole('listitem', { name: api.name }).getByLabel("Voir les clés d'API").click();
     await page
       .locator('.api-subscription', { hasText: 'metered' })
       .getByRole('button', { name: 'Copier le clientId et le clientSecret' })
@@ -301,5 +303,55 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     log('the api key passes again, with the same credentials');
 
     await deleteTestClock(clockId);
+  });
+
+  test('lets the subscriber resume an abandoned payment', async ({ page }) => {
+    test.setTimeout(180_000);
+
+    const settingsId = 'stripe-e2e';
+    await configureTenantStripe(tenant, settingsId);
+
+    const planId = nanoid(32);
+    const plan = generatePlan({
+      _id: planId,
+      customName: 'abandoned',
+      costPerRequest: 0.01,
+      costPerMonth: 5,
+    });
+    const api = generateApi({
+      name: 'Stripe abandoned API',
+      team: apiDivision,
+      possibleUsagePlans: [planId],
+    });
+    expect((await savePlan(plan)).ok).toBeTruthy();
+    expect((await saveApi(api as any)).ok).toBeTruthy();
+
+    await page.goto(ACCUEIL);
+    await page
+      .getByRole('img', { name: 'user menu' })
+      .waitFor({ state: 'visible', timeout: 60_000 });
+    await loginAs(MICHAEL, page);
+    await setupStripePaymentOnPlan(page, apiDivision, api, planId, plan, settingsId);
+
+    await page.getByRole('img', { name: 'user menu' }).click();
+    await page.getByRole('link', { name: 'Déconnexion' }).click();
+    await loginAs(JIM, page);
+
+    const firstSessionId = await openStripeCheckout(page, {
+      apiName: api.name,
+      teamName: 'Vendeurs',
+    });
+    const firstSession = await stripe(`/v1/checkout/sessions/${firstSessionId}`).then((r) =>
+      r.json()
+    );
+    await page.goto(firstSession.cancel_url);
+
+    await expect(page.getByRole('heading', { name: 'Paiement annulé' })).toBeVisible();
+    await page.getByRole('button', { name: 'Reprendre le paiement' }).click();
+
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
+    const resumedSessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0];
+    expect(resumedSessionId).toBeTruthy();
+    expect(resumedSessionId).not.toBe(firstSessionId);
   });
 });
