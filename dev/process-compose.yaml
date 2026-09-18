@@ -69,6 +69,8 @@ processes:
       fi
     is_tty: true
     depends_on:
+      PostgresRestore:
+        condition: process_completed
       Containers:
         condition: process_healthy
     readiness_probe:
