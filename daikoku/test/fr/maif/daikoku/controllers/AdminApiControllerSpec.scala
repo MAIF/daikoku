@@ -5596,7 +5596,7 @@ class AdminApiControllerSpec
           ),
           notif(
             "n-oto-sync-api-error",
-            NotificationAction.OtoroshiSyncApiError(api, "sync error")
+            NotificationAction.OtoroshiSyncApiError(api.id, "sync error")
           ),
           notif(
             "n-key-deletion",

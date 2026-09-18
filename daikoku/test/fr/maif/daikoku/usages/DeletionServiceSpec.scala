@@ -111,7 +111,7 @@ class DeletionServiceSpec
       ),
       notif(
         "n-oto-sync-api-error",
-        NotificationAction.OtoroshiSyncApiError(api, "sync error")
+        NotificationAction.OtoroshiSyncApiError(api.id, "sync error")
       ),
       notif(
         "n-key-deletion",
@@ -3787,11 +3787,11 @@ class DeletionServiceSpec
         !remaining.contains("n-new-post") &&
         !remaining.contains("n-new-issue") &&
         !remaining.contains("n-new-comment") &&
+        !remaining.contains("n-oto-sync-api-error") &&
         // survived — legacy types whose api field is not an id, or no api field
         remaining.contains("n-team-invitation") &&
         remaining.contains("n-account-creation") &&
-        remaining.contains("n-oto-sync-sub-error") &&
-        remaining.contains("n-oto-sync-api-error")
+        remaining.contains("n-oto-sync-sub-error")
       }
     }
 
@@ -3923,13 +3923,13 @@ class DeletionServiceSpec
         !remaining.contains("n-checkout") &&
         !remaining.contains("n-new-post") &&
         !remaining.contains("n-new-issue") &&
-        !remaining.contains("n-new-comment")
+        !remaining.contains("n-new-comment") &&
+        !remaining.contains("n-oto-sync-api-error")
       }
 
       // survived
       remaining must contain("n-account-creation")
       remaining must contain("n-oto-sync-sub-error")
-      remaining must contain("n-oto-sync-api-error")
     }
 
     "clean up user-related notifications when a user is deleted" in {
