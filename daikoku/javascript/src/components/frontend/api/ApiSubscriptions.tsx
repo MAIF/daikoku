@@ -21,9 +21,13 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
   const { translate } = useContext(I18nContext);
   const [searchParams, setSearchParams] = useSearchParams()
   const urlTeamId = searchParams.get("team")
-  const urlTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(urlTeam ?? props.subscribingTeams[0])
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(null)
+
+  useEffect(() => {
+    const urlTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
+    setSelectedTeam(urlTeam ?? props.subscribingTeams[0])
+  }, [props.subscribingTeams, urlTeamId])
 
   const subscriptionsQuery = useQuery({
     queryKey: ["subscriptions", selectedTeam?._id],

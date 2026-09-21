@@ -124,7 +124,7 @@ export const ApiHome = () => {
           toast.success(translate('subscription.created.success'));
           const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
           if (teamHrId && needRedirection) {
-            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
+            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys?team=${team}`);
           }
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
