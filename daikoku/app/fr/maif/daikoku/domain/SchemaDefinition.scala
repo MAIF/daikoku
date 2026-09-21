@@ -2776,7 +2776,7 @@ object SchemaDefinition {
           Field(
             "api",
             OptionType(ApiType),
-            resolve = ctx => Some(ctx.value.api)
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
           ),
           Field(
             "message",

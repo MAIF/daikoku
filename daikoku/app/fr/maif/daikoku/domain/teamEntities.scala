@@ -252,13 +252,13 @@ object NotificationAction {
         "subscription" -> subscription.asJson
       )
   }
-  case class OtoroshiSyncApiError(api: Api, message: String)
+  case class OtoroshiSyncApiError(api: ApiId, message: String)
       extends OtoroshiSyncNotificationAction {
     def json: JsValue =
       Json.obj(
         "errType" -> "OtoroshiSyncApiError",
         "errMessage" -> message,
-        "api" -> api.asJson
+        "api" -> api.value
       )
   }
   case class ApiKeyDeletionInformation(api: String, clientId: String)

@@ -3701,7 +3701,7 @@ object json {
       Try {
         JsSuccess(
           OtoroshiSyncApiError(
-            api = (json \ "api").as(using ApiFormat),
+            api = (json \ "api").as(using ApiIdFormat),
             message = (json \ "message").as[String]
           )
         )
@@ -3711,7 +3711,7 @@ object json {
 
     override def writes(o: OtoroshiSyncApiError): JsValue =
       Json.obj(
-        "api" -> ApiFormat.writes(o.api),
+        "api" -> o.api.value,
         "message" -> o.message
       )
   }
