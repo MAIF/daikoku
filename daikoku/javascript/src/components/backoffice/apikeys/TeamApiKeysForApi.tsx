@@ -177,8 +177,10 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     queryClient.invalidateQueries({ queryKey: ['data'] });
   }, [queryClient]);
 
-  const invalidate = () =>
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['data', 'keyrings'] });
+    queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
+  }
 
   const updateCustomName = (subscriptionId: string, customName: string) =>
     Services.updateSubscriptionCustomName(

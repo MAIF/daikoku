@@ -86,7 +86,7 @@ export const ApiHome = () => {
 `;
 
   const myTeamsQuery = useQuery({
-    queryKey: ["myTeamsGQL"],
+    queryKey: ["teams"],
     queryFn: () => customGraphQLClient.request<{ myTeams: Array<ITeamFullGql> }>(MY_TEAMS_QUERY),
     select: d => d.myTeams,
     enabled: true, // Assure que la requête est activée
