@@ -43,10 +43,10 @@ processes:
     shutdown:
       command: |
         if [[ $MODE = "ldap" ]] ;
-        then docker-compose -f dev/docker-compose-ldap.yml down && docker-compose -f dev/docker-compose-ldap.yml rm -f ;
+        then docker-compose -f docker-compose-ldap.yml down && docker-compose -f docker-compose-ldap.yml rm -f ;
         elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
-        then docker-compose -f dev/docker-compose-local.yml down && docker-compose -f dev/docker-compose-local.yml rm -f ;
-        else docker-compose -f dev/docker-compose-oidc.yml down && docker-compose -f dev/docker-compose-oidc.yml rm -f ;
+        then docker-compose -f docker-compose-local.yml down && docker-compose -f docker-compose-local.yml rm -f ;
+        else docker-compose -f docker-compose-oidc.yml down && docker-compose -f docker-compose-oidc.yml rm -f ;
         fi
   Backend:
     env_cms:
