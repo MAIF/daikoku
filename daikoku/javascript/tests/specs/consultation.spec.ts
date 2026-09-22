@@ -547,9 +547,9 @@ test("subscription page filtering by clientId should work",  async ({ page }) =>
   await expect(page).toHaveURL("/api-division/api-commande/1.0.0/description");
   await page.getByText('Souscriptions').click();
   await expect(page).toHaveURL("/api-division/api-commande/1.0.0/subscriptions")
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Filtrer' }).click();
   await page.getByRole('button', { name: 'Add' }).nth(1).click();

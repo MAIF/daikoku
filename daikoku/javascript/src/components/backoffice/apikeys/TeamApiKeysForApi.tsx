@@ -1,11 +1,11 @@
 import {constraints, type} from '@maif/react-forms';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import classNames from 'classnames';
-import {formatDistanceToNow, isBefore} from 'date-fns';
+import {isBefore} from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleQuestionMark, Copy, Ellipsis,
-  EllipsisVertical, FileKey, Key, KeyRound, Link as LucideLink, Menu, Smile, Terminal,
+  EllipsisVertical, KeyRound, Link as LucideLink, Terminal,
   Users
 } from "lucide-react";
 import React, {useContext, useEffect, useState, type ReactNode} from 'react';
@@ -25,22 +25,19 @@ import {
   ISubscription,
   ITeamSimple,
   IUsagePlan,
-  isError, IUsagePlanGQL
+  isError
 } from '../../../types';
 import {
   BeautifulTitle,
   Can,
-  PaginatedComponent,
-  Placeholder,
   Spinner,
   apikey,
   escapeRegExp,
   formatDate,
   manage,
-  read, getLanguageFns
+  read
 } from '../../utils';
 import {
-  clientFetchData,
   DynamicTable,
   DynamicTableColumnCtx,
   DynamicTableFeatures,
@@ -175,7 +172,6 @@ export interface IKeyringForApiGql {
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
-
   const pageNumber = 6;
   const [page, setPage] = useState(0);
 
@@ -199,13 +195,13 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     // select: (d) => d.keyrings.keyringsWithSubCountAndRotation
   });
 
-  useEffect(() => {
-    queryClient.invalidateQueries({queryKey: ['data']});
-  }, [queryClient]);
+  // useEffect(() => {
+  //   queryClient.invalidateQueries({queryKey: ['data']});
+  // }, [queryClient]);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['data', 'keyrings'] });
-    queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
+    queryClient.invalidateQueries({queryKey: QUERY_KEYS.apiKeyrings(props.team._id, props.api._id)});
+    queryClient.invalidateQueries({queryKey: ['mySubscription']});
   }
 
   const updateKeyringName = (keyringId: string, customName: string) =>
@@ -510,12 +506,12 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           </div>
 
           <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
-            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{gap: 16}}>
               <Pagination
                 containerClassName="pagination pagination--ds"
-                previousLabel={<ChevronLeft />}
-                nextLabel={<ChevronRight />}
-                breakLabel={<Ellipsis />}
+                previousLabel={<ChevronLeft/>}
+                nextLabel={<ChevronRight/>}
+                breakLabel={<Ellipsis/>}
                 breakClassName="break"
                 breakLinkClassName="btn --ghost"
                 pageCount={Math.ceil(keyringsQuery.data.keyrings.total / pageNumber)}
@@ -869,7 +865,7 @@ export const KeyringCard = ({
         </small>
         <small className="keyring-card-env d-flex gap-2">
           <Users size={16} color="var(--primary-color)"/>
-          { keyring.environments.length > 1 ? translate(`keyring.card.${displayType}`) : keyring.environments}
+          {keyring.environments.length > 1 ? translate(`keyring.card.${displayType}`) : keyring.environments}
         </small>
       </div>
       <div className="keyring-card-ico-folding">

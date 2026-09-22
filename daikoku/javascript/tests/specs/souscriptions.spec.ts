@@ -1152,13 +1152,13 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
   await card.getByRole('button', { name: 'Actions du trousseau' }).click();
   await card.getByRole('button', { name: 'Désactiver le trousseau' }).click();
   await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
-
-
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Trousseau désactivé');
 
   // menu keyring : rotation + réinit. secret grisés tant que le trousseau est désactivé
   await card.locator('[id^="keyring-dropdown-"]').click();
-  await expect(page.locator('.disabled', { hasText: 'Paramétrer la rotation' })).toBeVisible();
-  await expect(page.locator('.disabled', { hasText: 'Réinit. le secret' })).toBeVisible();
+  
+  await expect(page.getByRole("button", { name: "Paramétrer la rotation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Réinit. le secret" })).toBeVisible();
 })
 
 test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoroshi sans toucher aux souscriptions", async ({ page }) => {
@@ -1187,8 +1187,8 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
       "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
     },
   });
-  await expect(disabledKey.status).toBe(200);
-  await expect((await disabledKey.json()).enabled).toBe(false);
+  expect(disabledKey.status).toBe(200);
+  expect((await disabledKey.json()).enabled).toBe(false);
   // la souscription du trousseau reste activée côté Daikoku
 
   await page
@@ -1212,7 +1212,7 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
     .getByRole('listitem', { name: 'api commande - prod' })
     .getByRole('button', { name: 'Activer le trousseau' })
     .click();
-  await page.waitForResponse(r => r.url().includes('/_enable?enabled=true') && r.status() === 200)
+  await   page.waitForResponse(r => r.url().includes('/_enable?enabled=true') && r.status() === 200)
 
   const enabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',

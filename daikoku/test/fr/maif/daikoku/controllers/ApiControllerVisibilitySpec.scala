@@ -526,7 +526,7 @@ class ApiControllerVisibilitySpec() extends ApiControllerSpecBase {
       // le keyring appartient à teamConsumer, on tente de le piloter via teamOwner
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/keyring/${keyring.id.value}/_rotation",
+          s"/api/teams/${teamOwnerId.value}/keyrings/${keyring.id.value}/_rotation",
         method = "POST",
         body = Some(
           Json.obj(
