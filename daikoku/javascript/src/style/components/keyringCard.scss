@@ -1,16 +1,31 @@
 @use "../variables";
 
+
+.keyring-card-container {
+  --card-size: 152px;
+  gap: 8px;
+  container-type: inline-size;
+}
+
 .keyring-card-new {
   display: grid;
   grid-template: 1.7fr 1.2fr 0px 2fr/ 69px 1fr 1fr 1fr 50px;
   border: 1px solid variables.$neutral-color-400;
   border-radius: 8px;
-  width: 45%;
+  width: calc(50% - 4px);
   transition: grid-template-rows 0.3s ease;
   height: 152px;
   max-height: 152px;
   min-width:570px;
 }
+
+@container (max-width: 1148px) {
+  .keyring-card-new {
+    min-width: 100%;
+  }
+}
+
+
 
 .keyring-card-new.folded {
   grid-template: 1.7fr 1.2fr auto 2fr/ 69px 1fr 1fr 1fr 50px;

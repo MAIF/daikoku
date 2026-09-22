@@ -481,7 +481,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         </div>
 
         <div className="col-12">
-          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+          <div className="d-flex flex-row flex-wrap justify-content-center keyring-card-container">
             {
               sorted.map((keyring) => {
                 return (
