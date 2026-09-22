@@ -1912,8 +1912,8 @@ export const graphql = {
     }
     `,
   getApiKeyrings: `
-    query getApiKeyrings ($apiId: String!, $teamId: String!, $limit: Int!, $offset: Int!) {
-      keyrings (id: $apiId, teamId: $teamId, limit: $limit, offset: $offset) {
+    query getApiKeyrings ($apiId: String!, $teamId: String!,$filter: String, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset) {
         keyringsWithSubCountAndRotation {
           _id
           customName
@@ -1938,6 +1938,7 @@ export const graphql = {
           isRotationLocked
           environments
         }
+        totalFiltered
         total
       }
     }

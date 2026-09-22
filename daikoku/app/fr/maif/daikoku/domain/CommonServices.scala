@@ -1340,6 +1340,7 @@ object CommonServices {
   def getApiKeyrings(
       teamId: String,
       apiId: String,
+      filter: String,
       limit: Int,
       offset: Int
   )(implicit
@@ -1359,22 +1360,34 @@ object CommonServices {
       // total before pagination in the same single query
       val query =
         s"""
-           |SELECT
-           |       k.content AS content,
-           |       bool_or((p.content ->> 'autoRotation')::boolean) AS "isRotationLocked",
-           |       jsonb_agg(DISTINCT p.content ->> 'customName') FILTER (WHERE p.content ->> 'customName' IS NOT NULL) AS "environments",
-           |       (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = k._id AND s2._deleted = false) AS "subscriptionsCount",
-           |       count(*) OVER() AS "total"
-           |FROM keyrings k, api_subscriptions s, usage_plans p
-           |WHERE k._deleted = false
-           |  AND s.content ->> 'keyring' = k._id
-           |  AND s.content ->> 'api' = $$1
-           |  AND s.content ->> 'team' = $$2
-           |  AND s.content ->> 'plan' = p._id
-           |GROUP BY k._id, k.content
-           |ORDER BY COALESCE(k.content ->> 'customName', k.content -> 'apiKey' ->> 'clientName') ASC
-           |LIMIT $$3 OFFSET $$4;
-           |""".stripMargin
+           |WITH
+           |    keyringSubscriptionPlan AS (SELECT
+           |        k._id AS keyring_id,
+           |        k.content AS keyring,
+           |        s.content AS "subscription",
+           |        p.content AS "plan"
+           |    FROM keyrings k
+           |             LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
+           |             LEFT JOIN usage_plans p ON s.content ->> 'plan' = p._id
+           |    WHERE k._deleted = false
+           |      AND s.content ->> 'api' = $$1
+           |      AND k.content ->> 'team' = $$2
+           |    ),
+           |    total AS (
+           |        select COUNT(DISTINCT keyring_id) AS total from keyringSubscriptionPlan
+           |    )
+           |SELECT keyring AS content,
+           |   count(*) OVER() AS "totalFiltered",
+           |   (SELECT total FROM total),
+           |   bool_or((plan ->> 'autoRotation')::boolean) AS "isRotationLocked",
+           |   jsonb_agg(DISTINCT plan ->> 'customName') FILTER (WHERE plan ->> 'customName' IS NOT NULL) AS "environments",
+           |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id AND s2._deleted = false) AS "subscriptionsCount"
+           |   FROM keyringSubscriptionPlan WHERE keyring ->> 'customName'  ILIKE '%' || $$3::text || '%'
+           |                 OR plan ->> 'customName' ILIKE '%' || $$3::text || '%'
+           |                 OR keyring -> 'apiKey' ->> 'clientId' ILIKE '%' || $$3::text || '%'
+           |    GROUP BY keyring_id, keyring
+           |LIMIT $$4 OFFSET $$5
+           """.stripMargin
 
       env.dataStore
         .asInstanceOf[PostgresDataStore]
@@ -1385,11 +1398,13 @@ object CommonServices {
             Col.long("subscriptionsCount"),
             Col.bool("isRotationLocked"),
             Col.array("environments"),
+            Col.long("totalFiltered"),
             Col.long("total")
           ),
           Seq(
             apiId,
             team.id.value,
+            filter,
             java.lang.Integer.valueOf(limit),
             java.lang.Integer.valueOf(offset)
           )
@@ -1420,9 +1435,13 @@ object CommonServices {
             rows.headOption
               .flatMap(row => (row \ "total").asOpt[Long])
               .getOrElse(0L)
+          val totalFiltered =
+            rows.headOption
+              .flatMap(row => (row \ "totalFiltered").asOpt[Long])
+              .getOrElse(0L)
 
-          Right[AppError, (Seq[KeyringForGraphql], Long)](
-            (keyrings, total)
+          Right[AppError, (Seq[KeyringForGraphql], Long, Long)](
+            (keyrings, totalFiltered, total)
           )
         }
     }

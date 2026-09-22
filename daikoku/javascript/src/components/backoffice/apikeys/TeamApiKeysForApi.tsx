@@ -8,7 +8,7 @@ import {
   EllipsisVertical, KeyRound, Link as LucideLink, Terminal,
   Users
 } from "lucide-react";
-import React, {useContext, useEffect, useState, type ReactNode} from 'react';
+import React, {useContext, useEffect, useState, type ReactNode, useRef} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {toast} from 'sonner';
 
@@ -47,6 +47,8 @@ import {
 import {createColumnHelper} from "@tanstack/react-table";
 import {QUERY_KEYS} from "../../../constants/queryKeys";
 import Pagination from "../../utils/Pagination";
+import debounce from "lodash/debounce";
+import {FeedbackButton} from "../../utils/FeedbackButton";
 
 
 const DisplayLink = ({value}: { value: string }) => {
@@ -171,6 +173,7 @@ export interface IKeyringForApiGql {
 }
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searched, setSearched] = useState('');
   const pageNumber = 6;
   const [page, setPage] = useState(0);
@@ -182,13 +185,14 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
 
   const keyringsQuery = useQuery({
-    queryKey: [...QUERY_KEYS.apiKeyrings(props.team._id, props.api._id), pageNumber, page],
+    queryKey: [...QUERY_KEYS.apiKeyrings(props.team._id, props.api._id), pageNumber, page, searched],
     queryFn: () =>
       customGraphQLClient.request<{
-        keyrings: { keyringsWithSubCountAndRotation: Array<IKeyringForApiGql>; total: number };
+        keyrings: { keyringsWithSubCountAndRotation: Array<IKeyringForApiGql>, totalFiltered: number, total: number };
       }>(Services.graphql.getApiKeyrings, {
         apiId: props.api._id,
         teamId: props.team._id,
+        filter: searched,
         limit: pageNumber,
         offset: pageNumber * page,
       }),
@@ -446,95 +450,109 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     });
   };
 
+
+  let List;
   if (keyringsQuery.isLoading) {
-    return <Spinner/>;
+    List = <Spinner/>;
   } else if (keyringsQuery.data && !isError(keyringsQuery.data)) {
     const keyrings = keyringsQuery.data.keyrings.keyringsWithSubCountAndRotation;
-    const search = searched.trim().toLowerCase();
-
-    const filtered =
-      search === ''
-        ? keyrings
-        : keyrings.filter(
-          (k) =>
-            k.apiKey.clientName.toLowerCase().includes(search) ||
-            k.apiKey.clientId.toLowerCase() === search ||
-            (k.customName ?? '').toLowerCase().includes(search)
-        );
-
-    const sorted = sortBy(filtered, [
+    const sorted = sortBy(keyrings, [
       (k) => (k.customName ?? k.apiKey.clientName).toLowerCase(),
     ]);
+    const total = keyringsQuery.data?.keyrings.total ?? 0;
+    const totalFiltered = keyringsQuery.data?.keyrings.totalFiltered ?? total;
 
-    const apiLink = `/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/description`;
-    return (
-      <Can I={read} a={apikey} team={props.team} dispatchError>
-        <div className="col-6 mt-4 mb-2">
-          <input
-            type="text"
-            className="form-control col-5"
-            placeholder={translate('Search your apiKey...')}
-            aria-label="Search your apikey"
-            value={searched}
-            onChange={(e) => setSearched(e.target.value)}
-          />
-        </div>
+    if (sorted.length > 0) {
+      List =
 
         <div className="col-12">
-          <div className="d-flex flex-row flex-wrap justify-content-center keyring-card-container">
-            {
-              sorted.map((keyring) => {
-                return (
-                  <KeyringCard
-                    key={keyring._id}
-                    api={props.api}
-                    currentTeam={props.team}
-                    keyring={keyring}
-                    updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
-                    toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
-                    toggle={toggleApiKey}
-                    toggleRotation={toggleApiKeyRotation}
-                    regenerateSecret={() => regenerateSecret(keyring)}
-                    deleteKeyring={() => deleteKeyring(keyring)}
-                    transferKey={(sub, callback) => transferApiKey(sub, callback)}
-                    deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
-                    makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
-                  />
-                )
-              })
-            }
+          <div className="mt-2">
+            <span className="small">
+              <span className="fw-bold">{totalFiltered}</span>
+              {totalFiltered < total
+                ? ` ${translate({key: "keyring.count", plural: totalFiltered > 1})} (sur ${total})`
+                : ` ${translate({key: "keyring.count", plural: totalFiltered > 1})}`}
+            </span>
           </div>
-
-          <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
-            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{gap: 16}}>
-              <Pagination
-                containerClassName="pagination pagination--ds"
-                previousLabel={<ChevronLeft/>}
-                nextLabel={<ChevronRight/>}
-                breakLabel={<Ellipsis/>}
-                breakClassName="break"
-                breakLinkClassName="btn --ghost"
-                pageCount={Math.ceil(keyringsQuery.data.keyrings.total / pageNumber)}
-                forcePage={page}
-                marginPagesDisplayed={1}
-                pageRangeDisplayed={3}
-                onPageChange={(data) => setPage(data.selected)}
-                pageClassName="page-selector"
-                pageLinkClassName="btn --ghost"
-                previousLinkClassName="btn --tertiary --icon"
-                nextLinkClassName="btn --tertiary --icon"
-                disabledLinkClassName="--disabled"
-                activeClassName="active"
-              />
-            </div>
-
+        <div className="d-flex flex-row flex-wrap keyring-card-container">
+          {
+            sorted.map((keyring) => {
+              return (
+                <KeyringCard
+                  key={keyring._id}
+                  api={props.api}
+                  currentTeam={props.team}
+                  keyring={keyring}
+                  updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
+                  toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
+                  toggle={toggleApiKey}
+                  toggleRotation={toggleApiKeyRotation}
+                  regenerateSecret={() => regenerateSecret(keyring)}
+                  deleteKeyring={() => deleteKeyring(keyring)}
+                  transferKey={(sub, callback) => transferApiKey(sub, callback)}
+                  deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
+                  makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
+                />
+              )
+            })
+          }
+        </div>
+        <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
+          <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{gap: 16}}>
+            <Pagination
+              containerClassName="pagination pagination--ds"
+              previousLabel={<ChevronLeft/>}
+              nextLabel={<ChevronRight/>}
+              breakLabel={<Ellipsis/>}
+              breakClassName="break"
+              breakLinkClassName="btn --ghost"
+              pageCount={Math.ceil(keyringsQuery.data.keyrings.totalFiltered / pageNumber)}
+              forcePage={page}
+              marginPagesDisplayed={1}
+              pageRangeDisplayed={3}
+              onPageChange={(data) => setPage(data.selected)}
+              pageClassName="page-selector"
+              pageLinkClassName="btn --ghost"
+              previousLinkClassName="btn --tertiary --icon"
+              nextLinkClassName="btn --tertiary --icon"
+              disabledLinkClassName="--disabled"
+              activeClassName="active"
+            />
           </div>
         </div>
-      </Can>
-    );
-  } else {
-    return <div>an error occured</div>;
+      </div>
+    } else {
+      List = <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+        <div>{translate('keyring.filter.empty')}</div>
+        <button
+          className="btn --primary"
+          onClick={() => {
+            setSearched('')
+            if (searchInputRef.current) {
+              searchInputRef.current.value = ''
+            }
+          }}>
+          {translate('table.filters.clear.label')}
+        </button>
+      </div>
+    }
   }
+
+  return (
+    <Can I={read} a={apikey} team={props.team} dispatchError>
+      <div className="col-6 mt-4 mb-2">
+        <input
+          type="text"
+          className="form-control col-5"
+          placeholder={translate('Search your apiKey...')}
+          aria-label="Search your apikey"
+          ref={searchInputRef}
+          onChange={debounce(e => setSearched(e.target.value), 500)}
+        />
+      </div>
+      {List}
+    </Can>
+  );
 };
 
 type KeyringCardProps = {

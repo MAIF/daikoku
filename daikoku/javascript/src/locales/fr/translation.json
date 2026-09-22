@@ -283,6 +283,11 @@
   "keyring.custom.name.for.plan": "Nom du trousseau pour le plan %s",
   "keyring.custom.name.placeholder": "Nom du trousseau",
   "keyring.custom.name.success": "Le nom du trousseau a été mis à jour avec succès",
+  "keyring.filter.empty": "Aucun trousseau ne correspond à votre recherche",
+  "keyring.count": {
+    "s": "Trousseau",
+    "p": "Trousseaux"
+  },
   "subscription.actions": "Actions de la souscription",
   "Expires": "Expiration",
   "destroy.session.confirm": "Êtes-vous sûr de vouloir détruire cette session ?",

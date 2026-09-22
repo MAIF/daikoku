@@ -3970,25 +3970,26 @@ object SchemaDefinition {
 
     lazy val KeyringListType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      (Seq[KeyringForGraphql], Long)
+      (Seq[KeyringForGraphql], Long, Long)
     ] =
       ObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
-        (Seq[KeyringForGraphql], Long)
+        (Seq[KeyringForGraphql], Long, Long)
       ](
         "Keyrings",
         "Keyrings as a collection of keyrings and the total of",
         () =>
           fields[
             (DataStore, DaikokuActionContext[JsValue]),
-            (Seq[KeyringForGraphql], Long)
+            (Seq[KeyringForGraphql], Long, Long)
           ](
             Field(
               "keyringsWithSubCountAndRotation",
               ListType(KeyringsWithSubCountAndRotationType),
               resolve = _.value._1
             ),
-            Field("total", LongType, resolve = _.value._2)
+            Field("totalFiltered", LongType, resolve = _.value._2),
+            Field("total", LongType, resolve = _.value._3)
           )
       )
 
@@ -4454,6 +4455,7 @@ object SchemaDefinition {
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         apiId: String,
         teamId: String,
+        filter: String,
         limit: Int,
         offset: Int
     ) = {
@@ -4461,6 +4463,7 @@ object SchemaDefinition {
         .getApiKeyrings(
           teamId,
           apiId,
+          filter,
           limit,
           offset
         )(using ctx.ctx._2, env, e)
@@ -4476,12 +4479,13 @@ object SchemaDefinition {
         Field(
           "keyrings",
           KeyringListType,
-          arguments = ID :: TEAM_ID_NOT_OPT :: LIMIT :: OFFSET :: Nil,
+          arguments = ID :: TEAM_ID_NOT_OPT :: FILTER :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiKeyrings(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
+              ctx.arg(FILTER),
               ctx.arg(LIMIT),
               ctx.arg(OFFSET)
             )

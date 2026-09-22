@@ -2239,8 +2239,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <p className="m-0">{
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label'
-                )
+                  translate('api.pricings.creation.plan.button.label')
               }</p>
             </button>
           </>

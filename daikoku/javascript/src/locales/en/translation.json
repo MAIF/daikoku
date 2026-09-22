@@ -282,6 +282,11 @@
   "keyring.custom.name.for.plan": "Name of the keyring for plan %s",
   "keyring.custom.name.placeholder": "Keyring name",
   "keyring.custom.name.success": "The keyring name has been successfully updated",
+  "keyring.filter.empty": "No keyring corresponding to your search",
+  "keyring.count": {
+    "s": "Keyring",
+    "p": "Keyrings"
+  },
   "subscription.actions": "Subscription actions",
   "Expires": "Expires",
   "destroy.session.confirm": "Are you sure you want to destroy this session?",
