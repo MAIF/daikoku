@@ -1251,8 +1251,8 @@ object SchemaDefinition {
           ),
           Field(
             "metadata",
-            MapType,
-            resolve = _.value.metadata
+            OptionType(JsonType),
+            resolve = d => Json.toJson(d.value.metadata)
           )
         )
     )

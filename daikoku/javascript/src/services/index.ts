@@ -1526,6 +1526,7 @@ export const graphql = {
           maxPerDay
           maxPerMonth
           maxPerSecond
+          metadata
           otoroshiTarget {
             otoroshiSettings
             authorizedEntities {
