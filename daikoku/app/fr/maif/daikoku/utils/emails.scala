@@ -4,6 +4,7 @@ import cats.data.EitherT
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
@@ -523,7 +524,8 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
 
     Option(cache.get(key))
       .filter(_.expiresAtMs > System.currentTimeMillis()) match {
-      case Some(token) => EitherT.pure[Future, AppError](token.value)
+      case Some(token) =>
+        EitherT.pure[Future, AppError](token.value)
       case None =>
         inflight.computeIfAbsent(
           key,
@@ -531,12 +533,13 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
             val fetched = fetch(settings)
 
             fetched
-              .map(token => {
-                val token1 = cache.put(key, token)
-                val eventualString = inflight.remove(key)
-                token1.value
-              })
+              .map { token =>
+                cache.put(key, token)
+                inflight.remove(key)
+                token.value
+              }
               .leftMap(error => {
+                AppLogger.error(error.getErrorMessage())
                 inflight.remove(key)
                 error
               })
@@ -552,7 +555,7 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
       ws: WSClient
   ): EitherT[Future, AppError, CachedToken] = {
     for {
-      resp <- EitherT.right[AppError](
+      resp <- EitherT(
         ws
           .url(settings.tokenUrl)
           .withRequestTimeout(10.seconds)
@@ -564,17 +567,32 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
               "scope" -> Seq(settings.scope)
             )
           )
+          .map { resp =>
+            log.info(
+              s"OAuth2 token endpoint returned ${resp.status}"
+            )
+            Right(resp)
+          }
+          .recover {
+            case e =>
+              AppLogger.error(e.getMessage, e)
+              Left(
+                AppError.SmtpAuthenticationError(
+                  s"Unable to reach OAuth2 token endpoint: ${e.getMessage}"
+                )
+              )
+          }
       )
       _ <- EitherT.cond[Future](
         resp.status == 200,
         (),
-        AppError.BadRequestError(
+        AppError.SmtpAuthenticationError(
           s"Token endpoint answered HTTP ${resp.status}: ${describeError(resp.body)}"
         )
       )
       accessToken <- EitherT.fromOption[Future][AppError, String](
         (resp.json \ "access_token").asOpt[String],
-        AppError.EntityNotFound("access_token from token response")
+        AppError.SmtpAuthenticationError("access_token from token response not found")
       )
       // certains fournisseurs renvoient expires_in en string
       expiresIn = (resp.json \ "expires_in")
@@ -585,10 +603,12 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
             .flatMap(s => Try(s.toLong).toOption)
         )
         .getOrElse(3600L)
-    } yield CachedToken(
-      accessToken,
-      System.currentTimeMillis() + expiresIn * 1000 - SafetyMarginMs
-    )
+    } yield {
+      CachedToken(
+        accessToken,
+        System.currentTimeMillis() + expiresIn * 1000 - SafetyMarginMs
+      )
+    }
   }
 
   // ne jamais logger le token ni le secret ; on ne garde que error / error_description
@@ -620,6 +640,7 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
     properties.put("mail.smtp.auth", "true")
     // XOAUTH2 n'est pas dans la liste par défaut de Jakarta Mail
     properties.put("mail.smtp.auth.mechanisms", "XOAUTH2")
+    properties.put("mail.debug", "true")
     // évite les threads bloqués sur un serveur qui ne répond pas
     properties.put("mail.smtp.connectiontimeout", "10000")
     properties.put("mail.smtp.timeout", "30000")
@@ -637,6 +658,12 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
     properties
   }
 
+  private def isAuthenticationError(error: AppError): Boolean =
+    error match {
+      case e: AppError.SmtpAuthenticationError => true
+      case _ => false
+    }
+
   /** Ouvre une connexion SMTP authentifiée par token, exécute `f`, ferme. Si
     * l'auth échoue (token révoqué, cache périmé...), on retente une fois avec
     * un token neuf.
@@ -647,8 +674,7 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
   ): EitherT[Future, AppError, A] = {
     implicit val ws: WSClient = env.wsClient // à adapter selon Env
 
-    //todo: ca marche plsu parce que eitherT
-    def attempt(forceRefresh: Boolean): EitherT[Future, AppError, A] =
+    def attempt(forceRefresh: Boolean): EitherT[Future, AppError, A] = {
       OAuth2TokenProvider
         .getToken(settings, forceRefresh)
         .map { token =>
@@ -667,12 +693,20 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
             Try(transport.close())
           }
         }
+    }
 
     attempt(forceRefresh = false)
       .leftFlatMap(e => {
-        log.warn("SMTP authentication failed, retrying once with a fresh OAuth2 token")
+        log.warn(
+          "SMTP authentication failed, retrying once with a fresh OAuth2 token"
+        )
         log.warn(e.getErrorMessage())
-        attempt(forceRefresh = true)
+
+        if (isAuthenticationError(e)) {
+          attempt(forceRefresh = true)
+        } else {
+          EitherT.leftT[Future, A](e)
+        }
       })
   }
 
@@ -691,8 +725,12 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
     message
   }
 
-  private def _send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit
+  private def _send(
+      title: String,
+      to: Seq[String],
+      body: String,
+      tenant: Tenant
+  )(implicit
       ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
@@ -700,52 +738,68 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
       language: String
   ): EitherT[Future, AppError, Unit] = {
     for {
-      templatedBody <- EitherT.right[AppError](translator
-        .getMailTemplate(
-          "tenant.mail.template",
-          tenant,
-          Map("email" -> JsString(body))
-        ))
+      templatedBody <- EitherT.right[AppError](
+        translator
+          .getMailTemplate(
+            "tenant.mail.template",
+            tenant,
+            Map("email" -> JsString(body))
+          )
+      )
       html = templatedBody
         .replace("{{email}}", body)
         .replace("[email]", body)
       _ <- withTransport { (session, transport) =>
         to.foreach { recipient =>
-          Try {
-            val addresses =
-              InternetAddress.parse(recipient).map(a => a: Address)
-            val message = buildMessage(session, addresses, title, html)
-            transport.sendMessage(message, message.getAllRecipients)
-            log.debug(s"Alert email sent to : $recipient")
-          } match {
-            case Failure(e) =>
-              log.error(s"Error while sending alert email to $recipient", e)
-            case Success(_) => ()
-          }
+          val addresses =
+            InternetAddress.parse(recipient).map(a => a: Address)
+          val message = buildMessage(session, addresses, title, html)
+          transport.sendMessage(message, message.getAllRecipients)
+          log.info(s"Alert email sent to : $recipient")
         }
       }
     } yield ()
   }
 
-  override def send(title: String, to: Seq[String], body: String, tenant: Tenant)(implicit ec: ExecutionContext, translator: Translator, messagesApi: MessagesApi, env: Env, language: String): Future[Unit] =
+  override def send(
+      title: String,
+      to: Seq[String],
+      body: String,
+      tenant: Tenant
+  )(implicit
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi,
+      env: Env,
+      language: String
+  ): Future[Unit] =
     _send(title, to, body, tenant)
       .leftMap(error => {
-        logger.error(s"Error while sending alert email to [${to.mkString(",")}]")
+        logger.error(
+          s"Error while sending alert email to [${to.mkString(",")}]"
+        )
         logger.error(error.getErrorMessage())
       })
       .merge
 
   private def _testConnection(
       tenant: Tenant
-  )(implicit ec: ExecutionContext, env: Env): EitherT[Future, AppError, Boolean] = {
+  )(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): EitherT[Future, AppError, Boolean] = {
     withTransport((_, _) => ())
       .map(_ => true)
   }
 
-  override def testConnection(tenant: Tenant)(implicit ec: ExecutionContext, env: Env): Future[Boolean] =
+  override def testConnection(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] =
     _testConnection(tenant)
       .leftMap(error => {
-        logger.error(s"SMTP OAuth2 test failed (SMTP connection/authentication)")
+        logger.error(
+          s"SMTP OAuth2 test failed (SMTP connection/authentication)"
+        )
         logger.error(error.getErrorMessage())
         false
       })
