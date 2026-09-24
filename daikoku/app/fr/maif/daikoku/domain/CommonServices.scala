@@ -1382,7 +1382,8 @@ object CommonServices {
            |   bool_or((plan ->> 'autoRotation')::boolean) AS "isRotationLocked",
            |   jsonb_agg(DISTINCT plan ->> 'customName') FILTER (WHERE plan ->> 'customName' IS NOT NULL) AS "environments",
            |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id AND s2._deleted = false) AS "subscriptionsCount"
-           |   FROM keyringSubscriptionPlan WHERE keyring ->> 'customName'  ILIKE '%' || $$3::text || '%'
+           |   FROM keyringSubscriptionPlan
+           |                 WHERE keyring ->> 'customName'  ILIKE '%' || $$3::text || '%'
            |                 OR plan ->> 'customName' ILIKE '%' || $$3::text || '%'
            |                 OR keyring -> 'apiKey' ->> 'clientId' ILIKE '%' || $$3::text || '%'
            |    GROUP BY keyring_id, keyring

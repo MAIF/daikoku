@@ -60,19 +60,29 @@
 }
 
 .keyring-card-name {
-  grid-column: 2 / span 2;
+  grid-column: 2 / span 3;
   grid-row: 1 / 2;
   padding-top: 16px;
   margin: 0;
-  text-wrap: nowrap;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   overflow: hidden;
 }
 
-.keyring-card-badge {
-  grid-column: 4 / 5;
-  grid-row: 1 / 2;
-  padding-top: 16px;
+.keyring-card-name h4 {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;   /* ne s'étire pas, mais peut rétrécir si besoin */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.keyring-card-name .badge {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .keyring-card-count {

@@ -464,7 +464,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
     if (sorted.length > 0) {
       List =
-
         <div className="col-12">
           <div className="mt-2">
             <span className="small">
@@ -547,7 +546,11 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           placeholder={translate('Search your apiKey...')}
           aria-label="Search your apikey"
           ref={searchInputRef}
-          onChange={debounce(e => setSearched(e.target.value), 500)}
+          onChange={debounce(e => {
+            setSearched(e.target.value)
+            setPage(0)
+            }, 500
+          )}
         />
       </div>
       {List}
@@ -862,8 +865,8 @@ export const KeyringCard = ({
           <KeyRound/>
         </div>
       </div>
-      <h4 className="keyring-card-name" title={keyring.customName}>{keyring.customName}</h4>
-      <div className="keyring-card-badge">
+      <div className="keyring-card-name">
+          <h4 title={keyring.customName}>{keyring.customName}</h4>
           <span className={classNames("badge --state d-flex align-items-center gap-2", {
             "--success": keyring.enabled,
             "--danger": !keyring.enabled,
