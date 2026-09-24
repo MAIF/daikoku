@@ -129,26 +129,6 @@ export const TeamApiSubscriptions = ({
         meta: { title: translate("Name"), size: 25 },
         enableColumnFilter: true,
         cell: (info) => {
-          const sub = info.row.original;
-          if ((sub.keyring?.subscriptionsCount ?? 0) > 1) {
-            const title = `<div>
-            <strong>${translate("aggregated.apikey.badge.title")}</strong>
-            <ul>
-              <li>${translate("aggregated.apikey.badge.keyring.name")}: ${sub.keyring?.customName ?? sub.keyring?.apiKey.clientName ?? ''}</li>
-            </ul>
-          </div>`;
-            return (
-              <div className="d-flex flex-row justify-content-between align-items-center">
-                <span>{info.getValue()}</span>
-                <BeautifulTitle title={title} html>
-                  <div className="badge --primary">
-                    <Link />
-                  </div>
-                </BeautifulTitle>
-              </div>
-            );
-          }
-
           return (
             <span>{info.getValue()}</span>
           );
@@ -218,7 +198,7 @@ export const TeamApiSubscriptions = ({
             <div className="dropdown">
               <button
                 className="btn --ghost --small --icon-only"
-                aria-label={translate('subscription.actions.aria.label')}
+                aria-label={translate('subscription.actions')}
                 type="button" data-bs-toggle="dropdown" aria-expanded="false"
                 id={`dropdown-${sub._id}`}>
                 <Menu
@@ -249,7 +229,7 @@ export const TeamApiSubscriptions = ({
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => regenerateSecret(sub)}
                 >
-                  {translate("Refresh secret")}
+                  {translate("refresh.secret.label")}
                 </button>}
                 <button
                   className="dropdown-item cursor-pointer danger"

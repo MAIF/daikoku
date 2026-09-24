@@ -1,13 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { useContext, useEffect, useState } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import Select from 'react-select';
 
-import { I18nContext } from '../../../contexts';
-import * as Services from '../../../services';
-import { IApi, isError, ITeamSimple } from '../../../types';
-import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { Spinner } from '../../utils/Spinner';
-import { useSearchParams } from 'react-router-dom';
+import {I18nContext} from '../../../contexts';
+import {IApi, ITeamSimple} from '../../../types';
+import {ApiKeysListForApi} from '../../backoffice/apikeys/TeamApiKeysForApi';
+import {useSearchParams} from 'react-router-dom';
 
 type ApiSubscriptions = {
   api: IApi
@@ -18,22 +15,16 @@ type ApiSubscriptions = {
 
 export const ApiSubscriptions = (props: ApiSubscriptions) => {
 
-  const { translate } = useContext(I18nContext);
+  const {translate} = useContext(I18nContext);
   const [searchParams, setSearchParams] = useSearchParams()
   const urlTeamId = searchParams.get("team")
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(null)
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(props.subscribingTeams[0])
 
   useEffect(() => {
     const urlTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
     setSelectedTeam(urlTeam ?? props.subscribingTeams[0])
   }, [props.subscribingTeams, urlTeamId])
-
-  const subscriptionsQuery = useQuery({
-    queryKey: ["subscriptions", selectedTeam?._id],
-    queryFn: () => Services.getTeamSubscriptions(props.api._id, selectedTeam!._id, props.api.currentVersion),
-    enabled: !!selectedTeam
-  })
 
   useEffect(() => {
     if (!props.subscribingTeams.some(t => selectedTeam && t._id === selectedTeam._id)) (
@@ -41,14 +32,13 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
     )
   }, [props.subscribingTeams])
 
-
   return (
     <div>
       <Select
         className='col-3'
         classNamePrefix="reactSelect"
         placeholder={translate('api.subscriptions.team.select.placeholder')}
-        options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
+        options={props.subscribingTeams.map(value => ({label: value.name, value: value}))}
         onChange={t => {
           setSelectedTeam(t!.value)
           setSearchParams((searchParams) => {
@@ -56,7 +46,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
             return searchParams;
           });
         }}
-        value={{ label: selectedTeam?.name, value: selectedTeam }}
+        value={{label: selectedTeam?.name, value: selectedTeam}}
         styles={{
           valueContainer: (baseStyles) => ({
             ...baseStyles,
@@ -74,17 +64,13 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
               </span>{props.data.label}
             </div>
           }
-        }} />
-
-      {subscriptionsQuery.isLoading && <Spinner />}
-
-      {selectedTeam && subscriptionsQuery.data && !isError(subscriptionsQuery.data) && (
-        <ApiKeysListForApi
-          team={selectedTeam}
-          api={props.api}
-          ownerTeam={props.ownerTeam}
-          linkToChildren={(api, team) => `/${team}/${api._humanReadableId}/${api!.currentVersion}/apikeys`} />
-      )}
+        }}/>
+      <ApiKeysListForApi
+        team={selectedTeam}
+        api={props.api}
+        ownerTeam={props.ownerTeam}
+        linkToChildren={(api, team) => `/${team}/${api._humanReadableId}/${api!.currentVersion}/keyrings`}
+      />
     </div>
   )
 }
