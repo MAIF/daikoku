@@ -640,7 +640,6 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
     properties.put("mail.smtp.auth", "true")
     // XOAUTH2 n'est pas dans la liste par défaut de Jakarta Mail
     properties.put("mail.smtp.auth.mechanisms", "XOAUTH2")
-    properties.put("mail.debug", "true")
     // évite les threads bloqués sur un serveur qui ne répond pas
     properties.put("mail.smtp.connectiontimeout", "10000")
     properties.put("mail.smtp.timeout", "30000")
