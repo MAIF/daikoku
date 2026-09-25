@@ -184,7 +184,7 @@ const SelectOrCreateKeyring = (props: SelectOrCreateKeyringProps) => {
       <Button
         onClick={() => props.create(true)}
         message={translate('aggregation.button.subscription.usual.label')}
-        icon={<Plus />}
+        icon={<Plus />} 
       />
       {props.aggregationApiKeysSecurity && (
         <Button

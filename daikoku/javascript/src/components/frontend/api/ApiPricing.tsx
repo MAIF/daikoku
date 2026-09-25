@@ -1,23 +1,23 @@
-import { constraints, Flow, Form, format, type } from '@maif/react-forms';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ColumnDef, createColumnHelper, RowSelectionState, } from "@tanstack/react-table";
+import {constraints, Flow, Form, format, type} from '@maif/react-forms';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {ColumnDef, createColumnHelper, RowSelectionState,} from "@tanstack/react-table";
 import classNames from 'classnames';
-import { GraphQLClient } from 'graphql-request';
+import {GraphQLClient} from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
-import { nanoid } from 'nanoid';
-import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Select, { components, OptionProps } from 'react-select';
+import {CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2} from 'lucide-react';
+import {nanoid} from 'nanoid';
+import {ReactNode, useContext, useEffect, useMemo, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import Select, {components, OptionProps} from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import { toast } from 'sonner';
-import { QUERY_KEYS } from "../../../constants/queryKeys";
-import { I18nContext, ModalContext } from '../../../contexts';
-import { GlobalContext } from '../../../contexts/globalContext';
+import {toast} from 'sonner';
+import {QUERY_KEYS} from "../../../constants/queryKeys";
+import {I18nContext, ModalContext} from '../../../contexts';
+import {GlobalContext} from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { SubscriptionReturn } from '../../../services';
-import { currencies } from '../../../services/currencies';
+import {SubscriptionReturn} from '../../../services';
+import {currencies} from '../../../services/currencies';
 import {
   ApiPricingProps,
   IApi,
@@ -32,12 +32,12 @@ import {
   ITenant,
   IThirdPartyPaymentSettings,
   IUsagePlan,
-  IUsagePlanGQL,
+  IUsagePlanGQL, IValidationStep,
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity
 } from '../../../types';
-import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
-import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
+import {SubscriptionProcessEditor} from '../../backoffice/apis/SubscriptionProcessEditor';
+import {DynamicTable, DynamicTableFeatures, FetchData, FetchResult} from "../../inputs";
 import {
   access,
   api as API,
@@ -51,7 +51,7 @@ import {
   Option,
   renderPricing
 } from '../../utils';
-import { CmsViewerByPath } from "../CmsViewer";
+import {CmsViewerByPath} from "../CmsViewer";
 
 type Option = {
   type: 'group' | 'route';
@@ -78,14 +78,13 @@ type ToggleButtonProps = {
 }
 
 
-
 const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraProps }) => {
-  const { data, innerRef, innerProps } = props;
-  const { translate } = useContext(I18nContext);
+  const {data, innerRef, innerProps} = props;
+  const {translate} = useContext(I18nContext);
 
   return (
     <div ref={innerRef} {...innerProps}
-      className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
+         className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
       <div className="col-1">
         {data.type !== 'group' && !data.enabled && (
           <span className="badge --danger">
@@ -101,18 +100,18 @@ const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraPro
 };
 
 export const OtoroshiEntitiesSelector = ({
-  rawValues,
-  onChange,
-  translate,
-  ownerTeam
-}: OtoroshiEntitiesSelectorProps) => {
+                                           rawValues,
+                                           onChange,
+                                           translate,
+                                           ownerTeam
+                                         }: OtoroshiEntitiesSelectorProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<OtoroshiEntity>>([]);
   const [services, setServices] = useState<Array<OtoroshiEntity>>([]);
   const [routes, setRoutes] = useState<Array<OtoroshiEntity>>([]);
   const [disabled, setDisabled] = useState<boolean>(true);
   const [value, setValue] = useState<any>(undefined);
-  const { Translation } = useContext(I18nContext);
+  const {Translation} = useContext(I18nContext);
 
   useEffect(() => {
     const otoroshiTarget = rawValues;
@@ -239,7 +238,7 @@ export const OtoroshiEntitiesSelector = ({
               };
           }
         },
-        { groups: [], services: [], routes: [] }
+        {groups: [], services: [], routes: []}
       );
       setValue([
         ...value.groups.map((authGroup: any) =>
@@ -257,9 +256,9 @@ export const OtoroshiEntitiesSelector = ({
   };
 
   const groupedOptions = [
-    { label: 'Service groups', options: groups },
-    { label: 'Services', options: services },
-    { label: 'Routes', options: routes },
+    {label: 'Service groups', options: groups},
+    {label: 'Services', options: services},
+    {label: 'Routes', options: routes},
   ];
 
   const formatGroupLabel = (data) => (
@@ -346,12 +345,12 @@ const CustomMetadataInput = (props: {
   setValue?: (key: string, data: any) => void;
   translate: (key: string) => string;
 }) => {
-  const { alert } = useContext(ModalContext);
+  const {alert} = useContext(ModalContext);
 
   const changeValue = (possibleValues: any, key: string) => {
     const newValues = props.value?.map(v => {
       if (v.key === key) {
-        return { ...v, possibleValues }
+        return {...v, possibleValues}
       } else {
         return v;
       }
@@ -368,7 +367,7 @@ const CustomMetadataInput = (props: {
     const sanitizedValue = e.target.value;
     const newValues = props.value?.map(v => {
       if (v.key === oldName) {
-        return { ...v, key: sanitizedValue }
+        return {...v, key: sanitizedValue}
       } else {
         return v;
       }
@@ -380,7 +379,7 @@ const CustomMetadataInput = (props: {
   const addFirst = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
-      props.onChange?.([{ key: '', possibleValues: [] }]);
+      props.onChange?.([{key: '', possibleValues: []}]);
       alert({
         message: props.translate('custom.metadata.process.change.to.manual'),
         title: props.translate('Information'),
@@ -390,7 +389,7 @@ const CustomMetadataInput = (props: {
 
   const addNext = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
-    const newItem = { key: '', possibleValues: [] };
+    const newItem = {key: '', possibleValues: []};
     const newValues = [...(props.value || []), newItem];
     props.onChange?.(newValues);
   };
@@ -410,12 +409,12 @@ const CustomMetadataInput = (props: {
             className="btn --secondary --small --icon-only"
             onClick={(e) => addFirst(e)}
           >
-            <Plus />
+            <Plus/>
           </button>
         </div>
       )}
 
-      {(props.value || []).map(({ key, possibleValues }, idx) => (
+      {(props.value || []).map(({key, possibleValues}, idx) => (
         <div key={idx} className="col-sm-10">
           <div className="input-group">
             <input
@@ -428,7 +427,7 @@ const CustomMetadataInput = (props: {
               isMulti
               onChange={(e) =>
                 changeValue(
-                  e.map(({ value }) => value),
+                  e.map(({value}) => value),
                   key
                 )
               }
@@ -445,7 +444,7 @@ const CustomMetadataInput = (props: {
               className="ms-1 btn --secondary --small --icon-only"
               onClick={(e) => remove(e, key)}
             >
-              <Trash2 />
+              <Trash2/>
             </button>
             {idx === (props.value?.length || 0) - 1 && (
               <button
@@ -453,7 +452,7 @@ const CustomMetadataInput = (props: {
                 className="btn --secondary --small --icon-only"
                 onClick={addNext}
               >
-                <Plus />
+                <Plus/>
               </button>
             )}
           </div>
@@ -464,7 +463,7 @@ const CustomMetadataInput = (props: {
 };
 
 const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePlan: (plan: IUsagePlan) => void }) => {
-  const { translate } = useContext(I18nContext);
+  const {translate} = useContext(I18nContext);
   useContext(GlobalContext);
 
   const [quotasDisplayed, setQuotasDisplayed] = useState(!!props.plan.maxPerDay)
@@ -524,18 +523,18 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       {quotasDisplayed && <Form
         schema={quotasSchema}
         value={props.plan}
-        onSubmit={(data) => props.savePlan(convertIUsagePlanGQLToIUsagePlan({ ...props.plan, ...data }))}
+        onSubmit={(data) => props.savePlan(convertIUsagePlanGQLToIUsagePlan({...props.plan, ...data}))}
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
           <button className='btn --secondary'
-            type='button'
-            onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
-              ...props.plan,
-              maxPerDay: undefined,
-              maxPerSecond: undefined,
-              maxPerMonth: undefined
-            }))}>
+                  type='button'
+                  onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
+                    ...props.plan,
+                    maxPerDay: undefined,
+                    maxPerSecond: undefined,
+                    maxPerMonth: undefined
+                  }))}>
             Save
           </button>
         </div>
@@ -544,9 +543,13 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
   )
 }
 
-const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePlan: (plan: IUsagePlanGQL) => void }) => {
-  const { translate } = useContext(I18nContext);
-  const { tenant } = useContext(GlobalContext);
+const BillingForm = (props: {
+  ownerTeam: ITeamSimple,
+  plan: IUsagePlanGQL,
+  savePlan: (plan: IUsagePlanGQL) => void
+}) => {
+  const {translate} = useContext(I18nContext);
+  const {tenant} = useContext(GlobalContext);
 
   const hasPricing = props.plan.costPerMonth != null || props.plan.costPerRequest != null;
   const isPaymentDefined = props.plan.costPerMonth != null
@@ -571,8 +574,8 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
             label: s.name,
             value: s._id,
           }),
-          props: { isClearable: true },
-          onChange: ({ setValue, value }) => {
+          props: {isClearable: true},
+          onChange: ({setValue, value}) => {
             const settings = tenant.thirdPartyPaymentSettings;
             setValue(
               'paymentSettings.type',
@@ -584,7 +587,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
     },
     costPerMonth: {
       type: type.number,
-      label: ({ rawValues }) =>
+      label: ({rawValues}) =>
         translate(
           `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
         ),
@@ -605,7 +608,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       type: type.number,
       label: translate('Cost per req.'),
       placeholder: translate('Cost per request'),
-      props: { step: 0.01 },
+      props: {step: 0.01},
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
     currency: {
@@ -651,10 +654,10 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
           format: format.buttonsSelect,
           label: translate('Billing period unit'),
           options: [
-            { label: translate('Hours'), value: 'Hour' },
-            { label: translate('Days'), value: 'Day' },
-            { label: translate('Months'), value: 'Month' },
-            { label: translate('Years'), value: 'Year' },
+            {label: translate('Hours'), value: 'Hour'},
+            {label: translate('Days'), value: 'Day'},
+            {label: translate('Months'), value: 'Month'},
+            {label: translate('Years'), value: 'Year'},
           ],
           constraints: [
             constraints.required('constraints.required.billing.period'),
@@ -695,10 +698,10 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
           label: translate('Trial period unit'),
           defaultValue: 'Month',
           options: [
-            { label: translate('Hours'), value: 'Hour' },
-            { label: translate('Days'), value: 'Day' },
-            { label: translate('Months'), value: 'Month' },
-            { label: translate('Years'), value: 'Year' },
+            {label: translate('Hours'), value: 'Hour'},
+            {label: translate('Days'), value: 'Day'},
+            {label: translate('Months'), value: 'Month'},
+            {label: translate('Years'), value: 'Year'},
           ],
           constraints: [
             constraints.oneOf(
@@ -726,22 +729,22 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       {billingDisplayed && <Form
         schema={billingSchema}
         value={props.plan}
-        onSubmit={(data) => props.savePlan({ ...props.plan, ...data })}
+        onSubmit={(data) => props.savePlan({...props.plan, ...data})}
       />}
       {!billingDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
           <button className='mrf-btn mrf-btn_green mrf-ml_10'
-            type='button'
-            disabled={!isPaymentDefined}
-            onClick={() => props.savePlan({
-              ...props.plan,
-              costPerMonth: undefined,
-              costPerRequest: undefined,
-              trialPeriod: undefined,
-              currency: undefined,
-              billingDuration: undefined,
-              paymentSettings: undefined
-            })}>
+                  type='button'
+                  disabled={!isPaymentDefined}
+                  onClick={() => props.savePlan({
+                    ...props.plan,
+                    costPerMonth: undefined,
+                    costPerRequest: undefined,
+                    trialPeriod: undefined,
+                    currency: undefined,
+                    billingDuration: undefined,
+                    paymentSettings: undefined
+                  })}>
             Save
           </button>
         </div>
@@ -754,7 +757,7 @@ const SimpleTeamSelector = (props: {
   teams: Array<{ disabledFor: Array<string>, team: ITeamSimple }>;
   showApiKeySelectModal: (teamId: string) => void;
 }) => {
-  const { translate } = useContext(I18nContext);
+  const {translate} = useContext(I18nContext);
   return (
     <div className="modal-body">
       <div>
@@ -762,7 +765,7 @@ const SimpleTeamSelector = (props: {
           {translate('team.selection.desc.request')}
         </div>
         <div className="team-selection__container">
-          {props.teams.map(({ team, disabledFor }) => {
+          {props.teams.map(({team, disabledFor}) => {
 
             return <div
               key={team._id}
@@ -808,8 +811,8 @@ const SimpleTeamSelector = (props: {
 }
 
 const TeamSelector = (props: ITeamSelector) => {
-  const { translate } = useContext(I18nContext);
-  const { close } = useContext(ModalContext);
+  const {translate} = useContext(I18nContext);
+  const {close} = useContext(ModalContext);
   const navigate = useNavigate();
 
   const displayVerifiedBtn = props.plan.subscriptionProcess.some(
@@ -883,16 +886,16 @@ const TeamSelector = (props: ITeamSelector) => {
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
   return (
     <div className='form-selector mt-4'>
-      <button type='button' className={classNames('btn --secondary col-6', { active: props.value })}
-        onClick={() => props.action(true)}
-        disabled={props.disabledTrue}
+      <button type='button' className={classNames('btn --secondary col-6', {active: props.value})}
+              onClick={() => props.action(true)}
+              disabled={props.disabledTrue}
       >
         <div className='label'>{props.trueLabel}</div>
         <div className='description'>{props.trueDescription}</div>
       </button>
-      <button type='button' className={classNames('btn --secondary col-6', { active: !props.value })}
-        onClick={() => props.action(false)}
-        disabled={props.disabledFalse}>
+      <button type='button' className={classNames('btn --secondary col-6', {active: !props.value})}
+              onClick={() => props.action(false)}
+              disabled={props.disabledFalse}>
         <div className='label'>{props.falseLabel}</div>
         <div className='description'>{props.falseDescription}</div>
       </button>
@@ -921,20 +924,51 @@ export const ApiPricing = (props: ApiPricingProps) => {
     openApiSelectModal,
     confirm,
   } = useContext(ModalContext);
-  const { connectedUser, tenant, customGraphQLClient, flags: {
-    multiPlanSubscriptionEnabled
-  } } = useContext(GlobalContext);
+  const {
+    connectedUser, tenant, customGraphQLClient, flags: {
+      multiPlanSubscriptionEnabled
+    }
+  } = useContext(GlobalContext);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const hasSelectedRow = Object.values(rowSelection).includes(true)
+
+  function getFormSteps(plan: IUsagePlanGQL): Array<Extract<IValidationStep, { type: 'form' }>> {
+    return plan.subscriptionProcess.filter(
+      (step): step is Extract<IValidationStep, { type: 'form' }> => step.type === 'form'
+    );
+  }
+
+  function isSameFormStep(
+    a: Extract<IValidationStep, { type: 'form' }>,
+    b: Extract<IValidationStep, { type: 'form' }>
+  ): boolean {
+    return (
+      a.formatter === b.formatter &&
+      JSON.stringify(a.schema) === JSON.stringify(b.schema)
+    );
+  }
+
+  function hasIncompatibleFormStep(
+    selectedPlans: Array<IUsagePlanGQL>,
+    planToSelect: IUsagePlanGQL
+  ): boolean {
+    const selectedformSteps = selectedPlans.flatMap(getFormSteps);
+    const toBeSelectedFormStep = getFormSteps(planToSelect);
+
+    return toBeSelectedFormStep.some(
+      (toBeSelected) =>
+        selectedformSteps.length > 0 &&
+        !selectedformSteps.every((selected) => isSameFormStep(selected, toBeSelected))
+    );
+  }
 
   const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
     // We don't allow multi subscrption for paying plans for now, since it would
     // be too complicated to pay for multiple plans at once
     if (plan.paymentSettings) return false;
+    if (hasIncompatibleFormStep(selectedPlans, plan)) return false
     if (selectedPlans.length === 0) return true;
-
-
     return !hasProcess(plan) || selectedPlans.every(p => !hasProcess(p)) || selectedPlans.some(
       row => {
         return plan.subscriptionProcessChecksum === row.subscriptionProcessChecksum;
@@ -942,21 +976,21 @@ export const ApiPricing = (props: ApiPricingProps) => {
     );
   };
 
-  const { translate, language } = useContext(I18nContext);
+  const {translate, language} = useContext(I18nContext);
   const queryClient = useQueryClient();
 
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
-  const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({ limit, offset, filters, sorting }) =>
+  const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({limit, offset, filters, sorting}) =>
     customGraphQLClient
       .request<{ plansByApi: IPlansWithCount }>(
         Services.graphql.plansByApi, {
-        filterTable: JSON.stringify(filters),
-        sortingTable: JSON.stringify(sorting),
-        limit,
-        offset,
-        apiId: props.api._id
-      })
-      .then(({ plansByApi }): FetchResult<IUsagePlanGQL> => {
+          filterTable: JSON.stringify(filters),
+          sortingTable: JSON.stringify(sorting),
+          limit,
+          offset,
+          apiId: props.api._id
+        })
+      .then(({plansByApi}): FetchResult<IUsagePlanGQL> => {
         return {
           items: plansByApi.plans,
           total: plansByApi.total,
@@ -970,7 +1004,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   })
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['plans'] });
+    queryClient.invalidateQueries({queryKey: ['plans']});
   }, [props.api]);
 
 
@@ -1016,8 +1050,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
       format: format.buttonsSelect,
       label: () => translate('Visibility'),
       options: [
-        { label: translate('Public'), value: 'Public' },
-        { label: translate('Private'), value: 'Private' },
+        {label: translate('Public'), value: 'Public'},
+        {label: translate('Private'), value: 'Private'},
       ],
     },
     metadata: {
@@ -1029,7 +1063,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       format: format.select,
       isMulti: true,
       defaultValue: [],
-      visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
+      visible: ({rawValues}) => rawValues['visibility'] !== 'Public',
       deps: ['visibility'],
       label: translate('Authorized teams'),
       optionsFrom: () => Services.teams(props.ownerTeam)
@@ -1054,7 +1088,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       visible: tenant.aggregationApiKeysSecurity,
       label: translate('aggregation api keys security'),
       help: translate('aggregation_apikeys.security.help'),
-      onChange: ({ value, setValue }: any) => {
+      onChange: ({value, setValue}: any) => {
         if (value)
           confirm({
             message: translate('aggregation.api_key.security.notification'),
@@ -1080,6 +1114,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       props: {
         trueLabel: translate('Enabled'),
         falseLabel: translate('Disabled'),
+        'aria-label': "Autoriser plusieurs demandes de clé d'API"
       },
     },
     integrationProcess: {
@@ -1091,7 +1126,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           label: translate('Automatic'),
           value: 'Automatic',
         },
-        { label: translate('ApiKey'), value: 'ApiKey' },
+        {label: translate('ApiKey'), value: 'ApiKey'},
       ],
     },
   }), [availableEnvQuery.data, availableEnvQuery.isSuccess])
@@ -1124,8 +1159,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
           })))
           .then(closeRightPanel)
           .then(() => Promise.all([
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
-            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+            queryClient.invalidateQueries({queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id)}),
+            queryClient.invalidateQueries({queryKey: ['plans']}),
           ]))
           .then(() => undefined)
       )
@@ -1134,8 +1169,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
         Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
           .then(() => toast.success(translate('update.plan.successful.toast.label')))
           .then(() => Promise.all([
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
-            queryClient.invalidateQueries({ queryKey: ['plans'] }),
+            queryClient.invalidateQueries({queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id)}),
+            queryClient.invalidateQueries({queryKey: ['plans']}),
           ]))
           .then(closeRightPanel)
           .then(() => undefined)
@@ -1146,7 +1181,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
     // Convertire IUsagePlanGQL en IUsagePlan
     const planToUse = plan
-    availableEnvQuery.refetch().then(({ data: availableEnvs = [] }) => {
+    availableEnvQuery.refetch().then(({data: availableEnvs = []}) => {
       openRightPanel({
         title: creation ? translate("api.home.create.plan.form.title") : translate("api.home.update.plan.form.title"),
         content: <Form
@@ -1158,8 +1193,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
           }}
           options={{
             actions: {
-              cancel: { display: true, label: translate('Cancel'), action: () => closeRightPanel() },
-              submit: { label: translate('Save') }
+              cancel: {display: true, label: translate('Cancel'), action: () => closeRightPanel()},
+              submit: {label: translate('Save')}
             }
           }}
         />
@@ -1233,7 +1268,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         const joinsExistingKeyring = !!apiKey;
 
         const submit = (keyringCustomName?: string, motivation?: object) =>
-          props.askForApikeys({ team, plan, apiKey, keyringCustomName, motivation })
+          props.askForApikeys({team, plan, apiKey, keyringCustomName, motivation})
             .then(() => close());
 
         const openMotivationModal = (keyringCustomName?: string) => {
@@ -1243,7 +1278,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             actionLabel: translate('Send'),
             value: apiKey?.customMetadata,
             description: formStep!.info
-              ? <div className='alert alert-info' dangerouslySetInnerHTML={{ __html: formStep!.info }} />
+              ? <div className='alert alert-info' dangerouslySetInnerHTML={{__html: formStep!.info}}/>
               : <></>,
             onSubmit: (motivation) => submit(keyringCustomName, motivation)
           });
@@ -1265,7 +1300,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           actionLabel: translate(formStep ? 'Next' : 'Send'),
           // the next modal replaces this one ; closing here would wipe it
           noClose: !!formStep,
-          onSubmit: ({ customName }) =>
+          onSubmit: ({customName}) =>
             formStep ? openMotivationModal(customName) : submit(customName),
         });
       };
@@ -1292,15 +1327,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
       Services.getAllTeamSubscriptions(teamId)
         .then((subscriptions) =>
           customGraphQLClient.request<{ apis: Array<IApiGQL> }>(Services.graphql.apisByIdsWithPlans,
-            { ids: [...new Set(subscriptions.map((s) => s.api))] },
+            {ids: [...new Set(subscriptions.map((s) => s.api))]},
           )
-            .then(({ apis }) => ({ apis, subscriptions }))
+            .then(({apis}) => ({apis, subscriptions}))
         )
         .then(
           ({
-            apis,
-            subscriptions,
-          }) => {
+             apis,
+             subscriptions,
+           }) => {
             const subscription = subscriptions.map((subscription) => {
               const api = apis.find((a) => a._id === subscription.api);
               const plan = Option(api?.possibleUsagePlans)
@@ -1308,7 +1343,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   Option(plans.find((plan) => plan._id === subscription.plan))
                 )
                 .getOrNull();
-              return { subscription, api, plan };
+              return {subscription, api, plan};
             });
 
             // group every candidate subscription by its keyring : a keyring can
@@ -1418,12 +1453,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <CmsViewerByPath
               path={`/apis/${props.api._humanReadableId}/api-depreciation-warning/${language.toLowerCase()}`}
               fallBack={() => <CmsViewerByPath path={`/api-depreciation-warning/${language.toLowerCase()}`}
-                fallBack={() => <div>{translate({
-                  key: 'team.api.state.information.message',
-                  replacements:
-                    [props.api.name,
-                    props.api.state]
-                })}</div>} />} />
+                                               fallBack={() => <div>{translate({
+                                                 key: 'team.api.state.information.message',
+                                                 replacements:
+                                                   [props.api.name,
+                                                     props.api.state]
+                                               })}</div>}/>}/>
           </div>
       }) : Promise.resolve(true)
 
@@ -1470,7 +1505,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           } else {
             toast.success(translate('plan.payment.setup.successful'));
             closeRightPanel();
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
+            queryClient.invalidateQueries({queryKey: ['plans']})
           }
         });
     }
@@ -1528,11 +1563,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
       },
       authorizedEntities: {
         type: type.object,
-        visible: ({ rawValues }) =>
+        visible: ({rawValues}) =>
           !!rawValues.otoroshiSettings,
         deps: ['otoroshiSettings'],
         render: (p) =>
-          OtoroshiEntitiesSelector({ ...p, translate, ownerTeam: props.ownerTeam }),
+          OtoroshiEntitiesSelector({...p, translate, ownerTeam: props.ownerTeam}),
         label: translate('Authorized entities'),
         placeholder: translate('Authorized.entities.placeholder'),
         help: translate('authorized.entities.help'),
@@ -1553,7 +1588,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
             disabled: () =>
               !!planForEdition.aggregationApiKeysSecurity,
-            onChange: ({ setValue, value }) => {
+            onChange: ({setValue, value}) => {
               if (value) {
                 setValue('aggregationApiKeysSecurity', false);
               }
@@ -1569,7 +1604,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               }
             },
             disabled: () => !!planForEdition.aggregationApiKeysSecurity,
-            onChange: ({ setValue, value }) => {
+            onChange: ({setValue, value}) => {
               if (value) {
                 setValue('aggregationApiKeysSecurity', false);
               }
@@ -1598,7 +1633,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             label: translate('Custom Apikey metadata'),
             defaultValue: [],
             render: (props) => (
-              <CustomMetadataInput {...props} translate={translate} />
+              <CustomMetadataInput {...props} translate={translate}/>
             ),
             help: translate('custom.metadata.help'),
             arrayConstraints: [
@@ -1606,7 +1641,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 "no-dot-in-metadata",
                 translate("constraints.test.no.dot.in.metadata.key"),
                 (metadata) => {
-                  return metadata.every(({ key }) => !key.includes('.'))
+                  return metadata.every(({key}) => !key.includes('.'))
                 })
             ]
           },
@@ -1631,7 +1666,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               },
               allowLast: {
                 type: type.bool,
-                visible: ({ rawValues }) =>
+                visible: ({rawValues}) =>
                   !!rawValues.apikeyCustomization
                     .restrictions.enabled,
                 deps: [
@@ -1642,7 +1677,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               },
               allowed: {
                 label: translate('Allowed pathes'),
-                visible: ({ rawValues }) =>
+                visible: ({rawValues}) =>
                   rawValues.apikeyCustomization
                     .restrictions.enabled,
                 deps: [
@@ -1652,7 +1687,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               },
               forbidden: {
                 label: translate('Forbidden pathes'),
-                visible: ({ rawValues }) =>
+                visible: ({rawValues}) =>
                   rawValues.apikeyCustomization
                     .restrictions.enabled,
                 deps: [
@@ -1662,7 +1697,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               },
               notFound: {
                 label: translate('Not found pathes'),
-                visible: ({ rawValues }) =>
+                visible: ({rawValues}) =>
                   rawValues.apikeyCustomization
                     .restrictions.enabled,
                 deps: [
@@ -1699,19 +1734,19 @@ export const ApiPricing = (props: ApiPricingProps) => {
           schema: {
             confirm: {
               type: type.string,
-              label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName] }),
+              label: translate({key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName]}),
               constraints: [
                 constraints.oneOf(
                   [plan.customName],
-                  translate({ key: 'constraints.type.api.name', replacements: [plan.customName] })
+                  translate({key: 'constraints.type.api.name', replacements: [plan.customName]})
                 ),
               ],
             },
           },
           onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, convertIUsagePlanGQLToIUsagePlan(plan))
             .then(() => Promise.all([
-              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id) }),
-              queryClient.invalidateQueries({ queryKey: ['plans'] }),
+              queryClient.invalidateQueries({queryKey: QUERY_KEYS.availableEnvsByApi(props.api._id)}),
+              queryClient.invalidateQueries({queryKey: ['plans']}),
             ]))
             .then(() => toast.success(translate({
               key: `delete.${displayType}.successful.toast.label`,
@@ -1728,7 +1763,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         if (userCanUpdatePlan)
           openRightPanel({
             title: translate("api.pricings.quotas.table.title"),
-            content: <QuotasForm ownerTeam={props.ownerTeam} plan={plan} savePlan={savePlan} />
+            content: <QuotasForm ownerTeam={props.ownerTeam} plan={plan} savePlan={savePlan}/>
           })
       },
       editPricing: () => {
@@ -1738,7 +1773,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             content: <BillingForm
               ownerTeam={props.ownerTeam}
               plan={plan}
-              savePlan={setupPayment} />
+              savePlan={setupPayment}/>
           })
       },
       editOtoroshiTarget: () => openRightPanel({
@@ -1747,7 +1782,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           schema={otoroshiSchema(plan)}
           value={plan.otoroshiTarget}
           onSubmit={(otoroshiTarget) => {
-            savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, otoroshiTarget }))
+            savePlan(convertIUsagePlanGQLToIUsagePlan({...plan, otoroshiTarget}))
           }}
         />
       }),
@@ -1756,7 +1791,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
           title: translate("api.pricings.subscription.process.table.title"),
           content: <SubscriptionProcessEditor
             save={updatedProcess => {
-              return Promise.resolve(savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, subscriptionProcess: updatedProcess })))
+              return Promise.resolve(savePlan(convertIUsagePlanGQLToIUsagePlan({
+                ...plan,
+                subscriptionProcess: updatedProcess
+              })))
             }}
             process={plan.subscriptionProcess}
             team={props.ownerTeam._id}
@@ -1775,14 +1813,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
           hidden: !multiPlanSubscriptionEnabled
         },
         id: 'select',
-        header: ({ table }) => (
+        header: ({table}) => (
           <input
             type="checkbox"
             checked={table.getIsAllRowsSelected()}
             onChange={table.getToggleAllRowsSelectedHandler()}
           />
         ),
-        cell: ({ row }) => (
+        cell: ({row}) => (
           <input
             type="checkbox"
             checked={row.getIsSelected()}
@@ -1811,7 +1849,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'description',
-        meta: { className: "description-cell", title: translate('api.pricings.description.table.title'), size: 10 },
+        meta: {className: "description-cell", title: translate('api.pricings.description.table.title'), size: 10},
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1823,7 +1861,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'quotas',
-        meta: { className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 6 },
+        meta: {className: "quotas-cell", title: translate('api.pricings.quotas.table.title'), size: 6},
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1851,7 +1889,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'tarifs',
-        meta: { className: "tarifs-cell", title: translate('api.pricings.pricing.table.title'), size: 5 },
+        meta: {className: "tarifs-cell", title: translate('api.pricings.pricing.table.title'), size: 5},
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1863,7 +1901,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'otoroshi-cible',
-        meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
+        meta: {
+          className: "otoroshi-cible-cell",
+          title: translate('api.pricings.otoroshi.target.table.title'),
+          size: 7,
+          hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam])
+        },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1876,7 +1919,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'process',
-        meta: { className: "process-cell", title: translate('api.pricings.subscription.process.table.title'), size: 5, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
+        meta: {
+          className: "process-cell",
+          title: translate('api.pricings.subscription.process.table.title'),
+          size: 5,
+          hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam])
+        },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
           return (
@@ -1891,7 +1939,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       }),
       columnHelper.display({
         id: 'action',
-        meta: { className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 4 },
+        meta: {className: "action-cell", title: translate('api.pricings.name.table.actions'), size: 4},
         cell: (info) => {
 
           const plan: IUsagePlanGQL = info.cell.row.original
@@ -1918,7 +1966,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       aria-label={translate("Get API key")}
                       className="btn --tertiary --small --icon-only"
                     >
-                      <KeyRound size={16} />
+                      <KeyRound size={16}/>
                     </button>
                   )
                 }
@@ -1948,7 +1996,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                             aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
                             onClick={() => openTeamSelectorModal()}
                           >
-                            <KeyRound size={16} />
+                            <KeyRound size={16}/>
                           </button>
                         )
                       }
@@ -1961,9 +2009,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       type="button"
                       className="btn --tertiary --small --icon-only"
                       aria-label={translate("Get API key")}
-                      onClick={() => openLoginOrRegisterModal({ tenant })}
+                      onClick={() => openLoginOrRegisterModal({tenant})}
                     >
-                      <KeyRound size={16} />
+                      <KeyRound size={16}/>
                     </button>
                   )
                 }
@@ -1977,50 +2025,50 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       aria-expanded="false"
                       aria-label={
                         tenant.display === 'environment'
-                          ? translate('environment.actions.aria.label')
-                          : translate('plan.actions.aria.label')
+                          ? translate('pricing.actions.env.aria.label')
+                          : translate('pricing.actions.plan.aria.label')
                       }
                       id={`${plan.customName}-dropdownMenuButton`}
                     >
-                      <EllipsisVertical size={16} />
+                      <EllipsisVertical size={16}/>
                     </button>
                     <div className="dropdown-menu"
-                      aria-labelledby={`${plan._id}-dropdownMenuButton`}
-                      role='menu'>
+                         aria-labelledby={`${plan._id}-dropdownMenuButton`}
+                         role='menu'>
                       <button className="dropdown-item d-flex gap-1 align-items-center"
-                        onClick={() => actions(plan).editPlan()}>
-                        <Pencil size={16} />
+                              onClick={() => actions(plan).editPlan()}>
+                        <Pencil size={16}/>
                         {
                           tenant.display === 'environment'
-                            ? translate('environment.actions.aria.label')
-                            : translate('plan.actions.aria.label')
+                            ? translate('environment.action.configuration.aria.label')
+                            : translate('plan.action.configuration.aria.label')
                         }
                       </button>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item d-flex gap-1 align-items-center'
-                          onClick={() => actions(plan).editOtoroshiTarget()}>
-                          <Pencil size={16} />
+                                onClick={() => actions(plan).editOtoroshiTarget()}>
+                          <Pencil size={16}/>
                           {translate('Edit Otoroshi target')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item d-flex gap-1 align-items-center'
-                          onClick={() => actions(plan).editProcess()}>
-                          <Pencil size={16} />
+                                onClick={() => actions(plan).editProcess()}>
+                          <Pencil size={16}/>
                           {translate('pricing.edit.process.btn.label')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item  d-flex gap-1 align-items-center'
-                          onClick={() => actions(plan).editQuotas()}>
-                          <Pencil size={16} />
+                                onClick={() => actions(plan).editQuotas()}>
+                          <Pencil size={16}/>
                           {translate('usage.plan.form.quotas.selector.true.label')}
                         </button>
                       </Can>
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item  d-flex gap-1 align-items-center'
-                          onClick={() => actions(plan).editPricing()}>
-                          <Pencil size={16} />
+                                onClick={() => actions(plan).editPricing()}>
+                          <Pencil size={16}/>
                           {translate('usage.plan.form.pricing.display.button.label')}
                         </button>
                       </Can>
@@ -2030,7 +2078,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           <button
                             className="dropdown-item d-flex gap-1 align-items-center"
                             onClick={() => actions(plan).duplicatePlan()}>
-                            <CopyPlus size={16} />
+                            <CopyPlus size={16}/>
                             {tenant.display === 'environment'
                               ? translate('pricing.clone.env.btn.label')
                               : translate('Duplicate plan')}
@@ -2040,7 +2088,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           className="dropdown-item d-flex gap-1 align-items-center"
                           onClick={() => actions(plan).deleteWithConfirm()}
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={16}/>
                           {tenant.display === 'environment'
                             ? translate('pricing.delete.env.btn.label')
                             : translate('Delete plan')}
@@ -2121,90 +2169,90 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     Services.getAllTeamSubscriptions(teamId)
                       .then((subscriptions) =>
                         customGraphQLClient.request<{ apis: Array<IApiGQL> }>(Services.graphql.apisByIdsWithPlans,
-                          { ids: [...new Set(subscriptions.map((s) => s.api))] },
+                          {ids: [...new Set(subscriptions.map((s) => s.api))]},
                         )
-                          .then(({ apis }) => ({ apis, subscriptions }))
+                          .then(({apis}) => ({apis, subscriptions}))
                       ).then(subscriptionsWithApis => {
-                        return findCompatibleSubscriptionForMultiPlanRequest({
-                          plans: plans,
-                          tenant: tenant,
-                          teamApiSubscriptions: subscriptionsWithApis
-                        })
-                      }).then(compatibleSubscriptionsByPlan => {
-                        const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
-                        openFormModal({
-                          title: translate("apikey_select_modal.title"),
-                          onSubmit: (selectedApiKeyByPlanId) => {
-                            const teamName = props.myTeams.find(t => t._id === teamId)!.name;
+                      return findCompatibleSubscriptionForMultiPlanRequest({
+                        plans: plans,
+                        tenant: tenant,
+                        teamApiSubscriptions: subscriptionsWithApis
+                      })
+                    }).then(compatibleSubscriptionsByPlan => {
+                      const formStep = compatibleSubscriptionsByPlan.flatMap(s => s.plan.subscriptionProcess.filter(s => s.type === "form"))?.at(0);
+                      openFormModal({
+                        title: translate("apikey_select_modal.title"),
+                        onSubmit: (selectedApiKeyByPlanId) => {
+                          const teamName = props.myTeams.find(t => t._id === teamId)!.name;
 
-                            const openMultiSubscriptionModal = (
-                              motivation?: any // optionnel, absent dans le cas 4
-                            ) => {
-                              const promises = compatibleSubscriptionsByPlan.map(({ plan, subscriptions }) => {
-                                const subscriptionId = selectedApiKeyByPlanId[plan._id];
-                                const sub = subscriptions.find((sub) => sub._id === subscriptionId);
-                                const hasForm = plan.subscriptionProcess.some((s) => s.type === "form");
-                                return {
-                                  plan,
-                                  request: props.askForApikeys({
-                                    team: teamId,
-                                    plan: convertIUsagePlanGQLToIUsagePlan(plan),
-                                    apiKey: sub,
-                                    motivation: hasForm ? motivation : undefined,
-                                    redirect: false,
-                                    // one keyring per plan: each carries its own name, and a
-                                    // joined keyring keeps the one it already has.
-                                    keyringCustomName: sub
-                                      ? undefined
-                                      : selectedApiKeyByPlanId[keyringNameField(plan._id)],
-                                  }),
-                                };
-                              });
+                          const openMultiSubscriptionModal = (
+                            motivation?: any // optionnel, absent dans le cas 4
+                          ) => {
+                            const promises = compatibleSubscriptionsByPlan.map(({plan, subscriptions}) => {
+                              const subscriptionId = selectedApiKeyByPlanId[plan._id];
+                              const sub = subscriptions.find((sub) => sub._id === subscriptionId);
+                              const hasForm = plan.subscriptionProcess.some((s) => s.type === "form");
+                              return {
+                                plan,
+                                request: props.askForApikeys({
+                                  team: teamId,
+                                  plan: convertIUsagePlanGQLToIUsagePlan(plan),
+                                  apiKey: sub,
+                                  motivation: hasForm ? motivation : undefined,
+                                  redirect: false,
+                                  // one keyring per plan: each carries its own name, and a
+                                  // joined keyring keeps the one it already has.
+                                  keyringCustomName: sub
+                                    ? undefined
+                                    : selectedApiKeyByPlanId[keyringNameField(plan._id)],
+                                }),
+                              };
+                            });
 
-                              openCustomModal({
-                                title: translate("Creating subscription requests"),
-                                content: (
-                                  <SubscriptionResultForm
-                                    close={() => close()}
-                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
-                                    teamName={teamName}
-                                    requests={promises}
-                                  />
-                                ),
-                              });
-                            };
+                            openCustomModal({
+                              title: translate("Creating subscription requests"),
+                              content: (
+                                <SubscriptionResultForm
+                                  close={() => close()}
+                                  url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
+                                  teamName={teamName}
+                                  requests={promises}
+                                />
+                              ),
+                            });
+                          };
 
-                            if (formStep) {
-                              openFormModal({
-                                title: translate('motivations.modal.title'),
-                                noClose: true,
-                                schema: formStep.schema,
-                                actionLabel: translate('Send'),
-                                description: formStep.info ?
-                                  <div className='alert alert-info'
-                                    dangerouslySetInnerHTML={{ __html: formStep.info }} /> : <></>,
-                                onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
-                              })
-                            } else {
-                              openMultiSubscriptionModal();
-                            }
+                          if (formStep) {
+                            openFormModal({
+                              title: translate('motivations.modal.title'),
+                              noClose: true,
+                              schema: formStep.schema,
+                              actionLabel: translate('Send'),
+                              description: formStep.info ?
+                                <div className='alert alert-info'
+                                     dangerouslySetInnerHTML={{__html: formStep.info}}/> : <></>,
+                              onSubmit: (motivation) => openMultiSubscriptionModal(motivation)
+                            })
+                          } else {
+                            openMultiSubscriptionModal();
                           }
-                          ,
-                          actionLabel: translate(formStep ? 'Next' : 'Confirm'),
-                          noClose: true,
-                          schema: compatibleSubscriptionsByPlan.reduce((acc, { plan, subscriptions }) => {
+                        }
+                        ,
+                        actionLabel: translate(formStep ? 'Next' : 'Confirm'),
+                        noClose: true,
+                        schema: compatibleSubscriptionsByPlan.reduce((acc, {plan, subscriptions}) => {
                             acc[plan._id] = {
                               type: "string",
                               label: plan.customName,
                               format: "select",
                               defaultValue: "----",
                               options:
-                                [{ label: translate("aggregation.button.subscription.usual.label"), value: "----" },
-                                ...(subscriptions.map((s) => {
-                                  const keyringName = `${s.customName ?? s.planName} (${s.apiName})`
+                                [{label: translate("aggregation.button.subscription.usual.label"), value: "----"},
+                                  ...(subscriptions.map((s) => {
+                                    const keyringName = `${s.customName ?? s.planName} (${s.apiName})`
 
-                                  return ({ label: keyringName, value: s._id })
-                                }))
+                                    return ({label: keyringName, value: s._id})
+                                  }))
                                 ]
                             }
                             // one name per plan, only asked when a brand new keyring
@@ -2216,14 +2264,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 replacements: [plan.customName],
                               }),
                               placeholder: `${props.api.name} - ${plan.customName}`,
-                              visible: ({ rawValues }) => (rawValues[plan._id] ?? '----') === '----',
+                              visible: ({rawValues}) => (rawValues[plan._id] ?? '----') === '----',
                             }
                             return acc;
                           }
-                            , {}
-                          )
-                        })
-                      });
+                          , {}
+                        )
+                      })
+                    });
                   }}
                 />
               })
@@ -2231,35 +2279,43 @@ export const ApiPricing = (props: ApiPricingProps) => {
           },
         ]}
         toolbar={userCanUpdatePlan && <>
-            <button
-              type='button'
-              onClick={() => createNewPlan()}
-              className="btn --primary d-flex align-items-center gap-2">
-              <Plus />
-              <p className="m-0">{
-                tenant.display === 'environment' ?
-                  translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label')
-              }</p>
-            </button>
-          </>
-          }
+          <button
+            type='button'
+            onClick={() => createNewPlan()}
+            className="btn --primary d-flex align-items-center gap-2">
+            <Plus/>
+            <p className="m-0">{
+              tenant.display === 'environment' ?
+                translate('api.pricings.creation.environment.button.label') :
+                translate('api.pricings.creation.plan.button.label')
+            }</p>
+          </button>
+        </>
+        }
       />
     </>
   );
 }
 
-function SubscriptionResultForm(props: { close: () => any; url: string, teamName: string, requests: { plan: IUsagePlanGQL, request: Promise<SubscriptionReturn> }[] }) {
-  const { translate } = useContext(I18nContext);
-  const [state, setState] = useState<{ planId: string, status?: SubscriptionReturn }[]>(props.requests.map(r => ({ planId: r.plan._id })));
+function SubscriptionResultForm(props: {
+  close: () => any;
+  url: string,
+  teamName: string,
+  requests: { plan: IUsagePlanGQL, request: Promise<SubscriptionReturn> }[]
+}) {
+  const {translate} = useContext(I18nContext);
+  const [state, setState] = useState<{
+    planId: string,
+    status?: SubscriptionReturn
+  }[]>(props.requests.map(r => ({planId: r.plan._id})));
   useEffect(() => {
-    props.requests.forEach(({ plan, request }) => {
+    props.requests.forEach(({plan, request}) => {
       request.then(response => {
-        const currentState = state.find(({ planId }) => planId === plan._id);
+        const currentState = state.find(({planId}) => planId === plan._id);
         if (currentState?.status !== response) {
           setState(oldState => oldState.map(s => {
             if (s.planId === plan._id) {
-              return { ...s, status: response }
+              return {...s, status: response}
             } else {
               return s
             }
@@ -2269,9 +2325,12 @@ function SubscriptionResultForm(props: { close: () => any; url: string, teamName
     })
   }, []);
 
-  return <ul>{props.requests.map(({ plan }) => {
-    const currentStatus = state.find(({ planId }) => planId === plan._id)?.status;
-    let statusDisplay: ReactNode = <>{translate({ key: "subscription.plan.pending", replacements: [plan.customName, props.teamName] })} ⏳</>;
+  return <ul>{props.requests.map(({plan}) => {
+    const currentStatus = state.find(({planId}) => planId === plan._id)?.status;
+    let statusDisplay: ReactNode = <>{translate({
+      key: "subscription.plan.pending",
+      replacements: [plan.customName, props.teamName]
+    })} ⏳</>;
     if (Services.isCreationDone(currentStatus)) {
       const link = <Link
         to={props.url}
@@ -2280,13 +2339,22 @@ function SubscriptionResultForm(props: { close: () => any; url: string, teamName
         aria-label={translate("apikeys.view.api")}
         onClick={_ => props?.close()}
       >
-        <ExternalLink />
+        <ExternalLink/>
       </Link>
-      statusDisplay = <>{translate({ key: "subscription.plan.accepted", replacements: [plan.customName, props.teamName] })} ✅ {link}</>
+      statusDisplay = <>{translate({
+        key: "subscription.plan.accepted",
+        replacements: [plan.customName, props.teamName]
+      })} ✅ {link}</>
     } else if (Services.isCreationWaiting(currentStatus)) {
-      statusDisplay = <>{translate({ key: "subscription.plan.waiting", replacements: [plan.customName, props.teamName] })} ✅</>
+      statusDisplay = <>{translate({
+        key: "subscription.plan.waiting",
+        replacements: [plan.customName, props.teamName]
+      })} ✅</>
     } else if (Services.isResponseError(currentStatus)) {
-      statusDisplay = <>{translate({ key: "subscription.plan.failed", replacements: [plan.customName, props.teamName] })} ❌</>
+      statusDisplay = <>{translate({
+        key: "subscription.plan.failed",
+        replacements: [plan.customName, props.teamName]
+      })} ❌</>
     }
     return <li key={plan._id}>{statusDisplay}</li>
   })}</ul>
@@ -2294,21 +2362,23 @@ function SubscriptionResultForm(props: { close: () => any; url: string, teamName
 
 
 function convertIUsagePlanGQLToIUsagePlan(plan: IUsagePlanGQL): IUsagePlan {
-  return { ...plan, authorizedTeams: plan.authorizedTeams.map(team => team._id) };
+  return {...plan, authorizedTeams: plan.authorizedTeams.map(team => team._id)};
 }
 
 function findCompatibleSubscriptionForMultiPlanRequest(
-  { plans,
+  {
+    plans,
     tenant,
-    teamApiSubscriptions }:
-    {
-      plans: IUsagePlanGQL[],
-      tenant: ITenant,
-      teamApiSubscriptions: { apis: IApiGQL[], subscriptions: ISubscriptionWithApiInfo[] }
-    }
+    teamApiSubscriptions
+  }:
+  {
+    plans: IUsagePlanGQL[],
+    tenant: ITenant,
+    teamApiSubscriptions: { apis: IApiGQL[], subscriptions: ISubscriptionWithApiInfo[] }
+  }
 ): { plan: IUsagePlanGQL, subscriptions: ISubscriptionWithApiInfo[] }[] {
 
-  const { apis, subscriptions } = teamApiSubscriptions;
+  const {apis, subscriptions} = teamApiSubscriptions;
 
   const int = subscriptions.map((subscription) => {
     const api = apis.find((a) => a._id === subscription.api);
@@ -2317,7 +2387,7 @@ function findCompatibleSubscriptionForMultiPlanRequest(
         Option(plans.find((plan) => plan._id === subscription.plan))
       )
       .getOrNull();
-    return { subscription, api, plan };
+    return {subscription, api, plan};
   });
 
   const possibleKeysByPlanId = plans.map(plan => {
@@ -2330,7 +2400,7 @@ function findCompatibleSubscriptionForMultiPlanRequest(
       .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
       .map((infos) => infos.subscription);
 
-    return { plan: plan, subscriptions: filteredApiKeys };
+    return {plan: plan, subscriptions: filteredApiKeys};
   })
   return possibleKeysByPlanId;
 }

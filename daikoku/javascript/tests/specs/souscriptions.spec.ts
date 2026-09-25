@@ -96,6 +96,71 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
 
 });
 
+
+test('souscrire à plusieurs apis, une nouveau trousseau, l\'autre trousseau existant', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+await page.getByRole('link', { name: 'API Commande' }).click();
+await page.getByText('Environnements').click();
+
+await page.getByRole('listitem', { name: 'prod' }).getByLabel('Liste des actions pour').click();
+await page.getByRole('button', { name: 'Configurer l\'environnement' }).click();
+await page.getByText('Security').click();
+await page.getByText('Autoriser plusieurs demandes de clé d\'APIActivéDésactivé').getByRole('button', { name: 'Activé', exact: true }).click()
+await page.getByRole('button', { name: 'Enregistrer' }).click();
+await page.getByRole('listitem').filter({ hasText: 'Le plan a été mis à jour avec succès' }).getByLabel('Close toast').click();
+await page.getByRole('listitem', { name: 'prod' }).getByRole('checkbox').check();
+await page.getByRole('listitem', { name: 'dev' }).getByRole('checkbox').check();
+await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
+await page.getByText('Dwight Schrute').click();
+await page.getByRole('textbox', { name: 'Nom du trousseau pour le plan dev' }).fill('nouvelleSouscription');
+await page.locator('.react-form-select__input-container').first().click();
+await page.getByRole('option', { name: 'dev (API papier)' }).click();
+await page.locator('.react-form-select__indicator.react-form-select__dropdown-indicator.css-1xc3v61-indicatorContainer > .css-tj5bde-Svg').click();
+await page.getByRole('option', { name: 'Souscrire avec un nouveau' }).click();
+await page.getByRole('textbox', { name: 'Nom du trousseau pour le plan' }).click();
+await page.getByRole('textbox', { name: 'Nom du trousseau pour le plan' }).fill('Nouvelle Souscription');
+await page.getByRole('button', { name: 'Suivant' }).click();
+
+await page.getByRole('textbox', { name: 'motivation' }).fill('motivé');
+await page.getByRole('button', { name: 'Envoyer' }).click();
+await page.getByRole('link', { name: 'Voir l\'API' }).click();
+await page.getByRole('listitem').filter({ hasText: 'La demande de clé d\'API au' }).getByLabel('Close toast').click();
+await page.getByRole('listitem').filter({ hasText: 'Votre souscription a été créé' }).getByLabel('Close toast').click();
+
+await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+expect(page.getByRole('listitem', { name: 'Demande de souscription par' })).toContainText('Nouvelle demande de')
+await page.getByRole('button', { name: 'Accepter' }).click();
+await page.getByText('Accepter').click();
+await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+await page.getByRole('link', { name: 'API Commande' }).click();
+await page.getByText('Trousseaux').click();
+await page.getByRole('listitem').filter({ hasText: 'La souscription pour le plan prod de l\'api API Commande' }).getByLabel('Close toast').click();
+await page.getByRole('heading', { name: 'Nouvelle Souscription' }).click();
+await page.getByRole('heading', { name: 'api papier - dev' }).click();
+  await page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('button', { name: 'Contenu du trousseau' })
+    .click()
+  expect(page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' }))
+    .toBeVisible
+  expect(page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'api papier' }))
+    .toBeVisible 
+  await page
+    .getByRole('listitem', { name: 'Nouvelle Souscription' })
+    .getByRole('button', { name: 'Contenu du trousseau' })
+    .click()
+  expect(page
+    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem').filter({ hasText: 'API Commande' }))
+    .toBeVisible 
+});
+
 test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context }) => {
   test.setTimeout(60_000);
 

@@ -1,15 +1,15 @@
 import classNames from 'classnames';
-import { JSX, useContext, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Bell, MessageSquare } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import {JSX, useContext, useEffect, useMemo, useState} from 'react';
+import {ArrowLeft, Bell, MessageSquare} from 'lucide-react';
+import {Link, useLocation} from 'react-router-dom';
 
-import { getInitials, userHasAvatar } from '../..';
-import { GlobalContext } from '../../../contexts/globalContext';
-import { I18nContext } from '../../../contexts/i18n-context';
-import { MessagesContext } from '../../backoffice';
-import { Companion } from './companions';
-import { DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
-import { TeamPanel } from './panels/TeamPanel';
+import {getInitials, userHasAvatar} from '../..';
+import {GlobalContext} from '../../../contexts/globalContext';
+import {I18nContext} from '../../../contexts/i18n-context';
+import {MessagesContext} from '../../backoffice';
+import {Companion} from './companions';
+import {DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel} from './panels';
+import {TeamPanel} from './panels/TeamPanel';
 
 
 export const state = {
@@ -49,7 +49,7 @@ export const SideBar = () => {
 
   return (
     <div className="navbar-container d-flex flex-row">
-      <Companion />
+      <Companion/>
       <div
         className={classNames('navbar-panel d-flex flex-row', {
           opened: panelState === state.opened,
@@ -57,8 +57,9 @@ export const SideBar = () => {
         })}
       >
         <div className="mt-2 ms-2 ">
-          <div className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center companion-link">
-            <ArrowLeft className="" onClick={() => setPanelState(state.closed)} />
+          <div
+            className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center companion-link">
+            <ArrowLeft className="" onClick={() => setPanelState(state.closed)}/>
           </div>
         </div>
         {panelContent}
@@ -80,9 +81,16 @@ export const TopBar = () => {
 
   const location = useLocation();
 
-  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount, theme } = useContext(GlobalContext);
-  const { totalUnread } = useContext(MessagesContext);
-  const { translate } = useContext(I18nContext);
+  const {
+    tenant,
+    connectedUser,
+    impersonator,
+    isTenantAdmin,
+    unreadNotificationsCount,
+    theme
+  } = useContext(GlobalContext);
+  const {totalUnread} = useContext(MessagesContext);
+  const {translate} = useContext(I18nContext);
 
   useEffect(() => {
     setPanelState(state.closed);
@@ -111,7 +119,7 @@ export const TopBar = () => {
   }, [theme, tenant.logoMin, tenant.logoMinDark])
 
   const impersonatorStyle = impersonator
-    ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
+    ? {border: '3px solid red', boxShadow: '0px 0px 5px 2px red'}
     : {};
 
   const isAdmin = connectedUser.isDaikokuAdmin || isTenantAdmin;
@@ -131,7 +139,7 @@ export const TopBar = () => {
             aria-label={translate("Daikoku.home")}
             className="brand notification-link notification-link-color"
           >
-            {themedMinLogo && <img style={{ maxHeight: '40px' }} src={themedMinLogo} alt="logo" />}
+            {themedMinLogo && <img style={{maxHeight: '40px'}} src={themedMinLogo} alt="logo"/>}
             {tenant.name}
           </a>
         )}
@@ -142,7 +150,7 @@ export const TopBar = () => {
             aria-label={translate("Daikoku.home")}
             className="brand notification-link notification-link-color d-flex gap-3"
           >
-            {themedMinLogo && <img style={{ maxHeight: '40px', width: 'auto' }} src={themedMinLogo} alt="logo" />}
+            {themedMinLogo && <img style={{maxHeight: '40px', width: 'auto'}} src={themedMinLogo} alt="logo"/>}
             {tenant.name}
           </Link>
         )}
@@ -154,11 +162,11 @@ export const TopBar = () => {
         >
           {translate('topbar.link.dashboard.label')}
         </Link>
-        <TeamPanel />
+        <TeamPanel/>
 
       </div>
       <div className="navbar_middle d-flex justify-content-center flex-grow-1">
-        {!connectedUser.isGuest && <SearchPanel />}
+        {!connectedUser.isGuest && <SearchPanel/>}
       </div>
       <div className="navbar_right d-flex align-items-center gap-2">
         {isAdmin && (
@@ -172,7 +180,11 @@ export const TopBar = () => {
             )}
             title={translate('Access to the messages')}
           >
-            <MessageSquare />
+            <MessageSquare
+              onClick={() => {
+                setPanelState(state.opened);
+                setPanelContent(<MessagePanel/>);
+              }}/>
           </Link>
         )}
         {!connectedUser.isGuest && !isAdmin && (
@@ -185,12 +197,23 @@ export const TopBar = () => {
             )}
             aria-label={translate("sidebar.messages.button.aria.label")}
           >
-            <MessageSquare
-              onClick={() => {
-                setPanelState(state.opened);
-                setPanelContent(<MessagePanel />);
-              }}
-            />
+            <Link
+              to="/settings/messages"
+              className={classNames(
+                'nav-item notification-link  notification-link-color messages-link cursor-pointer',
+                {
+                  'unread-notifications': totalUnread > 0,
+                }
+              )}
+              title={translate('Access to the messages')}
+            >
+              <MessageSquare
+                onClick={() => {
+                  setPanelState(state.opened);
+                  setPanelContent(<MessagePanel/>);
+                }}
+              />
+            </Link>
           </button>
         )}
         {!connectedUser.isGuest && (
@@ -206,25 +229,25 @@ export const TopBar = () => {
               title={translate('Access to the notifications')}
               aria-label={translate('Access to the notifications')}
             >
-              <Bell />
+              <Bell/>
             </Link>
           </button>
         )}
-        <DarkModeActivator className="nav-item notification-link notification-link-color" />
+        <DarkModeActivator className="nav-item notification-link notification-link-color"/>
 
-        <div className="nav_item dropdown" style={{ color: '#fff' }}>
+        <div className="nav_item dropdown" style={{color: '#fff'}}>
           <button className="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             {!userHasAvatar(connectedUser) && <div
               role="img" aria-label="user menu"
-              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
+              style={{width: '35px', height: '35px', ...impersonatorStyle}}
               className="logo-anonymous user-logo avatar-without-img"
               onClick={() => {
                 if (!connectedUser.isGuest) {
                   setPanelState(state.opened);
-                  setPanelContent(<SettingsPanel />);
+                  setPanelContent(<SettingsPanel/>);
                 } else {
                   setPanelState(state.opened);
-                  setPanelContent(<GuestPanel />);
+                  setPanelContent(<GuestPanel/>);
                 }
               }}
               title={
@@ -236,7 +259,7 @@ export const TopBar = () => {
               }
             >{getInitials(connectedUser.name)}</div>}
             {userHasAvatar(connectedUser) && <img
-              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
+              style={{width: '35px', height: '35px', ...impersonatorStyle}}
               src={connectedUser.picture}
               className="logo-anonymous user-logo"
               title={
@@ -250,9 +273,9 @@ export const TopBar = () => {
             />}
 
           </button>
-          <div className="dropdown-menu" style={{ width: '400px' }}>
-            {!connectedUser.isGuest && <SettingsPanel />}
-            {connectedUser.isGuest && <GuestPanel />}
+          <div className="dropdown-menu" style={{width: '400px'}}>
+            {!connectedUser.isGuest && <SettingsPanel/>}
+            {connectedUser.isGuest && <GuestPanel/>}
           </div>
 
         </div>
