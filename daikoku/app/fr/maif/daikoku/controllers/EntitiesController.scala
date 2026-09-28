@@ -114,8 +114,7 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
                   env.dataStore.keyringRepo
                     .forTenant(tenant)
                     .queryOne(
-                      query =
-                        s"""
+                      query = s"""
                            |SELECT k.content AS content
                            |FROM api_subscriptions s
                            |         JOIN apis     a ON a._id = s.content ->> 'api'

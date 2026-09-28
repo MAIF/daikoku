@@ -3,7 +3,12 @@ package fr.maif.daikoku.controllers
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import fr.maif.daikoku.BuildInfo
-import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction, DaikokuUnauthenticatedActionContext}
+import fr.maif.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuUnauthenticatedAction,
+  DaikokuUnauthenticatedActionContext
+}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.ServiceStatus.Down
 import fr.maif.daikoku.controllers.authorizations.async.TenantAdminOnly
@@ -101,9 +106,10 @@ class HomeController(
         case None =>
           (env.dataStore match {
             case dataStore: PostgresDataStore =>
-              dataStore
-                .isDatabaseReachable
-                .map(dbReachable => if(dbReachable) ServiceStatus.Up else ServiceStatus.Down)
+              dataStore.isDatabaseReachable
+                .map(dbReachable =>
+                  if (dbReachable) ServiceStatus.Up else ServiceStatus.Down
+                )
           })
             .map(status =>
               Ok(Json.obj("status" -> (status match {
@@ -121,90 +127,95 @@ class HomeController(
         case Some(key) if env.config.detailedHealthAccessKey.contains(key) => {
           val datastoreHealth = env.dataStore match {
             case dataStore: PostgresDataStore =>
-              dataStore
-                .isDatabaseReachable
+              dataStore.isDatabaseReachable
                 .map(_ => ServiceStatus.Up)
           }
           datastoreHealth.flatMap(databaseStatus => {
-            if(databaseStatus == Down) {
-              Future.successful(Ok(Json.obj("status" -> ServiceStatus.Down.value)))
+            if (databaseStatus == Down) {
+              Future.successful(
+                Ok(Json.obj("status" -> ServiceStatus.Down.value))
+              )
             } else {
               val futureTenants = env.dataStore.tenantRepo
                 .findAll()
                 .flatMap(tenantList => {
-                  tenantList.foldLeft(Future.successful(Json.obj()))((futureJson, tenant) => {
-                    futureJson.flatMap(json => {
-                      for {
-                        mailerHealth <- tenant.mailer
-                          .testConnection(tenant) map (b =>
-                          if (b) ServiceStatus.Up else ServiceStatus.Down
+                  tenantList.foldLeft(Future.successful(Json.obj()))(
+                    (futureJson, tenant) => {
+                      futureJson.flatMap(json => {
+                        for {
+                          mailerHealth <- tenant.mailer
+                            .testConnection(tenant) map (b =>
+                            if (b) ServiceStatus.Up else ServiceStatus.Down
                           )
 
-                        s3HealthFuture =
-                          tenant.bucketSettings match {
-                            case None =>
-                              Future.successful(ServiceStatus.Absent)
-                            case Some(cfg: S3Configuration) =>
-                              env.assetsStore.checkBucket()(using cfg).map {
-                                case BucketAccess.AccessDenied =>
-                                  ServiceStatus.Down
-                                case BucketAccess.AccessGranted =>
-                                  ServiceStatus.Up
-                                case BucketAccess.NotExists =>
-                                  ServiceStatus.Absent
-                              }
-                          }
-                        s3Health <- s3HealthFuture
-
-                        otoroshiHealth <- {
-                          val checks =
-                            tenant.otoroshiSettings.map { otoSettings =>
-                              OtoroshiClient(env)
-                                .getApikey(otoSettings.clientId)(using
-                                  otoroshiSettings = otoSettings
-                                )
-                                .map { _ =>
-                                  (otoSettings, ServiceStatus.Up)
-                                }
-                                .recover { case _ =>
-                                  (otoSettings, ServiceStatus.Down)
+                          s3HealthFuture =
+                            tenant.bucketSettings match {
+                              case None =>
+                                Future.successful(ServiceStatus.Absent)
+                              case Some(cfg: S3Configuration) =>
+                                env.assetsStore.checkBucket()(using cfg).map {
+                                  case BucketAccess.AccessDenied =>
+                                    ServiceStatus.Down
+                                  case BucketAccess.AccessGranted =>
+                                    ServiceStatus.Up
+                                  case BucketAccess.NotExists =>
+                                    ServiceStatus.Absent
                                 }
                             }
-                          Future.sequence(checks)
-                        }
+                          s3Health <- s3HealthFuture
 
-                      } yield {
-                        val tenantJson = Json.obj(
-                          "tenantMode" -> tenant.tenantMode
-                            .map(_.name)
-                            .getOrElse(TenantMode.Default.name),
-                          "status" -> Json.obj(
-                            "mailer" -> mailerHealth.value,
-                            "S3" -> s3Health.value,
-                            "otoroshi" -> JsArray(
-                              otoroshiHealth
-                                .map(oto =>
-                                  Json.obj(
-                                    s"${oto._1.url} (${oto._1.host})" -> oto._2.value
+                          otoroshiHealth <- {
+                            val checks =
+                              tenant.otoroshiSettings.map { otoSettings =>
+                                OtoroshiClient(env)
+                                  .getApikey(otoSettings.clientId)(using
+                                    otoroshiSettings = otoSettings
                                   )
-                                )
-                                .toSeq
+                                  .map { _ =>
+                                    (otoSettings, ServiceStatus.Up)
+                                  }
+                                  .recover { case _ =>
+                                    (otoSettings, ServiceStatus.Down)
+                                  }
+                              }
+                            Future.sequence(checks)
+                          }
+
+                        } yield {
+                          val tenantJson = Json.obj(
+                            "tenantMode" -> tenant.tenantMode
+                              .map(_.name)
+                              .getOrElse(TenantMode.Default.name),
+                            "status" -> Json.obj(
+                              "mailer" -> mailerHealth.value,
+                              "S3" -> s3Health.value,
+                              "otoroshi" -> JsArray(
+                                otoroshiHealth
+                                  .map(oto =>
+                                    Json.obj(
+                                      s"${oto._1.url} (${oto._1.host})" -> oto._2.value
+                                    )
+                                  )
+                                  .toSeq
+                              )
                             )
                           )
-                        )
 
-                        json + (tenant.name -> tenantJson)
-                      }
-                    })
-                  })
+                          json + (tenant.name -> tenantJson)
+                        }
+                      })
+                    }
+                  )
                 })
 
               futureTenants.map(tenantJson => {
-                Ok(Json.obj(
-                  "status" -> ServiceStatus.Up.value,
-                  "datastore" -> ServiceStatus.Up.value,
-                  "version" -> BuildInfo.version
-                ) ++ tenantJson)
+                Ok(
+                  Json.obj(
+                    "status" -> ServiceStatus.Up.value,
+                    "datastore" -> ServiceStatus.Up.value,
+                    "version" -> BuildInfo.version
+                  ) ++ tenantJson
+                )
               })
             }
           })

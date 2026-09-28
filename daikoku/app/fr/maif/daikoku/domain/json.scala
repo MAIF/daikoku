@@ -1092,9 +1092,9 @@ object json {
     override def reads(json: JsValue): JsResult[GrantType] =
       json.asOpt[String] match {
         case Some("client-credential") => JsSuccess(GrantType.ClientCredential)
-        case Some("refresh-token") => JsSuccess(GrantType.RefreshToken)
+        case Some("refresh-token")     => JsSuccess(GrantType.RefreshToken)
         case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
-        case None => JsError("Bad SubscriptionBlockReason value")
+        case None      => JsError("Bad SubscriptionBlockReason value")
       }
 
     override def writes(o: GrantType): JsValue = JsString(o.name)
@@ -1117,7 +1117,7 @@ object json {
             tokenUrl = (json \ "scope").as[String],
             starttls = (json \ "starttls").asOpt[Boolean],
             ssl = (json \ "ssl").asOpt[Boolean],
-            grantType = (json \ "grantType").as(using GrantTypeFormat),
+            grantType = (json \ "grantType").as(using GrantTypeFormat)
           )
         )
       } recover { case e =>

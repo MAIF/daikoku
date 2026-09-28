@@ -51,7 +51,8 @@ class AuditTrailPurgeJob(override protected val env: Env)
       .minus(env.config.auditTrailPurgeJobMaxDate.toMillis)
       .getMillis
 
-    repo.execute(
+    repo
+      .execute(
         s"""DELETE FROM ${repo.tableName}
            |WHERE (content->>'@timestamp')::bigint < $$1""".stripMargin,
         Seq(java.lang.Long.valueOf(purgeBefore))

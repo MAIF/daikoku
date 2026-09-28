@@ -105,10 +105,10 @@ class SMTPOauth2SenderSpec
   }
 
   case class ReceivedEmail(
-                            subject: String,
-                            from: Seq[String],
-                            to: Seq[String]
-                          )
+      subject: String,
+      from: Seq[String],
+      to: Seq[String]
+  )
 
   def receivedEmails(): Array[ReceivedEmail] = {
     val properties = new Properties()
@@ -122,7 +122,6 @@ class SMTPOauth2SenderSpec
 
     val session = Session.getInstance(properties)
     val store = session.getStore("imap")
-
 
     store.connect(
       "test@example.com",

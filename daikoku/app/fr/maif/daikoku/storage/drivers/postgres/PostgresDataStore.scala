@@ -836,7 +836,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       .map(_.getOrElse(false))
 
   def isDatabaseReachable: Future[Boolean] = {
-    reactivePg.queryOne("SELECT 1") {row => Some(true)}
+    reactivePg
+      .queryOne("SELECT 1") { row => Some(true) }
       .map(maybeTrue => maybeTrue.getOrElse(false))
       .recover { case _ => false }
   }

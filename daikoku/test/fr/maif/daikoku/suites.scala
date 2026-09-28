@@ -1149,7 +1149,7 @@ object testUtils {
     val otoroshiPathServices = s"/api/services/?[\\w-]*"
     val otoroshiPathRoutes = s"/api/routes/?[\\w-]*"
     def otoroshiDeleteApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
-    def  otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
+    def otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiGetApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
 
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"

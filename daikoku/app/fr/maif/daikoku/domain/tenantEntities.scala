@@ -641,9 +641,9 @@ case class SMTPOauth2Settings(
     tokenUrl: String,
     starttls: Option[Boolean] = None,
     ssl: Option[Boolean] = None,
-    grantType: GrantType = GrantType.ClientCredential,
+    grantType: GrantType = GrantType.ClientCredential
 ) extends MailerSettings
-  with CanJson[SMTPOauth2Settings] {
+    with CanJson[SMTPOauth2Settings] {
 
   override def mailerType: String = "smtpOAuthClient"
 

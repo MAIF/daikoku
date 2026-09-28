@@ -25,7 +25,6 @@ class NotificationsPurgeJob(override protected val env: Env)
   override protected def defaultInput: Unit = ()
   private val ref = new AtomicReference[Cancellable]()
 
-
   override def start(): Unit = {
     super.start()
   }
