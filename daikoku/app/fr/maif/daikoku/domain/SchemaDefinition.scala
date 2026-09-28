@@ -3903,7 +3903,6 @@ object SchemaDefinition {
               TenantType,
               resolve = ctx => tenantsFetcher.defer(ctx.value._1.tenant)
             ),
-            Field("deleted", BooleanType, resolve = _.value._1.deleted),
             Field(
               "team",
               TeamObjectType,
