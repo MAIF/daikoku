@@ -9,6 +9,7 @@ import fr.maif.daikoku.actions.{
   DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.AppError.renderF
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.ApiSubscriptionState.Blocked
@@ -37,6 +38,7 @@ import fr.maif.daikoku.utils.RequestImplicits.{
   EnhancedRequestBody,
   EnhancedRequestHeader
 }
+import fr.maif.daikoku.utils.future.EnhancedObject
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -1483,44 +1485,6 @@ class ApiController(
       }
     }
 
-  def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String): Action[JsValue] =
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has update custom name for subscription @{subscription._id}"
-        )
-      )(teamId, ctx) { _ =>
-        val customName =
-          (ctx.request.body.as[JsObject] \ "customName").as[String].trim
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(ctx.tenant)
-          .findOneNotDeleted(
-            Json.obj("_id" -> subscriptionId, "team" -> teamId)
-          )
-          .flatMap {
-            case None =>
-              FastFuture.successful(
-                NotFound(Json.obj("error" -> "apiSubscription not found"))
-              )
-            case Some(subscription) =>
-              val updatedSubscription =
-                subscription.copy(customName = Some(customName))
-              for {
-                _ <- env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant)
-                  .save(updatedSubscription)
-                maybeKeyring <- env.dataStore.keyringRepo
-                  .forTenant(ctx.tenant)
-                  .findById(updatedSubscription.keyring)
-              } yield maybeKeyring match {
-                case Some(keyring) => Ok(updatedSubscription.asSafeJson(keyring))
-                case None =>
-                  NotFound(Json.obj("error" -> "keyring not found"))
-              }
-          }
-      }
-    }
-
   def updateKeyringCustomName(teamId: String, keyringId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiKeyAction(
@@ -2143,36 +2107,38 @@ class ApiController(
       }
     }
 
-  def toggleApiKeyRotation(teamId: String, subscriptionId: String): Action[JsValue] =
+  def toggleKeyringRotation(teamId: String, keyringId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}"
+          s"@{user.name} has toggle keyring rotation @{keyringId} of @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        apiSubscriptionAction(
-          ctx.tenant,
-          team,
-          subscriptionId,
-          (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-            ctx.setCtxValue("subscription", subscription)
-            val enabled =
-              (ctx.request.body.as[JsObject] \ "enabled").as[Boolean]
-            val rotationEvery =
-              (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
-            val gracePeriod =
-              (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
-            apiService.toggleApiKeyRotation(
-              ctx.tenant,
-              subscription,
-              plan,
-              api,
-              enabled,
-              rotationEvery,
-              gracePeriod
-            )
-          }
-        )
+        ctx.setCtxValue("keyringId", keyringId)
+        val enabled =
+          (ctx.request.body.as[JsObject] \ "enabled").as[Boolean]
+        val rotationEvery =
+          (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long]
+        val gracePeriod =
+          (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long]
+
+        env.dataStore.keyringRepo.forTenant(ctx.tenant).findById(keyringId).flatMap{
+          case Some(keyring) =>
+            if (keyring.team.value == teamId){
+              keyringService.toggleKeyringRotation(
+                ctx.tenant,
+                keyring,
+                enabled,
+                rotationEvery,
+                gracePeriod
+              ) .map(k => Ok(k.asJson))
+                .leftMap(AppError.render)
+                .merge
+            } else {
+              renderF(AppError.Forbidden("You're not allowed to toggle the rotation of this keyring"))
+            }
+          case None => NotFound(Json.obj("error" -> "keyring not found")).future
+        }
       }
     }
 

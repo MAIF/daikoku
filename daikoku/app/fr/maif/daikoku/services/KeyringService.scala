@@ -1,9 +1,18 @@
 package fr.maif.daikoku.services
 
+import cats.data.EitherT
+import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.controllers.AppError.{
+  ApiKeyRotationConflict,
+  ApiKeyRotationError,
+  OtoroshiSettingsNotFound
+}
+import fr.maif.daikoku.domain
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.OtoroshiApiKeyFormat
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.IdGenerator
+import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,7 +24,10 @@ import scala.concurrent.{ExecutionContext, Future}
   * key is recomputed on the fly by merging each referencing subscription. A
   * keyring lives as long as at least one subscription references it.
   */
-class KeyringService(env: Env) {
+class KeyringService(
+    env: Env,
+    otoroshiClient: OtoroshiClient
+) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -99,4 +111,131 @@ class KeyringService(env: Env) {
         case 0L => deleteKeyring(tenant, keyring)
         case _  => Future.successful(false)
       }
+
+  def toggleKeyringRotation(
+      tenant: Tenant,
+      keyring: Keyring,
+      enabled: Boolean,
+      rotationEvery: Long,
+      gracePeriod: Long
+  ): EitherT[Future, AppError, Keyring] = {
+    import cats.implicits.*
+
+    val keyringId = keyring.id;
+
+    for {
+      subscriptions <- EitherT.right[AppError](
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("keyring" -> keyringId.asJson))
+      )
+
+      planIds = subscriptions.map(_.plan).distinct
+
+      plans <- EitherT.right[AppError](
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIds(planIds)
+      )
+
+      isRotationLocked = plans.exists(_.autoRotation.getOrElse(false))
+
+      _ <- EitherT.cond[Future](
+        !isRotationLocked,
+        (),
+        ApiKeyRotationConflict
+      )
+      _ <- EitherT.cond[Future](
+        rotationEvery > gracePeriod,
+        (),
+        ApiKeyRotationError(
+          Json.obj(
+            "error" -> "Rotation period can't be less or equal to grace period"
+          )
+        )
+      )
+
+      _ <- EitherT.cond[Future](
+        rotationEvery > 0,
+        (),
+        ApiKeyRotationError(
+          Json
+            .obj(
+              "error" -> "Rotation period can't be less or equal to zero"
+            )
+        )
+      )
+      _ <- EitherT.cond[Future](
+        gracePeriod > 0,
+        (),
+        ApiKeyRotationError(
+          Json.obj(
+            "error" -> "Grace period can't be less or equal to zero"
+          )
+        )
+      )
+      otoSettings <- EitherT.fromOption[Future](
+        keyring.otoroshiSettings match {
+          case domain.KeyringOtoroshiBinding.Otoroshi(id) =>
+            tenant.otoroshiSettings.find(_.id == id)
+          case domain.KeyringOtoroshiBinding.Internal =>
+            None
+        },
+        OtoroshiSettingsNotFound
+      )
+
+      keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .findById(keyringId),
+        AppError.EntityNotFound(
+          s"Keyring ${keyringId.value}"
+        )
+      )
+      apiKey <- EitherT(
+        otoroshiClient.getApikey(keyring.apiKey.clientId)(using otoSettings)
+      )
+      _ <- EitherT.liftF(
+        // FIXME Use transaction
+        otoroshiClient.updateApiKey(
+          apiKey.copy(rotation =
+            Some(
+              ApiKeyRotation(
+                enabled = enabled,
+                rotationEvery = rotationEvery,
+                gracePeriod = gracePeriod
+              )
+            )
+          )
+        )(using otoSettings)
+      )
+
+      updatedKeyring = keyring.copy(rotation =
+        keyring.rotation
+          .map(r =>
+            r.copy(
+              enabled = enabled,
+              rotationEvery = rotationEvery,
+              gracePeriod = gracePeriod
+            )
+          )
+          .orElse(
+            Some(
+              ApiSubscriptionRotation(
+                rotationEvery = rotationEvery,
+                gracePeriod = gracePeriod
+              )
+            )
+          )
+      )
+      _ <- EitherT.liftF(
+        env.dataStore.keyringRepo
+          .forTenant(tenant.id)
+          .save(
+            updatedKeyring
+          )
+      )
+
+    } yield updatedKeyring
+  }
 }

@@ -2166,7 +2166,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 content: (
                                   <SubscriptionResultForm
                                     close={() => close()}
-                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
                                     teamName={teamName}
                                     requests={promises}
                                   />
@@ -2239,8 +2239,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <p className="m-0">{
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label'
-                )
+                  translate('api.pricings.creation.plan.button.label')
               }</p>
             </button>
           </>

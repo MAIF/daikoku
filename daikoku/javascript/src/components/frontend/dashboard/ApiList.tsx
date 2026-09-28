@@ -164,7 +164,7 @@ export const ApiList = (props: ApiListProps) => {
           const api = info.row.original.api
           return (
             <div className="d-flex align-items-center gap-1">
-              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}>
+              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/keyrings`}>
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
               </Link>
               {subscriptionDemandsCount > 0 && (
