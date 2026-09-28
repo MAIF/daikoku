@@ -839,6 +839,8 @@ class TeamController(
       }
     }
 
+  private val searchableUserAttributes = Set("email")
+
   def findUserByAttributes(teamId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
@@ -846,17 +848,28 @@ class TeamController(
           "@{user.name} has find User with many attributes (@{u.id})"
         )
       )(teamId, ctx) { _ =>
-        val attributes = (ctx.request.body \ "attributes").as[JsObject]
-        val (clause, params, _) =
-          attributes.fields.foldLeft(("", Seq.empty[String], 1)) {
-            case ((acc, values, idx), (key, value)) =>
-              val separator = if (acc.isEmpty) "" else " AND "
-              (
-                s"$acc${separator}lower(content ->> '$key') = lower($$$idx)",
-                values :+ value.as[String],
-                idx + 1
-              )
+        val fields: Seq[(String, String)] =
+          (ctx.request.body \ "attributes")
+            .asOpt[JsObject]
+            .map(_.fields.toSeq.collect { case (k, JsString(v)) => (k, v) })
+            .getOrElse(Seq.empty)
+
+        val validRequest =
+          fields.nonEmpty &&
+            fields.forall { case (k, _) => searchableUserAttributes.contains(k) }
+
+        if (!validRequest) {
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "invalid search attributes"))
+          )
+        }
+
+        val clause = fields.zipWithIndex
+          .map { case (_, i) =>
+            s"lower(content ->> $$${i * 2 + 1}) = lower($$${i * 2 + 2})"
           }
+          .mkString(" AND ")
+        val params = fields.flatMap { case (k, v) => Seq(k, v) }
 
         env.dataStore
           .asInstanceOf[PostgresDataStore]
@@ -867,7 +880,7 @@ class TeamController(
           )
           .map {
             case Some(user) => Ok(user.as(using json.UserFormat).asSimpleJson)
-            case None       => NotFound(Json.obj("error" -> "user not found"))
+            case None => NotFound(Json.obj("error" -> "user not found"))
           }
       }
     }

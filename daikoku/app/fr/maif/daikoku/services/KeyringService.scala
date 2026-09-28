@@ -12,7 +12,6 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.OtoroshiApiKeyFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -145,8 +144,7 @@ class KeyringService(
     for {
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("keyring" -> keyringId.asJson))
+          .findByKeyring(tenant.id, keyringId)
       )
 
       planIds = subscriptions.map(_.plan).distinct
@@ -247,7 +245,7 @@ class KeyringService(
             )
           )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
           .save(
