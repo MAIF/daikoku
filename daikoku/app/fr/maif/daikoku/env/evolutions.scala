@@ -2084,12 +2084,13 @@ object evolution_1900 extends EvolutionScript {
             )
           // 6. Unrelated to keyring, update OtoroshiSyncApiError to reduce size of 'api' field from complete
           // api content to api id
-          _ <- dataStore.notificationRepo.forAllTenant().execute(
-            query =
-              """UPDATE notifications n
+          _ <- dataStore.notificationRepo
+            .forAllTenant()
+            .execute(
+              query = """UPDATE notifications n
                 |SET content = jsonb_set(n.content, '{action,api}', n.content->'action'->'api'->'_id', false)
                 |WHERE n.content->'action'->>'type' = 'OtoroshiSyncApiError'""".stripMargin
-          )
+            )
         } yield Done
       }
   }

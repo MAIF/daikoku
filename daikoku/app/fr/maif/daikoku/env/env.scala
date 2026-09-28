@@ -584,7 +584,6 @@ class Config(val underlying: Configuration) {
     .map(v => v.millis)
     .getOrElse(10.minutes)
 
-
   lazy val auditTrailPurgeJobKey: String = underlying
     .getOptional[String]("daikoku.auditTrailPurgeJob.key")
     .getOrElse("secret")
@@ -620,7 +619,9 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
   lazy val notificationsToTreatPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.to.treat.date")
+    .getOptional[FiniteDuration](
+      "daikoku.notificationsPurgeJob.max.to.treat.date"
+    )
     .getOrElse(6 * 30 days)
   lazy val notificationsBasePurgeMaxDate: FiniteDuration = underlying
     .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.base.date")

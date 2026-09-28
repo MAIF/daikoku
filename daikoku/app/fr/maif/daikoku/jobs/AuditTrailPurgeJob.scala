@@ -45,7 +45,7 @@ class AuditTrailPurgeJob(override protected val env: Env)
     logger.info(
       s"Run audit trail purge for last ${env.config.auditTrailPurgeJobMaxDate}"
     )
-    
+
     env.dataStore.auditTrailRepo
       .deleteOlderThan(
         DateTime

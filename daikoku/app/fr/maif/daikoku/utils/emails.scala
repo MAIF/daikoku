@@ -573,14 +573,13 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
             )
             Right(resp)
           }
-          .recover {
-            case e =>
-              AppLogger.error(e.getMessage, e)
-              Left(
-                AppError.SmtpAuthenticationError(
-                  s"Unable to reach OAuth2 token endpoint: ${e.getMessage}"
-                )
+          .recover { case e =>
+            AppLogger.error(e.getMessage, e)
+            Left(
+              AppError.SmtpAuthenticationError(
+                s"Unable to reach OAuth2 token endpoint: ${e.getMessage}"
               )
+            )
           }
       )
       _ <- EitherT.cond[Future](
@@ -592,7 +591,9 @@ object OAuth2TokenProvider extends DefaultBodyWritables {
       )
       accessToken <- EitherT.fromOption[Future][AppError, String](
         (resp.json \ "access_token").asOpt[String],
-        AppError.SmtpAuthenticationError("access_token from token response not found")
+        AppError.SmtpAuthenticationError(
+          "access_token from token response not found"
+        )
       )
       // certains fournisseurs renvoient expires_in en string
       expiresIn = (resp.json \ "expires_in")
@@ -660,7 +661,7 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
   private def isAuthenticationError(error: AppError): Boolean =
     error match {
       case e: AppError.SmtpAuthenticationError => true
-      case _ => false
+      case _                                   => false
     }
 
   /** Ouvre une connexion SMTP authentifiée par token, exécute `f`, ferme. Si
