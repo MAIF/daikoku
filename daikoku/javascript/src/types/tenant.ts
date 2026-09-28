@@ -75,7 +75,7 @@ export interface IThirdPartyPaymentSettings {
   type: ThirdPartyPaymentType;
 }
 
-export type MailerType = 'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient';
+export type MailerType = 'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient' | 'smtpOAuthClient';
 
 export interface IMailerSettings {
   type: MailerType;
@@ -321,30 +321,30 @@ export interface ILogger {
 
 type AlgoSettings =
   | {
-      type: 'HSAlgoSettings';
-      size: number;
-      secret: string;
-    }
+    type: 'HSAlgoSettings';
+    size: number;
+    secret: string;
+  }
   | {
-      type: 'RSAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'RSAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'ESAlgoSettings';
-      size: number;
-      publicKey: string;
-      privateKey?: string;
-    }
+    type: 'ESAlgoSettings';
+    size: number;
+    publicKey: string;
+    privateKey?: string;
+  }
   | {
-      type: 'JWKSAlgoSettings';
-      url: string;
-      timeout: number;
-      headers: { [x: string]: string };
-      ttl: number;
-      kty: string;
-    };
+    type: 'JWKSAlgoSettings';
+    url: string;
+    timeout: number;
+    headers: { [x: string]: string };
+    ttl: number;
+    kty: string;
+  };
 
 export type OAuthSettings = {
   sessionMaxAge: number;
