@@ -5,6 +5,7 @@ import { Square, CheckSquare } from 'lucide-react';
 import { I18nContext } from '../../contexts';
 import { ITeamSimple } from '../../types';
 import { IBaseModalProps, TeamSelectorModalProps } from './types';
+import debounce from "lodash/debounce";
 
 export const TeamSelectorModal = ({ title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, actionLabel, close }: TeamSelectorModalProps & IBaseModalProps) => {
   const [selectedTeams, setSelectedTeams] = useState<Array<string>>([]);
@@ -78,6 +79,14 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
     }
   };
 
+
+  const [search, setSearch] = useState('')
+  const _search = (inputValue: string) => {
+    return setSearch(inputValue)
+  };
+  const debouncedSearch = debounce(_search, 100, { leading: true });
+
+
   return (
     <div className="modal-content">
       <div className="modal-header">
@@ -87,6 +96,12 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
       <div className="modal-body">
         <div className="modal-description" id="modal-description">{description}</div>
         <div className="team-selection__container" role='list' aria-labelledby='modal-title' aria-describedby='modal-description'>
+          {teams.length > 10 && <input
+            placeholder={translate('search.team.placeholder')}
+            className="form-control"
+            onChange={(e) => debouncedSearch(e.target.value)}
+            autoFocus={true}
+          />}
           {!!allTeamSelector && !!allTeams.length && (
             <button
               role='listitem'
@@ -100,7 +115,9 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
               </span>
             </button>
           )}
-          {teams.map((team) => {
+          {teams
+            .filter(team => team.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
+            .map((team) => {
             const teamName = getTeamLabel(team);
             return (
               <button
