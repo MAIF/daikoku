@@ -584,27 +584,46 @@ class Config(val underlying: Configuration) {
     .map(v => v.millis)
     .getOrElse(10.minutes)
 
-  lazy val auditTrailPurgeByCron: Boolean = underlying
-    .getOptional[Boolean]("daikoku.audit.purge.cron")
+
+  lazy val auditTrailPurgeJobKey: String = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.key")
+    .getOrElse("secret")
+  lazy val auditTrailPurgeJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.auditTrailPurgeJob.enabled")
     .getOrElse(false)
-  lazy val auditTrailPurgeInterval: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.audit.purge.interval")
-    .getOrElse(1 hour)
-  lazy val auditTrailPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.audit.purge.max.date")
+  lazy val auditTrailPurgeJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.cronExpression")
+  lazy val auditTrailPurgeJobInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.auditTrailPurgeJob.interval")
+    .getOrElse(1.hour)
+  lazy val auditTrailPurgeJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
+  lazy val auditTrailPurgeJobMaxDate: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.auditTrailPurgeJob.max.date")
     .getOrElse(60 day)
 
-  lazy val notificationsPurgeByCron: Boolean = underlying
-    .getOptional[Boolean]("daikoku.notifications.purge.cron")
+  lazy val notificationsPurgeJobKey: String = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.key")
+    .getOrElse("secret")
+  lazy val notificationsPurgeJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.notificationsPurgeJob.enabled")
     .getOrElse(false)
-  lazy val notificationsPurgeInterval: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.purge.interval")
-    .getOrElse(1 hour)
+  lazy val notificationsPurgeJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.cronExpression")
+  lazy val notificationsPurgeJobInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.interval")
+    .getOrElse(1.hour)
+  lazy val notificationsPurgeJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
   lazy val notificationsToTreatPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.max.to.treat.date")
+    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.to.treat.date")
     .getOrElse(6 * 30 days)
   lazy val notificationsBasePurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.purge.max.base.date")
+    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.base.date")
     .getOrElse(30 days)
 
   lazy val deletionByCron: Boolean = underlying

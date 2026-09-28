@@ -160,7 +160,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
 
   await page.goto(HOME)
 
@@ -174,8 +174,15 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
-  await expect(page.locator('.api-subscription')).toBeVisible();
+  await page.getByRole('navigation').getByText('Trousseaux').click();
+  await page
+      .getByRole('listitem', { name: 'api papier - dev' })
+      .getByRole('button', { name: 'Contenu du trousseau' })
+      .click()
+  await page
+      .getByRole('listitem', { name: 'api papier - dev' })
+      .getByRole('listitem').filter({ hasText: 'API Commande' }).click();
+
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
@@ -193,8 +200,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
-  await expect(page.locator('.api-subscription')).toBeVisible();
+  await page.getByRole('navigation').getByText('Trousseaux').click();
 
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
@@ -318,7 +324,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
   await page.goto(HOME)
 
 
@@ -333,7 +339,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
   await logout(page)
 
   //user admin
@@ -347,7 +353,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
 })
 
 test('Voir ses notifications', async ({ page }) => {
@@ -429,7 +435,7 @@ test('Voir ses notifications', async ({ page }) => {
 
   await expect(page.getByText('58 notifications')).toBeVisible();
   // await expect(page.getByLabel('notifications', { exact: true })).toContainText('58');
-  await expect(page.getByRole('article')).toHaveCount(25);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25);
 
   await expect(page.getByRole('button', { name: "page 3" })).toBeEnabled();
   // await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
@@ -443,18 +449,18 @@ test('Voir ses notifications', async ({ page }) => {
   await page.getByRole('option', { name: 'Logistique' }).click();
   await page.getByRole('heading', { name: 'Notifications' }).click();
   await expect(page.getByText('27 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(25)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
   await page.getByRole('option', { name: 'API Papier' }).click();
   await page.getByRole('heading', { name: 'Notifications' }).click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(1)
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(1)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
   await page.locator('div.daikoku-select__control').filter({ hasText: /^Tous les types/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Transfert de propriété d\'API' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
 
   await page.reload();
@@ -465,13 +471,13 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByText('56 lignes sélectionnées')).toBeVisible();
   await page.getByRole('button', { name: 'Marquer tout comme lu' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
   await page.getByRole('button', { name: 'Toutes' }).click();
   await expect(page.getByText('59 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(25);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(25)
   await page.getByRole('button', { name: 'À traiter' }).click();
   await expect(page.getByText('2 notifications')).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.getByRole('list', {name: 'notifications'}).getByRole('listitem')).toHaveCount(2)
 });
 
 
@@ -510,7 +516,7 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await loginAs(MICHAEL, page)
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  expect(page.getByRole('button', { name: 'Demandes à valider 3' })).toBeVisible
+  await expect(page.getByRole('button', { name: 'Demandes à valider 3' })).toBeVisible();
   await page.getByRole('button', { name: 'Demandes à valider' }).click();
 
   const parsedUrl = new URL(page.url());
@@ -526,8 +532,37 @@ test('Notification Count différencie les notifications à valider et a consulte
       'ApiSubscriptionDemand',
     ])
   );
-  expect(page.getByText('3 notifications (sur 6)')).toBeVisible
+  await expect(page.getByText('3 notifications (sur 6)')).toBeVisible();
   await page.getByRole('button', { name: 'À traiter' }).click();
   await page.getByRole('button', { name: 'Clear selection' }).click();
-  expect(page.getByText('6 notifications')).toBeVisible
+  await expect(page.getByText('6 notifications')).toBeVisible();
 });
+
+
+
+test("subscription page filtering by clientId should work",  async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('link', { name: 'API Commande' }).click();
+  await expect(page).toHaveURL("/api-division/api-commande/1.0.0/description");
+  await page.getByText('Souscriptions').click();
+  await expect(page).toHaveURL("/api-division/api-commande/1.0.0/subscriptions")
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Filtrer' }).click();
+  await page.getByRole('button', { name: 'Add' }).nth(1).click();
+  await page.locator('input[name="clientIds.0.value"]').fill('5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl');
+  await page.getByLabel('Filtrer les données').getByRole('button', { name: 'Filtrer' }).click();
+
+  await expect(page.getByText('daikoku-api-key-api-commande-dev-logistique')).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).not.toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).not.toBeVisible();
+
+  await page.getByRole('button', { name: 'supprimer les filtres' }).click();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
+
+})

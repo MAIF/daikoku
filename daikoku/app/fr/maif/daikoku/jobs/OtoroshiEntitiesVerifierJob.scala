@@ -180,7 +180,7 @@ class OtoroshiEntitiesVerifierJob(
                 )
                 JobUtils.sendErrorNotification(
                   NotificationAction.OtoroshiSyncApiError(
-                    api,
+                    api.id,
                     s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"
                   ),
                   api.team,
@@ -198,7 +198,7 @@ class OtoroshiEntitiesVerifierJob(
                   )
                   JobUtils.sendErrorNotification(
                     NotificationAction.OtoroshiSyncApiError(
-                      api,
+                      api.id,
                       s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"
                     ),
                     api.team,
@@ -216,7 +216,7 @@ class OtoroshiEntitiesVerifierJob(
                   )
                   JobUtils.sendErrorNotification(
                     NotificationAction.OtoroshiSyncApiError(
-                      api,
+                      api.id,
                       s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"
                     ),
                     api.team,

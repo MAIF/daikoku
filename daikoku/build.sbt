@@ -48,6 +48,9 @@ assembly / assemblyMergeStrategy := {
     MergeStrategy.first // ???
   case "META-INF/mailcap.default"   => MergeStrategy.last
   case "META-INF/mimetypes.default" => MergeStrategy.last
+  case "META-INF/versions/9/OSGI-INF/MANIFEST.MF" => MergeStrategy.last
+  case "OSGI-INF/MANIFEST.MF"                     => MergeStrategy.last
+
   case x =>
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)

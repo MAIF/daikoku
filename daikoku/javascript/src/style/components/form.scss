@@ -7,10 +7,6 @@
   background-color: variables.$form-bg-color;
   color: variables.$form-text-color;
   border-color: variables.$form-border-color;
-
-  &::placeholder {
-    color: variables.$form-text-color;
-  }
 }
 
 .form-control:disabled,

@@ -32,19 +32,14 @@ export const ApiHome = () => {
   const { translate } = useContext(I18nContext);
 
   const queryClient = useQueryClient();
-  //todo: ???
+
   const apiQuery = useQuery({
     queryKey: ["api", params.apiId, params.versionId],
     queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
   })
 
-  const visibleApisQuery = useQuery({
-    queryKey: ["api", "visibleApis"],
-    queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
-  })
-
   const mySubscriptionQuery = useQuery({
-    queryKey: ["mySubscription"],
+    queryKey: ["mySubscription", params.apiId, params.versionId],
     queryFn: () => Services.getMySubscriptions(params.apiId, params.versionId)
   })
 
@@ -91,7 +86,7 @@ export const ApiHome = () => {
 `;
 
   const myTeamsQuery = useQuery({
-    queryKey: ["myTeamsGQL"],
+    queryKey: ["teams"],
     queryFn: () => customGraphQLClient.request<{ myTeams: Array<ITeamFullGql> }>(MY_TEAMS_QUERY),
     select: d => d.myTeams,
     enabled: true, // Assure que la requête est activée
@@ -129,7 +124,7 @@ export const ApiHome = () => {
           toast.success(translate('subscription.created.success'));
           const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
           if (teamHrId && needRedirection) {
-            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys`);
+            navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys?team=${team}`);
           }
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
@@ -159,7 +154,7 @@ export const ApiHome = () => {
     mySubscriptionQuery.isLoading ||
     ownerTeamQuery.isLoading ||
     myTeamsQuery.isLoading ||
-    visibleApisQuery.isLoading
+    apiQuery.isLoading
   ) {
     return (
       <Spinner />
@@ -169,7 +164,7 @@ export const ApiHome = () => {
     mySubscriptionQuery.data &&
     ownerTeamQuery.data && !isError(ownerTeamQuery.data) &&
     myTeamsQuery.data &&
-    visibleApisQuery.data && !isError(visibleApisQuery.data)
+    apiQuery.data && !isError(apiQuery.data)
   ) {
     const api = apiQuery.data as IApi;
     const ownerTeam = ownerTeamQuery.data as ITeamSimple;
@@ -217,7 +212,7 @@ export const ApiHome = () => {
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
           {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
-          {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
+          {params.tab === 'keyrings' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
         </div>
       </main>);
   }

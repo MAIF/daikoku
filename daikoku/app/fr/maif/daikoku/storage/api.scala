@@ -1784,12 +1784,12 @@ trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId] {
     )
   }
 
-  /** Drops the events older than a cut-off, across every tenant. */
-  def deleteOlderThan(millis: Long)(implicit
+  /** Drops the events older than a cut-off. */
+  def deleteOlderThan(millis: Long, tenant: Tenant)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] = {
-    val repo = forAllTenant()
+    val repo = forTenant(tenant)
     repo.execute(
       s"DELETE FROM ${repo.tableName} " +
         "WHERE (content->>'@timestamp')::bigint < $1",

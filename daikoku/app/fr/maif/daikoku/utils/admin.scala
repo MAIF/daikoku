@@ -555,6 +555,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def deleteEntity(id: String): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
+      val logically =
+        ctx.request.queryString.get("logically").exists(_.contains("true"))
       entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
         case None =>
           Errors.craftResponseResultF(

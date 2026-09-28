@@ -1586,7 +1586,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 "no-dot-in-metadata",
                 translate("constraints.test.no.dot.in.metadata.key"),
                 (metadata) => {
-                  return Object.keys(metadata).every(key => !key.includes('.'))
+                  return Object.keys(metadata || {}).every(key => !key.includes('.'))
                 })
             ]
           },
@@ -1768,7 +1768,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const columnHelper = createColumnHelper<DynamicTableFeatures, IUsagePlanGQL>();
   const columns = useMemo(() => {
     return [
-      columnHelper.display({
+      ...(connectedUser.isGuest ? [] : [columnHelper.display({
         meta: {
           hidden: !multiPlanSubscriptionEnabled
         },
@@ -1788,7 +1788,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             onChange={row.getToggleSelectedHandler()}
           />
         ),
-      }),
+      })]),
       columnHelper.display({
         id: 'plan',
         meta: {
@@ -2090,9 +2090,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   });
 
                   const plansWithPendingDemands = plans.filter(p => !p.allowMultipleDemand)
-                    .filter(plan => {
-                      props.inProgressDemands.some(demand => demand.plan === plan._id && demand.team === team._id)
-                    });
+                    .filter(plan => props.inProgressDemands.some(demand => demand.plan === plan._id && demand.team === team._id));
 
                   let disableCauses: Array<string> = []
 
@@ -2166,7 +2164,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 content: (
                                   <SubscriptionResultForm
                                     close={() => close()}
-                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
                                     teamName={teamName}
                                     requests={promises}
                                   />
@@ -2230,8 +2228,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
         ]}
-        toolbar={
-          <>
+        toolbar={userCanUpdatePlan && <>
             <button
               type='button'
               onClick={() => createNewPlan()}
@@ -2240,11 +2237,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <p className="m-0">{
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label'
-                  )}</p>
+                  translate('api.pricings.creation.plan.button.label')
+              }</p>
             </button>
           </>
-        }
+          }
       />
     </>
   );

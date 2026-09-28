@@ -1085,6 +1085,70 @@ object json {
           .as[JsValue]
       )
   }
+
+  val GrantTypeFormat = new Format[GrantType] {
+    override def reads(json: JsValue): JsResult[GrantType] =
+      json.asOpt[String] match {
+        case Some("client-credential") => JsSuccess(GrantType.ClientCredential)
+        case Some("refresh-token") => JsSuccess(GrantType.RefreshToken)
+        case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
+        case None => JsError("Bad SubscriptionBlockReason value")
+      }
+
+    override def writes(o: GrantType): JsValue = JsString(o.name)
+  }
+
+  val SMTPOauth2SettingsFormat = new Format[SMTPOauth2Settings] {
+    override def reads(json: JsValue): JsResult[SMTPOauth2Settings] =
+      Try {
+        JsSuccess(
+          SMTPOauth2Settings(
+            host = (json \ "host").as[String],
+            port = (json \ "port").as[Int],
+            username = (json \ "username").as[String],
+            fromTitle = (json \ "fromTitle").as[String],
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String],
+            clientId = (json \ "clientId").as[String],
+            clientSecret = (json \ "clientSecret").as[String],
+            scope = (json \ "scope").as[String],
+            tokenUrl = (json \ "scope").as[String],
+            starttls = (json \ "starttls").asOpt[Boolean],
+            ssl = (json \ "ssl").asOpt[Boolean],
+            grantType = (json \ "grantType").as(using GrantTypeFormat),
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: SMTPOauth2Settings): JsValue =
+      Json.obj(
+        "type" -> "smtpOAuthClient",
+        "host" -> o.host,
+        "port" -> o.port,
+        "username" -> o.username,
+        "fromTitle" -> o.fromTitle,
+        "fromEmail" -> o.fromEmail,
+        "template" -> o.template
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "clientId" -> o.clientId,
+        "clientSecret" -> o.clientSecret,
+        "starttls" -> o.starttls
+          .map(JsBoolean.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "ssl" -> o.ssl
+          .map(JsBoolean.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "grantType" -> o.grantType.name
+      )
+
+  }
   val SendGridSettingsFormat = new Format[SendgridSettings] {
     override def reads(json: JsValue): JsResult[SendgridSettings] =
       Try {
@@ -3077,6 +3141,7 @@ object json {
           case "ApiDepreciationWarning" =>
             ApiDepreciationWarningFormat.reads(json)
           case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
+          case "NewSubscription"    => NewSubscriptionFormat.reads(json)
           case str                  => JsError(s"Bad notification value: $str")
         }
 
@@ -3195,6 +3260,10 @@ object json {
           case p: ApiBlockingWarning =>
             ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiBlockingWarning"
+            )
+          case p: NewSubscription =>
+            NewSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "NewSubscription"
             )
         }
     }
@@ -3427,6 +3496,27 @@ object json {
         "team" -> TeamIdFormat.writes(o.team)
       )
   }
+  val NewSubscriptionFormat = new Format[NewSubscription] {
+    override def reads(json: JsValue): JsResult[NewSubscription] =
+      Try {
+        JsSuccess(
+          NewSubscription(
+            api = (json \ "api").as(using ApiIdFormat),
+            team = (json \ "team").as(using TeamIdFormat),
+            plan = (json \ "plan").as(using UsagePlanIdFormat)
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewSubscription): JsValue = Json.obj(
+      "api" -> ApiIdFormat.writes(o.api),
+      "team" -> TeamIdFormat.writes(o.team),
+      "plan" -> UsagePlanIdFormat.writes(o.plan)
+    )
+  }
   val ApiSubscriptionDemandFormat = new Format[ApiSubscriptionDemand] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionDemand] =
       Try {
@@ -3651,7 +3741,7 @@ object json {
       Try {
         JsSuccess(
           OtoroshiSyncApiError(
-            api = (json \ "api").as(using ApiFormat),
+            api = (json \ "api").as(using ApiIdFormat),
             message = (json \ "message").as[String]
           )
         )
@@ -3661,7 +3751,7 @@ object json {
 
     override def writes(o: OtoroshiSyncApiError): JsValue =
       Json.obj(
-        "api" -> ApiFormat.writes(o.api),
+        "api" -> o.api.value,
         "message" -> o.message
       )
   }

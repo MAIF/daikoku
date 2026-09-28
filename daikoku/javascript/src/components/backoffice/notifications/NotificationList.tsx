@@ -25,6 +25,7 @@ import {
   ITeamSimple,
   ITenant,
   IUsagePlan,
+  IUsagePlanGQL,
   IUser,
   IValidationStep,
 } from '../../../types';
@@ -141,7 +142,8 @@ type NotificationActionGQL =
   | {
     __typename: 'ApiBlockingWarning';
     api: IApiGQL;
-  };
+  }
+  | { __typename: 'NewSubscription', team: ITeamFullGql, plan: IUsagePlanGQL, api: IApiGQL };
 
 
 type NotificationGQL = {
@@ -200,6 +202,7 @@ export const NotificationList = () => {
     { type: "ApiKeyRotationEndedV2" },
     { type: "ApiKeyRotationInProgress" },
     { type: "ApiKeyRotationInProgressV2" },
+    { type: "NewSubscription" },
     { type: "ApiSubscription" },
     { type: "ApiSubscriptionAccept" },
     { type: "ApiSubscriptionReject" },
@@ -397,7 +400,7 @@ export const NotificationList = () => {
             <div className="d-flex justify-content-end">
               {sub && (
                 <Link
-                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`}
+                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/keyrings`}
                   className="nav_item cursor-pointer no-bg"
                   title={translate('notif.apikey.refresh.see_keyring')}
                   aria-label={translate('notif.apikey.refresh.see_keyring')}
@@ -444,7 +447,7 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-center">
               <Link
-                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}
+                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/keyrings`}
                 className="btn --tertiary --small --icon-only"
                 title={translate('notif.api.demand.accept.see_key')}
                 aria-label={translate('notif.api.demand.accept.see_key')}
@@ -527,6 +530,8 @@ export const NotificationList = () => {
         return translate({ key: 'notif.api.access', replacements: [notification.action.api.name] });
       case 'TransferApiOwnership':
         return translate({ key: 'notif.api.transfer', replacements: [notification.action.api.name] });
+      case 'NewSubscription':
+        return translate({ key: 'notif.NewSubscription', replacements: [notification.action.team.name] });
       case 'ApiSubscription': {
         const desc = translate({ key: `notif.api.subscription.${tenant.display}`, replacements: [notification.action.plan.customName] });
         const _api = notification.action.api;
@@ -768,6 +773,7 @@ export const NotificationList = () => {
       case "CheckoutForSubscription":
       case "ApiDepreciationWarning":
       case "ApiBlockingWarning":
+      case 'NewSubscription':
         const _api = notification.action.api
         return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
       case "ApiKeyRefreshV2":
@@ -830,6 +836,7 @@ export const NotificationList = () => {
       enableColumnFilter: true,
       cell: (info) => {
         const typeName = info.getValue();
+        console.debug(info)
         const label = translate(`notifications.page.filters.type.${typeName}.label`);
         return (
           <span
@@ -1010,6 +1017,7 @@ export const NotificationList = () => {
         {translate('notifications.page.table.title')}
       </h1>
       <DynamicTable<NotificationGQL>
+        ariaLabel={translate("notifications.page.list.aria-label")}
         queryKey={['notifications']}
         columns={buildColumns}
         fetchData={fetchData}

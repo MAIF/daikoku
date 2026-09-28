@@ -3,13 +3,9 @@ package fr.maif.daikoku.controllers
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import fr.maif.daikoku.BuildInfo
-import fr.maif.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuUnauthenticatedAction,
-  DaikokuUnauthenticatedActionContext
-}
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuUnauthenticatedAction, DaikokuUnauthenticatedActionContext}
 import fr.maif.daikoku.audit.AuditTrailEvent
+import fr.maif.daikoku.controllers.ServiceStatus.Down
 import fr.maif.daikoku.controllers.authorizations.async.TenantAdminOnly
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.{CmsRequestRenderingFormat, FlagsFormat}
@@ -22,7 +18,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.connectors.s3.BucketAccess
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs
-import play.api.libs.json.*
+import play.api.libs.json.{Json, *}
 import play.api.mvc.*
 
 import scala.collection.mutable
@@ -106,10 +102,9 @@ class HomeController(
           (env.dataStore match {
             case dataStore: PostgresDataStore =>
               dataStore
-                .checkDatabase()
-                .map(_ => ServiceStatus.Up)
+                .isDatabaseReachable
+                .map(dbReachable => if(dbReachable) ServiceStatus.Up else ServiceStatus.Down)
           })
-            .recover { case _ => ServiceStatus.Down }
             .map(status =>
               Ok(Json.obj("status" -> (status match {
                 case ServiceStatus.Up => "ready"
@@ -127,21 +122,23 @@ class HomeController(
           val datastoreHealth = env.dataStore match {
             case dataStore: PostgresDataStore =>
               dataStore
-                .checkDatabase()
+                .isDatabaseReachable
                 .map(_ => ServiceStatus.Up)
           }
-          env.dataStore.tenantRepo
-            .findAll()
-            .flatMap(tenantList =>
-              datastoreHealth
-                .zip(
-                  Future.sequence(
-                    tenantList.map { (tenant: Tenant) =>
+          datastoreHealth.flatMap(databaseStatus => {
+            if(databaseStatus == Down) {
+              Future.successful(Ok(Json.obj("status" -> ServiceStatus.Down.value)))
+            } else {
+              val futureTenants = env.dataStore.tenantRepo
+                .findAll()
+                .flatMap(tenantList => {
+                  tenantList.foldLeft(Future.successful(Json.obj()))((futureJson, tenant) => {
+                    futureJson.flatMap(json => {
                       for {
                         mailerHealth <- tenant.mailer
                           .testConnection(tenant) map (b =>
                           if (b) ServiceStatus.Up else ServiceStatus.Down
-                        )
+                          )
 
                         s3HealthFuture =
                           tenant.bucketSettings match {
@@ -176,46 +173,41 @@ class HomeController(
                           Future.sequence(checks)
                         }
 
-                      } yield Json.obj(
-                        "tenantName" -> tenant.name,
-                        "tenantMode" -> tenant.tenantMode
-                          .map(_.name)
-                          .getOrElse(TenantMode.Default.name),
-                        "status" -> Json.obj(
-                          "mailer" -> mailerHealth.value,
-                          "S3" -> s3Health.value,
-                          "otoroshi" -> JsArray(
-                            otoroshiHealth
-                              .map(oto =>
-                                Json.obj(
-                                  s"${oto._1.url} (${oto._1.host})" -> oto._2.value
+                      } yield {
+                        val tenantJson = Json.obj(
+                          "tenantMode" -> tenant.tenantMode
+                            .map(_.name)
+                            .getOrElse(TenantMode.Default.name),
+                          "status" -> Json.obj(
+                            "mailer" -> mailerHealth.value,
+                            "S3" -> s3Health.value,
+                            "otoroshi" -> JsArray(
+                              otoroshiHealth
+                                .map(oto =>
+                                  Json.obj(
+                                    s"${oto._1.url} (${oto._1.host})" -> oto._2.value
+                                  )
                                 )
-                              )
-                              .toSeq
+                                .toSeq
+                            )
                           )
                         )
-                      )
-                    }
-                  )
-                )
-                .map { case (datastore, results) =>
-                  val resultObj = results.foldLeft(Json.obj()) { (acc, item) =>
-                    val tenantName = (item \ "tenantName").as[String]
-                    val withoutNom = item.as[JsObject] - "tenantName"
-                    acc + (tenantName -> withoutNom)
-                  }
-                  Ok(
-                    Json.obj(
-                      "status" -> datastore.value,
-                      "datastore" -> datastore.value,
-                      "version" -> BuildInfo.version
-                    ) ++ resultObj
-                  )
-                }
-                .recover { case _ =>
-                  Ok(Json.obj("status" -> ServiceStatus.Down.value))
-                }
-            )
+
+                        json + (tenant.name -> tenantJson)
+                      }
+                    })
+                  })
+                })
+
+              futureTenants.map(tenantJson => {
+                Ok(Json.obj(
+                  "status" -> ServiceStatus.Up.value,
+                  "datastore" -> ServiceStatus.Up.value,
+                  "version" -> BuildInfo.version
+                ) ++ tenantJson)
+              })
+            }
+          })
         }
         case _ => AppError.Unauthorized.renderF()
       }

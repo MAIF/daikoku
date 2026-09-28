@@ -58,6 +58,12 @@ daikoku:
   # Extra raw env vars for any other DAIKOKU_* setting, e.g.:
   #   - name: DAIKOKU_NOTIFICATIONS_PURGE_CRON
   #     value: "true"
+  # This is also how you feed a value from a Secret you own rather than writing it
+  # here in clear text — key names in the Secret are yours to choose. See
+  # "Referencing an existing Secret" in the README.
+  #   - name: DAIKOKU_INIT_MAILER_PASSWORD
+  #     valueFrom:
+  #       secretKeyRef: { name: daikoku-credentials, key: mailer_password }
   extraEnv: []
 
   # ===========================================================================
@@ -69,7 +75,10 @@ daikoku:
   # tenant from the Daikoku admin UI. (Same lifecycle as DAIKOKU_INIT_DATA_FROM.)
   #
   # Leave a value as "" (string) or null (bool/int) to skip it. Fields marked
-  # "-> Secret" are rendered into a Kubernetes Secret; the rest into a ConfigMap.
+  # [DAIKOKU_INIT_*] are rendered into a Kubernetes Secret under that key; the
+  # rest into a ConfigMap. To keep a credential out of this file entirely, leave it
+  # empty here and inject its variable from a Secret you own via `daikoku.extraEnv`
+  # — see "Referencing an existing Secret" in the README.
   # ===========================================================================
   initTenant:
     # --- Identity & locale -----------------------------------------------------
@@ -96,7 +105,7 @@ daikoku:
       url: ""                      # e.g. https://otoroshi-api.your-domain.com
       host: ""                     # Host header Otoroshi expects, e.g. otoroshi-api.your-domain.com
       clientId: ""                 # Otoroshi admin-api apikey client id. Empty -> "admin-api-apikey-id"
-      clientSecret: ""             # -> Secret. Empty -> "admin-api-apikey-secret"
+      clientSecret: ""             # [DAIKOKU_INIT_OTOROSHI_CLIENT_SECRET] Empty -> "admin-api-apikey-secret"
 
     # --- S3 bucket for asset storage -------------------------------------------
     # Set `bucket` to enable. For an in-cluster bucket, enable the bundled Garage
@@ -107,7 +116,7 @@ daikoku:
       endpoint: ""                 # S3 endpoint URL, e.g. https://s3.eu-west-1.amazonaws.com
       region: ""                   # e.g. eu-west-1. Empty -> "us-east-1"
       access: ""                   # access key id
-      secret: ""                   # -> Secret. secret access key
+      secret: ""                   # [DAIKOKU_INIT_S3_SECRET] secret access key
       chunkSize: null              # multipart chunk size in bytes (int). null -> 8388608 (8MiB)
       v4auth: null                 # true (AWS SigV4, default) | false (legacy v2). null -> true
 
@@ -123,17 +132,17 @@ daikoku:
       # type=mailgun:
       domain: ""                   # mailgun sending domain
       eu: null                     # true -> use mailgun EU region | false -> US. null -> false
-      key: ""                      # -> Secret. mailgun private api key
+      key: ""                      # [DAIKOKU_INIT_MAILER_KEY] mailgun private api key
       # type=mailjet:
       apiKeyPublic: ""             # mailjet public api key
-      apiKeyPrivate: ""            # -> Secret. mailjet private api key
+      apiKeyPrivate: ""            # [DAIKOKU_INIT_MAILER_API_KEY_PRIVATE] mailjet private api key
       # type=smtpClient:
       host: ""                     # SMTP server host
       port: ""                     # SMTP port as a string, e.g. "25" | "587" | "465". Empty -> "25"
       username: ""                 # SMTP username (optional)
-      password: ""                 # -> Secret. SMTP password (optional)
+      password: ""                 # [DAIKOKU_INIT_MAILER_PASSWORD] SMTP password (optional)
       # type=sendgrid:
-      sendgridApiKey: ""           # -> Secret. sendgrid api key
+      sendgridApiKey: ""           # [DAIKOKU_INIT_MAILER_SENDGRID_APIKEY] sendgrid api key
 
     # --- Authentication module -------------------------------------------------
     # `provider` selects how users log in. Allowed values:
@@ -146,7 +155,7 @@ daikoku:
       # Used only when provider=OAuth2:
       oauth2:
         clientId: ""               # OAuth2 client id
-        clientSecret: ""           # -> Secret. OAuth2 client secret
+        clientSecret: ""           # [DAIKOKU_INIT_AUTH_OAUTH2_CLIENT_SECRET] OAuth2 client secret
         tokenUrl: ""               # token endpoint URL
         authorizeUrl: ""           # authorize endpoint URL
         userInfoUrl: ""            # userinfo endpoint URL
@@ -169,7 +178,7 @@ daikoku:
         userBase: ""               # sub-DN appended to searchBase for users, e.g. "ou=people" (optional)
         searchFilter: ""           # user lookup filter. Empty -> "(mail=${username})"
         adminUsername: ""          # bind DN used to search, e.g. "cn=admin,dc=example,dc=com" (optional)
-        adminPassword: ""          # -> Secret. bind password (optional)
+        adminPassword: ""          # [DAIKOKU_INIT_AUTH_LDAP_ADMIN_PASSWORD] bind password (optional)
         nameFields: ""             # comma separated attrs for display name. Empty -> "cn"
         emailField: ""             # email attribute. Empty -> "mail"
         groupFilter: ""            # filter selecting member groups (optional)
@@ -184,7 +193,7 @@ daikoku:
         index: ""                  # index name (optional)
         type: ""                   # ES mapping type (optional, legacy ES)
         user: ""                   # basic-auth user (optional)
-        password: ""               # -> Secret. basic-auth password (optional)
+        password: ""               # [DAIKOKU_INIT_AUDIT_ELASTIC_PASSWORD] basic-auth password (optional)
 
 # ---------------------------------------------------------------------------
 # Secrets. Leave a value empty to auto-generate it on first install and KEEP it

@@ -232,6 +232,7 @@ export type DynamicTableProps<T extends RowData> = {
   setRowSelection?: OnChangeFn<RowSelectionState>;
   onSelectionChange?: (selected: T[]) => void;
   isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
+  ariaLabel?: string;
 };
 
 export function DynamicTable<T extends RowData>({
@@ -248,6 +249,7 @@ export function DynamicTable<T extends RowData>({
   toolbar = null,
   getRowId,
   getRowAriaLabel,
+  ariaLabel,
   dataClassName,
   countLabelKey,
   tableClassName,
@@ -788,16 +790,14 @@ export function DynamicTable<T extends RowData>({
                 </div>
               )
             }
-            <ul className="table-rows">
+            <ul className="table-rows" aria-label={ariaLabel}>
               {table.getRowModel().rows.map(row => (
-                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)}>
-                  <article className="table-row" aria-label={getRowAriaLabel?.(row.original)}>
-                    {row.getAllCells().map(cell => (
-                      (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </div>
-                    ))}
-                  </article>
+                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)} className="table-row">
+                  {row.getAllCells().map(cell => (
+                    (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  ))}
                 </li>
               ))}
             </ul>

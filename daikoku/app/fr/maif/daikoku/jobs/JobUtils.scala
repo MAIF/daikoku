@@ -67,7 +67,7 @@ object JobUtils {
               )
             case NotificationAction.OtoroshiSyncApiError(api, _) =>
               Json.obj(
-                "api" -> api.asJson,
+                "api" -> api.value,
                 "team" -> teamId.value,
                 "tenant" -> tenantId.value
               )
