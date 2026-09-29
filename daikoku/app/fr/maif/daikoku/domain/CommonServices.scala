@@ -1184,7 +1184,6 @@ object CommonServices {
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
            |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
-           |  AND s._deleted = false
            |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
            |LIMIT $$8 OFFSET $$9;
@@ -1275,8 +1274,7 @@ object CommonServices {
            |    FROM keyrings k
            |             LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
            |             LEFT JOIN usage_plans p ON s.content ->> 'plan' = p._id
-           |    WHERE k._deleted = false
-           |      AND s.content ->> 'api' = $$1
+           |    WHERE s.content ->> 'api' = $$1
            |      AND k.content ->> 'team' = $$2
            |    ),
            |    total AS (
@@ -1287,7 +1285,7 @@ object CommonServices {
            |   (SELECT total FROM total),
            |   bool_or((plan ->> 'autoRotation')::boolean) AS "isRotationLocked",
            |   jsonb_agg(DISTINCT plan ->> 'customName') FILTER (WHERE plan ->> 'customName' IS NOT NULL) AS "environments",
-           |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id AND s2._deleted = false) AS "subscriptionsCount"
+           |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id) AS "subscriptionsCount"
            |   FROM keyringSubscriptionPlan
            |                 WHERE keyring ->> 'customName'  ILIKE '%' || $$3::text || '%'
            |                 OR plan ->> 'customName' ILIKE '%' || $$3::text || '%'
