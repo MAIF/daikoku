@@ -1011,3 +1011,53 @@ We'd like to thank all the contributors who worked on this release!
 ## [v18.12.3] - 2026-07-17
 
 
+## [v19.0.0] - 2026-09-29
+
+## :star: New Features
+
+- Add an input search for teamSelection [#1272](https://github.com/MAIF/daikoku/issues/1272)
+- SMTP modern authentication [#1261](https://github.com/MAIF/daikoku/issues/1261)
+- "Subscribed APIs only" checkbox should be hidden when not connected [#1254](https://github.com/MAIF/daikoku/issues/1254)
+- TeamAdmin notification on plan subscription [#1247](https://github.com/MAIF/daikoku/issues/1247)
+- GitOps helm installation with secrets (Otoroshi, s3, Mailer) [#1183](https://github.com/MAIF/daikoku/issues/1183)
+- Allow to define key name at creation [#1180](https://github.com/MAIF/daikoku/issues/1180)
+- Duplicating a plan in env mode should not prefill "Name" field with an impossible value [#1174](https://github.com/MAIF/daikoku/issues/1174)
+- Validate an API key request should display a confirmation toast [#1171](https://github.com/MAIF/daikoku/issues/1171)
+- Basic implementation for remote catalogs : http - file - github - gitlab [#1143](https://github.com/MAIF/daikoku/issues/1143)
+- [LifeCycle] :: add doc [#939](https://github.com/MAIF/daikoku/issues/939)
+- [LifeCycle] :: Add tests [#938](https://github.com/MAIF/daikoku/issues/938)
+- [LifeCycle] :: API blocking [#937](https://github.com/MAIF/daikoku/issues/937)
+- [LifeCycle] :: API deprecation [#936](https://github.com/MAIF/daikoku/issues/936)
+- Better API lifecycle management [#800](https://github.com/MAIF/daikoku/issues/800)
+
+## :lady_beetle: Bug Fixes
+
+- The notification purge job does not seem to be working correctly. [#1262](https://github.com/MAIF/daikoku/issues/1262)
+- api field is too large for DB index in OtoroshiSyncApiError [#1256](https://github.com/MAIF/daikoku/issues/1256)
+- Subscription count / action columns should not be displayed in dashboard when not connected [#1255](https://github.com/MAIF/daikoku/issues/1255)
+- Placeholder text is too dark [#1253](https://github.com/MAIF/daikoku/issues/1253)
+- Subscriptions table sort on "created at" column does not work [#1252](https://github.com/MAIF/daikoku/issues/1252)
+- API key screen : switching API version does not refresh team select options [#1251](https://github.com/MAIF/daikoku/issues/1251)
+- Plan screen button should be aligned with other tables & Figma [#1198](https://github.com/MAIF/daikoku/issues/1198)
+- "Create plan" button should be "Create environment" in environment mode [#1197](https://github.com/MAIF/daikoku/issues/1197)
+- Field used as metadata is not valued correctly in modal [#1193](https://github.com/MAIF/daikoku/issues/1193)
+- "Fields used as metadata" is impossible to edit after motivation form edition [#1192](https://github.com/MAIF/daikoku/issues/1192)
+- Motivation form edition modal does not support editing schema [#1191](https://github.com/MAIF/daikoku/issues/1191)
+- Tooltip not displaying in motivation form edition modal [#1190](https://github.com/MAIF/daikoku/issues/1190)
+- Editing custom metadata change their display order constantly [#1177](https://github.com/MAIF/daikoku/issues/1177)
+- Custom Apikey metadata with "." in name prevent any subscription [#1176](https://github.com/MAIF/daikoku/issues/1176)
+- Allow forcing PostgreSQL connections onto the primary node [#1170](https://github.com/MAIF/daikoku/issues/1170)
+- Helm install with gitops secrets display email/password [#1164](https://github.com/MAIF/daikoku/issues/1164)
+- button with waiting to validation demands in dashbaord have wrong count [#1158](https://github.com/MAIF/daikoku/issues/1158)
+- API sidebar: missing highlighted tab when navigating to "Clés d'API" [#1157](https://github.com/MAIF/daikoku/issues/1157)
+- Secret reinitialisation for an aggregation parent doesn't refresh secret for child keys in Daikoku [#1156](https://github.com/MAIF/daikoku/issues/1156)
+- Desync between Daikoku and Otoroshi when regenerating an API key secret [#1155](https://github.com/MAIF/daikoku/issues/1155)
+- Default admin team display "Invite collaborator button" but it does not work [#1081](https://github.com/MAIF/daikoku/issues/1081)
+- In some case of subscription process, pending request aren't retrive in then pending request [#982](https://github.com/MAIF/daikoku/issues/982)
+- duplicate in agregated apikeys list [#594](https://github.com/MAIF/daikoku/issues/594)
+
+## :heart: Contributors
+
+Thank you to all the contributors who worked on this release:
+
+@gmenant, @ptitFicus, and @quentinovega
