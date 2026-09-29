@@ -526,8 +526,9 @@ trait TenantRepo extends Repo[Tenant, TenantId] {
       domain: String
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Tenant]] =
     queryOne(
-      s"SELECT content FROM $tableName " +
-        "WHERE content->>'domain' = $1 LIMIT 1",
+      s"""SELECT content FROM $tableName
+         |WHERE (content->>'domain' = $$1 OR (content->'additionalDomains') ? $$1) LIMIT 1
+         |""".stripMargin,
       Seq(domain)
     )
 
@@ -537,8 +538,9 @@ trait TenantRepo extends Repo[Tenant, TenantId] {
       ec: ExecutionContext
   ): Future[Boolean] =
     queryExists(
-      s"SELECT 1 FROM $tableName WHERE _id <> $$1 " +
-        s"AND content->>'domain' = $$2 LIMIT 1",
+      s"""SELECT 1 FROM $tableName WHERE _id <> $$1
+         |AND (content->>'domain' = $$2 OR (content->'additionalDomains') ? $$2) LIMIT 1
+         |""".stripMargin,
       Seq(id.value, domain)
     )
 }

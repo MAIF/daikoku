@@ -82,23 +82,19 @@ class MessageActor(implicit
         DateTime.now().getMillis
       )
 
-      emails =
+      recipientsToNotify =
         if (message.chat == message.sender)
           recipients
             .filter(u => lastMessage.exists(m => m.readBy.contains(u.id)))
             .filter(u => !connected.exists(s => s.userId == u.id))
-            .map(_.email)
         else
           recipients
             .filter(u => lastMessage.exists(_.readBy.contains(u.id)))
             .filter(_.id == message.chat)
             .filter(u => !connected.exists(s => s.userId == u.id))
-            .map(_.email)
       path =
         if (message.sender == message.chat) "/settings/messages"
         else "/"
-
-      link = env.getDaikokuUrl(tenant, path)
 
       title <- translator.translate(
         "mail.new.message.title",
@@ -107,19 +103,26 @@ class MessageActor(implicit
           "user" -> JsString(sender.get.name)
         )
       )
-      body <- translator.translate(
-        "mail.new.message.body",
-        tenant,
-        Map(
-          "body" -> JsString(message.message),
-          "user_data" -> sender.get.asSimpleJson,
-          "message_data" -> message.asJson,
-          "tenant_data" -> tenant.asJson,
-          "link" -> JsString(link)
-        )
-      )
       _ <- Future.sequence(
-        emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant))
+        recipientsToNotify.map(recipient =>
+          translator
+            .translate(
+              "mail.new.message.body",
+              tenant,
+              Map(
+                "body" -> JsString(message.message),
+                "user_data" -> sender.get.asSimpleJson,
+                "message_data" -> message.asJson,
+                "tenant_data" -> tenant.asJson,
+                "link" -> JsString(
+                  env.getDaikokuUrl(tenant, path, recipient)
+                )
+              )
+            )
+            .flatMap(body =>
+              tenant.mailer.send(title, Seq(recipient.email), body, tenant)
+            )
+        )
       )
     } yield ()
   }

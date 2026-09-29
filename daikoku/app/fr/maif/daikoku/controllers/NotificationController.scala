@@ -797,7 +797,7 @@ class NotificationController(
           )
       )
 
-      _ <- apiService.runSubscriptionProcess(demand.id, ctx.tenant)
+      _ <- apiService.runSubscriptionProcess(demand.id, ctx.tenant, host = env.requestHost(ctx.request).some)
     } yield ()
 
     r.value

@@ -300,6 +300,7 @@ object SchemaDefinition {
             Field("enabled", BooleanType, resolve = _.value.enabled),
             Field("name", StringType, resolve = _.value.name),
             Field("domain", StringType, resolve = _.value.domain),
+            Field("additionalDomain", ListType(StringType), resolve = _.value.additionalDomains),
             Field("contact", StringType, resolve = _.value.contact),
             Field(
               "style",

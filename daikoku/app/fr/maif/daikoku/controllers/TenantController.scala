@@ -13,7 +13,7 @@ import fr.maif.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.daikoku.domain.json.TenantFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.login.OAuth2Config
+import fr.maif.daikoku.login.{OAuth2Config, TenantHelper}
 import fr.maif.daikoku.services.{ApiService, DeletionService, TenantService}
 import fr.maif.daikoku.utils.*
 import fr.maif.daikoku.utils.future.EnhancedObject
@@ -147,7 +147,7 @@ class TenantController(
                 }
                 fu.map { _ =>
                   val path = ctx.request.getQueryString("path").getOrElse("")
-                  val url = env.getDaikokuUrl(tenant, path)
+                  val url = env.getDaikokuUrl(tenant, path, ctx.user)
 
                   Redirect(url)
                 }
@@ -205,11 +205,12 @@ class TenantController(
             ctx.setCtxValue("tenant.name", tenant.name)
             ctx.setCtxValue("tenant.id", tenant.id)
 
-            tenantService
-              .createTenant(tenant)
-              .map(tenantForCreation =>
-                Created(tenantForCreation.asJsonWithJwt)
-              )
+            TenantHelper.validateDomains(tenant)
+              .flatMap(x => tenantService
+                .createTenant(tenant)
+                .map(tenantForCreation =>
+                  Created(tenantForCreation.asJsonWithJwt)
+                ))
               .leftMap(_.render())
               .merge
           }
@@ -268,6 +269,7 @@ class TenantController(
                 env.dataStore.tenantRepo.findById(updatedTenant.id),
                 AppError.TenantNotFound
               )
+              _ <- TenantHelper.validateDomains(updatedTenant)
               tenant <- tenantService.updateTenant(
                 oldTenant,
                 updatedTenant,
@@ -281,7 +283,7 @@ class TenantController(
                 )
               )
             }).leftMap(e => {
-              AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
+              AppLogger.warn(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
               e.render()
             }).merge
         }

@@ -480,7 +480,7 @@ class ConsumptionController(
       )(teamId, ctx) { team =>
         val callback = ctx.request
           .getQueryString("callback")
-          .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
+          .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request))
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant)
           .findById(plan)

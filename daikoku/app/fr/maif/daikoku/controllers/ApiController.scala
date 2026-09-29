@@ -120,7 +120,7 @@ class ApiController(
               EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
-                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
+                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url, request = ctx.request)
                 else url
               EitherT(Try {
                 env.wsClient
@@ -217,7 +217,7 @@ class ApiController(
               EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
-                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
+                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url, request = ctx.request)
                 else url
               val triedEventualErrorOrResult
                   : Try[Future[Either[AppError, Result]]] = Try {
@@ -876,7 +876,7 @@ class ApiController(
                             "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
                           )
                         if (url.startsWith("/")) {
-                          url = env.getDaikokuUrl(ctx.tenant, s"$url")
+                          url = env.getDaikokuUrl(ctx.tenant, s"$url", request = ctx.request)
                         }
                         if (url.contains("?")) {
                           url = s"$url&sessionId=${ctx.session.sessionId.value}"
@@ -1184,11 +1184,12 @@ class ApiController(
         _ <- apiService.validateProcessWithStepValidator(
           validator,
           ctx.tenant,
-          maybeSessionId
+          maybeSessionId,
+          host = env.requestHost(ctx.request).some
         )
       } yield
-        Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-accept")))
-        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
+        Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-accept", request = ctx.request)))
+        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}", request = ctx.request)))
         .merge
     }
 
@@ -1244,8 +1245,8 @@ class ApiController(
             AppError.EntityNotFound("token")
           )
           _ <- apiService.declineProcessWithStepValidator(validator, ctx.tenant)
-        } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-decline")))
-          .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
+        } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-decline", request = ctx.request)))
+          .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}", request = ctx.request)))
           .merge
       }
     }
@@ -1302,7 +1303,7 @@ class ApiController(
             AppError.EntityNotFound("Subscription demand")
           )
           result <-
-            apiService.runSubscriptionProcess(demand.id, ctx.tenant, from.some)
+            apiService.runSubscriptionProcess(demand.id, ctx.tenant, from = from.some, host = env.requestHost(ctx.request).some)
         } yield result).value
       }
     }
@@ -1880,7 +1881,7 @@ class ApiController(
           cipheredToken = encrypt(env.config.cypherSecret, transfer.token, ctx.tenant)
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.deleteBySubscription(ctx.tenant.id, subscription.id).map(_ > 0))
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).save(transfer))
-          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve")}?token=$cipheredToken")
+          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve", request = ctx.request)}?token=$cipheredToken")
         } yield Ok(Json.obj("link" -> link)))
           .leftMap(_.render())
           .merge
@@ -2497,7 +2498,7 @@ class ApiController(
                 "user" -> JsString(ctx.user.name),
                 "apiName" -> JsString(api.name),
                 "teamName" -> JsString(team.name),
-                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications")),
+                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications", user = admin)),
                 "api_data" -> api.asJson,
                 "consumer_team_data" -> team.asJson,
                 "producer_team_data" -> maybeOwnerteam.map(_.asJson).getOrElse(Json.obj()),
@@ -2938,7 +2939,8 @@ class ApiController(
                     "teamName" -> JsString(api.team.value), //not sure
                     "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
-                      "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news"
+                      "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news",
+                      user = member
                     )), //same
                     "user_data" -> ctx.user.asSimpleJson,
                     "api_data" -> api.asJson,
@@ -3335,7 +3337,8 @@ class ApiController(
                                                 "teamName" -> JsString(api.team.value), // not sure if it's okay
                                                 "link" -> JsString(env.getDaikokuUrl(
                                                   ctx.tenant,
-                                                  "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues"
+                                                  "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues",
+                                                  user = admin
                                                 )), //same
                                                 "user_data" -> ctx.user.asSimpleJson,
                                                 "api_data" -> api.asJson,

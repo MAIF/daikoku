@@ -228,7 +228,7 @@ class LoginController(
             case _ if env.config.isDev =>
               FastFuture.successful(
                 Redirect(
-                  env.getDaikokuUrl(ctx.tenant, s"/auth/${p.name}/login")
+                  env.getDaikokuUrl(ctx.tenant, s"/auth/${p.name}/login", request = ctx.request)
                 )
               )
             case _ => assets.at("index.html").apply(ctx.request)
@@ -471,41 +471,52 @@ class LoginController(
           )
       }
       .flatMap { session =>
-        env.dataStore.userSessionRepo.save(session).map { _ =>
-          AuditTrailEvent(
-            s"${user.name} has connected to ${tenant.name} with ${user.email} address"
-          ).logTenantAuditEvent(
-            tenant,
-            user,
-            session,
-            request,
-            TrieMap[String, String](),
-            AuthorizationLevel.AuthorizedSelf
-          )
-
-          var redirectUri = request.session
-            .get("redirect")
-            .getOrElse(request.getQueryString("redirect").getOrElse("/"))
-
-          redirectUri =
-            if (redirectUri.startsWith("/api/")) "/" else redirectUri
-
-          try {
-            redirectUri = new String(
-              Base64.getUrlDecoder.decode(redirectUri),
-              StandardCharsets.UTF_8
+        val host = tenant.hostFor(Some(env.requestHost(request)))
+        val savePreferredDomain =
+          if (user.preferredDomains.exists((t, h) => t == tenant.id && h == host) )
+            FastFuture.successful(0L)
+          else
+            env.dataStore.userRepo.save(
+              user.copy(preferredDomains = user.preferredDomains + (tenant.id -> host))
             )
-          } catch {
-            case _: Throwable =>
+        for {
+          _ <- env.dataStore.userSessionRepo.save(session)
+          _ <- savePreferredDomain
+        } yield {
+            AuditTrailEvent(
+              s"${user.name} has connected to ${tenant.name} with ${user.email} address"
+            ).logTenantAuditEvent(
+              tenant,
+              user,
+              session,
+              request,
+              TrieMap[String, String](),
+              AuthorizationLevel.AuthorizedSelf
+            )
+
+            var redirectUri = request.session
+              .get("redirect")
+              .getOrElse(request.getQueryString("redirect").getOrElse("/"))
+
+            redirectUri =
+              if (redirectUri.startsWith("/api/")) "/" else redirectUri
+
+            try {
+              redirectUri = new String(
+                Base64.getUrlDecoder.decode(redirectUri),
+                StandardCharsets.UTF_8
+              )
+            } catch {
+              case _: Throwable =>
+            }
+
+            val baseSession = Map("sessionId" -> session.sessionId.value) ++
+              idToken.map(t => "id_token" -> t)
+
+            Redirect(redirectUri)
+              .withSession(baseSession.toSeq *)
+              .removingFromSession("redirect")(using request)
           }
-
-          val baseSession = Map("sessionId" -> session.sessionId.value) ++
-            idToken.map(t => "id_token" -> t)
-
-          Redirect(redirectUri)
-            .withSession(baseSession.toSeq*)
-            .removingFromSession("redirect")(using request)
-        }
       }
   }
 
@@ -689,11 +700,11 @@ class LoginController(
     DaikokuAction.async { ctx =>
       val redirectURI: String = ctx.tenant.tenantMode match {
         case Some(TenantMode.Maintenance) =>
-          env.getDaikokuUrl(ctx.tenant, "/maintenance")
+          env.getDaikokuUrl(ctx.tenant, "/maintenance", request = ctx.request)
         case _ =>
           ctx.request
             .getQueryString("redirect")
-            .getOrElse(env.getDaikokuUrl(ctx.tenant, "/"))
+            .getOrElse(env.getDaikokuUrl(ctx.tenant, "/", request = ctx.request))
       }
 
       AuthProvider(ctx.tenant.authProvider.name) match {
@@ -873,7 +884,8 @@ class LoginController(
               ),
               state = SubscriptionDemandState.Waiting,
               value = body - "confirmPassword" - "password",
-              fromTenant = ctx.tenant.id
+              fromTenant = ctx.tenant.id,
+              preferredDomains = Map(ctx.tenant.id ->  ctx.tenant.hostFor(env.requestHost(ctx.request).some))
             )
           )
         )
@@ -930,13 +942,14 @@ class LoginController(
           case _         => "account-creation-accept"
         }
         Redirect(
-          env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId")
+          env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId", request = ctx.request)
         )
       }).leftMap(error =>
         Redirect(
           env.getDaikokuUrl(
             ctx.tenant,
-            s"/informations?error=${error.getErrorMessage()}"
+            s"/informations?error=${error.getErrorMessage()}",
+            request = ctx.request
           )
         )
       ).merge
@@ -966,7 +979,8 @@ class LoginController(
           Redirect(
             env.getDaikokuUrl(
               ctx.tenant,
-              "/informations?message=account-creation-decline"
+              "/informations?message=account-creation-decline",
+              request = ctx.request
             )
           )
         )
@@ -975,7 +989,8 @@ class LoginController(
           Redirect(
             env.getDaikokuUrl(
               ctx.tenant,
-              s"/informations?error=${error.getErrorMessage()}"
+              s"/informations?error=${error.getErrorMessage()}",
+              request = ctx.request
             )
           )
         )
@@ -1036,7 +1051,9 @@ class LoginController(
                         picture = accountCreation.avatar,
                         lastTenant = Some(ctx.tenant.id),
                         password = Some(accountCreation.password),
-                        defaultLanguage = None
+                        defaultLanguage = None,
+                        preferredDomains = Map(ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some)),
+
                       )
 
                       val userCreation = for {
@@ -1103,7 +1120,7 @@ class LoginController(
 
         cypheredId =
           Cypher.encrypt(env.config.cypherSecret, randomId, ctx.tenant)
-        link = env.getDaikokuUrl(ctx.tenant, s"/reset/password?id=$cypheredId")
+        link = env.getDaikokuUrl(ctx.tenant, s"/reset/password?id=$cypheredId", user = ctx.user)
         language: String = user.defaultLanguage.getOrElse(tenantLanguage)
         title <- EitherT.liftF[Future, AppError, String](
           translator.translate(
@@ -1270,6 +1287,7 @@ class LoginController(
         case None =>
           BadRequest(Json.obj("error" -> "please provide a url")).future
         case Some(url) =>
+          implicit val r: Request[JsValue] = ctx.request
           OAuth2Support
             .getConfiguration(url, clientId, clientSecret, ctx.tenant)
             .leftMap(_.render())

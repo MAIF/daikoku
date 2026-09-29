@@ -415,6 +415,7 @@ case class Tenant(
     enabled: Boolean = true,
     name: String,
     domain: String,
+    additionalDomains: Set[String] = Set.empty,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -573,6 +574,9 @@ case class Tenant(
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
   }
+  def allDomains: Set[String] = additionalDomains + domain
+  def hostFor(candidate: Option[String]): String =
+    candidate.filter(allDomains.contains).getOrElse(domain)
 }
 
 sealed trait MailerSettings {
