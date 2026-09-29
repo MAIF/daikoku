@@ -2,6 +2,7 @@ package fr.maif.daikoku.jobs
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.joda.time.DateTime
@@ -59,10 +60,50 @@ class RemoteCatalogSpec
   private def teamDoc(t: Team): JsObject =
     t.asJson.as[JsObject] ++ Json.obj("kind" -> "team")
 
+  private def planDoc(p: UsagePlan): JsObject =
+    p.asJson.as[JsObject] ++ Json.obj("kind" -> "usage-plan")
+
+  private def apiDoc(a: Api): JsObject =
+    a.asJson.as[JsObject] ++ Json.obj("kind" -> "api")
+
+  private def cmsPageDoc(p: CmsPage): JsObject =
+    p.asJson.as[JsObject] ++ Json.obj("kind" -> "cms-page")
+
+  private val catalogTag = Map("created_by" -> "remote_catalog=cat-file")
+
+  // an api of the admin team exposing a single plan
+  private def apiWithOnePlan(version: String): (Api, UsagePlan) = {
+    val generated =
+      generateApi(version, tenant.id, defaultAdminTeam.id, Seq.empty)
+    val plan = generated.plans.head.copy(
+      id = UsagePlanId(s"plan-$version"),
+      customName = s"plan $version"
+    )
+    val api = generated.api.copy(
+      possibleUsagePlans = Seq(plan.id),
+      defaultUsagePlan = Some(plan.id)
+    )
+
+    (api, plan)
+  }
+
+  private def multiKindCatalog(path: String): RemoteCatalog =
+    fileCatalog("cat-file", path).copy(allowedKinds =
+      Set("team", "usage-plan", "api", "cms-page")
+    )
+
   private def writeFile(content: String): String = {
     val p = Files.createTempFile("daikoku-catalog", ".json")
     Files.write(p, content.getBytes(StandardCharsets.UTF_8))
     p.toAbsolutePath.toString
+  }
+
+  private def writeDir(files: Map[String, String]): java.nio.file.Path = {
+    val dir = Files.createTempDirectory("daikoku-catalog")
+    files.foreach { case (name, content) =>
+      Files.write(dir.resolve(name), content.getBytes(StandardCharsets.UTF_8))
+    }
+    dir
   }
 
   private def fileCatalog(id: String, path: String): RemoteCatalog =
@@ -146,6 +187,25 @@ class RemoteCatalogSpec
       method = "GET",
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)
+
+  private def getPlan(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/usage-plans/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+
+  private def getCmsPage(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/cms-pages/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+
+  private def errorMessages(resp: WSResponse): Seq[String] =
+    (resp.json \ "errors")
+      .as[Seq[JsObject]]
+      .map(e => (e \ "message").as[String])
 
   private def kindResult(resp: WSResponse, kind: String): JsObject =
     (resp.json \ "results")
@@ -252,6 +312,145 @@ class RemoteCatalogSpec
       getTeam("team-b").status mustBe 404
     }
 
+    "apply nothing when one file of the folder is invalid" in {
+      val dir = writeDir(
+        Map(
+          "team-a.json" -> Json.stringify(teamDoc(aTeam("team-a", "A"))),
+          "team-b.json" -> Json.stringify(teamDoc(aTeam("team-b", "B")))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(remoteCatalogs =
+            Seq(fileCatalog("cat-file", dir.toAbsolutePath.toString))
+          )
+        ),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "team") \ "created")
+        .as[Int] mustBe 2
+
+      rewriteFile(
+        dir.resolve("team-a.json").toString,
+        Json.stringify(teamDoc(aTeam("team-a", "A Renamed")))
+      )
+      rewriteFile(
+        dir.resolve("team-b.json").toString,
+        Json.stringify(teamDoc(aTeam("team-b", "B")) - "_id")
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+
+      val errors = (deploy.json \ "errors").as[Seq[JsObject]]
+      errors.map(e => (e \ "message").as[String]) mustBe Seq(
+        "Missing required field '_id'"
+      )
+      (errors.head \ "source").as[String] must endWith("team-b.json")
+
+      getTeam("team-b").status mustBe 200
+      (getTeam("team-a").json \ "name").as[String] mustBe "A"
+    }
+
+    "resolve a reference to an entity created by the same run, in dry-run" in {
+      val (api, plan) = apiWithOnePlan("same-run")
+      val path =
+        writeFile(Json.stringify(JsArray(Seq(apiDoc(api), planDoc(plan)))))
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(multiKindCatalog(path)))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val test = deployCall("cat-file", "_test")
+      test.status mustBe 200
+      (kindResult(test, "usage-plan") \ "created").as[Int] mustBe 1
+      (kindResult(test, "api") \ "created").as[Int] mustBe 1
+
+      getPlan(plan.id.value).status mustBe 404
+      getApi(api.id.value).status mustBe 404
+    }
+
+    "reject a reference to an entity the run would delete, and apply nothing" in {
+      val (api, plan) = apiWithOnePlan("removed-plan")
+      val managedApi = api.copy(metadata = catalogTag)
+      val managedPlan = plan.copy(metadata = catalogTag)
+      val path = writeFile(Json.stringify(apiDoc(managedApi)))
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(multiKindCatalog(path)))),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(managedApi),
+        usagePlans = Seq(managedPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy).exists(
+        _.contains(s"Usage Plan (${plan.id.value}) not found")
+      ) mustBe true
+
+      getPlan(plan.id.value).status mustBe 200
+      getApi(api.id.value).status mustBe 200
+    }
+
+    "reject an entity that already exists but is not managed by the catalog" in {
+      val manual = aTeam("team-manual", "Created by hand")
+      val path = writeFile(
+        Json.stringify(teamDoc(aTeam("team-manual", "From the catalog")))
+      )
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        teams = Seq(defaultAdminTeam, manual),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy).exists(
+        _.contains("already exists and is not managed by this catalog")
+      ) mustBe true
+
+      (getTeam("team-manual").json \ "name").as[String] mustBe "Created by hand"
+    }
+
+    "delete the managed entities of a kind removed entirely from the source" in {
+      val page = defaultCmsPage.copy(id = CmsPageId("page-catalog"))
+      val path = writeFile(
+        Json.stringify(
+          JsArray(Seq(teamDoc(aTeam("team-a", "A")), cmsPageDoc(page)))
+        )
+      )
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(multiKindCatalog(path)))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "cms-page") \ "created")
+        .as[Int] mustBe 1
+      getCmsPage("page-catalog").status mustBe 200
+
+      rewriteFile(path, Json.stringify(teamDoc(aTeam("team-a", "A"))))
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "cms-page") \ "deleted").as[Int] mustBe 1
+      getCmsPage("page-catalog").status mustBe 404
+      getTeam("team-a").status mustBe 200
+    }
+
     "not write anything in dry-run (_test)" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
@@ -291,6 +490,7 @@ class RemoteCatalogSpec
       val withPlans = defaultApi
       val baseApi = withPlans.api.copy(
         team = defaultAdminTeam.id,
+        metadata = Map("created_by" -> "remote_catalog=cat-api"),
         stars = 5,
         issues = Seq(ApiIssueId("issue-1")),
         posts = Seq(ApiPostId("post-1")),

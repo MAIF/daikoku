@@ -1,8 +1,11 @@
 package fr.maif.daikoku.services.catalog.sources
 
-import fr.maif.daikoku.services.catalog.{RemoteContentParser, RemoteEntity}
+import fr.maif.daikoku.services.catalog.{
+  RemoteCatalogError,
+  RemoteContentParser,
+  RemoteEntity
+}
 import fr.maif.daikoku.utils.Yaml
-import play.api.Logger
 import play.api.libs.json._
 
 import java.io.File
@@ -13,13 +16,18 @@ import scala.util.Try
 
 object SourceUtils {
 
-  private val logger = Logger("daikoku-remote-catalog-source-utils")
-
   def parseEntityContent(
       rawContent: String,
       sourceName: String
-  ): Seq[RemoteEntity] = {
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
     RemoteContentParser.parseRawContent(rawContent, sourceName)
+  }
+
+  def fetchError(sourceName: String, err: JsValue): RemoteCatalogError = {
+    val message =
+      (err \ "error").asOpt[String].getOrElse(Json.stringify(err))
+
+    RemoteCatalogError(sourceName, message)
   }
 
   private def isStringArray(value: JsValue): Option[JsArray] = value match {
@@ -62,50 +70,41 @@ object SourceUtils {
       resolveGlob: Option[String => Future[Either[JsValue, Seq[String]]]] = None
   )(implicit
       ec: ExecutionContext
-  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
-    val rawPaths = deployArray.value.flatMap(_.asOpt[String])
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+    val rawPaths = deployArray.value.flatMap(_.asOpt[String]).toSeq
+
+    def fetchAndParse(
+        relativePath: String
+    ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+      val fileSource = s"$sourceName/$relativePath"
+
+      fetchRelativePath(relativePath).map {
+        case Left(err)         => Left(Seq(fetchError(fileSource, err)))
+        case Right(rawContent) => parseEntityContent(rawContent, fileSource)
+      }
+    }
+
+    def fetchAll(
+        paths: Seq[String]
+    ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+      Future.sequence(paths.map(fetchAndParse)).map(RemoteCatalogError.collect)
+    }
+
     Future
       .sequence(rawPaths.map { path =>
-        if (isGlobPattern(path) && resolveGlob.isDefined) {
-          resolveGlob.get(path).flatMap {
-            case Left(err) =>
-              logger.warn(
-                s"Error resolving glob $path from $sourceName: ${err.toString}"
-              )
-              Future.successful(Seq.empty[RemoteEntity])
-            case Right(resolvedPaths) =>
-              Future
-                .sequence(resolvedPaths.map { relativePath =>
-                  fetchRelativePath(relativePath).map {
-                    case Left(err) =>
-                      logger.warn(
-                        s"Error fetching $relativePath from $sourceName: ${err.toString}"
-                      )
-                      Seq.empty[RemoteEntity]
-                    case Right(rawContent) =>
-                      parseEntityContent(
-                        rawContent,
-                        s"$sourceName/$relativePath"
-                      )
-                  }
-                })
-                .map(_.flatten)
-          }
-        } else {
-          fetchRelativePath(path).map {
-            case Left(err) =>
-              logger.warn(
-                s"Error fetching $path from $sourceName: ${err.toString}"
-              )
-              Seq.empty[RemoteEntity]
-            case Right(rawContent) =>
-              parseEntityContent(rawContent, s"$sourceName/$path")
-          }
+        resolveGlob match {
+          case Some(resolve) if isGlobPattern(path) =>
+            resolve(path).flatMap {
+              case Left(err) =>
+                Future.successful(
+                  Left(Seq(fetchError(s"$sourceName/$path", err)))
+                )
+              case Right(resolvedPaths) => fetchAll(resolvedPaths)
+            }
+          case _ => fetchAndParse(path)
         }
       })
-      .map(entities =>
-        Right(entities.flatten.toSeq): Either[JsValue, Seq[RemoteEntity]]
-      )
+      .map(RemoteCatalogError.collect)
   }
 
   def isGlobPattern(path: String): Boolean = {
@@ -139,7 +138,10 @@ object SourceUtils {
     path.matches(globToRegex(pattern))
   }
 
-  def resolveLocalGlob(baseDir: File, globPattern: String): Seq[String] = {
+  def resolveLocalGlob(
+      baseDir: File,
+      globPattern: String
+  ): Either[JsValue, Seq[String]] = {
     val clean = globPattern.stripPrefix("./")
     val matcher = FileSystems.getDefault.getPathMatcher("glob:" + clean)
     Try {
@@ -156,7 +158,11 @@ object SourceUtils {
           .map(_.toString)
           .toSeq
       } finally stream.close()
-    }.getOrElse(Seq.empty)
+    }.toEither.left.map(e =>
+      Json.obj(
+        "error" -> s"Cannot list files for '$globPattern': ${e.getMessage}"
+      )
+    )
   }
 
   def resolveRemoteGlob(

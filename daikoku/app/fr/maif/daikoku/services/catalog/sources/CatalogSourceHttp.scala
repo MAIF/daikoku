@@ -2,7 +2,11 @@ package fr.maif.daikoku.services.catalog.sources
 
 import fr.maif.daikoku.domain.RemoteCatalog
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
+import fr.maif.daikoku.services.catalog.{
+  CatalogSource,
+  RemoteCatalogError,
+  RemoteEntity
+}
 import play.api.Logger
 import play.api.libs.json._
 
@@ -19,19 +23,23 @@ class CatalogSourceHttp extends CatalogSource {
   override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val url = (catalog.source.config \ "url").asOpt[String].getOrElse("")
     val headers = (catalog.source.config \ "headers")
       .asOpt[Map[String, String]]
       .getOrElse(Map.empty)
     val timeout =
       (catalog.source.config \ "timeout").asOpt[Long].getOrElse(30000L)
+    val sourceName = s"http://$url"
 
     if (url.isEmpty) {
-      Future.successful(Left(Json.obj("error" -> "No URL configured")))
+      Future.successful(
+        Left(Seq(RemoteCatalogError(sourceKind, "No URL configured")))
+      )
     } else {
       fetchUrl(url, headers, timeout, env).flatMap {
-        case Left(err) => Future.successful(Left(err))
+        case Left(err) =>
+          Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
         case Right(rawContent) =>
           SourceUtils.isDeployListing(rawContent) match {
             case Some(arr) =>
@@ -40,15 +48,11 @@ class CatalogSourceHttp extends CatalogSource {
                 arr,
                 relativePath =>
                   fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
-                s"http://$url"
+                sourceName
               )
             case None =>
               Future.successful(
-                Right(
-                  SourceUtils.parseEntityContent(rawContent, s"http://$url")
-                ): Either[JsValue, Seq[
-                  RemoteEntity
-                ]]
+                SourceUtils.parseEntityContent(rawContent, sourceName)
               )
           }
       }

@@ -35,5 +35,5 @@ trait CatalogSource {
   def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]]
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]]
 }
