@@ -574,6 +574,8 @@ test('[ASOAPI-10457 ASOAPI-10458] - [Consommateur] - desactiver/reactiver un cl�
     .getByRole('button', { name: 'Désactiver la souscription' }).
     click();
 
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
 
   //verifier que la clé est désactivée
   await expect(page
@@ -675,6 +677,8 @@ test('[ASOAPI-10600 ASOAPI-10601] - [Consommateur] - desactiver/reactiver un cl�
     .click();
   //verifier que la clé est désactiver
 
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
   await page.waitForResponse(r => r.url().includes('/_archive?enabled=false') && r.status() === 200);
 
   //verifier que la clé est désactiver

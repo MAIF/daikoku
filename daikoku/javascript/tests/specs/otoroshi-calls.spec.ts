@@ -156,6 +156,10 @@ test("Disabling one key from keyring should prevent keyring to call associated r
         .getByLabel('Actions de la souscription')
         .click();
   await page.getByRole('button', { name: 'Désactiver la souscription' }).click();
+
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+
   await expect(page.getByText("Votre souscription a été dé")).toBeVisible();
 
   await checkOtoroshiCall({

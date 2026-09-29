@@ -289,6 +289,7 @@
     "p": "Trousseaux"
   },
   "subscription.actions": "Actions de la souscription",
+  "subscription.disable.confirm": "Êtes-vous sûr de vouloir désactiver la sousription ? D'autres utilisateurs peuvent êtres affectés",
   "Expires": "Expiration",
   "destroy.session.confirm": "Êtes-vous sûr de vouloir détruire cette session ?",
   "destroy.all.sessions.confirm": "Êtes-vous sûr de vouloir détruire toutes les sessions, y compris la vôtre ?",

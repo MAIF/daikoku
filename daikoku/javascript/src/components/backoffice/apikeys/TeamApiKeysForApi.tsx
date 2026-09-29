@@ -594,7 +594,7 @@ export const KeyringCard = ({
                               makeUniqueApiKey,
                             }: KeyringCardProps) => {
   const {translate} = useContext(I18nContext);
-  const {openFormModal} = useContext(ModalContext);
+  const {openFormModal, confirm} = useContext(ModalContext);
   const {customGraphQLClient, tenant} = useContext(GlobalContext);
   const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
 
@@ -806,11 +806,16 @@ export const KeyringCard = ({
                   {sub.state !== 'blocked' && (
                     <button
                       className="dropdown-item cursor-pointer"
-                      onClick={() => withLoader(() => {
-                        toggle(sub)
-                          .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                        ;
-                      })}
+                      onClick={() =>
+                        withLoader(async () => {
+                          if (sub.enabled) {
+                            const ok = await confirm({ message: translate('subscription.disable.confirm') });
+                            if (!ok) return;
+                          }
+                          await toggle(sub);
+                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
+                        })
+                      }
                     >
                       {sub.enabled
                         ? translate('subscription.disable.button.label')

@@ -223,7 +223,9 @@ export const TeamApiSubscriptions = ({
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => toggleApiSubscriptionState(sub)}
                 >
-                  {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
+                  {sub.state === 'active'
+                    ? translate("subscription.disable.button.label")
+                    : translate("subscription.enable.button.label")}
                 </button>}
                 {api.state !== 'blocked' && <button
                   className="dropdown-item cursor-pointer danger"
