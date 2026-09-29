@@ -2940,12 +2940,8 @@ class ApiController(
                     "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
                       "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news",
-<<<<<<< Updated upstream
                       user = member
-=======
-                      ctx.request.domain.some
->>>>>>> Stashed changes
-                    )), //same
+                    )),
                     "user_data" -> ctx.user.asSimpleJson,
                     "api_data" -> api.asJson,
                     "consumer_team_data" -> team.asJson,
