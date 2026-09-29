@@ -38,7 +38,7 @@ class ApiLifeCycleService(
          (COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason')
            || '["$lifecycleReason"]'::jsonb
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
@@ -58,7 +58,7 @@ class ApiLifeCycleService(
          '{blockedBy}',
          COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason'
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
@@ -95,13 +95,12 @@ class ApiLifeCycleService(
     EitherT
       .right[AppError](
         env.dataStore.apiRepo
-          .forTenant(api.tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "_humanReadableId" -> api.humanReadableId,
-              "currentVersion" -> Json.obj("$ne" -> api.currentVersion.asJson)
-            )
+          .findOtherVersions(
+            api.tenant,
+            api.humanReadableId,
+            api.currentVersion.value
           )
+          .map(_.headOption)
       )
       .flatMap {
         case None => EitherT.pure[Future, AppError](())
@@ -170,12 +169,7 @@ class ApiLifeCycleService(
         EitherT.right[AppError](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(subscriptionsTeamsIds.map(_.asJson)))
-              )
-            )
+            .findByIds(subscriptionsTeamsIds)
         )
       subscriptionWithMaybeTeams =
         subscriptions.map(subscription =>
@@ -231,10 +225,7 @@ class ApiLifeCycleService(
     for {
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(api.tenant)
-          .findNotDeleted(
-            Json.obj("api" -> api.id.value)
-          )
+          .findByApi(api.tenant, api.id)
       )
 
       subscriptionsTeamsIds: Seq[TeamId] = subscriptions.map(_.team).distinct
@@ -242,12 +233,7 @@ class ApiLifeCycleService(
         EitherT.liftF[Future, AppError, Seq[Team]](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(subscriptionsTeamsIds.map(_.asJson)))
-              )
-            )
+            .findByIds(subscriptionsTeamsIds)
         )
       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](
         Future.sequence(subscriptionTeams.map(subscriptionTeam => {

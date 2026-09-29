@@ -263,7 +263,7 @@ class ApiService(
               .fromOptionF[Future, AppError, Keyring](
                 env.dataStore.keyringRepo
                   .forTenant(tenant.id)
-                  .findByIdNotDeleted(kid.value),
+                  .findById(kid.value),
                 AppError.EntityNotFound(s"Keyring ${kid.value}")
               )
               .map(_.some)
@@ -676,7 +676,7 @@ class ApiService(
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(keyringId.value),
+          .findById(keyringId.value),
         AppError.EntityNotFound(s"Keyring ${keyringId.value}")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -712,7 +712,7 @@ class ApiService(
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(keyringId.value),
+          .findById(keyringId.value),
         AppError.EntityNotFound(s"Keyring ${keyringId.value}")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -770,22 +770,14 @@ class ApiService(
 
         val r: EitherT[Future, AppError, JsObject] = for {
           consumerTeam <- EitherT.fromOptionF[Future, AppError, Team](
-            env.dataStore.teamRepo.forTenant(tenant.id).findById(keyring.team),
+            env.dataStore.teamRepo
+              .forTenant(tenant.id)
+              .findById(keyring.team),
             AppError.TeamNotFound
           )
           admins <- EitherT.liftF[Future, AppError, Seq[User]](
-            env.dataStore.userRepo.find(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    consumerTeam.users
-                      .filter(_.teamPermission == Administrator)
-                      .map(_.userId.asJson)
-                      .toSeq
-                  )
-                )
-              )
-            )
+            env.dataStore.userRepo
+              .findByIds(consumerTeam.admins().toSeq)
           )
           apiKey <- EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
           otoApk <- EitherT(
@@ -881,13 +873,14 @@ class ApiService(
     val oldKeyringId = subscription.keyring
     (for {
       oldKeyring <- EitherT.fromOptionF[Future, AppError, Keyring](
-        env.dataStore.keyringRepo.forTenant(tenant).findById(oldKeyringId),
+        env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(oldKeyringId),
         AppError.EntityNotFound(s"Keyring ${oldKeyringId.value}")
       )
       keyringSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("keyring" -> oldKeyringId.asJson))
+          .findByKeyring(tenant.id, oldKeyringId)
       )
       _ <- EitherT.cond[Future][AppError, Unit](
         keyringSubs.size > 1,
@@ -895,7 +888,9 @@ class ApiService(
         AppError.EntityConflict("Subscription is not part of an aggregation")
       )
       api <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api),
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findById(subscription.api),
         ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
@@ -905,7 +900,9 @@ class ApiService(
         PlanNotFound
       )
       team <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team),
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findById(subscription.team),
         TeamNotFound
       )
       newIntegrationToken = IdGenerator.token(64)
@@ -945,199 +942,6 @@ class ApiService(
     } yield Json.obj("created" -> true)).value
   }
 
-  /** Delete a single subscription then reconcile its keyring: recompute the
-    * keyring's Otoroshi key without it, or delete the key + the keyring when no
-    * subscription references it anymore.
-    */
-  private def deleteSubscriptionAndSyncKeyring(
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      tenant: Tenant
-  )(implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
-    val kid = subscription.keyring
-    for {
-      _ <- env.dataStore.apiSubscriptionRepo
-        .forTenant(tenant.id)
-        .deleteByIdLogically(subscription.id)
-      _ <- env.dataStore.apiSubscriptionRepo
-        .forTenant(tenant)
-        .count(Json.obj("keyring" -> kid.asJson, "_deleted" -> false))
-        .flatMap {
-          case 0L =>
-            otoroshiSynchronisator
-              .runForDeletion(kid, tenant)
-              .flatMap(_ =>
-                env.dataStore.keyringRepo
-                  .forTenant(tenant)
-                  .deleteByIdLogically(kid)
-              )
-              .map(_ => ())
-          case _ => otoroshiSynchronisator.run(kid, tenant)
-        }
-    } yield ()
-  }
-
-//  def deleteApiSubscriptionsAsFlow(
-//      tenant: Tenant,
-//      apiOrGroupId: ApiId,
-//      user: User
-//  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
-//    Flow[(UsagePlan, Seq[ApiSubscription])]
-//      .map { case (plan, subscriptions) =>
-//        subscriptions.map(subscription => (plan, subscription))
-//      }
-//      .flatMapConcat(seq => Source(seq.toList))
-//      .mapAsync(1) { case (plan, subscription) =>
-//        env.dataStore.keyringRepo
-//          .forTenant(tenant)
-//          .findById(subscription.keyring)
-//          .map { maybeKeyring =>
-//            val clientId = maybeKeyring.map(_.apiKey.clientId).getOrElse("")
-//            val notification = Notification(
-//              id = NotificationId(IdGenerator.token(32)),
-//              tenant = tenant.id,
-//              team = Some(subscription.team),
-//              sender = user.asNotificationSender,
-//              notificationType = NotificationType.AcceptOnly,
-//              action = NotificationAction.ApiKeyDeletionInformationV2(
-//                apiOrGroupId,
-//                clientId,
-//                subscription.id
-//              )
-//            )
-//            (plan, subscription, notification)
-//          }
-//      }
-//      .mapAsync(1) { case (plan, subscription, notification) =>
-//        AppLogger.info(
-//          s"[DELETE_SUBS] :: plan => ${plan.customName} :: subscription => ${subscription.id}"
-//        )
-//
-//        (for {
-//          otoroshiSettings <- OptionT.fromOption[Future](
-//            plan.otoroshiTarget
-//              .map(_.otoroshiSettings)
-//              .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
-//          )
-//          _ <- OptionT.liftF(
-//            apiKeyStatsJob
-//              .syncForSubscription(subscription, tenant, completed = true)
-//          )
-//          _ <- OptionT.liftF(
-//            deleteSubscriptionAndSyncKeyring(subscription, plan, tenant)(using
-//              otoroshiSettings
-//            )
-//          )
-//          _ <- subscription.thirdPartySubscriptionInformations match {
-//            case Some(thirdPartySubscriptionInformations) =>
-//              OptionT.liftF(
-//                env.dataStore.operationRepo
-//                  .forTenant(tenant)
-//                  .save(
-//                    Operation(
-//                      DatastoreId(IdGenerator.token(24)),
-//                      tenant = tenant.id,
-//                      itemId = subscription.id.value,
-//                      itemType = ItemType.ThirdPartySubscription,
-//                      action = OperationAction.Delete,
-//                      payload = Json
-//                        .obj(
-//                          "paymentSettings" -> plan.paymentSettings
-//                            .map(_.asJson)
-//                            .getOrElse(JsNull)
-//                            .as[JsValue],
-//                          "thirdPartySubscriptionInformations" -> thirdPartySubscriptionInformations.asJson
-//                        )
-//                        .some
-//                    )
-//                  )
-//              )
-//            case None => OptionT.pure[Future](())
-//          }
-//          _ <- OptionT.liftF(
-//            env.dataStore.notificationRepo
-//              .forTenant(tenant)
-//              .save(notification)
-//          )
-//        } yield ()).value
-//          .map(_ => plan)
-//      }
-
-//  def deleteUsagePlan(
-//      plan: UsagePlan,
-//      api: Api,
-//      tenant: Tenant,
-//      user: User
-//  ): EitherT[Future, AppError, Api] = {
-//    val updatedApi = api.copy(possibleUsagePlans =
-//      api.possibleUsagePlans.filter(pp => pp != plan.id)
-//    )
-//    for {
-//      _ <-
-//        EitherT.liftF(deleteApiPlansSubscriptions(Seq(plan), api, tenant, user))
-//      _ <-
-//        EitherT.liftF(env.dataStore.apiRepo.forTenant(tenant).save(updatedApi))
-//      _ <- EitherT.liftF(
-//        env.dataStore.usagePlanRepo
-//          .forTenant(tenant)
-//          .deleteByIdLogically(plan.id)
-//      )
-//      _ <-
-//        if (plan.paymentSettings.isDefined)
-//          EitherT.liftF[Future, AppError, Boolean](
-//            env.dataStore.operationRepo
-//              .forTenant(tenant)
-//              .save(
-//                Operation(
-//                  DatastoreId(IdGenerator.token(24)),
-//                  tenant = tenant.id,
-//                  itemId = plan.id.value,
-//                  itemType = ItemType.ThirdPartyProduct,
-//                  action = OperationAction.Delete,
-//                  payload = Json
-//                    .obj(
-//                      "paymentSettings" -> plan.paymentSettings
-//                        .map(_.asJson)
-//                        .getOrElse(JsNull)
-//                        .as[JsValue]
-//                    )
-//                    .some
-//                )
-//              )
-//          )
-//        else EitherT.pure[Future, AppError](true)
-//    } yield updatedApi
-//  }
-
-//  def deleteApiPlansSubscriptions(
-//      plans: Seq[UsagePlan],
-//      api: Api,
-//      tenant: Tenant,
-//      user: User
-//  ): Future[Done] = {
-//    implicit val mat: Materializer = env.defaultMaterializer
-//
-//    Source(plans.toList)
-//      .mapAsync(1)(plan =>
-//        env.dataStore.apiSubscriptionRepo
-//          .forTenant(tenant)
-//          .findNotDeleted(
-//            Json.obj(
-//              "api" -> api.id.asJson,
-//              "plan" -> Json
-//                .obj("$in" -> JsArray(plans.map(_.id).map(_.asJson)))
-//            )
-//          )
-//          .map(seq => (plan, seq))
-//      )
-//      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
-//      .runWith(Sink.ignore)
-//      .recover { case e =>
-//        AppLogger.error(s"Error while deleting api subscriptions", e)
-//        Done
-//      }
-//  }
-
   def notifyApiSubscription(
       demand: SubscriptionDemand,
       tenant: Tenant,
@@ -1150,17 +954,17 @@ class ApiService(
 
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demand.plan),
+          .findById(demand.plan),
         AppError.PlanNotFound
       )
       user <- EitherT.fromOptionF(
-        env.dataStore.userRepo.findByIdNotDeleted(demand.from),
+        env.dataStore.userRepo.findById(demand.from),
         AppError.UserNotFound()
       )
       formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
@@ -1208,24 +1012,17 @@ class ApiService(
       apiTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(api.team),
+          .findById(api.team),
         AppError.TeamNotFound
       )
       demandTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .findByIdNotDeleted(demand.team),
+          .findById(demand.team),
         AppError.TeamNotFound
       )
       admins <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(apiTeam.admins().map(_.asJson).toSeq)
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIds(apiTeam.admins().toSeq)
       )
       _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
         implicit val language: String =
@@ -1318,15 +1115,21 @@ class ApiService(
 
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findById(demand.api),
         AppError.ApiNotFound
       )
       team <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(tenant).findById(demand.team),
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findById(demand.team),
         AppError.TeamNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo.forTenant(tenant).findById(demand.plan),
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(demand.plan),
         AppError.PlanNotFound
       )
       user <- EitherT.fromOptionF[Future, AppError, User](
@@ -1337,7 +1140,9 @@ class ApiService(
         demand.keyring.fold(
           FastFuture.successful(Option.empty[Keyring])
         )(kid =>
-          env.dataStore.keyringRepo.forTenant(tenant).findById(kid.value)
+          env.dataStore.keyringRepo
+            .forTenant(tenant)
+            .findById(kid.value)
         )
       )
       keyringSubscriptions <-
@@ -1346,29 +1151,18 @@ class ApiService(
             FastFuture.successful(Seq.empty[ApiSubscription])
           )(kid =>
             env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findNotDeleted(Json.obj("keyring" -> kid.asJson))
+              .findByKeyring(tenant.id, kid)
           )
         )
       aggregatedApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSubscriptions.map(_.api.asJson)))
-            )
-          )
+          .findByIds(keyringSubscriptions.map(_.api).distinct)
       )
       aggregatedPlan <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSubscriptions.map(_.plan.asJson)))
-            )
-          )
+          .findByIds(keyringSubscriptions.map(_.plan).distinct)
       )
 
       response <- EitherT(
@@ -1446,17 +1240,17 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       _ <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demand.team),
+          .findById(demand.team),
         AppError.TeamNotFound
       )
       _ <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
         AppError.ApiNotFound
       )
       step <- EitherT.fromOption[Future](
@@ -1476,21 +1270,26 @@ class ApiService(
           .save(updatedDemand)
       )
       _ <- EitherT.liftF(
-        env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "action.type" -> "CheckoutForSubscription",
-              "action.demand" -> demand.id.asJson,
-              "action.step" -> step.id.asJson
-            ),
-            Json.obj(
-              "$set" -> Json.obj(
-                "status" -> json.NotificationStatusFormat
+        {
+          val repo = env.dataStore.notificationRepo.forTenant(tenant)
+          repo.execute(
+            s"UPDATE ${repo.tableName} " +
+              "SET content = jsonb_set(content, '{status}', $2::jsonb) " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->'action'->>'type' = 'CheckoutForSubscription' " +
+              "AND content->'action'->>'demand' = $3 " +
+              "AND content->'action'->>'step' = $4",
+            Seq(
+              tenant.id.value,
+              Json.stringify(
+                json.NotificationStatusFormat
                   .writes(NotificationStatus.Accepted())
-              )
+              ),
+              demand.id.value,
+              step.id.value
             )
           )
+        }
       )
       result <- runSubscriptionProcess(
         demand.id,
@@ -1499,8 +1298,8 @@ class ApiService(
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield result
   }
@@ -1513,11 +1312,11 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       _ <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
+        env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
         AppError.ApiNotFound
       )
       step <- EitherT.fromOption[Future](
@@ -1537,8 +1336,8 @@ class ApiService(
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield ()
   }
@@ -1565,31 +1364,31 @@ class ApiService(
               translator.translate("mail.subscription.validation.title", tenant)
             )
             user <- EitherT.fromOptionF(
-              env.dataStore.userRepo.findByIdNotDeleted(demand.from),
+              env.dataStore.userRepo.findById(demand.from),
               AppError.UserNotFound()
             )
             team <- EitherT.fromOptionF(
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.team),
+                .findById(demand.team),
               AppError.TeamNotFound
             )
             api <- EitherT.fromOptionF(
               env.dataStore.apiRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.api),
+                .findById(demand.api),
               AppError.ApiNotFound
             )
             usagePlan <- EitherT.fromOptionF(
               env.dataStore.usagePlanRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.plan),
+                .findById(demand.plan),
               AppError.PlanNotFound
             )
             ownerTeam <- EitherT.fromOptionF(
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(api.team),
+                .findById(api.team),
               AppError.TeamNotFound
             )
             _ <- EitherT.right[AppError](Future.sequence(emails.map(email => {
@@ -1692,7 +1491,7 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demandId),
+          .findById(demandId),
         AppError.SubscriptionDemandNotFound
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -1732,25 +1531,25 @@ class ApiService(
             )
             user <- EitherT.fromOptionF[Future, AppError, User](
               env.dataStore.userRepo
-                .findByIdNotDeleted(demand.from),
+                .findById(demand.from),
               AppError.UserNotFound()
             )
             team <- EitherT.fromOptionF[Future, AppError, Team](
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.team),
+                .findById(demand.team),
               AppError.TeamNotFound
             )
             api <- EitherT.fromOptionF[Future, AppError, Api](
               env.dataStore.apiRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.api),
+                .findById(demand.api),
               AppError.ApiNotFound
             )
             ownerTeam <- EitherT.fromOptionF[Future, AppError, Team](
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(api.team),
+                .findById(api.team),
               AppError.TeamNotFound
             )
             plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
@@ -1764,9 +1563,7 @@ class ApiService(
                 .filter(_.teamPermission == TeamPermission.Administrator)
                 .map(_.userId)
             recipent <- EitherT.liftF[Future, AppError, Seq[User]](
-              env.dataStore.userRepo.find(
-                Json.obj("_id" -> Json.obj("$in" -> maybeAdmins.map(_.asJson)))
-              )
+              env.dataStore.userRepo.findByIds(maybeAdmins.toSeq)
             )
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
@@ -1812,25 +1609,25 @@ class ApiService(
         case (None, demand) =>
           for {
             from <- EitherT.fromOptionF(
-              env.dataStore.userRepo.findByIdNotDeleted(demand.from),
+              env.dataStore.userRepo.findById(demand.from),
               AppError.UserNotFound()
             )
             api <- EitherT.fromOptionF(
               env.dataStore.apiRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.api),
+                .findById(demand.api),
               AppError.ApiNotFound
             )
             ownerTeam <- EitherT.fromOptionF(
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(api.team),
+                .findById(api.team),
               AppError.ApiNotFound
             )
             team <- EitherT.fromOptionF(
               env.dataStore.teamRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(demand.team),
+                .findById(demand.team),
               AppError.ApiNotFound
             )
             plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
@@ -1871,20 +1668,7 @@ class ApiService(
               )
             )
             administrators <- EitherT.liftF(
-              env.dataStore.userRepo
-                .find(
-                  Json.obj(
-                    "_deleted" -> false,
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(
-                        team.users
-                          .filter(_.teamPermission == Administrator)
-                          .map(u => JsString(u.userId.value))
-                          .toSeq
-                      )
-                    )
-                  )
-                )
+              env.dataStore.userRepo.findByIds(team.admins().toSeq)
             )
             _ <- EitherT.liftF(
               env.dataStore.withTransaction {
@@ -2028,18 +1812,17 @@ class ApiService(
             keyring <- EitherT.fromOptionF(
               env.dataStore.keyringRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(kid.value),
+                .findById(kid.value),
               AppError.EntityNotFound(s"Keyring ${kid.value}")
             )
             members <- EitherT.liftF(
               env.dataStore.apiSubscriptionRepo
-                .forTenant(tenant)
-                .findNotDeleted(Json.obj("keyring" -> keyring.id.asJson))
+                .findByKeyring(tenant.id, keyring.id)
             )
             memberPlans <- EitherT.liftF(
               env.dataStore.usagePlanRepo
                 .forTenant(tenant)
-                .findByIdsNotDeleted(members.map(_.plan).distinct)
+                .findByIds(members.map(_.plan).distinct)
             )
             plansById = memberPlans.map(p => p.id -> p).toMap
             _ <- EitherT.cond[Future][AppError, Unit](
@@ -2102,14 +1885,7 @@ class ApiService(
         case _ =>
           EitherT(
             env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "team" -> team.id.asJson,
-                  "api" -> api.id.asJson,
-                  "plan" -> plan.id.asJson
-                )
-              )
+              .findOneByTeamApiAndPlan(tenant.id, team.id, api.id, plan.id)
               .map {
                 case Some(_) => Left(AppError.SubscriptionConflict)
                 case None    => Right(())
@@ -2120,16 +1896,18 @@ class ApiService(
 
     val value: EitherT[Future, AppError, Result] = for {
       api <- EitherT.fromOptionF(
-        env.dataStore.apiRepo.forTenant(tenant.id).findByIdNotDeleted(apiId),
+        env.dataStore.apiRepo.forTenant(tenant.id).findById(apiId),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo.forTenant(tenant).findById(planId),
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(planId),
         AppError.PlanNotFound
       )
       _ <- controlApiAndPlan(api)
       team <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(teamId),
+        env.dataStore.teamRepo.forTenant(tenant.id).findById(teamId),
         AppError.TeamNotFound
       )
       keyringCustomNameValid = keyringCustomName
@@ -2288,7 +2066,7 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demandId),
+          .findById(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
       _ <- EitherT.right[AppError](
@@ -2329,48 +2107,35 @@ class ApiService(
         }
       )
       from <- EitherT.fromOptionF(
-        env.dataStore.userRepo.findByIdNotDeleted(demand.from),
+        env.dataStore.userRepo.findById(demand.from),
         AppError.UserNotFound()
       )
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demand.api),
+          .findById(demand.api),
         AppError.ApiNotFound
       )
       usagePlan <- EitherT.fromOptionF(
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demand.plan),
+          .findById(demand.plan),
         AppError.PlanNotFound
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(demand.team),
+          .findById(demand.team),
         AppError.TeamNotFound
       )
       ownerTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(api.team),
+          .findById(api.team),
         AppError.TeamNotFound
       )
       administrators <- EitherT.right[AppError](
-        env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(
-                  team.users
-                    .filter(_.teamPermission == Administrator)
-                    .map(_.asJson)
-                    .toSeq
-                )
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIds(team.admins().toSeq)
       )
       _ <- EitherT.right[AppError](
         Future.sequence((administrators ++ Seq(from)).map(admin => {
@@ -2401,10 +2166,11 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
-  def getApis[T](ctx: ApiActionContext[T], notDeleted: Boolean = false) = {
+  def getApis[T](ctx: ApiActionContext[T]) = {
     val repo = env.dataStore.apiRepo.forTenant(ctx.tenant)
 
-    (if (!notDeleted) repo.findAll() else repo.findAllNotDeleted())
+    repo
+      .findAll()
       .map(apis => {
         val fields: Seq[String] = ctx.request
           .getQueryString("fields")
@@ -2452,8 +2218,7 @@ class ApiService(
       transfer <-
         EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](
           env.dataStore.apiSubscriptionTransferRepo
-            .forTenant(tenant)
-            .findOneNotDeleted(Json.obj("token" -> transferToken)),
+            .findByToken(tenant.id, transferToken),
           AppError.Unauthorized
         )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -2464,18 +2229,16 @@ class ApiService(
       subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(transfer.subscription),
+          .findById(transfer.subscription),
         AppError.SubscriptionNotFound
       )
       keyringSiblings <-
         EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "keyring" -> subscription.keyring.asJson,
-                "_id" -> Json.obj("$ne" -> subscription.id.asJson)
-              )
+            .findKeyringSiblings(
+              tenant.id,
+              subscription.keyring,
+              subscription.id
             )
         )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -2486,13 +2249,13 @@ class ApiService(
       api <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscription.api),
+          .findById(subscription.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscription.plan),
+          .findById(subscription.plan),
         AppError.PlanNotFound
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -2510,22 +2273,12 @@ class ApiService(
       childApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSiblings.map(_.api.asJson)))
-            )
-          )
+          .findByIds(keyringSiblings.map(_.api).distinct)
       )
       childPlans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(keyringSiblings.map(_.plan.asJson)))
-            )
-          )
+          .findByIds(keyringSiblings.map(_.plan).distinct)
       )
       _ <- EitherT.cond[Future][AppError, Unit](
         childApis.forall(a =>
@@ -2546,8 +2299,7 @@ class ApiService(
       teamSubscriptions <-
         EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj("team" -> team.id.asJson))
+            .findByTeam(tenant.id, team.id)
         )
       _ <- EitherT.cond[Future][AppError, Unit](
         (childPlans :+ plan).forall(p =>
@@ -2573,19 +2325,10 @@ class ApiService(
     for {
       result <- EitherT.liftF[Future, AppError, Long](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .updateManyByQuery(
-            Json.obj(
-              "_id" -> Json
-                .obj(
-                  "$in" -> JsArray(
-                    childs.map(_.id.asJson) :+ subscription.id.asJson
-                  )
-                )
-            ),
-            Json.obj(
-              "$set" -> Json.obj("team" -> newTeam.id.asJson)
-            )
+          .moveToTeam(
+            tenant.id,
+            childs.map(_.id) :+ subscription.id,
+            newTeam.id
           )
       )
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](

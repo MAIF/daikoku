@@ -84,7 +84,7 @@ object TenantHelper {
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(using env)
-        env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
+        env.dataStore.tenantRepo.findById(tenantId).flatMap {
           case None =>
             Errors.craftResponseResultF(
               "Tenant does not exists (1)",
@@ -105,12 +105,7 @@ object TenantHelper {
           .getOrElse(request.host)
         val domain = if (host.contains(":")) host.split(":").apply(0) else host
         env.dataStore.tenantRepo
-          .findOne(
-            Json.obj(
-              "_deleted" -> false,
-              "domain" -> domain
-            )
-          )
+          .findByDomain(domain)
           .flatMap {
             case None =>
               AppLogger.info(
@@ -141,13 +136,13 @@ object TenantHelper {
               FastFuture.successful(Tenant.Default)
             case Some(sessionId) =>
               env.dataStore.userSessionRepo
-                .findOne(Json.obj("sessionId" -> sessionId))
+                .findBySessionId(sessionId)
                 .flatMap {
                   case Some(session) if !session.expires.isAfterNow =>
                     FastFuture.successful(Tenant.Default)
                   case Some(session) if session.expires.isAfterNow =>
                     env.dataStore.userRepo
-                      .findByIdNotDeleted(session.userId)
+                      .findById(session.userId)
                       .flatMap {
                         case None =>
                           FastFuture.successful(Tenant.Default)
@@ -165,7 +160,7 @@ object TenantHelper {
                 }
           }
         tenantIdF
-          .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
+          .flatMap(env.dataStore.tenantRepo.findById(_))
           .flatMap {
             case None =>
               Errors.craftResponseResultF(
@@ -258,13 +253,8 @@ class LoginFilter(env: Env)(implicit
   def findUserTeam(tenantId: TenantId, user: User): Future[Option[Team]] = {
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
-      maybePersonnalTeam: Option[Team] <- teamRepo.findOne(
-        Json.obj(
-          "type" -> TeamType.Personal.name,
-          "users.userId" -> user.id.value,
-          "_deleted" -> false
-        )
-      )
+      maybePersonnalTeam: Option[Team] <- env.dataStore.teamRepo
+        .findPersonalTeam(tenantId, user.id)
       backupTeam = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenantId,
@@ -287,18 +277,12 @@ class LoginFilter(env: Env)(implicit
           teamRepo
             .save(backupTeam)
             .flatMap(_ =>
-              teamRepo
-                .findOne(
-                  Json.obj(
-                    "type" -> TeamType.Personal.name,
-                    "users.userId" -> user.id.value,
-                    "_deleted" -> false
-                  )
-                )
+              env.dataStore.teamRepo
+                .findPersonalTeam(tenantId, user.id)
                 .map(_.orElse(Some(backupTeam)))
             )
       // maybePersonnalTeamId = maybePersonnalTeam.map(_.id).getOrElse(Team.Default)
-      // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
+      // maybeLastTeam <- teamRepo.findById(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
       theMaybeTeam
       // maybeLastTeam match {
@@ -357,7 +341,7 @@ class LoginFilter(env: Env)(implicit
                   }
               case Some(sessionId) =>
                 env.dataStore.userSessionRepo
-                  .findOne(Json.obj("sessionId" -> sessionId))
+                  .findBySessionId(sessionId)
                   .flatMap {
                     case None if tenant.isPrivate =>
                       FastFuture.successful(
@@ -390,7 +374,7 @@ class LoginFilter(env: Env)(implicit
                       )
                     case Some(session) if session.expires.isAfterNow =>
                       env.dataStore.userRepo
-                        .findByIdNotDeleted(session.userId)
+                        .findById(session.userId)
                         .flatMap {
                           case None =>
                             AppLogger.info("No user found")
@@ -433,18 +417,12 @@ class LoginFilter(env: Env)(implicit
                                   _ <- env.dataStore.userRepo.save(user)
                                   isTenantAdmin <-
                                     env.dataStore.teamRepo
-                                      .forTenant(tenant)
-                                      .exists(
-                                        Json.obj(
-                                          "type" -> "Admin",
-                                          "users.userId" -> user.id.asJson
-                                        )
-                                      )
+                                      .isTenantAdmin(tenant.id, user.id)
                                   result <-
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                       .flatMap { maybeImpersonator =>

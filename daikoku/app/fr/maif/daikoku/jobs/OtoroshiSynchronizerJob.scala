@@ -386,7 +386,7 @@ class OtoroshiSynchronizerJob(
                   env.defaultActorSystem.scheduler.scheduleOnce(delay) {
                     logger.info(s"[OtoroshiSync] cron triggered at $now")
                     val _ = env.dataStore.tenantRepo
-                      .findAllNotDeleted()
+                      .findAll()
                       .flatMap(tenants =>
                         Future.sequence(
                           tenants.map(tenant =>
@@ -422,7 +422,7 @@ class OtoroshiSynchronizerJob(
                 env.config.otoroshiSyncInterval
               ) { () =>
                 env.dataStore.tenantRepo
-                  .findAllNotDeleted()
+                  .findAll()
                   .flatMap(tenants =>
                     Future.sequence(
                       tenants.map(tenant => run(SyncAllSubscription(), tenant))
@@ -734,12 +734,12 @@ class OtoroshiSynchronizerJob(
          |        )) FILTER (WHERE s._id IS NOT NULL AND apis._id IS NOT NULL AND usage_plans._id IS NOT NULL), '[]'::json) AS subscriptions,
          |        teams.content AS team
          |FROM keyrings k
-         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id AND (s.content ->> '_deleted')::bool IS NOT TRUE
+         |LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
          |LEFT JOIN apis ON apis._id = s.content ->> 'api'
          |LEFT JOIN users ON users._id = s.content ->> 'by'
          |LEFT JOIN usage_plans ON usage_plans._id = s.content ->> 'plan'
          |LEFT JOIN teams ON teams._id = s.content ->> 'team'
-         |WHERE (k.content ->> '_deleted')::bool IS NOT TRUE
+         |WHERE TRUE
          |  $predicate
          |  $cursorClause
          |GROUP BY k._id, k.content, teams.content
@@ -968,13 +968,8 @@ class OtoroshiSynchronizerJob(
 
     // FIXME: remove the timer after dev
     Time.concurrentTime(
-      jobRepo
-        .find(
-          Json.obj("jobName" -> JobName.ApiKeySynchronization.value),
-          sort = Some(Json.obj("startedAt" -> -1)),
-          maxDocs = 1
-        )
-        .map(_.headOption)
+      env.dataStore.JobInformationRepo
+        .findLastRun(tenant.id, JobName.ApiKeySynchronization.value)
         .flatMap {
           case Some(lastJob)
               if lastJob.status == JobStatus.Running && lastJob.expiresAt.isAfterNow =>

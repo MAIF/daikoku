@@ -64,7 +64,6 @@ enum SubscriptionBlockReason(val name: String) {
 case class ApiSubscription(
     id: ApiSubscriptionId,
     tenant: TenantId,
-    deleted: Boolean = false,
     plan: UsagePlanId,
     createdAt: DateTime,
     validUntil: Option[DateTime] = None,
@@ -122,7 +121,6 @@ case class ApiSubscription(
     Json.obj(
       "_id" -> json.ApiSubscriptionIdFormat.writes(id),
       "_tenant" -> json.TenantIdFormat.writes(tenant),
-      "_deleted" -> deleted,
       "plan" -> json.UsagePlanIdFormat.writes(plan),
       "team" -> json.TeamIdFormat.writes(team),
       "api" -> json.ApiIdFormat.writes(api),
@@ -144,7 +142,6 @@ case class Keyring(
     id: KeyringId,
     tenant: TenantId,
     team: TeamId,
-    deleted: Boolean = false,
     customName: String,
     apiKey: OtoroshiApiKey,
     otoroshiSettings: KeyringOtoroshiBinding,
@@ -227,7 +224,6 @@ object ApiKeyConsumptionState {
 
 case class ApiKeyConsumption(
     id: DatastoreId,
-    deleted: Boolean = false,
     tenant: TenantId,
     team: TeamId,
     api: ApiId,
@@ -352,7 +348,6 @@ object SubscriptionDemandState {
 case class SubscriptionDemand(
     id: DemandId,
     tenant: TenantId,
-    deleted: Boolean = false,
     api: ApiId,
     plan: UsagePlanId,
     steps: Seq[SubscriptionDemandStep],
@@ -398,7 +393,6 @@ case class SubscriptionDemandStep(
 case class StepValidator(
     id: DatastoreId,
     tenant: TenantId,
-    deleted: Boolean = false,
     token: String,
     step: SubscriptionDemandStepId,
     subscriptionDemand: DemandId,
@@ -410,7 +404,6 @@ case class StepValidator(
 case class ApiSubscriptionTransfer(
     id: DatastoreId,
     tenant: TenantId,
-    deleted: Boolean = false,
     token: String,
     subscription: ApiSubscriptionId,
     date: DateTime,

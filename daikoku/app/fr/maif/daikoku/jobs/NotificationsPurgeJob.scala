@@ -83,5 +83,4 @@ class NotificationsPurgeJob(override protected val env: Env)
         )
       }
   }
-
 }

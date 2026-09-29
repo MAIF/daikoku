@@ -343,7 +343,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await logout(page)
 
   //user admin
-  await loginAs(MICHAEL, page)
+  await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();

@@ -358,12 +358,7 @@ object LdapSupport {
 
                 Right(
                   _env.dataStore.userRepo
-                    .findOne(
-                      Json.obj(
-                        "_deleted" -> false,
-                        "email" -> email
-                      )
-                    )
+                    .findByEmail(email)
                     .flatMap {
                       case Some(user) =>
                         val newUser = user.copy(
@@ -418,12 +413,7 @@ object LdapSupport {
 
                 Right(
                   _env.dataStore.userRepo
-                    .findOne(
-                      Json.obj(
-                        "_deleted" -> false,
-                        "email" -> email
-                      )
-                    )
+                    .findByEmail(email)
                     .flatMap {
                       case Some(user) =>
                         val newUser = user.copy(

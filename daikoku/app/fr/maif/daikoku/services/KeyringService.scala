@@ -12,7 +12,6 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.OtoroshiApiKeyFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,16 +36,14 @@ class KeyringService(
       tenant: TenantId,
       id: KeyringId
   ): Future[Option[Keyring]] =
-    env.dataStore.keyringRepo.forTenant(tenant).findByIdNotDeleted(id)
+    env.dataStore.keyringRepo.forTenant(tenant).findById(id)
 
   /** All non-deleted subscriptions referencing the given keyring. */
   def keyringSubscriptions(
       tenant: TenantId,
       keyring: KeyringId
   ): Future[Seq[ApiSubscription]] =
-    env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .findNotDeleted(Json.obj("keyring" -> keyring.asJson))
+    env.dataStore.apiSubscriptionRepo.findByKeyring(tenant, keyring)
 
   /** Propagate the keyring's api key (the denormalized copy) to every
     * subscription referencing it. Must be called whenever a keyring's api key
@@ -57,56 +54,77 @@ class KeyringService(
       keyring: Keyring
   ): Future[Long] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .updateManyByQuery(
-        Json.obj("keyring" -> keyring.id.asJson),
-        Json.obj(
-          "$set" -> Json.obj(
-            "apiKey" -> OtoroshiApiKeyFormat.writes(keyring.apiKey)
-          )
-        )
+      .updateApiKeyOfKeyring(
+        tenant,
+        keyring.id,
+        OtoroshiApiKeyFormat.writes(keyring.apiKey)
       )
 
-  /** Logically delete the keyring and enqueue its physical deletion in the
-    * deletion queue. The operation is only enqueued when the keyring was not
-    * already flagged deleted, so callers can invoke this idempotently without
-    * piling up duplicate operations. The deletion of the underlying Otoroshi
-    * api key is the caller's responsibility. Returns true when the keyring was
-    * deleted.
+  /** Physically delete the keyring and enqueue the removal of its underlying
+    * Otoroshi api key on the deletion queue (self-contained: the operation
+    * carries the clientId and settings, since the row is gone). No-op when the
+    * keyring is already gone, so callers can invoke this idempotently. Returns
+    * true when the keyring was deleted.
     */
   def deleteKeyring(
       tenant: TenantId,
       keyring: KeyringId
   ): Future[Boolean] =
-    env.dataStore.keyringRepo
-      .forTenant(tenant)
-      .deleteByIdLogically(keyring)
-      .flatMap {
-        case true =>
-          env.dataStore.operationRepo
-            .forTenant(tenant)
-            .save(
-              Operation(
-                DatastoreId(IdGenerator.token(32)),
-                tenant = tenant,
-                itemId = keyring.value,
-                itemType = ItemType.Keyring,
-                action = OperationAction.Delete
-              )
-            )
-            .map(_ => true)
-        case false => Future.successful(false)
-      }
+    env.dataStore.keyringRepo.forTenant(tenant).findById(keyring).flatMap {
+      case None    => Future.successful(false)
+      case Some(k) =>
+        // Resolve the full OtoroshiSettings now and embed them in the payload,
+        // so the queued cleanup no longer needs the tenant (which may itself be
+        // deleted before the queue runs).
+        env.dataStore.tenantRepo.findById(tenant).flatMap { maybeTenant =>
+          val otoroshiPayload = k.otoroshiSettings match {
+            case KeyringOtoroshiBinding.Otoroshi(id) =>
+              maybeTenant
+                .flatMap(_.otoroshiSettings.find(_.id == id))
+                .map(settings =>
+                  Json.obj(
+                    "clientId" -> k.apiKey.clientId,
+                    "otoroshiSettings" ->
+                      json.OtoroshiSettingsFormat.writes(settings)
+                  )
+                )
+            case KeyringOtoroshiBinding.Internal => None
+          }
+          env.dataStore.withTransaction {
+            for {
+              _ <- env.dataStore.keyringRepo
+                .forTenant(tenant)
+                .deleteById(keyring)
+              _ <- otoroshiPayload match {
+                case Some(p) =>
+                  env.dataStore.operationRepo
+                    .forTenant(tenant)
+                    .save(
+                      Operation(
+                        DatastoreId(IdGenerator.token(32)),
+                        tenant = tenant,
+                        itemId = k.id.value,
+                        itemType = ItemType.Keyring,
+                        action = OperationAction.Delete,
+                        payload = Some(p)
+                      )
+                    )
+                    .map(_ => ())
+                case None => Future.successful(())
+              }
+            } yield true
+          }
+        }
+    }
 
-  /** Logically delete the keyring when no subscription references it anymore.
+  /** Physically delete the keyring when no subscription references it anymore.
     */
   def deleteKeyringIfEmpty(
       tenant: TenantId,
       keyring: KeyringId
   ): Future[Boolean] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .count(Json.obj("keyring" -> keyring.asJson, "_deleted" -> false))
+      .countByKeyring(tenant, keyring)
       .flatMap {
         case 0L => deleteKeyring(tenant, keyring)
         case _  => Future.successful(false)
@@ -126,8 +144,7 @@ class KeyringService(
     for {
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("keyring" -> keyringId.asJson))
+          .findByKeyring(tenant.id, keyringId)
       )
 
       planIds = subscriptions.map(_.plan).distinct
@@ -228,7 +245,7 @@ class KeyringService(
             )
           )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.keyringRepo
           .forTenant(tenant.id)
           .save(

@@ -1,23 +1,20 @@
 package fr.maif.daikoku.storage.drivers.postgres
 
-import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain._
-import fr.maif.daikoku.domain.json._
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.services.CmsPage
+import fr.maif.daikoku.storage.*
+import fr.maif.daikoku.storage.drivers.postgres.pgimplicits.*
 import io.vertx.core.json.JsonObject
 import io.vertx.sqlclient.{Pool, Row}
-import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.{Configuration, Logger}
-import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.storage._
-import fr.maif.daikoku.storage.drivers.postgres.Helper._
-import fr.maif.daikoku.storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
@@ -417,72 +414,6 @@ case class PostgresTenantCapableConsumptionRepo(
 
   override def repo(): PostgresRepo[ApiKeyConsumption, DatastoreId] = _repo()
 
-  private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]] = {
-
-    val rep = tenantId match {
-      case Some(t) =>
-        forTenant(t)
-          .asInstanceOf[PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId]]
-      case None =>
-        forAllTenant()
-          .asInstanceOf[PostgresRepo[ApiKeyConsumption, DatastoreId]]
-    }
-
-    val (sql, params) = convertQuery(filter)
-    val selector = if (sql == "") "" else s"WHERE $sql "
-
-    reactivePg
-      .querySeq(
-        s"SELECT content->>'clientId' as client_id, MAX(content->>'from') as max_from FROM ${rep.tableName} " +
-          selector +
-          "GROUP BY content->>'clientId'",
-        params
-      ) { row =>
-        Json
-          .obj(
-            "clientId" -> row.getString("client_id"),
-            "from" -> String.valueOf(row.getValue("max_from"))
-          )
-          .some
-      }
-      .map(res =>
-        Future.sequence(
-          res
-            .map(queryResult => findOne(queryResult, rep.tableName, rep.format))
-        )
-      )
-      .flatMap(r =>
-        r.map(res =>
-          res.collect { case Some(value) =>
-            value
-          }
-        )
-      )
-  }
-
-  def findOne(
-      query: JsObject,
-      tableName: String,
-      format: Format[ApiKeyConsumption]
-  ) = {
-    val (sql, params) = convertQuery(query)
-    reactivePg.queryOne(s"SELECT * FROM $tableName WHERE $sql", params) {
-      rowToJson(_, format)
-    }
-  }
-
-  override def getLastConsumptionsforAllTenant(filter: JsObject)(implicit
-      ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(None, filter)
-
-  override def getLastConsumptionsForTenant(
-      tenantId: TenantId,
-      filter: JsObject
-  )(implicit
-      ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
 class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
@@ -492,36 +423,35 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  private val TABLES = Map(
-    "tenants" -> true,
-    "password_reset" -> true,
-    "account_creation" -> true,
-    "teams" -> true,
-    "apis" -> true,
-    "translations" -> true,
-    "messages" -> false,
-    "api_subscriptions" -> true,
-    "api_documentation_pages" -> true,
-    "notifications" -> true,
-    "consumptions" -> true,
-    "audit_events" -> false,
-    "users" -> true,
-    "user_sessions" -> false,
-    "api_posts" -> true,
-    "api_issues" -> true,
-    "evolutions" -> false,
-    "cmspages" -> true,
-    "operations" -> true,
-    "email_verifications" -> true,
-    "operations" -> true,
-    "subscription_demands" -> true,
-    "step_validators" -> true,
-    "usage_plans" -> true,
-    "assets" -> true,
-    "reports_info" -> true,
-    "api_subscription_transfers" -> true,
-    "job_informations" -> true,
-    "keyrings" -> true
+  private val TABLES = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "messages",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "audit_events",
+    "users",
+    "user_sessions",
+    "api_posts",
+    "api_issues",
+    "evolutions",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations",
+    "keyrings"
   )
 
   private lazy val reactivePg =
@@ -872,44 +802,31 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
 
   def createDatabase(): Future[Any] = {
     logger.debug("Checking status of database ...")
-    Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
+    Future.sequence(TABLES.map(createTable))
   }
 
   private def createIndexes(): Future[Unit] = {
     val indexes = Seq(
-      "CREATE INDEX IF NOT EXISTS idx_api_id ON apis ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_api_team ON apis ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_api_tenant ON apis ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_api_deleted ON apis ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_api_hrid ON apis ((content->>'_humanReadableId'));",
       "CREATE INDEX IF NOT EXISTS idx_api_version ON apis ((content->>'currentVersion'));",
       "CREATE INDEX IF NOT EXISTS idx_api_state ON apis ((content->>'state'));",
       "CREATE INDEX IF NOT EXISTS idx_api_plans ON apis USING GIN ((content->'possibleUsagePlans'));",
-      "CREATE INDEX IF NOT EXISTS idx_notification_id ON notifications ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_tenant ON notifications ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_notification_deleted ON notifications ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_team ON notifications ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_team ON notifications ((content-> 'action' ->> 'team'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_api ON notifications ((content-> 'action' ->> 'api'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_plan ON notifications ((content-> 'action' ->> 'plan'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_action_type ON notifications ((content-> 'action' ->> 'type'));",
       "CREATE INDEX IF NOT EXISTS idx_notification_status ON notifications ((content-> 'status' ->> 'status'));",
-      "CREATE INDEX IF NOT EXISTS idx_team_id ON teams ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_team_tenant ON teams ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_team_deleted ON teams ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_team_hrid ON teams ((content->>'_humanReadableId'));",
-      "CREATE INDEX IF NOT EXISTS idx_plan_id ON usage_plans ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_plan_tenant ON usage_plans ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_plan_deleted ON usage_plans ((content->>'_deleted'));",
-      "CREATE INDEX IF NOT EXISTS idx_session_id ON user_sessions ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_session_userid ON user_sessions ((content->>'userId'));",
       "CREATE INDEX IF NOT EXISTS idx_session_useremail ON user_sessions ((content->>'userEmail'));",
       "CREATE INDEX IF NOT EXISTS idx_session_expires ON user_sessions ((content->>'expires'));",
-      "CREATE INDEX IF NOT EXISTS idx_user_id ON users ((content->>'_id'));",
-      "CREATE INDEX IF NOT EXISTS idx_user_tenant ON users ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_user_deleted ON users ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_user_hrid ON users ((content->>'_humanReadableId'));",
-      "CREATE INDEX IF NOT EXISTS idx_subscription_id ON api_subscriptions ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_tenant ON api_subscriptions ((content->>'_tenant'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_api ON api_subscriptions ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_plan ON api_subscriptions ((content->>'plan'));",
@@ -920,29 +837,69 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_subscription_created_at ON api_subscriptions ((content->>'createdAt'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_clientId ON api_subscriptions ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_subscription_team ON api_subscriptions ((content->>'team'));",
-      "CREATE INDEX IF NOT EXISTS idx_keyring_id ON keyrings ((content->>'_id'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_tenant ON keyrings ((content->>'_tenant'));",
-      "CREATE INDEX IF NOT EXISTS idx_keyring_deleted ON keyrings ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_clientId ON keyrings ((content-> 'apiKey' ->> 'clientId'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
       "CREATE INDEX IF NOT EXISTS idx_job_started_at ON job_informations ((content->>'startedAt'));",
       "CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));",
+      // `findLastRun` orders on the numeric value, which the text index above
+      // cannot serve.
+      "CREATE INDEX IF NOT EXISTS idx_job_started_at_num ON job_informations (((content->>'startedAt')::bigint));",
+      // Resolving the tenant by hostname runs on every request in Hostname
+      // mode, and `tenants` had no index at all.
+      "CREATE INDEX IF NOT EXISTS idx_tenant_domain ON tenants ((content->>'domain'));",
+      // Every login goes through the email.
+      "CREATE INDEX IF NOT EXISTS idx_user_email ON users ((content->>'email'));",
+      // `consumptions` is the largest table of a busy instance and had no
+      // index either.
+      "CREATE INDEX IF NOT EXISTS idx_consumption_tenant ON consumptions ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_client_id ON consumptions ((content->>'clientId'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_api ON consumptions ((content->>'api'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_team ON consumptions ((content->>'team'));",
+      "CREATE INDEX IF NOT EXISTS idx_consumption_from ON consumptions (((content->>'from')::bigint));",
+      // The sibling action paths were indexed, these were forgotten.
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_user ON notifications ((content-> 'action' ->> 'user'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_demand ON notifications ((content-> 'action' ->> 'demand'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_subscription ON notifications ((content-> 'action' ->> 'subscription'));",
+      "CREATE INDEX IF NOT EXISTS idx_notification_action_keyring ON notifications ((content-> 'action' ->> 'keyring'));",
+      // Chat lookups are all scoped to a chat.
+      "CREATE INDEX IF NOT EXISTS idx_message_tenant ON messages ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_message_chat ON messages ((content->>'chat'));",
+      // The root version of an api is resolved on every api page.
+      "CREATE INDEX IF NOT EXISTS idx_api_parent ON apis ((content->>'parent'));",
+      // Serving a CMS page resolves it by path.
+      "CREATE INDEX IF NOT EXISTS idx_cms_tenant ON cmspages ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_cms_path ON cmspages ((content->>'path'));",
+      // Assets are addressed by slug in urls.
+      "CREATE INDEX IF NOT EXISTS idx_asset_tenant ON assets ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_asset_slug ON assets ((content->>'slug'));",
+      // The deletion queue polls on the status.
+      "CREATE INDEX IF NOT EXISTS idx_operation_tenant ON operations ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_operation_status ON operations ((content->>'status'));",
+      // Mail validation links are claimed by token.
+      "CREATE INDEX IF NOT EXISTS idx_step_validator_token ON step_validators ((content->>'token'));",
+      "CREATE INDEX IF NOT EXISTS idx_step_validator_demand ON step_validators ((content->>'subscriptionDemand'));",
+      // A translation is keyed by (key, language).
+      "CREATE INDEX IF NOT EXISTS idx_translation_key_lang ON translations ((content->>'key'), (content->>'language'));",
+      "CREATE INDEX IF NOT EXISTS idx_demand_plan ON subscription_demands ((content->>'plan'));",
+      // `myTeams` sits behind nearly every page, and membership is the
+      // predicate it filters on. Serves the `@>` of `TeamRepo.isMemberSql`.
+      "CREATE INDEX IF NOT EXISTS idx_team_users ON teams USING GIN ((content->'users'));",
       """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
         |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
-        |WHERE _deleted = false AND content->>'type' = 'Personal';""".stripMargin
+        |WHERE content->>'type' = 'Personal';""".stripMargin
     )
     indexes.foldLeft(Future.successful(())) { (acc, query) =>
       acc.flatMap(_ => reactivePg.rawQuery(query).map(_ => ()))
     }
   }
 
-  def createTable(table: String, allFields: Boolean): Future[Any] = {
+  def createTable(table: String): Future[Any] = {
     logger.debug(
       s"CREATE TABLE $getSchema.$table (" +
         s"_id character varying PRIMARY KEY," +
-        s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)"
     )
 
@@ -961,7 +918,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
             .rawQuery(
               s"CREATE TABLE $getSchema.$table (" +
                 s"_id character varying PRIMARY KEY," +
-                s"${if (allFields) "_deleted BOOLEAN," else ""}" +
                 s"content JSONB)"
             )
             .map { _ =>
@@ -1038,9 +994,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     logger.debug("importFromStream")
 
     Future
-      .sequence(TABLES.map { case (key, _) =>
-        reactivePg.rawQuery(s"TRUNCATE $key")
-      })
+      .sequence(TABLES.map(table => reactivePg.rawQuery(s"TRUNCATE $table")))
       .flatMap { _ =>
         source
           .via(
@@ -1821,7 +1775,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     for {
       count <-
         reactivePg
-          .queryOne(s"select count(*) as counter from ($query)_")(row =>
+          .queryOne(s"select count(*) as counter from ($query)_", params)(row =>
             row.optLong("counter")
           )
           .map {
@@ -1845,168 +1799,12 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     reactivePg.execute(sql, params)
   }
 
-  override def findRaw(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
-
-    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
-
-    sort match {
-      case None =>
-        if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
-            _.optJsObject("content")
-          }
-        else {
-          val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit",
-            params
-          ) {
-            _.optJsObject("content")
-          }
-        }
-
-      case Some(_) =>
-        val sortedKeys = sort
-          .map(obj =>
-            obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value
-            )
-          )
-          .map(r => r.map(x => s"content->>'${x._1}'"))
-          .getOrElse(Seq("_id"))
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
-            Seq.empty
-          )(_.optJsObject("content"))
-        else {
-          val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
-            params
-          )(_.optJsObject("content"))
-        }
-    }
-  }
-
-  override def find(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
-
-    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
-
-    sort match {
-      case None =>
-        if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
-            rowToJson(_, format)
-          }
-        else {
-          val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit",
-            params
-          ) {
-            rowToJson(_, format)
-          }
-        }
-
-      case Some(_) =>
-        val sortedKeys = sort
-          .map(obj =>
-            obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value
-            )
-          )
-          .map(r => r.map(x => s"content->>'${x._1}'"))
-          .getOrElse(Seq("_id"))
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
-            Seq.empty
-          ) { rowToJson(_, format) }
-        else {
-          val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
-            params
-          ) { rowToJson(_, format) }
-        }
-    }
-  }
-
   override def count()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] =
-    count(JsObject.empty)
+    queryCount(s"SELECT COUNT(*) AS count FROM $tableName")
 
-  override def deleteByIdLogically(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE _id = $$1 AND _deleted = false  RETURNING _id",
-        Seq(id)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteByIdLogically(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-    deleteByIdLogically(id.value)
-  }
-
-  override def deleteLogically(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
-    val (sql, params) = convertQuery(query)
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE _deleted = false AND $sql  RETURNING _id",
-        params
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteAllLogically()")
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false RETURNING _id"
-      )
-      .map(_.size() > 0)
-  }
-
-  override def findWithPagination(
-      query: JsObject,
-      page: Int,
-      pageSize: Int,
-      sort: Option[JsObject] = None,
-      order: Option[SortingOrder] = None
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(query, page, pageSize, sort, order)
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
@@ -2016,6 +1814,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 ) extends CommonRepo[Of, Id](env, reactivePg) {
 
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
+
+  // Makes the generic helpers of `Repo` scope their SQL to this tenant.
+  override protected def tenantScope: Option[String] = Some(tenant.value)
 
   override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
@@ -2077,248 +1878,21 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     } yield (values, count)
   }
 
-  override def deleteByIdLogically(
-      id: String
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteByIdLogically($id)")
-
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE _id = $$1 AND content ->> '_tenant' = $$2  RETURNING _id",
-        Seq(id, tenant.value)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteByIdLogically(
-      id: Id
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    deleteByIdLogically(id.value)
-  }
-
-  override def deleteLogically(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
-    val (sql, params) = convertQuery(
-      query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)
-    )
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql  RETURNING _id",
-        params ++ Seq(tenant.value)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def deleteAllLogically()(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
-    logger.debug(s"$tableName.deleteAllLogically()")
-
-    reactivePg
-      .query(
-        s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          s"WHERE content ->> '_tenant' = $$1 AND _deleted = false  RETURNING _id",
-        Seq(tenant.value)
-      )
-      .map(_.size() > 0)
-  }
-
-  override def findRaw(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[JsValue]] = {
-    logger.debug(
-      s"$tableName.findRaw(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
-    )
-
-    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
-
-    sort match {
-      case None =>
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit"
-          ) {
-            _.optJsObject("content")
-          }
-        else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value)
-          )
-
-          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
-          params.zipWithIndex.reverse.foreach { case (param, i) =>
-            val escaped = param.toString.replace("'", "''")
-            out = out.replace("$" + (i + 1), s"'$escaped'")
-          }
-
-          reactivePg.querySeq(out) {
-            _.optJsObject("content")
-          }
-        }
-      case Some(s) =>
-        val sortedKeys = sort
-          .map(obj =>
-            obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value
-            )
-          )
-          .map(r => r.map(x => s"content->>'${x._1}'"))
-          .getOrElse(Seq("_id"))
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
-                .mkString(",")} ASC $limit",
-            Seq.empty
-          ) {
-            _.optJsObject("content")
-          }
-        else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value)
-          )
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-                .mkString(",")} ASC $limit",
-            params
-          ) {
-            _.optJsObject("content")
-          }
-        }
-    }
-  }
-
-  override def find(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.debug(
-      s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
-    )
-
-    val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
-
-    sort match {
-      case None =>
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit"
-          ) {
-            rowToJson(_, format)
-          }
-        else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value)
-          )
-
-          var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
-          params.zipWithIndex.reverse.foreach { case (param, i) =>
-            val escaped = param.toString.replace("'", "''")
-            out = out.replace("$" + (i + 1), s"'$escaped'")
-          }
-
-          reactivePg.querySeq(out) {
-            rowToJson(_, format)
-          }
-        }
-      case Some(s) =>
-        val sortedKeys = sort
-          .map(obj =>
-            obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value
-            )
-          )
-          .map(r => r.map(x => s"content->>'${x._1}'"))
-          .getOrElse(Seq("_id"))
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
-                .mkString(",")} ASC $limit",
-            Seq.empty
-          ) { rowToJson(_, format) }
-        else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value)
-          )
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-                .mkString(",")} ASC $limit",
-            params
-          ) { rowToJson(_, format) }
-        }
-    }
-  }
-
-  override def findOne(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] =
-    super.findOne(query ++ Json.obj("_tenant" -> tenant.value))
-
-  override def delete(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    super.delete(query ++ Json.obj("_tenant" -> tenant.value))
-
   override def insertMany(
       values: Seq[Of]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     super.insertMany(values, Json.obj("_tenant" -> tenant.value))
 
-  override def exists(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] =
-    super.exists(query ++ Json.obj("_tenant" -> tenant.value))
-
   override def count()(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Long] =
-    count(Json.obj("_tenant" -> tenant.value))
-
-  override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[JsObject]] =
-    super.findWithProjection(
-      query ++ Json.obj("_tenant" -> tenant.value),
-      projection
+    queryCount(
+      s"SELECT COUNT(*) AS count FROM $tableName " +
+        "WHERE content->>'_tenant' = $1",
+      Seq(tenant.value)
     )
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsObject]] =
-    super.findOneWithProjection(
-      query ++ Json.obj("_tenant" -> tenant.value),
-      projection
-    )
-
-  override def findWithPagination(
-      query: JsObject,
-      page: Int,
-      pageSize: Int,
-      sort: Option[JsObject] = None,
-      order: Option[SortingOrder] = None
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(
-      query ++ Json.obj("_tenant" -> tenant.value),
-      page,
-      pageSize,
-      sort,
-      order
-    )
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
@@ -2335,164 +1909,55 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     override def writes(o: JsObject): JsObject = o
   }
 
-  override def count(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
-    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
+  /** Loads the whole table and emits it row by row. Not a streaming read: the
+    * rows are materialised first, which is what the JsObject version did too.
+    * Only the evolutions and the export use it.
+    */
+  /** Walks the whole table through a server-side cursor: memory stays bounded
+    * by `fetchSize`, whatever the table holds. Uses the repo's own materializer
+    * so callers keep their signature.
+    *
+    * Streaming opens its own transaction — a cursor only lives inside one —
+    * which is why these two are excluded from `DbConn`.
+    */
+  override def streamAllRaw()(implicit
+      ec: ExecutionContext
+  ): Source[JsValue, ?] = {
+    logger.debug(s"$tableName.streamAllRaw()")
 
-    if (query.values.isEmpty)
-      reactivePg
-        .queryOne(s"SELECT COUNT(*) as count FROM $tableName") {
-          _.optLong("count")
-        }
-        .map(_.getOrElse(0L))
-    else {
-      val (sql, params) = convertQuery(query)
-      reactivePg
-        .queryOne(
-          s"SELECT COUNT(*) as count FROM $tableName WHERE $sql",
-          params
-        ) { _.optLong("count") }
-        .map(_.getOrElse(0L))
-    }
+    reactivePg.queryStreamSource(s"SELECT content FROM $tableName")(row =>
+      row.optJsObject("content")
+    )(using env.defaultMaterializer)
   }
 
-  override def exists(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    val (sql, params) = convertQuery(query)
+  override def streamAllRawFormatted()(implicit
+      ec: ExecutionContext
+  ): Source[Of, ?] = {
+    logger.debug(s"$tableName.streamAllRawFormatted()")
 
-    reactivePg
-      .query(s"SELECT 1 FROM $tableName WHERE $sql", params)
-      .map(_.size() > 0)
-  }
-
-  override def streamAllRaw(
-      query: JsObject = Json.obj()
-  )(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
-    logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
-
-    val (sql, params) = convertQuery(query)
-    val selector = if (sql == "") "" else s"WHERE $sql "
-
-    Source
-      .future(
-        reactivePg
-          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
-            row.optJsObject("content")
-          }
-      )
-      .flatMapConcat(res => Source(res.toList))
-  }
-
-  override def streamAllRawFormatted(
-      query: JsObject = Json.obj()
-  )(implicit ec: ExecutionContext): Source[Of, NotUsed] = {
-    logger.debug(
-      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})"
-    )
-
-    val (sql, params) = convertQuery(query)
-    val selector = if (sql == "") "" else s"WHERE $sql "
-
-    Source
-      .future(
-        reactivePg
-          .querySeq(s"SELECT * FROM $tableName $selector", params) { row =>
-            row.optJsObject("content")
-          }
-      )
-      .flatMapConcat(res =>
-        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get))
-      )
-  }
-
-  override def findOneRaw(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[JsValue]] = {
-    val (sql, params) = convertQuery(query)
-    logger.debug(s"$tableName.findOneRaw(${Json.prettyPrint(query)})")
-    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
-    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
-
-    reactivePg
-      .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
-        row =>
-          logger.debug(s"[ROW] :: ${row.deepToString()}")
-          logger.debug(s"[ROW] :: ${row.toJson}")
-          row.optJsObject("content")
+    reactivePg.queryStreamSource(s"SELECT content FROM $tableName")(row =>
+      row.optJsObject("content").map(format.reads).collect {
+        case JsSuccess(value, _) => value
       }
+    )(using env.defaultMaterializer)
   }
 
-  override def findOne(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Of]] = {
-    val (sql, params) = convertQuery(query)
-    logger.debug(s"$tableName.findeOne(${Json.prettyPrint(query)})")
-    logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
-    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
-
-    reactivePg
-      .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) {
-        row =>
-          logger.debug(s"[ROW FINDONE] :: ${row.deepToString()}")
-          logger.debug(s"[ROW FINDONE] :: ${row.toJson}")
-          row.optJsObject("content").map(format.reads).collect {
-            case JsSuccess(s, _) => s
-            case JsError(errors) => None.asInstanceOf[Of]
-          }
-      }
-  }
-
-  override def delete(
-      query: JsObject
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
-
-    if (query.values.isEmpty)
-      reactivePg
-        .query(s"DELETE FROM $tableName")
-        .map(_ => true)
-    else
-      {
-        val (sql, params) = convertQuery(query)
-        reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
-      }.map(_ => true)
-  }
-
-  override def save(query: JsObject, value: JsObject)(implicit
+  override def saveRaw(id: String, payload: JsObject)(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Boolean] = {
-    logger.debug(
-      s"$tableName.save(${Json.prettyPrint(query)}) with value ${Json.prettyPrint(value)}"
-    )
+    logger.debug(s"$tableName.saveRaw($id)")
 
-    (
-      if (value.keys.contains("_deleted"))
-        reactivePg.query(
-          s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            s"set _deleted = $$2, content = $$3",
-          Seq(
-            (value \ "_id").as[String],
-            java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
-            new JsonObject(Json.stringify(value))
-          )
-        )
-      else
-        reactivePg.query(
-          s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            s"set content = $$2",
-          Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
-        )
-    ).map(_ => true)
+    reactivePg
+      .query(
+        s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          s"set content = $$2",
+        Seq(id, new JsonObject(Json.stringify(payload)))
+      )
+      .map(_ => true)
       .recover { e =>
-        logger.error(
-          s"$tableName.save(${Json.prettyPrint(query)}) failed",
-          e
-        )
+        logger.error(s"$tableName.saveRaw($id) failed", e)
         false
       }
   }
@@ -2506,9 +1971,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     Future
       .sequence(
         values
-          .map(v =>
-            save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)
-          )
+          .map { v =>
+            val payload = format.writes(v).as[JsObject] ++ addToPayload
+            saveRaw((payload \ "_id").as[String], payload)
+          }
       )
       .map(_ => 1L)
   }
@@ -2517,6 +1983,26 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       values: Seq[Of]
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] =
     insertMany(values, Json.obj())
+
+  override protected def queryExists(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    logger.debug(s"$tableName.queryExists($sql)")
+
+    reactivePg.query(sql, params).map(_.size() > 0)
+  }
+
+  override def queryCount(sql: String, params: Seq[AnyRef])(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] = {
+    logger.debug(s"$tableName.queryCount($sql)")
+
+    reactivePg
+      .queryOne(sql, params)(_.optLong("count"))
+      .map(_.getOrElse(0L))
+  }
 
   override def queryTyped(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn,
@@ -2527,219 +2013,4 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     reactivePg.querySeq(sql, params)(rowToJson(_, format))
   }
 
-  override def updateMany(query: JsObject, value: JsObject)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long] = {
-    logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
-
-    val (sql, params) = convertQuery(query)
-    reactivePg
-      .query(
-        s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql RETURNING _id",
-        params ++ Seq(new JsonObject(Json.stringify(value)))
-      )
-      .map(_.size().toLong)
-  }
-
-  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Long] = {
-    logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
-
-    val (sql1, params1) = convertQuery(queryUpdate)
-    val (sql2, params2) = if (query.values.isEmpty) {
-      ("", params1)
-    } else {
-      val tuple = convertQuery(query, params1)
-      (s"WHERE ${tuple._1}", tuple._2)
-    }
-
-    var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
-    params2.zipWithIndex.reverse.foreach { case (param, i) =>
-      val escaped = param.toString.replace("'", "''")
-      out = out.replace("$" + (i + 1), s"'$escaped'")
-    }
-
-    reactivePg
-      .rawQuery(out)
-      .map(_ => 1L)
-  }
-
-  override def findMaxByQuery(query: JsObject, field: String)(implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[Long]] = {
-    logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
-
-    val (sql, params) = convertQuery(query)
-    reactivePg.queryOne(
-      s"SELECT MAX(content->>${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
-      params ++ Seq(field)
-    ) { row =>
-      Some(row.getLong(0).asInstanceOf[Long])
-    }
-  }
-
-  override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Seq[JsObject]] = {
-    logger.debug(
-      s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
-    )
-
-    if (query.values.isEmpty)
-      reactivePg.querySeq(s"SELECT * FROM $tableName") { row =>
-        projection.keys
-          .map(key => Json.obj(key -> row.getString(key)))
-          .foldLeft(Json.obj())(_ ++ _)
-          .some
-      }
-    else {
-      val (sql, params) = convertQuery(query)
-      reactivePg.querySeq(
-        s"SELECT " +
-          s"${projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", ")} FROM $tableName WHERE $sql",
-        params
-      ) { row =>
-        projection.keys
-          .filter(key => {
-            try {
-              row.getString(key)
-              true
-            } catch {
-              case _: Throwable => false
-            }
-          })
-          .map(key => Json.obj(key -> row.getString(key)))
-          .foldLeft(Json.obj())(_ ++ _)
-          .some
-      }
-    }
-  }
-
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit
-      dbConn: DbConn,
-      ec: ExecutionContext
-  ): Future[Option[JsObject]] = {
-    logger.debug(
-      s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
-    )
-
-    if (query.values.isEmpty) {
-      reactivePg.queryOne(
-        s"SELECT $$1 FROM $tableName",
-        Seq(
-          if (projection.values.isEmpty) "*"
-          else
-            projection.keys
-              .map(e => s"content->>'$e' as ${e.toLowerCase}")
-              .mkString(", ")
-        )
-      ) { row =>
-        projection.keys
-          .map(key => Json.obj(key -> row.getString(key)))
-          .foldLeft(Json.obj())(_ ++ _)
-          .some
-      }
-    } else {
-      val (sql, params) = convertQuery(query)
-      reactivePg.queryOne(
-        s"SELECT ${getParam(params.size)} FROM $tableName WHERE $sql",
-        params ++ Seq(
-          if (projection.values.isEmpty) "*"
-          else
-            projection.keys
-              .map(e => s"content->>'$e' as ${e.toLowerCase}")
-              .mkString(", ")
-        )
-      ) { row =>
-        projection.keys
-          .map(key => Json.obj(key -> row.getString(key)))
-          .foldLeft(Json.obj())(_ ++ _)
-          .some
-      }
-    }
-  }
-
-  override def findWithPagination(
-      query: JsObject,
-      page: Int,
-      pageSize: Int,
-      sort: Option[JsObject] = None,
-      order: Option[SortingOrder] = None
-  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[(Seq[Of], Long)] = {
-    logger.debug(
-      s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)"
-    )
-
-    for {
-      count <- {
-        if (query.values.isEmpty)
-          reactivePg
-            .queryOne(s"SELECT COUNT(*) as count FROM $tableName") {
-              _.optLong("count")
-            }
-            .map(_.getOrElse(0L))
-        else {
-          val (sql, params) = convertQuery(query)
-          val out: String =
-            s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
-
-          reactivePg
-            .queryOne(
-              out,
-              params.map {
-                case x: String => x.replace("\"", "")
-                case x         => x
-              }
-            ) { _.optLong("count") }
-            .map(_.getOrElse(0L))
-        }
-      }
-      queryRes <- {
-        val sortedKeys = sort
-          .map(obj =>
-            obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value
-            )
-          )
-          .map(r => r.map(x => s"content->>'${x._1}'"))
-          .getOrElse(Seq("_id"))
-
-        if (query.values.isEmpty)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName ORDER BY ${sortedKeys
-                .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
-            Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
-          ) { row =>
-            rowToJson(row, format)
-          }
-        else {
-          val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-                .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} ${
-                if (pageSize > 0)
-                  s"LIMIT ${Integer.valueOf(pageSize)}"
-                else ""
-              } OFFSET ${Integer.valueOf(page * pageSize)}",
-            params.map {
-              case x: String => x.replace("\"", "")
-              case x         => x
-            }
-          ) { row =>
-            rowToJson(row, format)
-          }
-        }
-      }
-    } yield {
-      (queryRes, count)
-    }
-  }
 }

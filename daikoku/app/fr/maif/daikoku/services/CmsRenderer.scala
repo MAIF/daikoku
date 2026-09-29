@@ -130,7 +130,10 @@ case class CmsPage(
       (id: String, options: Options) => {
         val userId = renderString(ctx, parentId, id, fields, jsonToCombine, req)
         val optUser =
-          Await.result(env.dataStore.userRepo.findById(userId), 10.seconds)
+          Await.result(
+            env.dataStore.userRepo.findById(userId),
+            10.seconds
+          )
 
         optUser match {
           case Some(user) =>
@@ -212,7 +215,7 @@ case class CmsPage(
           options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
         val optApi = Await.result(
           env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, renderedParameter, version),
+            .findByVersion(ctx.tenant.id, renderedParameter, version),
           10.seconds
         )
 
@@ -252,7 +255,7 @@ case class CmsPage(
           options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
         val optApi = Await.result(
           env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, renderedParameter, version),
+            .findByVersion(ctx.tenant.id, renderedParameter, version),
           10.seconds
         )
 
@@ -392,14 +395,7 @@ case class CmsPage(
             )
           )(ctxUserContext) {
             env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findOne(
-                Json.obj(
-                  "_deleted" -> false,
-                  "type" -> TeamType.Personal.name,
-                  "users.userId" -> ctx.user.get.id.value
-                )
-              )
+              .findPersonalTeam(ctx.tenant.id, ctx.user.get.id)
               .map {
                 case None => AppError.TeamNotFound
                 case Some(team) if team.includeUser(ctx.user.get.id) =>
@@ -479,7 +475,7 @@ case class CmsPage(
       s"daikoku-${name}s",
       (_: CmsPage, options: Options) => {
         val apis = Await
-          .result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+          .result(repo.forTenant(ctx.tenant).findAll(), 10.seconds)
         apis
           .map(api =>
             renderString(
@@ -501,7 +497,7 @@ case class CmsPage(
           .result(
             repo
               .forTenant(ctx.tenant)
-              .findByIdOrHrIdNotDeleted(
+              .findByIdOrHrId(
                 renderString(ctx, parentId, id, fields, jsonToCombine, req)
               ),
             10.seconds
@@ -523,7 +519,7 @@ case class CmsPage(
       s"daikoku-json-$name",
       (id: String, _: Options) =>
         Await
-          .result(repo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds)
+          .result(repo.forTenant(ctx.tenant).findById(id), 10.seconds)
           .map(stringify)
           .getOrElse("")
     )
@@ -532,7 +528,7 @@ case class CmsPage(
       (_: CmsPage, _: Options) =>
         JsArray(
           Await
-            .result(repo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+            .result(repo.forTenant(ctx.tenant).findAll(), 10.seconds)
             .map(stringify)
         )
     )
@@ -599,16 +595,7 @@ case class CmsPage(
   )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     Await.result(
       env.dataStore.cmsRepo
-        .forTenant(ctx.tenant)
-        .findOne(
-          Json.obj(
-            "$or" -> Json.arr(
-              Json.obj("_id" -> cleanPath(id)),
-              Json.obj("_id" -> cleanPath(id).replace("/", "-")),
-              Json.obj("_id" -> cleanPath(id).replace("/", "-").substring(1))
-            )
-          )
-        ),
+        .findByIdOrPathVariants(ctx.tenant.id, cleanPath(id), byPath = false),
       10.seconds
     )
   }
@@ -640,15 +627,10 @@ case class CmsPage(
       case None =>
         Await.result(
           env.dataStore.cmsRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj(
-                "$or" -> Json.arr(
-                  Json.obj("path" -> cleanPath(id)),
-                  Json.obj("_id" -> cleanPath(id)),
-                  Json.obj("_id" -> cleanPath(id).replace("/", "-"))
-                )
-              )
+            .findByIdOrPathVariants(
+              ctx.tenant.id,
+              cleanPath(id),
+              byPath = true
             ),
           10.seconds
         )
@@ -1192,7 +1174,7 @@ case class CmsPage(
                   .result(
                     env.dataStore.apiRepo
                       .forTenant(ctx.tenant)
-                      .findAllNotDeleted(),
+                      .findAll(),
                     10.seconds
                   )
                   .map(a => {
@@ -1216,7 +1198,7 @@ case class CmsPage(
                   .result(
                     env.dataStore.teamRepo
                       .forTenant(ctx.tenant)
-                      .findAllNotDeleted(),
+                      .findAll(),
                     10.seconds
                   )
                   .map(a => {
@@ -1235,7 +1217,7 @@ case class CmsPage(
               JsArray(
                 Await
                   .result(
-                    env.dataStore.userRepo.findAllNotDeleted(),
+                    env.dataStore.userRepo.findAll(),
                     10.seconds
                   )
                   .map(_.toUiPayload())

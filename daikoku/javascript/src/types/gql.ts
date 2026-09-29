@@ -12,7 +12,6 @@ import { ITenant } from './tenant';
 export interface ITeamFullGql {
   _id: string;
   _humanReadableId: string;
-  _deleted: boolean;
   tenant: ITenant & { id: string };
   type: 'Personal' | 'Organization' | 'Admin';
   name: string;
@@ -49,7 +48,6 @@ type IUsagePlanGQL = {
 export interface IApiGQL {
   _id: string;
   _humanReadableId: string;
-  _deleted: boolean;
   lastUpdate: number;
   state: ApiState;
   currentVersion: string;
@@ -154,7 +152,6 @@ export interface ISubscriptionDemandGQL {
 
 export interface IAccountCreationGQL {
   id: string;
-  deleted: boolean;
   randomId: string;
   email: string;
   name: string;

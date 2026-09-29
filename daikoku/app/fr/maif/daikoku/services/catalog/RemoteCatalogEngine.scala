@@ -9,6 +9,7 @@ import fr.maif.daikoku.controllers.{
   UsagePlansAdminApiController
 }
 import fr.maif.daikoku.domain.{
+  DatastoreId,
   RemoteCatalog,
   Tenant,
   TenantId,
@@ -114,11 +115,8 @@ class RemoteCatalogEngine(
 
   private def pruneAudit(tenant: Tenant, catalog: RemoteCatalog): Unit = {
     val repo = env.dataStore.auditTrailRepo.forTenant(tenant.id)
-    repo
-      .find(
-        Json.obj("@userId" -> auditUserId),
-        Some(Json.obj("@timestamp" -> -1))
-      )
+    env.dataStore.auditTrailRepo
+      .findByUser(tenant.id, auditUserId)
       .map { events =>
         val mine = events.filter(e =>
           (e \ "details" \ "catalog_id").asOpt[String].contains(catalog.id)
@@ -126,11 +124,7 @@ class RemoteCatalogEngine(
         val toDelete =
           mine.drop(auditKeep).flatMap(e => (e \ "_id").asOpt[String])
         if (toDelete.nonEmpty) {
-          repo.delete(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(toDelete.map(JsString.apply)))
-            )
-          )
+          repo.deleteByIds(toDelete.map(DatastoreId.apply))
         }
       }
   }

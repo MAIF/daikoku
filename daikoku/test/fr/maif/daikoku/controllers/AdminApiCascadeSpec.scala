@@ -240,19 +240,7 @@ class AdminApiCascadeSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -284,19 +272,7 @@ class AdminApiCascadeSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -366,19 +342,15 @@ class AdminApiCascadeSpec
       resp.status mustBe 201
 
       val adminTeam = Await.result(
-        daikokuComponents.env.dataStore.teamRepo
-          .forTenant(newTenant.id)
-          .findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name)),
+        daikokuComponents.env.dataStore.teamRepo.findAdminTeam(newTenant.id),
         5.second
       )
       adminTeam.isDefined mustBe true
 
       val adminApiForTenant = Await.result(
         daikokuComponents.env.dataStore.apiRepo
-          .forTenant(newTenant.id)
-          .findOneNotDeleted(
-            Json.obj("visibility" -> ApiVisibility.AdminOnly.name)
-          ),
+          .findByVisibility(newTenant.id, ApiVisibility.AdminOnly)
+          .map(_.headOption),
         5.second
       )
       adminApiForTenant.isDefined mustBe true

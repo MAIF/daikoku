@@ -113,13 +113,7 @@ class LoginController(
                               else
                                 EitherT(
                                   env.dataStore.teamRepo
-                                    .forTenant(tenant)
-                                    .exists(
-                                      Json.obj(
-                                        "type" -> "Admin",
-                                        "users.userId" -> user.id.asJson
-                                      )
-                                    )
+                                    .isTenantAdmin(tenant.id, user.id)
                                     .map(isTenantAdmin =>
                                       if (isTenantAdmin) Right(user)
                                       else Left(AppError.Unauthorized: AppError)
@@ -168,7 +162,7 @@ class LoginController(
   def getAuthContext: Action[AnyContent] = {
     Action.async { ctx =>
       env.dataStore.tenantRepo
-        .findOneNotDeleted(Json.obj("domain" -> ctx.domain))
+        .findByDomain(ctx.domain)
         .map {
           case Some(tenant) =>
             Ok(Json.obj("provider" -> tenant.authProvider.name))
@@ -443,8 +437,8 @@ class LoginController(
   private def deleteSessionWithImpersonations(session: UserSession) =
     for {
       _ <- env.dataStore.userSessionRepo.deleteById(session.id)
-      _ <- env.dataStore.userSessionRepo.delete(
-        Json.obj("impersonatorSessionId" -> session.sessionId.value)
+      _ <- env.dataStore.userSessionRepo.deleteByImpersonatorSessionId(
+        session.sessionId
       )
     } yield ()
 
@@ -456,9 +450,7 @@ class LoginController(
       idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
-      .findOne(
-        Json.obj("userEmail" -> user.email, "impersonatorId" -> JsNull)
-      )
+      .findByUserEmailWithoutImpersonator(user.email)
       .map {
         case Some(session) =>
           session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
@@ -629,12 +621,7 @@ class LoginController(
                         // the increment. We handle it here so that LDAP failures are always counted.
                         val auth: EitherT[Future, AppError, User] = EitherT(
                           env.dataStore.userRepo
-                            .findOne(
-                              Json.obj(
-                                "_deleted" -> false,
-                                "email" -> username.trim
-                              )
-                            )
+                            .findByEmail(username.trim)
                             .flatMap {
                               case Some(u) if u.password.isEmpty =>
                                 userService.incrementAttempts(u).map {
@@ -841,7 +828,7 @@ class LoginController(
 
       (for {
         maybeUser <- EitherT.liftF(
-          env.dataStore.userRepo.findOne(Json.obj("email" -> email))
+          env.dataStore.userRepo.findByEmail(email)
         )
         // todo: tester la presence desessentiel ??
         _ <- EitherT.cond[Future](
@@ -911,8 +898,7 @@ class LoginController(
         )
         validator <- EitherT.fromOptionF[Future, AppError, StepValidator](
           env.dataStore.stepValidatorRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("token" -> token)),
+            .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
         _ <- accountCreationService.validateAccountCreationWithStepValidator(
@@ -922,7 +908,7 @@ class LoginController(
         accountCreation <-
           EitherT.fromOptionF[Future, AppError, AccountCreation](
             env.dataStore.accountCreationRepo
-              .findByIdNotDeleted(validator.subscriptionDemand),
+              .findById(validator.subscriptionDemand),
             AppError.EntityNotFound("Account creation")
           )
         step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](
@@ -969,8 +955,7 @@ class LoginController(
         )
         validator <- EitherT.fromOptionF(
           env.dataStore.stepValidatorRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("token" -> token)),
+            .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
         _ <- accountCreationService.declineAccountCreationWithStepValidator(
@@ -1007,7 +992,7 @@ class LoginController(
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
-            .findOneNotDeleted(Json.obj("randomId" -> id))
+            .findByRandomId(id)
             .flatMap {
               case Some(accountCreation)
                   if accountCreation.validUntil.isBefore(DateTime.now()) =>
@@ -1019,7 +1004,7 @@ class LoginController(
               case Some(accountCreation)
                   if accountCreation.validUntil.isAfter(DateTime.now()) =>
                 env.dataStore.userRepo
-                  .findOne(Json.obj("email" -> accountCreation.email))
+                  .findByEmail(accountCreation.email)
                   .flatMap {
                     case Some(user)
                         if user.invitation.isEmpty || user.invitation.get.registered =>
@@ -1098,7 +1083,7 @@ class LoginController(
 
       (for {
         user <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findOne(Json.obj("email" -> email)),
+          env.dataStore.userRepo.findByEmail(email),
           AppError.UserNotFound(None)
         )
         randomId = IdGenerator.token(128)
@@ -1172,8 +1157,7 @@ class LoginController(
 
       (for {
         user <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo
-            .findOneNotDeleted(Json.obj("email" -> email)),
+          env.dataStore.userRepo.findByEmail(email),
           AppError.BadRequestError("password.reset.error.unknown.user")
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -1190,7 +1174,7 @@ class LoginController(
         id = Cypher.decrypt(env.config.cypherSecret, cypheredId, ctx.tenant)
         pwdReset <- EitherT.fromOptionF[Future, AppError, PasswordReset](
           env.dataStore.passwordResetRepo
-            .findOneNotDeleted(Json.obj("randomId" -> id, "email" -> email)),
+            .findByRandomIdAndEmail(id, email),
           AppError.BadRequestError("password.reset.error.invalid")
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -1299,10 +1283,10 @@ class LoginController(
       (token, code) match {
         case (Some(token), Some(code)) =>
           env.dataStore.userRepo
-            .findOne(
-              Json.obj(
-                "twoFactorAuthentication.token" -> token
-              )
+            .queryOne(
+              s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
+                "WHERE content->'twoFactorAuthentication'->>'token' = $1 LIMIT 1",
+              Seq(token)
             )
             .flatMap {
               case Some(user) if user.twoFactorAuthentication.isDefined =>
@@ -1353,10 +1337,10 @@ class LoginController(
           )
         case Some(backupCodes) =>
           env.dataStore.userRepo
-            .findOne(
-              Json.obj(
-                "twoFactorAuthentication.backupCodes" -> backupCodes
-              )
+            .queryOne(
+              s"SELECT content FROM ${env.dataStore.userRepo.tableName} " +
+                "WHERE content->'twoFactorAuthentication'->>'backupCodes' = $1 LIMIT 1",
+              Seq(backupCodes)
             )
             .flatMap {
               case Some(user) =>

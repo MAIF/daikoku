@@ -37,8 +37,7 @@ class AccountCreationService {
         AppError.BadRequestError("not.valid.anymore")
       )
       optUser <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findOne(Json.obj("email" -> accountCreation.email))
+        env.dataStore.userRepo.findByEmail(accountCreation.email)
       )
       _ <- EitherT.cond[Future][AppError, Unit](
         optUser.forall(_.invitation match {
@@ -373,9 +372,7 @@ class AccountCreationService {
         AppError.EntityNotFound("form step")
       )
       adminTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(Json.obj("type" -> "Admin")),
+        env.dataStore.teamRepo.findAdminTeam(tenant.id),
         AppError.EntityNotFound("tenant team admin")
       )
       _ <- EitherT.cond[Future](
@@ -421,14 +418,7 @@ class AccountCreationService {
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       )
       admins <- EitherT.liftF(
-        env.dataStore.userRepo
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(adminTeam.admins().map(_.asJson).toSeq)
-              )
-            )
-          )
+        env.dataStore.userRepo.findByIds(adminTeam.admins().toSeq)
       )
       _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
         implicit val language: String =
@@ -571,7 +561,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -581,8 +571,8 @@ class AccountCreationService {
       _ <- validateStep(step, demand)
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
       result <- runAccountCreationProcess(
         demand.id,
@@ -604,7 +594,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(validator.subscriptionDemand),
+          .findById(validator.subscriptionDemand),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -614,8 +604,8 @@ class AccountCreationService {
       _ <- rejectStep(step, demand, tenant, None)
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
-          .forTenant(tenant)
-          .delete(Json.obj("step" -> validator.step.value))
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
       )
     } yield ()
   }
@@ -636,7 +626,7 @@ class AccountCreationService {
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(accountCreation),
+          .findById(accountCreation),
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](
@@ -667,7 +657,7 @@ class AccountCreationService {
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findByIdNotDeleted(accountCreation),
+          .findById(accountCreation),
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](

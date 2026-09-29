@@ -506,6 +506,8 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       )(using tenant, userSession)
       respVerifDk.status mustBe 404
 
+      // otoroshi apikey deletion is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
       val respVerifOto = httpJsonCallBlocking(
         path = s"/api/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -821,8 +823,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner.length mustBe 1
@@ -830,8 +831,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForConsumer = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer.length mustBe 0
@@ -894,16 +894,14 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification (O for owner)
       val notificationsForOwner2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner2.length mustBe 0
       // check notification (2 for consumer, demand & transfer accepted)
       val notificationsForConsumer2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer2.length mustBe 2
@@ -912,14 +910,20 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
 
       // check also demand
       val demands = Await.result(
-        daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> defaultApi.api.id.asJson,
-              "team" -> teamConsumerId.asJson
+        {
+          val repo = daikokuComponents.env.dataStore.subscriptionDemandRepo
+            .forTenant(tenant)
+          repo.query(
+            s"SELECT content FROM ${repo.tableName} " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->>'api' = $2 AND content->>'team' = $3",
+            Seq(
+              tenant.id.value,
+              defaultApi.api.id.value,
+              teamConsumerId.value
             )
-          ),
+          )
+        },
         5.seconds
       )
       demands.length mustBe 1
@@ -1032,8 +1036,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner.length mustBe 2
@@ -1041,25 +1044,20 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // check notification for demand is saved for owner team
       val notificationsForConsumer = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          .findByTeam(tenant.id, teamConsumerId),
         5.seconds
       )
       notificationsForConsumer.length mustBe 0
       // check also demand
       val demandsForAllversion = Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "state" -> Json.obj(
-                "$in" -> Json.arr(
-                  SubscriptionDemandState.InProgress.name,
-                  SubscriptionDemandState.Waiting.name
-                )
-              )
-            )
+          .findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = Some(versions.map(_.id))
           ),
         5.seconds
       )
@@ -1143,16 +1141,14 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // 5
       val notificationsForOwner2 = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+          .findByTeam(tenant.id, teamOwnerId),
         5.seconds
       )
       notificationsForOwner2.length mustBe 0
       val notificationsForConsumer2 = Await
         .result(
           daikokuComponents.env.dataStore.notificationRepo
-            .forTenant(tenant)
-            .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+            .findByTeam(tenant.id, teamConsumerId),
           5.seconds
         )
         .filter(_.action.isInstanceOf[ApiSubscriptionDemand])
@@ -1164,17 +1160,13 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       // 6
       val demandsForAllversion2 = Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
-              "state" -> Json.obj(
-                "$in" -> Json.arr(
-                  SubscriptionDemandState.InProgress.name,
-                  SubscriptionDemandState.Waiting.name
-                )
-              )
-            )
+          .findByStates(
+            tenant.id,
+            Seq(
+              SubscriptionDemandState.InProgress,
+              SubscriptionDemandState.Waiting
+            ),
+            apis = Some(versions.map(_.id))
           ),
         5.seconds
       )

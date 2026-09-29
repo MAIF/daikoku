@@ -121,7 +121,9 @@ class StateController(
         val body = ctx.request.body.as[JsObject]
         for {
           maybeDate <-
-            env.dataStore.reportsInfoRepo.findAll().map(info => info.head.date)
+            env.dataStore.reportsInfoRepo
+              .findAll()
+              .map(info => info.head.date)
           _ <- env.dataStore.reportsInfoRepo.save(
             ReportsInfo(
               DatastoreId((body \ "id").as[String]),
@@ -136,20 +138,9 @@ class StateController(
       }
     }
 
-  private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
+  private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) =
     env.dataStore.userSessionRepo
-      .findNotDeleted(
-        Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson))
-      )
-      .flatMap(seq =>
-        env.dataStore.userSessionRepo
-          .delete(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson)))
-            )
-          )
-      )
-  }
+      .deleteAllExceptSession(ctx.session.sessionId.some)
 
   def enableMaintenanceMode(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
@@ -161,7 +152,7 @@ class StateController(
         removeAllUserSessions(ctx)
           .flatMap { _ =>
             env.dataStore.tenantRepo
-              .findAllNotDeleted()
+              .findAll()
               .map(
                 _.map(tenant =>
                   env.dataStore.tenantRepo
@@ -187,7 +178,7 @@ class StateController(
         )
       )(ctx) {
         env.dataStore.tenantRepo
-          .findAllNotDeleted()
+          .findAll()
           .map(
             _.map(tenant =>
               env.dataStore.tenantRepo
@@ -210,7 +201,7 @@ class StateController(
         AuditTrailEvent(s"@{user.name} has accessed to maintenance mode")
       )(ctx) {
         env.dataStore.tenantRepo
-          .findAllNotDeleted()
+          .findAll()
           .map { tenants =>
             tenants.forall(tenant =>
               tenant.tenantMode.isDefined && tenant.tenantMode.get
@@ -313,16 +304,11 @@ class TenantAdminApiController(
   ): EitherT[Future, AppError, Tenant] =
     EitherT(
       env.dataStore.tenantRepo
-        .findOne(
-          Json.obj(
-            "_id" -> Json.obj("$ne" -> entity.id.asJson),
-            "domain" -> entity.domain
-          )
-        )
+        .existsAnotherWithDomain(entity.id, entity.domain)
         .map {
-          case Some(_) =>
+          case true =>
             Left(AppError.ParsingPayloadError("tenant.domain already used"))
-          case None => Right(entity)
+          case false => Right(entity)
         }
     )
 
@@ -343,8 +329,7 @@ class TenantAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Tenant,
-      logically: Boolean
+      entity: Tenant
   ): EitherT[Future, AppError, Unit] =
     tenantService.deleteTenant(entity).map(_ => ())
 }
@@ -374,16 +359,11 @@ class UserAdminApiController(
   ): EitherT[Future, AppError, User] =
     EitherT(
       env.dataStore.userRepo
-        .findOne(
-          Json.obj(
-            "_id" -> Json.obj("$ne" -> entity.id.asJson),
-            "email" -> entity.email
-          )
-        )
+        .existsAnotherWithEmail(entity.id, entity.email)
         .map {
-          case Some(_) =>
+          case true =>
             Left(AppError.ParsingPayloadError("user.email already used"))
-          case None => Right(entity)
+          case false => Right(entity)
         }
     )
 
@@ -410,8 +390,7 @@ class UserAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: User,
-      logically: Boolean
+      entity: User
   ): EitherT[Future, AppError, Unit] =
     deletionService
       .deleteCompleteUserByQueue(entity.id.value, tenant)
@@ -493,8 +472,7 @@ class TeamAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Team,
-      logically: Boolean
+      entity: Team
   ): EitherT[Future, AppError, Unit] =
     teamService.deleteTeam(tenant, entity)
 }
@@ -566,21 +544,20 @@ class ApiAdminApiController(
         )
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo
+          .forTenant(entity.tenant)
+          .findById(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- updateOrCreate match {
         case UpdateOrCreate.Update =>
           EitherT(
             env.dataStore.apiRepo
-              .forTenant(entity.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj("$ne" -> entity.id.asJson),
-                  "name" -> entity.name
-                ) ++ entity.parent
-                  .map(p => Json.obj("_id" -> p.asJson))
-                  .getOrElse(Json.obj())
+              .findAnotherWithName(
+                entity.tenant,
+                entity.id,
+                entity.name,
+                entity.parent
               )
               .map {
                 case Some(api)
@@ -595,14 +572,11 @@ class ApiAdminApiController(
         case UpdateOrCreate.Create =>
           EitherT(
             env.dataStore.apiRepo
-              .forTenant(entity.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj("$ne" -> entity.id.asJson),
-                  "name" -> entity.name
-                ) ++ entity.parent
-                  .map(p => Json.obj("_id" -> p.asJson))
-                  .getOrElse(Json.obj())
+              .findAnotherWithName(
+                entity.tenant,
+                entity.id,
+                entity.name,
+                entity.parent
               )
               .map {
                 case None =>
@@ -633,7 +607,9 @@ class ApiAdminApiController(
       _ <- entity.parent match {
         case Some(api) =>
           EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo.forTenant(entity.tenant).findById(api),
+            env.dataStore.apiRepo
+              .forTenant(entity.tenant)
+              .findById(api),
             AppError.ParsingPayloadError("Parent API not found")
           )
         case None => EitherT.pure[Future, AppError](())
@@ -643,7 +619,9 @@ class ApiAdminApiController(
           apis
             .map(api =>
               EitherT.fromOptionF[Future, AppError, Api](
-                env.dataStore.apiRepo.forTenant(entity.tenant).findById(api),
+                env.dataStore.apiRepo
+                  .forTenant(entity.tenant)
+                  .findById(api),
                 AppError.ParsingPayloadError(
                   s"Children API (${api.value}) not found"
                 )
@@ -667,7 +645,9 @@ class ApiAdminApiController(
       case None =>
         for {
           team <- EitherT.fromOptionF[Future, AppError, Team](
-            env.dataStore.teamRepo.forTenant(tenant).findById(entity.team),
+            env.dataStore.teamRepo
+              .forTenant(tenant)
+              .findById(entity.team),
             AppError.TeamNotFound
           )
           created <- apiCrudService.createApi(tenant, team, entity)
@@ -683,8 +663,7 @@ class ApiAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: Api,
-      logically: Boolean
+      entity: Api
   ): EitherT[Future, AppError, Unit] =
     apiCrudService.deleteApi(tenant, entity)
 }
@@ -737,7 +716,9 @@ class ApiSubscriptionAdminApiController(
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo
+          .forTenant(entity.tenant)
+          .findById(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
@@ -840,12 +821,13 @@ class ApiSubscriptionAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: ApiSubscription,
-      logically: Boolean
+      entity: ApiSubscription
   ): EitherT[Future, AppError, Unit] =
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(tenant).findById(entity.api),
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findById(entity.api),
         AppError.ApiNotFound
       )
       _ <- deletionService.deleteSubscriptions(Seq(entity), api, tenant)
@@ -1010,7 +992,9 @@ class ApiKeyConsumptionAdminApiController(
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api),
+        env.dataStore.apiRepo
+          .forTenant(entity.tenant)
+          .findById(entity.api),
         AppError.ParsingPayloadError("Api not found")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -1065,8 +1049,7 @@ class CredentialsAdminApiController(
   def getCredentials(token: String) =
     DaikokuApiAction.async { ctx =>
       env.dataStore.keyringRepo
-        .forAllTenant()
-        .findOne(Json.obj("integrationToken" -> token))
+        .findByIntegrationTokenForAllTenants(token)
         .map {
           case None => NotFound(Json.obj("error" -> "Keyring not found"))
           case Some(keyring) => Ok(keyring.apiKey.asJson)
@@ -1360,13 +1343,7 @@ class UsagePlansAdminApiController(
       tenant: Tenant,
       planId: UsagePlanId
   ): Future[Option[Api]] =
-    env.dataStore.apiRepo
-      .forTenant(tenant)
-      .findOneNotDeleted(
-        Json.obj(
-          "possibleUsagePlans" -> Json.obj("$in" -> Json.arr(planId.value))
-        )
-      )
+    env.dataStore.apiRepo.findByPlan(tenant.id, planId)
 
   override def createEntity(): Action[JsValue] =
     daa.async(parse.json) { ctx =>
@@ -1379,7 +1356,7 @@ class UsagePlansAdminApiController(
           )
         case Right(newEntity) =>
           entityStore(ctx.tenant, env.dataStore)
-            .findByIdNotDeleted(newEntity.id.value)
+            .findById(newEntity.id.value)
             .flatMap {
               case Some(_) =>
                 AppError
@@ -1395,7 +1372,7 @@ class UsagePlansAdminApiController(
                         api <- EitherT.fromOptionF[Future, AppError, Api](
                           env.dataStore.apiRepo
                             .forTenant(ctx.tenant)
-                            .findByIdNotDeleted(apiId),
+                            .findById(apiId),
                           AppError.ApiNotFound
                         )
                         team <- EitherT.fromOptionF[Future, AppError, Team](
@@ -1438,7 +1415,9 @@ class UsagePlansAdminApiController(
             tenant.defaultLanguage.getOrElse("en")
           for {
             team <- EitherT.fromOptionF[Future, AppError, Team](
-              env.dataStore.teamRepo.forTenant(tenant).findById(api.team),
+              env.dataStore.teamRepo
+                .forTenant(tenant)
+                .findById(api.team),
               AppError.TeamNotFound
             )
             updated <- usagePlanService.updatePlan(
@@ -1454,8 +1433,7 @@ class UsagePlansAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: UsagePlan,
-      logically: Boolean
+      entity: UsagePlan
   ): EitherT[Future, AppError, Unit] =
     for {
       api <- EitherT.fromOptionF[Future, AppError, Api](
@@ -1501,7 +1479,9 @@ class SubscriptionDemandsAdminApiController(
         AppError.ParsingPayloadError("Tenant not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Api](
-        env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api),
+        env.dataStore.apiRepo
+          .forTenant(entity.tenant)
+          .findById(entity.api),
         AppError.ParsingPayloadError("Api not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](
@@ -1511,7 +1491,9 @@ class SubscriptionDemandsAdminApiController(
         AppError.ParsingPayloadError("Plan not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](
-        env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team),
+        env.dataStore.teamRepo
+          .forTenant(entity.tenant)
+          .findById(entity.team),
         AppError.ParsingPayloadError("Team not found")
       )
       _ <- EitherT.fromOptionF[Future, AppError, User](
@@ -1525,8 +1507,7 @@ class SubscriptionDemandsAdminApiController(
 
   override def doDelete(
       tenant: Tenant,
-      entity: SubscriptionDemand,
-      logically: Boolean
+      entity: SubscriptionDemand
   ): EitherT[Future, AppError, Unit] =
     deletionService
       .cancelSubscriptionDemand(entity.id.value, tenant)

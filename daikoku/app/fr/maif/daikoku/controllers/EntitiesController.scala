@@ -109,8 +109,6 @@ class DaikokuActionOrApiKey(val parser: BodyParser[AnyContent], env: Env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case Some((clientId, clientSecret)) =>
-                  logger.info(s"$clientId")
-                  logger.info(s"$clientSecret")
                   env.dataStore.keyringRepo
                     .forTenant(tenant)
                     .queryOne(
@@ -401,7 +399,6 @@ class EntitiesController(
         Ok(
           User(
             id = UserId(IdGenerator.token(32)),
-            deleted = false,
             tenants = Set(ctx.tenant.id),
             origins = Set(AuthProvider.Local),
             name = "John Doe",

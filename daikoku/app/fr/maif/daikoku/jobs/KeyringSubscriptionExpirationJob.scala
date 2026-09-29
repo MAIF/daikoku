@@ -85,7 +85,7 @@ class KeyringSubscriptionExpirationJob(
 
   private def runForAllTenants(): Future[Unit] =
     env.dataStore.tenantRepo
-      .findAllNotDeleted()
+      .findAll()
       .flatMap(tenants => Future.sequence(tenants.map(run)))
       .map(_ => ())
       .recover { case e: Throwable =>
@@ -97,12 +97,10 @@ class KeyringSubscriptionExpirationJob(
     val jobId = DatastoreId(s"keyring-expiration-${IdGenerator.token(16)}")
     val now = DateTime.now()
 
-    jobRepo
-      .findOneNotDeleted(
-        Json.obj(
-          "jobName" -> JobName.KeyringSubscriptionExpiration.value,
-          "status" -> JobStatus.Running.value
-        )
+    env.dataStore.JobInformationRepo
+      .findRunning(
+        tenant.id,
+        JobName.KeyringSubscriptionExpiration.value
       )
       .flatMap {
         case Some(_) =>
@@ -161,10 +159,7 @@ class KeyringSubscriptionExpirationJob(
       now: DateTime
   ): Future[Int] =
     env.dataStore.apiSubscriptionRepo
-      .forTenant(tenant)
-      .findNotDeleted(
-        Json.obj("validUntil" -> Json.obj("$lt" -> now.getMillis))
-      )
+      .findExpiredBefore(tenant.id, now.getMillis)
       .flatMap { expired =>
         if (expired.isEmpty) Future.successful(0)
         else
@@ -172,7 +167,7 @@ class KeyringSubscriptionExpirationJob(
             .sequence(expired.groupBy(_.api).toSeq.map { case (apiId, subs) =>
               env.dataStore.apiRepo
                 .forTenant(tenant)
-                .findByIdNotDeleted(apiId)
+                .findById(apiId)
                 .flatMap {
                   case None =>
                     logger.warn(

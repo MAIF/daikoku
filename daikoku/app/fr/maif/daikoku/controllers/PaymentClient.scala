@@ -77,7 +77,7 @@ class PaymentClient(
   ): EitherT[Future, AppError, JsValue] = {
     EitherT
       .fromOptionF(
-        env.dataStore.tenantRepo.findByIdNotDeleted(tenantId),
+        env.dataStore.tenantRepo.findById(tenantId),
         AppError.TenantNotFound
       )
       .flatMap(
@@ -195,23 +195,23 @@ class PaymentClient(
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.api),
+          .findById(subscriptionDemand.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF(
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.plan),
+          .findById(subscriptionDemand.plan),
         AppError.PlanNotFound
       )
       apiTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team),
+        env.dataStore.teamRepo.forTenant(tenant).findById(api.team),
         AppError.TeamNotFound
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.team),
+          .findById(subscriptionDemand.team),
         AppError.TeamNotFound
       )
       _ <- EitherT.fromEither[Future](if (team.verified) {
@@ -220,7 +220,7 @@ class PaymentClient(
         Left(AppError.TeamNotVerified)
       })
       user <- EitherT.fromOptionF(
-        env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from),
+        env.dataStore.userRepo.findById(subscriptionDemand.from),
         AppError.UserNotFound()
       )
       settings <- EitherT.fromOption[Future](
@@ -592,7 +592,7 @@ class PaymentClient(
       case (Some(paymentSettings), Some(infos)) =>
         (for {
           tenant <- OptionT(
-            env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant)
+            env.dataStore.tenantRepo.findById(consumption.tenant)
           )
           setting <- OptionT.fromOption[Future](
             tenant.thirdPartyPaymentSettings
@@ -647,7 +647,7 @@ class PaymentClient(
       case (Some(paymentSettings), Some(infos)) =>
         for {
           tenant <- EitherT.fromOptionF(
-            env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
+            env.dataStore.tenantRepo.findById(subscription.tenant),
             AppError.TenantNotFound
           )
           setting <- EitherT.fromOption[Future](
@@ -696,11 +696,11 @@ class PaymentClient(
       plan <- EitherT.fromOptionF(
         env.dataStore.usagePlanRepo
           .forTenant(apiSubscription.tenant)
-          .findByIdNotDeleted(apiSubscription.plan),
+          .findById(apiSubscription.plan),
         AppError.PlanNotFound
       )
       tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findByIdNotDeleted(apiSubscription.tenant),
+        env.dataStore.tenantRepo.findById(apiSubscription.tenant),
         AppError.TenantNotFound
       )
       settings = plan.paymentSettings.flatMap(s =>

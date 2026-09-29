@@ -29,7 +29,6 @@ object User {
 
 case class User(
     id: UserId,
-    deleted: Boolean = false,
     tenants: Set[TenantId],
     origins: Set[AuthProvider],
     name: String,
@@ -183,7 +182,6 @@ case class UserInvitation(
 
 case class PasswordReset(
     id: DatastoreId,
-    deleted: Boolean = false,
     randomId: String,
     email: String,
     password: String,
@@ -196,7 +194,6 @@ case class PasswordReset(
 
 case class AccountCreation(
     id: DemandId,
-    deleted: Boolean = false,
     randomId: String,
     email: String,
     name: String,

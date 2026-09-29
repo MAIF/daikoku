@@ -504,6 +504,9 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       )(using tenant, userSession)
       respVerifDk.status mustBe 404
 
+      // otoroshi apikey deletion is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
+
       val respVerifOto = httpJsonCallBlocking(
         path = s"/api/apikeys/${keyring.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -772,21 +775,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       def operationsPending() = {
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" ->
-                  Json.obj(
-                    "$in" ->
-                      JsArray(
-                        Seq(
-                          JsString(OperationStatus.Idle.name),
-                          JsString(OperationStatus.InProgress.name)
-                        )
-                      )
-                  )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
       }
@@ -812,7 +801,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(Json.obj("api" -> defaultApi.api.id.asJson)),
+          .findByIds(defaultApi.plans.map(_.id)),
         5.second
       )
       _maybePlans.isEmpty mustBe true
@@ -821,7 +810,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybeDocs = Await.result(
         daikokuComponents.env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(page.id),
+          .findById(page.id),
         5.second
       )
       _maybeDocs.isEmpty mustBe true
@@ -830,7 +819,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybePosts = Await.result(
         daikokuComponents.env.dataStore.apiPostRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(post.id),
+          .findById(post.id),
         5.second
       )
       _maybePosts.isEmpty mustBe true
@@ -839,7 +828,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val _maybeIssue = Await.result(
         daikokuComponents.env.dataStore.apiIssueRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(issue.id),
+          .findById(issue.id),
         5.second
       )
       _maybeIssue.isEmpty mustBe true
@@ -848,7 +837,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -3202,7 +3191,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None

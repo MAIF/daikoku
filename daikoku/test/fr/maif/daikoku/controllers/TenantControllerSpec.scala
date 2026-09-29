@@ -213,6 +213,12 @@ class TenantControllerSpec()
       )(using tenant, session)
       respDelete.status mustBe 200
 
+      Await.result(
+        daikokuComponents.env.dataStore.tenantRepo
+          .findById(testTenant.id),
+        5.seconds
+      ) mustBe None
+
       val sessionNewTenant = loginWithBlocking(daikokuAdmin, testTenant)
       val respTeams =
         httpJsonCallBlocking(s"/api/me/teams")(using

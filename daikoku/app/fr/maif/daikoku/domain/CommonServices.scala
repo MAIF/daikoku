@@ -1,6 +1,7 @@
 package fr.maif.daikoku.domain
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.audit.AuditTrailEvent
@@ -29,10 +30,7 @@ object CommonServices {
 
       val tenant = ctx.tenant
       val user = ctx.user
-      val idFilter =
-        if (ids.nonEmpty)
-          Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(JsString.apply))))
-        else Json.obj()
+      val idFilter = if (ids.nonEmpty) ids.some else None
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
         apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
@@ -40,56 +38,53 @@ object CommonServices {
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
             env.dataStore.notificationRepo
-              .forTenant(tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiAccess",
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
-                  "status.status" -> "Pending"
-                )
+              .findPendingByActionTypeAndTeams(
+                tenant.id,
+                "ApiAccess",
+                myTeams.map(_.id)
               )
         publicApis <-
-          apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ idFilter)
+          env.dataStore.apiRepo
+            .findByVisibility(
+              tenant.id,
+              ApiVisibility.Public,
+              ids = idFilter
+            )
         almostPublicApis <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj("visibility" -> "PublicWithAuthorizations") ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.PublicWithAuthorizations,
+                ids = idFilter
+              )
         privateApis <-
           if (user.isGuest) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj(
-                "visibility" -> "Private",
-                "$or" -> Json.arr(
-                  Json.obj(
-                    "authorizedTeams" -> Json
-                      .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                  )
-                )
-              ) ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.Private,
+                authorizedTeams = myTeams.map(_.id).some,
+                ids = idFilter
+              )
         adminApis <-
           if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty)
           else
-            apiRepo.findNotDeleted(
-              Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ idFilter
-            )
+            env.dataStore.apiRepo
+              .findByVisibility(
+                tenant.id,
+                ApiVisibility.AdminOnly,
+                ids = idFilter
+              )
         plans <-
           env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    (publicApis ++ almostPublicApis ++ privateApis ++ adminApis)
-                      .flatMap(_.possibleUsagePlans)
-                      .map(_.asJson)
-                  )
-                )
-              )
+            .forTenant(tenant.id)
+            .findByIds(
+              (publicApis ++ almostPublicApis ++ privateApis ++ adminApis)
+                .flatMap(_.possibleUsagePlans)
+                .distinct
             )
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] =
@@ -178,79 +173,45 @@ object CommonServices {
       for {
         subs <-
           env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("team" -> teamId))
-        subsOnlyFilter =
-          if (apiSubOnly)
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(subs.map(a => JsString(a.api.value))))
-            )
-          else Json.obj()
-        apiFilter = Json.obj(
-          "$or" -> Json.arr(
-            Json.obj("visibility" -> "Public"),
-            Json.obj("authorizedTeams" -> teamId),
-            Json.obj("team" -> teamId)
-          ),
-          "state" -> ApiState.publishedJsonFilter,
-          "_deleted" -> false,
-          "parent" -> JsNull, // FIXME : could be a problem if parent is not published [#517]
-          "name" -> Json.obj("$regex" -> research)
-        )
+            .findByTeam(ctx.tenant.id, TeamId(teamId))
+        subscribedTo = if (apiSubOnly) subs.map(_.api).distinct.some else None
         uniqueApis <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findWithPagination(
-              apiFilter ++ subsOnlyFilter,
-              offset,
-              limit,
-              Some(Json.obj("name" -> 1))
+            .findAccessibleByTeamPaginated(
+              ctx.tenant.id,
+              TeamId(teamId),
+              research,
+              subscribedTo,
+              page = offset,
+              pageSize = limit
             )
-        allApisFilter = Json.obj(
-          "_humanReadableId" -> Json.obj(
-            "$in" -> JsArray(
-              uniqueApis._1.map(a => JsString(a.humanReadableId))
-            )
-          ),
-          "state" -> ApiState.publishedJsonFilter
-        )
         allApis <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              query = allApisFilter ++ subsOnlyFilter,
-              sort = Some(Json.obj("name" -> 1))
+            .findPublishedVersionsOf(
+              ctx.tenant.id,
+              uniqueApis._1.map(_.humanReadableId).distinct,
+              subscribedTo
             )
         teams <-
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj("$in" -> JsArray(allApis.map(_.team.asJson)))
-              )
-            )
+            .findByIds(allApis.map(_.team).distinct)
         demands <-
           env.dataStore.subscriptionDemandRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "team" -> teamId,
-                "api" -> Json.obj("$in" -> Json.arr(allApis.map(_.id.asJson))),
-                "state" -> Json.obj("$in" -> Json.arr("waiting", "inProgress"))
-              )
+            .findByStates(
+              ctx.tenant.id,
+              Seq(
+                SubscriptionDemandState.Waiting,
+                SubscriptionDemandState.InProgress
+              ),
+              apis = allApis.map(_.id).some,
+              teams = Seq(TeamId(teamId)).some
             )
         plans <-
           env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    allApis.flatMap(_.possibleUsagePlans).map(_.asJson)
-                  )
-                )
-              )
+            .forTenant(ctx.tenant.id)
+            .findByIds(
+              allApis.flatMap(_.possibleUsagePlans).distinct
             )
       } yield {
         AccessibleApisWithNumberOfApis(
@@ -319,16 +280,15 @@ object CommonServices {
        |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' = ANY ($$2::text[])) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
        |      END) AND
        |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
-       |  (_deleted = false) AND
        |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
        |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
        |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
-       |  (COALESCE($$8, '') = '' OR (content ->> '_id' IN (SELECT jsonb_array_elements_text(content -> 'apis')
+       |  (COALESCE($$8, '') = '' OR (_id IN (SELECT jsonb_array_elements_text(content -> 'apis')
        |                                                    FROM apis
        |                                                    WHERE _id = $$8))) AND
        |  (content ->> 'isDefault')::boolean
        |)
-       |ORDER BY CASE WHEN content ->> '_id' = ANY ($$9::text[]) THEN 0 ELSE 1 END,
+       |ORDER BY CASE WHEN _id = ANY ($$9::text[]) THEN 0 ELSE 1 END,
        |LOWER(content ->> 'name')
        |""".stripMargin
 
@@ -357,15 +317,13 @@ object CommonServices {
            |           WHERE _id = $$1),
            |    my_teams as (SELECT *
            |                  FROM teams
-           |                  WHERE _deleted IS FALSE
-           |                    AND content->>'_tenant' = $$2
+           |                  WHERE content->>'_tenant' = $$2
            |                    AND content -> 'users' @> format('[{"userId": "%s"}]', $$1)::jsonb),
            |    api as (
            |        SELECT a.content FROM apis a
            |                                LEFT JOIN me ON TRUE
            |                       WHERE _id = $$3
            |            AND (
-           |                             a._deleted IS false AND
            |                             a.content ->> '_tenant' = $$2 AND
            |                             (CASE
            |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
@@ -490,8 +448,7 @@ object CommonServices {
           |     my_teams as (SELECT teams.*
           |                  FROM teams
           |                           LEFT JOIN me on true
-          |                  WHERE teams._deleted IS FALSE
-          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                  WHERE ((me.content ->> 'isDaikokuAdmin')::bool is true
           |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
           |                         FROM me))),
@@ -499,7 +456,6 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
-          |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' IN ('published','deprecated') OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
@@ -582,8 +538,7 @@ object CommonServices {
           |                       limit CASE WHEN $$7 = -1 THEN null ELSE $$7 END offset $$8),
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis_no_team va
-          |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
-          |                            WHERE t._deleted IS FALSE
+          |                                     JOIN teams t ON t._id = va.content ->> 'team'
           |                            GROUP BY t.content ),
           |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
           |                  FROM visible_apis_no_tag va,
@@ -763,8 +718,7 @@ object CommonServices {
           |     my_teams as (SELECT teams.*
           |                  FROM teams
           |                           LEFT JOIN me on true
-          |                  WHERE teams._deleted IS FALSE
-          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                  WHERE ((me.content ->> 'isDaikokuAdmin')::bool is true
           |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
           |                         FROM me))),
@@ -772,7 +726,6 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
-          |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' = 'published' OR
           |                             a.content ->> 'state' = 'deprecated' OR
@@ -926,20 +879,15 @@ object CommonServices {
         s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"
       )
     )(ctx) { team =>
-      val query = Json.obj(
-        "team" -> team.id.value,
-        "$or" -> Json.arr(
-          Json.obj("_id" -> apiId),
-          Json.obj("_humanReadableId" -> apiId)
-        ),
-        "currentVersion" -> version
-      )
-
       (for {
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(query),
+            .findByIdOrHrIdVersionAndTeam(
+              ctx.tenant.id,
+              apiId,
+              version,
+              team.id
+            ),
           AppError.ApiNotFound
         )
       } yield {
@@ -956,30 +904,11 @@ object CommonServices {
       ec: ExecutionContext
   ) = {
 
-    val typeFilter =
-      if (
-        ctx.tenant.subscriptionSecurity.isDefined
-        && ctx.tenant.subscriptionSecurity.exists(identity)
-      ) {
-        Json.obj(
-          "type" -> Json.obj("$ne" -> TeamType.Personal.name)
-        )
-      } else {
-        Json.obj()
-      }
     _UberPublicUserAccess(
       AuditTrailEvent("@{user.name} has accessed his team list")
     )(ctx) {
-      (if (ctx.user.isDaikokuAdmin)
-         env.dataStore.teamRepo
-           .forTenant(ctx.tenant)
-           .findNotDeleted(typeFilter)
-       else
-         env.dataStore.teamRepo
-           .forTenant(ctx.tenant)
-           .findNotDeleted(
-             Json.obj("users.userId" -> ctx.user.id.value) ++ typeFilter
-           ))
+      env.dataStore.teamRepo
+        .myTeams(ctx.tenant, ctx.user)
         .map(teams =>
           teams
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
@@ -995,30 +924,22 @@ object CommonServices {
     _TenantAdminAccessTenant(
       AuditTrailEvent("@{user.name} has accessed to all teams list")
     )(ctx) {
-      val typeFilter =
-        if (
-          ctx.tenant.subscriptionSecurity.isDefined
-          && ctx.tenant.subscriptionSecurity.exists(identity)
-        ) {
-          Json.obj(
-            "type" -> TeamType.Organization.name
-          )
-        } else {
-          Json.obj()
-        }
+      val organizationsOnly =
+        if (ctx.tenant.subscriptionSecurity.exists(identity))
+          s" AND content->>'type' = '${TeamType.Organization.name}'"
+        else ""
+      val repo = env.dataStore.teamRepo.forTenant(ctx.tenant)
+
       for {
-        teams <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findWithPagination(
-              Json.obj(
-                "_deleted" -> false,
-                "name" -> Json.obj("$regex" -> research)
-              ) ++ typeFilter,
-              offset,
-              limit,
-              Some(Json.obj("_humanReadableId" -> 1))
-            )
+        teams <- repo.queryPaginated(
+          s"SELECT content FROM ${repo.tableName} " +
+            "WHERE content->>'_tenant' = $1 " +
+            s"AND content->>'name' ~* $$2$organizationsOnly " +
+            "ORDER BY content->>'_humanReadableId' ASC",
+          Seq(ctx.tenant.id.value, research),
+          offset = offset * limit,
+          limit = limit
+        )
       } yield {
         TeamWithCount(teams._1, teams._2)
       }
@@ -1047,34 +968,19 @@ object CommonServices {
         DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
       )
       val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
-      val planIdFilters = planId match {
-        case Some(value) => Json.obj("plan" -> value)
-        case None        => Json.obj()
-      }
       for {
         api <-
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findOneNotDeleted(
-              Json.obj(
-                "team" -> team.id.value,
-                "$or" -> Json.arr(
-                  Json.obj("_id" -> apiId),
-                  Json.obj("_humanReadableId" -> apiId)
-                )
-              )
-            )
+            .findByIdOrHrIdAndTeam(ctx.tenant.id, apiId, team.id)
         apiId = api.map(api => api.id.value).get
         consumptions <-
           env.dataStore.consumptionRepo
-            .forTenant(ctx.tenant.id)
-            .find(
-              Json.obj(
-                "api" -> apiId,
-                "from" -> Json.obj("$gte" -> fromTimestamp),
-                "to" -> Json.obj("$lte" -> toTimestamp)
-              ) ++ planIdFilters,
-              Some(Json.obj("from" -> 1))
+            .findByApiBetween(
+              ctx.tenant.id,
+              ApiId(apiId),
+              planId.map(UsagePlanId.apply),
+              fromTimestamp,
+              toTimestamp
             )
       } yield {
         Right(consumptions)
@@ -1278,7 +1184,6 @@ object CommonServices {
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
            |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
-           |  AND s._deleted = false
            |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
            |LIMIT $$8 OFFSET $$9;
@@ -1369,8 +1274,7 @@ object CommonServices {
            |    FROM keyrings k
            |             LEFT JOIN api_subscriptions s ON s.content ->> 'keyring' = k._id
            |             LEFT JOIN usage_plans p ON s.content ->> 'plan' = p._id
-           |    WHERE k._deleted = false
-           |      AND s.content ->> 'api' = $$1
+           |    WHERE s.content ->> 'api' = $$1
            |      AND k.content ->> 'team' = $$2
            |    ),
            |    total AS (
@@ -1381,7 +1285,7 @@ object CommonServices {
            |   (SELECT total FROM total),
            |   bool_or((plan ->> 'autoRotation')::boolean) AS "isRotationLocked",
            |   jsonb_agg(DISTINCT plan ->> 'customName') FILTER (WHERE plan ->> 'customName' IS NOT NULL) AS "environments",
-           |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id AND s2._deleted = false) AS "subscriptionsCount"
+           |   (SELECT count(*) FROM api_subscriptions s2 WHERE s2.content ->> 'keyring' = keyring_id) AS "subscriptionsCount"
            |   FROM keyringSubscriptionPlan
            |                 WHERE keyring ->> 'customName'  ILIKE '%' || $$3::text || '%'
            |                 OR plan ->> 'customName' ILIKE '%' || $$3::text || '%'
@@ -1530,19 +1434,13 @@ object CommonServices {
         to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
       for {
         ownApis <-
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(Json.obj("team" -> team.id.value))
+          env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
         revenue <-
           env.dataStore.consumptionRepo
-            .getLastConsumptionsForTenant(
-              ctx.tenant.id,
-              Json.obj(
-                "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
-                "from" -> Json
-                  .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
-                "to" -> Json.obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
-              )
+            .findLastConsumptions(
+              ctx.tenant.id.some,
+              apis = ownApis.map(_.id).some,
+              between = (fromTimestamp, toTimestamp).some
             )
       } yield {
         Right(revenue)
@@ -1568,8 +1466,7 @@ object CommonServices {
       val CTE = s"""
                    |WITH my_teams as (SELECT *
                    |                  FROM teams
-                   |                  WHERE _deleted IS FALSE
-                   |                    AND content->>'_tenant' = '${ctx.tenant.id.value}'
+                   |                  WHERE content->>'_tenant' = '${ctx.tenant.id.value}'
                    |                    AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}", "teamPermission": "Administrator"}]')
                    |                  """
 
@@ -1608,9 +1505,9 @@ object CommonServices {
                |    n.content,
                |    count(1) OVER() AS total_filtered
                |  FROM notifications n
-               |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
-               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |  WHERE n._deleted IS FALSE AND n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |           LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |           LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE n.content->>'_tenant' = '${ctx.tenant.id.value}' AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |      OR n.content ->> 'team' = t._id::text)
                |    AND CASE
                |            WHEN array_length($$1::text[], 1) IS NULL THEN true
@@ -1661,7 +1558,7 @@ object CommonServices {
                |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
                |              FROM notifications n
                |                       LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |              WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |              WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |                  OR n.content ->> 'team' = t._id::text)
                |                AND ($$1 IS FALSE OR n.content -> 'status' ->> 'status' = 'Pending')),
                |     total AS (SELECT COUNT(*) AS total
@@ -1673,11 +1570,11 @@ object CommonServices {
                |     total_by_apis AS (SELECT a._id AS api, COUNT(*) AS total
                |                       FROM base n
                |                                LEFT JOIN apis a
-               |                                          ON a._deleted IS FALSE AND (
+               |                                          ON (
                |                                              a._id = n.content -> 'action' ->> 'api'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'
-               |                                                  OR a.content ->> '_id' = n.content -> 'action' -> 'api' ->> '_id'
+               |                                                  OR a._id = n.content -> 'action' -> 'api' ->> '_id'
                |                                              )
                |                       GROUP BY a._id
                |                       ORDER BY total DESC),
@@ -1714,7 +1611,6 @@ object CommonServices {
           )
         )
       } yield {
-        AppLogger.warn(Json.prettyPrint(notifications))
         NotificationWithCount(
           notifications = (notifications \ "notifications")
             .asOpt(using json.SeqNotificationFormat)

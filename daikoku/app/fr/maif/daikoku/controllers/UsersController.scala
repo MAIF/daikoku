@@ -53,7 +53,7 @@ class UsersController(
       TenantAdminOnly(
         AuditTrailEvent("@{user.name} has accessed all users list")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
-        env.dataStore.userRepo.findAllNotDeleted().map { users =>
+        env.dataStore.userRepo.findAll().map { users =>
           Ok(
             JsArray(
               users
@@ -72,7 +72,7 @@ class UsersController(
           "@{user.name} has accessed user profile of @{u.email} (@{u.id})"
         )
       )(ctx) {
-        env.dataStore.userRepo.findByIdOrHrIdNotDeleted(id).map {
+        env.dataStore.userRepo.findByIdOrHrId(id).map {
           case Some(user) =>
             ctx.setCtxValue("u.email", user.email)
             ctx.setCtxValue("u.id", user.id.value)
@@ -91,7 +91,7 @@ class UsersController(
       )(ctx) {
         (ctx.request.body \ "isDaikokuAdmin").asOpt[Boolean] match {
           case Some(isDaikokuAdmin) =>
-            env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
+            env.dataStore.userRepo.findById(id).flatMap {
               case Some(user) if user.isDaikokuAdmin == isDaikokuAdmin =>
                 FastFuture.successful(
                   Conflict(Json.obj("error" -> "user have already this status"))
@@ -122,7 +122,7 @@ class UsersController(
           )(userId, ctx) {
             json.UserFormat.reads(ctx.request.body) match {
               case JsSuccess(newUser, _) => {
-                env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
+                env.dataStore.userRepo.findById(id).flatMap {
                   case Some(user) =>
                     ctx.setCtxValue("u.email", user.email)
                     ctx.setCtxValue("u.id", user.id.value)
@@ -214,7 +214,7 @@ class UsersController(
           "@{user.name} has impersonated user profile of @{u.email} (@{u.id})"
         )
       )(ctx) {
-        env.dataStore.userRepo.findByIdNotDeleted(userId).flatMap {
+        env.dataStore.userRepo.findById(userId).flatMap {
           case Some(user) =>
             val session = UserSession(
               id = DatastoreId(IdGenerator.token(32)),
@@ -255,13 +255,11 @@ class UsersController(
           case None => FastFuture.successful(Redirect("/logout"))
           case Some(sessionId) =>
             env.dataStore.userSessionRepo
-              .findOne(Json.obj("sessionId" -> sessionId.value))
+              .findBySessionId(sessionId.value)
               .flatMap {
                 case Some(session) =>
                   env.dataStore.userSessionRepo
-                    .delete(
-                      Json.obj("impersonatorSessionId" -> sessionId.value)
-                    )
+                    .deleteByImpersonatorSessionId(sessionId)
                     .map { _ =>
                       if (session.expires.isBefore(DateTime.now()))
                         Redirect("/logout")
@@ -459,7 +457,7 @@ class UsersController(
       (body \ "token").asOpt[String] match {
         case Some(token) =>
           env.dataStore.userRepo
-            .findOneNotDeleted(Json.obj("invitation.token" -> token))
+            .findByInvitationToken(token)
             .map {
               case Some(user) =>
                 user.invitation
@@ -504,7 +502,7 @@ class UsersController(
           )
           user <- EitherT.fromOptionF[Future, AppError, User](
             env.dataStore.userRepo
-              .findOne(Json.obj("invitation.token" -> token)),
+              .findByInvitationToken(token),
             AppError.UserNotFound()
           )
           _ <- EitherT.pure[Future, AppError](
@@ -512,13 +510,7 @@ class UsersController(
           )
           notification <- EitherT.fromOptionF[Future, AppError, Notification](
             env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .findOne(
-                Json.obj(
-                  "action.type" -> "TeamInvitation",
-                  "action.user" -> user.id.asJson
-                )
-              ),
+              .findTeamInvitationForUser(ctx.tenant.id, user.id),
             AppError.EntityNotFound("notification")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](

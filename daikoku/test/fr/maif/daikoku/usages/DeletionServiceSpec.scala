@@ -15,6 +15,7 @@ import play.api.libs.json.{JsArray, JsString, Json}
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.utils.LoggerImplicits.BetterLogger
+import fr.maif.daikoku.login.AuthProvider
 
 import scala.concurrent.Await
 import scala.concurrent.duration.*
@@ -46,6 +47,31 @@ class DeletionServiceSpec
 
   before {
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+  }
+
+  // Fetches the Otoroshi apikeys of the container and tells whether the given
+  // clientId is still known there.
+  private def otoroshiKnowsApiKey(clientId: String): Boolean = {
+    val keys = Await.result(
+      daikokuComponents.env.wsClient
+        .url(
+          s"http://otoroshi-api.oto.tools:${container.mappedPort(8080)}" +
+            "/apis/apim.otoroshi.io/v1/apikeys"
+        )
+        .withHttpHeaders(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        )
+        .withFollowRedirects(false)
+        .withRequestTimeout(10.seconds)
+        .get()
+        .map(_.json),
+      10.seconds
+    )
+    keys.asOpt[JsArray].exists { arr =>
+      arr.value.exists(k => (k \ "clientId").asOpt[String].contains(clientId))
+    }
   }
 
   private def makeAllNotifs(
@@ -370,21 +396,7 @@ class DeletionServiceSpec
       def operationsPending() = {
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" ->
-                  Json.obj(
-                    "$in" ->
-                      JsArray(
-                        Seq(
-                          JsString(OperationStatus.Idle.name),
-                          JsString(OperationStatus.InProgress.name)
-                        )
-                      )
-                  )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
       }
@@ -410,12 +422,7 @@ class DeletionServiceSpec
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-            )
-          ),
+          .findByIds(defaultApi.plans.map(_.id)),
         5.second
       )
       _maybePlans.isEmpty mustBe true
@@ -424,7 +431,7 @@ class DeletionServiceSpec
       val _maybeDocs = Await.result(
         daikokuComponents.env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(page.id),
+          .findById(page.id),
         5.second
       )
       _maybeDocs.isEmpty mustBe true
@@ -433,7 +440,7 @@ class DeletionServiceSpec
       val _maybePosts = Await.result(
         daikokuComponents.env.dataStore.apiPostRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(post.id),
+          .findById(post.id),
         5.second
       )
       _maybePosts.isEmpty mustBe true
@@ -442,7 +449,7 @@ class DeletionServiceSpec
       val _maybeIssue = Await.result(
         daikokuComponents.env.dataStore.apiIssueRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(issue.id),
+          .findById(issue.id),
         5.second
       )
       _maybeIssue.isEmpty mustBe true
@@ -451,7 +458,7 @@ class DeletionServiceSpec
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -646,6 +653,47 @@ class DeletionServiceSpec
         5.second
       ) mustBe None
 
+    }
+
+    "physically remove the user at enqueue time" in {
+      val victim = User(
+        id = UserId("atomic-del-user"),
+        tenants = Set(tenant.id),
+        origins = Set(AuthProvider.Local),
+        name = "victim",
+        email = "victim@foo.bar",
+        lastTenant = None,
+        password = None,
+        defaultLanguage = None
+      )
+      val victimPersonalTeam = Team(
+        id = TeamId("atomic-del-user-team"),
+        tenant = tenant.id,
+        `type` = TeamType.Personal,
+        name = "victim personal team",
+        description = "",
+        contact = victim.email,
+        users = Set(UserWithPermission(victim.id, TeamPermission.Administrator))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, victim),
+        teams = Seq(teamOwner, victimPersonalTeam)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/admin/users/${victim.id.value}",
+        method = "DELETE"
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      Await.result(
+        daikokuComponents.env.dataStore.userRepo
+          .findById(victim.id),
+        5.second
+      ) mustBe None
     }
 
     val randomUser = Random.shuffle(Seq(user, userApiEditor, userAdmin)).head
@@ -986,21 +1034,7 @@ class DeletionServiceSpec
       def operationsPending() = {
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" ->
-                  Json.obj(
-                    "$in" ->
-                      JsArray(
-                        Seq(
-                          JsString(OperationStatus.Idle.name),
-                          JsString(OperationStatus.InProgress.name)
-                        )
-                      )
-                  )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
       }
@@ -1025,12 +1059,7 @@ class DeletionServiceSpec
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-            )
-          ),
+          .findByIds(defaultApi.plans.map(_.id)),
         5.second
       )
       _maybePlans.isEmpty mustBe true
@@ -1039,7 +1068,7 @@ class DeletionServiceSpec
       val _maybeDocs = Await.result(
         daikokuComponents.env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(page.id),
+          .findById(page.id),
         5.second
       )
       _maybeDocs.isEmpty mustBe true
@@ -1048,7 +1077,7 @@ class DeletionServiceSpec
       val _maybePosts = Await.result(
         daikokuComponents.env.dataStore.apiPostRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(post.id),
+          .findById(post.id),
         5.second
       )
       _maybePosts.isEmpty mustBe true
@@ -1057,7 +1086,7 @@ class DeletionServiceSpec
       val _maybeIssue = Await.result(
         daikokuComponents.env.dataStore.apiIssueRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(issue.id),
+          .findById(issue.id),
         5.second
       )
       _maybeIssue.isEmpty mustBe true
@@ -1066,7 +1095,7 @@ class DeletionServiceSpec
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -1179,19 +1208,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -1208,9 +1225,6 @@ class DeletionServiceSpec
         operationsPending().isEmpty
       }
 
-      // the keyring must be physically removed, not only flagged _deleted.
-      // findById does not filter on _deleted, so a soft-deleted keyring would
-      // still be returned here.
       val maybeKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
@@ -1218,6 +1232,263 @@ class DeletionServiceSpec
         5.second
       )
       maybeKeyring mustBe None
+    }
+
+    // The DELETE removes the whole DB closure (api, its subscriptions and the
+    // orphaned keyrings) in one transaction and defers every Otoroshi/Stripe
+    // call to the deletion queue. So right after the response: no row of the
+    // closure survives, the Otoroshi apikey is still there, and the operations
+    // carrying its removal are pending. It is gone once the queue drains.
+    //
+    // The immediate checks run right after the blocking 200, before the queue's
+    // first tick (>= 1s away), so they need no queue control.
+    "physically remove the API/subscriptions atomically and defer the Otoroshi cleanup to the queue" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("atomic-purge-plan"),
+        tenant = tenant.id,
+        customName = "atomic purge plan",
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = SubscriptionProcess(),
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("atomic-purge-api"),
+        name = "atomic purge API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(plan.id),
+        defaultUsagePlan = plan.id.some
+      )
+      val keyring = Keyring(
+        id = KeyringId("atomic-purge-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-atomicKeyring",
+        integrationToken = "atomic-purge-token"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("atomic-purge-sub"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = user.id,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = Seq(plan),
+        apis = Seq(api),
+        subscriptions = Seq(sub),
+        keyrings = Seq(keyring)
+      )
+
+      // Precondition: the Otoroshi apikey exists before the deletion (seeded by
+      // cleanOtoroshiServer in `before`).
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+
+      Await.result(
+        daikokuComponents.env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findById(api.id),
+        5.second
+      ) mustBe None
+      Await.result(
+        daikokuComponents.env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant)
+          .findById(sub.id),
+        5.second
+      ) mustBe None
+      Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(keyring.id),
+        5.second
+      ) mustBe None
+
+      // The Otoroshi cleanup was NOT done synchronously in the request: the
+      // apikey is still there, and an operation carrying its removal is pending.
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+      Await.result(
+        daikokuComponents.env.dataStore.operationRepo.findPending(tenant.id),
+        5.second
+      ) must not be empty
+
+      // Once the queue drains, the Otoroshi apikey is finally removed.
+      org.awaitility.Awaitility.await.atMost(15.seconds.toJava) until { () =>
+        Await
+          .result(
+            daikokuComponents.env.dataStore.operationRepo
+              .findPending(tenant.id),
+            5.second
+          )
+          .isEmpty
+      }
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe false
+    }
+
+    // A keyring with no subscription left is deleted through its own endpoint,
+    // not through deleteSubscriptions. It must be removed physically and its
+    // Otoroshi apikey removal deferred to the queue — the (Keyring, Delete)
+    // operation carries the target in its payload.
+    "physically remove a subscription-less keyring and delete its otoroshi key" in {
+      val keyring = Keyring(
+        id = KeyringId("orphan-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = parentApiKey,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "orphan keyring",
+        integrationToken = "orphan-token"
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(otoroshiSettings =
+            Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer),
+        keyrings = Seq(keyring)
+      )
+
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/keyrings/${keyring.id.value}",
+        method = "DELETE"
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      // physically gone, not flagged
+      Await.result(
+        daikokuComponents.env.dataStore.keyringRepo
+          .forTenant(tenant)
+          .findById(keyring.id),
+        5.second
+      ) mustBe None
+
+      // otoroshi removal deferred to the queue
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe true
+      awaitDeletionQueueDrained(tenant)
+      otoroshiKnowsApiKey(parentApiKey.clientId) mustBe false
+    }
+
+    "physically remove the team at enqueue time" in {
+      val team = Team(
+        id = TeamId("atomic-del-team"),
+        tenant = tenant.id,
+        `type` = TeamType.Organization,
+        name = "atomic del team",
+        description = "",
+        contact = "team@foo.bar",
+        users =
+          Set(UserWithPermission(userAdmin.id, TeamPermission.Administrator))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, team)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${team.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      Await.result(
+        daikokuComponents.env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findById(team.id),
+        5.second
+      ) mustBe None
+    }
+
+    "physically remove the usage plan at enqueue time" in {
+      val planToDelete = defaultApi.plans.head
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${planToDelete.id.value}",
+        method = "DELETE",
+        body = Json.obj().some
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      Await.result(
+        daikokuComponents.env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findById(planToDelete.id),
+        5.second
+      ) mustBe None
     }
 
     "be completed by delete a plan" in {
@@ -1393,21 +1664,7 @@ class DeletionServiceSpec
       def operationsPending() = {
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" ->
-                  Json.obj(
-                    "$in" ->
-                      JsArray(
-                        Seq(
-                          JsString(OperationStatus.Idle.name),
-                          JsString(OperationStatus.InProgress.name)
-                        )
-                      )
-                  )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
       }
@@ -1432,12 +1689,7 @@ class DeletionServiceSpec
       val _maybePlans = Await.result(
         daikokuComponents.env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "_id" -> Json
-                .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-            )
-          ),
+          .findByIds(defaultApi.plans.map(_.id)),
         5.second
       )
       _maybePlans.nonEmpty mustBe true
@@ -1446,7 +1698,7 @@ class DeletionServiceSpec
       val _maybeDocs = Await.result(
         daikokuComponents.env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(page.id),
+          .findById(page.id),
         5.second
       )
       _maybeDocs.isEmpty mustBe true
@@ -1455,7 +1707,7 @@ class DeletionServiceSpec
       val notifDemand = Await.result(
         daikokuComponents.env.dataStore.notificationRepo
           .forAllTenant()
-          .findByIdNotDeleted(subDemandNotif.id),
+          .findById(subDemandNotif.id),
         5.second
       )
       notifDemand mustBe None
@@ -1605,19 +1857,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -1639,11 +1879,10 @@ class DeletionServiceSpec
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(parentSub.id),
+          .findById(parentSub.id),
         5.second
       )
       maybeParentSub.isDefined mustBe true
-      maybeParentSub.forall(_.deleted) mustBe false
 
       // otoroshi key must still exist with only parentRoute as authorized entity
       val respOto = httpJsonCallBlocking(
@@ -1757,15 +1996,22 @@ class DeletionServiceSpec
       val maybeKeyring = Await.result(
         daikokuComponents.env.dataStore.keyringRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(keyring.id.value),
+          .findById(keyring.id.value),
         5.second
       )
       maybeKeyring.isDefined mustBe false
 
       val notifs = Await.result(
-        daikokuComponents.env.dataStore.notificationRepo
-          .forTenant(tenant)
-          .findNotDeleted(Json.obj("action.type" -> "ApiSubscriptionExpired")),
+        {
+          val repo =
+            daikokuComponents.env.dataStore.notificationRepo.forTenant(tenant)
+          repo.query(
+            s"SELECT content FROM ${repo.tableName} " +
+              "WHERE content->>'_tenant' = $1 " +
+              "AND content->'action'->>'type' = 'ApiSubscriptionExpired'",
+            Seq(tenant.id.value)
+          )
+        },
         5.second
       )
       notifs must have size 1
@@ -1894,19 +2140,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -1934,7 +2168,6 @@ class DeletionServiceSpec
         5.second
       )
       maybeChildSub.isDefined mustBe true
-      maybeChildSub.forall(_.deleted) mustBe false
       // keyring model: child keeps its keyring, promotion no longer applies
       // maybeChildSub.forall(_.parent.isEmpty) mustBe true
 
@@ -2119,19 +2352,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -2153,7 +2374,7 @@ class DeletionServiceSpec
       val maybeChildSub1 = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub1.id),
+          .findById(childSub1.id),
         5.second
       )
       maybeChildSub1.isDefined mustBe true
@@ -2164,7 +2385,7 @@ class DeletionServiceSpec
       val maybeChildSub2 = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub2.id),
+          .findById(childSub2.id),
         5.second
       )
       maybeChildSub2.isDefined mustBe true
@@ -2312,19 +2533,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -2347,7 +2556,7 @@ class DeletionServiceSpec
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(parentSub.id),
+          .findById(parentSub.id),
         5.second
       )
       maybeParentSub.isDefined mustBe true
@@ -2485,19 +2694,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -2519,7 +2716,7 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.isDefined mustBe true
@@ -2665,19 +2862,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -2700,7 +2885,7 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.isDefined mustBe true
@@ -2854,19 +3039,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -2888,7 +3061,7 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.isDefined mustBe true
@@ -2986,19 +3159,7 @@ class DeletionServiceSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.second
         )
 
@@ -3117,7 +3278,8 @@ class DeletionServiceSpec
       )
       maybeSub mustBe empty
 
-      // otoroshi key must be deleted
+      // otoroshi key must be deleted (deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -3254,14 +3416,16 @@ class DeletionServiceSpec
       val maybeChildSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(childSub.id),
+          .findById(childSub.id),
         5.second
       )
       maybeChildSub.isDefined mustBe true
       // keyring model: parent field no longer exists
       // maybeChildSub.flatMap(_.parent) mustBe None
 
-      // otoroshi key must still exist with only child route
+      // otoroshi key must still exist with only child route (recompute
+      // deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -3394,18 +3558,20 @@ class DeletionServiceSpec
           .findById(childSub.id),
         5.second
       )
-      maybeChildSub.forall(_.deleted) mustBe true
+      maybeChildSub mustBe empty
 
       // parent sub must still be alive
       val maybeParentSub = Await.result(
         daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(parentSub.id),
+          .findById(parentSub.id),
         5.second
       )
       maybeParentSub.isDefined mustBe true
 
-      // otoroshi key must still exist with only the parent route
+      // otoroshi key must still exist with only the parent route (recompute
+      // deferred to the queue)
+      awaitDeletionQueueDrained(tenant)
       val respOto = httpJsonCallBlocking(
         path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentApiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -3504,7 +3670,7 @@ class DeletionServiceSpec
         .result(
           daikokuComponents.env.dataStore.notificationRepo
             .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
+            .findAll(),
           5.second
         )
         .map(_.id.value)
@@ -3612,19 +3778,7 @@ class DeletionServiceSpec
 
       def operationsPending() = Await.result(
         daikokuComponents.env.dataStore.operationRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "status" -> Json.obj(
-                "$in" -> JsArray(
-                  Seq(
-                    JsString(OperationStatus.Idle.name),
-                    JsString(OperationStatus.InProgress.name)
-                  )
-                )
-              )
-            )
-          ),
+          .findPending(tenant.id),
         5.second
       )
 
@@ -3633,7 +3787,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAll(),
             5.second
           )
           .map(_.id.value)
@@ -3741,19 +3895,7 @@ class DeletionServiceSpec
 
       def operationsPending() = Await.result(
         daikokuComponents.env.dataStore.operationRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "status" -> Json.obj(
-                "$in" -> JsArray(
-                  Seq(
-                    JsString(OperationStatus.Idle.name),
-                    JsString(OperationStatus.InProgress.name)
-                  )
-                )
-              )
-            )
-          ),
+          .findPending(tenant.id),
         5.second
       )
 
@@ -3762,7 +3904,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAll(),
             5.second
           )
           .map(_.id.value)
@@ -3871,19 +4013,7 @@ class DeletionServiceSpec
 
       def operationsPending() = Await.result(
         daikokuComponents.env.dataStore.operationRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "status" -> Json.obj(
-                "$in" -> JsArray(
-                  Seq(
-                    JsString(OperationStatus.Idle.name),
-                    JsString(OperationStatus.InProgress.name)
-                  )
-                )
-              )
-            )
-          ),
+          .findPending(tenant.id),
         5.second
       )
 
@@ -3893,7 +4023,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAll(),
             5.second
           )
           .map(_.id.value)
@@ -3995,19 +4125,7 @@ class DeletionServiceSpec
 
       def operationsPending() = Await.result(
         daikokuComponents.env.dataStore.operationRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "status" -> Json.obj(
-                "$in" -> JsArray(
-                  Seq(
-                    JsString(OperationStatus.Idle.name),
-                    JsString(OperationStatus.InProgress.name)
-                  )
-                )
-              )
-            )
-          ),
+          .findPending(tenant.id),
         5.second
       )
 
@@ -4017,7 +4135,7 @@ class DeletionServiceSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAll(),
             5.second
           )
           .map(_.id.value)
@@ -4130,7 +4248,7 @@ class DeletionServiceSpec
         .result(
           daikokuComponents.env.dataStore.notificationRepo
             .forTenant(tenant)
-            .findNotDeleted(Json.obj()),
+            .findAll(),
           5.second
         )
         .map(_.id.value)

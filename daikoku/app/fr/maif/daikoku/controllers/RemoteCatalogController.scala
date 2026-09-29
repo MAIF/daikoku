@@ -66,11 +66,7 @@ class RemoteCatalogController(
         )
       )(tenantId, ctx) { (tenant, _) =>
         env.dataStore.auditTrailRepo
-          .forTenant(tenant.id)
-          .find(
-            Json.obj("@userId" -> auditUserId),
-            Some(Json.obj("@timestamp" -> -1))
-          )
+          .findByUser(tenant.id, auditUserId)
           .map { events =>
             val runs = events
               .filter(e =>

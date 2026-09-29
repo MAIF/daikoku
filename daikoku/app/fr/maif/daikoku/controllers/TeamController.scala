@@ -55,7 +55,7 @@ class TeamController(
       )(ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findByIdOrHrIdNotDeleted(teamId)
+          .findByIdOrHrId(teamId)
           .map {
             case Some(team) =>
               ctx.setCtxValue("team.name", team.name);
@@ -82,8 +82,7 @@ class TeamController(
               ctx.setCtxValue("team.name", team.name)
 
               env.dataStore.translationRepo
-                .forTenant(ctx.tenant)
-                .find(Json.obj("element.id" -> team.id.asJson))
+                .findByElement(ctx.tenant.id, team.id.value)
                 .map(translations => {
                   val translationAsJsObject = translations
                     .groupBy(t => t.language)
@@ -115,7 +114,7 @@ class TeamController(
       )(teamId, ctx) { _ =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
-          .findAllNotDeleted() map { teams =>
+          .findAll() map { teams =>
           Ok(JsArray(teams.map(_.toUiPayload())))
         }
       }
@@ -193,8 +192,8 @@ class TeamController(
             case Some(encryptedString) =>
               val token =
                 decrypt(env.config.cypherSecret, encryptedString, ctx.tenant)
-              emailVerificationRepo
-                .findOneNotDeleted(Json.obj("randomId" -> token))
+              env.dataStore.emailVerificationRepo
+                .findByRandomId(ctx.tenant.id, token)
                 .flatMap {
                   case None =>
                     Future(
@@ -260,7 +259,7 @@ class TeamController(
       )(teamId, ctx) { team =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant)
-          .findByIdNotDeleted(teamId)
+          .findById(teamId)
           .flatMap {
             case Some(team) if team.verified =>
               Future(Left(AppError.TeamAlreadyVerified))
@@ -308,8 +307,7 @@ class TeamController(
                     .send(title, Seq(team.contact), value, ctx.tenant)
                 _ <-
                   env.dataStore.emailVerificationRepo
-                    .forTenant(ctx.tenant)
-                    .delete(Json.obj("teamId" -> team.id.value))
+                    .deleteByTeam(ctx.tenant.id, team.id)
                 _ <-
                   env.dataStore.emailVerificationRepo
                     .forTenant(ctx.tenant)
@@ -378,24 +376,14 @@ class TeamController(
         for {
           pendingNotif <-
             env.dataStore.notificationRepo
-              .forTenant(ctx.tenant)
-              .find(
-                Json.obj(
-                  "status.status" -> NotificationStatus.Pending.toString,
-                  "action.team" -> teamId,
-                  "action.type" -> "TeamInvitation"
-                )
-              )
+              .findPendingTeamInvitations(ctx.tenant.id, teamId)
           pendingUsersId =
             pendingNotif
               .map(_.action)
               .map(_.asInstanceOf[NotificationAction.TeamInvitation])
               .map(_.user)
-          pendingUsers <- env.dataStore.userRepo.findNotDeleted(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))
-            )
-          )
+          pendingUsers <-
+            env.dataStore.userRepo.findByIds(pendingUsersId.toSeq)
         } yield {
           Ok(
             Json.obj(
@@ -509,7 +497,7 @@ class TeamController(
     )
 
     for {
-      maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
+      maybeUser <- env.dataStore.userRepo.findById(userId)
       _ <-
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant)
@@ -607,7 +595,7 @@ class TeamController(
     }
 
     env.dataStore.userRepo
-      .findOne(Json.obj("email" -> email))
+      .findByEmail(email)
       .flatMap {
         case Some(user) =>
           addMemberToTeam(team, user.id.value, ctx).flatMap { _ =>
@@ -760,7 +748,7 @@ class TeamController(
       )(teamId, ctx) {
         // TODO: verify if the behavior is correct
         case team if team.includeUser(UserId(id)) =>
-          env.dataStore.userRepo.findByIdNotDeleted(id).map {
+          env.dataStore.userRepo.findById(id).map {
             case None       => AppError.UserNotFound(None).render()
             case Some(user) => Ok(user.asSimpleJson)
           }
@@ -777,13 +765,7 @@ class TeamController(
         )
       )(teamId, ctx) { team =>
         env.dataStore.userRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json
-                .obj("$in" -> JsArray(team.users.map(_.userId.asJson).toSeq))
-            )
-          )
+          .findByIds(team.users.map(_.userId).toSeq)
           .map(users => Ok(JsArray(users.map(_.asSimpleJson))))
       }
     }
@@ -803,15 +785,13 @@ class TeamController(
           notificationRepo <-
             env.dataStore.notificationRepo
               .forTenantF(ctx.tenant.id)
-          apis <- apiRepo.findNotDeleted(Json.obj("team" -> team.id.value))
+          apis <- env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
           subscriptions <-
-            subscriptionRepo.findNotDeleted(Json.obj("team" -> team.id.value))
-          notifications <- notificationRepo.findNotDeleted(
-            Json.obj(
-              "status.status" -> "Pending",
-              "team" -> team.id.value
-            )
-          )
+            env.dataStore.apiSubscriptionRepo
+              .findByTeam(ctx.tenant.id, team.id)
+          notifications <-
+            env.dataStore.notificationRepo
+              .findPendingByTeam(ctx.tenant.id, team.id)
 
         } yield {
           ctx.setCtxValue("team.id", team.id)
@@ -837,8 +817,7 @@ class TeamController(
         )
       )(ctx) {
         env.dataStore.teamRepo
-          .forTenant(ctx.tenant)
-          .findOne(Json.obj("type" -> TeamType.Admin.name))
+          .findAdminTeam(ctx.tenant.id)
           .map {
             case Some(team) => Ok(team.asSimpleJson)
             case None => NotFound(Json.obj("error" -> "Team admin not found"))
@@ -860,6 +839,8 @@ class TeamController(
       }
     }
 
+  private val searchableUserAttributes = Set("email")
+
   def findUserByAttributes(teamId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
@@ -867,29 +848,39 @@ class TeamController(
           "@{user.name} has find User with many attributes (@{u.id})"
         )
       )(teamId, ctx) { _ =>
-        val attributes = (ctx.request.body \ "attributes").as[JsObject]
-        val (clause, params, _) =
-          attributes.fields.foldLeft(("", Seq.empty[String], 1)) {
-            case ((acc, values, idx), (key, value)) =>
-              val separator = if (acc.isEmpty) "" else " AND "
-              (
-                s"$acc${separator}lower(content ->> '$key') = lower($$$idx)",
-                values :+ value.as[String],
-                idx + 1
-              )
+        val fields: Seq[(String, String)] =
+          (ctx.request.body \ "attributes")
+            .asOpt[JsObject]
+            .map(_.fields.toSeq.collect { case (k, JsString(v)) => (k, v) })
+            .getOrElse(Seq.empty)
+
+        val validRequest =
+          fields.nonEmpty &&
+            fields.forall { case (k, _) => searchableUserAttributes.contains(k) }
+
+        if (!validRequest) {
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "invalid search attributes"))
+          )
+        }
+
+        val clause = fields.zipWithIndex
+          .map { case (_, i) =>
+            s"lower(content ->> $$${i * 2 + 1}) = lower($$${i * 2 + 2})"
           }
+          .mkString(" AND ")
+        val params = fields.flatMap { case (k, v) => Seq(k, v) }
 
         env.dataStore
           .asInstanceOf[PostgresDataStore]
           .queryOneRaw(
-            query =
-              s"SELECT content FROM users WHERE _deleted = false AND $clause",
+            query = s"SELECT content FROM users WHERE $clause",
             name = "content",
             params = params
           )
           .map {
             case Some(user) => Ok(user.as(using json.UserFormat).asSimpleJson)
-            case None       => NotFound(Json.obj("error" -> "user not found"))
+            case None => NotFound(Json.obj("error" -> "user not found"))
           }
       }
     }
@@ -946,15 +937,7 @@ class TeamController(
                   env.dataStore.userRepo.deleteById(userId).flatMap {
                     case true =>
                       env.dataStore.notificationRepo
-                        .forTenant(ctx.tenant.id)
-                        .delete(
-                          Json.obj(
-                            "status.status" -> NotificationStatus.Pending.toString,
-                            "action.team" -> team.id.value,
-                            "action.user" -> userId,
-                            "action.type" -> "TeamInvitation"
-                          )
-                        )
+                        .deleteTeamInvitation(ctx.tenant.id, team.id, userId)
                         .flatMap { _ =>
                           FastFuture.successful(Ok(Json.obj("deleted" -> true)))
                         }
@@ -969,13 +952,7 @@ class TeamController(
                   }
                 case Some(user) if !team.users.exists(_.userId == user.id) =>
                   env.dataStore.notificationRepo
-                    .forTenant(ctx.tenant)
-                    .findOne(
-                      Json.obj(
-                        "action.type" -> "TeamInvitation",
-                        "action.user" -> user.id.asJson
-                      )
-                    )
+                    .findTeamInvitationForUser(ctx.tenant.id, user.id)
                     .flatMap {
                       case Some(n) =>
                         env.dataStore.notificationRepo

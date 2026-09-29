@@ -92,13 +92,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                   // the otoroshi api key now lives on the Keyring entity, not on
                   // the subscription (see the keyring migration)
                   env.dataStore.keyringRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "apiKey.clientId" -> clientId,
-                        "apiKey.clientSecret" -> clientSecret
-                      )
-                    )
+                    .findByApiKey(tenant.id, clientId, clientSecret)
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>
@@ -234,15 +228,12 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def doDelete(
       tenant: Tenant,
-      entity: Of,
-      logically: Boolean
+      entity: Of
   ): EitherT[Future, AppError, Unit] =
     EitherT.liftF[Future, AppError, Unit] {
-      val store = entityStore(tenant, env.dataStore)
-      val deletion =
-        if (logically) store.deleteByIdLogically(getId(entity).value)
-        else store.deleteById(getId(entity).value)
-      deletion.map(_ => ())
+      entityStore(tenant, env.dataStore)
+        .deleteById(getId(entity).value)
+        .map(_ => ())
     }
 
   protected def auditAdminApiWrite(
@@ -279,7 +270,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       case Left(err) => Future.successful(Left(err))
       case Right(entity) =>
         entityStore(tenant, env.dataStore)
-          .findByIdNotDeleted(getId(entity).value)
+          .findById(getId(entity).value)
           .flatMap { existing =>
             val mode =
               if (existing.isDefined) UpdateOrCreate.Update
@@ -312,10 +303,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
     }
 
   def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
-    entityStore(tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+    entityStore(tenant, env.dataStore).findById(id).flatMap {
       case None => Future.successful(false)
       case Some(entity) =>
-        doDelete(tenant, entity, logically = false).value.map {
+        doDelete(tenant, entity).value.map {
           case Left(_)  => false
           case Right(_) => true
         }
@@ -325,7 +316,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       tenant: Tenant
   ): Future[Seq[(String, Map[String, String])]] =
     entityStore(tenant, env.dataStore)
-      .findAllNotDeleted()
+      .findAll()
       .map(_.map(e => (getId(e).value, readMetadata(e))))
 
   def findAll(): Action[AnyContent] =
@@ -342,15 +333,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           .map(_.toInt)
           .getOrElse(Int.MaxValue)
       val paginationPosition = (paginationPage - 1) * paginationPageSize
-      val allEntities =
-        if (
-          ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
-        ) {
-          entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
-        } else {
-          entityStore(ctx.tenant, env.dataStore).findAll()
-        }
-      allEntities
+      entityStore(ctx.tenant, env.dataStore)
+        .findAll()
         .map(all =>
           all
             .slice(paginationPosition, paginationPosition + paginationPageSize)
@@ -375,26 +359,13 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def findById(id: String): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>
-      val notDeleted: Boolean =
-        ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
-      if (notDeleted) {
-        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
-          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-          case None =>
-            Errors.craftResponseResultF(
-              s"$entityName not found",
-              Results.NotFound
-            )
-        }
-      } else {
-        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-          case None =>
-            Errors.craftResponseResultF(
-              s"$entityName not found",
-              Results.NotFound
-            )
-        }
+      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+        case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
+        case None =>
+          Errors.craftResponseResultF(
+            s"$entityName not found",
+            Results.NotFound
+          )
       }
     }
 
@@ -409,7 +380,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           )
         case Right(newEntity) =>
           entityStore(ctx.tenant, env.dataStore)
-            .findByIdNotDeleted(getId(newEntity).value)
+            .findById(getId(newEntity).value)
             .flatMap {
               case Some(_) =>
                 AppError
@@ -504,15 +475,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       }
 
       val fu: Future[Option[Of]] =
-        if (
-          ctx.request.queryString
-            .get("notDeleted")
-            .exists(_.contains("true"))
-        ) {
-          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
-        } else {
-          entityStore(ctx.tenant, env.dataStore).findById(id)
-        }
+        entityStore(ctx.tenant, env.dataStore).findById(id)
 
       def finalizePatch(
           oldEntity: Of,
@@ -601,7 +564,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             Results.NotFound
           )
         case Some(entity) =>
-          doDelete(ctx.tenant, entity, logically)
+          doDelete(ctx.tenant, entity)
             .map { _ =>
               auditAdminApiWrite(ctx, "delete", id)
               Ok(Json.obj("done" -> true))

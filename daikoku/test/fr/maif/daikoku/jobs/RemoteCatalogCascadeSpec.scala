@@ -188,7 +188,7 @@ class RemoteCatalogCascadeSpec
     Await.result(
       daikokuComponents.env.dataStore.apiSubscriptionRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(id),
+        .findById(id),
       5.second
     )
 
@@ -196,26 +196,14 @@ class RemoteCatalogCascadeSpec
     Await.result(
       daikokuComponents.env.dataStore.keyringRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(id),
+        .findById(id),
       5.second
     )
 
   private def operationsPending() =
     Await.result(
       daikokuComponents.env.dataStore.operationRepo
-        .forTenant(tenant)
-        .find(
-          Json.obj(
-            "status" -> Json.obj(
-              "$in" -> JsArray(
-                Seq(
-                  JsString(OperationStatus.Idle.name),
-                  JsString(OperationStatus.InProgress.name)
-                )
-              )
-            )
-          )
-        ),
+        .findPending(tenant.id),
       5.second
     )
 

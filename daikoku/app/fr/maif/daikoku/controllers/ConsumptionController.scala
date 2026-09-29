@@ -8,7 +8,8 @@ import fr.maif.daikoku.controllers.authorizations.async.{
   TeamAdminOnly,
   TeamApiKeyAction
 }
-import fr.maif.daikoku.domain.OtoroshiSettings
+import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.domain.{ApiId, OtoroshiSettings, UsagePlanId}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.OtoroshiClient
 import fr.maif.daikoku.jobs.ApiKeyStatsJob
@@ -100,14 +101,11 @@ class ConsumptionController(
                           )
                         case Some(keyring) =>
                           env.dataStore.consumptionRepo
-                            .forTenant(ctx.tenant.id)
-                            .find(
-                              Json.obj(
-                                "clientId" -> keyring.apiKey.clientId,
-                                "from" -> Json.obj("$gte" -> fromTimestamp),
-                                "to" -> Json.obj("$lte" -> toTimestamp)
-                              ),
-                              Some(Json.obj("from" -> 1))
+                            .findByClientIdBetween(
+                              ctx.tenant.id,
+                              keyring.apiKey.clientId,
+                              fromTimestamp,
+                              toTimestamp
                             )
                             .map(consumptions =>
                               Ok(
@@ -231,7 +229,7 @@ class ConsumptionController(
         ctx.setCtxValue("subscriptionId", subscriptionId)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(subscriptionId)
+          .findById(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -316,20 +314,17 @@ class ConsumptionController(
 
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant.id)
-          .findByIdNotDeleted(planId)
+          .findById(planId)
           .flatMap {
             case None => AppError.ApiNotFound.renderF()
             case Some(plan) =>
               env.dataStore.consumptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "api" -> apiId, // FIXME: get api from plan
-                    "plan" -> planId,
-                    "from" -> Json.obj("$gte" -> fromTimestamp),
-                    "to" -> Json.obj("$lte" -> toTimestamp)
-                  ),
-                  Some(Json.obj("from" -> 1))
+                .findByApiBetween(
+                  ctx.tenant.id,
+                  ApiId(apiId), // FIXME: get api from plan
+                  UsagePlanId(planId).some,
+                  fromTimestamp,
+                  toTimestamp
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
           }
@@ -356,16 +351,7 @@ class ConsumptionController(
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
         env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj(
-              "team" -> team.id.value,
-              "$or" -> Json.arr(
-                Json.obj("_id" -> apiId),
-                Json.obj("_humanReadableId" -> apiId)
-              )
-            )
-          )
+          .findByIdOrHrIdAndTeam(ctx.tenant.id, apiId, team.id)
           .flatMap {
             case None =>
               FastFuture.successful(
@@ -373,14 +359,12 @@ class ConsumptionController(
               )
             case Some(api) =>
               env.dataStore.consumptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(
-                  Json.obj(
-                    "api" -> api.id.value,
-                    "from" -> Json.obj("$gte" -> fromTimestamp),
-                    "to" -> Json.obj("$lte" -> toTimestamp)
-                  ),
-                  Some(Json.obj("from" -> 1))
+                .findByApiBetween(
+                  ctx.tenant.id,
+                  api.id,
+                  None,
+                  fromTimestamp,
+                  toTimestamp
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
 
@@ -407,48 +391,26 @@ class ConsumptionController(
         for {
           subscriptions <-
             env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(Json.obj("team" -> team.id.value))
+              .findByTeam(ctx.tenant.id, team.id)
           keyrings <-
             env.dataStore.keyringRepo
               .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$in" -> JsArray(
-                      subscriptions.map(_.keyring.asJson).distinct
-                    )
-                  )
-                )
-              )
+              .findByIds(subscriptions.map(_.keyring).distinct)
           subscribedApis <-
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json
-                    .obj("$in" -> JsArray(subscriptions.map(s => s.api.asJson)))
-                )
-              )
+              .findByIds(subscriptions.map(_.api).distinct)
           plans <-
             env.dataStore.usagePlanRepo
-              .forTenant(ctx.tenant)
-              .findNotDeleted(
-                Json.obj(
-                  "_id" -> Json
-                    .obj("$in" -> JsArray(subscriptions.map(_.plan.asJson)))
-                )
-              )
+              .forTenant(ctx.tenant.id)
+              .findByIds(subscriptions.map(_.plan).distinct)
           consumptions <-
             env.dataStore.consumptionRepo
-              .forTenant(ctx.tenant.id)
-              .find(
-                Json.obj(
-                  "team" -> team.id.value,
-                  "from" -> Json.obj("$gte" -> fromTimestamp),
-                  "to" -> Json.obj("$lte" -> toTimestamp)
-                ),
-                Some(Json.obj("from" -> 1))
+              .findByTeamBetween(
+                ctx.tenant.id,
+                team.id,
+                fromTimestamp,
+                toTimestamp
               )
         } yield {
           Ok(
@@ -500,13 +462,10 @@ class ConsumptionController(
         )
 
         env.dataStore.consumptionRepo
-          .getLastConsumptionsForTenant(
-            ctx.tenant.id,
-            Json.obj(
-              "team" -> team.id.value,
-              "from" -> Json.obj("$gte" -> fromTimestamp),
-              "to" -> Json.obj("$lte" -> toTimestamp)
-            )
+          .findLastConsumptions(
+            ctx.tenant.id.some,
+            team = team.id.some,
+            between = (fromTimestamp, toTimestamp).some
           )
           .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
       }
@@ -524,7 +483,7 @@ class ConsumptionController(
           .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant)
-          .findByIdNotDeleted(plan)
+          .findById(plan)
           .map {
             case Some(plan) =>
               paymentClient
@@ -559,19 +518,13 @@ class ConsumptionController(
         for {
           ownApis <-
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findNotDeleted(Json.obj("team" -> team.id.value))
+              .findByTeam(ctx.tenant.id, team.id)
           revenue <-
             env.dataStore.consumptionRepo
-              .getLastConsumptionsForTenant(
-                ctx.tenant.id,
-                Json.obj(
-                  "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
-                  "from" -> Json
-                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
-                  "to" -> Json
-                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
-                )
+              .findLastConsumptions(
+                ctx.tenant.id.some,
+                apis = ownApis.map(_.id).some,
+                between = (fromTimestamp, toTimestamp).some
               )
         } yield {
           Ok(JsArray(revenue.map(_.asJson)))

@@ -445,8 +445,7 @@ object OAuth2Support {
         )
 
         existingUser <- EitherT.right[AppError](
-          _env.dataStore.userRepo
-            .findOne(Json.obj("_deleted" -> false, "email" -> email))
+          _env.dataStore.userRepo.findByEmail(email)
         )
 
         connectedUser <- existingUser match {

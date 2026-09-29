@@ -60,18 +60,13 @@ object OtoroshiIdentityFilter {
   ): Future[Option[Team]] = {
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
-      maybePersonnalTeam <- teamRepo.findOne(
-        Json.obj(
-          "type" -> TeamType.Personal.name,
-          "users.userId" -> user.id.value,
-          "_deleted" -> false
-        )
-      )
+      maybePersonnalTeam <- env.dataStore.teamRepo
+        .findPersonalTeam(tenantId, user.id)
       maybePersonnalTeamId =
         maybePersonnalTeam
           .map(_.id)
           .getOrElse(Team.Default)
-      // maybeLastTeam <- teamRepo.findByIdNotDeleted(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
+      // maybeLastTeam <- teamRepo.findById(user.lastTeams.getOrElse(tenantId, maybePersonnalTeamId))
     } yield {
       maybePersonnalTeam
       // maybeLastTeam match {
@@ -149,10 +144,7 @@ object OtoroshiIdentityFilter {
                       maybeUser match {
                         case None =>
                           env.dataStore.userRepo
-                            .findOne(
-                              Json
-                                .obj("_deleted" -> false, "email" -> user.email)
-                            )
+                            .findByEmail(user.email)
                             .flatMap {
                               case None =>
                                 val userId = UserId(IdGenerator.token(32))
@@ -215,7 +207,7 @@ object OtoroshiIdentityFilter {
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                   rr <- nextFilter(
@@ -284,10 +276,7 @@ object OtoroshiIdentityFilter {
                                 for {
                                   tenantTeam <-
                                     env.dataStore.teamRepo
-                                      .forTenant(tenant)
-                                      .findNotDeleted(
-                                        Json.obj("type" -> "Admin")
-                                      )
+                                      .findAdminTeam(tenant.id)
                                   userTeamOpt <-
                                     findUserTeam(tenant.id, updatedUser)(using
                                       ec,
@@ -309,7 +298,7 @@ object OtoroshiIdentityFilter {
                                     session.impersonatorId
                                       .map(id =>
                                         env.dataStore.userRepo
-                                          .findByIdNotDeleted(id)
+                                          .findById(id)
                                       )
                                       .getOrElse(FastFuture.successful(None))
                                   rr <- nextFilter(
@@ -398,9 +387,7 @@ object OtoroshiIdentityFilter {
                               )
                           for {
                             tenantTeam <-
-                              env.dataStore.teamRepo
-                                .forTenant(tenant)
-                                .findNotDeleted(Json.obj("type" -> "Admin"))
+                              env.dataStore.teamRepo.findAdminTeam(tenant.id)
                             userTeamOpt <-
                               findUserTeam(tenant.id, updatedUser)(using
                                 ec,
@@ -417,9 +404,7 @@ object OtoroshiIdentityFilter {
                             _ <- env.dataStore.userRepo.save(updatedUser)
                             impersonator <-
                               session.impersonatorId
-                                .map(id =>
-                                  env.dataStore.userRepo.findByIdNotDeleted(id)
-                                )
+                                .map(id => env.dataStore.userRepo.findById(id))
                                 .getOrElse(FastFuture.successful(None))
                             rr <- nextFilter(
                               request
@@ -460,17 +445,10 @@ object OtoroshiIdentityFilter {
                         val maybeSession = for {
                           session <-
                             env.dataStore.userSessionRepo
-                              .findOne(
-                                Json.obj(
-                                  "userEmail" -> user.email,
-                                  "impersonatorId" -> JsNull
-                                )
-                              )
+                              .findByUserEmailWithoutImpersonator(user.email)
                           impersonatedSession <-
                             env.dataStore.userSessionRepo
-                              .findOne(
-                                Json.obj("impersonatorEmail" -> user.email)
-                              )
+                              .findByImpersonatorEmail(user.email)
                         } yield {
                           impersonatedSession.orElse(session)
                         }
@@ -489,7 +467,7 @@ object OtoroshiIdentityFilter {
                           case Some(session)
                               if session.expires.isAfter(DateTime.now()) =>
                             env.dataStore.userRepo
-                              .findByIdNotDeleted(session.userId)
+                              .findById(session.userId)
                               .flatMap {
                                 case None =>
                                   createSessionFromOtoroshi(

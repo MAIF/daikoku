@@ -33,7 +33,12 @@ object tenantSecurity {
           case true =>
             env.dataStore.teamRepo
               .forTenant(tenant)
-              .find(Json.obj("apisCreationPermission" -> true))
+              .query(
+                s"SELECT content FROM ${env.dataStore.teamRepo.forTenant(tenant).tableName} " +
+                  "WHERE content->>'_tenant' = $1 " +
+                  "AND content->>'apisCreationPermission' = 'true'",
+                Seq(tenant.id.value)
+              )
               .map { teams =>
                 if (teams.isEmpty)
                   false
@@ -222,13 +227,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                   )
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
-                    .forTenant(tenant)
-                    .findNotDeleted(
-                      Json.obj(
-                        "apiKey.clientId" -> clientId,
-                        "apiKey.clientSecret" -> clientSecret
-                      )
-                    )
+                    .findByApiKey(tenant.id, clientId, clientSecret)
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>

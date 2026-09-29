@@ -170,7 +170,7 @@ abstract class AbstractJob[Input] {
 
   private def runForAllTenants(): Future[Unit] =
     env.dataStore.tenantRepo
-      .findAllNotDeleted()
+      .findAll()
       .flatMap(tenants =>
         Future.sequence(tenants.map(run(_, Runner.Scheduler)))
       )
@@ -289,7 +289,7 @@ abstract class AbstractJob[Input] {
           val outcome = JobOutcome.Failed(e.getMessage)
           // keep the cursor already persisted by saveCursor so the next run resumes
           jobRepo
-            .findByIdNotDeleted(jobId)
+            .findById(jobId)
             .flatMap { current =>
               val info = current
                 .getOrElse(runningInfo(fromCursor.getOrElse(0L)))
@@ -327,13 +327,8 @@ abstract class AbstractJob[Input] {
     skipReason(tenant).flatMap {
       case Some(reason) => skip(reason)
       case None =>
-        jobRepo
-          .find(
-            Json.obj("jobName" -> jobName.value),
-            sort = Some(Json.obj("startedAt" -> -1)),
-            maxDocs = 1
-          )
-          .map(_.headOption)
+        env.dataStore.JobInformationRepo
+          .findLastRun(tenant.id, jobName.value)
           .flatMap {
             case Some(last)
                 if last.status == JobStatus.Running && last.expiresAt.isAfterNow =>
