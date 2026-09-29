@@ -552,6 +552,12 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.remoteCatalogJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
+  lazy val remoteCatalogAllowFileSource: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowFileSource")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowPreCommand: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowPreCommand")
+    .getOrElse(false)
 
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
@@ -583,7 +589,6 @@ class Config(val underlying: Configuration) {
     .getOptional[Long]("daikoku.stats.call.interval")
     .map(v => v.millis)
     .getOrElse(10.minutes)
-
 
   lazy val auditTrailPurgeJobKey: String = underlying
     .getOptional[String]("daikoku.auditTrailPurgeJob.key")
@@ -620,7 +625,9 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
   lazy val notificationsToTreatPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.to.treat.date")
+    .getOptional[FiniteDuration](
+      "daikoku.notificationsPurgeJob.max.to.treat.date"
+    )
     .getOrElse(6 * 30 days)
   lazy val notificationsBasePurgeMaxDate: FiniteDuration = underlying
     .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.base.date")

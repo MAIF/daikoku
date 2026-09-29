@@ -535,6 +535,31 @@ class RemoteCatalogSpec
       getTeam("team-5").status mustBe 404
     }
 
+    "refuse a pre_command when the instance does not allow it" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val withPreCommand = fileCatalog("cat-file", path).copy(source =
+        RemoteCatalogSource(
+          kind = "file",
+          config =
+            Json.obj("path" -> path, "pre_command" -> Json.arr("echo", "hi"))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(remoteCatalogs = Seq(withPreCommand))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq(
+        "pre_command is disabled on this instance (daikoku.remoteCatalogJob.allowPreCommand)"
+      )
+      getTeam("team-weather").status mustBe 404
+    }
+
     "delete the managed entities of a kind removed entirely from the source" in {
       val page = defaultCmsPage.copy(id = CmsPageId("page-catalog"))
       val path = writeFile(

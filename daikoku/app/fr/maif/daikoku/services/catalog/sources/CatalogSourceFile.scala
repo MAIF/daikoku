@@ -126,16 +126,38 @@ class CatalogSourceFile extends CatalogSource {
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val path = (catalog.source.config \ "path").asOpt[String].getOrElse("")
     val file = new File(path)
+    val hasPreCommand =
+      (catalog.source.config \ "pre_command")
+        .asOpt[Seq[String]]
+        .exists(_.nonEmpty)
 
-    runPreCommand(catalog) match {
-      case Left(err) =>
-        Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
-      case Right(()) =>
-        if (file.isDirectory) {
-          Future.successful(fetchDirectory(file))
-        } else {
-          fetchFile(file, path)
-        }
+    def disabled(what: String, key: String) =
+      Future.successful(
+        Left(
+          Seq(
+            RemoteCatalogError(
+              sourceKind,
+              s"$what is disabled on this instance (daikoku.remoteCatalogJob.$key)"
+            )
+          )
+        )
+      )
+
+    if (!env.config.remoteCatalogAllowFileSource) {
+      disabled("file source", "allowFileSource")
+    } else if (hasPreCommand && !env.config.remoteCatalogAllowPreCommand) {
+      disabled("pre_command", "allowPreCommand")
+    } else {
+      runPreCommand(catalog) match {
+        case Left(err) =>
+          Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
+        case Right(()) =>
+          if (file.isDirectory) {
+            Future.successful(fetchDirectory(file))
+          } else {
+            fetchFile(file, path)
+          }
+      }
     }
   }
 }

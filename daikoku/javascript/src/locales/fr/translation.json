@@ -1427,6 +1427,8 @@
   "remote-catalog.help.baseUrl": "URL de base de l'API. Défauts : https://api.github.com (GitHub), https://gitlab.com (GitLab).",
   "remote-catalog.help.repoPatterns": "Motifs glob pour sélectionner les fichiers/dépôts (un par ligne).",
   "remote-catalog.help.allowedKinds": "Restreint les types d'entités que ce catalogue peut déployer. Laisser vide pour tout autoriser.",
+  "remote-catalog.label.maxDeletionPercent": "Pourcentage maximal de suppressions",
+  "remote-catalog.help.maxDeletionPercent": "Un run qui supprimerait plus que cette part des entités gérées par le catalogue échoue sans rien appliquer (30 par défaut, -1 pour aucune limite, ignoré sous 5 entités gérées).",
   "remote-catalog.help.cron": "Format cron avec secondes : secondes minutes heures jour-du-mois mois jour-de-semaine.\nToutes les 5 secondes : */5 * * * * ?\nToutes les 2 minutes : 0 */2 * * * ?\nToutes les 3 heures : 0 0 */3 * * ?\nTous les jours à minuit : 0 0 0 * * ?",
   "remote-catalog.deleteConfirm": "Êtes-vous sûr de vouloir supprimer le catalogue distant %s ?",
   "remote-catalog.noRun": "Aucune exécution pour le moment",

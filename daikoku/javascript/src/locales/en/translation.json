@@ -1408,6 +1408,8 @@
   "remote-catalog.help.baseUrl": "API base URL. Defaults: https://api.github.com (GitHub), https://gitlab.com (GitLab).",
   "remote-catalog.help.repoPatterns": "Glob patterns to select files/repositories (one per line).",
   "remote-catalog.help.allowedKinds": "Restrict the entity kinds this catalog is allowed to deploy. Leave empty to allow all.",
+  "remote-catalog.label.maxDeletionPercent": "Max deletion percent",
+  "remote-catalog.help.maxDeletionPercent": "A run deleting more than this share of the entities managed by the catalog fails without applying anything (default 30, -1 for no limit, ignored under 5 managed entities).",
   "remote-catalog.help.cron": "Cron format with seconds: seconds minutes hours day-of-month month day-of-week.\nEvery 5 seconds: */5 * * * * ?\nEvery 2 minutes: 0 */2 * * * ?\nEvery 3 hours: 0 0 */3 * * ?\nEvery day at midnight: 0 0 0 * * ?",
   "remote-catalog.deleteConfirm": "Are you sure you want to delete the remote catalog %s?",
   "remote-catalog.noRun": "No run yet",

@@ -73,12 +73,11 @@ class CatalogSourceHttp extends CatalogSource {
       .withHttpHeaders(headers.toSeq*)
       .get()
       .map { resp =>
-        val body: String = resp.body
         if (resp.status == 200) {
-          Right(body): Either[JsValue, String]
+          Right(resp.body): Either[JsValue, String]
         } else {
           Left(
-            Json.obj("error" -> s"HTTP ${resp.status}: ${body.take(500)}")
+            Json.obj("error" -> s"HTTP ${resp.status} returned by $url")
           ): Either[JsValue, String]
         }
       }

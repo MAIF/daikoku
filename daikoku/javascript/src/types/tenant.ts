@@ -221,6 +221,7 @@ export interface IRemoteCatalog {
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
   testDeployArgs?: any;
+  maxDeletionPercent: number;
 }
 
 export type TranslationItem = string | { s: string; p: string };

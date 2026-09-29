@@ -7,11 +7,7 @@ import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
-import {
-  IRemoteCatalog,
-  ITenantFull,
-  RemoteCatalogSourceKind,
-} from '../../../../types';
+import { IRemoteCatalog, ITenantFull, RemoteCatalogSourceKind } from '../../../../types';
 import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { formatDate } from '../../../utils/formatters';
@@ -25,6 +21,7 @@ const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   source: { kind: 'http', config: {} as any },
   scheduling: { enabled: false },
   allowedKinds: [],
+  maxDeletionPercent: 30,
 });
 
 export const RemoteCatalogsForm = (props: {
@@ -58,7 +55,9 @@ export const RemoteCatalogsForm = (props: {
   const ReportView = ({ report }: { report: any }) => (
     <div className="mt-3">
       {report.timestamp && (
-        <div className="text-muted mb-2">{formatAt(Date.parse(report.timestamp) || report.timestamp)}</div>
+        <div className="text-muted mb-2">
+          {formatAt(Date.parse(report.timestamp) || report.timestamp)}
+        </div>
       )}
       <table className="table table-sm align-middle mb-0">
         <thead>
@@ -73,7 +72,9 @@ export const RemoteCatalogsForm = (props: {
         <tbody>
           {(report.results ?? []).map((res: any, i: number) => (
             <tr key={i}>
-              <td><span className="badge bg-secondary">{res.kind}</span></td>
+              <td>
+                <span className="badge bg-secondary">{res.kind}</span>
+              </td>
               <td className="text-center text-success">{res.created}</td>
               <td className="text-center text-info">{res.updated}</td>
               <td className="text-center text-warning">{res.deleted}</td>
@@ -135,7 +136,11 @@ export const RemoteCatalogsForm = (props: {
       label: translate('remote-catalog.label.name'),
       constraints: [constraints.required(translate('remote-catalog.constraint.name'))],
     },
-    enabled: { type: type.bool, label: translate('remote-catalog.label.enabled'), defaultValue: true },
+    enabled: {
+      type: type.bool,
+      label: translate('remote-catalog.label.enabled'),
+      defaultValue: true,
+    },
     source: {
       type: type.object,
       format: format.form,
@@ -161,11 +166,9 @@ export const RemoteCatalogsForm = (props: {
               help: translate('remote-catalog.help.path'),
               visible: ({ rawValues }) => rawValues.source.kind !== 'http',
               constraints: [
-                constraints.when(
-                  'source.kind',
-                  (k) => k === 'file',
-                  [constraints.required(translate('remote-catalog.constraint.path'))]
-                ),
+                constraints.when('source.kind', (k) => k === 'file', [
+                  constraints.required(translate('remote-catalog.constraint.path')),
+                ]),
               ],
             },
             pre_command: {
@@ -182,11 +185,9 @@ export const RemoteCatalogsForm = (props: {
               label: translate('remote-catalog.label.url'),
               visible: ({ rawValues }) => rawValues.source.kind === 'http',
               constraints: [
-                constraints.when(
-                  'source.kind',
-                  (k) => k === 'http',
-                  [constraints.required(translate('remote-catalog.constraint.url'))]
-                ),
+                constraints.when('source.kind', (k) => k === 'http', [
+                  constraints.required(translate('remote-catalog.constraint.url')),
+                ]),
               ],
             },
             headers: {
@@ -208,11 +209,9 @@ export const RemoteCatalogsForm = (props: {
               visible: ({ rawValues }) =>
                 rawValues.source.kind === 'github' || rawValues.source.kind === 'gitlab',
               constraints: [
-                constraints.when(
-                  'source.kind',
-                  (k) => k === 'github' || k === 'gitlab',
-                  [constraints.required(translate('remote-catalog.constraint.repo'))]
-                ),
+                constraints.when('source.kind', (k) => k === 'github' || k === 'gitlab', [
+                  constraints.required(translate('remote-catalog.constraint.repo')),
+                ]),
               ],
             },
             branch: {
@@ -271,11 +270,19 @@ export const RemoteCatalogsForm = (props: {
       help: translate('remote-catalog.help.allowedKinds'),
       options: ENTITY_KINDS,
     },
+    maxDeletionPercent: {
+      type: type.number,
+      label: translate('remote-catalog.label.maxDeletionPercent'),
+      help: translate('remote-catalog.help.maxDeletionPercent'),
+      defaultValue: 30,
+    },
   });
 
   const editCatalog = (catalog?: IRemoteCatalog) =>
     openFormModal<IRemoteCatalog>({
-      title: catalog ? translate('remote-catalog.modal.edit') : translate('remote-catalog.modal.create'),
+      title: catalog
+        ? translate('remote-catalog.modal.edit')
+        : translate('remote-catalog.modal.create'),
       schema: catalogSchema(),
       value: catalog ?? (emptyCatalog() as IRemoteCatalog),
       onSubmit: (data) => {
@@ -293,20 +300,15 @@ export const RemoteCatalogsForm = (props: {
         : translate('remote-catalog.modal.createBtn'),
     });
 
-  const fetchData = clientFetchData<IRemoteCatalog>(
-    () => props.tenant.remoteCatalogs ?? [],
-    {
-      searchable: (c) => [c.name, c.source?.kind],
-      sortValues: {
-        source: (c) => c.source?.kind,
-        scheduling: (c) => !!c.scheduling?.enabled,
-      },
-    }
-  );
+  const fetchData = clientFetchData<IRemoteCatalog>(() => props.tenant.remoteCatalogs ?? [], {
+    searchable: (c) => [c.name, c.source?.kind],
+    sortValues: {
+      source: (c) => c.source?.kind,
+      scheduling: (c) => !!c.scheduling?.enabled,
+    },
+  });
 
-  const filters: FilterDef[] = [
-    { id: 'search', type: 'text', placeholder: translate('Search') },
-  ];
+  const filters: FilterDef[] = [{ id: 'search', type: 'text', placeholder: translate('Search') }];
 
   const deleteCatalog = (catalog: IRemoteCatalog) =>
     confirm({
@@ -333,7 +335,9 @@ export const RemoteCatalogsForm = (props: {
       id: 'enabled',
       meta: { title: translate('remote-catalog.label.enabled'), size: 10 },
       cell: (info) => (
-        <i className={`fas ${info.getValue() ? 'fa-check text-success' : 'fa-times text-danger'}`} />
+        <i
+          className={`fas ${info.getValue() ? 'fa-check text-success' : 'fa-times text-danger'}`}
+        />
       ),
     }),
     columnHelper.accessor('scheduling.enabled', {
@@ -347,7 +351,11 @@ export const RemoteCatalogsForm = (props: {
     }),
     columnHelper.display({
       id: 'actions',
-      meta: { title: translate('remote-catalog.label.actions'), size: 12, className: 'action-cell' },
+      meta: {
+        title: translate('remote-catalog.label.actions'),
+        size: 12,
+        className: 'action-cell',
+      },
       cell: (info) => {
         const catalog = info.row.original;
         return (
@@ -361,27 +369,54 @@ export const RemoteCatalogsForm = (props: {
               {translate('remote-catalog.label.actions')}
             </button>
             <div className="dropdown-menu" style={{ zIndex: 1 }}>
-              <span className="dropdown-item cursor-pointer"
-                onClick={() => run(translate('remote-catalog.action.deploy'), () => Services.deployRemoteCatalog(props.tenant._id, catalog.id))}>
-                <i className="fas fa-rocket me-2" />{translate('remote-catalog.action.deploy')}
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() =>
+                  run(translate('remote-catalog.action.deploy'), () =>
+                    Services.deployRemoteCatalog(props.tenant._id, catalog.id)
+                  )
+                }
+              >
+                <i className="fas fa-rocket me-2" />
+                {translate('remote-catalog.action.deploy')}
               </span>
-              <span className="dropdown-item cursor-pointer"
-                onClick={() => run(translate('remote-catalog.action.test'), () => Services.testRemoteCatalog(props.tenant._id, catalog.id))}>
-                <i className="fas fa-vial me-2" />{translate('remote-catalog.action.test')}
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() =>
+                  run(translate('remote-catalog.action.test'), () =>
+                    Services.testRemoteCatalog(props.tenant._id, catalog.id)
+                  )
+                }
+              >
+                <i className="fas fa-vial me-2" />
+                {translate('remote-catalog.action.test')}
               </span>
-              <span className="dropdown-item cursor-pointer"
-                onClick={() => run(translate('remote-catalog.action.undeploy'), () => Services.undeployRemoteCatalog(props.tenant._id, catalog.id))}>
-                <i className="fas fa-eraser me-2" />{translate('remote-catalog.action.undeploy')}
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() =>
+                  run(translate('remote-catalog.action.undeploy'), () =>
+                    Services.undeployRemoteCatalog(props.tenant._id, catalog.id)
+                  )
+                }
+              >
+                <i className="fas fa-eraser me-2" />
+                {translate('remote-catalog.action.undeploy')}
               </span>
               <span className="dropdown-item cursor-pointer" onClick={() => showHistory(catalog)}>
-                <i className="fas fa-history me-2" />{translate('remote-catalog.action.history')}
+                <i className="fas fa-history me-2" />
+                {translate('remote-catalog.action.history')}
               </span>
               <div className="dropdown-divider" />
               <span className="dropdown-item cursor-pointer" onClick={() => editCatalog(catalog)}>
-                <i className="fas fa-edit me-2" />{translate('remote-catalog.action.edit')}
+                <i className="fas fa-edit me-2" />
+                {translate('remote-catalog.action.edit')}
               </span>
-              <span className="dropdown-item cursor-pointer text-danger" onClick={() => deleteCatalog(catalog)}>
-                <i className="fas fa-trash me-2" />{translate('remote-catalog.action.delete')}
+              <span
+                className="dropdown-item cursor-pointer text-danger"
+                onClick={() => deleteCatalog(catalog)}
+              >
+                <i className="fas fa-trash me-2" />
+                {translate('remote-catalog.action.delete')}
               </span>
             </div>
           </div>
@@ -408,8 +443,8 @@ export const RemoteCatalogsForm = (props: {
           fetchData={fetchData}
           filters={filters}
           defaultSorting={[{ id: 'name', desc: false }]}
-          getRowId={row => row.id}
-          getRowAriaLabel={row => row.name}
+          getRowId={(row) => row.id}
+          getRowAriaLabel={(row) => row.name}
         />
       </div>
     </Can>
