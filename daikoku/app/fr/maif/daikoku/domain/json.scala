@@ -31,6 +31,14 @@ object json {
     def r = new scala.util.matching.Regex(sc.parts.mkString)
   }
 
+  // keeps the text values only, e.g. {"owner": "ops", "priority": 1} -> Map("owner" -> "ops")
+  private def readTextMetadata(json: JsValue): Map[String, String] =
+    (json \ "metadata")
+      .asOpt[JsObject]
+      .map(_.fields.collect { case (key, JsString(value)) => key -> value })
+      .getOrElse(Seq.empty)
+      .toMap
+
   val BillingTimeUnitFormat = new Format[BillingTimeUnit] {
     override def reads(json: JsValue): JsResult[BillingTimeUnit] =
       Try {
@@ -857,9 +865,7 @@ object json {
             testing = (json \ "testing").asOpt(using TestingFormat),
             documentation =
               (json \ "documentation").asOpt(using ApiDocumentationFormat),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty)
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -2159,9 +2165,7 @@ object json {
               .getOrElse(Set.empty[UserWithPermission]),
             authorizedOtoroshiEntities = (json \ "authorizedOtoroshiEntities")
               .asOpt(using SeqTeamAuthorizedEntitiesFormat),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty),
+            metadata = readTextMetadata(json),
             apiKeyVisibility = (json \ "apiKeyVisibility")
               .asOpt[String]
               .flatMap(TeamApiKeyVisibility.apply),
@@ -2309,9 +2313,7 @@ object json {
             state = (json \ "state")
               .asOpt(using ApiStateFormat)
               .getOrElse(ApiState.Created),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty)
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -4972,8 +4974,7 @@ object json {
           name = (json \ "name").as[String],
           picture = (json \ "picture").asOpt[String].filter(_.trim.nonEmpty),
           tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
-          metadata =
-            (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
+          metadata = readTextMetadata(json),
           body = (json \ "body").asOpt[String].getOrElse(""),
           contentType =
             (json \ "contentType").asOpt[String].getOrElse("text/html"),
@@ -5380,7 +5381,9 @@ object json {
             allowedKinds =
               (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
             testDeployArgs =
-              (json \ "testDeployArgs").asOpt[JsObject].getOrElse(Json.obj())
+              (json \ "testDeployArgs").asOpt[JsObject].getOrElse(Json.obj()),
+            maxDeletionPercent =
+              (json \ "maxDeletionPercent").asOpt[Int].getOrElse(30)
           )
         )
       } recover { case e: Throwable =>
@@ -5395,7 +5398,8 @@ object json {
         "source" -> RemoteCatalogSourceFormat.writes(o.source),
         "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
         "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
-        "testDeployArgs" -> o.testDeployArgs
+        "testDeployArgs" -> o.testDeployArgs,
+        "maxDeletionPercent" -> o.maxDeletionPercent
       )
   }
 

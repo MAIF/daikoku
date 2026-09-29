@@ -423,6 +423,118 @@ class RemoteCatalogSpec
       (getTeam("team-manual").json \ "name").as[String] mustBe "Created by hand"
     }
 
+    "reject documents without _tenant or with another tenant, and apply nothing" in {
+      val path = writeFile(
+        Json.stringify(
+          JsArray(
+            Seq(
+              teamDoc(aTeam("team-no-tenant", "No tenant")) - "_tenant",
+              teamDoc(aTeam("team-other", "Other")) ++ Json
+                .obj("_tenant" -> "another-tenant")
+            )
+          )
+        )
+      )
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq(
+        "team team-no-tenant: missing required field '_tenant'",
+        s"team team-other: _tenant 'another-tenant' is not the catalog tenant '${tenant.id.value}'"
+      )
+
+      getTeam("team-no-tenant").status mustBe 404
+      getTeam("team-other").status mustBe 404
+    }
+
+    "keep the document metadata next to created_by" in {
+      val team =
+        aTeam("team-meta", "Meta").copy(metadata = Map("owner" -> "ops"))
+      val path = writeFile(Json.stringify(teamDoc(team)))
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      val metadata = (getTeam("team-meta").json \ "metadata").as[JsObject]
+      (metadata \ "owner").as[String] mustBe "ops"
+      (metadata \ "created_by").as[String] mustBe "remote_catalog=cat-file"
+    }
+
+    "keep the text metadata and the catalog tag when a metadata value is not text" in {
+      val doc = teamDoc(aTeam("team-meta", "Meta")) ++ Json.obj(
+        "metadata" -> Json.obj("owner" -> "ops", "priority" -> 1)
+      )
+      val path = writeFile(Json.stringify(doc))
+      setupEnvBlocking(
+        tenants =
+          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      val metadata = (getTeam("team-meta").json \ "metadata").as[JsObject]
+      (metadata \ "owner").as[String] mustBe "ops"
+      (metadata \ "created_by").as[String] mustBe "remote_catalog=cat-file"
+      (metadata \ "priority").toOption mustBe None
+    }
+
+    "fail without deleting anything when the run would delete more than maxDeletionPercent" in {
+      val teams = (1 to 5).map(i => aTeam(s"team-$i", s"Team $i"))
+      val path = writeFile(Json.stringify(JsArray(teams.map(teamDoc))))
+      val catalog = fileCatalog("cat-file", path)
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(remoteCatalogs = Seq(catalog))),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+      rewriteFile(path, Json.stringify(JsArray(teams.take(3).map(teamDoc))))
+
+      val blocked = deployCall("cat-file", "_deploy")
+      blocked.status mustBe 400
+      errorMessages(blocked) mustBe Seq(
+        "2 of 5 managed entities would be deleted (40% > 30%): fix the source or raise maxDeletionPercent (-1 for no limit)"
+      )
+      teams.foreach(team => getTeam(team.id.value).status mustBe 200)
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(remoteCatalogs =
+            Seq(catalog.copy(maxDeletionPercent = -1))
+          )
+        ),
+        teams = Seq(defaultAdminTeam) ++ teams.map(
+          _.copy(metadata = catalogTag)
+        ),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val unlimited = deployCall("cat-file", "_deploy")
+      unlimited.status mustBe 200
+      (kindResult(unlimited, "team") \ "deleted").as[Int] mustBe 2
+      getTeam("team-4").status mustBe 404
+      getTeam("team-5").status mustBe 404
+    }
+
     "delete the managed entities of a kind removed entirely from the source" in {
       val page = defaultCmsPage.copy(id = CmsPageId("page-catalog"))
       val path = writeFile(

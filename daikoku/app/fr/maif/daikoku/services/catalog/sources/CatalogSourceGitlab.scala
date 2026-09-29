@@ -64,6 +64,55 @@ class CatalogSourceGitlab extends CatalogSource {
       }
   }
 
+  private val perPage = 100
+
+  private def isBlob(item: JsObject): Boolean =
+    (item \ "type").asOpt[String].contains("blob")
+
+  private def pathOf(item: JsObject): Option[String] =
+    (item \ "path").asOpt[String]
+
+  private def fetchPage(
+      apiUrl: String,
+      params: Seq[(String, String)],
+      page: Int,
+      token: String,
+      what: String,
+      env: Env
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[JsObject]]] = {
+    env.wsClient
+      .url(apiUrl)
+      .withQueryStringParameters(
+        params ++ Seq("per_page" -> perPage.toString, "page" -> page.toString)*
+      )
+      .withHttpHeaders(gitlabHeaders(token)*)
+      .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
+      .get()
+      .map { resp =>
+        if (resp.status != 200) {
+          Left(
+            Json.obj("error" -> s"GitLab API returned ${resp.status} for $what")
+          )
+        } else {
+          resp.json match {
+            case arr: JsArray =>
+              Right(arr.value.toSeq.collect { case o: JsObject => o })
+            case _ =>
+              Left(
+                Json.obj(
+                  "error" -> s"GitLab API did not return an array for $what"
+                )
+              )
+          }
+        }
+      }
+      .recover { case e: Throwable =>
+        Left(
+          Json.obj("error" -> s"Error listing GitLab $what: ${e.getMessage}")
+        )
+      }
+  }
+
   private def listAllFilesRecursive(
       baseUrl: String,
       encodedProject: String,
@@ -72,52 +121,15 @@ class CatalogSourceGitlab extends CatalogSource {
       env: Env
   )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[String]]] = {
     val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/tree"
-    env.wsClient
-      .url(apiUrl)
-      .withQueryStringParameters(
-        "ref" -> branch,
-        "recursive" -> "true",
-        "per_page" -> "100"
+    val params = Seq("ref" -> branch, "recursive" -> "true")
+
+    SourceUtils
+      .fetchAllPages(
+        perPage,
+        page =>
+          fetchPage(apiUrl, params, page, token, "recursive tree listing", env)
       )
-      .withHttpHeaders(gitlabHeaders(token)*)
-      .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
-      .get()
-      .map { resp =>
-        if (resp.status == 200) {
-          resp.json match {
-            case arr: JsArray =>
-              val files = arr.value.flatMap { item =>
-                val itemType = (item \ "type").asOpt[String].getOrElse("")
-                val itemPath = (item \ "path").asOpt[String].getOrElse("")
-                if (itemType == "blob") Some(itemPath) else None
-              }
-              Right(files.toSeq): Either[JsValue, Seq[String]]
-            case _ =>
-              Left(
-                Json.obj(
-                  "error" -> "GitLab API did not return an array for recursive tree listing"
-                )
-              ): Either[
-                JsValue,
-                Seq[String]
-              ]
-          }
-        } else {
-          Left(
-            Json.obj(
-              "error" -> s"GitLab API returned ${resp.status} for recursive tree listing"
-            )
-          ): Either[
-            JsValue,
-            Seq[String]
-          ]
-        }
-      }
-      .recover { case e: Throwable =>
-        Left(
-          Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")
-        ): Either[JsValue, Seq[String]]
-      }
+      .map(_.map(items => items.filter(isBlob).flatMap(pathOf)))
   }
 
   private def listDirectory(
@@ -129,53 +141,20 @@ class CatalogSourceGitlab extends CatalogSource {
       env: Env
   )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[String]]] = {
     val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/tree"
-    env.wsClient
-      .url(apiUrl)
-      .withQueryStringParameters(
-        "ref" -> branch,
-        "path" -> dirPath,
-        "per_page" -> "100"
+    val params = Seq("ref" -> branch, "path" -> dirPath)
+
+    SourceUtils
+      .fetchAllPages(
+        perPage,
+        page => fetchPage(apiUrl, params, page, token, "tree listing", env)
       )
-      .withHttpHeaders(gitlabHeaders(token)*)
-      .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
-      .get()
-      .map { resp =>
-        if (resp.status == 200) {
-          resp.json match {
-            case arr: JsArray =>
-              val files = arr.value.flatMap { item =>
-                val itemType = (item \ "type").asOpt[String].getOrElse("")
-                val itemName = (item \ "name").asOpt[String].getOrElse("")
-                val itemPath = (item \ "path").asOpt[String].getOrElse("")
-                if (itemType == "blob" && SourceUtils.isEntityFile(itemName))
-                  Some(itemPath)
-                else None
-              }
-              Right(files.toSeq): Either[JsValue, Seq[String]]
-            case _ =>
-              Left(
-                Json.obj(
-                  "error" -> "GitLab API did not return an array for tree listing"
-                )
-              ): Either[JsValue, Seq[
-                String
-              ]]
-          }
-        } else {
-          Left(
-            Json.obj(
-              "error" -> s"GitLab API returned ${resp.status} for tree listing"
-            )
-          ): Either[JsValue, Seq[
-            String
-          ]]
-        }
-      }
-      .recover { case e: Throwable =>
-        Left(
-          Json.obj("error" -> s"Error listing GitLab tree: ${e.getMessage}")
-        ): Either[JsValue, Seq[String]]
-      }
+      .map(_.map { items =>
+        items
+          .filter(item =>
+            isBlob(item) && pathOf(item).exists(SourceUtils.isEntityFile)
+          )
+          .flatMap(pathOf)
+      })
   }
 
   override def webhookDeploySelect(
@@ -226,51 +205,16 @@ class CatalogSourceGitlab extends CatalogSource {
   ): Future[Either[JsValue, Seq[String]]] = {
     val encodedGroup = java.net.URLEncoder.encode(group, "UTF-8")
     val apiUrl = s"$baseUrl/api/v4/groups/$encodedGroup/projects"
-    env.wsClient
-      .url(apiUrl)
-      .withQueryStringParameters(
-        "per_page" -> "100",
-        "include_subgroups" -> "true"
+    val params = Seq("include_subgroups" -> "true")
+
+    SourceUtils
+      .fetchAllPages(
+        perPage,
+        page => fetchPage(apiUrl, params, page, token, "group projects", env)
       )
-      .withHttpHeaders(gitlabHeaders(token)*)
-      .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
-      .get()
-      .map { resp =>
-        if (resp.status == 200) {
-          resp.json match {
-            case arr: JsArray =>
-              val projects = arr.value.flatMap(item =>
-                (item \ "path_with_namespace").asOpt[String]
-              )
-              Right(projects.toSeq): Either[JsValue, Seq[String]]
-            case _ =>
-              Left(
-                Json.obj(
-                  "error" -> "GitLab API did not return an array for group projects"
-                )
-              ): Either[
-                JsValue,
-                Seq[String]
-              ]
-          }
-        } else {
-          Left(
-            Json.obj(
-              "error" -> s"GitLab API returned ${resp.status} for group projects"
-            )
-          ): Either[
-            JsValue,
-            Seq[String]
-          ]
-        }
-      }
-      .recover { case e: Throwable =>
-        Left(
-          Json.obj(
-            "error" -> s"Error listing GitLab group projects: ${e.getMessage}"
-          )
-        ): Either[JsValue, Seq[String]]
-      }
+      .map(
+        _.map(_.flatMap(item => (item \ "path_with_namespace").asOpt[String]))
+      )
   }
 
   private def fetchFromSingleProject(

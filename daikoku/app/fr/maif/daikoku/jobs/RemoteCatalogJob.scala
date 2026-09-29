@@ -52,6 +52,14 @@ class RemoteCatalogJob(
           engine
             .deploy(tenant, catalog, catalog.scheduling.deployArgs)
             .map {
+              case Right(report) if report.isPartial =>
+                acc.copy(
+                  processed = acc.processed + 1,
+                  failures = acc.failures :+ JobItemFailure(
+                    catalog.id,
+                    report.errors.mkString(", ")
+                  )
+                )
               case Right(_) =>
                 acc.copy(
                   processed = acc.processed + 1,

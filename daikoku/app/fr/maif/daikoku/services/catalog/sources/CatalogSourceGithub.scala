@@ -102,7 +102,18 @@ class CatalogSourceGithub extends CatalogSource {
       .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
-        if (resp.status == 200) {
+        val truncated =
+          resp.status == 200 && (resp.json \ "truncated")
+            .asOpt[Boolean]
+            .contains(true)
+
+        if (truncated) {
+          Left(
+            Json.obj(
+              "error" -> "GitHub recursive tree listing is truncated (too many files): list the files explicitly or target a narrower path"
+            )
+          ): Either[JsValue, Seq[String]]
+        } else if (resp.status == 200) {
           val tree =
             (resp.json \ "tree").asOpt[Seq[JsObject]].getOrElse(Seq.empty)
           val files = tree.flatMap { item =>
@@ -150,6 +161,13 @@ class CatalogSourceGithub extends CatalogSource {
       .map { resp =>
         if (resp.status == 200) {
           resp.json match {
+            // the contents API returns at most 1000 entries per directory
+            case arr: JsArray if arr.value.size >= 1000 =>
+              Left(
+                Json.obj(
+                  "error" -> s"GitHub directory listing of $dirPath may be incomplete (1000 entries or more): list the files explicitly or split the directory"
+                )
+              ): Either[JsValue, Seq[String]]
             case arr: JsArray =>
               val files = arr.value.flatMap { item =>
                 val itemType = (item \ "type").asOpt[String].getOrElse("")
@@ -230,6 +248,52 @@ class CatalogSourceGithub extends CatalogSource {
     if (parts.length == 1) Some(parts(0)) else None
   }
 
+  private val reposPerPage = 100
+
+  private def fetchRepoPage(
+      reposUrl: String,
+      page: Int,
+      token: String,
+      env: Env
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[JsObject]]] = {
+    env.wsClient
+      .url(reposUrl)
+      .withQueryStringParameters(
+        "per_page" -> reposPerPage.toString,
+        "page" -> page.toString,
+        "type" -> "all"
+      )
+      .withHttpHeaders(githubHeaders(token)*)
+      .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
+      .get()
+      .map { resp =>
+        if (resp.status != 200) {
+          Left(
+            Json.obj(
+              "error" -> s"GitHub API returned ${resp.status} for $reposUrl"
+            )
+          )
+        } else {
+          Right(resp.json.asOpt[Seq[JsObject]].getOrElse(Seq.empty))
+        }
+      }
+      .recover { case e: Throwable =>
+        Left(Json.obj("error" -> s"Error listing $reposUrl: ${e.getMessage}"))
+      }
+  }
+
+  private def listRepos(
+      reposUrl: String,
+      token: String,
+      env: Env
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[String]]] =
+    SourceUtils
+      .fetchAllPages(
+        reposPerPage,
+        page => fetchRepoPage(reposUrl, page, token, env)
+      )
+      .map(_.map(_.flatMap(repo => (repo \ "name").asOpt[String])))
+
   private def listOrgRepos(
       apiBase: String,
       org: String,
@@ -238,51 +302,13 @@ class CatalogSourceGithub extends CatalogSource {
   )(implicit
       ec: ExecutionContext
   ): Future[Either[JsValue, Seq[String]]] = {
-    val orgUrl = s"$apiBase/orgs/$org/repos"
-    env.wsClient
-      .url(orgUrl)
-      .withQueryStringParameters("per_page" -> "100", "type" -> "all")
-      .withHttpHeaders(githubHeaders(token)*)
-      .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
-      .get()
-      .flatMap { resp =>
-        if (resp.status == 200) {
-          val repos =
-            resp.json
-              .asOpt[Seq[JsObject]]
-              .getOrElse(Seq.empty)
-              .flatMap(o => (o \ "name").asOpt[String])
-          Future.successful(Right(repos): Either[JsValue, Seq[String]])
-        } else {
-          val userUrl = s"$apiBase/users/$org/repos"
-          env.wsClient
-            .url(userUrl)
-            .withQueryStringParameters("per_page" -> "100", "type" -> "all")
-            .withHttpHeaders(githubHeaders(token)*)
-            .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
-            .get()
-            .map { resp2 =>
-              if (resp2.status == 200) {
-                Right(
-                  resp2.json
-                    .asOpt[Seq[JsObject]]
-                    .getOrElse(Seq.empty)
-                    .flatMap(o => (o \ "name").asOpt[String])
-                ): Either[JsValue, Seq[String]]
-              } else {
-                Left(
-                  Json.obj("error" -> s"Cannot list repos for '$org'")
-                ): Either[JsValue, Seq[String]]
-              }
-            }
-        }
-      }
-      .recover { case e: Throwable =>
-        Left(
-          Json
-            .obj("error" -> s"Error listing repos for '$org': ${e.getMessage}")
-        ): Either[JsValue, Seq[String]]
-      }
+    listRepos(s"$apiBase/orgs/$org/repos", token, env).flatMap {
+      case Right(repos) => Future.successful(Right(repos))
+      case Left(_) =>
+        listRepos(s"$apiBase/users/$org/repos", token, env).map(
+          _.left.map(_ => Json.obj("error" -> s"Cannot list repos for '$org'"))
+        )
+    }
   }
 
   private def fetchFromSingleRepo(

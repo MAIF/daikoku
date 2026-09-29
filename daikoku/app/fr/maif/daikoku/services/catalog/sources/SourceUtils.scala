@@ -107,6 +107,21 @@ object SourceUtils {
       .map(RemoteCatalogError.collect)
   }
 
+  def fetchAllPages[A](
+      perPage: Int,
+      fetchPage: Int => Future[Either[JsValue, Seq[A]]],
+      page: Int = 1,
+      collected: Seq[A] = Seq.empty
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[A]]] = {
+    fetchPage(page).flatMap {
+      case Left(err) => Future.successful(Left(err))
+      case Right(items) if items.size < perPage =>
+        Future.successful(Right(collected ++ items))
+      case Right(items) =>
+        fetchAllPages(perPage, fetchPage, page + 1, collected ++ items)
+    }
+  }
+
   def isGlobPattern(path: String): Boolean = {
     path.contains("*") || path
       .contains("?") || (path.contains("[") && path.contains("]"))

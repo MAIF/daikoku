@@ -196,14 +196,15 @@ class RemoteCatalogEngine(
             Future.successful(
               Left(
                 errorsJson(
-                  s"Catalog ${catalog.id} could not be fetched, nothing was applied",
+                  s"Catalog ${catalog.id} could not be read, nothing was applied",
                   errors
                 )
               )
             )
           case Right(entities) =>
-            val validationErrors =
-              entities.flatMap(entity => checkKind(catalog, entity))
+            val validationErrors = entities.flatMap(entity =>
+              checkKind(catalog, entity) ++ checkTenant(tenant, entity)
+            )
 
             if (validationErrors.nonEmpty) {
               Future.successful(
@@ -242,6 +243,31 @@ class RemoteCatalogEngine(
     }
   }
 
+  private def checkTenant(
+      tenant: Tenant,
+      entity: RemoteEntity
+  ): Option[RemoteCatalogError] = {
+    val prefix = s"${entity.kind} ${entity.id}"
+
+    (entity.content \ "_tenant").asOpt[String] match {
+      case None =>
+        Some(
+          RemoteCatalogError(
+            entity.source,
+            s"$prefix: missing required field '_tenant'"
+          )
+        )
+      case Some(value) if value != tenant.id.value =>
+        Some(
+          RemoteCatalogError(
+            entity.source,
+            s"$prefix: _tenant '$value' is not the catalog tenant '${tenant.id.value}'"
+          )
+        )
+      case Some(_) => None
+    }
+  }
+
   private def errorsJson(
       message: String,
       errors: Seq[RemoteCatalogError]
@@ -264,19 +290,33 @@ class RemoteCatalogEngine(
       val toDelete =
         computeEntitiesToDelete(databaseState, metadataKey, entities)
       val finalIds = computeFinalIds(databaseState, toDelete, entities)
+      val deletionLimitError =
+        checkDeletionLimit(catalog, databaseState, metadataKey, toDelete)
 
-      prepareAllWrites(tenant, metadataKey, entities, finalIds).flatMap {
-        case Left(errors) =>
+      deletionLimitError match {
+        case Some(error) =>
           Future.successful(
             Left(
               errorsJson(
-                s"Catalog ${catalog.id} is invalid, nothing was applied",
-                errors
+                s"Catalog ${catalog.id} would delete too many entities, nothing was applied",
+                Seq(error)
               )
             )
           )
-        case Right(writes) =>
-          writeAll(tenant, catalog, writes, toDelete, dryRun).map(Right(_))
+        case None =>
+          prepareAllWrites(tenant, metadataKey, entities, finalIds).flatMap {
+            case Left(errors) =>
+              Future.successful(
+                Left(
+                  errorsJson(
+                    s"Catalog ${catalog.id} is invalid, nothing was applied",
+                    errors
+                  )
+                )
+              )
+            case Right(writes) =>
+              writeAll(tenant, catalog, writes, toDelete, dryRun).map(Right(_))
+          }
       }
     }
   }
@@ -303,12 +343,37 @@ class RemoteCatalogEngine(
     val remoteIds = entities.map(e => (e.kind, e.id)).toSet
 
     kindOrder.reverse.flatMap { kind =>
-      databaseState(kind).collect {
+      databaseState(kind).toSeq.collect {
         case (id, createdBy)
             if createdBy
               .contains(metadataKey) && !remoteIds.contains((kind, id)) =>
           (kind, id)
       }
+    }
+  }
+
+  private def checkDeletionLimit(
+      catalog: RemoteCatalog,
+      databaseState: DatabaseState,
+      metadataKey: String,
+      toDelete: Seq[(String, String)]
+  ): Option[RemoteCatalogError] = {
+    val managedCount = databaseState.values
+      .flatMap(_.values)
+      .count(_.contains(metadataKey))
+    val deletedPercent =
+      if (managedCount == 0) 0.0 else toDelete.size * 100.0 / managedCount
+    val limitIsActive = catalog.maxDeletionPercent != -1 && managedCount >= 5
+
+    if (limitIsActive && deletedPercent > catalog.maxDeletionPercent) {
+      Some(
+        RemoteCatalogError(
+          s"catalog ${catalog.id}",
+          f"${toDelete.size} of $managedCount managed entities would be deleted ($deletedPercent%.0f%% > ${catalog.maxDeletionPercent}%%): fix the source or raise maxDeletionPercent (-1 for no limit)"
+        )
+      )
+    } else {
+      None
     }
   }
 
@@ -368,9 +433,11 @@ class RemoteCatalogEngine(
       json: JsObject,
       metadataKey: String
   ): JsObject = {
-    val current =
-      (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty)
-    json ++ Json.obj("metadata" -> (current + ("created_by" -> metadataKey)))
+    val current = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj())
+
+    json ++ Json.obj(
+      "metadata" -> (current ++ Json.obj("created_by" -> metadataKey))
+    )
   }
 
   // ---------------------------------------------------------------------------

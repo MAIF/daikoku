@@ -777,5 +777,6 @@ case class RemoteCatalog(
     source: RemoteCatalogSource = RemoteCatalogSource(),
     scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
     allowedKinds: Set[String] = Set.empty,
-    testDeployArgs: JsObject = Json.obj()
+    testDeployArgs: JsObject = Json.obj(),
+    maxDeletionPercent: Int = 30
 )
