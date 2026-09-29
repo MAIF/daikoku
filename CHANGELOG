@@ -1061,3 +1061,21 @@ We'd like to thank all the contributors who worked on this release!
 Thank you to all the contributors who worked on this release:
 
 @gmenant, @ptitFicus, and @quentinovega
+## [v18.next] - 2026-09-29
+
+## :star: New Features
+
+- run schema migrations in transactions to prevent blocking failures [#974](https://github.com/MAIF/daikoku/issues/974)
+- implement transaction support with reactive Vert.x driver [#973](https://github.com/MAIF/daikoku/issues/973)
+- Refactor Subscription Aggregation Logic [#890](https://github.com/MAIF/daikoku/issues/890)
+- Be redirected on the selected page after login [#783](https://github.com/MAIF/daikoku/issues/783)
+- be able to see your subscriptions from the plan display [#743](https://github.com/MAIF/daikoku/issues/743)
+- new page to show all Team APIkeys [#591](https://github.com/MAIF/daikoku/issues/591)
+
+## :lady_beetle: Bug Fixes
+
+- poor performance on team selection for API key requests [#1006](https://github.com/MAIF/daikoku/issues/1006)
+- unpublished default version hides all published older versions from API list [#803](https://github.com/MAIF/daikoku/issues/803)
+- better graphql request for visible & accessible apis [#517](https://github.com/MAIF/daikoku/issues/517)
+- find a way to customize antd colors [#496](https://github.com/MAIF/daikoku/issues/496)
+
