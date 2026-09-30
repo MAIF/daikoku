@@ -182,14 +182,6 @@ class CatalogSourceGitlab extends CatalogSource {
     Future.successful(Right(matched))
   }
 
-  override def webhookDeployExtractArgs(
-      catalog: RemoteCatalog,
-      payload: JsValue
-  )(implicit
-      ec: ExecutionContext,
-      env: Env
-  ): Future[Either[JsValue, JsObject]] = Future.successful(Right(Json.obj()))
-
   private def isGroup(repoUrl: String): Boolean = {
     val cleaned = repoUrl.stripSuffix("/")
     !cleaned.contains("/")
@@ -310,7 +302,7 @@ class CatalogSourceGitlab extends CatalogSource {
     }
   }
 
-  override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
+  override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {

@@ -1,6 +1,5 @@
 package fr.maif.daikoku.services.catalog
 
-import fr.maif.daikoku.audit.JobEvent
 import fr.maif.daikoku.controllers.{
   ApiAdminApiController,
   ApiSubscriptionAdminApiController,
@@ -9,17 +8,18 @@ import fr.maif.daikoku.controllers.{
   UsagePlansAdminApiController
 }
 import fr.maif.daikoku.domain.{
+  DatastoreId,
   RemoteCatalog,
+  RemoteCatalogRun,
+  RemoteCatalogRunStatus,
   Tenant,
-  TenantId,
-  User,
-  UserId,
   ValueType
 }
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{
   AdminApiController,
   ExistingEntities,
+  IdGenerator,
   PreparedWrite,
   ReconcileFinalIds
 }
@@ -80,8 +80,6 @@ class RemoteCatalogEngine(
 
   private val logger = Logger("daikoku-remote-catalog-engine")
   private val deployingCatalogs = TrieMap.empty[String, Boolean]
-  private val auditUserId = "remote-catalog-job"
-  private val auditKeep = 10
 
   private val controllers: Map[String, AdminApiController[?, ? <: ValueType]] =
     Map(
@@ -115,64 +113,57 @@ class RemoteCatalogEngine(
 
   def deploy(
       tenant: Tenant,
-      catalog: RemoteCatalog,
-      args: JsObject
+      catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val key = s"${tenant.id.value}:${catalog.id}"
+    val key = s"${tenant.id.value}:${catalog.id.value}"
     if (deployingCatalogs.contains(key)) {
       Future.successful(
         Left(
           Json.obj(
-            "error" -> s"Catalog ${catalog.id} is already being deployed"
+            "error" -> s"Catalog ${catalog.id.value} is already being deployed"
           )
         )
       )
     } else {
       deployingCatalogs.put(key, true)
       logger.info(
-        s"deploying catalog ${catalog.id} / ${catalog.source.kind} on tenant ${tenant.id.value}"
+        s"deploying catalog ${catalog.id.value} / ${catalog.source.kind} on tenant ${tenant.id.value}"
       )
       Future.unit
-        .flatMap(_ =>
-          doFetchAndReconcile(tenant, catalog, args, dryRun = false)
-        )
-        .andThen { case scala.util.Success(Right(report)) =>
-          audit(tenant, catalog, report)
-        }
+        .flatMap(_ => doFetchAndReconcile(tenant, catalog, dryRun = false))
+        .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
         .andThen { case _ => deployingCatalogs.remove(key) }
     }
   }
 
   def dryRun(
       tenant: Tenant,
-      catalog: RemoteCatalog,
-      args: JsObject
-  ): Future[Either[JsValue, DeployReport]] =
-    doFetchAndReconcile(tenant, catalog, args, dryRun = true)
+      catalog: RemoteCatalog
+  ): Future[RemoteCatalogRun] =
+    doFetchAndReconcile(tenant, catalog, dryRun = true)
+      .map(result => toRun(tenant, catalog, result))
 
   def undeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val key = s"${tenant.id.value}:${catalog.id}"
+    val key = s"${tenant.id.value}:${catalog.id.value}"
     if (deployingCatalogs.contains(key)) {
       Future.successful(
         Left(
           Json.obj(
-            "error" -> s"Catalog ${catalog.id} is currently being deployed"
+            "error" -> s"Catalog ${catalog.id.value} is currently being deployed"
           )
         )
       )
     } else {
       deployingCatalogs.put(key, true)
       logger.info(
-        s"undeploying catalog ${catalog.id} on tenant ${tenant.id.value}"
+        s"undeploying catalog ${catalog.id.value} on tenant ${tenant.id.value}"
       )
       Future.unit
         .flatMap(_ => doUndeploy(tenant, catalog))
-        .andThen { case scala.util.Success(Right(report)) =>
-          audit(tenant, catalog, report)
-        }
+        .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
         .andThen { case _ => deployingCatalogs.remove(key) }
     }
   }
@@ -184,7 +175,6 @@ class RemoteCatalogEngine(
   private def doFetchAndReconcile(
       tenant: Tenant,
       catalog: RemoteCatalog,
-      args: JsObject,
       dryRun: Boolean
   ): Future[Either[JsValue, DeployReport]] = {
     CatalogSources.get(catalog.source.kind) match {
@@ -195,12 +185,12 @@ class RemoteCatalogEngine(
           )
         )
       case Some(source) =>
-        source.fetch(catalog, args)(using ec, env).flatMap {
+        source.fetch(catalog)(using ec, env).flatMap {
           case Left(errors) =>
             Future.successful(
               Left(
                 errorsJson(
-                  s"Catalog ${catalog.id} could not be read, nothing was applied",
+                  s"Catalog ${catalog.id.value} could not be read, nothing was applied",
                   errors
                 )
               )
@@ -214,7 +204,7 @@ class RemoteCatalogEngine(
               Future.successful(
                 Left(
                   errorsJson(
-                    s"Catalog ${catalog.id} is invalid, nothing was applied",
+                    s"Catalog ${catalog.id.value} is invalid, nothing was applied",
                     validationErrors
                   )
                 )
@@ -288,7 +278,7 @@ class RemoteCatalogEngine(
       entities: Seq[RemoteEntity],
       dryRun: Boolean
   ): Future[Either[JsValue, DeployReport]] = {
-    val metadataKey = s"remote_catalog=${catalog.id}"
+    val metadataKey = s"remote_catalog=${catalog.id.value}"
 
     readDatabaseState(tenant).flatMap { databaseState =>
       val toDelete =
@@ -302,7 +292,7 @@ class RemoteCatalogEngine(
           Future.successful(
             Left(
               errorsJson(
-                s"Catalog ${catalog.id} would delete too many entities, nothing was applied",
+                s"Catalog ${catalog.id.value} would delete too many entities, nothing was applied",
                 Seq(error)
               )
             )
@@ -313,7 +303,7 @@ class RemoteCatalogEngine(
               Future.successful(
                 Left(
                   errorsJson(
-                    s"Catalog ${catalog.id} is invalid, nothing was applied",
+                    s"Catalog ${catalog.id.value} is invalid, nothing was applied",
                     errors
                   )
                 )
@@ -372,7 +362,7 @@ class RemoteCatalogEngine(
     if (limitIsActive && deletedPercent > catalog.maxDeletionPercent) {
       Some(
         RemoteCatalogError(
-          s"catalog ${catalog.id}",
+          s"catalog ${catalog.id.value}",
           f"${toDelete.size} of $managedCount managed entities would be deleted ($deletedPercent%.0f%% > ${catalog.maxDeletionPercent}%%): fix the source or raise maxDeletionPercent (-1 for no limit)"
         )
       )
@@ -552,14 +542,14 @@ class RemoteCatalogEngine(
       )
     }
 
-    DeployReport(catalog.id, tenant.id.value, results, DateTime.now())
+    DeployReport(catalog.id.value, tenant.id.value, results, DateTime.now())
   }
 
   private def doUndeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val metadataKey = s"remote_catalog=${catalog.id}"
+    val metadataKey = s"remote_catalog=${catalog.id.value}"
 
     readDatabaseState(tenant)
       .flatMap { databaseState =>
@@ -572,61 +562,92 @@ class RemoteCatalogEngine(
   }
 
   // ---------------------------------------------------------------------------
-  // Audit
+  // Run history
   // ---------------------------------------------------------------------------
 
-  private def jobUser(tenantId: TenantId): User =
-    User(
-      id = UserId(auditUserId),
-      tenants = Set(tenantId),
-      origins = Set.empty,
-      name = "Remote Catalog Job",
-      email = "",
-      lastTenant = None,
-      defaultLanguage = None,
-      isGuest = true
-    )
-
-  private def audit(
+  private def saveRun(
       tenant: Tenant,
       catalog: RemoteCatalog,
-      report: DeployReport
-  ): Unit = {
-    JobEvent(s"remote catalog ${catalog.id}")
-      .logJobEvent(
-        tenant,
-        jobUser(tenant.id),
-        Json.obj(
-          "event" -> "remote_catalog_run",
-          "catalog_id" -> catalog.id,
-          "created" -> report.results.flatMap(_.created),
-          "updated" -> report.results.flatMap(_.updated),
-          "deleted" -> report.results.flatMap(_.deleted)
-        )
-      )(using env)
-    pruneAudit(tenant, catalog)
+      result: Either[JsValue, DeployReport]
+  ): Future[Unit] = {
+    val run = toRun(tenant, catalog, result)
+
+    env.dataStore.remoteCatalogRunRepo
+      .forTenant(tenant)
+      .save(run)
+      .flatMap(_ => pruneRuns(tenant, catalog))
+      .recover { case e =>
+        logger.error(s"cannot save the run of catalog ${catalog.id.value}", e)
+      }
   }
 
-  private def pruneAudit(tenant: Tenant, catalog: RemoteCatalog): Unit = {
-    val repo = env.dataStore.auditTrailRepo.forTenant(tenant.id)
-    repo
-      .find(
-        Json.obj("@userId" -> auditUserId),
-        Some(Json.obj("@timestamp" -> -1))
-      )
-      .map { events =>
-        val mine = events.filter(e =>
-          (e \ "details" \ "catalog_id").asOpt[String].contains(catalog.id)
+  private def toRun(
+      tenant: Tenant,
+      catalog: RemoteCatalog,
+      result: Either[JsValue, DeployReport]
+  ): RemoteCatalogRun =
+    result match {
+      case Right(report) =>
+        val status =
+          if (report.isPartial) RemoteCatalogRunStatus.Partial
+          else RemoteCatalogRunStatus.Completed
+
+        RemoteCatalogRun(
+          id = DatastoreId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          catalog = catalog.id,
+          at = report.timestamp,
+          status = status,
+          created = report.results.flatMap(_.created),
+          updated = report.results.flatMap(_.updated),
+          deleted = report.results.flatMap(_.deleted),
+          errors = report.errors
         )
-        val toDelete =
-          mine.drop(auditKeep).flatMap(e => (e \ "_id").asOpt[String])
-        if (toDelete.nonEmpty) {
-          repo.delete(
-            Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(toDelete.map(JsString.apply)))
-            )
-          )
+      case Left(error) =>
+        RemoteCatalogRun(
+          id = DatastoreId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          catalog = catalog.id,
+          at = DateTime.now(),
+          status = RemoteCatalogRunStatus.Failed,
+          created = Seq.empty,
+          updated = Seq.empty,
+          deleted = Seq.empty,
+          errors = failureMessages(error)
+        )
+    }
+
+  private val runsKept = 20
+
+  private def pruneRuns(
+      tenant: Tenant,
+      catalog: RemoteCatalog
+  ): Future[Unit] = {
+    val repo = env.dataStore.remoteCatalogRunRepo.forTenant(tenant)
+
+    repo
+      .find(Json.obj("catalog" -> catalog.id.value))
+      .flatMap { runs =>
+        val newestFirst = runs.sortBy(_.at.getMillis).reverse
+        val oldIds = newestFirst.drop(runsKept).map(_.id.value)
+
+        if (oldIds.isEmpty) {
+          Future.unit
+        } else {
+          repo
+            .delete(Json.obj("_id" -> Json.obj("$in" -> oldIds)))
+            .map(_ => ())
         }
       }
   }
+
+  // e.g. Seq("file:///catalog/teams.yaml: document 2: Missing required field '_id'")
+  private def failureMessages(error: JsValue): Seq[String] =
+    (error \ "errors").asOpt[Seq[JsObject]] match {
+      case Some(details) if details.nonEmpty =>
+        details.map(d =>
+          s"${(d \ "source").as[String]}: ${(d \ "message").as[String]}"
+        )
+      case _ => (error \ "error").asOpt[String].toSeq
+    }
 }

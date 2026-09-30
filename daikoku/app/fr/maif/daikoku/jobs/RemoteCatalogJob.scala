@@ -1,5 +1,6 @@
 package fr.maif.daikoku.jobs
 
+import fr.maif.daikoku.audit.JobEvent
 import fr.maif.daikoku.domain.{JobName, RemoteCatalog, Tenant}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{CatalogSources, RemoteCatalogEngine}
@@ -30,12 +31,23 @@ class RemoteCatalogJob(
     super.start()
   }
 
-  private def activeCatalogs(tenant: Tenant): Seq[RemoteCatalog] =
-    tenant.remoteCatalogs.filter(c => c.enabled && c.scheduling.enabled)
+  private def activeCatalogs(tenant: Tenant): Future[Seq[RemoteCatalog]] =
+    env.dataStore.remoteCatalogRepo
+      .forTenant(tenant)
+      .findAll()
+      .map(_.filter(c => c.enabled && c.scheduling.enabled))
+
+  private def auditDeploy(tenant: Tenant, catalog: RemoteCatalog): Unit =
+    JobEvent(s"remote catalog ${catalog.id.value} deployed by job")
+      .logJobEvent(
+        tenant,
+        JobUtils.jobUser,
+        Json.obj("catalog" -> catalog.id.value)
+      )(using env)
 
   override protected def skipReason(tenant: Tenant): Future[Option[String]] =
-    Future.successful(
-      if (activeCatalogs(tenant).nonEmpty) None
+    activeCatalogs(tenant).map(catalogs =>
+      if (catalogs.nonEmpty) None
       else Some("no enabled remote catalog")
     )
 
@@ -46,17 +58,19 @@ class RemoteCatalogJob(
       saveCursor: Long => Future[Boolean],
       fromCursor: Option[Long]
   ): Future[JobRunResult] = {
-    activeCatalogs(tenant)
-      .foldLeft(Future.successful(JobRunResult.empty)) { (accF, catalog) =>
+    activeCatalogs(tenant).flatMap(
+      _.foldLeft(Future.successful(JobRunResult.empty)) { (accF, catalog) =>
         accF.flatMap { acc =>
+          auditDeploy(tenant, catalog)
+
           engine
-            .deploy(tenant, catalog, catalog.scheduling.deployArgs)
+            .deploy(tenant, catalog)
             .map {
               case Right(report) if report.isPartial =>
                 acc.copy(
                   processed = acc.processed + 1,
                   failures = acc.failures :+ JobItemFailure(
-                    catalog.id,
+                    catalog.id.value,
                     report.errors.mkString(", ")
                   )
                 )
@@ -69,7 +83,7 @@ class RemoteCatalogJob(
                 acc.copy(
                   processed = acc.processed + 1,
                   failures = acc.failures :+ JobItemFailure(
-                    catalog.id,
+                    catalog.id.value,
                     Json.stringify(err)
                   )
                 )
@@ -78,10 +92,11 @@ class RemoteCatalogJob(
               acc.copy(
                 processed = acc.processed + 1,
                 failures =
-                  acc.failures :+ JobItemFailure(catalog.id, e.getMessage)
+                  acc.failures :+ JobItemFailure(catalog.id.value, e.getMessage)
               )
             }
         }
       }
+    )
   }
 }

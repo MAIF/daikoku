@@ -114,6 +114,12 @@ case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
 
+case class RemoteCatalogId(value: String)
+    extends ValueType
+    with CanJson[RemoteCatalogId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class ThirdPartyPaymentSettingsId(value: String)
     extends ValueType
     with CanJson[CmsPageId] {

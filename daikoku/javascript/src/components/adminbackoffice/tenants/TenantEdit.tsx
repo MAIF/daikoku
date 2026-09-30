@@ -218,7 +218,7 @@ export const TenantEditComponent = ({
                   {tenant.name} - {translate('remote-catalog.title')}
                 </h1>
               )}
-              <RemoteCatalogsForm tenant={tenant} updateTenant={updateTenant} />
+              <RemoteCatalogsForm tenant={tenant} />
             </>
           }
         />

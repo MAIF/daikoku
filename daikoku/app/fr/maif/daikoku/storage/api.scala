@@ -649,6 +649,12 @@ trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
 trait AssetRepo extends TenantCapableRepo[Asset, AssetId]
 
+trait RemoteCatalogRepo
+    extends TenantCapableRepo[RemoteCatalog, RemoteCatalogId]
+
+trait RemoteCatalogRunRepo
+    extends TenantCapableRepo[RemoteCatalogRun, DatastoreId]
+
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
 trait SubscriptionDemandRepo
@@ -719,6 +725,10 @@ trait DataStore {
   def cmsRepo: CmsPageRepo
 
   def assetRepo: AssetRepo
+
+  def remoteCatalogRepo: RemoteCatalogRepo
+
+  def remoteCatalogRunRepo: RemoteCatalogRunRepo
 
   def operationRepo: OperationRepo
 

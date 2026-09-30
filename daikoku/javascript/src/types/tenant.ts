@@ -181,7 +181,6 @@ export interface ITenantFull extends ITenant {
   style: ITenantStyle;
   translation: any;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
-  remoteCatalogs: Array<IRemoteCatalog>;
 }
 
 export type RemoteCatalogSourceKind = 'file' | 'http' | 'github' | 'gitlab';
@@ -211,16 +210,15 @@ export interface IRemoteCatalogSource {
 }
 export interface IRemoteCatalogScheduling {
   enabled: boolean;
-  deployArgs?: any;
 }
 export interface IRemoteCatalog {
-  id: string;
+  _id: string;
+  _tenant: string;
   name: string;
   enabled: boolean;
   source: IRemoteCatalogSource;
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
-  testDeployArgs?: any;
   maxDeletionPercent: number;
 }
 

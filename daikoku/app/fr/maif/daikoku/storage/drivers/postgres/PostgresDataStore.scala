@@ -273,6 +273,38 @@ case class PostgresTenantCapableCmsPageRepo(
   override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
 }
 
+case class PostgresTenantCapableRemoteCatalogRepo(
+    _repo: () => PostgresRepo[RemoteCatalog, RemoteCatalogId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      RemoteCatalog,
+      RemoteCatalogId
+    ]
+) extends PostgresTenantCapableRepo[RemoteCatalog, RemoteCatalogId]
+    with RemoteCatalogRepo {
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[RemoteCatalog, RemoteCatalogId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[RemoteCatalog, RemoteCatalogId] = _repo()
+}
+
+case class PostgresTenantCapableRemoteCatalogRunRepo(
+    _repo: () => PostgresRepo[RemoteCatalogRun, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      RemoteCatalogRun,
+      DatastoreId
+    ]
+) extends PostgresTenantCapableRepo[RemoteCatalogRun, DatastoreId]
+    with RemoteCatalogRunRepo {
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[RemoteCatalogRun, DatastoreId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[RemoteCatalogRun, DatastoreId] = _repo()
+}
+
 case class PostgresTenantCapableAssetRepo(
     _repo: () => PostgresRepo[Asset, AssetId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[Asset, AssetId]
@@ -521,7 +553,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "reports_info" -> true,
     "api_subscription_transfers" -> true,
     "job_informations" -> true,
-    "keyrings" -> true
+    "keyrings" -> true,
+    "remote_catalogs" -> false,
+    "remote_catalog_runs" -> false
   )
 
   private lazy val reactivePg =
@@ -608,6 +642,16 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       () => new PostgresAssetRepo(env, reactivePg),
       t => new PostgresTenantAssetRepo(env, reactivePg, t)
     )
+  private val _remoteCatalogRepo: RemoteCatalogRepo =
+    PostgresTenantCapableRemoteCatalogRepo(
+      () => new PostgresRemoteCatalogRepo(env, reactivePg),
+      t => new PostgresTenantRemoteCatalogRepo(env, reactivePg, t)
+    )
+  private val _remoteCatalogRunRepo: RemoteCatalogRunRepo =
+    PostgresTenantCapableRemoteCatalogRunRepo(
+      () => new PostgresRemoteCatalogRunRepo(env, reactivePg),
+      t => new PostgresTenantRemoteCatalogRunRepo(env, reactivePg, t)
+    )
   private val _evolutionRepo: EvolutionRepo =
     new PostgresEvolutionRepo(env, reactivePg)
 
@@ -691,6 +735,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   override def cmsRepo: CmsPageRepo = _cmsPageRepo
 
   override def assetRepo: AssetRepo = _assetRepo
+
+  override def remoteCatalogRepo: RemoteCatalogRepo = _remoteCatalogRepo
+
+  override def remoteCatalogRunRepo: RemoteCatalogRunRepo =
+    _remoteCatalogRunRepo
 
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
@@ -917,6 +966,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_keyring_tenant ON keyrings ((content->>'_tenant'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_deleted ON keyrings ((content->>'_deleted'));",
       "CREATE INDEX IF NOT EXISTS idx_keyring_clientId ON keyrings ((content-> 'apiKey' ->> 'clientId'));",
+      "CREATE INDEX IF NOT EXISTS idx_remote_catalog_id ON remote_catalogs ((content->>'_id'));",
+      "CREATE INDEX IF NOT EXISTS idx_remote_catalog_tenant ON remote_catalogs ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_remote_catalog_run_tenant ON remote_catalog_runs ((content->>'_tenant'));",
+      "CREATE INDEX IF NOT EXISTS idx_remote_catalog_run_catalog ON remote_catalog_runs ((content->>'catalog'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
@@ -1002,7 +1055,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       subscriptionDemandRepo.forAllTenant(),
       usagePlanRepo.forAllTenant(),
       apiSubscriptionTransferRepo.forAllTenant(),
-      keyringRepo.forAllTenant()
+      keyringRepo.forAllTenant(),
+      remoteCatalogRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -1134,6 +1188,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
               keyringRepo
                 .forAllTenant()
                 .save(json.KeyringFormat.reads(payload).get)
+            case ("remote_catalogs", payload) =>
+              remoteCatalogRepo
+                .forAllTenant()
+                .save(json.RemoteCatalogFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)
@@ -1381,6 +1439,38 @@ class PostgresTenantCmsPageRepo(
   override def extractId(value: CmsPage): String = value.id.value
 }
 
+class PostgresTenantRemoteCatalogRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[RemoteCatalog, RemoteCatalogId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+  override def tableName: String = "remote_catalogs"
+
+  override def format: Format[RemoteCatalog] = json.RemoteCatalogFormat
+
+  override def extractId(value: RemoteCatalog): String = value.id.value
+}
+
+class PostgresTenantRemoteCatalogRunRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[RemoteCatalogRun, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+  override def tableName: String = "remote_catalog_runs"
+
+  override def format: Format[RemoteCatalogRun] = json.RemoteCatalogRunFormat
+
+  override def extractId(value: RemoteCatalogRun): String = value.id.value
+}
+
 class PostgresTenantAssetRepo(
     env: Env,
     reactivePg: ReactivePg,
@@ -1588,6 +1678,24 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[CmsPage] = json.CmsPageFormat
 
   override def extractId(value: CmsPage): String = value.id.value
+}
+
+class PostgresRemoteCatalogRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[RemoteCatalog, RemoteCatalogId](env, reactivePg) {
+  override def tableName: String = "remote_catalogs"
+
+  override def format: Format[RemoteCatalog] = json.RemoteCatalogFormat
+
+  override def extractId(value: RemoteCatalog): String = value.id.value
+}
+
+class PostgresRemoteCatalogRunRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[RemoteCatalogRun, DatastoreId](env, reactivePg) {
+  override def tableName: String = "remote_catalog_runs"
+
+  override def format: Format[RemoteCatalogRun] = json.RemoteCatalogRunFormat
+
+  override def extractId(value: RemoteCatalogRun): String = value.id.value
 }
 
 class PostgresAssetRepo(env: Env, reactivePg: ReactivePg)

@@ -1,6 +1,7 @@
 import { Form, FormRef, TBaseObject } from '@maif/react-forms';
-import { useContext, useRef } from 'react';
+import { useContext, useRef, useState } from 'react';
 
+import { DismissibleError } from '../../components/utils/DismissibleError';
 import { I18nContext } from '../../contexts';
 import { IBaseModalProps, IFormModalProps } from './types';
 
@@ -18,8 +19,22 @@ export const FormModal = <T extends TBaseObject>({
   moreAction
 }: IFormModalProps<T> & IBaseModalProps) => {
   const ref = useRef<FormRef>(undefined);
+  const [error, setError] = useState<string>();
 
   const { translate } = useContext(I18nContext);
+
+  const submit = (data: T) => {
+    Promise.resolve(onSubmit(data)).then((message) => {
+      if (message) {
+        setError(message);
+        return;
+      }
+
+      if (!noClose) {
+        close();
+      }
+    });
+  };
 
   return (
     <div className="modal-content">
@@ -34,12 +49,7 @@ export const FormModal = <T extends TBaseObject>({
           schema={schema}
           flow={flow}
           value={value}
-          onSubmit={(data) => {
-            onSubmit(data)
-            if (!noClose) {
-              close();
-            }
-          }}
+          onSubmit={submit}
           options={{
             ...options,
             actions: {
@@ -48,6 +58,7 @@ export const FormModal = <T extends TBaseObject>({
             }
           }}
         />
+        {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn --secondary" onClick={() => close()}>

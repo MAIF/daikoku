@@ -202,6 +202,14 @@ object testUtils {
           daikokuComponents.env.dataStore.keyringRepo
             .forAllTenant()
             .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.remoteCatalogRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.remoteCatalogRunRepo
+            .forAllTenant()
+            .deleteAll()
       } yield (logger.info("[DaikokuSpecHelper] :: flush database finished"))
     }
 
@@ -225,7 +233,8 @@ object testUtils {
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
         translations: Seq[Translation] = Seq.empty,
-        keyrings: Seq[Keyring] = Seq.empty
+        keyrings: Seq[Keyring] = Seq.empty,
+        remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
     ) = {
 //      Await.result(waitForDaikokuSetup(), 5.second)
       Await.result(
@@ -249,7 +258,8 @@ object testUtils {
           subscriptionDemands,
           usagePlans,
           translations,
-          keyrings
+          keyrings,
+          remoteCatalogs
         ),
         5.second
       )
@@ -275,7 +285,8 @@ object testUtils {
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
         usagePlans: Seq[UsagePlan] = Seq.empty,
         translations: Seq[Translation] = Seq.empty,
-        keyrings: Seq[Keyring] = Seq.empty
+        keyrings: Seq[Keyring] = Seq.empty,
+        remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
     ): Future[Unit] = {
       for {
 //        _ <- waitForDaikokuSetup()
@@ -324,6 +335,14 @@ object testUtils {
         _ <- Source(keyrings.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.keyringRepo
+              .forAllTenant()
+              .save(i)
+          )
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(remoteCatalogs.toList)
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.remoteCatalogRepo
               .forAllTenant()
               .save(i)
           )

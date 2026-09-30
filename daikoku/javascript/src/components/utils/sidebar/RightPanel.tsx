@@ -40,7 +40,7 @@ export const RightPanel = () => {
   return (
     <div className={classNames("right-panel-container", { opened: rightPanelContent })}>
       <Group orientation='horizontal'>
-        <Panel defaultSize={25} maxSize={65}>
+        <Panel defaultSize="60" maxSize="65">
           <div
             className={classNames('right-panel-background', {
               opened: rightPanelContent,
@@ -51,7 +51,7 @@ export const RightPanel = () => {
 
         </Panel>
         <Separator />
-        <Panel defaultSize={75} minSize={35}>
+        <Panel defaultSize="40" minSize="35">
           <div
             className={classNames('right-panel', {
               opened: rightPanelContent,

@@ -120,7 +120,7 @@ class CatalogSourceFile extends CatalogSource {
     }
   }
 
-  override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
+  override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {

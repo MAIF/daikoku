@@ -10,6 +10,7 @@ import {
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
+  IRemoteCatalog,
   ISafeSubscription,
   ISession,
   ISimpleOtoroshiSettings,
@@ -2688,6 +2689,28 @@ export const fetchOAuthConfiguration = (
   });
 };
 
+export const getRemoteCatalogs = (tenantId: string): PromiseWithError<Array<IRemoteCatalog>> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`);
+export const createRemoteCatalog = (
+  tenantId: string,
+  catalog: Partial<IRemoteCatalog>
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`, {
+    method: 'POST',
+    body: JSON.stringify(catalog),
+  });
+export const updateRemoteCatalog = (
+  tenantId: string,
+  catalog: IRemoteCatalog
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalog._id}`, {
+    method: 'PUT',
+    body: JSON.stringify(catalog),
+  });
+export const deleteRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}`, {
+    method: 'DELETE',
+  });
 export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
 export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
