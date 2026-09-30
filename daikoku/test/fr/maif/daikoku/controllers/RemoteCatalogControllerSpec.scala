@@ -2,12 +2,14 @@ package fr.maif.daikoku.controllers
 
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
+import fr.maif.daikoku.utils.Yaml
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.WSResponse
 
+import java.nio.file.{Files, Paths}
 import java.util.Base64
 
 class RemoteCatalogControllerSpec
@@ -77,6 +79,20 @@ class RemoteCatalogControllerSpec
       method = method,
       body = body
     )(using tenant, session)
+
+  private lazy val openApi: JsObject = {
+    val path = Paths.get(
+      s"${System.getProperty("user.dir")}/public/swaggers/admin-api-openapi.yaml"
+    )
+
+    Yaml.parse(Files.readString(path)).get.as[JsObject]
+  }
+
+  // the minimal example of a kind, as published in the OpenAPI document
+  private def publishedExample(schemaName: String): JsObject =
+    (openApi \ "components" \ "schemas" \ schemaName \ "examples")
+      .as[Seq[JsObject]]
+      .head
 
   private def tokenCall(
       catalogId: String,
@@ -337,6 +353,46 @@ class RemoteCatalogControllerSpec
       )
       validated.status mustBe 200
       (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+    }
+
+    "accept the minimal examples published in the OpenAPI document" in {
+      val keyring = json.KeyringFormat.reads(publishedExample("Keyring")).get
+      val author = tenantAdmin.copy(id = UserId("user-admin"))
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(author),
+        teams = Seq(defaultAdminTeam),
+        keyrings = Seq(keyring),
+        remoteCatalogs = Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+
+      val kinds = Seq(
+        "team" -> "Team",
+        "usage-plan" -> "UsagePlan",
+        "api" -> "Api",
+        "api-subscription" -> "ApiSubscription",
+        "cms-page" -> "CmsPage"
+      )
+      val files = kinds.map { case (kind, schemaName) =>
+        val document = publishedExample(schemaName) ++ Json.obj("kind" -> kind)
+
+        Json.obj("path" -> s"$kind.json", "content" -> Json.stringify(document))
+      }
+
+      val validated =
+        tokenCall("cat-a", "_validate", "tok-a", Some(JsArray(files)))
+
+      withClue(validated.body) {
+        validated.status mustBe 200
+      }
+      (validated.json \ "created").as[Seq[String]] must contain allOf (
+        "team-weather",
+        "plan-weather-free",
+        "api-weather",
+        "subscription-weather",
+        "page-weather-home"
+      )
     }
   }
 }

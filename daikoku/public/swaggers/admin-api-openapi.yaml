@@ -14,6 +14,38 @@ info:
   version: 19.1.0-dev
 tags: []
 components:
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    NotFound:
+      description: entity not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    BadFormat:
+      description: bad entity format
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    Conflict:
+      description: an entity with the same id already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
   schemas:
     Tenant:
       description: Tenant
@@ -393,9 +425,6 @@ components:
           type: string
         port:
           type: string
-          additionalProperties:
-            oneOf:
-              - type: integer
         fromTitle:
           type: string
         fromEmail:
@@ -641,8 +670,119 @@ components:
         - secret
         - token
         - backupCodes
+    RemoteCatalog:
+      description: RemoteCatalog
+      examples:
+        - _id: catalog-weather
+          _tenant: default
+          name: Weather catalog
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        source:
+          type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - file
+                - http
+                - github
+                - gitlab
+            config:
+              type: object
+        scheduling:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+        allowedKinds:
+          type: array
+          items:
+            type: string
+            enum:
+              - team
+              - usage-plan
+              - api
+              - api-subscription
+              - cms-page
+        maxDeletionPercent:
+          type: integer
+          format: int32
+        token:
+          type: string
+          readOnly: true
+      required:
+        - _id
+        - _tenant
+        - name
+    CmsPage:
+      description: CmsPage
+      examples:
+        - _id: page-weather-home
+          _tenant: default
+          name: Weather home
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        name:
+          type: string
+        visible:
+          type: boolean
+        authenticated:
+          type: boolean
+        picture:
+          type:
+            - string
+            - "null"
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        contentType:
+          type: string
+        forwardRef:
+          type:
+            - string
+            - "null"
+        body:
+          type: string
+        path:
+          type:
+            - string
+            - "null"
+        exact:
+          type: boolean
+        lastPublishedDate:
+          type:
+            - integer
+            - "null"
+          format: timestamp
+      required:
+        - _id
+        - _tenant
+        - name
     Team:
       description: Team
+      examples:
+        - _id: team-weather
+          _tenant: default
+          type: Organization
+          name: Weather
+          contact: weather@acme.io
+          verified: true
       properties:
         _id:
           type: string
@@ -721,8 +861,15 @@ components:
         - teamPermission
     Api:
       description: Api
+      examples:
+        - _id: api-weather
+          _tenant: default
+          team: team-weather
+          name: Weather API
       properties:
         _id:
+          type: string
+        _humanReadableId:
           type: string
         _tenant:
           type: string
@@ -733,11 +880,22 @@ components:
         lastUpdate:
           type: integer
           format: timestamp
+        createdAt:
+          type: integer
+          format: timestamp
         description:
           type:
             - string
             - "null"
         smallDescription:
+          type:
+            - string
+            - "null"
+        customHeaderCmsPage:
+          type:
+            - string
+            - "null"
+        descriptionCmsPage:
           type:
             - string
             - "null"
@@ -840,17 +998,15 @@ components:
             - published
             - blocked
             - deprecated
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
       required:
         - _id
         - _tenant
         - team
         - name
-        - lastUpdate
-        - currentVersion
-        - documentation
-        - visibility
-        - possibleUsagePlans
-        - state
     ApiIssueTag:
       description: ApiIssueTag
       properties:
@@ -1031,13 +1187,22 @@ components:
         - services
     ApiSubscription:
       description: ApiSubscription
+      examples:
+        - _id: subscription-weather
+          _tenant: default
+          keyring: keyring-weather
+          plan: plan-weather-free
+          team: team-weather
+          api: api-weather
+          createdAt: 1759190400000
+          by: user-admin
       properties:
         _id:
           type: string
         _tenant:
           type: string
-        apiKey:
-          $ref: "#/components/schemas/OtoroshiApiKey"
+        keyring:
+          type: string
         plan:
           type: string
         team:
@@ -1046,6 +1211,11 @@ components:
           type: string
         createdAt:
           type: integer
+          format: timestamp
+        validUntil:
+          type:
+            - integer
+            - "null"
           format: timestamp
         by:
           type: string
@@ -1061,12 +1231,10 @@ components:
           type:
             - boolean
             - "null"
-        rotation:
-          $ref: "#/components/schemas/ApiSubscriptionRotation"
-        integrationToken:
-          type: string
         customMetadata:
-          type: object
+          type:
+            - object
+            - "null"
         metadata:
           type:
             - object
@@ -1094,23 +1262,30 @@ components:
           type:
             - boolean
             - "null"
-        parent:
-          type:
-            - string
-            - "null"
+        state:
+          type: string
+          enum:
+            - active
+            - blocked
+        blockedBy:
+          type: array
+          items:
+            type: string
+            enum:
+              - owner
+              - lifecycle
         thirdPartySubscriptionInformations:
           oneOf:
             - $ref: "#/components/schemas/ThirdPartySubscriptionInformations.Stripe"
       required:
         - _id
         - _tenant
-        - apiKey
+        - keyring
         - plan
         - team
         - api
         - createdAt
         - by
-        - integrationToken
     ThirdPartySubscriptionInformations.Stripe:
       description: ThirdPartySubscriptionInformations
       properties:
@@ -1124,6 +1299,69 @@ components:
           type:
             - string
             - "null"
+    Keyring:
+      description: Keyring
+      examples:
+        - _id: keyring-weather
+          _tenant: default
+          team: team-weather
+          apiKey:
+            clientName: weather
+            clientId: weather-client-id
+            clientSecret: weather-client-secret
+          otoroshiSettings:
+            type: Internal
+          createdAt: 1759190400000
+          integrationToken: weather-integration-token
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        team:
+          type: string
+        customName:
+          type: string
+        apiKey:
+          $ref: "#/components/schemas/OtoroshiApiKey"
+        otoroshiSettings:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - Otoroshi
+                - Internal
+            id:
+              type: string
+          required:
+            - type
+        createdAt:
+          type: integer
+          format: timestamp
+        rotation:
+          anyOf:
+            - $ref: "#/components/schemas/ApiSubscriptionRotation"
+            - type: "null"
+        integrationToken:
+          type: string
+        bearerToken:
+          type:
+            - string
+            - "null"
+        thirdPartySubscriptionInformations:
+          oneOf:
+            - $ref: "#/components/schemas/ThirdPartySubscriptionInformations.Stripe"
+        enabled:
+          type: boolean
+      required:
+        - _id
+        - _tenant
+        - team
+        - apiKey
+        - otoroshiSettings
+        - createdAt
+        - integrationToken
     OtoroshiApiKey:
       description: OtoroshiApiKey
       properties:
@@ -1253,7 +1491,6 @@ components:
       required:
         - api
         - team
-        - sender
     NotificationAction.TeamAccess:
       description: NotificationAction teamAccess
       properties:
@@ -1868,6 +2105,12 @@ components:
         - language
     UsagePlan:
       description: UsagePlan
+      examples:
+        - _id: plan-weather-free
+          _tenant: default
+          customName: Free
+          subscriptionProcess:
+            steps: []
       properties:
         _id:
           type: string
@@ -1964,12 +2207,12 @@ components:
           format: int64
         costPerMonth:
           type:
-            - integer
+            - number
             - "null"
           format: float64
         costPerRequest:
           type:
-            - integer
+            - number
             - "null"
           format: float64
         trialPeriod:
@@ -2285,6 +2528,8 @@ components:
             - httpRequest
         id:
           type: string
+        title:
+          type: string
         url:
           type: string
         headers:
@@ -2411,9 +2656,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Tenant"
+                $ref: "#/components/schemas/Tenant"
         "401":
           description: unauthorized
           content:
@@ -2595,9 +2838,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/User"
         "401":
           description: unauthorized
           content:
@@ -2778,9 +3019,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Team"
+                $ref: "#/components/schemas/Team"
         "401":
           description: unauthorized
           content:
@@ -2961,9 +3200,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Api"
+                $ref: "#/components/schemas/Api"
         "401":
           description: unauthorized
           content:
@@ -3144,9 +3381,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiSubscription"
+                $ref: "#/components/schemas/ApiSubscription"
         "401":
           description: unauthorized
           content:
@@ -3327,9 +3562,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiDocumentationPage"
+                $ref: "#/components/schemas/ApiDocumentationPage"
         "401":
           description: unauthorized
           content:
@@ -3442,9 +3675,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Notification"
+                $ref: "#/components/schemas/Notification"
         "401":
           description: unauthorized
           content:
@@ -3526,9 +3757,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/UserSession"
+                $ref: "#/components/schemas/UserSession"
         "401":
           description: unauthorized
           content:
@@ -3610,9 +3839,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiKeyConsumption"
+                $ref: "#/components/schemas/ApiKeyConsumption"
         "401":
           description: unauthorized
           content:
@@ -3694,9 +3921,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/object"
+                $ref: "#/components/schemas/object"
         "401":
           description: unauthorized
           content:
@@ -3778,9 +4003,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Message"
+                $ref: "#/components/schemas/Message"
         "401":
           description: unauthorized
           content:
@@ -3930,9 +4153,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiIssue"
+                $ref: "#/components/schemas/ApiIssue"
         "401":
           description: unauthorized
           content:
@@ -4113,9 +4334,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiPost"
+                $ref: "#/components/schemas/ApiPost"
         "401":
           description: unauthorized
           content:
@@ -4296,9 +4515,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Translation"
+                $ref: "#/components/schemas/Translation"
         "401":
           description: unauthorized
           content:
@@ -4660,9 +4877,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/SubscriptionDemand"
+                $ref: "#/components/schemas/SubscriptionDemand"
         "401":
           description: unauthorized
           content:
@@ -4796,3 +5011,437 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OtoroshiApiKey"
+  /admin-api/cms-pages:
+    get:
+      summary: read all cms pages
+      operationId: cms-pages.findAll
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CmsPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+    post:
+      summary: creates a cms page
+      operationId: cms-pages.create
+      requestBody:
+        description: the cms page to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPage"
+      responses:
+        "201":
+          description: entity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmsPage"
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+  /admin-api/cms-pages/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: read a cms page
+      operationId: cms-pages.findById
+      responses:
+        "200":
+          description: found entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmsPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    put:
+      summary: update a cms page
+      operationId: cms-pages.update
+      requestBody:
+        description: the cms page to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPage"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    patch:
+      summary: update a cms page with JSON patch or by merging JSON object
+      operationId: cms-pages.patch
+      requestBody:
+        description: the patch to update the cms page or a JSON object
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/CmsPage"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    delete:
+      summary: delete a cms page
+      operationId: cms-pages.delete
+      responses:
+        "200":
+          description: entity deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+  /admin-api/cms-pages/sync:
+    post:
+      summary: replace every cms page of the tenant with the given files
+      operationId: cms-pages.sync
+      requestBody:
+        description: the cms files, as sent by the CLI
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  content:
+                    type: string
+                  metadata:
+                    type: object
+                  daikoku_data:
+                    type:
+                      - object
+                      - "null"
+                    additionalProperties:
+                      type: string
+                required:
+                  - name
+                  - content
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+  /admin-api/remote-catalogs:
+    get:
+      summary: read all remote catalogs
+      operationId: remote-catalogs.findAll
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RemoteCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - remote-catalog
+    post:
+      summary: creates a remote catalog
+      operationId: remote-catalogs.create
+      requestBody:
+        description: the remote catalog to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "201":
+          description: entity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalog"
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: read a remote catalog
+      operationId: remote-catalogs.findById
+      responses:
+        "200":
+          description: found entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    put:
+      summary: update a remote catalog
+      operationId: remote-catalogs.update
+      requestBody:
+        description: the remote catalog to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    patch:
+      summary: update a remote catalog with JSON patch or by merging JSON object
+      operationId: remote-catalogs.patch
+      requestBody:
+        description: the patch to update the remote catalog or a JSON object
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    delete:
+      summary: delete a remote catalog, leaving the entities it deployed in place
+      operationId: remote-catalogs.delete
+      responses:
+        "200":
+          description: entity deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_validate:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: check a whole catalog sent in the request, without fetching nor writing anything
+      operationId: remote-catalogs.validate
+      requestBody:
+        description: every file of the catalog
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  content:
+                    type: string
+                required:
+                  - path
+                  - content
+      responses:
+        "200":
+          description: the catalog would deploy; the body lists what would be created, updated and deleted
+        "400":
+          description: the catalog is refused (the body lists the errors, file by file) or the request body is not an array of files
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_test:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: dry run - fetch the configured source and report what a deploy would do, without writing anything
+      operationId: remote-catalogs.test
+      responses:
+        "200":
+          description: the catalog would deploy; the body lists what would be created, updated and deleted
+        "400":
+          description: the catalog is refused; the body lists the errors, file by file
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_deploy:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: deploy the catalog - validate everything, then write; nothing is applied when validation fails
+      operationId: remote-catalogs.deploy
+      responses:
+        "200":
+          description: the catalog was applied; the body counts what was created, updated and deleted per kind (status is partial when a write failed on the way)
+        "400":
+          description: nothing was applied; the body lists the errors, file by file
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_undeploy:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: delete every entity this catalog deployed; the catalog itself is kept
+      operationId: remote-catalogs.undeploy
+      responses:
+        "200":
+          description: the entities were deleted; the body counts them per kind
+        "400":
+          description: the catalog is being deployed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/state/export:
+    get:
+      summary: export the whole database as a stream, one entity per line
+      operationId: state.export
+      parameters:
+        - name: export-audit-trail
+          in: query
+          description: also export the audit trail
+          schema:
+            type: boolean
+        - name: download
+          in: query
+          description: answer with a Content-Disposition header, to download a file
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: one {type, payload} JSON object per line
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - state
+  /admin-api/state/import:
+    post:
+      summary: replace the whole database with an export - every table is emptied first
+      operationId: state.import
+      requestBody:
+        description: an export, one {type, payload} JSON object per line
+        required: true
+        content:
+          application/x-ndjson:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: import done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - state
+  /admin-api/state/reset:
+    post:
+      summary: empty the database and initialise it again - only available in dev and test modes
+      operationId: state.reset
+      parameters:
+        - name: path
+          in: query
+          description: file to initialise the database from
+          schema:
+            type: string
+      responses:
+        "200":
+          description: reset done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: the instance does not run in dev or test mode
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+      tags:
+        - state

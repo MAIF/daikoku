@@ -2,6 +2,7 @@ package fr.maif.daikoku
 
 import com.networknt.schema.{InputFormat, SchemaRegistry, SpecificationVersion}
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.utils.Yaml
 import org.joda.time.DateTime
 import org.scalatest.matchers.must.Matchers
@@ -19,7 +20,9 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
 
   private val spec: JsObject = {
     val text =
-      Files.readString(Paths.get(s"$pwd/public/swaggers/admin-api-openapi.yaml"))
+      Files.readString(
+        Paths.get(s"$pwd/public/swaggers/admin-api-openapi.yaml")
+      )
 
     Yaml.parse(text).get.as[JsObject]
   }
@@ -55,7 +58,9 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     val root = Json.obj(
       "$schema" -> "https://json-schema.org/draft/2020-12/schema",
       "components" -> (spec \ "components").as[JsObject]
-    ) ++ componentSchema(schemaName) ++ Json.obj("additionalProperties" -> false)
+    ) ++ componentSchema(schemaName) ++ Json.obj(
+      "additionalProperties" -> false
+    )
 
     registry
       .getSchema(Json.stringify(root), InputFormat.JSON)
@@ -79,8 +84,9 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     def required: Seq[String] =
       (componentSchema(schemaName) \ "required").as[Seq[String]]
 
+    // the minimal document published in the schema, the one users copy
     def minimal: JsObject =
-      JsObject(complete.fields.filter { case (key, _) => required.contains(key) })
+      (componentSchema(schemaName) \ "examples").as[Seq[JsObject]].head
   }
 
   private val completeTeam = Team(
@@ -89,7 +95,8 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     `type` = TeamType.Organization,
     name = "Team",
     description = "A team",
-    users = Set(UserWithPermission(UserId("user-1"), TeamPermission.Administrator)),
+    users =
+      Set(UserWithPermission(UserId("user-1"), TeamPermission.Administrator)),
     contact = "team@acme.io",
     avatar = Some("https://acme.io/avatar.png")
   )
@@ -128,9 +135,81 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     authorizedTeams = Seq(completeTeam.id)
   )
 
+  private val completeSubscription = ApiSubscription(
+    id = ApiSubscriptionId("subscription-1"),
+    tenant = TenantId("tenant"),
+    plan = completePlan.id,
+    createdAt = DateTime.now(),
+    team = completeTeam.id,
+    api = completeApi.id,
+    by = UserId("user-1"),
+    customName = Some("Weather key"),
+    keyring = KeyringId("keyring-1")
+  )
+
+  private val completeCmsPage = CmsPage(
+    id = CmsPageId("page-1"),
+    tenant = TenantId("tenant"),
+    visible = true,
+    authenticated = false,
+    name = "Home",
+    forwardRef = None,
+    tags = List("home"),
+    metadata = Map("owner" -> "docs"),
+    contentType = "text/html",
+    body = "<h1>Home</h1>",
+    path = Some("/home")
+  )
+
+  private val completeKeyring = Keyring(
+    id = KeyringId("keyring-1"),
+    tenant = TenantId("tenant"),
+    team = completeTeam.id,
+    customName = "Weather keyring",
+    apiKey = OtoroshiApiKey(
+      clientName = "weather",
+      clientId = "client-id",
+      clientSecret = "client-secret"
+    ),
+    otoroshiSettings = KeyringOtoroshiBinding.Internal,
+    createdAt = DateTime.now(),
+    integrationToken = "integration-token"
+  )
+
+  private val completeCatalog = RemoteCatalog(
+    id = RemoteCatalogId("catalog-1"),
+    tenant = TenantId("tenant"),
+    name = "Weather catalog",
+    source = RemoteCatalogSource(
+      kind = "github",
+      config = Json.obj("repo" -> "acme/catalog")
+    ),
+    allowedKinds = Set("team", "api")
+  )
+
   private val contracts = Seq(
     KindContract("Team", json.TeamFormat, completeTeam.asJson.as[JsObject]),
     KindContract("Api", json.ApiFormat, completeApi.asJson.as[JsObject]),
+    KindContract(
+      "RemoteCatalog",
+      json.RemoteCatalogFormat,
+      completeCatalog.asJson.as[JsObject]
+    ),
+    KindContract(
+      "Keyring",
+      json.KeyringFormat,
+      completeKeyring.asJson.as[JsObject]
+    ),
+    KindContract(
+      "CmsPage",
+      json.CmsPageFormat,
+      completeCmsPage.asJson.as[JsObject]
+    ),
+    KindContract(
+      "ApiSubscription",
+      json.ApiSubscriptionFormat,
+      completeSubscription.asJson.as[JsObject]
+    ),
     KindContract(
       "UsagePlan",
       json.UsagePlanFormat,
@@ -149,11 +228,16 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
         errors mustBe empty
       }
 
+      "publish a minimal example holding the required fields only" in {
+        schemaErrors(contract.schemaName, contract.minimal) mustBe empty
+        contract.minimal.keys mustBe contract.required.toSet
+      }
+
       "require nothing more than what the format needs" in {
         contract.reads.reads(contract.minimal).isSuccess mustBe true
       }
 
-      "require every field the format cannot do without" in { 
+      "require every field the format cannot do without" in {
         // meaningless while the minimal document itself is refused
         assume(contract.reads.reads(contract.minimal).isSuccess)
 
