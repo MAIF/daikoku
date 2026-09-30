@@ -170,10 +170,10 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
             },
           },
           viewApiKey: canReadApiKey && {
-            label: translate({ key: 'API key', plural: true }),
-            action: () => navigateTo('apikeys'),
+            label: translate({ key: 'navbar.keyrings.label', plural: true }),
+            action: () => navigateTo('keyrings'),
             className: {
-              active: currentTab === 'apikeys',
+              active: currentTab === 'keyrings',
             },
           }
         },

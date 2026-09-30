@@ -27,15 +27,7 @@ class TranslationsService {
       supportedLangs.availables.map(_.language)
 
     env.dataStore.translationRepo
-      .forTenant(ctx.tenant.id)
-      .find(
-        Json.obj(
-          "key" -> Json.obj(
-            "$regex" -> s".*${domain.getOrElse("mail")}",
-            "$options" -> "-i"
-          )
-        )
-      )
+      .findByKeyPattern(ctx.tenant.id, s".*${domain.getOrElse("mail")}")
       .map(translations => {
         val defaultTranslations = messagesApi.messages
           .map(v =>

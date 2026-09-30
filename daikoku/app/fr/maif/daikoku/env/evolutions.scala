@@ -109,7 +109,7 @@ object evolution_102 extends EvolutionScript {
 
           dataStore.apiRepo
             .forAllTenant()
-            .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
+            .saveRaw((goodApi \ "_id").as[String], goodApi)
         }
         .runWith(Sink.ignore)(using mat)
     }
@@ -186,8 +186,7 @@ object evolution_151 extends EvolutionScript {
               tenant.style match {
                 case Some(value) =>
                   dataStore.cmsRepo
-                    .forTenant(tenant)
-                    .findOneNotDeleted(Json.obj("path" -> "/"))
+                    .findByPath(tenant.id, "/")
                     .map {
                       case Some(_) => FastFuture.successful(())
                       case None =>
@@ -351,9 +350,17 @@ object evolution_157 extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val source = dataStore.apiSubscriptionRepo
-        .forAllTenant()
-        .streamAllRaw(Json.obj("_deleted" -> false))
+      val subscriptionRepo = dataStore.apiSubscriptionRepo.forAllTenant()
+
+      val source = Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${subscriptionRepo.tableName} " +
+              "WHERE content->>'_deleted' = 'false'",
+            "content"
+          )
+        )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(10) { value =>
           ApiSubscriptionFormat.reads(value) match {
             case JsSuccess(sub, _) =>
@@ -361,9 +368,13 @@ object evolution_157 extends EvolutionScript {
                 s"begin sync of ${sub.id} with api ${sub.api.asJson}"
               )
 
-              dataStore.apiRepo
-                .forTenant(sub.tenant)
-                .findOneRaw(Json.obj("_id" -> sub.api.asJson))
+              dataStore
+                .queryOneRaw(
+                  s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                    "WHERE content->>'_tenant' = $1 AND _id = $2",
+                  "content",
+                  Seq(sub.tenant.value, sub.api.value)
+                )
                 .map {
                   case Some(api) =>
                     (api \ "possibleUsagePlans")
@@ -382,14 +393,17 @@ object evolution_157 extends EvolutionScript {
                   case Some(otoSettingsId) =>
                     (for {
                       api <- OptionT(
-                        dataStore.apiRepo
-                          .forTenant(sub.tenant)
-                          .findOneRaw(Json.obj("_id" -> sub.api.asJson))
+                        dataStore.queryOneRaw(
+                          s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                            "WHERE content->>'_tenant' = $1 AND _id = $2",
+                          "content",
+                          Seq(sub.tenant.value, sub.api.value)
+                        )
                       )
                       tenant <- OptionT(
                         dataStore.tenantRepo
-                          .findOne(
-                            Json.obj("_id" -> (api \ "_tenant").as[String])
+                          .findById(
+                            (api \ "_tenant").as[String]
                           )
                       )
                       otoSettings <- OptionT.fromOption[Future](
@@ -467,9 +481,17 @@ object evolution_157_b extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val rewriteApiDocSource = dataStore.apiRepo
-        .forAllTenant()
-        .streamAllRaw(Json.obj("_deleted" -> false))
+      val apiRepo = dataStore.apiRepo.forAllTenant()
+
+      val rewriteApiDocSource = Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${apiRepo.tableName} " +
+              "WHERE content->>'_deleted' = 'false'",
+            "content"
+          )
+        )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(10) { value =>
           val apiId = ApiId((value \ "_id").as[String])
           val doc = (value \ "documentation").as[JsObject]
@@ -498,22 +520,24 @@ object evolution_157_b extends EvolutionScript {
               )
             )
 
-          newPages.flatMap(n =>
-            dataStore.apiRepo
-              .forTenant(tenantId)
-              .updateManyByQuery(
-                Json.obj(
-                  "_id" -> apiId.asJson
-                ),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "documentation" -> (doc ++ Json.obj(
-                      "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)
-                    ))
+          newPages.flatMap(n => {
+            val repo = dataStore.apiRepo.forTenant(tenantId)
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = jsonb_set(content, '{documentation}', " +
+                "  $3::jsonb) " +
+                "WHERE content->>'_tenant' = $1 AND _id = $2",
+              Seq(
+                tenantId.value,
+                apiId.value,
+                Json.stringify(
+                  doc ++ Json.obj(
+                    "pages" -> SeqApiDocumentationDetailPageFormat.writes(n)
                   )
                 )
               )
-          )
+            )
+          })
         }
 
       val recalcDocHumanReadableIdSource = dataStore.apiDocumentationPageRepo
@@ -561,16 +585,10 @@ object evolution_157_c extends EvolutionScript {
 
       implicit val execContext: ExecutionContext = ec
 
-      val eventualLong = dataStore.teamRepo
-        .forAllTenant()
-        .updateManyByQuery(
-          Json.obj(),
-          Json.obj(
-            "$unset" -> Json.obj(
-              "subscriptions" -> ""
-            )
-          )
-        )
+      val repo = dataStore.teamRepo.forAllTenant()
+      val eventualLong = repo.execute(
+        s"UPDATE ${repo.tableName} SET content = content - 'subscriptions'"
+      )
 
       Source
         .future(eventualLong)
@@ -603,32 +621,24 @@ object evolution_1612_a extends EvolutionScript {
 
         val future: Future[Long] = for {
           apiWithParents <-
-            dataStore.apiRepo
-              .forAllTenant()
-              .findRaw(
-                Json.obj(
-                  "_deleted" -> false,
-                  "parent" -> Json.obj("$exists" -> true, "$ne" -> null),
-                  "isDefault" -> true
-                )
-              )
-          parents =
-            apiWithParents.map(api => (api \ "parent").as[String]).distinct
-          res <-
-            dataStore.apiRepo
-              .forAllTenant()
-              .updateManyByQuery(
-                Json.obj(
-                  "parent" -> JsNull,
-                  "_id" -> Json
-                    .obj("$nin" -> JsArray(parents.map(JsString.apply)))
-                ),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "isDefault" -> true
-                  )
-                )
-              )
+            dataStore.queryString(
+              s"SELECT content->>'parent' AS parent FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                "WHERE content->>'_deleted' = 'false' " +
+                "AND content->>'parent' IS NOT NULL " +
+                "AND content->>'isDefault' = 'true'",
+              "parent"
+            )
+          parents = apiWithParents.distinct
+          res <- {
+            val repo = dataStore.apiRepo.forAllTenant()
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = jsonb_set(content, '{isDefault}', 'true'::jsonb) " +
+                "WHERE content->>'parent' IS NULL " +
+                "AND NOT (_id = ANY($1::text[]))",
+              Seq(parents.toArray)
+            )
+          }
         } yield res
 
         Source
@@ -663,32 +673,19 @@ object evolution_1612_b extends EvolutionScript {
 
         implicit val execContext: ExecutionContext = ec
 
-        val eventualLong = dataStore.teamRepo
-          .forAllTenant()
-          .updateManyByQuery(
-            Json.obj(
-              "$or" -> Json.arr(
-                Json.obj("type" -> "Personal"),
-                Json.obj("type" -> "Admin")
-              )
-            ),
-            Json.obj(
-              "$set" -> Json.obj(
-                "verified" -> true
-              )
-            )
+        val repo = dataStore.teamRepo.forAllTenant()
+        val eventualLong = repo
+          .execute(
+            s"UPDATE ${repo.tableName} " +
+              "SET content = content || '{\"verified\": true}' " +
+              "WHERE content->>'type' IN ('Personal', 'Admin')"
           )
           .flatMap(_ =>
-            dataStore.teamRepo
-              .forAllTenant()
-              .updateManyByQuery(
-                Json.obj("type" -> "Organization"),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "verified" -> false
-                  )
-                )
-              )
+            repo.execute(
+              s"UPDATE ${repo.tableName} " +
+                "SET content = content || '{\"verified\": false}' " +
+                "WHERE content->>'type' = 'Organization'"
+            )
           )
 
         Source
@@ -756,7 +753,7 @@ object evolution_1612_c extends EvolutionScript {
               jsValue.as[JsObject] ++ Json.obj("possibleUsagePlans" -> plans)
             dataStore.apiRepo
               .forAllTenant()
-              .save(Json.obj("_id" -> (goodApi \ "_id").as[String]), goodApi)
+              .saveRaw((goodApi \ "_id").as[String], goodApi)
           })
           .runWith(Sink.ignore)(using mat)
       }
@@ -828,10 +825,7 @@ object evolution_1613 extends EvolutionScript {
 
           dataStore.apiRepo
             .forAllTenant()
-            .save(
-              Json.obj({ "_id" -> (updatedApi \ "_id").as[String] }),
-              updatedApi
-            )
+            .saveRaw((updatedApi \ "_id").as[String], updatedApi)
           // FIXME can't get errors ?
         }
 
@@ -864,15 +858,19 @@ object evolution_1613_b extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-      dataStore.notificationRepo
-        .forAllTenant()
-        .streamAllRaw(
-          Json.obj(
-            "action.type" -> "ApiSubscription",
-            "status.status" -> "Pending",
-            "_deleted" -> false
+      val notificationRepo = dataStore.notificationRepo.forAllTenant()
+
+      Source
+        .future(
+          dataStore.queryRaw(
+            s"SELECT content FROM ${notificationRepo.tableName} " +
+              "WHERE content->'action'->>'type' = 'ApiSubscription' " +
+              "AND content->'status'->>'status' = 'Pending' " +
+              "AND content->>'_deleted' = 'false'",
+            "content"
           )
         )
+        .flatMapConcat(rows => Source(rows.toList))
         .mapAsync(1) { value =>
           val tenant = (value \ "_tenant").as(using json.TenantIdFormat)
           val action = (value \ "action").as[JsObject]
@@ -892,9 +890,12 @@ object evolution_1613_b extends EvolutionScript {
 
           (for {
             api <- OptionT(
-              dataStore.apiRepo
-                .forAllTenant()
-                .findOneRaw(Json.obj("_id" -> apiId.asJson))
+              dataStore.queryOneRaw(
+                s"SELECT content FROM ${dataStore.apiRepo.forAllTenant().tableName} " +
+                  "WHERE _id = $1",
+                "content",
+                Seq(apiId.value)
+              )
             )
             plan <- OptionT.fromOption[Future](
               (api \ "possibleUsagePlans")
@@ -1020,13 +1021,18 @@ object evolution_1630 extends EvolutionScript {
                   val apiId = (api \ "_id").as[String]
 
                   for {
-                    s <-
-                      dataStore.apiSubscriptionRepo
-                        .forAllTenant()
-                        .updateManyByQuery(
-                          Json.obj("plan" -> oldId, "api" -> apiId),
-                          Json.obj("$set" -> Json.obj("plan" -> _id))
-                        )
+                    s <- {
+                      val repo =
+                        dataStore.apiSubscriptionRepo.forAllTenant()
+                      repo.execute(
+                        s"UPDATE ${repo.tableName} " +
+                          "SET content = jsonb_set(content, '{plan}', " +
+                          "  to_jsonb($1::text)) " +
+                          "WHERE content->>'plan' = $2 " +
+                          "AND content->>'api' = $3",
+                        Seq(_id, oldId, apiId)
+                      )
+                    }
                     n <-
                       dataStore.notificationRepo
                         .forAllTenant()
@@ -1116,8 +1122,8 @@ object evolution_1634 extends EvolutionScript {
 
               dataStore.consumptionRepo
                 .forAllTenant()
-                .save(
-                  Json.obj("_id" -> id),
+                .saveRaw(
+                  id,
                   consumption.as[
                     JsObject
                   ] + ("state" -> json.ApiKeyConsumptionStateFormat
@@ -1157,8 +1163,7 @@ object evolution_1750 extends EvolutionScript {
         _ <- Future.sequence(
           tenants.map(tenant =>
             dataStore.teamRepo
-              .forTenant(tenant)
-              .findOne(Json.obj("type" -> TeamType.Admin.name))
+              .findAdminTeam(tenant.id)
               .flatMap(team => {
                 if (team.isDefined) {
                   val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
@@ -1583,8 +1588,7 @@ object evolution_1840_b extends EvolutionScript {
         .streamAllRaw()
         .mapAsync(1) { tenant =>
           dataStore.teamRepo
-            .forTenant((tenant \ "_id").as(using TenantIdFormat))
-            .findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name))
+            .findAdminTeam((tenant \ "_id").as(using TenantIdFormat))
             .map(t => (tenant, t))
         }
         .mapAsync(10) {
@@ -1740,8 +1744,7 @@ object evolution_1860 extends EvolutionScript {
             case Some(footer) =>
               val tenant = (value \ "_id").as(using json.TenantIdFormat)
               dataStore.cmsRepo
-                .forTenant(tenant)
-                .findOneNotDeleted(Json.obj("name" -> "footer.html"))
+                .findByName(tenant, "footer.html")
                 .map {
                   case Some(_) => FastFuture.successful(())
                   case None =>
@@ -2007,7 +2010,11 @@ object evolution_1900 extends EvolutionScript {
                 |         'team', s.content->>'team',
                 |         '_deleted', false,
                 |         'apiKey', s.content->'apiKey',
-                |         'otoroshiSettings', jsonb_build_object('type', 'Otoroshi', 'id', p.content->'otoroshiTarget'->>'otoroshiSettings'),
+                |         'otoroshiSettings', CASE
+                |           WHEN p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL
+                |             THEN jsonb_build_object('type', 'Otoroshi', 'id', p.content->'otoroshiTarget'->>'otoroshiSettings')
+                |             ELSE jsonb_build_object('type', 'Internal')
+                |           END,
                 |         'createdAt', s.content->'createdAt',
                 |         'rotation', s.content->'rotation',
                 |         'integrationToken', s.content->>'integrationToken',
@@ -2022,40 +2029,6 @@ object evolution_1900 extends EvolutionScript {
                 |  AND s.content->>'parent' IS NULL
                 |  AND s.content->>'keyring' IS NULL
                 |  AND p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL;
-                |""".stripMargin
-            )
-          // 1b. every subscription must carry a keyring ; root subscriptions that
-          // did not get an otoroshi-bound keyring above (keyless plans, e.g. the
-          // admin api) get one bound to KeyringOtoroshiBinding.Internal
-          _ <- dataStore.keyringRepo
-            .forAllTenant()
-            .execute(
-              query = """
-                |INSERT INTO keyrings (_id, _deleted, content)
-                |SELECT s._id,
-                |       false,
-                |       jsonb_build_object(
-                |         '_id', s._id,
-                |         '_tenant', s.content->>'_tenant',
-                |         'team', s.content->>'team',
-                |         '_deleted', false,
-                |         'apiKey', s.content->'apiKey',
-                |         'otoroshiSettings', jsonb_build_object('type', 'Internal'),
-                |         'createdAt', s.content->'createdAt',
-                |         'rotation', s.content->'rotation',
-                |         'integrationToken', s.content->>'integrationToken',
-                |         'bearerToken', s.content->'bearerToken',
-                |         'thirdPartySubscriptionInformations', s.content->'thirdPartySubscriptionInformations',
-                |         'customName', coalesce((a.content->>'name') || ' - ' || (p.content->>'customName'), s.content->'apiKey'->>'clientName')
-                |       )
-                |FROM api_subscriptions s
-                |LEFT JOIN apis a ON a.content->>'_id' = s.content->>'api'
-                |LEFT JOIN usage_plans p ON p.content->>'_id' = s.content->>'plan'
-                |WHERE s._deleted = false
-                |  AND s.content->>'parent' IS NULL
-                |  AND s.content->>'keyring' IS NULL
-                |  AND s.content->'apiKey' IS NOT NULL
-                |  AND NOT EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s._id);
                 |""".stripMargin
             )
           // 2. attach root subscriptions to their keyring (= own id), drop 'parent'
@@ -2108,6 +2081,15 @@ object evolution_1900 extends EvolutionScript {
                 |WHERE n.content->'action'->>'parentSubscriptionId' = s._id
                 |  AND s.content->>'keyring' IS NOT NULL;
                 |""".stripMargin
+            )
+          // 6. Unrelated to keyring, update OtoroshiSyncApiError to reduce size of 'api' field from complete
+          // api content to api id
+          _ <- dataStore.notificationRepo
+            .forAllTenant()
+            .execute(
+              query = """UPDATE notifications n
+                |SET content = jsonb_set(n.content, '{action,api}', n.content->'action'->'api'->'_id', false)
+                |WHERE n.content->'action'->>'type' = 'OtoroshiSyncApiError'""".stripMargin
             )
         } yield Done
       }
@@ -2255,6 +2237,302 @@ object evolution_18110_b extends EvolutionScript {
     }
 }
 
+object evolution_1900_b extends EvolutionScript {
+  override def version: String = "19.0.0_b"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - drop the JSONB indexes no query reads any more"
+      )
+
+      // Every entity carries its id twice: the `_id` column, which holds the
+      // PRIMARY KEY, and the JSON key `content->>'_id'`. Since the storage
+      // layer went to typed SQL, every id lookup goes through the column, so
+      // these expression indexes are only maintained — on every insert and
+      // every save — and never read.
+      //
+      // `idx_user_tenant` goes with them: `UserRepo` is a plain `Repo`, not a
+      // `TenantCapableRepo`, so no user query filters on `_tenant`.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script, so
+      // restoring means replaying these statements as CREATE INDEX:
+      //   idx_api_id           ON apis              ((content->>'_id'))
+      //   idx_notification_id  ON notifications     ((content->>'_id'))
+      //   idx_team_id          ON teams             ((content->>'_id'))
+      //   idx_plan_id          ON usage_plans       ((content->>'_id'))
+      //   idx_session_id       ON user_sessions     ((content->>'_id'))
+      //   idx_user_id          ON users             ((content->>'_id'))
+      //   idx_subscription_id  ON api_subscriptions ((content->>'_id'))
+      //   idx_keyring_id       ON keyrings          ((content->>'_id'))
+      //   idx_user_tenant      ON users             ((content->>'_tenant'))
+      val deadIndexes = Seq(
+        "idx_api_id",
+        "idx_notification_id",
+        "idx_team_id",
+        "idx_plan_id",
+        "idx_session_id",
+        "idx_user_id",
+        "idx_subscription_id",
+        "idx_keyring_id",
+        "idx_user_tenant"
+      )
+
+      deadIndexes
+        .foldLeft(Future.successful(())) { (acc, index) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = s"DROP INDEX IF EXISTS $index;")
+              .map { _ =>
+                logger.info(s"[evolution $version] :: dropped $index")
+              }
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
+object evolution_1900_c extends EvolutionScript {
+  override def version: String = "19.0.0_c"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - purge legacy soft-deleted rows (_deleted = true)"
+      )
+
+      // Logical deletion is gone: every deletion path now removes rows
+      // physically. Rows that were flagged `_deleted = true` before this
+      // change and never purged by the queue are dead weight — invisible to
+      // the app (filtered by notDeletedSql), so removing them changes nothing
+      // observable. This must run before notDeletedSql is dropped, otherwise
+      // those tombstones would resurface.
+      //
+      // Only the tables created with the `_deleted` column (allFields = true in
+      // PostgresDataStore.TABLES) are purged.
+      val softDeleteTables = Seq(
+        "tenants",
+        "password_reset",
+        "account_creation",
+        "teams",
+        "apis",
+        "translations",
+        "api_subscriptions",
+        "api_documentation_pages",
+        "notifications",
+        "consumptions",
+        "users",
+        "api_posts",
+        "api_issues",
+        "cmspages",
+        "operations",
+        "email_verifications",
+        "subscription_demands",
+        "step_validators",
+        "usage_plans",
+        "assets",
+        "reports_info",
+        "api_subscription_transfers",
+        "job_informations",
+        "keyrings"
+      )
+
+      softDeleteTables
+        .foldLeft(Future.successful(())) { (acc, table) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = s"DELETE FROM $table WHERE _deleted = true;")
+              .map { deleted =>
+                logger.info(
+                  s"[evolution $version] :: purged $deleted legacy tombstones from $table"
+                )
+              }
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
+object evolution_1900_d extends EvolutionScript {
+  override def version: String = "19.0.0_d"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - rebuild uniq_team_personal_user without its _deleted predicate"
+      )
+
+      // The entities stopped writing the `_deleted` key, so the column is left
+      // NULL on every new row. `NULL = false` is not true, so the partial index
+      // would silently stop covering new personal teams and the "one personal
+      // team per user" uniqueness would be lost without any error.
+      //
+      // Rebuilding cannot conflict: evolution_1900_c purged the rows the old
+      // predicate excluded, and every existing team row has the column set,
+      // so the new predicate covers exactly the same rows as the old one.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script:
+      //   DROP INDEX uniq_team_personal_user;
+      //   CREATE UNIQUE INDEX uniq_team_personal_user
+      //   ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+      //   WHERE _deleted = false AND content->>'type' = 'Personal';
+      val statements = Seq(
+        "DROP INDEX IF EXISTS uniq_team_personal_user;",
+        """CREATE UNIQUE INDEX IF NOT EXISTS uniq_team_personal_user
+          |ON teams ((content->>'_tenant'), (content->'users'->0->>'userId'))
+          |WHERE content->>'type' = 'Personal';""".stripMargin
+      )
+
+      statements
+        .foldLeft(Future.successful(())) { (acc, statement) =>
+          acc.flatMap { _ =>
+            dataStore.teamRepo
+              .forAllTenant()
+              .execute(query = statement)
+              .map(_ => ())
+          }
+        }
+        .map { _ =>
+          logger.info(
+            s"[evolution $version] :: rebuilt uniq_team_personal_user"
+          )
+          Done
+        }
+    }
+}
+
+object evolution_1900_e extends EvolutionScript {
+  override def version: String = "19.0.0_e"
+
+  // The tables created with the `_deleted` column (allFields = true in the
+  // former PostgresDataStore.TABLES).
+  private val tablesWithDeletedColumn = Seq(
+    "tenants",
+    "password_reset",
+    "account_creation",
+    "teams",
+    "apis",
+    "translations",
+    "api_subscriptions",
+    "api_documentation_pages",
+    "notifications",
+    "consumptions",
+    "users",
+    "api_posts",
+    "api_issues",
+    "cmspages",
+    "operations",
+    "email_verifications",
+    "subscription_demands",
+    "step_validators",
+    "usage_plans",
+    "assets",
+    "reports_info",
+    "api_subscription_transfers",
+    "job_informations",
+    "keyrings"
+  )
+
+  // Expression indexes on the JSON key, not on the column: dropping the column
+  // does not take them with it, so they have to go explicitly.
+  private val deletedIndexes = Seq(
+    "idx_api_deleted",
+    "idx_notification_deleted",
+    "idx_team_deleted",
+    "idx_plan_deleted",
+    "idx_user_deleted",
+    "idx_keyring_deleted"
+  )
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - drop the _deleted column and its indexes"
+      )
+
+      // Nothing reads or writes the flag any more: the read filter went with
+      // the typed queries, the write family was dead code, and the entities
+      // stopped serialising the key.
+      //
+      // Reversible by hand — the evolution mechanism has no down-script:
+      //   ALTER TABLE <table> ADD COLUMN _deleted BOOLEAN;   -- 24 tables
+      //   UPDATE <table> SET _deleted = false;
+      //   CREATE INDEX idx_api_deleted          ON apis          ((content->>'_deleted'));
+      //   CREATE INDEX idx_notification_deleted ON notifications ((content->>'_deleted'));
+      //   CREATE INDEX idx_team_deleted         ON teams         ((content->>'_deleted'));
+      //   CREATE INDEX idx_plan_deleted         ON usage_plans   ((content->>'_deleted'));
+      //   CREATE INDEX idx_user_deleted         ON users         ((content->>'_deleted'));
+      //   CREATE INDEX idx_keyring_deleted      ON keyrings      ((content->>'_deleted'));
+      val statements =
+        deletedIndexes.map(index => s"DROP INDEX IF EXISTS $index;") ++
+          tablesWithDeletedColumn.map(table =>
+            s"ALTER TABLE $table DROP COLUMN IF EXISTS _deleted;"
+          )
+
+      statements
+        .foldLeft(Future.successful(())) { (acc, statement) =>
+          acc.flatMap { _ =>
+            dataStore.userRepo
+              .execute(query = statement)
+              .map(_ => logger.info(s"[evolution $version] :: $statement"))
+          }
+        }
+        .map(_ => Done)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2282,7 +2560,11 @@ object evolutions {
       evolution_1892,
       evolution_18110,
       evolution_18110_b,
-      evolution_1900
+      evolution_1900,
+      evolution_1900_b,
+      evolution_1900_c,
+      evolution_1900_d,
+      evolution_1900_e
     )
   def run(
       dataStore: DataStore,
@@ -2292,7 +2574,7 @@ object evolutions {
     Source(list)
       .mapAsync(1) { evolution =>
         dataStore.evolutionRepo
-          .findOne(Json.obj("version" -> evolution.version))
+          .findByVersion(evolution.version)
           .flatMap {
             case None =>
               evolution.run(None, dataStore, otoroshiClient).flatMap { _ =>

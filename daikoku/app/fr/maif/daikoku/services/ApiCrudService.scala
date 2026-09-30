@@ -35,29 +35,19 @@ class ApiCrudService(
     val apiRepo = env.dataStore.apiRepo.forTenant(tenant)
     val maybeHumanReadableId = name.urlPathSegmentSanitized
 
-    def uniquenessQuery(excludedId: Option[String]): JsObject = {
-      Json.obj(
-        "_humanReadableId" -> maybeHumanReadableId,
-        "_deleted" -> false,
-        "parent" -> JsNull
-      ) ++ excludedId
-        .map(id => Json.obj("_id" -> Json.obj("$ne" -> id)))
-        .getOrElse(Json.obj())
-    }
+    def taken(excludedId: Option[String]): Future[Boolean] =
+      env.dataStore.apiRepo
+        .existsRootWithHumanReadableId(tenant, maybeHumanReadableId, excludedId)
 
     maybeApiId match {
       case Some(apiId) =>
-        apiRepo.findByIdNotDeleted(apiId).flatMap {
-          case None =>
-            apiRepo.exists(uniquenessQuery(None))
-
+        apiRepo.findById(apiId).flatMap {
+          case None => taken(None)
           case Some(api) =>
-            val excludedId = api.parent.map(_.value).orElse(Some(apiId))
-            apiRepo.exists(uniquenessQuery(excludedId))
+            taken(api.parent.map(_.value).orElse(Some(apiId)))
         }
 
-      case None =>
-        apiRepo.exists(uniquenessQuery(None))
+      case None => taken(None)
     }
   }
 
@@ -122,8 +112,7 @@ class ApiCrudService(
         )
           EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant.id)
-              .count(Json.obj("api" -> newApi.id.value, "_deleted" -> false))
+              .countByApi(tenant.id, newApi.id)
               .map(_ > 0)
           )
         else EitherT.pure[Future, AppError](false)
@@ -134,14 +123,11 @@ class ApiCrudService(
       )
       anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.apiRepo
-          .forTenant(tenant.id)
-          .exists(
-            Json.obj(
-              "_deleted" -> false,
-              "_humanReadableId" -> newApi.humanReadableId,
-              "currentVersion" -> newApi.currentVersion.asJson,
-              "_id" -> Json.obj("$ne" -> newApi.id.value)
-            )
+          .existsOtherVersion(
+            tenant.id,
+            newApi.humanReadableId,
+            newApi.currentVersion.value,
+            newApi.id
           )
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -197,13 +183,7 @@ class ApiCrudService(
         for {
           nextCurrentApi <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
-              .forTenant(tenant.id)
-              .findOneNotDeleted(
-                Json.obj(
-                  "_humanReadableId" -> api.humanReadableId,
-                  "currentVersion" -> version
-                )
-              ),
+              .findByVersion(tenant.id, api.humanReadableId, version),
             AppError.ApiNotFound
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -213,17 +193,11 @@ class ApiCrudService(
           )
           _ <- EitherT.liftF[Future, AppError, Long](
             env.dataStore.apiRepo
-              .forTenant(tenant)
-              .updateManyByQuery(
-                Json.obj(
-                  "_deleted" -> false,
-                  "_humanReadableId" -> api.humanReadableId,
-                  "parent" -> api.id.asJson,
-                  "_id" -> Json.obj("$ne" -> nextCurrentApi.id.asJson)
-                ),
-                Json.obj(
-                  "$set" -> Json.obj("parent" -> nextCurrentApi.id.asJson)
-                )
+              .reparentVersions(
+                tenant.id,
+                api.humanReadableId,
+                api.id,
+                nextCurrentApi.id
               )
           )
         } yield ()
@@ -237,14 +211,10 @@ class ApiCrudService(
   ): Future[Long] = {
     if (oldApi.name != apiToSave.name) {
       env.dataStore.apiRepo
-        .forTenant(tenant.id)
-        .updateManyByQuery(
-          Json.obj("_humanReadableId" -> oldApi.humanReadableId),
-          Json.obj(
-            "$set" -> Json.obj(
-              "_humanReadableId" -> apiToSave.humanReadableId
-            )
-          )
+        .renameHumanReadableId(
+          tenant.id,
+          oldApi.humanReadableId,
+          apiToSave.humanReadableId
         )
     } else
       FastFuture.successful(0L)
@@ -257,18 +227,10 @@ class ApiCrudService(
   ): Future[Long] = {
     if (apiToSave.isDefault && !oldApi.isDefault)
       env.dataStore.apiRepo
-        .forTenant(tenant.id)
-        .updateManyByQuery(
-          Json.obj(
-            "_humanReadableId" -> apiToSave.humanReadableId,
-            "currentVersion" -> Json
-              .obj("$ne" -> apiToSave.currentVersion.value)
-          ),
-          Json.obj(
-            "$set" -> Json.obj(
-              "isDefault" -> false
-            )
-          )
+        .clearDefaultVersionExceptVersion(
+          tenant.id,
+          apiToSave.humanReadableId,
+          apiToSave.currentVersion.value
         )
     else
       FastFuture.successful(0L)

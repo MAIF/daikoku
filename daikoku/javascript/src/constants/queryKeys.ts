@@ -8,4 +8,6 @@ export const QUERY_KEYS = {
     tenantId,
     catalogId,
   ],
+  keyringSubscriptions: (keyringId: string) => ['keyring-subscription', keyringId],
+  apiKeyrings: (teamId: string, apiId: string) => ['keyrings', teamId, apiId],
 } as const;

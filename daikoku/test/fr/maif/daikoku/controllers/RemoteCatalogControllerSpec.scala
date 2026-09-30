@@ -157,10 +157,10 @@ class RemoteCatalogControllerSpec
       adminApi("/cat-other", "DELETE").status mustBe 404
     }
 
-    "physically delete a catalog, even when asked to delete it logically" in {
+    "delete a catalog" in {
       setupWithAdminApi(remoteCatalogs = Seq(aCatalog("cat-a")))
 
-      adminApi("/cat-a?logically=true", "DELETE").status mustBe 200
+      adminApi("/cat-a", "DELETE").status mustBe 200
       adminApi("/cat-a").status mustBe 404
     }
   }

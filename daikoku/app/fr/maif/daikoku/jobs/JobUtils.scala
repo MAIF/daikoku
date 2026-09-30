@@ -52,7 +52,7 @@ object JobUtils {
           action = err.asInstanceOf[NotificationAction]
         )
       )
-    env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).andThen {
+    env.dataStore.tenantRepo.findById(tenantId).andThen {
       case Success(Some(tenant)) =>
         JobEvent(err.message).logJobEvent(
           tenant,
@@ -67,7 +67,7 @@ object JobUtils {
               )
             case NotificationAction.OtoroshiSyncApiError(api, _) =>
               Json.obj(
-                "api" -> api.asJson,
+                "api" -> api.value,
                 "team" -> teamId.value,
                 "tenant" -> tenantId.value
               )
@@ -75,7 +75,7 @@ object JobUtils {
         )
     }
     env.dataStore.userRepo
-      .findAllNotDeleted()
+      .findAll()
       .map(_.filter(_.isDaikokuAdmin))
       .map { users =>
         def sendMail(mailer: Mailer, tenant: Tenant): Unit = {
@@ -94,14 +94,7 @@ object JobUtils {
 
         val tenants: Seq[TenantId] = users.flatMap(u => u.tenants).distinct
         env.dataStore.tenantRepo
-          .find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(tenants.map(t => JsString(t.value)))
-              )
-            )
-          )
+          .findByIds(tenants)
           .map { tenants =>
             tenants.find { t =>
               t.mailerSettings.isDefined && t.mailerSettings.get.mailerType != "console"

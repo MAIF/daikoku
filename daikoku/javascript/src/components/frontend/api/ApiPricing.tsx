@@ -1392,7 +1392,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
       authorizedTeams.map((t) => t._id),
       props.subscriptions
         .filter((_) => !plan.allowMultipleKeys)
-        .filter((f) => !f._deleted)
         .map((s) => s.team)
     );
 
@@ -1439,7 +1438,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
                 pendingTeams={props.inProgressDemands.map((s) => s.team)}
                 acceptedTeams={props.subscriptions
-                  .filter((f) => !f._deleted)
                   .filter(s => s.plan === plan._id)
                   .map((subs) => subs.team)}
                 allowMultipleDemand={plan.allowMultipleKeys}
@@ -2166,7 +2164,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 content: (
                                   <SubscriptionResultForm
                                     close={() => close()}
-                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
                                     teamName={teamName}
                                     requests={promises}
                                   />
@@ -2239,8 +2237,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <p className="m-0">{
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label'
-                )
+                  translate('api.pricings.creation.plan.button.label')
               }</p>
             </button>
           </>

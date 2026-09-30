@@ -132,7 +132,7 @@ class RemoteCatalogSpec
     daikokuComponents.env.dataStore.teamRepo.forTenant(tenant.id)
 
   private def loadTeam(id: String): Option[Team] =
-    Await.result(teamRepo.findByIdNotDeleted(id), 10.seconds)
+    Await.result(teamRepo.findById(id), 10.seconds)
 
   private def outcomeName(o: JobOutcome): String = o match {
     case _: JobOutcome.Skipped            => "skipped"
@@ -183,7 +183,7 @@ class RemoteCatalogSpec
 
   private def getTeam(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
-      path = s"/admin-api/teams/$id?notDeleted=true",
+      path = s"/admin-api/teams/$id",
       method = "GET",
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)

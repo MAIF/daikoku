@@ -45,16 +45,14 @@ class AuditTrailPurgeJob(override protected val env: Env)
     logger.info(
       s"Run audit trail purge for last ${env.config.auditTrailPurgeJobMaxDate}"
     )
-    val repo = env.dataStore.auditTrailRepo.forTenant(tenant)
-    val purgeBefore = DateTime
-      .now()
-      .minus(env.config.auditTrailPurgeJobMaxDate.toMillis)
-      .getMillis
 
-    repo.execute(
-        s"""DELETE FROM ${repo.tableName}
-           |WHERE (content->>'@timestamp')::bigint < $$1""".stripMargin,
-        Seq(java.lang.Long.valueOf(purgeBefore))
+    env.dataStore.auditTrailRepo
+      .deleteOlderThan(
+        DateTime
+          .now()
+          .minus(env.config.auditTrailPurgeJobMaxDate.toMillis)
+          .getMillis,
+        tenant
       )
       .map(count =>
         JobRunResult(

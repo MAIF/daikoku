@@ -92,18 +92,6 @@ class RemoteCatalogAdminApiController(
   ): EitherT[Future, AppError, RemoteCatalog] =
     super.doUpdate(tenant, oldEntity, newEntity.copy(token = oldEntity.token))
 
-  // no soft delete for catalogs: the table has no _deleted column
-  override def doDelete(
-      tenant: Tenant,
-      entity: RemoteCatalog,
-      logically: Boolean
-  ): EitherT[Future, AppError, Unit] =
-    EitherT.liftF[Future, AppError, Unit](
-      entityStore(tenant, env.dataStore)
-        .deleteById(entity.id)
-        .map(_ => ())
-    )
-
   def deploy(id: String) =
     DaikokuApiAction.async { ctx =>
       withCatalog(ctx.tenant, id) { catalog =>

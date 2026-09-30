@@ -70,6 +70,7 @@ object AppError {
   case object UnexpectedError extends AppError
   case class InternalServerError(message: String) extends AppError
   case class BadRequestError(message: String) extends AppError
+  case class SmtpAuthenticationError(message: String) extends AppError
   case class AuthenticationError(message: String) extends AppError
   case class UserNotAllowed(email: String) extends AppError
   case class AppErrors(errors: Seq[AppError]) extends AppError
@@ -137,7 +138,8 @@ object AppError {
       case UnexpectedError     => BadRequest(toJson(error))
       case InternalServerError(message) =>
         play.api.mvc.Results.InternalServerError(toJson(error))
-      case BadRequestError(message) => BadRequest(toJson(error))
+      case BadRequestError(message)         => BadRequest(toJson(error))
+      case SmtpAuthenticationError(message) => BadRequest(toJson(error))
       case AuthenticationError(message) =>
         play.api.mvc.Results.Unauthorized(toJson(error))
       case UserNotAllowed(_) =>
@@ -149,19 +151,20 @@ object AppError {
 
   def getErrorMessage(error: AppError) =
     error match {
-      case OtoroshiError(e)         => Json.stringify(e) // todo: ???
-      case ApiKeyRotationError(e)   => Json.stringify(e) // todo: ???
-      case PaymentError(e)          => e
-      case ParsingPayloadError(msg) => s"Error while parsing payload: $msg"
-      case BadRequestError(e)       => e
-      case ApiVersionConflict       => "This version already existed"
-      case TeamNameAlreadyExists    => "The name of this team already exists"
-      case ApiNotFound              => "API not found"
-      case ApiNotPublished          => "API not subscribable"
-      case PageNotFound             => "Page not found"
-      case ApiGroupNotFound         => "API group not found"
-      case TeamNotFound             => "Team not found"
-      case TenantNotFound           => "Tenant not found"
+      case OtoroshiError(e)           => Json.stringify(e) // todo: ???
+      case ApiKeyRotationError(e)     => Json.stringify(e) // todo: ???
+      case PaymentError(e)            => e
+      case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
+      case BadRequestError(e)         => e
+      case SmtpAuthenticationError(e) => e
+      case ApiVersionConflict         => "This version already existed"
+      case TeamNameAlreadyExists      => "The name of this team already exists"
+      case ApiNotFound                => "API not found"
+      case ApiNotPublished            => "API not subscribable"
+      case PageNotFound               => "Page not found"
+      case ApiGroupNotFound           => "API group not found"
+      case TeamNotFound               => "Team not found"
+      case TenantNotFound             => "Tenant not found"
       case UserNotFound(user) =>
         s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
       case EntityNotFound(name)       => s"$name not found"

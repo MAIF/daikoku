@@ -1,7 +1,7 @@
 import test, { expect, Locator } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { DWIGHT, IUser, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, expectOtoroshiApiKeyGone, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 
 
 test.beforeEach(async () => {
@@ -118,12 +118,5 @@ test('[ASOAPI-10506] - Supprimer définitivement un utilisateur (cas particulier
   await page.waitForResponse(response => response.url().includes('/api/admin/users/1AJMQB27BOOSQJC9xeUEwgDJNC5xuUq4') && response.status() === 200)
   await expect(getDwightAvatar()).not.toBeVisible();
 
-  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
-    method: 'GET',
-    headers: {
-      "Otoroshi-Client-Id": otoroshiAdminApikeyId,
-      "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
-    },
-  })
-  await expect(maybeKey.status).toBe(404)
+  await expectOtoroshiApiKeyGone(dwightPaperApiKeyId);
 });

@@ -11,7 +11,7 @@ info:
     email: oss@maif.fr
   description: Admin API of Daikoku
   title: Daikoku Admin API
-  version: 19.0.0-dev
+  version: 19.1.0-dev
 tags: []
 components:
   schemas:
@@ -22,10 +22,6 @@ components:
           type: string
         enabled:
           type: boolean
-        _deleted:
-          type:
-            - boolean
-            - "null"
         name:
           type: string
         domain:
@@ -533,8 +529,6 @@ components:
       properties:
         _id:
           type: string
-        _deleted:
-          type: boolean
         tenants:
           type:
             - array
@@ -656,10 +650,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         type:
           type: string
           enum:
@@ -736,10 +726,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         team:
           type: string
         name:
@@ -1050,10 +1036,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         apiKey:
           $ref: "#/components/schemas/OtoroshiApiKey"
         plan:
@@ -1180,10 +1162,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         title:
           type: string
         lastModificationAt:
@@ -1221,10 +1199,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         team:
           type: string
         sender:
@@ -1591,10 +1565,6 @@ components:
       properties:
         _id:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         _tenant:
           type: string
         team:
@@ -1789,10 +1759,6 @@ components:
           format: int32
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         title:
           type: string
         tags:
@@ -1862,10 +1828,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         title:
           type: string
         lastModificationAt:
@@ -1911,10 +1873,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type:
-            - boolean
-            - "null"
         currency:
           anyOf:
             - $ref: "#/components/schemas/Currency"
@@ -2165,8 +2123,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
         api:
           type: string
         plan:

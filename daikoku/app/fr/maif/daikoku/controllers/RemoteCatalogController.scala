@@ -6,6 +6,7 @@ import fr.maif.daikoku.controllers.authorizations.async._
 import fr.maif.daikoku.domain.json.RemoteCatalogFormat
 import fr.maif.daikoku.domain.{
   RemoteCatalog,
+  RemoteCatalogId,
   RemoteCatalogRun,
   RemoteCatalogRunStatus,
   Tenant
@@ -170,12 +171,9 @@ class RemoteCatalogController(
         )
       )(tenantId, ctx) { (tenant, _) =>
         env.dataStore.remoteCatalogRunRepo
-          .forTenant(tenant)
-          .find(Json.obj("catalog" -> catalogId))
+          .findByCatalog(tenant.id, RemoteCatalogId(catalogId))
           .map { runs =>
-            val newestFirst = runs.sortBy(_.at.getMillis).reverse
-
-            Ok(JsArray(newestFirst.map(_.asJson)))
+            Ok(JsArray(runs.map(_.asJson)))
           }
       }
     }

@@ -105,9 +105,9 @@ Here you can set the email addresses to report some Daikoku alerts.
 ### Mail
 The mailer type is by default, just the standard output.
 Mailgun, Mailjet and Sendgrid can be configured as a SASS solution.
-Otherwise, a SMTP client can be configured.
+Otherwise, a SMTP client can be configured (with modern auth or just user/password).
 
-> The mail templates (one by supported languages) can be edited on the `internationalization page` accessible by clicking the `edit mail template` button.
+> The mail templates (one by supported languages) can be edited with `CLI`.
 
 
 ### Authentication

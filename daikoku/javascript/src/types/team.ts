@@ -25,7 +25,6 @@ export interface ITeamSimple {
 }
 
 export interface ITeamFull extends ITeamSimple {
-  _deleted: boolean;
   metadata: object;
 }
 

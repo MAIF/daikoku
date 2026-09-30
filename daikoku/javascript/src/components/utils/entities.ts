@@ -4,7 +4,6 @@ import { ITenant, IUsagePlan, UsagePlanVisibility } from '../../types';
 export const newPossibleUsagePlan = (customName: string, tenant: ITenant): IUsagePlan => ({
   _id: nanoid(32),
   _tenant: tenant._id,
-  _deleted: false,
   currency: { code: 'EUR' },
   customName,
   customDescription: 'Free plan with limited number of calls per day and per month',

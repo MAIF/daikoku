@@ -213,6 +213,12 @@ class TenantControllerSpec()
       )(using tenant, session)
       respDelete.status mustBe 200
 
+      Await.result(
+        daikokuComponents.env.dataStore.tenantRepo
+          .findById(testTenant.id),
+        5.seconds
+      ) mustBe None
+
       val sessionNewTenant = loginWithBlocking(daikokuAdmin, testTenant)
       val respTeams =
         httpJsonCallBlocking(s"/api/me/teams")(using
@@ -2177,6 +2183,55 @@ class TenantControllerSpec()
       val resp =
         httpJsonCallBlocking(s"/api/admin/auditTrail")(using tenant, session)
       resp.status mustBe 403
+    }
+  }
+  "a tenant with additional domains" must {
+    "be resolved from an alias and refuse an unknown host" in {
+      setupEnvBlocking(
+        tenants = Seq(aliasTenant),
+        users = Seq(user),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val onAlias = httpJsonCallWithoutSessionBlocking(
+        path = "/api/me/context",
+        hostHeader = "daikoku.oto.tools"
+      )(using aliasTenant)
+      onAlias.status mustBe 200
+      (onAlias.json \ "tenant" \ "_id").as[String] mustBe tenant.id.value
+
+      val provider = httpJsonCallWithoutSessionBlocking(
+        path = "/api/auth/provider",
+        hostHeader = "daikoku.oto.tools"
+      )(using aliasTenant)
+      provider.status mustBe 200
+
+      httpJsonCallWithoutSessionBlocking(
+        path = "/api/me/context",
+        hostHeader = "unknown.oto.tools"
+      )(using aliasTenant).status mustBe 404
+    }
+    "refuse a domain already used by another tenant" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant, tenant2),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam, tenant2AdminTeam)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant2)
+
+      val conflict = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant2.id.value}",
+        method = "PUT",
+        body = Some(tenant2.copy(additionalDomains = Set(tenant.domain)).asJson)
+      )(using tenant2, session)
+      conflict.status mustBe 400
+
+      val duplicate = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant2.id.value}",
+        method = "PUT",
+        body = Some(tenant2.copy(additionalDomains = Set(tenant2.domain)).asJson)
+      )(using tenant2, session)
+      duplicate.status mustBe 400
     }
   }
 }

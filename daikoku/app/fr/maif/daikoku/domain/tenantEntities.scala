@@ -7,9 +7,9 @@ import fr.maif.daikoku.domain.json.SeqValidationStepFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils._
+import fr.maif.daikoku.utils.*
 import org.joda.time.DateTime
-import play.api.libs.json._
+import play.api.libs.json.*
 import fr.maif.daikoku.services.CmsPage
 
 import scala.concurrent.duration.FiniteDuration
@@ -414,9 +414,9 @@ case object ThirdPartyPaymentSettings {
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
-    deleted: Boolean = false,
     name: String,
     domain: String,
+    additionalDomains: Set[String] = Set.empty,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -574,6 +574,9 @@ case class Tenant(
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
   }
+  def allDomains: Set[String] = additionalDomains + domain
+  def hostFor(candidate: Option[String]): String =
+    candidate.filter(allDomains.contains).getOrElse(domain)
 }
 
 sealed trait MailerSettings {
@@ -623,6 +626,33 @@ case class MailjetSettings(
   def mailer(implicit env: Env): Mailer = {
     new MailjetSender(env.wsClient, this)
   }
+}
+enum GrantType(val name: String) {
+  case ClientCredential extends GrantType("client-credential")
+  case RefreshToken extends GrantType("refresh-token")
+}
+case class SMTPOauth2Settings(
+    host: String,
+    port: Int = 25,
+    username: String,
+    fromTitle: String,
+    fromEmail: String,
+    template: Option[String],
+    clientId: String,
+    clientSecret: String,
+    scope: String,
+    tokenUrl: String,
+    starttls: Option[Boolean] = None,
+    ssl: Option[Boolean] = None,
+    grantType: GrantType = GrantType.ClientCredential
+) extends MailerSettings
+    with CanJson[SMTPOauth2Settings] {
+
+  override def mailerType: String = "smtpOAuthClient"
+
+  override def mailer(implicit env: Env): Mailer = new SMTPOauth2Sender(this)
+
+  override def asJson: JsValue = json.SMTPOauth2SettingsFormat.writes(this)
 }
 case class SimpleSMTPSettings(
     host: String,

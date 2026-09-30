@@ -211,7 +211,7 @@ class BasicUsageSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val injectionPayloads = Seq(
-        "' or 1=1 union all select _id, _deleted, content from apis WHERE content::text='",
+        "' or 1=1 union all select _id, content from apis WHERE content::text='",
         "' OR '1'='1",
         "'; DROP TABLE apis; --",
         "' UNION SELECT * FROM apis --"

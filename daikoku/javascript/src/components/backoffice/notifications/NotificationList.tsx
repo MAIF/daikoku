@@ -149,7 +149,6 @@ type NotificationActionGQL =
 type NotificationGQL = {
   _id: string
   action: NotificationActionGQL
-  _deleted: boolean
   _tenant: ITeamFullGql
   date: number
   notificationType: { value: 'AcceptOnly' | 'AcceptOrReject' }
@@ -401,7 +400,7 @@ export const NotificationList = () => {
             <div className="d-flex justify-content-end">
               {sub && (
                 <Link
-                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`}
+                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/keyrings`}
                   className="nav_item cursor-pointer no-bg"
                   title={translate('notif.apikey.refresh.see_keyring')}
                   aria-label={translate('notif.apikey.refresh.see_keyring')}
@@ -448,7 +447,7 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-center">
               <Link
-                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}
+                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/keyrings`}
                 className="btn --tertiary --small --icon-only"
                 title={translate('notif.api.demand.accept.see_key')}
                 aria-label={translate('notif.api.demand.accept.see_key')}
@@ -1018,6 +1017,7 @@ export const NotificationList = () => {
         {translate('notifications.page.table.title')}
       </h1>
       <DynamicTable<NotificationGQL>
+        ariaLabel={translate("notifications.page.list.aria-label")}
         queryKey={['notifications']}
         columns={buildColumns}
         fetchData={fetchData}

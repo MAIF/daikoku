@@ -42,16 +42,7 @@ class AuditTrailController(
         )
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         env.dataStore.auditTrailRepo
-          .forTenant(tenant.id)
-          .find(
-            Json.obj(
-              "@timestamp" -> Json.obj(
-                "$gte" -> from,
-                "$lte" -> to
-              )
-            ),
-            Some(Json.obj("@timestamp" -> -1))
-          )
+          .findBetween(tenant.id, from, to)
           .map { events =>
             Ok(
               Json.obj(

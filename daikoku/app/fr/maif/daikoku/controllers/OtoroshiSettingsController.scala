@@ -588,12 +588,12 @@ class OtoroshiSettingsController(
               case "api" =>
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(entityId)
+                  .findById(entityId)
                   .map(api => api.flatMap(_.testing))
               case "plan" =>
                 env.dataStore.usagePlanRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(entityId)
+                  .findById(entityId)
                   .map(plan => plan.flatMap(_.testing))
               case _ => FastFuture.successful(None)
             },
@@ -768,15 +768,12 @@ class OtoroshiSettingsController(
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(teamId),
+            .findById(teamId),
           AppError.TeamNotFound
         )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-            ),
+            .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -796,15 +793,12 @@ class OtoroshiSettingsController(
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(teamId),
+            .findById(teamId),
           AppError.TeamNotFound
         )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-            ),
+            .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](
@@ -815,7 +809,7 @@ class OtoroshiSettingsController(
         plan <- EitherT.fromOptionF(
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
-            .findByIdNotDeleted(planId),
+            .findById(planId),
           AppError.PlanNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](

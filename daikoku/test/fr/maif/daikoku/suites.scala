@@ -80,6 +80,29 @@ object testUtils {
       daikokuComponents.application
     }
 
+    /** Deletion moved the Otoroshi/Stripe cleanup off the request thread and
+      * onto the deletion queue. Tests that assert the external-facing result
+      * (an Otoroshi apikey deleted or recomputed) must wait for the queue to
+      * drain before checking.
+      */
+    def awaitDeletionQueueDrained(
+        tenant: Tenant,
+        timeout: FiniteDuration = 15.seconds
+    ): Unit = {
+      val deadline = timeout.fromNow
+      var pending = true
+      while (pending && deadline.hasTimeLeft()) {
+        pending = Await
+          .result(
+            daikokuComponents.env.dataStore.operationRepo
+              .findPending(tenant.id),
+            5.seconds
+          )
+          .nonEmpty
+        if (pending) Thread.sleep(200)
+      }
+    }
+
     abstract override def run(testName: Option[String], args: Args): Status = {
       lazy val run = super.run(testName, args)
 
@@ -87,7 +110,7 @@ object testUtils {
 
         val triedLong = Try(
           Await.result(
-            daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()),
+            daikokuComponents.env.dataStore.tenantRepo.count(),
             1.second
           )
         )
@@ -505,11 +528,7 @@ object testUtils {
 
     def logout(email: String, on: Tenant): Future[Unit] = {
       daikokuComponents.env.dataStore.userSessionRepo
-        .delete(
-          Json.obj(
-            "userEmail" -> email
-          )
-        )
+        .deleteByUserEmail(email)
         .map(_ => ())
     }
 
@@ -523,18 +542,15 @@ object testUtils {
 
     def loginWith(email: String, on: Tenant): Future[UserSession] = {
       daikokuComponents.env.dataStore.userRepo
-        .findOneNotDeleted(
-          Json.obj(
-            "email" -> email
-          )
-        )
+        .findByEmail(email)
         .flatMap {
           case None =>
             FastFuture.failed(new RuntimeException("User not found !!!"))
           case Some(user) =>
             daikokuComponents.env.dataStore.teamRepo
               .forTenant(on)
-              .findOne(Json.obj())
+              .findAll()
+              .map(_.headOption)
               .map {
                 case None =>
                   Team(
@@ -1207,6 +1223,7 @@ object testUtils {
 
     val wiremockedOtoroshi = OtoroshiSettingsId("wiremock")
     val containerizedOtoroshi = OtoroshiSettingsId("test-container")
+    val defaultOtoroshi = OtoroshiSettingsId("default")
 
     val teamOwner = Team(
       id = teamOwnerId,
@@ -1500,6 +1517,8 @@ object testUtils {
       adminSubscriptions = Seq.empty,
       contact = "contactII@test-corp.foo.bar"
     )
+    
+    val aliasTenant = tenant.copy(additionalDomains = Set("daikoku.oto.tools"))
 
     val envModeDev = "dev"
     val envModeProd = "prod"

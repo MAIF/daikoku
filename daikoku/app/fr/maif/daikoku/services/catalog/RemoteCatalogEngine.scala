@@ -650,19 +650,17 @@ class RemoteCatalogEngine(
       tenant: Tenant,
       catalog: RemoteCatalog
   ): Future[Unit] = {
-    val repo = env.dataStore.remoteCatalogRunRepo.forTenant(tenant)
-
-    repo
-      .find(Json.obj("catalog" -> catalog.id.value))
-      .flatMap { runs =>
-        val newestFirst = runs.sortBy(_.at.getMillis).reverse
-        val oldIds = newestFirst.drop(runsKept).map(_.id.value)
+    env.dataStore.remoteCatalogRunRepo
+      .findByCatalog(tenant.id, catalog.id)
+      .flatMap { newestFirst =>
+        val oldIds = newestFirst.drop(runsKept).map(_.id)
 
         if (oldIds.isEmpty) {
           Future.unit
         } else {
-          repo
-            .delete(Json.obj("_id" -> Json.obj("$in" -> oldIds)))
+          env.dataStore.remoteCatalogRunRepo
+            .forTenant(tenant)
+            .deleteByIds(oldIds)
             .map(_ => ())
         }
       }
