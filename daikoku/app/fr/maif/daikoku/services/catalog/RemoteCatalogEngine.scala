@@ -143,6 +143,21 @@ class RemoteCatalogEngine(
     doFetchAndReconcile(tenant, catalog, dryRun = true)
       .map(result => toRun(tenant, catalog, result))
 
+  def validate(
+      tenant: Tenant,
+      catalog: RemoteCatalog,
+      files: Seq[CatalogFile]
+  ): Future[RemoteCatalogRun] = {
+    val parsed = RemoteCatalogError.collect(
+      files.map(file =>
+        RemoteContentParser.parseRawContent(file.content, file.path)
+      )
+    )
+
+    checkAndReconcile(tenant, catalog, parsed, dryRun = true)
+      .map(result => toRun(tenant, catalog, result))
+  }
+
   def undeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
@@ -185,36 +200,48 @@ class RemoteCatalogEngine(
           )
         )
       case Some(source) =>
-        source.fetch(catalog)(using ec, env).flatMap {
-          case Left(errors) =>
-            Future.successful(
-              Left(
-                errorsJson(
-                  s"Catalog ${catalog.id.value} could not be read, nothing was applied",
-                  errors
-                )
-              )
-            )
-          case Right(entities) =>
-            val validationErrors = entities.flatMap(entity =>
-              checkKind(catalog, entity) ++ checkTenant(tenant, entity)
-            )
-
-            if (validationErrors.nonEmpty) {
-              Future.successful(
-                Left(
-                  errorsJson(
-                    s"Catalog ${catalog.id.value} is invalid, nothing was applied",
-                    validationErrors
-                  )
-                )
-              )
-            } else {
-              reconcile(tenant, catalog, entities, dryRun)
-            }
-        }
+        source
+          .fetch(catalog)(using ec, env)
+          .flatMap(fetched =>
+            checkAndReconcile(tenant, catalog, fetched, dryRun)
+          )
     }
   }
+
+  private def checkAndReconcile(
+      tenant: Tenant,
+      catalog: RemoteCatalog,
+      fetched: Either[Seq[RemoteCatalogError], Seq[RemoteEntity]],
+      dryRun: Boolean
+  ): Future[Either[JsValue, DeployReport]] =
+    fetched match {
+      case Left(errors) =>
+        Future.successful(
+          Left(
+            errorsJson(
+              s"Catalog ${catalog.id.value} could not be read, nothing was applied",
+              errors
+            )
+          )
+        )
+      case Right(entities) =>
+        val validationErrors = entities.flatMap(entity =>
+          checkKind(catalog, entity) ++ checkTenant(tenant, entity)
+        )
+
+        if (validationErrors.nonEmpty) {
+          Future.successful(
+            Left(
+              errorsJson(
+                s"Catalog ${catalog.id.value} is invalid, nothing was applied",
+                validationErrors
+              )
+            )
+          )
+        } else {
+          reconcile(tenant, catalog, entities, dryRun)
+        }
+    }
 
   private def checkKind(
       catalog: RemoteCatalog,

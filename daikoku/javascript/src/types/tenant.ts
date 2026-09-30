@@ -220,6 +220,7 @@ export interface IRemoteCatalog {
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
   maxDeletionPercent: number;
+  token: string;
 }
 
 export type TranslationItem = string | { s: string; p: string };

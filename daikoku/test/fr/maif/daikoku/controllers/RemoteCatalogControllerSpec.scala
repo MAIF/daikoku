@@ -5,7 +5,7 @@ import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.ws.WSResponse
 
 import java.util.Base64
@@ -21,9 +21,11 @@ class RemoteCatalogControllerSpec
     setupEnvBlocking(tenants = Seq(tenant))
   }
 
+  // the token routes resolve the tenant from the Host header: it needs its own domain
   private val otherTenant = tenant.copy(
     id = TenantId("other-tenant"),
     name = "other-tenant",
+    domain = "other-tenant.test",
     adminApi = ApiId("other-admin-api")
   )
 
@@ -75,6 +77,38 @@ class RemoteCatalogControllerSpec
       method = method,
       body = body
     )(using tenant, session)
+
+  private def tokenCall(
+      catalogId: String,
+      action: String,
+      token: String,
+      body: Option[JsValue] = None
+  ): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/api/remote-catalogs/$catalogId/$action",
+      method = "POST",
+      headers = Map("Authorization" -> s"Bearer $token"),
+      body = body
+    )(using tenant)
+
+  private def teamFile(teamId: String): JsObject = {
+    val team = Team(
+      id = TeamId(teamId),
+      tenant = tenant.id,
+      `type` = TeamType.Organization,
+      name = teamId,
+      description = "",
+      users = Set.empty,
+      contact = s"$teamId@acme.io"
+    )
+
+    Json.obj(
+      "path" -> s"teams/$teamId.json",
+      "content" -> Json.stringify(
+        team.asJson.as[JsObject] ++ Json.obj("kind" -> "team")
+      )
+    )
+  }
 
   "Remote catalog admin-api" should {
     "create a catalog and read it back" in {
@@ -187,6 +221,122 @@ class RemoteCatalogControllerSpec
         .findById("cat-other")
         .futureValue
       other mustBe defined
+    }
+  }
+
+  "Remote catalog token routes" should {
+    "validate a whole catalog without writing anything" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+
+      val validated = tokenCall(
+        "cat-a",
+        "_validate",
+        "tok-a",
+        Some(Json.arr(teamFile("team-weather")))
+      )
+      validated.status mustBe 200
+      (validated.json \ "status").as[String] mustBe "completed"
+      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+
+      val team = daikokuComponents.env.dataStore.teamRepo
+        .forTenant(tenant)
+        .findById("team-weather")
+        .futureValue
+      team mustBe None
+    }
+
+    "report a broken file with its path" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+      val content = (teamFile("team-weather") \ "content").as[String]
+      val withoutId = Json.parse(content).as[JsObject] - "_id"
+      val broken = Json.obj(
+        "path" -> "teams/broken.json",
+        "content" -> Json.stringify(withoutId)
+      )
+
+      val validated =
+        tokenCall("cat-a", "_validate", "tok-a", Some(Json.arr(broken)))
+      validated.status mustBe 400
+      (validated.json \ "status").as[String] mustBe "failed"
+      val errors = (validated.json \ "errors").as[Seq[String]]
+      errors.head must startWith("teams/broken.json")
+      errors.head must include("Missing required field '_id'")
+    }
+
+    "refuse a missing, wrong or foreign token, and an unknown catalog" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(
+          aCatalog("cat-a").copy(token = "tok-a"),
+          aCatalog("cat-b").copy(token = "tok-b")
+        )
+      )
+
+      val withoutToken = httpJsonCallWithoutSessionBlocking(
+        path = "/api/remote-catalogs/cat-a/_test",
+        method = "POST"
+      )(using tenant)
+      withoutToken.status mustBe 401
+
+      tokenCall("cat-a", "_test", "wrong").status mustBe 401
+      tokenCall("cat-a", "_test", "tok-b").status mustBe 401
+      tokenCall("unknown", "_test", "tok-a").status mustBe 401
+    }
+
+    "stop accepting the old token once it is regenerated" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val regenerated =
+        backOffice(session, "/cat-a/_regenerate-token", "POST")
+      regenerated.status mustBe 200
+      val newToken = (regenerated.json \ "token").as[String]
+      newToken must not be "tok-a"
+
+      tokenCall(
+        "cat-a",
+        "_validate",
+        "tok-a",
+        Some(Json.arr())
+      ).status mustBe 401
+      tokenCall(
+        "cat-a",
+        "_validate",
+        newToken,
+        Some(Json.arr())
+      ).status mustBe 200
+    }
+
+    "never take the token from a request body" in {
+      setupWithAdminApi(remoteCatalogs = Seq.empty)
+
+      val proposed = aCatalog("cat-a").copy(token = "chosen").asJson
+      adminApi("", "POST", Some(proposed)).status mustBe 201
+
+      val createdToken = (adminApi("/cat-a").json \ "token").as[String]
+      createdToken must not be "chosen"
+
+      val hijack = aCatalog("cat-a").copy(token = "hijack").asJson
+      adminApi("/cat-a", "PUT", Some(hijack)).status mustBe 204
+
+      (adminApi("/cat-a").json \ "token").as[String] mustBe createdToken
+    }
+
+    "validate through the admin API as well" in {
+      setupWithAdminApi(remoteCatalogs = Seq(aCatalog("cat-a")))
+
+      val validated = adminApi(
+        "/cat-a/_validate",
+        "POST",
+        Some(Json.arr(teamFile("team-weather")))
+      )
+      validated.status mustBe 200
+      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
     }
   }
 }

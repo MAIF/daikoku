@@ -11,11 +11,16 @@ import fr.maif.daikoku.domain.{
   Tenant
 }
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{DeployReport, RemoteCatalogEngine}
+import fr.maif.daikoku.services.catalog.{
+  CatalogFile,
+  DeployReport,
+  RemoteCatalogEngine
+}
 import fr.maif.daikoku.storage.{DataStore, Repo}
 import fr.maif.daikoku.utils.{
   AdminApiController,
   DaikokuApiAction,
+  IdGenerator,
   UpdateOrCreate
 }
 import play.api.libs.json._
@@ -74,6 +79,19 @@ class RemoteCatalogAdminApiController(
 
   override def getId(entity: RemoteCatalog): RemoteCatalogId = entity.id
 
+  override def doCreate(
+      tenant: Tenant,
+      entity: RemoteCatalog
+  ): EitherT[Future, AppError, RemoteCatalog] =
+    super.doCreate(tenant, entity.copy(token = IdGenerator.token(64)))
+
+  override def doUpdate(
+      tenant: Tenant,
+      oldEntity: RemoteCatalog,
+      newEntity: RemoteCatalog
+  ): EitherT[Future, AppError, RemoteCatalog] =
+    super.doUpdate(tenant, oldEntity, newEntity.copy(token = oldEntity.token))
+
   // no soft delete for catalogs: the table has no _deleted column
   override def doDelete(
       tenant: Tenant,
@@ -101,6 +119,24 @@ class RemoteCatalogAdminApiController(
         auditAdminApiWrite(ctx, "test", id)
 
         engine.dryRun(ctx.tenant, catalog).map(dryRunResult)
+      }
+    }
+
+  def validate(id: String) =
+    DaikokuApiAction.async(parse.json) { ctx =>
+      withCatalog(ctx.tenant, id) { catalog =>
+        auditAdminApiWrite(ctx, "validate", id)
+
+        CatalogFile.readAll(ctx.request.body) match {
+          case None =>
+            Future.successful(
+              BadRequest(
+                Json.obj("error" -> "Expected an array of {path, content}")
+              )
+            )
+          case Some(files) =>
+            engine.validate(ctx.tenant, catalog, files).map(dryRunResult)
+        }
       }
     }
 

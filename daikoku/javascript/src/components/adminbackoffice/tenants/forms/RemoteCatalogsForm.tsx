@@ -15,6 +15,7 @@ import {
 } from '../../../../types';
 import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
+import { copyToClipboard } from '../../../utils/clipboard';
 import { DismissibleError } from '../../../utils/DismissibleError';
 import { formatDate } from '../../../utils/formatters';
 
@@ -163,6 +164,78 @@ const CatalogHistory = (props: {
   );
 };
 
+const CatalogToken = (props: {
+  tenantId: string;
+  catalog: IRemoteCatalog;
+  onRegenerated: () => void;
+}) => {
+  const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
+  const [token, setToken] = useState(props.catalog.token);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const validateUrl = `${window.location.origin}/api/remote-catalogs/${props.catalog._id}/_validate`;
+  const curlExample = [
+    `curl -X POST ${validateUrl} \\`,
+    '  -H "Authorization: Bearer $DAIKOKU_CATALOG_TOKEN" \\',
+    '  -H "Content-Type: application/json" \\',
+    '  -d @catalog-files.json',
+  ].join('\n');
+  const copyIcon = copied ? 'fas fa-check' : 'fas fa-copy';
+
+  const copy = () =>
+    copyToClipboard(token).then(() => {
+      setCopied(true);
+    });
+
+  const regenerate = () =>
+    confirm({
+      message: translate('remote-catalog.token.regenerateConfirm'),
+      okLabel: translate('remote-catalog.token.regenerate'),
+    }).then((ok) => {
+      if (!ok) {
+        return;
+      }
+
+      Services.regenerateRemoteCatalogToken(props.tenantId, props.catalog._id).then((response) => {
+        if (isError(response)) {
+          setError(response.error);
+          return;
+        }
+
+        setToken(response.token);
+        setCopied(false);
+        props.onRegenerated();
+      });
+    });
+
+  return (
+    <div>
+      <label className="form-label">{translate('remote-catalog.token.label')}</label>
+      <div className="input-group mb-2">
+        <input className="form-control" readOnly value={token} />
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          aria-label={translate('remote-catalog.token.copy')}
+          onClick={copy}
+        >
+          <i className={copyIcon} />
+        </button>
+      </div>
+      <button type="button" className="btn btn-sm btn-outline-danger mb-3" onClick={regenerate}>
+        {translate('remote-catalog.token.regenerate')}
+      </button>
+      {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
+      <p className="small text-muted">{translate('remote-catalog.token.help')}</p>
+      <pre className="small">
+        <code>{curlExample}</code>
+      </pre>
+    </div>
+  );
+};
+
 export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm, alert, openRightPanel } = useContext(ModalContext);
@@ -177,6 +250,14 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
     openRightPanel({
       title: `${catalog.name} — ${translate('remote-catalog.action.history')}`,
       content: <CatalogHistory tenantId={props.tenant._id} catalog={catalog} formatAt={formatAt} />,
+    });
+
+  const showToken = (catalog: IRemoteCatalog) =>
+    openRightPanel({
+      title: `${catalog.name} — ${translate('remote-catalog.action.token')}`,
+      content: (
+        <CatalogToken tenantId={props.tenant._id} catalog={catalog} onRegenerated={refresh} />
+      ),
     });
 
   const formatAt = (at: any): string => {
@@ -480,6 +561,10 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
               <span className="dropdown-item cursor-pointer" onClick={() => showHistory(catalog)}>
                 <i className="fas fa-history me-2" />
                 {translate('remote-catalog.action.history')}
+              </span>
+              <span className="dropdown-item cursor-pointer" onClick={() => showToken(catalog)}>
+                <i className="fas fa-key me-2" />
+                {translate('remote-catalog.action.token')}
               </span>
               <div className="dropdown-divider" />
               <span className="dropdown-item cursor-pointer" onClick={() => editCatalog(catalog)}>

@@ -25,6 +25,24 @@ object RemoteCatalogError {
   }
 }
 
+case class CatalogFile(path: String, content: String)
+
+object CatalogFile {
+
+  // e.g. [{"path": "teams/weather.yaml", "content": "kind: team\n_id: ..."}]
+  def readAll(body: JsValue): Option[Seq[CatalogFile]] =
+    body.asOpt[Seq[JsObject]].flatMap { objects =>
+      val files = objects.flatMap(o =>
+        for {
+          path <- (o \ "path").asOpt[String]
+          content <- (o \ "content").asOpt[String]
+        } yield CatalogFile(path, content)
+      )
+
+      Option.when(files.size == objects.size)(files)
+    }
+}
+
 case class RemoteEntity(
     id: String,
     kind: String,

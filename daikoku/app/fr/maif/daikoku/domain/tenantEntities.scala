@@ -777,7 +777,8 @@ case class RemoteCatalog(
     source: RemoteCatalogSource = RemoteCatalogSource(),
     scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
     allowedKinds: Set[String] = Set.empty,
-    maxDeletionPercent: Int = 30
+    maxDeletionPercent: Int = 30,
+    token: String = IdGenerator.token(64)
 ) extends CanJson[RemoteCatalog] {
   def asJson: JsValue = json.RemoteCatalogFormat.writes(this)
 }

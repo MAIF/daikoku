@@ -5386,7 +5386,10 @@ object json {
             allowedKinds =
               (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
             maxDeletionPercent =
-              (json \ "maxDeletionPercent").asOpt[Int].getOrElse(30)
+              (json \ "maxDeletionPercent").asOpt[Int].getOrElse(30),
+            token = (json \ "token")
+              .asOpt[String]
+              .getOrElse(IdGenerator.token(64))
           )
         )
       } recover { case e: Throwable =>
@@ -5402,7 +5405,8 @@ object json {
         "source" -> RemoteCatalogSourceFormat.writes(o.source),
         "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
         "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
-        "maxDeletionPercent" -> o.maxDeletionPercent
+        "maxDeletionPercent" -> o.maxDeletionPercent,
+        "token" -> o.token
       )
   }
 

@@ -140,6 +140,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val remoteCatalogAdminApiController =
     wire[RemoteCatalogAdminApiController]
   lazy val remoteCatalogController = wire[RemoteCatalogController]
+  lazy val remoteCatalogTokenController = wire[RemoteCatalogTokenController]
   lazy val graphQLController = wire[GraphQLController]
   lazy val cmsApiController = wire[CmsApiController]
   lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]

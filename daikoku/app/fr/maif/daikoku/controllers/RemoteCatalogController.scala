@@ -48,7 +48,8 @@ class RemoteCatalogController(
         val body = ctx.request.body.asOpt[JsObject].getOrElse(Json.obj()) ++
           Json.obj(
             "_id" -> IdGenerator.token(32),
-            "_tenant" -> tenant.id.value
+            "_tenant" -> tenant.id.value,
+            "token" -> IdGenerator.token(64)
           )
 
         RemoteCatalogFormat.reads(body) match {
@@ -75,7 +76,8 @@ class RemoteCatalogController(
             ctx.request.body.asOpt[JsObject].getOrElse(Json.obj()) ++
               Json.obj(
                 "_id" -> existing.id.value,
-                "_tenant" -> tenant.id.value
+                "_tenant" -> tenant.id.value,
+                "token" -> existing.token
               )
 
           RemoteCatalogFormat.reads(body) match {
@@ -103,6 +105,24 @@ class RemoteCatalogController(
             .forTenant(tenant)
             .deleteById(existing.id)
             .map(_ => NoContent)
+        }
+      }
+    }
+
+  def regenerateToken(tenantId: String, catalogId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has regenerated the token of remote catalog $catalogId"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        withCatalog(tenant, catalogId) { existing =>
+          val regenerated = existing.copy(token = IdGenerator.token(64))
+
+          env.dataStore.remoteCatalogRepo
+            .forTenant(tenant)
+            .save(regenerated)
+            .map(_ => Ok(regenerated.asJson))
         }
       }
     }

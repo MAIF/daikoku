@@ -2707,6 +2707,13 @@ export const updateRemoteCatalog = (
     method: 'PUT',
     body: JSON.stringify(catalog),
   });
+export const regenerateRemoteCatalogToken = (
+  tenantId: string,
+  catalogId: string
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_regenerate-token`, {
+    method: 'POST',
+  });
 export const deleteRemoteCatalog = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}`, {
     method: 'DELETE',
