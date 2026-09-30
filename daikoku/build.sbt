@@ -78,6 +78,7 @@ libraryDependencies ++= Seq(
 //  "org.wiremock" % "wiremock-jre8" % wiremockVersion % Test,
   "org.testcontainers" % "testcontainers" % "2.0.5" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.44.1" % Test,
+  "com.networknt" % "json-schema-validator" % "3.0.7" % Test,
   "org.apache.commons" % "commons-lang3" % "3.20.0",
   "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2",
   // play framework

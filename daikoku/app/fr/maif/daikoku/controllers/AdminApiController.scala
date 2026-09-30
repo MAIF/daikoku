@@ -2,6 +2,7 @@ package fr.maif.daikoku.controllers
 
 import cats.data.EitherT
 import cats.implicits.*
+import fr.maif.daikoku.BuildInfo
 import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
@@ -1584,15 +1585,24 @@ class AdminApiSwaggerController(
   def swagger() =
     Action {
       Using(
-        scala.io.Source.fromResource("public/swaggers/admin-api-openapi.json")
+        scala.io.Source.fromResource("public/swaggers/admin-api-openapi.yaml")
       ) { source =>
         source.mkString
-      } match {
+      }.flatMap(text =>
+        Yaml
+          .parse(text)
+          .toRight(new RuntimeException("Cannot parse the OpenAPI YAML"))
+          .toTry
+      ) match {
         case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           BadRequest(Json.obj("error" -> e.getMessage))
         case Success(value) =>
-          Ok(Json.parse(value)).withHeaders(
+          val spec = value.as[JsObject]
+          val info = (spec \ "info").as[JsObject] ++
+            Json.obj("version" -> BuildInfo.version)
+
+          Ok(spec ++ Json.obj("info" -> info)).withHeaders(
             "Access-Control-Allow-Origin" -> "*"
           )
       }
