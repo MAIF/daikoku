@@ -425,52 +425,58 @@ class CatalogSourceGithub extends CatalogSource {
         .asOpt[Seq[String]]
         .getOrElse(Seq.empty)
 
-    parseRepo(repoUrl) match {
-      case Some((owner, repo)) =>
-        fetchFromSingleRepo(apiBase, owner, repo, branch, path, token, env)
+    SourceUtils.checkHostAllowed(apiBase, sourceKind, env) match {
+      case Some(error) => Future.successful(Left(Seq(error)))
       case None =>
-        parseOrg(repoUrl) match {
-          case Some(org) =>
-            listOrgRepos(apiBase, org, token, env).flatMap {
-              case Left(err) =>
-                Future.successful(
-                  Left(Seq(SourceUtils.fetchError(s"github://$org", err)))
-                )
-              case Right(repos) =>
-                val filtered =
-                  if (repoPatterns.nonEmpty)
-                    repos.filter(name =>
-                      repoPatterns.exists(p => SourceUtils.matchesGlob(name, p))
-                    )
-                  else repos
-                logger.info(
-                  s"Scanning ${filtered.size} repos in org '$org' for path '$path'"
-                )
-                Future
-                  .sequence(filtered.map { repoName =>
-                    fetchFromSingleRepo(
-                      apiBase,
-                      org,
-                      repoName,
-                      branch,
-                      path,
-                      token,
-                      env
-                    )
-                  })
-                  .map(RemoteCatalogError.collect)
-            }
+        parseRepo(repoUrl) match {
+          case Some((owner, repo)) =>
+            fetchFromSingleRepo(apiBase, owner, repo, branch, path, token, env)
           case None =>
-            Future.successful(
-              Left(
-                Seq(
-                  RemoteCatalogError(
-                    sourceKind,
-                    s"Cannot parse GitHub repo or organization from: $repoUrl"
+            parseOrg(repoUrl) match {
+              case Some(org) =>
+                listOrgRepos(apiBase, org, token, env).flatMap {
+                  case Left(err) =>
+                    Future.successful(
+                      Left(Seq(SourceUtils.fetchError(s"github://$org", err)))
+                    )
+                  case Right(repos) =>
+                    val filtered =
+                      if (repoPatterns.nonEmpty)
+                        repos.filter(name =>
+                          repoPatterns.exists(p =>
+                            SourceUtils.matchesGlob(name, p)
+                          )
+                        )
+                      else repos
+                    logger.info(
+                      s"Scanning ${filtered.size} repos in org '$org' for path '$path'"
+                    )
+                    Future
+                      .sequence(filtered.map { repoName =>
+                        fetchFromSingleRepo(
+                          apiBase,
+                          org,
+                          repoName,
+                          branch,
+                          path,
+                          token,
+                          env
+                        )
+                      })
+                      .map(RemoteCatalogError.collect)
+                }
+              case None =>
+                Future.successful(
+                  Left(
+                    Seq(
+                      RemoteCatalogError(
+                        sourceKind,
+                        s"Cannot parse GitHub repo or organization from: $repoUrl"
+                      )
+                    )
                   )
                 )
-              )
-            )
+            }
         }
     }
   }

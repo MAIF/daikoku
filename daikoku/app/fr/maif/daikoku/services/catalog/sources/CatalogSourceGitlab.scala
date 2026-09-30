@@ -330,24 +330,52 @@ class CatalogSourceGitlab extends CatalogSource {
         .asOpt[Seq[String]]
         .getOrElse(Seq.empty)
 
-    if (isGroup(repoUrl)) {
-      listGroupProjects(baseUrl, repoUrl, token, env).flatMap {
-        case Left(err) =>
-          Future.successful(
-            Left(Seq(SourceUtils.fetchError(s"gitlab://$repoUrl", err)))
-          )
-        case Right(projects) =>
-          val filtered = if (repoPatterns.nonEmpty) {
-            projects.filter { p =>
-              val name = p.split("/").lastOption.getOrElse(p)
-              repoPatterns.exists(pat => SourceUtils.matchesGlob(name, pat))
-            }
-          } else projects
-          logger.info(
-            s"Scanning ${filtered.size} projects in group '$repoUrl' for path '$path'"
-          )
-          Future
-            .sequence(filtered.map { projectPath =>
+    SourceUtils.checkHostAllowed(baseUrl, sourceKind, env) match {
+      case Some(error) => Future.successful(Left(Seq(error)))
+      case None =>
+        if (isGroup(repoUrl)) {
+          listGroupProjects(baseUrl, repoUrl, token, env).flatMap {
+            case Left(err) =>
+              Future.successful(
+                Left(Seq(SourceUtils.fetchError(s"gitlab://$repoUrl", err)))
+              )
+            case Right(projects) =>
+              val filtered = if (repoPatterns.nonEmpty) {
+                projects.filter { p =>
+                  val name = p.split("/").lastOption.getOrElse(p)
+                  repoPatterns.exists(pat => SourceUtils.matchesGlob(name, pat))
+                }
+              } else projects
+              logger.info(
+                s"Scanning ${filtered.size} projects in group '$repoUrl' for path '$path'"
+              )
+              Future
+                .sequence(filtered.map { projectPath =>
+                  fetchFromSingleProject(
+                    baseUrl,
+                    projectPath,
+                    branch,
+                    path,
+                    token,
+                    env
+                  )
+                })
+                .map(RemoteCatalogError.collect)
+          }
+        } else {
+          parseProjectPath(repoUrl) match {
+            case None =>
+              Future.successful(
+                Left(
+                  Seq(
+                    RemoteCatalogError(
+                      sourceKind,
+                      s"Cannot parse GitLab project path from: $repoUrl"
+                    )
+                  )
+                )
+              )
+            case Some(projectPath) =>
               fetchFromSingleProject(
                 baseUrl,
                 projectPath,
@@ -356,25 +384,8 @@ class CatalogSourceGitlab extends CatalogSource {
                 token,
                 env
               )
-            })
-            .map(RemoteCatalogError.collect)
-      }
-    } else {
-      parseProjectPath(repoUrl) match {
-        case None =>
-          Future.successful(
-            Left(
-              Seq(
-                RemoteCatalogError(
-                  sourceKind,
-                  s"Cannot parse GitLab project path from: $repoUrl"
-                )
-              )
-            )
-          )
-        case Some(projectPath) =>
-          fetchFromSingleProject(baseUrl, projectPath, branch, path, token, env)
-      }
+          }
+        }
     }
   }
 }

@@ -131,6 +131,28 @@ class RemoteCatalogHttpSourceSpec
         .as[String] mustBe "remote_catalog=cat-http"
     }
 
+    "refuse a host outside the instance allowlist without touching the database" in {
+      val url =
+        servedFixtureUrl("catalog.json").replace("localhost", "127.0.0.1")
+      val t = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", url)))
+      setupEnvBlocking(
+        tenants = Seq(t),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      Await.result(job.run(t, Runner.Scheduler), 15.seconds) match {
+        case JobOutcome.PartiallyCompleted(r) =>
+          r.failures.map(_.itemId) mustBe Seq("cat-http")
+          r.failures.head.error must include(
+            "Host '127.0.0.1' is not allowed on this instance"
+          )
+        case other => fail(s"expected PartiallyCompleted, got $other")
+      }
+      getTeam("team-http").status mustBe 404
+    }
+
     "re-sync updated content over HTTP and reflect the change" in {
       val v1 =
         servedFixtureUrl("catalog-v1.json")

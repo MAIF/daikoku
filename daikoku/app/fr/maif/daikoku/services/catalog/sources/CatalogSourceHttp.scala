@@ -32,30 +32,34 @@ class CatalogSourceHttp extends CatalogSource {
       (catalog.source.config \ "timeout").asOpt[Long].getOrElse(30000L)
     val sourceName = s"http://$url"
 
-    if (url.isEmpty) {
-      Future.successful(
-        Left(Seq(RemoteCatalogError(sourceKind, "No URL configured")))
-      )
-    } else {
-      fetchUrl(url, headers, timeout, env).flatMap {
-        case Left(err) =>
-          Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
-        case Right(rawContent) =>
-          SourceUtils.isDeployListing(rawContent) match {
-            case Some(arr) =>
-              val baseUrl = url.substring(0, url.lastIndexOf('/'))
-              SourceUtils.resolveDeployListing(
-                arr,
-                relativePath =>
-                  fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
-                sourceName
-              )
-            case None =>
-              Future.successful(
-                SourceUtils.parseEntityContent(rawContent, sourceName)
-              )
-          }
-      }
+    val blocked =
+      if (url.isEmpty) Some(RemoteCatalogError(sourceKind, "No URL configured"))
+      else SourceUtils.checkHostAllowed(url, sourceName, env)
+
+    blocked match {
+      case Some(error) => Future.successful(Left(Seq(error)))
+      case None =>
+        fetchUrl(url, headers, timeout, env).flatMap {
+          case Left(err) =>
+            Future.successful(
+              Left(Seq(SourceUtils.fetchError(sourceName, err)))
+            )
+          case Right(rawContent) =>
+            SourceUtils.isDeployListing(rawContent) match {
+              case Some(arr) =>
+                val baseUrl = url.substring(0, url.lastIndexOf('/'))
+                SourceUtils.resolveDeployListing(
+                  arr,
+                  relativePath =>
+                    fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
+                  sourceName
+                )
+              case None =>
+                Future.successful(
+                  SourceUtils.parseEntityContent(rawContent, sourceName)
+                )
+            }
+        }
     }
   }
 

@@ -132,7 +132,10 @@ class RemoteCatalogEngine(
       logger.info(
         s"deploying catalog ${catalog.id} / ${catalog.source.kind} on tenant ${tenant.id.value}"
       )
-      doFetchAndReconcile(tenant, catalog, args, dryRun = false)
+      Future.unit
+        .flatMap(_ =>
+          doFetchAndReconcile(tenant, catalog, args, dryRun = false)
+        )
         .andThen { case scala.util.Success(Right(report)) =>
           audit(tenant, catalog, report)
         }
@@ -165,7 +168,8 @@ class RemoteCatalogEngine(
       logger.info(
         s"undeploying catalog ${catalog.id} on tenant ${tenant.id.value}"
       )
-      doUndeploy(tenant, catalog)
+      Future.unit
+        .flatMap(_ => doUndeploy(tenant, catalog))
         .andThen { case scala.util.Success(Right(report)) =>
           audit(tenant, catalog, report)
         }

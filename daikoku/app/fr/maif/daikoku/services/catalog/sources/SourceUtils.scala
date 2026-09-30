@@ -1,5 +1,6 @@
 package fr.maif.daikoku.services.catalog.sources
 
+import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{
   RemoteCatalogError,
   RemoteContentParser,
@@ -105,6 +106,31 @@ object SourceUtils {
         }
       })
       .map(RemoteCatalogError.collect)
+  }
+
+  def checkHostAllowed(
+      url: String,
+      sourceName: String,
+      env: Env
+  ): Option[RemoteCatalogError] = {
+    val allowedHosts = env.config.remoteCatalogAllowedHosts
+    val host = Try(new java.net.URI(url).getHost).toOption
+      .flatMap(Option(_))
+      .map(_.toLowerCase)
+
+    (allowedHosts, host) match {
+      case (Nil, _) => None
+      case (_, None) =>
+        Some(RemoteCatalogError(sourceName, s"Cannot read a host from '$url'"))
+      case (_, Some(h)) if allowedHosts.contains(h) => None
+      case (_, Some(h)) =>
+        Some(
+          RemoteCatalogError(
+            sourceName,
+            s"Host '$h' is not allowed on this instance (daikoku.remoteCatalogJob.allowedHosts)"
+          )
+        )
+    }
   }
 
   def fetchAllPages[A](
