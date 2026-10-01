@@ -95,10 +95,10 @@ $text-color-white: #{"var(--neutral-color-700, var(--neutral-primary-700, #50505
 
 $card-header-bg-color : #{"var(--card_header-bg-color, #404040)"};
 $card-header-text-color : #{"var(--card_header-text-color, #fff)"};
-$card-bg-color: #{"var(--card_bg-color, #282828)"};
-$card-text-color: #{"var(--card_text-color, #FFF)"};
-$card-link-color: #{"var(--card_link-color, #97b0c7)"};
-$card-link-hover-color: #{"var(--card_link-hover-color, #a9cbea)"};
+$card-bg-color: #{"var(--card_bg-color, #fff)"};
+$card-text-color: #{"var(--card_text-color, #000)"};
+$card-link-color: #{"var(--card_link-color, #605c5c)"};
+$card-link-hover-color: #{"var(--card_link-hover-color, #1e1e1e)"};
 
 $topbar-height: 50px;
 
