@@ -76,8 +76,11 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   `allowFileSource` / `allowPreCommand` / `allowedHosts`, historique 20 runs, admin-api CRUD + actions.
 - Specs Scala : 23 unitaires + 23 intégration au vert (dont même run en dry-run, ref vers entité supprimée,
   non possédée, kind retiré, dossier avec un fichier invalide). ⬜ Playwright du lot 1.
-- Points ouverts : run `partial` compté `succeeded` par le job (proposé : `failure`) ; message « could not be fetched »
-  aussi pour un YAML cassé ; tenant relu en base par chaque `validate` ; cas API + plan retirés ensemble non testé.
+- Points ouverts (revus le 2026-10-01) : ✅ run `partial` compté en `failure` par le job ; ✅ message global « could not
+  be read », cause par fichier (« Cannot parse as JSON or YAML ») ; ✅ API + plan retirés ensemble (spec, la cascade est
+  tolérée) ; ✅ tenant plus relu par entité : `checkReference(readFrom, "tenant", ...)` dans team, api,
+  api-subscription, cms-page, `"tenant"` ajouté à `ReconcileFinalIds` ; usage-plan garde sa lecture (il lit
+  `otoroshiSettings` / `thirdPartyPaymentSettings` du tenant).
 
 ## Lot 2 — Table dédiée, runs asynchrones, UI étape 1
 
@@ -97,7 +100,11 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   ce qui s'est passé, l'audit dit qui l'a lancé : audit du moteur supprimé (plus de `pruneAudit`), controllers UI et
   admin-api (`_deploy` / `_test` / `_undeploy` ajoutés) auditent, le job audite chaque catalog lancé via
   `JobUtils.jobUser`. `history` (endpoint à part) lit la table ; la liste reste la liste des catalogs.
-- ⬜ Verrou en base via le run en cours (remplace le `TrieMap`).
+- ✅ Verrou en base (2026-10-01) : deploy / undeploy (UI, admin-api, token CI) passent par `RemoteCatalogJob`
+  (`RemoteCatalogJobInput` : `AllEnabled` | `Deploy` | `Undeploy`, rapport rendu via une `Promise`), donc par le `claim`
+  d'`AbstractJob`. `TrieMap` supprimé du moteur. Verrou par tenant : un deploy manuel pendant la passe planifiée →
+  400 « Remote catalogs are busy ». Heartbeat `saveCursor` après chaque catalog. Effet accepté : un run manuel met à
+  jour `lastBatchAt` et repousse la passe planifiée suivante d'un intervalle. Spec : deploy refusé sous verrou.
 - ✅ UI S1 (réduite le 2026-09-30) : deploy / undeploy ouvrent le tiroir « Dernières exécutions » (tiroir partagé
   `RightPanel` corrigé : tailles en % pour react-resizable-panels v4) rechargé à l'ouverture puis toutes les 10 s ;
   dry-run renvoie la même forme qu'un run (non stocké, 400 si `failed`) affichée avec `HistoryRuns` ; undeploy
@@ -127,8 +134,8 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   création, conservé à la mise à jour, côté UI et admin-api), `RemoteCatalogTokenController` (Bearer, comparaison à
   temps constant, audit `User.system`), `_regenerate-token` back-office, panneau « Token CI » (copie http/https via
   `copyToClipboard`, régénération confirmée, exemple curl), 6 specs (45/45). Piège trouvé : les routes token résolvent
-  le tenant par le `Host`, la fixture `otherTenant` doit avoir son propre `domain`. ⬜ Reste : GraphQL — vérifier que
-  `token` n'est exposé nulle part (aujourd'hui aucun type GraphQL pour RemoteCatalog).
+  le tenant par le `Host`, la fixture `otherTenant` doit avoir son propre `domain`. ✅ GraphQL : aucun type pour
+  RemoteCatalog, `token` exposé nulle part (vérifié le 2026-10-01).
 - ⬜ Page du manuel : contenu minimal + complet par kind (repris des `examples` de l'OpenAPI), snippet CI
   `curl _validate` avec le token du catalog.
 - ~~Vérifier le YAML multi-documents avec ajv / check-jsonschema~~ sans objet depuis l'abandon du schéma autonome
@@ -142,28 +149,75 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
 - ⬜ Export YAML / JSON : enveloppe `apiVersion: daikoku.io/v1` / `kind` / `spec` pour les deux, générée côté serveur depuis
   le `toJson` de l'admin-api (un seul chemin d'écriture et de lecture). Test de contrat : tout export repasse par
   `_validate`. Visible par ceux qui peuvent éditer l'entité. Écrans d'édition de team, api, usage-plan, api-subscription,
-  keyring, cms-page.
+  keyring, cms-page. Décisions du 2026-10-01 : sert à passer en GitOps un Daikoku **sans catalog** ; archive avec un
+  dossier par kind et un fichier par entité ; action ponctuelle (bouton UI, route admin-api) avec une case « tout
+  exporter ou non », rien de stocké sur un catalog. Relecture par un catalog → listing récursif (lot 5) d'abord.
+- ✅ `adoptExisting` (2026-10-01) : réglage du catalog, désactivé par défaut. Une entité déjà dans Daikoku sans
+  `created_by`, décrite dans le catalog, est reprise (écrasée, taguée) ; une entité taguée par un autre catalog n'est
+  jamais reprise. `prepareWrite` (règle `owner`), `Format`, OpenAPI (+ copie manuel), form + aide i18n EN / FR qui
+  explique l'usage ponctuel. 2 specs (adoption, pas de vol).
+- Ordre retenu : listing récursif → kind `keyring` (on le crée et on l'ajoute à l'export) → export.
+- ✅ Export du tenant (2026-10-01) : tenant entier, case « inclure ce qu'un catalog gère déjà » (défaut false), YAML.
+  Streaming de bout en bout (30k entités) : `RemoteCatalogEngine.exportTenant` = `Source(kindOrder).flatMapConcat`
+  → `streamAllRawFormatted` → filtre `created_by` → enveloppe → `Yaml.write` (snakeyaml, load du JSON puis dump BLOCK)
+  → `Archive.zip()` (`pekko-connectors-file` 1.3.0 ajouté). Fichiers `<kind>/<id>.yaml`, secrets du keyring retirés
+  (`KeyringAdminApiController.secretFields`). Routes `GET /api/tenants/:tenantId/remote-catalogs/_export?all=`
+  (TenantAdminOnly) et `GET /admin-api/remote-catalogs/_export?all=`, `Ok.chunked`, fichier `<tenant hrid>.zip`.
+  Bouton « Exporter » + modale (navigation, pas de `fetch`/`blob`). Correctif : `streamAllRaw*` ignoraient
+  `forTenant` (`scopedWhere` ajouté ; appelants existants en `forAllTenant`, inchangés). 2 specs : aller-retour
+  export → `_validate` sur catalog `adoptExisting` = `completed`, et filtre `created_by` / `all`.
+- ⬜ Réécrire `ReactivePg.queryStreamSource` avec l'API `Cursor` pull de Vert.x (`read(n)` / `hasMore` / `close`) :
+  supprime `streamDone` et corrige la transaction laissée ouverte quand le client annule (`QueueClosed` →
+  `stream.close()` sans compléter `streamDone`, à confirmer). Commit à part + test connexion rendue après annulation.
 - Second temps : bouton d'import depuis le loader.
 
 ## Lot 5 — Fédération (contraintes composables, rien de codé en dur)
 
-- ⬜ `recursive` sur le mode dossier ; listing confiné (pas de `../`, rien hors du `path` du catalog).
-- ⬜ `allowedTeams` : toute entité doit appartenir à (ou être) une de ces teams. Un usage-plan est rattaché à la team de
+- ✅ `recursive` sur le mode dossier (2026-10-01) : `source.config.recursive`, défaut false. file → `resolveLocalGlob(dir,
+  "**")` ; GitHub → arbre complet + `resolveRemoteGlob(files, path, "**")` filtré par extension ; GitLab → `recursive=true`
+  sur `repository/tree` avec `path`. `path` sans `/` final (GitHub, GitLab). Case + aide i18n dans le form. 2 specs (file).
+- ✅ Listing confiné : `resolveDeployListing` refuse toute entrée absolue ou avec un segment `..` avant tout fetch (toutes
+  sources). Spec `../outside.json`.
+- ✅ `folderPerTeam` (2026-10-01, GitHub / GitLab seulement, implique la lecture récursive) : `teams/<teamId>/**` ne
+  déclare que les entités de sa team (team : `_id`, api / keyring / api-subscription : champ `team`, la consommatrice
+  pour les souscriptions, usage-plan : team de l'API qui le référence) ; cms-page refusée ; dossier sans team → erreur ;
+  hors de `teams/` = niveau tenant. `RemoteEntity.path` (chemin relatif, posé par les sources et `_validate`).
+  2 requêtes max (teams du tenant, puis API des plans absents du run via `possibleUsagePlans ?|`). 6 specs.
+- ~~`allowedTeams`~~ abandonné le 2026-10-01 (trop lourd, `folderPerTeam` suffit). Ancienne note : toute entité doit appartenir à (ou être) une de ces teams. Un usage-plan est rattaché à la team de
   l'API qui le référence ; cms-page refusée dès qu'il y a une contrainte de team.
 - ⬜ `folder_per_team` (config du catalog, pas dans le listing) : `<root>/<teamId>/**` impose `team == teamId` (un doc `team`
   doit avoir `_id == teamId`) ; pas de cms-page dans un dossier de team ; fichiers directement dans `<root>/` = niveau
   tenant, sans contrainte de team ; sous-dossier sans team correspondante → erreur.
-- ⬜ `allow_deletions` (défaut true) : à false, une entité retirée du repo reste en vie, garde son tag, est listée comme
+- ✅ `allowDeletions` (2026-10-01, défaut true) : à false, une entité retirée du repo est **détachée** (perd son tag,
+  `detachEntity` en phase 3, même rythme que `deleteEntity`) au lieu d'être supprimée ; `maxDeletionPercent` ignoré ;
+  `detached` dans le rapport, le run et l'historique (colonne « Détachées ») ; Undeploy inchangé. Remettre le fichier
+  ne la reprend pas sans `adoptExisting` (dit dans l'aide). 2 specs. Ancienne note : à false, une entité retirée du repo reste en vie, garde son tag, est listée comme
   orpheline dans le rapport ; suppression par les écrans habituels.
-- ⬜ Kind `keyring`.
+- ✅ Kind `keyring` (2026-10-01) : `Keyring.metadata` (lu par `readTextMetadata`) ; `KeyringAdminApiController` (fichier à
+  part, CRUD `/admin-api/keyrings`) : `readPayload` génère apiKey / integrationToken, jamais lus du payload,
+  `mergeWithExisting` + `doUpdate` gardent secrets, createdAt, rotation, infos Stripe ; validation par `checkReference`
+  (tenant, team, `otoroshi-settings` ajouté à `ReconcileFinalIds`). `kindOrder` public dans `object RemoteCatalogEngine`,
+  keyring entre api et api-subscription ; api-subscription vérifie son keyring par `checkReference`. Suppression :
+  `KeyringService.deleteKeyring(tenant, keyring)` fait tout (souscriptions via `deleteSubscriptions`, puis keyring vide),
+  `DeletionService` ne dépend plus de `KeyringService`, `deleteKeyringIfEmpty` (mort) supprimé. Actions keyring du
+  back-office sorties d'`ApiController` dans `KeyringController`. OpenAPI : paths, `required` réduit, exemple sans
+  secrets, enum `allowedKinds`. 3 specs + exemple minimal via `_validate`. Piège : changer un constructeur câblé par
+  `wire` demande un `clean` (macro périmée → `NoSuchMethodError` à l'exécution).
+  ✅ Copie manuel de l'OpenAPI resynchronisée (`cp` depuis la source, `diff` vide).
 
 ## Lot 6 — Reste
 
-- ⬜ Webhook : URL par catalog + secret généré ; `X-Hub-Signature-256` (GitHub), `X-Gitlab-Token` (GitLab) ; déclenche
-  uniquement un deploy de la branche configurée.
-- ⬜ Suppression d'un catalog : proposer undeploy ou détachement (retrait du tag).
-- ⬜ UI S2 : bloc CI (token de validation, URL + secret webhook, snippets) + « Tester la connexion ».
-- Idées notées, non planifiées : page dédiée à onglets, vue des entités gérées / orphelins, flag `adopt_existing`,
+- ✅ Webhook (2026-10-01) : `POST /api/remote-catalogs/:id/_webhook`, secret = token CI du catalog. GitHub : HMAC-SHA256
+  hex du corps brut dans `X-Hub-Signature-256` (temps constant) ; GitLab : `X-Gitlab-Token`. Secret et `application/json`
+  obligatoires (401 / 400) ; seul `push` sur repo + branche du catalog déploie (job, en arrière-plan), réponse 202
+  immédiate (GitHub : 2XX < 10 s) ; `ping` et autres ignorés (202). 8 specs dont le vecteur de la doc GitHub.
+- ✅ Suppression d'un catalog : détache toujours (UI + admin-api), `engine.detach` = `UPDATE … #- '{metadata,created_by}'`
+  par table. Pour supprimer les entités : Undeploy avant (expliqué dans la modale). 1 spec.
+- ✅ UI : panneau « CI et webhook » (curl `_validate` / `_deploy`, section webhook GitHub / GitLab). « Tester la
+  connexion » abandonné (doublon du dry-run). État vide (carte, à gauche, sans tableau ni export) ; carte « Exporter ce
+  tenant » sous le tableau ; création / édition dans le tiroir de droite (`CatalogEditor`). Thème : `.card` blanche en
+  clair (`default.css` + replis `variables.scss`), règle morte `.card-text { height: 100px }` supprimée.
+- Idées notées, non planifiées : page dédiée à onglets, vue des entités gérées / orphelins,
   sources différées (s3, consulkv, bitbucket, gitea / forgejo / codeberg, git), limites `maxFileSize` / `maxFiles`
   (robustesse mémoire si un gros fichier est commité par erreur).
 
