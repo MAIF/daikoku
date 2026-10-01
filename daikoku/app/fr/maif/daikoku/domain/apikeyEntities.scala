@@ -152,7 +152,8 @@ case class Keyring(
     thirdPartySubscriptionInformations: Option[
       ThirdPartySubscriptionInformations
     ] = None,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[Keyring] {
   override def asJson: JsValue = json.KeyringFormat.writes(this)
 

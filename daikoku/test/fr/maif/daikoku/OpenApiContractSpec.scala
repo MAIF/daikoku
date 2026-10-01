@@ -1,6 +1,7 @@
 package fr.maif.daikoku
 
 import com.networknt.schema.{InputFormat, SchemaRegistry, SpecificationVersion}
+import fr.maif.daikoku.controllers.KeyringAdminApiController
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.services.CmsPage
 import fr.maif.daikoku.utils.Yaml
@@ -173,7 +174,8 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     ),
     otoroshiSettings = KeyringOtoroshiBinding.Internal,
     createdAt = DateTime.now(),
-    integrationToken = "integration-token"
+    integrationToken = "integration-token",
+    metadata = Map("created_by" -> "remote_catalog=catalog-1")
   )
 
   private val completeCatalog = RemoteCatalog(
@@ -197,7 +199,7 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     ),
     KindContract(
       "Keyring",
-      json.KeyringFormat,
+      Reads(KeyringAdminApiController.readPayload),
       completeKeyring.asJson.as[JsObject]
     ),
     KindContract(

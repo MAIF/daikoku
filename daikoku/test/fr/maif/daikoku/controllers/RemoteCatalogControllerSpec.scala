@@ -6,11 +6,14 @@ import fr.maif.daikoku.utils.Yaml
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatestplus.play.PlaySpec
+import org.apache.pekko.util.ByteString
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{BodyWritable, InMemoryBody, WSResponse}
 
 import java.nio.file.{Files, Paths}
 import java.util.Base64
+import scala.concurrent.Await
+import scala.concurrent.duration.*
 
 class RemoteCatalogControllerSpec
     extends PlaySpec
@@ -106,6 +109,98 @@ class RemoteCatalogControllerSpec
       headers = Map("Authorization" -> s"Bearer $token"),
       body = body
     )(using tenant)
+
+  private def webhookCall(
+      catalogId: String,
+      body: String,
+      headers: Map[String, String]
+  ): WSResponse = {
+    val contentType = headers.getOrElse("Content-Type", "application/json")
+    val writable = BodyWritable[String](
+      s => InMemoryBody(ByteString(s)),
+      contentType
+    )
+
+    Await.result(
+      daikokuComponents.env.wsClient
+        .url(s"http://127.0.0.1:$port/api/remote-catalogs/$catalogId/_webhook")
+        .withHttpHeaders((Map("Host" -> tenant.domain) ++ headers).toSeq*)
+        .post(body)(using writable),
+      10.seconds
+    )
+  }
+
+  // what GitHub sends: the raw body signed with the webhook secret
+  private def githubWebhook(
+      catalogId: String,
+      token: String,
+      event: String,
+      payload: JsValue,
+      contentType: String = "application/json"
+  ): WSResponse = {
+    val body = Json.stringify(payload)
+    val signature =
+      RemoteCatalogTokenController.hmacSha256Hex(token, ByteString(body))
+
+    webhookCall(
+      catalogId,
+      body,
+      Map(
+        "Content-Type" -> contentType,
+        "X-GitHub-Event" -> event,
+        "X-Hub-Signature-256" -> s"sha256=$signature"
+      )
+    )
+  }
+
+  private def githubCatalog(id: String, token: String): RemoteCatalog =
+    aCatalog(id).copy(
+      token = token,
+      source = RemoteCatalogSource(
+        kind = "github",
+        config = Json.obj("repo" -> "acme/catalog", "branch" -> "main")
+      )
+    )
+
+  private def githubPush(branch: String): JsObject =
+    Json.obj(
+      "ref" -> s"refs/heads/$branch",
+      "repository" -> Json.obj("full_name" -> "acme/catalog")
+    )
+
+  private def folderCatalog(folderPerTeam: Boolean): RemoteCatalog =
+    githubCatalog("cat-gh", "tok-gh").copy(folderPerTeam = folderPerTeam)
+
+  // e.g. validateFolders("teams/team-a/team.json" -> teamIn("team-a"))
+  private def validateFolders(files: (String, JsObject)*): WSResponse =
+    tokenCall(
+      "cat-gh",
+      "_validate",
+      "tok-gh",
+      Some(JsArray(files.map { case (path, document) =>
+        Json.obj("path" -> path, "content" -> Json.stringify(document))
+      }))
+    )
+
+  private def teamIn(teamId: String): JsObject =
+    Team(
+      id = TeamId(teamId),
+      tenant = tenant.id,
+      `type` = TeamType.Organization,
+      name = teamId,
+      description = "",
+      users = Set.empty,
+      contact = s"$teamId@acme.io"
+    ).asJson.as[JsObject] ++ Json.obj("kind" -> "team")
+
+  private def keyringIn(id: String, team: String): JsObject =
+    Json.obj(
+      "kind" -> "keyring",
+      "_id" -> id,
+      "_tenant" -> tenant.id.value,
+      "team" -> team,
+      "otoroshiSettings" -> Json.obj("type" -> "Internal")
+    )
 
   private def teamFile(teamId: String): JsObject = {
     val team = Team(
@@ -356,14 +451,12 @@ class RemoteCatalogControllerSpec
     }
 
     "accept the minimal examples published in the OpenAPI document" in {
-      val keyring = json.KeyringFormat.reads(publishedExample("Keyring")).get
       val author = tenantAdmin.copy(id = UserId("user-admin"))
 
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(author),
         teams = Seq(defaultAdminTeam),
-        keyrings = Seq(keyring),
         remoteCatalogs = Seq(aCatalog("cat-a").copy(token = "tok-a"))
       )
 
@@ -371,6 +464,7 @@ class RemoteCatalogControllerSpec
         "team" -> "Team",
         "usage-plan" -> "UsagePlan",
         "api" -> "Api",
+        "keyring" -> "Keyring",
         "api-subscription" -> "ApiSubscription",
         "cms-page" -> "CmsPage"
       )
@@ -390,9 +484,191 @@ class RemoteCatalogControllerSpec
         "team-weather",
         "plan-weather-free",
         "api-weather",
+        "keyring-weather",
         "subscription-weather",
         "page-weather-home"
       )
+    }
+  }
+
+  "The remote catalog webhook" should {
+    "compute the signature of the GitHub documentation example" in {
+      RemoteCatalogTokenController.hmacSha256Hex(
+        "It's a Secret to Everybody",
+        ByteString("Hello, World!")
+      ) mustBe "757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"
+    }
+
+    "deploy on a signed GitHub push to the catalog branch" in {
+      setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
+
+      val resp = githubWebhook("cat-gh", "tok-gh", "push", githubPush("main"))
+      resp.status mustBe 202
+      (resp.json \ "deploying").as[String] mustBe "cat-gh"
+    }
+
+    "ignore a GitHub push to another branch" in {
+      setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
+
+      val resp = githubWebhook("cat-gh", "tok-gh", "push", githubPush("dev"))
+      resp.status mustBe 202
+      (resp.json \ "ignored").asOpt[String] mustBe defined
+    }
+
+    "ignore a GitHub ping" in {
+      setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
+
+      val resp = githubWebhook("cat-gh", "tok-gh", "ping", Json.obj("zen" -> "ok"))
+      resp.status mustBe 202
+      (resp.json \ "ignored").as[String] mustBe "not a push event"
+    }
+
+    "refuse a GitHub delivery signed with another secret or not signed" in {
+      setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
+
+      githubWebhook("cat-gh", "wrong", "push", githubPush("main")).status mustBe 401
+      webhookCall(
+        "cat-gh",
+        Json.stringify(githubPush("main")),
+        Map("X-GitHub-Event" -> "push")
+      ).status mustBe 401
+    }
+
+    "refuse a GitHub delivery that is not JSON" in {
+      setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
+
+      val resp = githubWebhook(
+        "cat-gh",
+        "tok-gh",
+        "push",
+        githubPush("main"),
+        contentType = "application/x-www-form-urlencoded"
+      )
+      resp.status mustBe 400
+    }
+
+    "deploy on a GitLab push carrying the catalog token" in {
+      val gitlab = aCatalog("cat-gl").copy(
+        token = "tok-gl",
+        source = RemoteCatalogSource(
+          kind = "gitlab",
+          config = Json.obj(
+            "repo" -> "https://gitlab.com/acme/catalog",
+            "branch" -> "main"
+          )
+        )
+      )
+      setupWithAdminApi(Seq(gitlab))
+
+      val resp = webhookCall(
+        "cat-gl",
+        Json.stringify(
+          Json.obj(
+            "ref" -> "refs/heads/main",
+            "project" -> Json.obj("web_url" -> "https://gitlab.com/acme/catalog")
+          )
+        ),
+        Map("X-Gitlab-Event" -> "Push Hook", "X-Gitlab-Token" -> "tok-gl")
+      )
+      resp.status mustBe 202
+      (resp.json \ "deploying").as[String] mustBe "cat-gl"
+    }
+
+    "refuse webhooks on a source that does not support them" in {
+      setupWithAdminApi(Seq(aCatalog("cat-http").copy(token = "tok-http")))
+
+      githubWebhook("cat-http", "tok-http", "push", githubPush("main"))
+        .status mustBe 400
+    }
+  }
+
+  "A catalog with one folder per team" should {
+    def runErrors(resp: WSResponse): Seq[String] =
+      (resp.json \ "errors").as[Seq[String]]
+
+    "accept a team folder holding the team and its keyring" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
+
+      val resp = validateFolders(
+        "teams/team-a/team.json" -> teamIn("team-a"),
+        "teams/team-a/keyring.json" -> keyringIn("kr-a", "team-a"),
+        "shared.json" -> teamIn("team-shared")
+      )
+      withClue(resp.body) {
+        resp.status mustBe 200
+      }
+    }
+
+    "accept a usage plan referenced by an api of its team" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
+
+      val resp = validateFolders(
+        "teams/team-weather/team.json" ->
+          (publishedExample("Team") ++ Json.obj("kind" -> "team")),
+        "teams/team-weather/api.json" ->
+          (publishedExample("Api") ++ Json.obj(
+            "kind" -> "api",
+            "possibleUsagePlans" -> Json.arr("plan-weather-free")
+          )),
+        "teams/team-weather/plan.json" ->
+          (publishedExample("UsagePlan") ++ Json.obj("kind" -> "usage-plan"))
+      )
+      withClue(resp.body) {
+        resp.status mustBe 200
+      }
+    }
+
+    "refuse an entity declared in the folder of another team" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
+
+      val resp = validateFolders(
+        "teams/team-a/team.json" -> teamIn("team-a"),
+        "teams/team-b/team.json" -> teamIn("team-b"),
+        "teams/team-b/keyring.json" -> keyringIn("kr-a", "team-a")
+      )
+      resp.status mustBe 400
+      runErrors(resp).exists(
+        _.contains("keyring kr-a: belongs to team 'team-a', not to 'teams/team-b'")
+      ) mustBe true
+    }
+
+    "refuse a folder that matches no team" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
+
+      val resp = validateFolders(
+        "teams/ghost/keyring.json" -> keyringIn("kr-ghost", "ghost")
+      )
+      resp.status mustBe 400
+      runErrors(resp).exists(
+        _.contains("folder 'teams/ghost' does not match any team")
+      ) mustBe true
+    }
+
+    "refuse a cms page in a team folder" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
+
+      val resp = validateFolders(
+        "teams/team-a/team.json" -> teamIn("team-a"),
+        "teams/team-a/page.json" ->
+          (publishedExample("CmsPage") ++ Json.obj("kind" -> "cms-page"))
+      )
+      resp.status mustBe 400
+      runErrors(resp).exists(
+        _.contains("a cms-page cannot be declared in a team folder")
+      ) mustBe true
+    }
+
+    "not check the folders when folderPerTeam is off" in {
+      setupWithAdminApi(Seq(folderCatalog(folderPerTeam = false)))
+
+      val resp = validateFolders(
+        "teams/team-a/team.json" -> teamIn("team-a"),
+        "teams/team-b/team.json" -> teamIn("team-b"),
+        "teams/team-b/keyring.json" -> keyringIn("kr-a", "team-a")
+      )
+      withClue(resp.body) {
+        resp.status mustBe 200
+      }
     }
   }
 }

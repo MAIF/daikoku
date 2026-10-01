@@ -73,6 +73,12 @@ object SourceUtils {
       ec: ExecutionContext
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val rawPaths = deployArray.value.flatMap(_.asOpt[String]).toSeq
+    val outsideErrors = rawPaths.filter(isOutsideListing).map(path =>
+      RemoteCatalogError(
+        s"$sourceName/$path",
+        "Listing entries must stay inside the listing folder (no absolute path, no '..')"
+      )
+    )
 
     def fetchAndParse(
         relativePath: String
@@ -80,8 +86,10 @@ object SourceUtils {
       val fileSource = s"$sourceName/$relativePath"
 
       fetchRelativePath(relativePath).map {
-        case Left(err)         => Left(Seq(fetchError(fileSource, err)))
-        case Right(rawContent) => parseEntityContent(rawContent, fileSource)
+        case Left(err) => Left(Seq(fetchError(fileSource, err)))
+        case Right(rawContent) =>
+          parseEntityContent(rawContent, fileSource)
+            .map(_.map(_.copy(path = relativePath)))
       }
     }
 
@@ -91,22 +99,28 @@ object SourceUtils {
       Future.sequence(paths.map(fetchAndParse)).map(RemoteCatalogError.collect)
     }
 
-    Future
-      .sequence(rawPaths.map { path =>
-        resolveGlob match {
-          case Some(resolve) if isGlobPattern(path) =>
-            resolve(path).flatMap {
-              case Left(err) =>
-                Future.successful(
-                  Left(Seq(fetchError(s"$sourceName/$path", err)))
-                )
-              case Right(resolvedPaths) => fetchAll(resolvedPaths)
-            }
-          case _ => fetchAndParse(path)
-        }
-      })
-      .map(RemoteCatalogError.collect)
+    if (outsideErrors.nonEmpty) Future.successful(Left(outsideErrors))
+    else
+      Future
+        .sequence(rawPaths.map { path =>
+          resolveGlob match {
+            case Some(resolve) if isGlobPattern(path) =>
+              resolve(path).flatMap {
+                case Left(err) =>
+                  Future.successful(
+                    Left(Seq(fetchError(s"$sourceName/$path", err)))
+                  )
+                case Right(resolvedPaths) => fetchAll(resolvedPaths)
+              }
+            case _ => fetchAndParse(path)
+          }
+        })
+        .map(RemoteCatalogError.collect)
   }
+
+  // e.g. "../secrets.yaml", "/etc/passwd", "teams/../../x.json"
+  private def isOutsideListing(path: String): Boolean =
+    path.startsWith("/") || path.split("[/\\\\]").contains("..")
 
   def checkHostAllowed(
       url: String,

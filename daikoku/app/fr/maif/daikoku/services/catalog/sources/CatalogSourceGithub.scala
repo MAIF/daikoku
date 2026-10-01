@@ -309,6 +309,7 @@ class CatalogSourceGithub extends CatalogSource {
       repo: String,
       branch: String,
       path: String,
+      recursive: Boolean,
       token: String,
       env: Env
   )(implicit
@@ -367,7 +368,23 @@ class CatalogSourceGithub extends CatalogSource {
           }
       }
     } else {
-      listDirectory(apiBase, owner, repo, path, branch, token, env).flatMap {
+      val listing =
+        if (recursive) {
+          listAllFilesRecursive(apiBase, owner, repo, branch, token, env).map(
+            _.map(files =>
+              SourceUtils
+                .resolveRemoteGlob(files, path, "**")
+                .filter(SourceUtils.isEntityFile)
+                .map(relative =>
+                  if (path.nonEmpty) s"$path/$relative" else relative
+                )
+            )
+          )
+        } else {
+          listDirectory(apiBase, owner, repo, path, branch, token, env)
+        }
+
+      listing.flatMap {
         case Left(err) =>
           Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
         case Right(files) =>
@@ -387,7 +404,9 @@ class CatalogSourceGithub extends CatalogSource {
                 case Left(err) =>
                   Left(Seq(SourceUtils.fetchError(fileSource, err)))
                 case Right(rawContent) =>
-                  SourceUtils.parseEntityContent(rawContent, fileSource)
+                  SourceUtils
+                    .parseEntityContent(rawContent, fileSource)
+                    .map(_.map(_.copy(path = filePath.stripPrefix(s"$path/"))))
               }
             })
             .map(RemoteCatalogError.collect)
@@ -406,6 +425,9 @@ class CatalogSourceGithub extends CatalogSource {
       .asOpt[String]
       .getOrElse("/")
       .stripPrefix("/")
+      .stripSuffix("/")
+    val recursive = catalog.folderPerTeam ||
+      (catalog.source.config \ "recursive").asOpt[Boolean].getOrElse(false)
     val token = (catalog.source.config \ "token").asOpt[String].getOrElse("")
     val apiBase =
       (catalog.source.config \ "base_url")
@@ -422,7 +444,16 @@ class CatalogSourceGithub extends CatalogSource {
       case None =>
         parseRepo(repoUrl) match {
           case Some((owner, repo)) =>
-            fetchFromSingleRepo(apiBase, owner, repo, branch, path, token, env)
+            fetchFromSingleRepo(
+              apiBase,
+              owner,
+              repo,
+              branch,
+              path,
+              recursive,
+              token,
+              env
+            )
           case None =>
             parseOrg(repoUrl) match {
               case Some(org) =>
@@ -451,6 +482,7 @@ class CatalogSourceGithub extends CatalogSource {
                           repoName,
                           branch,
                           path,
+                          recursive,
                           token,
                           env
                         )

@@ -318,7 +318,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
       tenant: Tenant,
       raws: Seq[JsValue],
       metadataKey: String,
-      finalIds: ReconcileFinalIds
+      finalIds: ReconcileFinalIds,
+      adoptExisting: Boolean
   ): Future[Seq[Either[String, PreparedWrite]]] = {
     val parsed = raws.map(fromJson)
     val parsedIds = parsed.collect { case Right(entity) => getId(entity) }
@@ -329,29 +330,42 @@ abstract class AdminApiController[Of, Id <: ValueType](
         case Right(entity) =>
           val existing = existingById.get(getId(entity).value)
 
-          prepareWrite(tenant, entity, existing, metadataKey, finalIds)
+          prepareWrite(
+            tenant,
+            entity,
+            existing,
+            metadataKey,
+            finalIds,
+            adoptExisting
+          )
       })
     }
   }
 
   // e.g. team-a absent from DB -> PreparedWrite("team-a", "created", () => doCreate(...))
   //      team-a in DB, identical -> PreparedWrite("team-a", "unchanged", no-op)
-  //      team-a in DB, created by hand -> Left("team-a already exists and is not managed by this catalog")
+  //      team-a in DB, created by hand -> Left("team-a already exists and is not managed by this catalog"),
+  //        or adopted (updated with the catalog tag) when adoptExisting
+  //      team-a in DB, created by another catalog -> Left(...), even when adoptExisting
   private def prepareWrite(
       tenant: Tenant,
       entity: Of,
       existing: Option[Of],
       metadataKey: String,
-      finalIds: ReconcileFinalIds
+      finalIds: ReconcileFinalIds,
+      adoptExisting: Boolean
   ): Future[Either[String, PreparedWrite]] = {
     val id = getId(entity).value
-    val ownedByAnotherSource = existing.exists(old =>
-      !readMetadata(old).get("created_by").contains(metadataKey)
-    )
+    val owner = existing.map(old => readMetadata(old).get("created_by"))
+    val refused = owner match {
+      case Some(Some(key)) => key != metadataKey
+      case Some(None)      => !adoptExisting
+      case None            => false
+    }
     val mode =
       if (existing.isDefined) UpdateOrCreate.Update else UpdateOrCreate.Create
 
-    if (ownedByAnotherSource) {
+    if (refused) {
       Future.successful(
         Left(s"$id already exists and is not managed by this catalog")
       )

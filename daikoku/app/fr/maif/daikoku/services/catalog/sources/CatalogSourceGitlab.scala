@@ -136,12 +136,17 @@ class CatalogSourceGitlab extends CatalogSource {
       baseUrl: String,
       encodedProject: String,
       dirPath: String,
+      recursive: Boolean,
       branch: String,
       token: String,
       env: Env
   )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[String]]] = {
     val apiUrl = s"$baseUrl/api/v4/projects/$encodedProject/repository/tree"
-    val params = Seq("ref" -> branch, "path" -> dirPath)
+    val params = Seq(
+      "ref" -> branch,
+      "path" -> dirPath,
+      "recursive" -> recursive.toString
+    )
 
     SourceUtils
       .fetchAllPages(
@@ -214,6 +219,7 @@ class CatalogSourceGitlab extends CatalogSource {
       projectPath: String,
       branch: String,
       path: String,
+      recursive: Boolean,
       token: String,
       env: Env
   )(implicit
@@ -275,7 +281,15 @@ class CatalogSourceGitlab extends CatalogSource {
             }
         }
     } else {
-      listDirectory(baseUrl, encodedProject, path, branch, token, env).flatMap {
+      listDirectory(
+        baseUrl,
+        encodedProject,
+        path,
+        recursive,
+        branch,
+        token,
+        env
+      ).flatMap {
         case Left(err) =>
           Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
         case Right(files) =>
@@ -294,7 +308,9 @@ class CatalogSourceGitlab extends CatalogSource {
                 case Left(err) =>
                   Left(Seq(SourceUtils.fetchError(fileSource, err)))
                 case Right(rawContent) =>
-                  SourceUtils.parseEntityContent(rawContent, fileSource)
+                  SourceUtils
+                    .parseEntityContent(rawContent, fileSource)
+                    .map(_.map(_.copy(path = filePath.stripPrefix(s"$path/"))))
               }
             })
             .map(RemoteCatalogError.collect)
@@ -313,6 +329,9 @@ class CatalogSourceGitlab extends CatalogSource {
       .asOpt[String]
       .getOrElse("/")
       .stripPrefix("/")
+      .stripSuffix("/")
+    val recursive = catalog.folderPerTeam ||
+      (catalog.source.config \ "recursive").asOpt[Boolean].getOrElse(false)
     val token = (catalog.source.config \ "token").asOpt[String].getOrElse("")
     val baseUrl = (catalog.source.config \ "base_url")
       .asOpt[String]
@@ -348,6 +367,7 @@ class CatalogSourceGitlab extends CatalogSource {
                     projectPath,
                     branch,
                     path,
+                    recursive,
                     token,
                     env
                   )
@@ -373,6 +393,7 @@ class CatalogSourceGitlab extends CatalogSource {
                 projectPath,
                 branch,
                 path,
+                recursive,
                 token,
                 env
               )

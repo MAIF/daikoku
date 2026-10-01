@@ -87,6 +87,7 @@ libraryDependencies ++= Seq(
   // pekko
   "org.apache.pekko" %% "pekko-connectors-kafka" % "1.1.0",
   "org.apache.pekko" %% "pekko-connectors-s3" % "1.3.0",
+  "org.apache.pekko" %% "pekko-connectors-file" % "1.3.0",
   "com.auth0" % "java-jwt" % "4.6.0" excludeAll (excludesJackson: _*),
   "com.auth0" % "jwks-rsa" % "0.24.1" excludeAll (excludesJackson: _*), // https://github.com/auth0/jwks-rsa-java
   "com.nimbusds" % "nimbus-jose-jwt" % "10.9.1",

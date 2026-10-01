@@ -12,6 +12,7 @@ import fr.maif.daikoku.domain.{
   Tenant
 }
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.jobs.RemoteCatalogJob
 import fr.maif.daikoku.services.catalog.{DeployReport, RemoteCatalogEngine}
 import fr.maif.daikoku.utils.IdGenerator
 import play.api.libs.json._
@@ -22,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class RemoteCatalogController(
     DaikokuAction: DaikokuAction,
     engine: RemoteCatalogEngine,
+    job: RemoteCatalogJob,
     env: Env,
     cc: ControllerComponents
 ) extends AbstractController(cc) {
@@ -102,9 +104,13 @@ class RemoteCatalogController(
         AuditTrailEvent(s"@{user.name} has deleted remote catalog $catalogId")
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId) { existing =>
-          env.dataStore.remoteCatalogRepo
-            .forTenant(tenant)
-            .deleteById(existing.id)
+          engine
+            .detach(tenant, existing)
+            .flatMap(_ =>
+              env.dataStore.remoteCatalogRepo
+                .forTenant(tenant)
+                .deleteById(existing.id)
+            )
             .map(_ => NoContent)
         }
       }
@@ -134,7 +140,22 @@ class RemoteCatalogController(
         AuditTrailEvent(s"@{user.name} has deployed remote catalog $catalogId")
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.deploy(tenant, catalog).map(toResult)
+          job.deploy(tenant, catalog).map(toResult)
+        )
+      }
+    }
+
+  def exportTenant(tenantId: String, all: Boolean) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has exported the tenant as a catalog")
+      )(tenantId, ctx) { (tenant, _) =>
+        Future.successful(
+          Ok.chunked(engine.exportTenant(tenant, includeManaged = all))
+            .as("application/zip")
+            .withHeaders(
+              CONTENT_DISPOSITION -> s"attachment; filename=${tenant.humanReadableId}.zip"
+            )
         )
       }
     }
@@ -158,7 +179,7 @@ class RemoteCatalogController(
         )
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.undeploy(tenant, catalog).map(toResult)
+          job.undeploy(tenant, catalog).map(toResult)
         )
       }
     }

@@ -100,7 +100,10 @@ abstract class AbstractJob[Input] {
   /** Cheap business pre-check, evaluated before any claim or DB write.
     * Some(reason) skips the run entirely.
     */
-  protected def skipReason(tenant: Tenant): Future[Option[String]] =
+  protected def skipReason(
+      tenant: Tenant,
+      input: Input
+  ): Future[Option[String]] =
     Future.successful(None)
 
   protected implicit def ec: ExecutionContext = env.defaultExecutionContext
@@ -324,7 +327,7 @@ abstract class AbstractJob[Input] {
         lastBatchAt.plusSeconds(jobConfig.interval.toSeconds.toInt).isBeforeNow
 
     // Cheap business pre-check: decides skip / resume cursor before claiming.
-    skipReason(tenant).flatMap {
+    skipReason(tenant, input).flatMap {
       case Some(reason) => skip(reason)
       case None =>
         env.dataStore.JobInformationRepo

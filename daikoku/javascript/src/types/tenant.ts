@@ -221,6 +221,9 @@ export interface IRemoteCatalog {
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
   maxDeletionPercent: number;
+  adoptExisting: boolean;
+  folderPerTeam: boolean;
+  allowDeletions: boolean;
   token: string;
 }
 

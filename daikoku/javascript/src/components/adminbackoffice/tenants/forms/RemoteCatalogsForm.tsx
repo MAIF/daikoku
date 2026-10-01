@@ -1,4 +1,4 @@
-import { constraints, format, Schema, type } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useState } from 'react';
@@ -20,7 +20,7 @@ import { DismissibleError } from '../../../utils/DismissibleError';
 import { formatDate } from '../../../utils/formatters';
 
 const SOURCE_KINDS: Array<RemoteCatalogSourceKind> = ['file', 'http', 'github', 'gitlab'];
-const ENTITY_KINDS = ['team', 'usage-plan', 'api', 'api-subscription', 'cms-page'];
+const ENTITY_KINDS = ['team', 'usage-plan', 'api', 'keyring', 'api-subscription', 'cms-page'];
 
 const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   name: '',
@@ -29,6 +29,9 @@ const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   scheduling: { enabled: false },
   allowedKinds: [],
   maxDeletionPercent: 30,
+  adoptExisting: false,
+  folderPerTeam: false,
+  allowDeletions: true,
 });
 
 type CatalogRun = {
@@ -38,6 +41,7 @@ type CatalogRun = {
   created: Array<string>;
   updated: Array<string>;
   deleted: Array<string>;
+  detached: Array<string>;
   errors: Array<string>;
 };
 
@@ -65,10 +69,11 @@ const RunRow = (props: { run: CatalogRun; formatAt: (at: any) => string }) => {
         <td className="text-center text-success">{props.run.created.length}</td>
         <td className="text-center text-info">{props.run.updated.length}</td>
         <td className="text-center text-warning">{props.run.deleted.length}</td>
+        <td className="text-center text-muted">{props.run.detached.length}</td>
       </tr>
       {hasErrors && (
         <tr>
-          <td colSpan={5} className="text-danger small">
+          <td colSpan={6} className="text-danger small">
             {props.run.errors.map((error, i) => (
               <div key={i}>{error}</div>
             ))}
@@ -124,6 +129,7 @@ const HistoryRuns = (props: {
           <th className="text-center">{translate('remote-catalog.col.created')}</th>
           <th className="text-center">{translate('remote-catalog.col.updated')}</th>
           <th className="text-center">{translate('remote-catalog.col.deleted')}</th>
+          <th className="text-center">{translate('remote-catalog.col.detached')}</th>
         </tr>
       </thead>
       <tbody>
@@ -175,13 +181,17 @@ const CatalogToken = (props: {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string>();
 
-  const validateUrl = `${window.location.origin}/api/remote-catalogs/${props.catalog._id}/_validate`;
-  const curlExample = [
-    `curl -X POST ${validateUrl} \\`,
-    '  -H "Authorization: Bearer $DAIKOKU_CATALOG_TOKEN" \\',
-    '  -H "Content-Type: application/json" \\',
-    '  -d @catalog-files.json',
-  ].join('\n');
+  const catalogUrl = `${window.location.origin}/api/remote-catalogs/${props.catalog._id}`;
+  const webhookUrl = `${catalogUrl}/_webhook`;
+  const supportsWebhook = ['github', 'gitlab'].includes(props.catalog.source.kind);
+  const curlFor = (action: string, withFiles: boolean) =>
+    [
+      `curl -X POST ${catalogUrl}/${action} \\`,
+      `  -H "Authorization: Bearer $DAIKOKU_CATALOG_TOKEN"${withFiles ? ' \\' : ''}`,
+      ...(withFiles
+        ? ['  -H "Content-Type: application/json" \\', '  -d @catalog-files.json']
+        : []),
+    ].join('\n');
   const copyIcon = copied ? 'fas fa-check' : 'fas fa-copy';
 
   const copy = () =>
@@ -230,21 +240,98 @@ const CatalogToken = (props: {
       {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
       <p className="small text-muted">{translate('remote-catalog.token.help')}</p>
       <pre className="small">
-        <code>{curlExample}</code>
+        <code>{curlFor('_validate', true)}</code>
       </pre>
+      <p className="small text-muted">{translate('remote-catalog.token.deployHelp')}</p>
+      <pre className="small">
+        <code>{curlFor('_deploy', false)}</code>
+      </pre>
+      {supportsWebhook && (
+        <>
+          <h6 className="mt-4">{translate('remote-catalog.webhook.title')}</h6>
+          <label className="form-label">{translate('remote-catalog.webhook.url')}</label>
+          <div className="input-group mb-2">
+            <input className="form-control" readOnly value={webhookUrl} />
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              aria-label={translate('remote-catalog.token.copy')}
+              onClick={() => copyToClipboard(webhookUrl)}
+            >
+              <i className="fas fa-copy" />
+            </button>
+          </div>
+          <p className="small">
+            {translate(`remote-catalog.webhook.${props.catalog.source.kind}`)}
+          </p>
+          <p className="small text-warning">{translate('remote-catalog.webhook.warning')}</p>
+        </>
+      )}
     </div>
+  );
+};
+
+const CatalogEditor = (props: {
+  tenantId: string;
+  catalog?: IRemoteCatalog;
+  schema: Schema;
+  onSaved: () => void;
+}) => {
+  const { translate } = useContext(I18nContext);
+  const [error, setError] = useState<string>();
+
+  const save = (data: IRemoteCatalog) => {
+    const request = props.catalog
+      ? Services.updateRemoteCatalog(props.tenantId, { ...data, _id: props.catalog._id })
+      : Services.createRemoteCatalog(props.tenantId, data);
+
+    return request.then((response) => {
+      if (isError(response)) {
+        setError(response.error);
+        return;
+      }
+
+      props.onSaved();
+    });
+  };
+
+  return (
+    <>
+      {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
+      <Form<IRemoteCatalog>
+        schema={props.schema}
+        value={props.catalog ?? (emptyCatalog() as IRemoteCatalog)}
+        onSubmit={save}
+        options={{
+          actions: {
+            submit: {
+              label: props.catalog
+                ? translate('remote-catalog.modal.updateBtn')
+                : translate('remote-catalog.modal.createBtn'),
+            },
+          },
+        }}
+      />
+    </>
   );
 };
 
 export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, confirm, alert, openRightPanel } = useContext(ModalContext);
+  const { openFormModal, confirm, alert, openRightPanel, closeRightPanel } =
+    useContext(ModalContext);
   const queryClient = useQueryClient();
   const [error, setError] = useState<string>();
 
   const queryKey = QUERY_KEYS.remoteCatalogs(props.tenant._id);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey });
+
+  const catalogsQuery = useQuery({
+    queryKey,
+    queryFn: () => Services.getRemoteCatalogs(props.tenant._id),
+  });
+  const isEmpty = Array.isArray(catalogsQuery.data) && catalogsQuery.data.length === 0;
 
   const showHistory = (catalog: IRemoteCatalog) =>
     openRightPanel({
@@ -331,6 +418,13 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
                   constraints.required(translate('remote-catalog.constraint.path')),
                 ]),
               ],
+            },
+            recursive: {
+              type: type.bool,
+              label: translate('remote-catalog.label.recursive'),
+              help: translate('remote-catalog.help.recursive'),
+              defaultValue: false,
+              visible: ({ rawValues }) => rawValues.source.kind !== 'http',
             },
             pre_command: {
               type: type.string,
@@ -436,31 +530,44 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
       help: translate('remote-catalog.help.maxDeletionPercent'),
       defaultValue: 30,
     },
+    allowDeletions: {
+      type: type.bool,
+      label: translate('remote-catalog.label.allowDeletions'),
+      help: translate('remote-catalog.help.allowDeletions'),
+      defaultValue: true,
+    },
+    adoptExisting: {
+      type: type.bool,
+      label: translate('remote-catalog.label.adoptExisting'),
+      help: translate('remote-catalog.help.adoptExisting'),
+      defaultValue: false,
+    },
+    folderPerTeam: {
+      type: type.bool,
+      label: translate('remote-catalog.label.folderPerTeam'),
+      help: translate('remote-catalog.help.folderPerTeam'),
+      defaultValue: false,
+      visible: ({ rawValues }) =>
+        rawValues.source?.kind === 'github' || rawValues.source?.kind === 'gitlab',
+    },
   });
 
   const editCatalog = (catalog?: IRemoteCatalog) =>
-    openFormModal<IRemoteCatalog>({
+    openRightPanel({
       title: catalog
         ? translate('remote-catalog.modal.edit')
         : translate('remote-catalog.modal.create'),
-      schema: catalogSchema(),
-      value: catalog ?? (emptyCatalog() as IRemoteCatalog),
-      onSubmit: (data) => {
-        const request = catalog
-          ? Services.updateRemoteCatalog(props.tenant._id, { ...data, _id: catalog._id })
-          : Services.createRemoteCatalog(props.tenant._id, data);
-
-        return request.then((response) => {
-          if (isError(response)) {
-            return response.error;
-          }
-
-          refresh();
-        });
-      },
-      actionLabel: catalog
-        ? translate('remote-catalog.modal.updateBtn')
-        : translate('remote-catalog.modal.createBtn'),
+      content: (
+        <CatalogEditor
+          tenantId={props.tenant._id}
+          catalog={catalog}
+          schema={catalogSchema()}
+          onSaved={() => {
+            closeRightPanel();
+            refresh();
+          }}
+        />
+      ),
     });
 
   const fetchData = clientFetchData<IRemoteCatalog>(
@@ -494,6 +601,27 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
         setError(undefined);
         refresh();
       });
+    });
+
+  // a plain navigation lets the browser stream the zip to disk
+  const exportTenant = () =>
+    openFormModal<{ all: boolean }>({
+      title: translate('remote-catalog.modal.export'),
+      schema: {
+        all: {
+          type: type.bool,
+          label: translate('remote-catalog.label.exportAll'),
+          help: translate('remote-catalog.help.exportAll'),
+          defaultValue: false,
+        },
+      },
+      value: { all: false },
+      onSubmit: ({ all }) => {
+        window.location.assign(
+          `/api/tenants/${props.tenant._id}/remote-catalogs/_export?all=${all}`
+        );
+      },
+      actionLabel: translate('remote-catalog.modal.exportBtn'),
     });
 
   const columnHelper = createColumnHelper<DynamicTableFeatures, IRemoteCatalog>();
@@ -588,25 +716,68 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   return (
     <Can I={manage} a={TENANT} dispatchError>
       <div className="m-3">
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-success my-2"
-          onClick={() => editCatalog()}
-        >
-          <i className="fas fa-plus me-1" />
-          {translate('remote-catalog.action.create')}
-        </button>
-        <div className="section p-2" />
-        {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
-        <DynamicTable<IRemoteCatalog>
-          queryKey={queryKey}
-          columns={columns}
-          fetchData={fetchData}
-          filters={filters}
-          defaultSorting={[{ id: 'name', desc: false }]}
-          getRowId={(row) => row._id}
-          getRowAriaLabel={(row) => row.name}
-        />
+        {isEmpty ? (
+          <div className="card my-4" style={{ maxWidth: '45rem' }}>
+            <div className="card-body">
+              <h4 className="card-title">{translate('remote-catalog.empty.title')}</h4>
+              <p className="card-text text-muted">
+                {translate('remote-catalog.empty.description')}
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                onClick={() => editCatalog()}
+              >
+                <i className="fas fa-plus me-1" />
+                {translate('remote-catalog.empty.create')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-success my-2"
+              onClick={() => editCatalog()}
+            >
+              <i className="fas fa-plus me-1" />
+              {translate('remote-catalog.action.create')}
+            </button>
+            <div className="section p-2" />
+            {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
+            <DynamicTable<IRemoteCatalog>
+              queryKey={queryKey}
+              columns={columns}
+              fetchData={fetchData}
+              filters={filters}
+              defaultSorting={[{ id: 'name', desc: false }]}
+              getRowId={(row) => row._id}
+              getRowAriaLabel={(row) => row.name}
+            />
+            <div className="card mt-4">
+              <div className="card-body">
+                <h6 className="card-title">{translate('remote-catalog.export.title')}</h6>
+                <p className="card-text small text-muted">
+                  {translate({
+                    key: 'remote-catalog.export.description',
+                    replacements: [props.tenant.name],
+                  })}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={exportTenant}
+                >
+                  <i className="fas fa-download me-1" />
+                  {translate({
+                    key: 'remote-catalog.export.button',
+                    replacements: [props.tenant.name],
+                  })}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </Can>
   );

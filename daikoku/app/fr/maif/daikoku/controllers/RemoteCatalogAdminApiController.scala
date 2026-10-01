@@ -11,6 +11,7 @@ import fr.maif.daikoku.domain.{
   Tenant
 }
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.jobs.RemoteCatalogJob
 import fr.maif.daikoku.services.catalog.{
   CatalogFile,
   DeployReport,
@@ -31,6 +32,7 @@ import scala.concurrent.Future
 class RemoteCatalogAdminApiController(
     DaikokuApiAction: DaikokuApiAction,
     engine: RemoteCatalogEngine,
+    job: RemoteCatalogJob,
     env: Env,
     cc: ControllerComponents
 ) extends AdminApiController[RemoteCatalog, RemoteCatalogId](
@@ -92,13 +94,34 @@ class RemoteCatalogAdminApiController(
   ): EitherT[Future, AppError, RemoteCatalog] =
     super.doUpdate(tenant, oldEntity, newEntity.copy(token = oldEntity.token))
 
+  override def doDelete(
+      tenant: Tenant,
+      entity: RemoteCatalog
+  ): EitherT[Future, AppError, Unit] =
+    EitherT
+      .liftF[Future, AppError, Unit](engine.detach(tenant, entity))
+      .flatMap(_ => super.doDelete(tenant, entity))
+
   def deploy(id: String) =
     DaikokuApiAction.async { ctx =>
       withCatalog(ctx.tenant, id) { catalog =>
         auditAdminApiWrite(ctx, "deploy", id)
 
-        engine.deploy(ctx.tenant, catalog).map(toResult)
+        job.deploy(ctx.tenant, catalog).map(toResult)
       }
+    }
+
+  def exportTenant(all: Boolean) =
+    DaikokuApiAction.async { ctx =>
+      auditAdminApiWrite(ctx, "export", ctx.tenant.id.value)
+
+      Future.successful(
+        Ok.chunked(engine.exportTenant(ctx.tenant, includeManaged = all))
+          .as("application/zip")
+          .withHeaders(
+            CONTENT_DISPOSITION -> s"attachment; filename=${ctx.tenant.humanReadableId}.zip"
+          )
+      )
     }
 
   def test(id: String) =
@@ -133,7 +156,7 @@ class RemoteCatalogAdminApiController(
       withCatalog(ctx.tenant, id) { catalog =>
         auditAdminApiWrite(ctx, "undeploy", id)
 
-        engine.undeploy(ctx.tenant, catalog).map(toResult)
+        job.undeploy(ctx.tenant, catalog).map(toResult)
       }
     }
 

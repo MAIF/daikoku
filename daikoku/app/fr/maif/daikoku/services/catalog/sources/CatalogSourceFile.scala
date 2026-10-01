@@ -66,26 +66,28 @@ class CatalogSourceFile extends CatalogSource {
   }
 
   private def fetchDirectory(
-      dir: File
+      dir: File,
+      recursive: Boolean
   ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
-    Option(dir.listFiles()) match {
-      case None =>
-        Left(
-          Seq(
-            RemoteCatalogError(
-              s"file://${dir.getAbsolutePath}",
-              "Cannot list directory"
-            )
+    val sourceName = s"file://${dir.getAbsolutePath}"
+    val entityFiles: Either[Seq[RemoteCatalogError], Seq[File]] =
+      if (recursive) {
+        SourceUtils
+          .resolveLocalGlob(dir, "**")
+          .left
+          .map(err => Seq(SourceUtils.fetchError(sourceName, err)))
+          .map(_.map(relativePath => new File(dir, relativePath)))
+      } else {
+        Option(dir.listFiles())
+          .toRight(Seq(RemoteCatalogError(sourceName, "Cannot list directory")))
+          .map(
+            _.filter(f => f.isFile && SourceUtils.isEntityFile(f.getName)).toSeq
           )
-        )
-      case Some(files) =>
-        val entityFiles =
-          files
-            .filter(f => f.isFile && SourceUtils.isEntityFile(f.getName))
-            .toSeq
+      }
 
-        RemoteCatalogError.collect(entityFiles.map(readAndParse))
-    }
+    entityFiles.flatMap(files =>
+      RemoteCatalogError.collect(files.map(readAndParse))
+    )
   }
 
   private def fetchFile(
@@ -153,7 +155,10 @@ class CatalogSourceFile extends CatalogSource {
           Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
         case Right(()) =>
           if (file.isDirectory) {
-            Future.successful(fetchDirectory(file))
+            val recursive = (catalog.source.config \ "recursive")
+              .asOpt[Boolean]
+              .getOrElse(false)
+            Future.successful(fetchDirectory(file, recursive))
           } else {
             fetchFile(file, path)
           }

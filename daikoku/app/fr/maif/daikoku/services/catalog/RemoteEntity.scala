@@ -43,12 +43,14 @@ object CatalogFile {
     }
 }
 
+// path: the file path relative to the catalog root, e.g. "team-weather/apis/weather.yaml"
 case class RemoteEntity(
     id: String,
     kind: String,
     source: String,
     syncAt: DateTime,
-    content: JsObject
+    content: JsObject,
+    path: String = ""
 )
 
 object RemoteEntity {

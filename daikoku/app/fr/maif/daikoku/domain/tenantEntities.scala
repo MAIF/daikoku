@@ -808,6 +808,9 @@ case class RemoteCatalog(
     scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
     allowedKinds: Set[String] = Set.empty,
     maxDeletionPercent: Int = 30,
+    adoptExisting: Boolean = false,
+    folderPerTeam: Boolean = false,
+    allowDeletions: Boolean = true,
     token: String = IdGenerator.token(64)
 ) extends CanJson[RemoteCatalog] {
   def asJson: JsValue = json.RemoteCatalogFormat.writes(this)
@@ -832,6 +835,7 @@ case class RemoteCatalogRun(
     created: Seq[String],
     updated: Seq[String],
     deleted: Seq[String],
+    detached: Seq[String] = Seq.empty,
     errors: Seq[String]
 ) extends CanJson[RemoteCatalogRun] {
   def asJson: JsValue = json.RemoteCatalogRunFormat.writes(this)

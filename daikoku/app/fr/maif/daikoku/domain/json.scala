@@ -2674,7 +2674,8 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true)
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -2704,7 +2705,8 @@ object json {
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "enabled" -> o.enabled
+        "enabled" -> o.enabled,
+        "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq)
       )
   }
 
@@ -5423,6 +5425,12 @@ object json {
               (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
             maxDeletionPercent =
               (json \ "maxDeletionPercent").asOpt[Int].getOrElse(30),
+            adoptExisting =
+              (json \ "adoptExisting").asOpt[Boolean].getOrElse(false),
+            folderPerTeam =
+              (json \ "folderPerTeam").asOpt[Boolean].getOrElse(false),
+            allowDeletions =
+              (json \ "allowDeletions").asOpt[Boolean].getOrElse(true),
             token = (json \ "token")
               .asOpt[String]
               .getOrElse(IdGenerator.token(64))
@@ -5442,6 +5450,9 @@ object json {
         "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
         "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
         "maxDeletionPercent" -> o.maxDeletionPercent,
+        "adoptExisting" -> o.adoptExisting,
+        "folderPerTeam" -> o.folderPerTeam,
+        "allowDeletions" -> o.allowDeletions,
         "token" -> o.token
       )
   }
@@ -5461,6 +5472,8 @@ object json {
             created = (json \ "created").as[Seq[String]],
             updated = (json \ "updated").as[Seq[String]],
             deleted = (json \ "deleted").as[Seq[String]],
+            detached =
+              (json \ "detached").asOpt[Seq[String]].getOrElse(Seq.empty),
             errors = (json \ "errors").as[Seq[String]]
           )
         )
@@ -5478,6 +5491,7 @@ object json {
         "created" -> o.created,
         "updated" -> o.updated,
         "deleted" -> o.deleted,
+        "detached" -> o.detached,
         "errors" -> o.errors
       )
   }

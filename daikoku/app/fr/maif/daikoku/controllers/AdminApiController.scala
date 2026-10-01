@@ -420,13 +420,28 @@ class TeamAdminApiController(
   override def validate(
       entity: Team,
       updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Team] =
+    validateWith(entity, ReadEntitiesFrom.inDatabase)
+
+  override def validateForReconcile(
+      entity: Team,
+      updateOrCreate: UpdateOrCreate,
+      finalIds: ReconcileFinalIds
+  ): EitherT[Future, AppError, Team] =
+    validateWith(entity, finalIds)
+
+  private def validateWith(
+      entity: Team,
+      readFrom: ReadEntitiesFrom
   ): EitherT[Future, AppError, Team] = {
     import cats.implicits.*
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+      _ <- checkReference(
+        readFrom,
+        "tenant",
+        entity.tenant.value,
         AppError.ParsingPayloadError("Tenant not found")
-      )
+      )(env.dataStore.tenantRepo.findById(entity.tenant))
       _ <-
         entity.users
           .map(u =>
@@ -527,10 +542,12 @@ class ApiAdminApiController(
   ): EitherT[Future, AppError, Api] = {
     import cats.implicits.*
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+      _ <- checkReference(
+        readFrom,
+        "tenant",
+        entity.tenant.value,
         AppError.ParsingPayloadError("Tenant not found")
-      )
+      )(env.dataStore.tenantRepo.findById(entity.tenant))
       _ <-
         entity.possibleUsagePlans
           .map(planId =>
@@ -732,10 +749,12 @@ class ApiSubscriptionAdminApiController(
   ): EitherT[Future, AppError, ApiSubscription] = {
     import cats.implicits.*
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+      _ <- checkReference(
+        readFrom,
+        "tenant",
+        entity.tenant.value,
         AppError.ParsingPayloadError("Tenant not found")
-      )
+      )(env.dataStore.tenantRepo.findById(entity.tenant))
       _ <- checkReference(
         readFrom,
         "usage-plan",
@@ -756,14 +775,16 @@ class ApiSubscriptionAdminApiController(
         env.dataStore.userRepo.findById(entity.by),
         AppError.ParsingPayloadError("By not found")
       )
-      _ <- EitherT
-        .fromOptionF[Future, AppError, Keyring](
-          env.dataStore.keyringRepo
-            .forTenant(entity.tenant)
-            .findById(entity.keyring),
-          AppError.ParsingPayloadError(s"Keyring not found")
-        )
-
+      _ <- checkReference(
+        readFrom,
+        "keyring",
+        entity.keyring.value,
+        AppError.ParsingPayloadError("Keyring not found")
+      )(
+        env.dataStore.keyringRepo
+          .forTenant(entity.tenant)
+          .findById(entity.keyring)
+      )
     } yield entity
   }
 
@@ -1244,12 +1265,25 @@ class CmsPagesAdminApiController(
       entity: CmsPage,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, CmsPage] =
-    for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
-        AppError.ParsingPayloadError("Tenant not found")
-      )
-    } yield entity
+    validateWith(entity, ReadEntitiesFrom.inDatabase)
+
+  override def validateForReconcile(
+      entity: CmsPage,
+      updateOrCreate: UpdateOrCreate,
+      finalIds: ReconcileFinalIds
+  ): EitherT[Future, AppError, CmsPage] =
+    validateWith(entity, finalIds)
+
+  private def validateWith(
+      entity: CmsPage,
+      readFrom: ReadEntitiesFrom
+  ): EitherT[Future, AppError, CmsPage] =
+    checkReference(
+      readFrom,
+      "tenant",
+      entity.tenant.value,
+      AppError.ParsingPayloadError("Tenant not found")
+    )(env.dataStore.tenantRepo.findById(entity.tenant)).map(_ => entity)
 
   override def getId(entity: CmsPage): CmsPageId = entity.id
 

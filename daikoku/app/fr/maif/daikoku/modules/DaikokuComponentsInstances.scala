@@ -90,6 +90,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val homeController = wire[HomeController]
   lazy val mockController = wire[MockController]
   lazy val apiController = wire[ApiController]
+  lazy val keyringController = wire[KeyringController]
   lazy val loginController = wire[LoginController]
   lazy val teamController = wire[TeamController]
   lazy val notificationController = wire[NotificationController]
@@ -114,6 +115,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val apiAdminApiController = wire[ApiAdminApiController]
   lazy val apiSubscriptionAdminApiController =
     wire[ApiSubscriptionAdminApiController]
+  lazy val keyringAdminApiController = wire[KeyringAdminApiController]
   lazy val apiDocumentationPageAdminApiController =
     wire[ApiDocumentationPageAdminApiController]
   lazy val notificationAdminApiController =
