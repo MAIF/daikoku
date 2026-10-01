@@ -133,7 +133,7 @@ class ApiLifeCycleService(
       subscriptions <- EitherT.right[AppError](
         addLifecycleBlock(api = api, tenant = tenant)
       )
-      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](synchronizerJob.runSync(api.id, tenant))
       _ <- notifyBlocking(subscriptions, api, tenant, user)
     } yield ()
   }
@@ -147,7 +147,7 @@ class ApiLifeCycleService(
       _ <- EitherT.right[AppError](
         removeLifecycleBlock(api = api, tenant = tenant)
       )
-      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](synchronizerJob.runSync(api.id, tenant))
     } yield ()
   }
 

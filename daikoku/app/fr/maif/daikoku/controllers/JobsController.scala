@@ -56,7 +56,7 @@ class JobsController(
                   }
               }
             otoroshiSynchronizerJob
-              .run(
+              .runSync(
                 entryPoint = entryPoint,
                 tenant = tenant,
                 parallelism = parallelism

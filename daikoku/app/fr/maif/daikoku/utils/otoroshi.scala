@@ -12,10 +12,10 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Source, Sink}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.libs.json.*
-import play.api.libs.ws.{WSAuthScheme, WSRequest}
+import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest}
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.ws.WSBodyWritables.writeableOf_String
 import play.api.mvc.*
@@ -47,7 +47,7 @@ class OtoroshiExpositionFilter(
 class OtoroshiClient(env: Env) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
-  val ws = env.wsClient
+  val ws: WSClient = env.wsClient
 
   def client(
       path: String
@@ -238,6 +238,35 @@ class OtoroshiClient(env: Env) {
       }
     }
   }
+
+  def getApikeyOpt(clientId: String)(implicit
+      otoroshiSettings: OtoroshiSettings
+  ): EitherT[Future, AppError, Option[ActualOtoroshiApiKey]] = for {
+    resp <- EitherT.right[AppError](
+      client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").get()
+    )
+    apikey <- resp.status match {
+      case 200 =>
+        EitherT.fromEither[Future](
+          resp.json.validate(using ActualOtoroshiApiKeyFormat) match {
+            case JsSuccess(k, _) => Right(k.some)
+            case e: JsError      => Left(OtoroshiError(JsError.toJson(e)))
+          }
+        )
+      case 400 | 404 =>
+        EitherT.rightT[Future, AppError](
+          None
+        )
+      case _ =>
+        EitherT.leftT[Future, Option[ActualOtoroshiApiKey]](
+          OtoroshiError(
+            Json.obj(
+              "error" -> s"Error while fetching otoroshi apikey: ${resp.status} - ${resp.body}"
+            )
+          )
+        )
+    }
+  } yield apikey
 
   def createApiKey(key: ActualOtoroshiApiKey)(implicit
       otoroshiSettings: OtoroshiSettings
