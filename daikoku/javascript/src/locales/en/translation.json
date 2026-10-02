@@ -287,7 +287,9 @@
     "s": "Keyring",
     "p": "Keyrings"
   },
+  "keyring.disable.confirm": "Are you sure you want to disable this keyring ? it may affect other users",
   "subscription.actions": "Subscription actions",
+  "subscription.disable.confirm": "Are you sure you want to disable this subscription ? it may affect other users",
   "Expires": "Expires",
   "destroy.session.confirm": "Are you sure you want to destroy this session?",
   "destroy.all.sessions.confirm": "Are you sure you want to destroy all sessions including yours?",

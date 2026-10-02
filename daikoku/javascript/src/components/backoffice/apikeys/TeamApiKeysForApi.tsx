@@ -594,7 +594,7 @@ export const KeyringCard = ({
                               makeUniqueApiKey,
                             }: KeyringCardProps) => {
   const {translate} = useContext(I18nContext);
-  const {openFormModal} = useContext(ModalContext);
+  const {openFormModal, confirm} = useContext(ModalContext);
   const {customGraphQLClient, tenant} = useContext(GlobalContext);
   const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
 
@@ -806,11 +806,18 @@ export const KeyringCard = ({
                   {sub.state !== 'blocked' && (
                     <button
                       className="dropdown-item cursor-pointer"
-                      onClick={() => withLoader(() => {
-                        toggle(sub)
-                          .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                        ;
-                      })}
+                      onClick={() =>
+                        sub.enabled ? 
+                        confirm({message: translate('subscription.disable.confirm')})
+                          .then((ok) => {
+                            if (ok) {
+                              toggle(sub)
+                                .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }));
+                            }
+                          })
+                          :toggle(sub)
+                            .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }))
+                      }
                     >
                       {sub.enabled
                         ? translate('subscription.disable.button.label')
@@ -1007,7 +1014,17 @@ export const KeyringCard = ({
               </button>
               {/* TODO: better label */}
               <button className={classNames('dropdown-item cursor-pointer')}
-                      onClick={() => toggleKeyring(!keyring.enabled)}
+                      onClick={
+                        () =>
+                        withLoader(async () => {
+                          if (keyring.enabled) {
+                            const ok = await confirm({ message: translate('keyring.disable.confirm') });
+                            if (!ok) return;
+                          }
+                          toggleKeyring(!keyring.enabled);
+                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
+                        })
+                      }
               >
                 {translate(
                   keyring.enabled

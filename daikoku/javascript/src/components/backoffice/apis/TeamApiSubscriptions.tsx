@@ -219,12 +219,27 @@ export const TeamApiSubscriptions = ({
                   {translate("Update metadata")}
                 </button>
                 <div className="dropdown-divider" />
-                {api.state !== 'blocked' && <button
-                  className="dropdown-item cursor-pointer danger"
-                  onClick={() => toggleApiSubscriptionState(sub)}
-                >
-                  {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-                </button>}
+                {api.state !== 'blocked' && (
+                  <button
+                    className="dropdown-item cursor-pointer danger"
+                    onClick={() => {
+                      if (sub.state === 'active') {
+                        confirm({ message: translate('subscription.disable.confirm') }).then((ok) => {
+                          if (!ok) return;
+                          toggleApiSubscriptionState(sub);
+                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(sub._id) });
+                        });
+                      } else {
+                        alert("ghrds")
+                        toggleApiSubscriptionState(sub);
+                        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(sub._id) });
+                      }
+                    }}
+                  >
+                  {sub.state === 'active'
+                    ? translate("subscription.disable.button.label")
+                    : translate("subscription.enable.button.label")}
+                </button>)}
                 {api.state !== 'blocked' && <button
                   className="dropdown-item cursor-pointer danger"
                   onClick={() => regenerateSecret(sub)}

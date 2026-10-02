@@ -511,6 +511,8 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
     .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
     .getByRole('button', { name: 'Désactiver la souscription' }).click();
+    expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
   await expect(page.getByRole('listitem', { name: 'api-commande-prod-logistique' }))
     .toContainText('Bloquée');
 
@@ -574,6 +576,8 @@ test('[ASOAPI-10457 ASOAPI-10458] - [Consommateur] - desactiver/reactiver un cl�
     .getByRole('button', { name: 'Désactiver la souscription' }).
     click();
 
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
 
   //verifier que la clé est désactivée
   await expect(page
@@ -675,6 +679,8 @@ test('[ASOAPI-10600 ASOAPI-10601] - [Consommateur] - desactiver/reactiver un cl�
     .click();
   //verifier que la clé est désactiver
 
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
   await page.waitForResponse(r => r.url().includes('/_archive?enabled=false') && r.status() === 200);
 
   //verifier que la clé est désactiver
@@ -1120,6 +1126,9 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
   // désactivation du trousseau via le switch (admin)
   await card.getByRole('button', { name: 'Actions du trousseau' }).click();
   await card.getByRole('button', { name: 'Désactiver le trousseau' }).click();
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+
   await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Trousseau désactivé');
 
@@ -1147,6 +1156,9 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
     .getByRole('listitem', { name: 'api commande - prod' })
     .getByRole('button', { name: 'Désactiver le trousseau' })
     .click();
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+
   await page.waitForResponse(r => r.url().includes('/_enable?enabled=false') && r.status() === 200)
 
   const disabledKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {

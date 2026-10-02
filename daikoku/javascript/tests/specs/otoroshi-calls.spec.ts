@@ -156,7 +156,12 @@ test("Disabling one key from keyring should prevent keyring to call associated r
         .getByLabel('Actions de la souscription')
         .click();
   await page.getByRole('button', { name: 'Désactiver la souscription' }).click();
+
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+
   await expect(page.getByText("Votre souscription a été dé")).toBeVisible();
+  await page.getByRole('button', { name: 'Close toast' }).click();
 
   await checkOtoroshiCall({
     api: "command",
@@ -179,11 +184,12 @@ test("Disabling one key from keyring should prevent keyring to call associated r
   await page
         .getByRole('listitem', { name: 'api commande - dev' })
         .getByRole('listitem').filter({ hasText: 'API Commande' })
-    .getByRole("button", { name: "Activer la souscription" })
+    .getByRole("button", { name: /^Activer la souscription$/ })
     .click();
   await expect(
     page.getByText("Votre souscription a été activée"),
   ).toBeVisible();
+  await page.getByRole('button', { name: 'Close toast' }).click();
   await checkOtoroshiCall({
     api: "command",
     env: "dev",
@@ -269,6 +275,8 @@ test("Disabling keyring should prevent calling all associated routes", async ({
 
   await page.getByRole('listitem', { name: COMMAND_DEV_KEYRING }).getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Désactiver le trousseau" }).click();
+  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
+  await page.getByRole('button', { name: 'Ok', exact: true }).click()
   await expect(page.getByText("Trousseau désactivé")).toBeVisible();
   await checkOtoroshiCall({
     api: "paper",
