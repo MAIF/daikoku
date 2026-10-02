@@ -739,7 +739,7 @@ class ApiSubscriptionAdminApiController(
     for {
       created <- super.doCreate(tenant, entity)
       _ <- EitherT.liftF[Future, AppError, Unit](
-        otoroshiSynchronisator.run(created.id, tenant)
+        otoroshiSynchronisator.runSync(created.id, tenant)
       )
     } yield created
 
