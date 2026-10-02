@@ -84,6 +84,23 @@ Daikoku then computes a *merged* value from all of them. This is exactly what th
 The workflow for requesting a subscription, made of `ValidationStep`s (Form / Email / TeamAdmin /
 Payment / HttpRequest) and tracked by a `SubscriptionDemandState`.
 
+### SubscriptionBatchDemand
+A durable parent for a multi-plan request by one consumer team. Each item snapshots its API, plan,
+process and existing/shared-new-keyring choice. Classic `SubscriptionDemand` children are linked
+progressively, with a unique `(tenant, batch, item)` identity; creating a child and linking its parent
+is transactional. The parent summary is derived from independent item outcomes, so a refusal does
+not close other unfinished items.
+
+Submission idempotency is scoped to tenant, consumer team and requester. Parent mutations use a
+revision guard and row locks for operations spanning children. Item reservations retain a worker
+token and expiration; expiration does not authorize replaying an external effect. An expired
+reservation is retained with an explicit error until its outcome can be reconciled.
+
+The persistence layer includes batch import/export, optional keyring-shell provenance (source batch,
+shared creation, pending items and activation date), and managed-empty-group identity in each
+tenant's Otoroshi configuration. These storage contracts do not themselves create safe empty
+Otoroshi keys, run a worker, expose a batch submission API or implement grouped approvals.
+
 ### Notification
 Domain events with a Pending / Accepted / Rejected status: API access requests, team invitations,
 subscription accept/reject, Otoroshi sync errors, API key rotation, new posts/issues, etc.

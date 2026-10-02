@@ -22,6 +22,7 @@ import fr.maif.daikoku.utils.{
   IdGenerator,
   JsonOperationsHelper,
   OtoroshiClient,
+  SubscriptionDemandPreparation,
   Translator,
   metadataObjectToMap
 }
@@ -50,6 +51,52 @@ class ApiService(
   implicit val ev: Env = env
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
+
+  private def saveDemandProgress(
+      demand: SubscriptionDemand,
+      previous: SubscriptionDemand
+  ): EitherT[Future, AppError, Boolean] =
+    demand.batch match {
+      case None =>
+        EitherT.liftF(
+          env.dataStore.subscriptionDemandRepo
+            .forTenant(demand.tenant)
+            .save(demand)
+        )
+      case Some(_) =>
+        EitherT(env.dataStore.saveBatchChildProgress(demand, previous)).map(_ =>
+          true
+        )
+    }
+
+  private def saveDemandOutcome(
+      previous: SubscriptionDemand,
+      updated: SubscriptionDemand,
+      notification: Notification,
+      subscription: Option[ApiSubscriptionId] = None
+  ): EitherT[Future, AppError, Unit] =
+    previous.batch match {
+      case Some(_) =>
+        EitherT(
+          env.dataStore.saveBatchChildProgress(
+            updated,
+            previous,
+            subscription,
+            Some(notification)
+          )
+        )
+      case None =>
+        EitherT.liftF(env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.subscriptionDemandRepo
+              .forTenant(previous.tenant)
+              .save(updated)
+            _ <- env.dataStore.notificationRepo
+              .forTenant(previous.tenant)
+              .save(notification)
+          } yield ()
+        })
+    }
 
   /** Name given to a keyring when the consumer did not provide one. Kept in
     * sync with the placeholder displayed by the front (see ApiPricing.tsx).
@@ -1101,11 +1148,7 @@ class ApiService(
           customName = customName,
           tags = tags
         )
-        _ <- EitherT.liftF(
-          env.dataStore.subscriptionDemandRepo
-            .forTenant(tenant)
-            .save(updatedDemand)
-        )
+        _ <- saveDemandProgress(updatedDemand, demand)
         result <- runSubscriptionProcess(
           demand.id,
           tenant,
@@ -1266,11 +1309,7 @@ class ApiService(
           else s
         )
       )
-      _ <- EitherT.liftF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .save(updatedDemand)
-      )
+      _ <- saveDemandProgress(updatedDemand, demand)
       _ <- EitherT.liftF(
         {
           val repo = env.dataStore.notificationRepo.forTenant(tenant)
@@ -1479,10 +1518,9 @@ class ApiService(
         result <- run
         _ <-
           if (!step.step.isAutomatic)
-            EitherT.liftF[Future, AppError, Boolean](
-              env.dataStore.subscriptionDemandRepo
-                .forTenant(tenant)
-                .save(demand.copy(steps = steps, state = demandState))
+            saveDemandProgress(
+              demand.copy(steps = steps, state = demandState),
+              demand
             )
           else EitherT.pure[Future, AppError](true)
       } yield result
@@ -1573,33 +1611,42 @@ class ApiService(
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
             )
-            
-            _ <- EitherT.right[AppError](Future.sequence(
-              recipent
-                .map(recipient => translator.translate(
-                  "mail.checkout.body",
-                  tenant,
-                  Map(
-                    "api.name" -> JsString(api.name),
-                    "api.plan" -> JsString(
-                      plan.customName
-                    ),
-                    "link" -> JsString(
-                      env.getDaikokuUrl(
+
+            _ <- EitherT.right[AppError](
+              Future.sequence(
+                recipent
+                  .map(recipient =>
+                    translator
+                      .translate(
+                        "mail.checkout.body",
                         tenant,
-                        s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
-                        recipient
+                        Map(
+                          "api.name" -> JsString(api.name),
+                          "api.plan" -> JsString(
+                            plan.customName
+                          ),
+                          "link" -> JsString(
+                            env.getDaikokuUrl(
+                              tenant,
+                              s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
+                              recipient
+                            )
+                          ),
+                          "producer_team_data" -> ownerTeam.asJson,
+                          "consumer_team_data" -> team.asJson,
+                          "user_data" -> user.asSimpleJson,
+                          "api_data" -> api.asJson,
+                          "usagePlan_data" -> plan.asJson,
+                          "subscriptionDemand_data" -> demand.asJson
+                        )
                       )
-                    ),
-                    "producer_team_data" -> ownerTeam.asJson,
-                    "consumer_team_data" -> team.asJson,
-                    "user_data" -> user.asSimpleJson,
-                    "api_data" -> api.asJson,
-                    "usagePlan_data" -> plan.asJson,
-                    "subscriptionDemand_data" -> demand.asJson
+                      .flatMap(body =>
+                        tenant.mailer
+                          .send(title, Seq(recipient.email), body, tenant)
+                      )
                   )
-                )
-                .flatMap(body => tenant.mailer.send(title, Seq(recipient.email), body, tenant)))))
+              )
+            )
           } yield (step.some, demand)
         case tuple =>
           EitherT.pure[Future, AppError](tuple)
@@ -1670,26 +1717,19 @@ class ApiService(
             administrators <- EitherT.liftF(
               env.dataStore.userRepo.findByIds(team.admins().toSeq)
             )
-            _ <- EitherT.liftF(
-              env.dataStore.withTransaction {
-                val newNotification = Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = Some(team.id),
-                  sender = currentUser.asNotificationSender,
-                  notificationType = NotificationType.AcceptOnly,
-                  action = NotificationAction
-                    .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
-                )
-                for {
-                  _ <- env.dataStore.subscriptionDemandRepo
-                    .forTenant(tenant)
-                    .save(demand.copy(state = SubscriptionDemandState.Accepted))
-                  _ <- env.dataStore.notificationRepo
-                    .forTenant(tenant)
-                    .save(newNotification)
-                } yield ()
-              }
+            _ <- saveDemandOutcome(
+              demand,
+              demand.copy(state = SubscriptionDemandState.Accepted),
+              Notification(
+                id = NotificationId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                team = Some(team.id),
+                sender = currentUser.asNotificationSender,
+                notificationType = NotificationType.AcceptOnly,
+                action = NotificationAction
+                  .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
+              ),
+              Some(subscription.id)
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence((administrators ++ Seq(from)).map(admin => {
@@ -1990,57 +2030,35 @@ class ApiService(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
             })
-          case steps =>
+          case _ =>
             val demanId = DemandId(IdGenerator.token(32))
-
-            val formKeysToMetadata = steps
-              .collectFirst { case s: ValidationStep.Form => s }
-              .flatMap(_.formKeysToMetadata)
-
-            val metadataFromMotivation: Option[JsObject] = for {
-              motiv <- motivation
-              keys <- formKeysToMetadata
-            } yield {
-              val filtered = motiv.fields.collect {
-                case (k, v) if keys.contains(k) => (k, v)
-              }
-              JsObject(filtered)
-            }
 
             for {
               _ <- EitherT.liftF(
                 env.dataStore.subscriptionDemandRepo
                   .forTenant(tenant)
                   .save(
-                    SubscriptionDemand(
-                      id = demanId,
-                      tenant = tenant.id,
-                      api = api.id,
-                      plan = plan.id,
-                      state = SubscriptionDemandState.Waiting,
-                      steps = steps.map(step =>
-                        SubscriptionDemandStep(
-                          id = SubscriptionDemandStepId(IdGenerator.token),
-                          state = step match {
-                            case _: ValidationStep.Form =>
-                              SubscriptionDemandState.Accepted
-                            case _ => SubscriptionDemandState.Waiting
-                          },
-                          step = step
-                        )
+                    SubscriptionDemandPreparation.prepare(
+                      SubscriptionDemand(
+                        id = demanId,
+                        tenant = tenant.id,
+                        api = api.id,
+                        plan = plan.id,
+                        state = SubscriptionDemandState.Waiting,
+                        steps = Seq.empty,
+                        team = team.id,
+                        from = user.id,
+                        motivation = motivation,
+                        keyring = keyringId,
+                        keyringCustomName = Some(keyringCustomName),
+                        customMetadata = customMetadata,
+                        customMaxPerSecond = customMaxPerSecond,
+                        customMaxPerDay = customMaxPerDay,
+                        customMaxPerMonth = customMaxPerMonth,
+                        customReadOnly = customReadOnly,
+                        adminCustomName = adminCustomName
                       ),
-                      team = team.id,
-                      from = user.id,
-                      motivation = motivation,
-                      keyring = keyringId,
-                      keyringCustomName = Some(keyringCustomName),
-                      customMetadata = JsonOperationsHelper
-                        .mergeOptJson(customMetadata, metadataFromMotivation),
-                      customMaxPerSecond = customMaxPerSecond,
-                      customMaxPerDay = customMaxPerDay,
-                      customMaxPerMonth = customMaxPerMonth,
-                      customReadOnly = customReadOnly,
-                      adminCustomName = adminCustomName
+                      plan.subscriptionProcess
                     )
                   )
               )
@@ -2070,42 +2088,32 @@ class ApiService(
           .findById(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.withTransaction {
-          val newNotification = Notification(
-            id = NotificationId(IdGenerator.token(32)),
-            tenant = tenant.id,
-            team = demand.team.some,
-            sender = sender,
-            notificationType = NotificationType.AcceptOnly,
-            action = NotificationAction.ApiSubscriptionReject(
-              maybeMessage,
-              demand.api,
-              demand.plan,
-              demand.team
-            )
-          )
-          for {
-            _ <- env.dataStore.subscriptionDemandRepo
-              .forTenant(tenant)
-              .save(
-                demand.copy(
-                  state = SubscriptionDemandState.Refused,
-                  steps = demand.steps.map(s =>
-                    if (s.id == stepId)
-                      s.copy(
-                        state = SubscriptionDemandState.Refused,
-                        metadata = Json.obj("by" -> sender.asJson)
-                      )
-                    else s
-                  )
-                )
+      _ <- saveDemandOutcome(
+        demand,
+        demand.copy(
+          state = SubscriptionDemandState.Refused,
+          steps = demand.steps.map(s =>
+            if (s.id == stepId)
+              s.copy(
+                state = SubscriptionDemandState.Refused,
+                metadata = Json.obj("by" -> sender.asJson)
               )
-            _ <- env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .save(newNotification)
-          } yield ()
-        }
+            else s
+          )
+        ),
+        Notification(
+          id = NotificationId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          team = demand.team.some,
+          sender = sender,
+          notificationType = NotificationType.AcceptOnly,
+          action = NotificationAction.ApiSubscriptionReject(
+            maybeMessage,
+            demand.api,
+            demand.plan,
+            demand.team
+          )
+        )
       )
       from <- EitherT.fromOptionF(
         env.dataStore.userRepo.findById(demand.from),

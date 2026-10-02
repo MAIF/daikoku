@@ -1,6 +1,6 @@
 package fr.maif.daikoku.utils
 
-import fr.maif.daikoku.domain.ValidationStep
+import fr.maif.daikoku.domain.{SubscriptionProcess, ValidationStep}
 import play.api.libs.json.{JsArray, JsObject, JsValue}
 
 object SubscriptionUtil {
@@ -26,15 +26,39 @@ object SubscriptionUtil {
     */
   private val ignoredKeys = Set("id", "title")
 
-  private def normalizeStep(step: ValidationStep): JsValue =
-    canonical(ignoredKeys.foldLeft(step.asJson.as[JsObject])(_ - _))
+  private def normalizeStep(
+      step: ValidationStep,
+      ignoredFields: Set[String] = ignoredKeys
+  ): JsValue =
+    canonical(ignoredFields.foldLeft(step.asJson.as[JsObject])(_ - _))
 
-  def processChecksum(steps: Seq[ValidationStep]): Option[String] = {
+  def processChecksum(steps: Seq[ValidationStep]): Option[String] =
+    checksum(steps.map(step => normalizeStep(step)))
+
+  /** Approver teams may differ across APIs in the same subscription batch;
+    * all other meaningful step settings must still match.
+    */
+  def batchProcessChecksum(steps: Seq[ValidationStep]): Option[String] =
+    checksum(steps.map { step =>
+      val ignoredFields = step match {
+        case _: ValidationStep.TeamAdmin => ignoredKeys + "team"
+        case _                          => ignoredKeys
+      }
+      normalizeStep(step, ignoredFields)
+    })
+
+  def areBatchProcessesCompatible(
+      processes: Seq[SubscriptionProcess]
+  ): Boolean =
+    processes.flatMap(process => batchProcessChecksum(process.steps))
+      .distinct.size <= 1
+
+  private def checksum(steps: Seq[JsValue]): Option[String] = {
     steps match {
       case Nil => None
       case _ =>
         val payload =
-          JsArray(steps.map(normalizeStep)).toString
+          JsArray(steps).toString
             .getBytes(java.nio.charset.StandardCharsets.UTF_8)
 
         Some(

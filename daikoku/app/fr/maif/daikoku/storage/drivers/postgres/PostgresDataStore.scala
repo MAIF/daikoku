@@ -311,6 +311,26 @@ case class PostgresTenantCapableEmailVerificationRepo(
 
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
+case class PostgresTenantCapableSubscriptionBatchDemandRepo(
+    _repo: () => PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      SubscriptionBatchDemand,
+      SubscriptionBatchDemandId
+    ]
+) extends PostgresTenantCapableRepo[
+      SubscriptionBatchDemand,
+      SubscriptionBatchDemandId
+    ]
+    with SubscriptionBatchDemandRepo {
+  override def repo(): PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId] =
+    _repo()
+
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId] =
+    _tenantRepo(tenant)
+}
+
 case class PostgresTenantCapableSubscriptionDemandRepo(
     _repo: () => PostgresRepo[SubscriptionDemand, DemandId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[
@@ -445,6 +465,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "operations",
     "email_verifications",
     "subscription_demands",
+    "subscription_batch_demands",
     "step_validators",
     "usage_plans",
     "assets",
@@ -558,6 +579,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       t => new PostgresTenantSubscriptionDemandRepo(env, reactivePg, t)
     )
 
+  private val _subscriptionBatchDemandRepo: SubscriptionBatchDemandRepo =
+    PostgresTenantCapableSubscriptionBatchDemandRepo(
+      () => new PostgresSubscriptionBatchDemandRepo(env, reactivePg),
+      t => new PostgresTenantSubscriptionBatchDemandRepo(env, reactivePg, t)
+    )
+
   private val _jobInformationRepo: JobInformationRepo =
     PostgresTenantCapableJobInformationRepo(
       () => new PostgresJobInformationRepo(env, reactivePg),
@@ -631,6 +658,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
 
   override def subscriptionDemandRepo: SubscriptionDemandRepo =
     _subscriptionDemandRepo
+
+  override def subscriptionBatchDemandRepo: SubscriptionBatchDemandRepo =
+    _subscriptionBatchDemandRepo
 
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
@@ -842,6 +872,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       "CREATE INDEX IF NOT EXISTS idx_demand_api ON subscription_demands ((content->>'api'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_team ON subscription_demands ((content->>'team'));",
       "CREATE INDEX IF NOT EXISTS idx_demand_state ON subscription_demands ((content->>'state'));",
+      "CREATE UNIQUE INDEX IF NOT EXISTS uniq_demand_batch_item ON subscription_demands ((content->>'_tenant'), (content->'batch'->>'batch'), (content->'batch'->>'item'));",
+      "CREATE INDEX IF NOT EXISTS idx_batch_demand_team ON subscription_batch_demands ((content->>'_tenant'), (content->>'team'));",
+      "CREATE INDEX IF NOT EXISTS idx_batch_demand_state ON subscription_batch_demands ((content->>'_tenant'), (content->>'state'));",
+      "CREATE UNIQUE INDEX IF NOT EXISTS uniq_batch_demand_submission ON subscription_batch_demands ((content->>'_tenant'), (content->>'team'), (content->>'from'), (content->>'idempotencyKey'));",
       "CREATE INDEX IF NOT EXISTS idx_job_started_at ON job_informations ((content->>'startedAt'));",
       "CREATE INDEX IF NOT EXISTS idx_job_name ON job_informations ((content->>'jobName'));",
       // `findLastRun` orders on the numeric value, which the text index above
@@ -963,6 +997,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       assetRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
       subscriptionDemandRepo.forAllTenant(),
+      subscriptionBatchDemandRepo.forAllTenant(),
       usagePlanRepo.forAllTenant(),
       apiSubscriptionTransferRepo.forAllTenant(),
       keyringRepo.forAllTenant()
@@ -1071,6 +1106,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
               subscriptionDemandRepo
                 .forAllTenant()
                 .save(json.SubscriptionDemandFormat.reads(payload).get)
+            case ("subscriptionbatchdemands", payload) =>
+              subscriptionBatchDemandRepo
+                .forAllTenant()
+                .save(json.SubscriptionBatchDemandFormat.reads(payload).get)
             case ("usageplans", payload) =>
               usagePlanRepo
                 .forAllTenant()
@@ -1240,6 +1279,31 @@ class PostgresTenantEmailVerificationRepo(
 
   override def extractId(value: EmailVerification): String = value.id.value
 
+}
+
+class PostgresTenantSubscriptionBatchDemandRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[
+      SubscriptionBatchDemand,
+      SubscriptionBatchDemandId
+    ](env, reactivePg, tenant) {
+  override def tableName: String = "subscription_batch_demands"
+  override def format: Format[SubscriptionBatchDemand] =
+    json.SubscriptionBatchDemandFormat
+  override def extractId(value: SubscriptionBatchDemand): String = value.id.value
+}
+
+class PostgresSubscriptionBatchDemandRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId](
+      env,
+      reactivePg
+    ) {
+  override def tableName: String = "subscription_batch_demands"
+  override def format: Format[SubscriptionBatchDemand] =
+    json.SubscriptionBatchDemandFormat
+  override def extractId(value: SubscriptionBatchDemand): String = value.id.value
 }
 
 class PostgresTenantSubscriptionDemandRepo(

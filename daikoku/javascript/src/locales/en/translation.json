@@ -1276,6 +1276,7 @@
     "p": "%s rows selected"
   },
   "table.select.all.label": "Select all %s items",
+  "table.selection.clear.label": "Clear selection",
   "notifications.page.table.title": "Notifications",
   "notifications.page.table.read.bulk.action.label": "Mark all as read",
   "notifications.page.table.read.action.label": "Mark as read",

@@ -18,6 +18,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { SubscriptionReturn } from '../../../services';
 import { currencies } from '../../../services/currencies';
+import { isPlanSelectableForBatch } from '../../../services/subscriptions';
 import {
   ApiPricingProps,
   IApi,
@@ -901,10 +902,6 @@ const ToggleFormPartButton = (props: ToggleButtonProps) => {
 }
 
 
-function hasProcess(plan: IUsagePlanGQL) {
-  return plan.subscriptionProcess.length > 0
-}
-
 // form field holding the name of the keyring to create for a given plan, in the
 // multi-plan request form (which mixes one keyring-select + one name per plan).
 const keyringNameField = (planId: string) => `${planId}__keyringName`;
@@ -927,20 +924,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const hasSelectedRow = Object.values(rowSelection).includes(true)
-
-  const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: IUsagePlanGQL[]) => {
-    // We don't allow multi subscrption for paying plans for now, since it would
-    // be too complicated to pay for multiple plans at once
-    if (plan.paymentSettings) return false;
-    if (selectedPlans.length === 0) return true;
-
-
-    return !hasProcess(plan) || selectedPlans.every(p => !hasProcess(p)) || selectedPlans.some(
-      row => {
-        return plan.subscriptionProcessChecksum === row.subscriptionProcessChecksum;
-      }
-    );
-  };
 
   const { translate, language } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -2063,11 +2046,12 @@ export const ApiPricing = (props: ApiPricingProps) => {
         columns={columns}
         fetchData={usagePlansFetchData}
         getRowId={plan => plan._id}
+        persistSelectionAcrossPages
         getRowAriaLabel={plan => plan.customName}
         tableClassName="col-12 api_list_container"
         dataClassName="api-table table-rows"
         countLabelKey="Plan"
-        isRowSelectable={isPlanSelectable}
+        isRowSelectable={isPlanSelectableForBatch}
         enableRowSelection={hasSelectedRow}
         rowSelection={rowSelection}
         setRowSelection={setRowSelection}

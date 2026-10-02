@@ -675,6 +675,7 @@ export interface IUsagePlanGQL
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>;
   subscriptionProcessChecksum: string;
+  subscriptionBatchProcessChecksum?: string | null;
   trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
 }

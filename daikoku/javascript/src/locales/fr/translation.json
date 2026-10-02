@@ -1291,6 +1291,7 @@
     "p": "%s lignes sélectionnées"
   },
   "table.select.all.label": "Sélectionner les %s éléments",
+  "table.selection.clear.label": "Vider la sélection",
   "notifications.page.table.title": "Notifications",
   "notifications.page.table.read.bulk.action.label": "Marquer tout comme lu",
   "notifications.page.table.read.action.label": "Marquer comme lu",

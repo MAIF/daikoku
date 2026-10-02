@@ -1610,6 +1610,7 @@ export const graphql = {
             }
           }
           subscriptionProcessChecksum
+          subscriptionBatchProcessChecksum
           trialPeriod {
             ... on BillingDuration {
               value

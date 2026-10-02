@@ -39,6 +39,7 @@ class DaikokuComponentsInstances(context: Context)
     with I18nSupport {
 
   implicit lazy val env: Env = wire[DaikokuEnv]
+  private lazy val dataStore = env.dataStore
 
   lazy val verifier = wire[OtoroshiSynchronizerJob]
   lazy val entityVerifier = wire[OtoroshiEntitiesVerifierJob]
@@ -55,6 +56,7 @@ class DaikokuComponentsInstances(context: Context)
 
   lazy val keyringService = wire[KeyringService]
   lazy val apiService = wire[ApiService]
+  lazy val subscriptionBatchService = wire[SubscriptionBatchService]
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
   lazy val translationsService = wire[TranslationsService]

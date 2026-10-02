@@ -489,6 +489,7 @@ object SchemaDefinition {
       ObjectTypeDescription(
         "Settings to communicate with an instance of Otoroshi"
       ),
+      ExcludeFields("keyringEmptyGroup"),
       ReplaceField("id", Field("id", StringType, resolve = _.value.id.value)),
       ReplaceField(
         "elasticConfig",
@@ -1259,6 +1260,11 @@ object SchemaDefinition {
             "subscriptionProcessChecksum",
             OptionType(StringType),
             resolve = _.value.subscriptionProcess.checksum
+          ),
+          Field(
+            "subscriptionBatchProcessChecksum",
+            OptionType(StringType),
+            resolve = _.value.subscriptionProcess.batchChecksum
           ),
           Field(
             "integrationProcess",

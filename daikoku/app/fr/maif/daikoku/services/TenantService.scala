@@ -142,6 +142,9 @@ class TenantService(
       )
       _ <- env.dataStore.apiRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant).deleteAll()
+      _ <- env.dataStore.subscriptionBatchDemandRepo
+        .forTenant(tenant)
+        .deleteAll()
       _ <- env.dataStore.apiDocumentationPageRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.notificationRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()

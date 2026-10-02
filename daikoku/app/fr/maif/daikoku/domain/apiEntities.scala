@@ -134,6 +134,8 @@ case class SubscriptionProcess(
     steps: Seq[ValidationStep] = Seq.empty
 ) extends CanJson[SubscriptionProcess] {
   val checksum: Option[String] = processChecksum(steps)
+  val batchChecksum: Option[String] =
+    SubscriptionUtil.batchProcessChecksum(steps)
   def asJson: JsValue = SubscriptionProcessFormat.writes(this)
 }
 
