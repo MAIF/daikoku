@@ -66,7 +66,11 @@ trait Repo[Of, Id <: ValueType] {
   // lazy Source that materialises outside any transaction window.
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, ?]
 
-  def streamAllRawFormatted()(implicit
+  // e.g. streamAllRawFormatted(Seq("content->>'api' = $1"), Seq("api-weather"))
+  def streamAllRawFormatted(
+      predicates: Seq[String] = Seq.empty,
+      params: Seq[AnyRef] = Seq.empty
+  )(implicit
       ec: ExecutionContext
   ): Source[Of, ?]
 

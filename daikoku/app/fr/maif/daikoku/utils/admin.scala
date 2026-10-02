@@ -317,7 +317,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def prepareWrites(
       tenant: Tenant,
       raws: Seq[JsValue],
-      metadataKey: String,
+      metadataKey: Option[String],
       finalIds: ReconcileFinalIds,
       adoptExisting: Boolean
   ): Future[Seq[Either[String, PreparedWrite]]] = {
@@ -351,14 +351,14 @@ abstract class AdminApiController[Of, Id <: ValueType](
       tenant: Tenant,
       entity: Of,
       existing: Option[Of],
-      metadataKey: String,
+      metadataKey: Option[String],
       finalIds: ReconcileFinalIds,
       adoptExisting: Boolean
   ): Future[Either[String, PreparedWrite]] = {
     val id = getId(entity).value
     val owner = existing.map(old => readMetadata(old).get("created_by"))
     val refused = owner match {
-      case Some(Some(key)) => key != metadataKey
+      case Some(Some(key)) => !metadataKey.contains(key)
       case Some(None)      => !adoptExisting
       case None            => false
     }

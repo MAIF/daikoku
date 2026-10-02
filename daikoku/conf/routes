@@ -278,7 +278,9 @@ POST    /api/tenants/:tenantId/admins                   fr.maif.daikoku.controll
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.daikoku.controllers.TenantController.removeAdminFromTenant(tenantId, adminId)
 GET     /api/tenants/:tenantId/remote-catalogs                          fr.maif.daikoku.controllers.RemoteCatalogController.list(tenantId)
 POST    /api/tenants/:tenantId/remote-catalogs                          fr.maif.daikoku.controllers.RemoteCatalogController.create(tenantId)
-GET     /api/tenants/:tenantId/remote-catalogs/_export                  fr.maif.daikoku.controllers.RemoteCatalogController.exportTenant(tenantId, all: Boolean ?= false)
+GET     /api/tenants/:tenantId/remote-catalogs/_export                  fr.maif.daikoku.controllers.RemoteCatalogController.exportEntities(tenantId, all: Boolean ?= false, kind: Option[String], id: Option[String], children: Boolean ?= false, format: String ?= "zip")
+# writes without any catalog ownership: back office only, never on the admin API
+POST    /api/tenants/:tenantId/remote-catalogs/_load                    fr.maif.daikoku.controllers.RemoteCatalogController.loadResources(tenantId, dryRun: Boolean ?= true)
 PUT     /api/tenants/:tenantId/remote-catalogs/:catalogId               fr.maif.daikoku.controllers.RemoteCatalogController.update(tenantId, catalogId)
 DELETE  /api/tenants/:tenantId/remote-catalogs/:catalogId               fr.maif.daikoku.controllers.RemoteCatalogController.delete(tenantId, catalogId)
 POST    /api/tenants/:tenantId/remote-catalogs/:catalogId/_regenerate-token fr.maif.daikoku.controllers.RemoteCatalogController.regenerateToken(tenantId, catalogId)

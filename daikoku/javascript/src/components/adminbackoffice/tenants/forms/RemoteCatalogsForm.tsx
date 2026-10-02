@@ -1,6 +1,7 @@
 import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
+import { ExternalLink } from 'lucide-react';
 import { useContext, useState } from 'react';
 
 import { QUERY_KEYS } from '../../../../constants/queryKeys';
@@ -17,7 +18,7 @@ import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { DismissibleError } from '../../../utils/DismissibleError';
-import { formatDate } from '../../../utils/formatters';
+import { CatalogRun, HistoryRuns } from '../../remotecatalogs/CatalogRuns';
 
 const SOURCE_KINDS: Array<RemoteCatalogSourceKind> = ['file', 'http', 'github', 'gitlab'];
 const ENTITY_KINDS = ['team', 'usage-plan', 'api', 'keyring', 'api-subscription', 'cms-page'];
@@ -34,56 +35,6 @@ const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   allowDeletions: true,
 });
 
-type CatalogRun = {
-  _id: string;
-  at: number;
-  status: 'completed' | 'partial' | 'failed';
-  created: Array<string>;
-  updated: Array<string>;
-  deleted: Array<string>;
-  detached: Array<string>;
-  errors: Array<string>;
-};
-
-const STATUS_BADGE: Record<CatalogRun['status'], string> = {
-  completed: 'bg-success',
-  partial: 'bg-warning',
-  failed: 'bg-danger',
-};
-
-const RunRow = (props: { run: CatalogRun; formatAt: (at: any) => string }) => {
-  const { translate } = useContext(I18nContext);
-
-  const badgeClass = `badge ${STATUS_BADGE[props.run.status]}`;
-  const hasErrors = props.run.errors.length > 0;
-
-  return (
-    <>
-      <tr>
-        <td>{props.formatAt(props.run.at)}</td>
-        <td>
-          <span className={badgeClass}>
-            {translate(`remote-catalog.run.status.${props.run.status}`)}
-          </span>
-        </td>
-        <td className="text-center text-success">{props.run.created.length}</td>
-        <td className="text-center text-info">{props.run.updated.length}</td>
-        <td className="text-center text-warning">{props.run.deleted.length}</td>
-        <td className="text-center text-muted">{props.run.detached.length}</td>
-      </tr>
-      {hasErrors && (
-        <tr>
-          <td colSpan={6} className="text-danger small">
-            {props.run.errors.map((error, i) => (
-              <div key={i}>{error}</div>
-            ))}
-          </td>
-        </tr>
-      )}
-    </>
-  );
-};
-
 const useRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   useQuery({
     queryKey: QUERY_KEYS.remoteCatalogHistory(tenantId, catalogId),
@@ -95,56 +46,9 @@ const useRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
     refetchInterval: 10_000,
   });
 
-const HistoryRuns = (props: {
-  isLoading: boolean;
-  data?: ResponseError | Array<CatalogRun>;
-  formatAt: (at: any) => string;
-}) => {
-  const { translate } = useContext(I18nContext);
-
-  if (props.isLoading) {
-    return <div className="text-muted">{translate('loading')}</div>;
-  }
-
-  if (isError(props.data)) {
-    return (
-      <div className="alert alert-danger" role="alert">
-        {props.data.error}
-      </div>
-    );
-  }
-
-  const runs = props.data ?? [];
-
-  if (runs.length === 0) {
-    return <div>{translate('remote-catalog.noRun')}</div>;
-  }
-
-  return (
-    <table className="table table-sm align-middle mb-0">
-      <thead>
-        <tr>
-          <th>{translate('remote-catalog.col.date')}</th>
-          <th>{translate('remote-catalog.col.status')}</th>
-          <th className="text-center">{translate('remote-catalog.col.created')}</th>
-          <th className="text-center">{translate('remote-catalog.col.updated')}</th>
-          <th className="text-center">{translate('remote-catalog.col.deleted')}</th>
-          <th className="text-center">{translate('remote-catalog.col.detached')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {runs.map((run) => (
-          <RunRow key={run._id} run={run} formatAt={props.formatAt} />
-        ))}
-      </tbody>
-    </table>
-  );
-};
-
 const CatalogHistory = (props: {
   tenantId: string;
   catalog: IRemoteCatalog;
-  formatAt: (at: any) => string;
 }) => {
   const { translate } = useContext(I18nContext);
 
@@ -165,7 +69,7 @@ const CatalogHistory = (props: {
           <i className={refreshIcon} />
         </button>
       </div>
-      <HistoryRuns isLoading={history.isLoading} data={history.data} formatAt={props.formatAt} />
+      <HistoryRuns isLoading={history.isLoading} data={history.data} />
     </div>
   );
 };
@@ -316,6 +220,43 @@ const CatalogEditor = (props: {
   );
 };
 
+const CATALOG_DOC_URL = 'https://maif.github.io/daikoku/docs/usages/tenantusage/remote-catalogs';
+
+const CatalogFlowStep = (props: { title: string; text: string }) => (
+  <div className="border rounded p-3 flex-fill">
+    <div className="fw-bold">{props.title}</div>
+    <div className="small text-muted">{props.text}</div>
+  </div>
+);
+
+const CatalogFlowArrow = () => <i className="fas fa-arrow-right d-none d-md-block align-self-center" />;
+
+const CatalogFlow = () => {
+  const { translate } = useContext(I18nContext);
+
+  return (
+    <div className="my-3">
+      <div className="d-flex flex-column flex-md-row gap-3">
+        <CatalogFlowStep
+          title={translate('remote-catalog.flow.files.title')}
+          text={translate('remote-catalog.flow.files.text')}
+        />
+        <CatalogFlowArrow />
+        <CatalogFlowStep
+          title={translate('remote-catalog.flow.validate.title')}
+          text={translate('remote-catalog.flow.validate.text')}
+        />
+        <CatalogFlowArrow />
+        <CatalogFlowStep
+          title={translate('remote-catalog.flow.apply.title')}
+          text={translate('remote-catalog.flow.apply.text')}
+        />
+      </div>
+      <p className="small text-muted mt-2 mb-0">{translate('remote-catalog.flow.triggers')}</p>
+    </div>
+  );
+};
+
 export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm, alert, openRightPanel, closeRightPanel } =
@@ -336,7 +277,7 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   const showHistory = (catalog: IRemoteCatalog) =>
     openRightPanel({
       title: `${catalog.name} — ${translate('remote-catalog.action.history')}`,
-      content: <CatalogHistory tenantId={props.tenant._id} catalog={catalog} formatAt={formatAt} />,
+      content: <CatalogHistory tenantId={props.tenant._id} catalog={catalog} />,
     });
 
   const showToken = (catalog: IRemoteCatalog) =>
@@ -347,12 +288,6 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
       ),
     });
 
-  const formatAt = (at: any): string => {
-    const ts = typeof at === 'object' && at !== null ? at.$long : at;
-    if (!ts) return '';
-    return formatDate(ts, translate('date.locale'), translate('date.format'));
-  };
-
   const deploy = (catalog: IRemoteCatalog) =>
     Services.deployRemoteCatalog(props.tenant._id, catalog._id).then(() => showHistory(catalog));
 
@@ -360,7 +295,7 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
     Services.testRemoteCatalog(props.tenant._id, catalog._id).then((run) =>
       alert({
         title: `${catalog.name} — ${translate('remote-catalog.action.test')}`,
-        message: <HistoryRuns isLoading={false} data={[run]} formatAt={formatAt} />,
+        message: <HistoryRuns isLoading={false} data={[run]} />,
       })
     );
 
@@ -717,27 +652,36 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
     <Can I={manage} a={TENANT} dispatchError>
       <div className="m-3">
         {isEmpty ? (
-          <div className="card my-4" style={{ maxWidth: '45rem' }}>
+          <div className="card my-4" style={{ maxWidth: '55rem' }}>
             <div className="card-body">
               <h4 className="card-title">{translate('remote-catalog.empty.title')}</h4>
-              <p className="card-text text-muted">
-                {translate('remote-catalog.empty.description')}
-              </p>
-              <button
-                type="button"
-                className="btn btn-outline-success"
-                onClick={() => editCatalog()}
-              >
-                <i className="fas fa-plus me-1" />
-                {translate('remote-catalog.empty.create')}
-              </button>
+              <CatalogFlow />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn --primary"
+                  onClick={() => editCatalog()}
+                >
+                  <i className="fas fa-plus me-1" />
+                  {translate('remote-catalog.empty.create')}
+                </button>
+                <a
+                  className="external-link"
+                  href={CATALOG_DOC_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {translate('Documentation')}
+                  <ExternalLink size={14} />
+                </a>
+              </div>
             </div>
           </div>
         ) : (
           <>
             <button
               type="button"
-              className="btn btn-sm btn-outline-success my-2"
+              className="btn --primary --small my-2"
               onClick={() => editCatalog()}
             >
               <i className="fas fa-plus me-1" />

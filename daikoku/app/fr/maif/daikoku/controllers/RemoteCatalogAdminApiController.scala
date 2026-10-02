@@ -15,6 +15,8 @@ import fr.maif.daikoku.jobs.RemoteCatalogJob
 import fr.maif.daikoku.services.catalog.{
   CatalogFile,
   DeployReport,
+  ExportFormat,
+  ExportSelection,
   RemoteCatalogEngine
 }
 import fr.maif.daikoku.storage.{DataStore, Repo}
@@ -116,7 +118,13 @@ class RemoteCatalogAdminApiController(
       auditAdminApiWrite(ctx, "export", ctx.tenant.id.value)
 
       Future.successful(
-        Ok.chunked(engine.exportTenant(ctx.tenant, includeManaged = all))
+        Ok.chunked(
+          engine.exportEntities(
+            ctx.tenant,
+            ExportSelection.WholeTenant(includeManaged = all),
+            ExportFormat.Zip
+          )
+        )
           .as("application/zip")
           .withHeaders(
             CONTENT_DISPOSITION -> s"attachment; filename=${ctx.tenant.humanReadableId}.zip"

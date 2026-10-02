@@ -2745,3 +2745,12 @@ export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, {
     method: 'POST',
   });
+export const loadResources = (
+  tenantId: string,
+  files: Array<{ path: string; content: string }>,
+  dryRun: boolean
+) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_load?dryRun=${dryRun}`, {
+    method: 'POST',
+    body: JSON.stringify(files),
+  });

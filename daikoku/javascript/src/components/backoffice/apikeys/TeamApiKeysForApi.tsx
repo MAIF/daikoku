@@ -1,23 +1,23 @@
-import {constraints, type} from '@maif/react-forms';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import { constraints, type } from '@maif/react-forms';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
-import {isBefore} from 'date-fns';
+import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleQuestionMark, Copy, Ellipsis,
   EllipsisVertical, KeyRound, Link as LucideLink, Terminal,
   Users
 } from "lucide-react";
-import React, {useContext, useEffect, useState, type ReactNode, useRef} from 'react';
-import {Link, useParams} from 'react-router-dom';
-import {toast} from 'sonner';
+import React, { useContext, useEffect, useState, type ReactNode, useRef } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import {
   I18nContext,
   ModalContext,
   useTeamBackOffice,
 } from '../../../contexts';
-import {GlobalContext} from '../../../contexts/globalContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
@@ -44,16 +44,16 @@ import {
   FetchData,
   FetchResult
 } from "../../inputs";
-import {createColumnHelper} from "@tanstack/react-table";
-import {QUERY_KEYS} from "../../../constants/queryKeys";
+import { createColumnHelper } from "@tanstack/react-table";
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import Pagination from "../../utils/Pagination";
 import debounce from "lodash/debounce";
-import {FeedbackButton} from "../../utils/FeedbackButton";
+import { useExportEntity } from "../../utils/useExportEntity";
 
 
-const DisplayLink = ({value}: { value: string }) => {
+const DisplayLink = ({ value }: { value: string }) => {
   const [displayLink, setDisplayLink] = useState(false)
-  const {translate} = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   return (
     <div>{translate("subscriptions.link.explanation.1")}
       <ol>
@@ -62,8 +62,8 @@ const DisplayLink = ({value}: { value: string }) => {
         <li>{translate("subscriptions.link.explanation.4")}</li>
       </ol>
       <span className='a-fake' onClick={() => setDisplayLink(!displayLink)}>
-        {!!displayLink && <ChevronUp className='me-1'/>}
-        {!displayLink && <ChevronDown className='me-1'/>}
+        {!!displayLink && <ChevronUp className='me-1' />}
+        {!displayLink && <ChevronDown className='me-1' />}
         {displayLink ? translate('subscriptions.hide.link') : translate('subscriptions.display.link')}
       </span>
       {displayLink && <div className='api-susbcription__display-link'>
@@ -80,8 +80,8 @@ export type IKeyringSubscriptionsWithCount = {
 };
 
 export const TeamApiKeysForApi = () => {
-  const {currentTeam} = useTeamBackOffice();
-  const {Translation} = useContext(I18nContext);
+  const { currentTeam } = useTeamBackOffice();
+  const { Translation } = useContext(I18nContext);
 
   const params = useParams();
 
@@ -109,7 +109,7 @@ export const TeamApiKeysForApi = () => {
 
 
   if (apiQuery.isLoading || teamQuery.isLoading) {
-    return <Spinner/>
+    return <Spinner />
   } else if (apiQuery.data && !isError(apiQuery.data) && teamQuery.data && !isError(teamQuery.data)) {
     const apiLink = `/${teamQuery.data._humanReadableId}/${apiQuery.data._humanReadableId}/${apiQuery.data.currentVersion}/description`;
 
@@ -178,9 +178,9 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const pageNumber = 6;
   const [page, setPage] = useState(0);
 
-  const {customGraphQLClient} = useContext(GlobalContext);
-  const {translate} = useContext(I18nContext);
-  const {confirm, openFormModal, openCustomModal} = useContext(ModalContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
+  const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
 
@@ -204,8 +204,8 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   // }, [queryClient]);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({queryKey: QUERY_KEYS.apiKeyrings(props.team._id, props.api._id)});
-    queryClient.invalidateQueries({queryKey: ['mySubscription']});
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeyrings(props.team._id, props.api._id) });
+    queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
   }
 
   const updateKeyringName = (keyringId: string, customName: string) =>
@@ -266,7 +266,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   };
 
   const regenerateSecret = (keyring: IKeyringForApiGql) =>
-    confirm({message: translate('reset.secret.confirm')}).then((ok) => {
+    confirm({ message: translate('reset.secret.confirm') }).then((ok) => {
       if (ok) {
         Services.regenerateApiKeySecret(props.team._id, keyring._id).then(() => {
           invalidate();
@@ -284,7 +284,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         if (!isError(response)) {
           openCustomModal({
             title: translate('subscriptions.transfer.modal.title'),
-            content: <DisplayLink value={response.link}/>,
+            content: <DisplayLink value={response.link} />,
             actions: (close) => (
               <button
                 className='btn --primary'
@@ -301,7 +301,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                     );
                 }}
               >
-                <LucideLink className='me-1'/>
+                <LucideLink className='me-1' />
                 {translate('subscriptions.copy.link.button.label')}
               </button>
             ),
@@ -453,7 +453,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   let List;
   if (keyringsQuery.isLoading) {
-    List = <Spinner/>;
+    List = <Spinner />;
   } else if (keyringsQuery.data && !isError(keyringsQuery.data)) {
     const keyrings = keyringsQuery.data.keyrings.keyringsWithSubCountAndRotation;
     const sorted = sortBy(keyrings, [
@@ -469,57 +469,57 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             <span className="small">
               <span className="fw-bold">{totalFiltered}</span>
               {totalFiltered < total
-                ? ` ${translate({key: "keyring.count", plural: totalFiltered > 1})} (sur ${total})`
-                : ` ${translate({key: "keyring.count", plural: totalFiltered > 1})}`}
+                ? ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })} (sur ${total})`
+                : ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })}`}
             </span>
           </div>
-        <div className="d-flex flex-row flex-wrap keyring-card-container">
-          {
-            sorted.map((keyring) => {
-              return (
-                <KeyringCard
-                  key={keyring._id}
-                  api={props.api}
-                  currentTeam={props.team}
-                  keyring={keyring}
-                  updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
-                  toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
-                  toggle={toggleApiKey}
-                  toggleRotation={toggleApiKeyRotation}
-                  regenerateSecret={() => regenerateSecret(keyring)}
-                  deleteKeyring={() => deleteKeyring(keyring)}
-                  transferKey={(sub, callback) => transferApiKey(sub, callback)}
-                  deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
-                  makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
-                />
-              )
-            })
-          }
-        </div>
-        <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
-          <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{gap: 16}}>
-            <Pagination
-              containerClassName="pagination pagination--ds"
-              previousLabel={<ChevronLeft/>}
-              nextLabel={<ChevronRight/>}
-              breakLabel={<Ellipsis/>}
-              breakClassName="break"
-              breakLinkClassName="btn --ghost"
-              pageCount={Math.ceil(keyringsQuery.data.keyrings.totalFiltered / pageNumber)}
-              forcePage={page}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={3}
-              onPageChange={(data) => setPage(data.selected)}
-              pageClassName="page-selector"
-              pageLinkClassName="btn --ghost"
-              previousLinkClassName="btn --tertiary --icon"
-              nextLinkClassName="btn --tertiary --icon"
-              disabledLinkClassName="--disabled"
-              activeClassName="active"
-            />
+          <div className="d-flex flex-row flex-wrap keyring-card-container">
+            {
+              sorted.map((keyring) => {
+                return (
+                  <KeyringCard
+                    key={keyring._id}
+                    api={props.api}
+                    currentTeam={props.team}
+                    keyring={keyring}
+                    updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
+                    toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
+                    toggle={toggleApiKey}
+                    toggleRotation={toggleApiKeyRotation}
+                    regenerateSecret={() => regenerateSecret(keyring)}
+                    deleteKeyring={() => deleteKeyring(keyring)}
+                    transferKey={(sub, callback) => transferApiKey(sub, callback)}
+                    deleteApiKey={(sub, callback) => deleteApiKey(sub, keyring, callback)}
+                    makeUniqueApiKey={(sub, callback) => makeUniqueApiKey(sub, keyring, callback)}
+                  />
+                )
+              })
+            }
+          </div>
+          <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ gap: 16 }}>
+              <Pagination
+                containerClassName="pagination pagination--ds"
+                previousLabel={<ChevronLeft />}
+                nextLabel={<ChevronRight />}
+                breakLabel={<Ellipsis />}
+                breakClassName="break"
+                breakLinkClassName="btn --ghost"
+                pageCount={Math.ceil(keyringsQuery.data.keyrings.totalFiltered / pageNumber)}
+                forcePage={page}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={3}
+                onPageChange={(data) => setPage(data.selected)}
+                pageClassName="page-selector"
+                pageLinkClassName="btn --ghost"
+                previousLinkClassName="btn --tertiary --icon"
+                nextLinkClassName="btn --tertiary --icon"
+                disabledLinkClassName="--disabled"
+                activeClassName="active"
+              />
+            </div>
           </div>
         </div>
-      </div>
     } else {
       List = <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
         <div>{translate('keyring.filter.empty')}</div>
@@ -549,7 +549,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           onChange={debounce(e => {
             setSearched(e.target.value)
             setPage(0)
-            }, 500
+          }, 500
           )}
         />
       </div>
@@ -580,22 +580,23 @@ type KeyringCardProps = {
 };
 
 export const KeyringCard = ({
-                              api,
-                              keyring,
-                              currentTeam,
-                              updateKeyringName,
-                              toggleKeyring,
-                              toggle,
-                              toggleRotation,
-                              regenerateSecret,
-                              deleteKeyring,
-                              transferKey,
-                              deleteApiKey,
-                              makeUniqueApiKey,
-                            }: KeyringCardProps) => {
-  const {translate} = useContext(I18nContext);
-  const {openFormModal} = useContext(ModalContext);
-  const {customGraphQLClient, tenant} = useContext(GlobalContext);
+  api,
+  keyring,
+  currentTeam,
+  updateKeyringName,
+  toggleKeyring,
+  toggle,
+  toggleRotation,
+  regenerateSecret,
+  deleteKeyring,
+  transferKey,
+  deleteApiKey,
+  makeUniqueApiKey,
+}: KeyringCardProps) => {
+  const { translate } = useContext(I18nContext);
+  const { openFormModal } = useContext(ModalContext);
+  const { customGraphQLClient, tenant } = useContext(GlobalContext);
+  const { canExport, exportEntity } = useExportEntity();
   const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
 
 
@@ -631,16 +632,16 @@ export const KeyringCard = ({
       type: type.number,
       label: translate('Rotation period'),
       help: translate('help.apikey.rotation.period'),
-      disabled: ({rawValues}: any) => !rawValues.enabled,
-      props: {steps: 1, min: 0},
+      disabled: ({ rawValues }: any) => !rawValues.enabled,
+      props: { steps: 1, min: 0 },
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
     gracePeriod: {
       type: type.number,
       label: translate('Grace period'),
       help: translate('help.apikey.grace.period'),
-      disabled: ({rawValues}: any) => !rawValues.enabled,
-      props: {steps: 1, min: 0},
+      disabled: ({ rawValues }: any) => !rawValues.enabled,
+      props: { steps: 1, min: 0 },
       constraints: [
         constraints.positive(translate('constraints.positive')),
         constraints.lessThan(
@@ -675,7 +676,7 @@ export const KeyringCard = ({
   );
 
   const columnHelper = createColumnHelper<DynamicTableFeatures, IKeyringSubscriptionGql>();
-  const fetchData: FetchData<IKeyringSubscriptionGql> = ({limit, offset, filters, sorting}) =>
+  const fetchData: FetchData<IKeyringSubscriptionGql> = ({ limit, offset, filters, sorting }) =>
     customGraphQLClient
       .request<{
         keyringSubscriptions: IKeyringSubscriptionsWithCount
@@ -687,17 +688,17 @@ export const KeyringCard = ({
         limit: limit,
         offset: offset,
       })
-      .then(({keyringSubscriptions}): FetchResult<IKeyringSubscriptionGql> => ({
-            items: keyringSubscriptions.subscriptions,
-            total: keyringSubscriptions.total
-          }
-        )
+      .then(({ keyringSubscriptions }): FetchResult<IKeyringSubscriptionGql> => ({
+        items: keyringSubscriptions.subscriptions,
+        total: keyringSubscriptions.total
+      }
+      )
       );
 
-  const buildColumns = ({setColumnFilters, selectAll, seedFilterLabels}: DynamicTableColumnCtx) => [
+  const buildColumns = ({ setColumnFilters, selectAll, seedFilterLabels }: DynamicTableColumnCtx) => [
     columnHelper.display({
       id: 'api',
-      meta: {className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 20},
+      meta: { className: 'api-cell', title: translate('notifications.page.table.header.label.api'), size: 20 },
       cell: (info) => {
         const sub = info.cell.row.original
         const statsLink = `/${currentTeam?._humanReadableId}/settings/apikeys/${sub.api._id}/${sub.api.currentVersion}/subscription/${sub._id}/consumptions`;
@@ -712,7 +713,7 @@ export const KeyringCard = ({
     }),
     columnHelper.display({
       id: 'state',
-      meta: {className: 'state-cell', title: translate('State'), size: 15},
+      meta: { className: 'state-cell', title: translate('State'), size: 15 },
       cell: (info) => {
         const sub = info.cell.row.original
         return (
@@ -729,17 +730,17 @@ export const KeyringCard = ({
               "--success": sub.enabled && sub.state === 'active',
               "--danger": !sub.enabled || sub.state === 'blocked',
             })}>
-                      {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
+              {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
               {(sub.state === "blocked") && translate('subscription.blocked.label')}
               {(!sub.enabled && sub.state === "active") && translate('subscription.disable.label')}
-                    </span>
+            </span>
           </div>
         );
       }
     }),
     columnHelper.display({
       id: 'env',
-      meta: {className: 'env-cell', title: translate('display.environment.label'), size: 20},
+      meta: { className: 'env-cell', title: translate('display.environment.label'), size: 20 },
       cell: (info) => {
         const sub = info.cell.row.original
         return (
@@ -751,23 +752,23 @@ export const KeyringCard = ({
     }),
     columnHelper.display({
       id: 'creationDate',
-      meta: {className: 'creationDate-cell', title: translate('display.creation.label'), size: 10},
+      meta: { className: 'creationDate-cell', title: translate('display.creation.label'), size: 10 },
       cell: (info) => {
         const sub = info.cell.row.original
         return (
           <span>
-          {formatDate(
-            sub.createdAt,
-            translate('date.locale'),
-            translate('date.format.without.hours')
-          )}
+            {formatDate(
+              sub.createdAt,
+              translate('date.locale'),
+              translate('date.format.without.hours')
+            )}
           </span>
         );
       }
     }),
     columnHelper.display({
       id: 'action',
-      meta: {className: 'action-cell', size: 5},
+      meta: { className: 'action-cell', size: 5 },
       cell: (info) => {
         const sub = info.cell.row.original
         return (
@@ -783,13 +784,13 @@ export const KeyringCard = ({
                 >
                   <EllipsisVertical
                     className="cursor-pointer dropdown-menu-button"
-                    style={{fontSize: '18px'}}
+                    style={{ fontSize: '18px' }}
                   />
                 </button>
                 <div
                   className="dropdown-menu dropdown-menu-end"
                   aria-labelledby={`dropdown-${sub._id}`}
-                  style={{zIndex: 1}}
+                  style={{ zIndex: 1 }}
                 >
                   {!aggregated && (
                     <span
@@ -797,7 +798,7 @@ export const KeyringCard = ({
                       onClick={() => withLoader(() => {
                         transferKey(
                           sub,
-                          () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
+                          () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }))
                       })}
                     >
                       {translate('subscription.transfer.label')}
@@ -808,8 +809,8 @@ export const KeyringCard = ({
                       className="dropdown-item cursor-pointer"
                       onClick={() => withLoader(() => {
                         toggle(sub)
-                          .then(r => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}))
-                        ;
+                          .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }))
+                          ;
                       })}
                     >
                       {sub.enabled
@@ -823,18 +824,26 @@ export const KeyringCard = ({
                       onClick={() => withLoader(() => {
                         makeUniqueApiKey(
                           sub,
-                          () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)})
+                          () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) })
                         );
                       })}
                     >
                       {translate('subscription.extract.button.label')}
                     </button>
                   )}
-                  <div className="dropdown-divider"/>
+                  {canExport && (
+                    <button
+                      className="dropdown-item cursor-pointer"
+                      onClick={() => exportEntity('api-subscription', sub._id)}
+                    >
+                      {translate('remote-catalog.exportEntity.button')}
+                    </button>
+                  )}
+                  <div className="dropdown-divider" />
                   <button
                     className="dropdown-item cursor-pointer danger"
                     onClick={() => withLoader(() => {
-                      deleteApiKey(sub, () => queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id)}));
+                      deleteApiKey(sub, () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }));
                     })}
                   >
                     {translate('subscription.delete.button.label')}
@@ -862,30 +871,30 @@ export const KeyringCard = ({
     >
       <div className="keyring-card-ico">
         <div className="keyring-card-ico--icon">
-          <KeyRound/>
+          <KeyRound />
         </div>
       </div>
       <div className="keyring-card-name">
-          <h4 title={keyring.customName}>{keyring.customName}</h4>
-          <span className={classNames("badge --state d-flex align-items-center gap-2", {
-            "--success": keyring.enabled,
-            "--danger": !keyring.enabled,
-          })}>
-            {keyring.enabled
-              ? translate('subscription.enable.label')
-              : translate('subscription.disable.label')}
-            </span>
+        <h4 title={keyring.customName}>{keyring.customName}</h4>
+        <span className={classNames("badge --state d-flex align-items-center gap-2", {
+          "--success": keyring.enabled,
+          "--danger": !keyring.enabled,
+        })}>
+          {keyring.enabled
+            ? translate('subscription.enable.label')
+            : translate('subscription.disable.label')}
+        </span>
       </div>
       <div className="keyring-card-count-env d-flex gap-2">
         <small className="keyring-card-count">
           {keyring.subscriptionsCount}
         </small>
         <small className="keyring-card-env d-flex gap-2">
-          <Users size={16} color="var(--primary-color)"/>
+          <Users size={16} color="var(--primary-color)" />
           {keyring.team.name}
         </small>
         <small className="keyring-card-env d-flex gap-2">
-          <Users size={16} color="var(--primary-color)"/>
+          <Users size={16} color="var(--primary-color)" />
           {keyring.environments.length > 1 ? translate(`keyring.card.${displayType}`) : keyring.environments}
         </small>
       </div>
@@ -895,7 +904,7 @@ export const KeyringCard = ({
           aria-label={translate('keyring.details')}
           aria-expanded={!folding}
           onClick={() => setFolding(!folding)}>
-          <ChevronDown/>
+          <ChevronDown />
         </button>
       </div>
 
@@ -914,14 +923,14 @@ export const KeyringCard = ({
       <div className="keyring-card-actions d-flex gap-3">
         {!isApiCMS &&
           <span>
-              {translate("subscription.copy.apikey.label")}
+            {translate("subscription.copy.apikey.label")}
             {credentialButton(
               translate('subscription.copy.apikey.help'),
               translate('subscription.copy.apikey.aria.label'),
-              <Copy/>,
+              <Copy />,
               `${keyring.apiKey.clientId}:${keyring.apiKey.clientSecret}`
             )}
-            </span>
+          </span>
         }
         {!isApiCMS &&
           <span>
@@ -929,18 +938,18 @@ export const KeyringCard = ({
             {credentialButton(
               translate('subscription.copy.token.help'),
               translate('subscription.copy.token.aria.label'),
-              <Copy/>,
+              <Copy />,
               keyring.integrationToken
             )}
-            </span>
+          </span>
         }
         {!isApiCMS && <span>
-            Bearer
+          Bearer
           {
             credentialButton(
               translate('subscription.copy.bearer.token.help'),
               translate('subscription.copy.bearer.token.aria.label'),
-              <Copy/>,
+              <Copy />,
               keyring.bearerToken ?? ''
             )} </span>
         }
@@ -950,18 +959,18 @@ export const KeyringCard = ({
             {credentialButton(
               translate('subscription.copy.basic.auth.help'),
               translate('subscription.copy.basic.auth.aria.label'),
-              <Copy/>,
+              <Copy />,
               `Basic ${btoa(`${keyring.apiKey.clientId}:${keyring.apiKey.clientSecret}`)}`
             )}
-              </span>
+          </span>
         }
         {isApiCMS &&
           <span>
-          CLI Auth.
+            CLI Auth.
             {credentialButton(
               translate('subscription.copy.cli.auth.help'),
               translate('subscription.copy.cli.auth.aria.label'),
-              <Terminal/>,
+              <Terminal />,
               `${btoa(`${keyring.apiKey.clientId}:${keyring.apiKey.clientSecret}`)}`
             )} </span>
         }
@@ -976,13 +985,13 @@ export const KeyringCard = ({
             >
               <EllipsisVertical
                 className="dropdown-menu-button cursor-pointer"
-                style={{fontSize: '20px'}}
+                style={{ fontSize: '20px' }}
               />
             </button>
             <div
               className="dropdown-menu dropdown-menu-end"
               aria-labelledby={`keyring-dropdown-${keyring._id}`}
-              style={{zIndex: 1}}
+              style={{ zIndex: 1 }}
             >
               <button
                 className="dropdown-item cursor-pointer"
@@ -999,7 +1008,7 @@ export const KeyringCard = ({
                     },
                     onSubmit: (data) =>
                       withLoader(() => updateKeyringName(data.customName ?? '')),
-                    value: {customName: keyring.customName},
+                    value: { customName: keyring.customName },
                   })
                 }
               >
@@ -1007,7 +1016,7 @@ export const KeyringCard = ({
               </button>
               {/* TODO: better label */}
               <button className={classNames('dropdown-item cursor-pointer')}
-                      onClick={() => toggleKeyring(!keyring.enabled)}
+                onClick={() => toggleKeyring(!keyring.enabled)}
               >
                 {translate(
                   keyring.enabled
@@ -1046,7 +1055,15 @@ export const KeyringCard = ({
                   {translate('subscription.rotation.update.label')}
                 </button>
               )}
-              <div className="dropdown-divider"/>
+              {canExport && (
+                <button
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => exportEntity('keyring', keyring._id)}
+                >
+                  {translate('remote-catalog.exportEntity.button')}
+                </button>
+              )}
+              <div className="dropdown-divider" />
               <button
                 className={classNames('dropdown-item cursor-pointer danger', {
                   disabled: !keyring.enabled,
@@ -1074,10 +1091,10 @@ export const KeyringCard = ({
 type HelpProps = {
   message: string;
 };
-export const Help = ({message}: HelpProps) => {
+export const Help = ({ message }: HelpProps) => {
   return (
     <BeautifulTitle place="bottom" title={message}>
-      <CircleQuestionMark/>
+      <CircleQuestionMark />
     </BeautifulTitle>
   );
 }
@@ -1090,7 +1107,7 @@ type SimpleApiKeyCardProps = {
 }
 
 export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
-  const {translate} = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
   const _customName = props.subscription.customName || props.plan.customName
   const isApiCMS = props.api.visibility === "AdminOnly" && props.api.name.includes("cms");
@@ -1112,7 +1129,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <Copy className="me-1"/>
+                <Copy className="me-1" />
                 {translate("subscription.copy.apikey.label")}
               </button>
             </BeautifulTitle>}
@@ -1127,7 +1144,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <Copy className="me-1"/>
+                <Copy className="me-1" />
                 {translate("subscription.copy.token.label")}
               </button>
             </BeautifulTitle>}
@@ -1142,24 +1159,24 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                     toast.warning(translate('credential.copy.error'))
                   );
               }}>
-                <Copy className="me-1"/>
+                <Copy className="me-1" />
                 {translate("subscription.copy.basic.auth.label")}
               </button>
             </BeautifulTitle>}
             {!!isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
               <button className='btn --secondary --small'
-                      aria-label={translate("subscription.copy.cli.auth.aria.label")}
-                      onClick={() => {
-                        navigator.clipboard
-                          .writeText(`Basic ${btoa(`${props.subscription.keyring?.apiKey?.clientId}:${props.subscription.keyring?.apiKey?.clientSecret}`)}`)
-                          .then(() =>
-                            toast.info(translate('credential.copy.success'))
-                          )
-                          .catch(() =>
-                            toast.warning(translate('credential.copy.error'))
-                          );
-                      }}>
-                <Copy className="me-1"/>
+                aria-label={translate("subscription.copy.cli.auth.aria.label")}
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(`Basic ${btoa(`${props.subscription.keyring?.apiKey?.clientId}:${props.subscription.keyring?.apiKey?.clientSecret}`)}`)
+                    .then(() =>
+                      toast.info(translate('credential.copy.success'))
+                    )
+                    .catch(() =>
+                      toast.warning(translate('credential.copy.error'))
+                    );
+                }}>
+                <Copy className="me-1" />
                 {translate("subscription.copy.cli.auth.label")}
               </button>
             </BeautifulTitle>}

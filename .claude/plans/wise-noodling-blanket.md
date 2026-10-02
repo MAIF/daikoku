@@ -146,12 +146,20 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
 
 - ⬜ Resource Loader (menu utilisateur, hors réglages tenant) : drop / coller, liste des docs détectés (kind, nom, valide ou
   non, erreurs par chemin JSON). Même moteur que `_validate`. Structurel pour tout connecté, référentiel pour les admins.
-- ⬜ Export YAML / JSON : enveloppe `apiVersion: daikoku.io/v1` / `kind` / `spec` pour les deux, générée côté serveur depuis
+- 🔧 Export YAML / JSON : enveloppe `apiVersion: daikoku.io/v1` / `kind` / `spec` pour les deux, générée côté serveur depuis
   le `toJson` de l'admin-api (un seul chemin d'écriture et de lecture). Test de contrat : tout export repasse par
   `_validate`. Visible par ceux qui peuvent éditer l'entité. Écrans d'édition de team, api, usage-plan, api-subscription,
   keyring, cms-page. Décisions du 2026-10-01 : sert à passer en GitOps un Daikoku **sans catalog** ; archive avec un
   dossier par kind et un fichier par entité ; action ponctuelle (bouton UI, route admin-api) avec une case « tout
   exporter ou non », rien de stocké sur un catalog. Relecture par un catalog → listing récursif (lot 5) d'abord.
+  Décisions du 2026-10-02 (export par entité) : admins du tenant seulement, sans contrôle par entité ; YAML seul.
+  Enfants sur option, un niveau : team → ses API, les plans de ces API, ses keyrings, ses souscriptions
+  (consommatrice) ; api → ses plans + les souscriptions sur l'API ; usage-plan → ses souscriptions ; keyring → ses
+  souscriptions ; api-subscription / cms-page → rien. Avec enfants, format au choix dans la modale : un YAML `---` ou un
+  zip `<kind>/<id>.yaml`. Un seul pipeline avec l'export du tenant (sélection tenant | entité + enfants → stream de
+  documents → zip ou multi-doc), une seule route UI `_export` avec options ; l'admin-api garde son export du tenant,
+  rien d'autre. Stream de bout en bout (requêtes filtrées en SQL par curseur : 2000 souscriptions sans tout charger) ;
+  téléchargement par navigation, sans loader. Entité gérée par un catalog exportée quand même. Ensuite : Resource Loader.
 - ✅ `adoptExisting` (2026-10-01) : réglage du catalog, désactivé par défaut. Une entité déjà dans Daikoku sans
   `created_by`, décrite dans le catalog, est reprise (écrasée, taguée) ; une entité taguée par un autre catalog n'est
   jamais reprise. `prepareWrite` (règle `owner`), `Format`, OpenAPI (+ copie manuel), form + aide i18n EN / FR qui

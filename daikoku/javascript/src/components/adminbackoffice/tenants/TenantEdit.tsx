@@ -27,6 +27,7 @@ import { ThirdPartyPaymentForm } from './forms/ThirdPartyPaymentForm';
 import { ResponseError, isError } from '../../../types';
 import { DisplayForm } from './forms/DisplayForm';
 import { RemoteCatalogsForm } from './forms/RemoteCatalogsForm';
+import { ResourceLoader } from '../remotecatalogs/ResourceLoader';
 
 export const TenantEditComponent = ({
   tenantId,
@@ -219,6 +220,19 @@ export const TenantEditComponent = ({
                 </h1>
               )}
               <RemoteCatalogsForm tenant={tenant} />
+            </>
+          }
+        />
+        <Route
+          path="/resource-loader"
+          element={
+            <>
+              {fromDaikokuAdmin && (
+                <h1>
+                  {tenant.name} - {translate('resource-loader.title')}
+                </h1>
+              )}
+              <ResourceLoader tenant={tenant} />
             </>
           }
         />

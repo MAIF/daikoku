@@ -1,7 +1,7 @@
 import { format, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Code, Eye, Trash2 } from 'lucide-react';
+import { Code, Download, Eye, Trash2 } from 'lucide-react';
 import { useContext } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ import * as Services from '../../../services';
 import { ICmsPageGQL } from '../../../types';
 import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '../../inputs';
 import { Can, manage, tenant } from '../../utils';
+import { useExportEntity } from '../../utils/useExportEntity';
 
 export const CMSOffice = () => {
   useTenantBackOffice();
@@ -18,6 +19,7 @@ export const CMSOffice = () => {
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
   const { confirm, alert, openFormModal } = useContext(ModalContext);
+  const { exportEntity } = useExportEntity();
 
   const queryClient = useQueryClient();
   const queryKey = ['cms-pages'];
@@ -96,6 +98,14 @@ export const CMSOffice = () => {
               onClick={() => showContent(page)}
             >
               <Code />
+            </button>
+            <button
+              type="button"
+              className="btn --tertiary --small --icon-only"
+              title={translate('remote-catalog.exportEntity.button')}
+              onClick={() => exportEntity('cms-page', page.id)}
+            >
+              <Download />
             </button>
             <button
               type="button"

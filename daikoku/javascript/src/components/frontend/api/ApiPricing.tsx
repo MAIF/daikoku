@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CopyPlus, Download, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -51,6 +51,7 @@ import {
   Option,
   renderPricing
 } from '../../utils';
+import { useExportEntity } from '../../utils/useExportEntity';
 import { CmsViewerByPath } from "../CmsViewer";
 
 type Option = {
@@ -944,6 +945,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const { translate, language } = useContext(I18nContext);
   const queryClient = useQueryClient();
+  const { canExport, exportEntity } = useExportEntity();
 
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
   const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({ limit, offset, filters, sorting }) =>
@@ -2034,6 +2036,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
                               : translate('Duplicate plan')}
                           </button>)
                         }
+                        {canExport && (
+                          <button
+                            className="dropdown-item d-flex gap-1 align-items-center"
+                            onClick={() => exportEntity('usage-plan', plan._id)}>
+                            <Download size={16} />
+                            {translate('remote-catalog.exportEntity.button')}
+                          </button>
+                        )}
                         <button
                           className="dropdown-item d-flex gap-1 align-items-center"
                           onClick={() => actions(plan).deleteWithConfirm()}

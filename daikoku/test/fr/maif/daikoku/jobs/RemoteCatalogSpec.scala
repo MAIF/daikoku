@@ -3,13 +3,17 @@ package fr.maif.daikoku.jobs
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.services.CmsPage
-import fr.maif.daikoku.services.catalog.RemoteCatalogEngine
+import fr.maif.daikoku.services.catalog.{
+  RemoteCatalogEngine,
+  RemoteContentParser
+}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.ws.WSBodyReadables._
 import play.api.libs.ws.WSResponse
 
 import java.nio.charset.StandardCharsets
@@ -247,7 +251,6 @@ class RemoteCatalogSpec
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)
 
-  // e.g. Map("team/team-a.yaml" -> "apiVersion: daikoku.io/v1\nkind: team\nspec: ...")
   private def exportFiles(all: Boolean): Map[String, String] = {
     val resp = httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/remote-catalogs/_export?all=$all",
@@ -256,6 +259,11 @@ class RemoteCatalogSpec
     )(using tenant)
     resp.status mustBe 200
 
+    unzip(resp)
+  }
+
+  // e.g. Map("team/team-a.yaml" -> "apiVersion: daikoku.io/v1\nkind: team\nspec: ...")
+  private def unzip(resp: WSResponse): Map[String, String] = {
     val zip = new java.util.zip.ZipInputStream(
       new java.io.ByteArrayInputStream(resp.bodyAsBytes.toArray)
     )
@@ -268,6 +276,20 @@ class RemoteCatalogSpec
       .toMap
   }
 
+  // e.g. exportCall(session, "kind=api&id=api-weather&children=true&format=yaml")
+  private def exportCall(session: UserSession, query: String): WSResponse =
+    httpJsonCallBlocking(
+      path = s"/api/tenants/${tenant.id.value}/remote-catalogs/_export?$query"
+    )(using tenant, session)
+
+  // e.g. Seq("api" -> "api-weather", "usage-plan" -> "plan-free")
+  private def yamlDocuments(resp: WSResponse): Seq[(String, String)] =
+    RemoteContentParser
+      .parseRawContent(resp.body, "export")
+      .toOption
+      .value
+      .map(entity => entity.kind -> entity.id)
+
   private def validateFiles(
       catalogId: String,
       files: Map[String, String]
@@ -276,10 +298,25 @@ class RemoteCatalogSpec
       path = s"/admin-api/remote-catalogs/$catalogId/_validate",
       method = "POST",
       headers = getAdminApiHeader(adminApiKeyring),
-      body = JsArray(files.toSeq.map { case (path, content) =>
-        Json.obj("path" -> path, "content" -> content)
-      }).some
+      body = filesBody(files).some
     )(using tenant)
+
+  private def filesBody(files: Map[String, String]): JsArray =
+    JsArray(files.toSeq.map { case (path, content) =>
+      Json.obj("path" -> path, "content" -> content)
+    })
+
+  private def loadCall(
+      session: UserSession,
+      files: Map[String, String],
+      dryRun: Boolean
+  ): WSResponse =
+    httpJsonCallBlocking(
+      path =
+        s"/api/tenants/${tenant.id.value}/remote-catalogs/_load?dryRun=$dryRun",
+      method = "POST",
+      body = filesBody(files).some
+    )(using tenant, session)
 
   private def errorMessages(resp: WSResponse): Seq[String] =
     (resp.json \ "errors")
@@ -1089,6 +1126,243 @@ class RemoteCatalogSpec
 
       exportFiles(all = false).keys must not contain "team/team-managed.yaml"
       exportFiles(all = true).keys must contain("team/team-managed.yaml")
+    }
+
+    "export one entity alone as a single YAML document" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp =
+        exportCall(session, s"kind=api&id=${adminApi.id.value}&format=yaml")
+
+      resp.status mustBe 200
+      resp.header("Content-Disposition").value must include(
+        s"${adminApi.id.value}.yaml"
+      )
+      yamlDocuments(resp) mustBe Seq("api" -> adminApi.id.value)
+    }
+
+    "export an api with its plans and its subscriptions" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=api&id=${adminApi.id.value}&children=true&format=zip"
+      )
+
+      resp.status mustBe 200
+      unzip(resp).keySet mustBe Set(
+        s"api/${adminApi.id.value}.yaml",
+        s"usage-plan/${adminApiPlan.id.value}.yaml",
+        s"api-subscription/${adminApiSubscription.id.value}.yaml"
+      )
+    }
+
+    "export a team with its children, which a catalog adopting them validates" in {
+      val otherTeam = aTeam("team-other", "Other")
+      val other = generateApi("other", tenant.id, otherTeam.id, Seq.empty)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, otherTeam),
+        apis = Seq(adminApi, other.api),
+        usagePlans = adminApiPlan +: other.plans,
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs =
+          Seq(multiKindCatalog("unused").copy(adoptExisting = true))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val files = unzip(
+        exportCall(
+          session,
+          s"kind=team&id=${defaultAdminTeam.id.value}&children=true&format=zip"
+        )
+      )
+
+      files.keySet mustBe Set(
+        s"team/${defaultAdminTeam.id.value}.yaml",
+        s"usage-plan/${adminApiPlan.id.value}.yaml",
+        s"api/${adminApi.id.value}.yaml",
+        s"keyring/${adminApiKeyring.id.value}.yaml",
+        s"api-subscription/${adminApiSubscription.id.value}.yaml"
+      )
+
+      val validated = validateFiles("cat-file", files)
+      withClue(validated.body) {
+        validated.status mustBe 200
+      }
+    }
+
+    "export a keyring with its subscriptions in one YAML file, without its secrets" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=keyring&id=${adminApiKeyring.id.value}&children=true&format=yaml"
+      )
+
+      yamlDocuments(resp) mustBe Seq(
+        "keyring" -> adminApiKeyring.id.value,
+        "api-subscription" -> adminApiSubscription.id.value
+      )
+      resp.body[String] must not include adminApiKeyring.apiKey.clientSecret
+      resp.body[String] must not include adminApiKeyring.integrationToken
+    }
+
+    "export the 2000 subscriptions of an api" in {
+      val subscriptions = (1 to 2000).map(i =>
+        adminApiSubscription.copy(id = ApiSubscriptionId(s"sub-$i"))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = subscriptions,
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=api&id=${adminApi.id.value}&children=true&format=yaml"
+      )
+
+      yamlDocuments(resp).count(_._1 == "api-subscription") mustBe 2000
+    }
+  }
+
+  "Resource loader" should {
+    "check the documents without writing anything" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      val resp = loadCall(session, files, dryRun = true)
+
+      resp.status mustBe 200
+      (resp.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      loadTeam("team-weather") mustBe None
+    }
+
+    "create the documents without any catalog tag" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 200
+      loadTeam("team-weather").value.metadata.get("created_by") mustBe None
+    }
+
+    "refuse a document whose id already exists" in {
+      val existing = aTeam("team-weather", "Weather")
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, existing)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(existing.copy(name = "Renamed")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-weather").value.name mustBe "Weather"
+    }
+
+    "refuse an entity managed by a catalog" in {
+      val managed = aTeam("team-managed", "Managed").copy(metadata = catalogTag)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, managed)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(managed.copy(name = "Renamed")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-managed").value.name mustBe "Managed"
+    }
+
+    "create nothing when one document is invalid" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "a.yaml" -> Json.stringify(teamDoc(aTeam("team-a", "A"))),
+        "b.yaml" -> Json.stringify(teamDoc(aTeam("team-b", "B")) - "_tenant")
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-a") mustBe None
+    }
+
+    "be refused to a user who is not a tenant admin" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(user, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      loadCall(session, files, dryRun = true).status mustBe 403
     }
   }
 

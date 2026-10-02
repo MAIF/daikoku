@@ -2039,13 +2039,16 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     )(using env.defaultMaterializer)
   }
 
-  override def streamAllRawFormatted()(implicit
+  override def streamAllRawFormatted(
+      predicates: Seq[String],
+      params: Seq[AnyRef]
+  )(implicit
       ec: ExecutionContext
   ): Source[Of, ?] = {
-    logger.debug(s"$tableName.streamAllRawFormatted()")
-    val (where, params) = scopedWhere(Seq.empty)
+    logger.debug(s"$tableName.streamAllRawFormatted($predicates)")
+    val (where, scopedParams) = scopedWhere(predicates, params)
 
-    reactivePg.queryStreamSource(s"SELECT content FROM $tableName$where", params)(
+    reactivePg.queryStreamSource(s"SELECT content FROM $tableName$where", scopedParams)(
       row =>
         row.optJsObject("content").map(format.reads).collect {
           case JsSuccess(value, _) => value

@@ -13,7 +13,13 @@ import fr.maif.daikoku.domain.{
 }
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.RemoteCatalogJob
-import fr.maif.daikoku.services.catalog.{DeployReport, RemoteCatalogEngine}
+import fr.maif.daikoku.services.catalog.{
+  CatalogFile,
+  DeployReport,
+  ExportFormat,
+  ExportSelection,
+  RemoteCatalogEngine
+}
 import fr.maif.daikoku.utils.IdGenerator
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
@@ -145,18 +151,56 @@ class RemoteCatalogController(
       }
     }
 
-  def exportTenant(tenantId: String, all: Boolean) =
+  def exportEntities(
+      tenantId: String,
+      all: Boolean,
+      kind: Option[String],
+      id: Option[String],
+      children: Boolean,
+      format: String
+  ) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
-        AuditTrailEvent(s"@{user.name} has exported the tenant as a catalog")
+        AuditTrailEvent(
+          s"@{user.name} has exported ${id.getOrElse("the tenant")} as a catalog"
+        )
       )(tenantId, ctx) { (tenant, _) =>
+        val selection = (kind, id) match {
+          case (Some(entityKind), Some(entityId)) =>
+            ExportSelection.OneEntity(entityKind, entityId, children)
+          case _ => ExportSelection.WholeTenant(includeManaged = all)
+        }
+        val (exportFormat, extension, contentType) = format match {
+          case "yaml" => (ExportFormat.MultiDocument, "yaml", "application/yaml")
+          case _      => (ExportFormat.Zip, "zip", "application/zip")
+        }
+        val fileName = id.getOrElse(tenant.humanReadableId)
+
         Future.successful(
-          Ok.chunked(engine.exportTenant(tenant, includeManaged = all))
-            .as("application/zip")
+          Ok.chunked(engine.exportEntities(tenant, selection, exportFormat))
+            .as(contentType)
             .withHeaders(
-              CONTENT_DISPOSITION -> s"attachment; filename=${tenant.humanReadableId}.zip"
+              CONTENT_DISPOSITION -> s"attachment; filename=$fileName.$extension"
             )
         )
+      }
+    }
+
+  def loadResources(tenantId: String, dryRun: Boolean) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has loaded resources (dryRun: $dryRun)")
+      )(tenantId, ctx) { (tenant, _) =>
+        CatalogFile.readAll(ctx.request.body) match {
+          case None =>
+            Future.successful(
+              BadRequest(
+                Json.obj("error" -> "Expected an array of {path, content}")
+              )
+            )
+          case Some(files) =>
+            engine.loadResources(tenant, files, dryRun).map(dryRunResult)
+        }
       }
     }
 

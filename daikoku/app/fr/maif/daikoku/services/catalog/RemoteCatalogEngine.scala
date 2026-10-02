@@ -11,6 +11,7 @@ import fr.maif.daikoku.controllers.{
 import fr.maif.daikoku.domain.{
   DatastoreId,
   RemoteCatalog,
+  RemoteCatalogId,
   RemoteCatalogRun,
   RemoteCatalogRunStatus,
   Tenant,
@@ -74,6 +75,13 @@ case class DeployReport(
   )
 }
 
+enum ExportSelection:
+  case WholeTenant(includeManaged: Boolean)
+  case OneEntity(kind: String, id: String, withChildren: Boolean)
+
+enum ExportFormat:
+  case Zip, MultiDocument
+
 object RemoteCatalogEngine {
   val kindOrder: Seq[String] =
     Seq("team", "usage-plan", "api", "keyring", "api-subscription", "cms-page")
@@ -108,6 +116,9 @@ class RemoteCatalogEngine(
   // kind -> existing entities, e.g. Map("team" -> Map("team-a" -> Some("remote_catalog=cat-git")))
   private type DatabaseState = Map[String, ExistingEntities]
 
+  // e.g. (Seq("content->>'api' = $1"), Seq("api-weather"))
+  private type SqlFilter = (Seq[String], Seq[AnyRef])
+
   private case class CatalogWrite(entity: RemoteEntity, prepared: PreparedWrite)
 
   private case class WrittenEntity(kind: String, id: String, action: String)
@@ -140,24 +151,40 @@ class RemoteCatalogEngine(
       catalog: RemoteCatalog
   ): Future[RemoteCatalogRun] =
     doFetchAndReconcile(tenant, catalog, dryRun = true)
-      .map(result => toRun(tenant, catalog, result))
+      .map(result => toRun(tenant, catalog.id, result))
 
   def validate(
       tenant: Tenant,
       catalog: RemoteCatalog,
       files: Seq[CatalogFile]
-  ): Future[RemoteCatalogRun] = {
-    val parsed = RemoteCatalogError.collect(
+  ): Future[RemoteCatalogRun] =
+    checkAndReconcile(tenant, Some(catalog), parseFiles(files), dryRun = true)
+      .map(result => toRun(tenant, catalog.id, result))
+
+  // writes without any catalog ownership: back office only, never on the admin API
+  def loadResources(
+      tenant: Tenant,
+      files: Seq[CatalogFile],
+      dryRun: Boolean
+  ): Future[RemoteCatalogRun] =
+    checkAndReconcile(tenant, None, parseFiles(files), dryRun)
+      .map(result => toRun(tenant, resourceLoaderId, result))
+
+  private val resourceLoaderId = RemoteCatalogId("resource-loader")
+
+  private def runIdOf(catalog: Option[RemoteCatalog]): RemoteCatalogId =
+    catalog.fold(resourceLoaderId)(_.id)
+
+  private def parseFiles(
+      files: Seq[CatalogFile]
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] =
+    RemoteCatalogError.collect(
       files.map(file =>
         RemoteContentParser
           .parseRawContent(file.content, file.path)
           .map(_.map(_.copy(path = file.path)))
       )
     )
-
-    checkAndReconcile(tenant, catalog, parsed, dryRun = true)
-      .map(result => toRun(tenant, catalog, result))
-  }
 
   def undeploy(
       tenant: Tenant,
@@ -205,14 +232,14 @@ class RemoteCatalogEngine(
         source
           .fetch(catalog)(using ec, env)
           .flatMap(fetched =>
-            checkAndReconcile(tenant, catalog, fetched, dryRun)
+            checkAndReconcile(tenant, Some(catalog), fetched, dryRun)
           )
     }
   }
 
   private def checkAndReconcile(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalog: Option[RemoteCatalog],
       fetched: Either[Seq[RemoteCatalogError], Seq[RemoteEntity]],
       dryRun: Boolean
   ): Future[Either[JsValue, DeployReport]] =
@@ -221,21 +248,22 @@ class RemoteCatalogEngine(
         Future.successful(
           Left(
             errorsJson(
-              s"Catalog ${catalog.id.value} could not be read, nothing was applied",
+              s"Catalog ${runIdOf(catalog).value} could not be read, nothing was applied",
               errors
             )
           )
         )
       case Right(entities) =>
         val validationErrors = entities.flatMap(entity =>
-          checkKind(catalog, entity) ++ checkTenant(tenant, entity)
+          checkKind(catalog.fold(Set.empty[String])(_.allowedKinds), entity) ++
+            checkTenant(tenant, entity)
         )
 
         if (validationErrors.nonEmpty) {
           Future.successful(
             Left(
               errorsJson(
-                s"Catalog ${catalog.id.value} is invalid, nothing was applied",
+                s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
                 validationErrors
               )
             )
@@ -247,7 +275,7 @@ class RemoteCatalogEngine(
               Future.successful(
                 Left(
                   errorsJson(
-                    s"Catalog ${catalog.id.value} is invalid, nothing was applied",
+                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
                     teamErrors
                   )
                 )
@@ -257,11 +285,11 @@ class RemoteCatalogEngine(
     }
 
   private def checkKind(
-      catalog: RemoteCatalog,
+      allowedKinds: Set[String],
       entity: RemoteEntity
   ): Option[RemoteCatalogError] = {
     val kindIsAllowed =
-      catalog.allowedKinds.isEmpty || catalog.allowedKinds.contains(entity.kind)
+      allowedKinds.isEmpty || allowedKinds.contains(entity.kind)
 
     if (!controllers.contains(entity.kind)) {
       Some(RemoteCatalogError(entity.source, s"Unknown kind: ${entity.kind}"))
@@ -308,15 +336,16 @@ class RemoteCatalogEngine(
   //      Seq.empty when folderPerTeam is off, the source is not GitHub / GitLab or nothing is under teams/
   private def checkTeamFolders(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalog: Option[RemoteCatalog],
       entities: Seq[RemoteEntity]
   ): Future[Seq[RemoteCatalogError]] = {
-    val isGitSource = Set("github", "gitlab").contains(catalog.source.kind)
+    val isGitSource =
+      catalog.exists(c => Set("github", "gitlab").contains(c.source.kind))
 
     val inTeamFolders = entities
         .flatMap(entity => teamFolderOf(entity).map(entity -> _))
 
-    if (catalog.folderPerTeam && isGitSource && inTeamFolders.nonEmpty) {
+    if (catalog.exists(_.folderPerTeam) && isGitSource && inTeamFolders.nonEmpty) {
       checkEachTeamFolder(tenant, entities, inTeamFolders)
     } else {
       Future.successful(Seq.empty)
@@ -453,25 +482,25 @@ class RemoteCatalogEngine(
 
   private def reconcile(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalog: Option[RemoteCatalog],
       entities: Seq[RemoteEntity],
       dryRun: Boolean
   ): Future[Either[JsValue, DeployReport]] = {
-    val metadataKey = s"remote_catalog=${catalog.id.value}"
+    val metadataKey = catalog.map(c => s"remote_catalog=${c.id.value}")
 
     readDatabaseState(tenant).flatMap { databaseState =>
       val toDelete =
         computeEntitiesToDelete(databaseState, metadataKey, entities)
       val finalIds = computeFinalIds(tenant, databaseState, toDelete, entities)
       val deletionLimitError =
-        checkDeletionLimit(catalog, databaseState, metadataKey, toDelete)
+        catalog.flatMap(c => checkDeletionLimit(c, databaseState, toDelete))
 
       deletionLimitError match {
         case Some(error) =>
           Future.successful(
             Left(
               errorsJson(
-                s"Catalog ${catalog.id.value} would delete too many entities, nothing was applied",
+                s"Catalog ${runIdOf(catalog).value} would delete too many entities, nothing was applied",
                 Seq(error)
               )
             )
@@ -482,13 +511,13 @@ class RemoteCatalogEngine(
             metadataKey,
             entities,
             finalIds,
-            catalog.adoptExisting
+            catalog.exists(_.adoptExisting)
           ).flatMap {
             case Left(errors) =>
               Future.successful(
                 Left(
                   errorsJson(
-                    s"Catalog ${catalog.id.value} is invalid, nothing was applied",
+                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
                     errors
                   )
                 )
@@ -516,7 +545,7 @@ class RemoteCatalogEngine(
 
   private def computeEntitiesToDelete(
       databaseState: DatabaseState,
-      metadataKey: String,
+      metadataKey: Option[String],
       entities: Seq[RemoteEntity]
   ): Seq[(String, String)] = {
     val remoteIds = entities.map(e => (e.kind, e.id)).toSet
@@ -524,8 +553,8 @@ class RemoteCatalogEngine(
     kindOrder.reverse.flatMap { kind =>
       databaseState(kind).toSeq.collect {
         case (id, createdBy)
-            if createdBy
-              .contains(metadataKey) && !remoteIds.contains((kind, id)) =>
+            if metadataKey.exists(key => createdBy.contains(key)) &&
+              !remoteIds.contains((kind, id)) =>
           (kind, id)
       }
     }
@@ -534,9 +563,9 @@ class RemoteCatalogEngine(
   private def checkDeletionLimit(
       catalog: RemoteCatalog,
       databaseState: DatabaseState,
-      metadataKey: String,
       toDelete: Seq[(String, String)]
   ): Option[RemoteCatalogError] = {
+    val metadataKey = s"remote_catalog=${catalog.id.value}"
     val managedCount = databaseState.values
       .flatMap(_.values)
       .count(_.contains(metadataKey))
@@ -582,7 +611,7 @@ class RemoteCatalogEngine(
 
   private def prepareAllWrites(
       tenant: Tenant,
-      metadataKey: String,
+      metadataKey: Option[String],
       entities: Seq[RemoteEntity],
       finalIds: ReconcileFinalIds,
       adoptExisting: Boolean
@@ -590,8 +619,9 @@ class RemoteCatalogEngine(
     Future
       .sequence(kindOrder.map { kind =>
         val kindEntities = entities.filter(_.kind == kind)
-        val raws =
-          kindEntities.map(e => withCreatedByMetadata(e.content, metadataKey))
+        val raws = kindEntities.map(e =>
+          metadataKey.fold(e.content)(withCreatedByMetadata(e.content, _))
+        )
 
         controllers(kind)
           .prepareWrites(tenant, raws, metadataKey, finalIds, adoptExisting)
@@ -634,21 +664,23 @@ class RemoteCatalogEngine(
 
   private def writeAll(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalog: Option[RemoteCatalog],
       writes: Seq[CatalogWrite],
       toDelete: Seq[(String, String)],
       dryRun: Boolean
   ): Future[DeployReport] = {
     runOneByOne(writes)(writeEntity(dryRun)).flatMap { upserts =>
       if (upserts.error.isDefined) {
-        Future.successful(buildReport(tenant, catalog, Seq(upserts)))
+        Future.successful(buildReport(tenant, runIdOf(catalog), Seq(upserts)))
       } else {
         val removeEntity =
-          if (catalog.allowDeletions) deleteEntity(tenant, dryRun)
+          if (catalog.exists(_.allowDeletions)) deleteEntity(tenant, dryRun)
           else detachEntity(tenant, dryRun)
 
         runOneByOne(toDelete)(removeEntity)
-          .map(removals => buildReport(tenant, catalog, Seq(upserts, removals)))
+          .map(removals =>
+            buildReport(tenant, runIdOf(catalog), Seq(upserts, removals))
+          )
       }
     }
   }
@@ -744,7 +776,7 @@ class RemoteCatalogEngine(
 
   private def buildReport(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalogId: RemoteCatalogId,
       outcomes: Seq[WriteOutcome]
   ): DeployReport = {
     val written = outcomes.flatMap(_.written)
@@ -764,7 +796,7 @@ class RemoteCatalogEngine(
       )
     }
 
-    DeployReport(catalog.id.value, tenant.id.value, results, DateTime.now())
+    DeployReport(catalogId.value, tenant.id.value, results, DateTime.now())
   }
 
   private def doUndeploy(
@@ -776,55 +808,143 @@ class RemoteCatalogEngine(
     readDatabaseState(tenant)
       .flatMap { databaseState =>
         val managed =
-          computeEntitiesToDelete(databaseState, metadataKey, Seq.empty)
+          computeEntitiesToDelete(databaseState, Some(metadataKey), Seq.empty)
 
         runOneByOne(managed)(deleteEntity(tenant, dryRun = false))
       }
-      .map(deletions => Right(buildReport(tenant, catalog, Seq(deletions))))
+      .map(deletions => Right(buildReport(tenant, catalog.id, Seq(deletions))))
   }
 
   // ---------------------------------------------------------------------------
   // Export
   // ---------------------------------------------------------------------------
 
-  // a zip with one folder per kind and one file per entity, e.g. api/api-weather.yaml
-  def exportTenant(
+  def exportEntities(
       tenant: Tenant,
-      includeManaged: Boolean
-  ): Source[ByteString, ?] =
-    Source(kindOrder)
+      selection: ExportSelection,
+      format: ExportFormat
+  ): Source[ByteString, ?] = {
+    val filters = exportFilters(tenant, selection)
+    val documents = Source(kindOrder.filter(filters.contains))
       .flatMapConcat(kind =>
-        exportOf(kind, controllers(kind), tenant, includeManaged)
+        documentsOf(kind, controllers(kind), tenant, filters(kind))
       )
-      .via(Archive.zip())
 
-  private def exportOf[Of, Id <: ValueType](
+    format match {
+      case ExportFormat.Zip =>
+        documents
+          .map { case (path, document) =>
+            ArchiveMetadata(path) ->
+              Source.single(ByteString(Yaml.write(document)))
+          }
+          .via(Archive.zip())
+      case ExportFormat.MultiDocument =>
+        documents
+          .map { case (_, document) => ByteString(Yaml.write(document)) }
+          .intersperse(ByteString("---\n"))
+    }
+  }
+
+  // e.g. keyring-1 with children -> Map("keyring" -> _id = keyring-1, "api-subscription" -> keyring = keyring-1)
+  private def exportFilters(
+      tenant: Tenant,
+      selection: ExportSelection
+  ): Map[String, SqlFilter] =
+    selection match {
+      case ExportSelection.WholeTenant(includeManaged) =>
+        val predicates =
+          if (includeManaged) {
+            Seq.empty
+          } else {
+            Seq("content->'metadata'->>'created_by' IS NULL")
+          }
+
+        kindOrder.map(kind => kind -> (predicates, Seq.empty)).toMap
+
+      case ExportSelection.OneEntity(kind, id, withChildren) =>
+        val root: Map[String, SqlFilter] = Map(kind -> (Seq("_id = $1"), Seq(id)))
+
+        if (withChildren) {
+          root ++ childrenFilters(tenant, kind, id)
+        } else {
+          root
+        }
+    }
+
+  private def childrenFilters(
+      tenant: Tenant,
+      kind: String,
+      id: String
+  ): Map[String, SqlFilter] = {
+    val apiTable = env.dataStore.apiRepo.forTenant(tenant).tableName
+
+    def byField(field: String): SqlFilter =
+      (Seq(s"content->>'$field' = $$1"), Seq(id))
+
+    def plansOfApis(apisWhere: String): SqlFilter =
+      (
+        Seq(
+          "_id IN (SELECT jsonb_array_elements_text(content->'possibleUsagePlans') " +
+            s"FROM $apiTable WHERE $apisWhere AND content->>'_tenant' = $$2)"
+        ),
+        Seq(id, tenant.id.value)
+      )
+
+    kind match {
+      case "team" =>
+        Map(
+          "usage-plan" -> plansOfApis("content->>'team' = $1"),
+          "api" -> byField("team"),
+          "keyring" -> byField("team"),
+          "api-subscription" -> byField("team")
+        )
+      case "api" =>
+        Map(
+          "usage-plan" -> plansOfApis("_id = $1"),
+          "api-subscription" -> byField("api")
+        )
+      case "usage-plan" => Map("api-subscription" -> byField("plan"))
+      case "keyring"    => Map("api-subscription" -> byField("keyring"))
+      case _            => Map.empty
+    }
+  }
+
+  // e.g. ("api/api-weather.yaml", { "apiVersion": "daikoku.io/v1", "kind": "api", "spec": {...} })
+  private def documentsOf[Of, Id <: ValueType](
       kind: String,
       controller: AdminApiController[Of, Id],
       tenant: Tenant,
-      includeManaged: Boolean
-  ): Source[(ArchiveMetadata, Source[ByteString, Any]), ?] =
+      filter: SqlFilter
+  ): Source[(String, JsObject), ?] = {
+    val (predicates, params) = filter
+
     controller
       .entityStore(tenant, env.dataStore)
-      .streamAllRawFormatted()
-      .filter(entity =>
-        includeManaged || !controller.readMetadata(entity).contains("created_by")
+      .streamAllRawFormatted(predicates, params)
+      .map(entity =>
+        s"$kind/${controller.getId(entity).value}.yaml" ->
+          exportDocument(kind, controller, entity)
       )
-      .map { entity =>
-        val spec = controller.toJson(entity).as[JsObject]
-        val exported =
-          if (kind == "keyring")
-            KeyringAdminApiController.secretFields.foldLeft(spec)(_ - _)
-          else spec
-        val document = Json.obj(
-          "apiVersion" -> "daikoku.io/v1",
-          "kind" -> kind,
-          "spec" -> exported
-        )
+  }
 
-        ArchiveMetadata(s"$kind/${controller.getId(entity).value}.yaml") ->
-          Source.single(ByteString(Yaml.write(document)))
-      }
+  // e.g. { "apiVersion": "daikoku.io/v1", "kind": "keyring", "spec": { ...without apiKey, integrationToken } }
+  private def exportDocument[Of, Id <: ValueType](
+      kind: String,
+      controller: AdminApiController[Of, Id],
+      entity: Of
+  ): JsObject = {
+    val spec = controller.toJson(entity).as[JsObject]
+    val exported =
+      if (kind == "keyring")
+        KeyringAdminApiController.secretFields.foldLeft(spec)(_ - _)
+      else spec
+
+    Json.obj(
+      "apiVersion" -> "daikoku.io/v1",
+      "kind" -> kind,
+      "spec" -> exported
+    )
+  }
 
   // ---------------------------------------------------------------------------
   // Run history
@@ -835,7 +955,7 @@ class RemoteCatalogEngine(
       catalog: RemoteCatalog,
       result: Either[JsValue, DeployReport]
   ): Future[Unit] = {
-    val run = toRun(tenant, catalog, result)
+    val run = toRun(tenant, catalog.id, result)
 
     env.dataStore.remoteCatalogRunRepo
       .forTenant(tenant)
@@ -848,7 +968,7 @@ class RemoteCatalogEngine(
 
   private def toRun(
       tenant: Tenant,
-      catalog: RemoteCatalog,
+      catalogId: RemoteCatalogId,
       result: Either[JsValue, DeployReport]
   ): RemoteCatalogRun =
     result match {
@@ -860,7 +980,7 @@ class RemoteCatalogEngine(
         RemoteCatalogRun(
           id = DatastoreId(IdGenerator.token(32)),
           tenant = tenant.id,
-          catalog = catalog.id,
+          catalog = catalogId,
           at = report.timestamp,
           status = status,
           created = report.results.flatMap(_.created),
@@ -873,7 +993,7 @@ class RemoteCatalogEngine(
         RemoteCatalogRun(
           id = DatastoreId(IdGenerator.token(32)),
           tenant = tenant.id,
-          catalog = catalog.id,
+          catalog = catalogId,
           at = DateTime.now(),
           status = RemoteCatalogRunStatus.Failed,
           created = Seq.empty,
