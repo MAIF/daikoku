@@ -807,14 +807,16 @@ export const KeyringCard = ({
                     <button
                       className="dropdown-item cursor-pointer"
                       onClick={() =>
-                        withLoader(async () => {
-                          if (sub.enabled) {
-                            const ok = await confirm({ message: translate('subscription.disable.confirm') });
-                            if (!ok) return;
-                          }
-                          await toggle(sub);
-                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
-                        })
+                        sub.enabled ? 
+                        confirm({message: translate('subscription.disable.confirm')})
+                          .then((ok) => {
+                            if (ok) {
+                              toggle(sub)
+                                .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }));
+                            }
+                          })
+                          :toggle(sub)
+                            .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }))
                       }
                     >
                       {sub.enabled
@@ -1012,7 +1014,17 @@ export const KeyringCard = ({
               </button>
               {/* TODO: better label */}
               <button className={classNames('dropdown-item cursor-pointer')}
-                      onClick={() => toggleKeyring(!keyring.enabled)}
+                      onClick={
+                        () =>
+                        withLoader(async () => {
+                          if (keyring.enabled) {
+                            const ok = await confirm({ message: translate('keyring.disable.confirm') });
+                            if (!ok) return;
+                          }
+                          toggleKeyring(!keyring.enabled);
+                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
+                        })
+                      }
               >
                 {translate(
                   keyring.enabled
