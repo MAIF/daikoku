@@ -116,7 +116,12 @@ class OtoroshiSynchronizerJobSpec
         id = KeyringId("sync-missing-keyring"),
         tenant = tenant.id,
         team = teamConsumerId,
-        apiKey = parentApiKey,
+        apiKey = OtoroshiApiKey(
+          clientName = "daikoku_test_missing_key",
+          clientId = "missing-key-client-id",
+          clientSecret =
+            "missing-key-client-secret"
+        ),
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
         createdAt = DateTime.now(),
