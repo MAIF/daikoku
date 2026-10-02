@@ -103,6 +103,7 @@ flag "--mode <mode>" help="Initialization mode" default="local" {
   choices "ldap" "oidc" "local" "empty" "dump"
 }
 flag "--test" help="Display playwright test ui, only for oidc and local modes"
+flag "--lite" help="Postgres, backend and frontend only: no Otoroshi, no mail server (local mode only)"
 flag "--dumpuser <user>" help="Dump user" default="postgres"
 flag "--dumpschema <schema>" help="Dump schema" default="public"
 '''
@@ -113,12 +114,21 @@ then echo "--test flag and --mode empty or --mode dump are not compatible" ;
 exit 1;
 fi;
 
+if [[ $usage_lite = 'true' ]] && ( [[ $usage_mode != 'local' ]] || [[ $usage_test = 'true' ]] ) ;
+then echo "--lite flag only works with --mode local, without --test" ;
+exit 1;
+fi;
+
 if [[ $usage_test = 'true' ]] ;
 then echo '--test is specified, starting playwright test ui' ;
 PC_DISABLED_PROCESSES="PostgresRestore" ;
 elif [[ $usage_mode = 'dump' ]] ;
 then PC_DISABLED_PROCESSES="Test" ;
 else PC_DISABLED_PROCESSES="Test,PostgresRestore" ;
+fi ;
+
+if [[ $usage_lite = 'true' ]] ;
+then PC_DISABLED_PROCESSES="$PC_DISABLED_PROCESSES,Containers" ;
 fi ;
 
 DUMPDBSCHEMA=$usage_dumpschema DUMPDBUSER=$usage_dumpuser TEST=$usage_test MODE=$usage_mode PC_DISABLED_PROCESSES=$PC_DISABLED_PROCESSES process-compose --hide-disabled -f ./dev/process-compose.yaml -p 9999;
