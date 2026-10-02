@@ -2,7 +2,11 @@ package fr.maif.daikoku.services.catalog.sources
 
 import fr.maif.daikoku.domain.RemoteCatalog
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
+import fr.maif.daikoku.services.catalog.{
+  CatalogSource,
+  RemoteCatalogError,
+  RemoteEntity
+}
 import play.api.Logger
 import play.api.libs.json._
 
@@ -16,42 +20,46 @@ class CatalogSourceHttp extends CatalogSource {
 
   override def sourceKind: String = "http"
 
-  override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
+  override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val url = (catalog.source.config \ "url").asOpt[String].getOrElse("")
     val headers = (catalog.source.config \ "headers")
       .asOpt[Map[String, String]]
       .getOrElse(Map.empty)
     val timeout =
       (catalog.source.config \ "timeout").asOpt[Long].getOrElse(30000L)
+    val sourceName = s"http://$url"
 
-    if (url.isEmpty) {
-      Future.successful(Left(Json.obj("error" -> "No URL configured")))
-    } else {
-      fetchUrl(url, headers, timeout, env).flatMap {
-        case Left(err) => Future.successful(Left(err))
-        case Right(rawContent) =>
-          SourceUtils.isDeployListing(rawContent) match {
-            case Some(arr) =>
-              val baseUrl = url.substring(0, url.lastIndexOf('/'))
-              SourceUtils.resolveDeployListing(
-                arr,
-                relativePath =>
-                  fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
-                s"http://$url"
-              )
-            case None =>
-              Future.successful(
-                Right(
-                  SourceUtils.parseEntityContent(rawContent, s"http://$url")
-                ): Either[JsValue, Seq[
-                  RemoteEntity
-                ]]
-              )
-          }
-      }
+    val blocked =
+      if (url.isEmpty) Some(RemoteCatalogError(sourceKind, "No URL configured"))
+      else SourceUtils.checkHostAllowed(url, sourceName, env)
+
+    blocked match {
+      case Some(error) => Future.successful(Left(Seq(error)))
+      case None =>
+        fetchUrl(url, headers, timeout, env).flatMap {
+          case Left(err) =>
+            Future.successful(
+              Left(Seq(SourceUtils.fetchError(sourceName, err)))
+            )
+          case Right(rawContent) =>
+            SourceUtils.isDeployListing(rawContent) match {
+              case Some(arr) =>
+                val baseUrl = url.substring(0, url.lastIndexOf('/'))
+                SourceUtils.resolveDeployListing(
+                  arr,
+                  relativePath =>
+                    fetchUrl(s"$baseUrl/$relativePath", headers, timeout, env),
+                  sourceName
+                )
+              case None =>
+                Future.successful(
+                  SourceUtils.parseEntityContent(rawContent, sourceName)
+                )
+            }
+        }
     }
   }
 
@@ -69,12 +77,11 @@ class CatalogSourceHttp extends CatalogSource {
       .withHttpHeaders(headers.toSeq*)
       .get()
       .map { resp =>
-        val body: String = resp.body
         if (resp.status == 200) {
-          Right(body): Either[JsValue, String]
+          Right(resp.body): Either[JsValue, String]
         } else {
           Left(
-            Json.obj("error" -> s"HTTP ${resp.status}: ${body.take(500)}")
+            Json.obj("error" -> s"HTTP ${resp.status} returned by $url")
           ): Either[JsValue, String]
         }
       }

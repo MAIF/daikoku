@@ -1,29 +1,39 @@
 package fr.maif.daikoku.services.catalog
 
-import fr.maif.daikoku.audit.JobEvent
 import fr.maif.daikoku.controllers.{
   ApiAdminApiController,
   ApiSubscriptionAdminApiController,
   CmsPagesAdminApiController,
+  KeyringAdminApiController,
   TeamAdminApiController,
   UsagePlansAdminApiController
 }
 import fr.maif.daikoku.domain.{
   DatastoreId,
   RemoteCatalog,
+  RemoteCatalogId,
+  RemoteCatalogRun,
+  RemoteCatalogRunStatus,
   Tenant,
-  TenantId,
-  User,
-  UserId,
   ValueType
 }
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.utils.AdminApiController
+import fr.maif.daikoku.utils.{
+  AdminApiController,
+  ExistingEntities,
+  IdGenerator,
+  PreparedWrite,
+  ReconcileFinalIds,
+  Yaml
+}
+import org.apache.pekko.stream.connectors.file.ArchiveMetadata
+import org.apache.pekko.stream.connectors.file.scaladsl.Archive
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 case class ReconcileResult(
@@ -31,6 +41,7 @@ case class ReconcileResult(
     created: Seq[String],
     updated: Seq[String],
     deleted: Seq[String],
+    detached: Seq[String],
     errors: Seq[String]
 ) {
   def json: JsValue = Json.obj(
@@ -38,6 +49,7 @@ case class ReconcileResult(
     "created" -> created.size,
     "updated" -> updated.size,
     "deleted" -> deleted.size,
+    "detached" -> detached.size,
     "errors" -> JsArray(errors.map(JsString.apply))
   )
 }
@@ -48,12 +60,31 @@ case class DeployReport(
     results: Seq[ReconcileResult],
     timestamp: DateTime
 ) {
+  def errors: Seq[String] = results.flatMap(_.errors)
+
+  def isPartial: Boolean = errors.nonEmpty
+
+  def status: String = if (isPartial) "partial" else "completed"
+
   def json: JsValue = Json.obj(
     "catalog_id" -> catalogId,
     "tenant" -> tenant,
+    "status" -> status,
     "results" -> JsArray(results.map(_.json)),
     "timestamp" -> timestamp.toString
   )
+}
+
+enum ExportSelection:
+  case WholeTenant(includeManaged: Boolean)
+  case OneEntity(kind: String, id: String, withChildren: Boolean)
+
+enum ExportFormat:
+  case Zip, MultiDocument
+
+object RemoteCatalogEngine {
+  val kindOrder: Seq[String] =
+    Seq("team", "usage-plan", "api", "keyring", "api-subscription", "cms-page")
 }
 
 class RemoteCatalogEngine(
@@ -62,15 +93,13 @@ class RemoteCatalogEngine(
     usagePlanController: UsagePlansAdminApiController,
     teamController: TeamAdminApiController,
     cmsPageController: CmsPagesAdminApiController,
-    apiSubscriptionController: ApiSubscriptionAdminApiController
+    apiSubscriptionController: ApiSubscriptionAdminApiController,
+    keyringController: KeyringAdminApiController
 ) {
 
   private implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   private val logger = Logger("daikoku-remote-catalog-engine")
-  private val deployingCatalogs = TrieMap.empty[String, Boolean]
-  private val auditUserId = "remote-catalog-job"
-  private val auditKeep = 10
 
   private val controllers: Map[String, AdminApiController[?, ? <: ValueType]] =
     Map(
@@ -78,121 +107,118 @@ class RemoteCatalogEngine(
       usagePlanController.entityName -> usagePlanController,
       teamController.entityName -> teamController,
       cmsPageController.entityName -> cmsPageController,
-      apiSubscriptionController.entityName -> apiSubscriptionController
+      apiSubscriptionController.entityName -> apiSubscriptionController,
+      keyringController.entityName -> keyringController
     )
 
-  private def jobUser(tenantId: TenantId): User =
-    User(
-      id = UserId(auditUserId),
-      tenants = Set(tenantId),
-      origins = Set.empty,
-      name = "Remote Catalog Job",
-      email = "",
-      lastTenant = None,
-      defaultLanguage = None,
-      isGuest = true
-    )
+  import RemoteCatalogEngine.kindOrder
 
-  private def audit(
-      tenant: Tenant,
-      catalog: RemoteCatalog,
-      report: DeployReport
-  ): Unit = {
-    JobEvent(s"remote catalog ${catalog.id}")
-      .logJobEvent(
-        tenant,
-        jobUser(tenant.id),
-        Json.obj(
-          "event" -> "remote_catalog_run",
-          "catalog_id" -> catalog.id,
-          "created" -> report.results.flatMap(_.created),
-          "updated" -> report.results.flatMap(_.updated),
-          "deleted" -> report.results.flatMap(_.deleted)
-        )
-      )(using env)
-    pruneAudit(tenant, catalog)
-  }
+  // kind -> existing entities, e.g. Map("team" -> Map("team-a" -> Some("remote_catalog=cat-git")))
+  private type DatabaseState = Map[String, ExistingEntities]
 
-  private def pruneAudit(tenant: Tenant, catalog: RemoteCatalog): Unit = {
-    val repo = env.dataStore.auditTrailRepo.forTenant(tenant.id)
-    env.dataStore.auditTrailRepo
-      .findByUser(tenant.id, auditUserId)
-      .map { events =>
-        val mine = events.filter(e =>
-          (e \ "details" \ "catalog_id").asOpt[String].contains(catalog.id)
-        )
-        val toDelete =
-          mine.drop(auditKeep).flatMap(e => (e \ "_id").asOpt[String])
-        if (toDelete.nonEmpty) {
-          repo.deleteByIds(toDelete.map(DatastoreId.apply))
-        }
-      }
-  }
+  // e.g. (Seq("content->>'api' = $1"), Seq("api-weather"))
+  private type SqlFilter = (Seq[String], Seq[AnyRef])
+
+  private case class CatalogWrite(entity: RemoteEntity, prepared: PreparedWrite)
+
+  private case class WrittenEntity(kind: String, id: String, action: String)
+
+  private case class WriteError(kind: String, message: String)
+
+  private case class WriteOutcome(
+      written: Seq[WrittenEntity],
+      error: Option[WriteError]
+  )
+
+  // ---------------------------------------------------------------------------
+  // Entry points
+  // ---------------------------------------------------------------------------
 
   def deploy(
       tenant: Tenant,
-      catalog: RemoteCatalog,
-      args: JsObject
+      catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val key = s"${tenant.id.value}:${catalog.id}"
-    if (deployingCatalogs.contains(key)) {
-      Future.successful(
-        Left(
-          Json.obj(
-            "error" -> s"Catalog ${catalog.id} is already being deployed"
-          )
-        )
-      )
-    } else {
-      deployingCatalogs.put(key, true)
-      logger.info(
-        s"deploying catalog ${catalog.id} / ${catalog.source.kind} on tenant ${tenant.id.value}"
-      )
-      doFetchAndReconcile(tenant, catalog, args, dryRun = false)
-        .andThen { case scala.util.Success(Right(report)) =>
-          audit(tenant, catalog, report)
-        }
-        .andThen { case _ => deployingCatalogs.remove(key) }
-    }
+    logger.info(
+      s"deploying catalog ${catalog.id.value} / ${catalog.source.kind} on tenant ${tenant.id.value}"
+    )
+    Future.unit
+      .flatMap(_ => doFetchAndReconcile(tenant, catalog, dryRun = false))
+      .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
   }
 
   def dryRun(
       tenant: Tenant,
+      catalog: RemoteCatalog
+  ): Future[RemoteCatalogRun] =
+    doFetchAndReconcile(tenant, catalog, dryRun = true)
+      .map(result => toRun(tenant, catalog.id, result))
+
+  def validate(
+      tenant: Tenant,
       catalog: RemoteCatalog,
-      args: JsObject
-  ): Future[Either[JsValue, DeployReport]] =
-    doFetchAndReconcile(tenant, catalog, args, dryRun = true)
+      files: Seq[CatalogFile]
+  ): Future[RemoteCatalogRun] =
+    checkAndReconcile(tenant, Some(catalog), parseFiles(files), dryRun = true)
+      .map(result => toRun(tenant, catalog.id, result))
+
+  // writes without any catalog ownership: back office only, never on the admin API
+  def loadResources(
+      tenant: Tenant,
+      files: Seq[CatalogFile],
+      dryRun: Boolean
+  ): Future[RemoteCatalogRun] =
+    checkAndReconcile(tenant, None, parseFiles(files), dryRun)
+      .map(result => toRun(tenant, resourceLoaderId, result))
+
+  private val resourceLoaderId = RemoteCatalogId("resource-loader")
+
+  private def runIdOf(catalog: Option[RemoteCatalog]): RemoteCatalogId =
+    catalog.fold(resourceLoaderId)(_.id)
+
+  private def parseFiles(
+      files: Seq[CatalogFile]
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] =
+    RemoteCatalogError.collect(
+      files.map(file =>
+        RemoteContentParser
+          .parseRawContent(file.content, file.path)
+          .map(_.map(_.copy(path = file.path)))
+      )
+    )
 
   def undeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val key = s"${tenant.id.value}:${catalog.id}"
-    if (deployingCatalogs.contains(key)) {
-      Future.successful(
-        Left(
-          Json.obj(
-            "error" -> s"Catalog ${catalog.id} is currently being deployed"
-          )
-        )
-      )
-    } else {
-      deployingCatalogs.put(key, true)
-      logger.info(
-        s"undeploying catalog ${catalog.id} on tenant ${tenant.id.value}"
-      )
-      doUndeploy(tenant, catalog)
-        .andThen { case scala.util.Success(Right(report)) =>
-          audit(tenant, catalog, report)
-        }
-        .andThen { case _ => deployingCatalogs.remove(key) }
-    }
+    logger.info(
+      s"undeploying catalog ${catalog.id.value} on tenant ${tenant.id.value}"
+    )
+    Future.unit
+      .flatMap(_ => doUndeploy(tenant, catalog))
+      .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
   }
+
+  // the deployed entities stay in Daikoku, no longer managed by any catalog
+  def detach(tenant: Tenant, catalog: RemoteCatalog): Future[Unit] =
+    Future
+      .sequence(kindOrder.map { kind =>
+        val repo = controllers(kind).entityStore(tenant, env.dataStore)
+
+        repo.execute(
+          s"UPDATE ${repo.tableName} SET content = content #- '{metadata,created_by}' " +
+            "WHERE content->>'_tenant' = $1 AND content->'metadata'->>'created_by' = $2",
+          Seq(tenant.id.value, s"remote_catalog=${catalog.id.value}")
+        )
+      })
+      .map(_ => ())
+
+  // ---------------------------------------------------------------------------
+  // Phase 1 — fetch and parse the catalog (no database access)
+  // ---------------------------------------------------------------------------
 
   private def doFetchAndReconcile(
       tenant: Tenant,
       catalog: RemoteCatalog,
-      args: JsObject,
       dryRun: Boolean
   ): Future[Either[JsValue, DeployReport]] = {
     CatalogSources.get(catalog.source.kind) match {
@@ -203,208 +229,809 @@ class RemoteCatalogEngine(
           )
         )
       case Some(source) =>
-        source.fetch(catalog, args)(using ec, env).flatMap {
-          case Left(err) => Future.successful(Left(err))
-          case Right(entities) =>
-            reconcile(tenant, catalog, entities, dryRun).map(Right(_))
+        source
+          .fetch(catalog)(using ec, env)
+          .flatMap(fetched =>
+            checkAndReconcile(tenant, Some(catalog), fetched, dryRun)
+          )
+    }
+  }
+
+  private def checkAndReconcile(
+      tenant: Tenant,
+      catalog: Option[RemoteCatalog],
+      fetched: Either[Seq[RemoteCatalogError], Seq[RemoteEntity]],
+      dryRun: Boolean
+  ): Future[Either[JsValue, DeployReport]] =
+    fetched match {
+      case Left(errors) =>
+        Future.successful(
+          Left(
+            errorsJson(
+              s"Catalog ${runIdOf(catalog).value} could not be read, nothing was applied",
+              errors
+            )
+          )
+        )
+      case Right(entities) =>
+        val validationErrors = entities.flatMap(entity =>
+          checkKind(catalog.fold(Set.empty[String])(_.allowedKinds), entity) ++
+            checkTenant(tenant, entity)
+        )
+
+        if (validationErrors.nonEmpty) {
+          Future.successful(
+            Left(
+              errorsJson(
+                s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
+                validationErrors
+              )
+            )
+          )
+        } else {
+          checkTeamFolders(tenant, catalog, entities).flatMap { teamErrors =>
+            if (teamErrors.isEmpty) reconcile(tenant, catalog, entities, dryRun)
+            else
+              Future.successful(
+                Left(
+                  errorsJson(
+                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
+                    teamErrors
+                  )
+                )
+              )
+          }
+        }
+    }
+
+  private def checkKind(
+      allowedKinds: Set[String],
+      entity: RemoteEntity
+  ): Option[RemoteCatalogError] = {
+    val kindIsAllowed =
+      allowedKinds.isEmpty || allowedKinds.contains(entity.kind)
+
+    if (!controllers.contains(entity.kind)) {
+      Some(RemoteCatalogError(entity.source, s"Unknown kind: ${entity.kind}"))
+    } else if (!kindIsAllowed) {
+      Some(
+        RemoteCatalogError(
+          entity.source,
+          s"Kind '${entity.kind}' not allowed for this catalog"
+        )
+      )
+    } else {
+      None
+    }
+  }
+
+  private def checkTenant(
+      tenant: Tenant,
+      entity: RemoteEntity
+  ): Option[RemoteCatalogError] = {
+    val prefix = s"${entity.kind} ${entity.id}"
+
+    (entity.content \ "_tenant").asOpt[String] match {
+      case None =>
+        Some(
+          RemoteCatalogError(
+            entity.source,
+            s"$prefix: missing required field '_tenant'"
+          )
+        )
+      case Some(value) if value != tenant.id.value =>
+        Some(
+          RemoteCatalogError(
+            entity.source,
+            s"$prefix: _tenant '$value' is not the catalog tenant '${tenant.id.value}'"
+          )
+        )
+      case Some(_) => None
+    }
+  }
+
+  // folderPerTeam: teams/<teamId>/ may only declare the entities of that team
+  // e.g. [teams/team-mobile/sub.yaml (team: team-weather)]
+  //   -> Seq(RemoteCatalogError(".../sub.yaml", "api-subscription sub-1: belongs to team 'team-weather', not to 'teams/team-mobile'"))
+  //      Seq.empty when folderPerTeam is off, the source is not GitHub / GitLab or nothing is under teams/
+  private def checkTeamFolders(
+      tenant: Tenant,
+      catalog: Option[RemoteCatalog],
+      entities: Seq[RemoteEntity]
+  ): Future[Seq[RemoteCatalogError]] = {
+    val isGitSource =
+      catalog.exists(c => Set("github", "gitlab").contains(c.source.kind))
+
+    val inTeamFolders = entities
+        .flatMap(entity => teamFolderOf(entity).map(entity -> _))
+
+    if (catalog.exists(_.folderPerTeam) && isGitSource && inTeamFolders.nonEmpty) {
+      checkEachTeamFolder(tenant, entities, inTeamFolders)
+    } else {
+      Future.successful(Seq.empty)
+    }
+  }
+
+  // e.g. inTeamFolders = Seq(api-weather -> "team-weather", sub-1 -> "team-mobile")
+  //   -> the errors of the entities that do not belong to their folder team
+  private def checkEachTeamFolder(
+      tenant: Tenant,
+      entities: Seq[RemoteEntity],
+      inTeamFolders: Seq[(RemoteEntity, String)]
+  ): Future[Seq[RemoteCatalogError]] = {
+    val runPlans = runPlanTeams(entities)
+
+    val plansToRead = inTeamFolders
+      .map { case (entity, _) => entity }
+      .filter(_.kind == "usage-plan")
+      .map(_.id)
+      .filterNot(runPlans.contains)
+      .toSet
+
+    for {
+      dbTeams <- controllers("team").readExistingEntities(tenant)
+      dbPlans <- dbPlanTeams(tenant, plansToRead)
+    } yield {
+      val runTeams = entities.filter(_.kind == "team").map(_.id)
+      val knownTeams = dbTeams.keySet ++ runTeams
+      val planTeams = dbPlans ++ runPlans
+
+      inTeamFolders.flatMap { case (entity, folder) =>
+        teamFolderError(entity, folder, knownTeams, planTeams)
+          .map(message => RemoteCatalogError(entity.source, message))
+      }
+    }
+  }
+
+  // e.g. api-weather (team: team-weather) in "team-weather" -> None
+  //      api-weather (team: team-weather) in "team-mobile"  -> Some("... belongs to team 'team-weather', not to 'teams/team-mobile'")
+  //      anything in "unknown-team"                          -> Some("... folder 'teams/unknown-team' does not match any team")
+  private def teamFolderError(
+      entity: RemoteEntity,
+      folder: String,
+      knownTeams: Set[String],
+      planTeams: Map[String, String]
+  ): Option[String] = {
+    val prefix = s"${entity.kind} ${entity.id}"
+    val owner = ownerTeam(entity, planTeams)
+
+    if (!knownTeams.contains(folder)) {
+      Some(s"$prefix: folder 'teams/$folder' does not match any team")
+    } else if (entity.kind == "cms-page") {
+      Some(s"$prefix: a cms-page cannot be declared in a team folder")
+    } else if (!owner.contains(folder)) {
+      Some(
+        s"$prefix: belongs to team '${owner.getOrElse("none")}', not to 'teams/$folder'"
+      )
+    } else {
+      None
+    }
+  }
+
+  // e.g. "teams/team-a/api.yaml" -> Some("team-a"),
+  //      "teams/team-a/apis/api.yaml" -> Some("team-a"),
+  //      "pages/home.yaml" -> None, "api.yaml" -> None
+  private def teamFolderOf(entity: RemoteEntity): Option[String] =
+    entity.path.split("/").toSeq match {
+      case "teams" +: team +: _ +: _ => Some(team)
+      case _                         => None
+    }
+
+  // e.g. team team-weather -> Some("team-weather")
+  //      usage-plan plan-free with planTeams(plan-free -> team-weather) -> Some("team-weather")
+  //      api / keyring / api-subscription -> their "team" field
+  private def ownerTeam(
+      entity: RemoteEntity,
+      planTeams: Map[String, String]
+  ): Option[String] =
+    entity.kind match {
+      case "team"       => Some(entity.id)
+      case "usage-plan" => planTeams.get(entity.id)
+      case _            => (entity.content \ "team").asOpt[String]
+    }
+
+  // e.g. Map("plan-free" -> "team-weather")
+  private def runPlanTeams(entities: Seq[RemoteEntity]): Map[String, String] =
+    entities
+      .filter(_.kind == "api")
+      .flatMap { api =>
+        val team = (api.content \ "team").asOpt[String]
+
+        (api.content \ "possibleUsagePlans")
+          .asOpt[Seq[String]]
+          .getOrElse(Seq.empty)
+          .flatMap(plan => team.map(plan -> _))
+      }
+      .toMap
+
+  // one query for every plan, e.g. Map("plan-gold" -> "team-weather")
+  private def dbPlanTeams(
+      tenant: Tenant,
+      planIds: Set[String]
+  ): Future[Map[String, String]] =
+    if (planIds.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val repo = env.dataStore.apiRepo.forTenant(tenant)
+
+      repo
+        .query(
+          s"SELECT content FROM ${repo.tableName} " +
+            "WHERE content->>'_tenant' = $1 AND content->'possibleUsagePlans' ?| $2",
+          Seq(tenant.id.value, planIds.toArray)
+        )
+        .map(apis =>
+          apis.flatMap { api =>
+            api.possibleUsagePlans
+              .map(_.value)
+              .filter(planIds.contains)
+              .map(_ -> api.team.value)
+          }.toMap
+        )
+    }
+
+  private def errorsJson(
+      message: String,
+      errors: Seq[RemoteCatalogError]
+  ): JsValue =
+    Json.obj("error" -> message, "errors" -> JsArray(errors.map(_.json)))
+
+  // ---------------------------------------------------------------------------
+  // Orchestration — phase 2 then phase 3
+  // ---------------------------------------------------------------------------
+
+  private def reconcile(
+      tenant: Tenant,
+      catalog: Option[RemoteCatalog],
+      entities: Seq[RemoteEntity],
+      dryRun: Boolean
+  ): Future[Either[JsValue, DeployReport]] = {
+    val metadataKey = catalog.map(c => s"remote_catalog=${c.id.value}")
+
+    readDatabaseState(tenant).flatMap { databaseState =>
+      val toDelete =
+        computeEntitiesToDelete(databaseState, metadataKey, entities)
+      val finalIds = computeFinalIds(tenant, databaseState, toDelete, entities)
+      val deletionLimitError =
+        catalog.flatMap(c => checkDeletionLimit(c, databaseState, toDelete))
+
+      deletionLimitError match {
+        case Some(error) =>
+          Future.successful(
+            Left(
+              errorsJson(
+                s"Catalog ${runIdOf(catalog).value} would delete too many entities, nothing was applied",
+                Seq(error)
+              )
+            )
+          )
+        case None =>
+          prepareAllWrites(
+            tenant,
+            metadataKey,
+            entities,
+            finalIds,
+            catalog.exists(_.adoptExisting)
+          ).flatMap {
+            case Left(errors) =>
+              Future.successful(
+                Left(
+                  errorsJson(
+                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
+                    errors
+                  )
+                )
+              )
+            case Right(writes) =>
+              writeAll(tenant, catalog, writes, toDelete, dryRun).map(Right(_))
+          }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 2 — validate everything (reads the database, never writes)
+  // ---------------------------------------------------------------------------
+
+  private def readDatabaseState(
+      tenant: Tenant
+  ): Future[DatabaseState] = {
+    Future
+      .sequence(kindOrder.map { kind =>
+        controllers(kind).readExistingEntities(tenant).map(kind -> _)
+      })
+      .map(_.toMap)
+  }
+
+  private def computeEntitiesToDelete(
+      databaseState: DatabaseState,
+      metadataKey: Option[String],
+      entities: Seq[RemoteEntity]
+  ): Seq[(String, String)] = {
+    val remoteIds = entities.map(e => (e.kind, e.id)).toSet
+
+    kindOrder.reverse.flatMap { kind =>
+      databaseState(kind).toSeq.collect {
+        case (id, createdBy)
+            if metadataKey.exists(key => createdBy.contains(key)) &&
+              !remoteIds.contains((kind, id)) =>
+          (kind, id)
+      }
+    }
+  }
+
+  private def checkDeletionLimit(
+      catalog: RemoteCatalog,
+      databaseState: DatabaseState,
+      toDelete: Seq[(String, String)]
+  ): Option[RemoteCatalogError] = {
+    val metadataKey = s"remote_catalog=${catalog.id.value}"
+    val managedCount = databaseState.values
+      .flatMap(_.values)
+      .count(_.contains(metadataKey))
+    val deletedPercent =
+      if (managedCount == 0) 0.0 else toDelete.size * 100.0 / managedCount
+    val limitIsActive = catalog.allowDeletions &&
+      catalog.maxDeletionPercent != -1 && managedCount >= 5
+
+    if (limitIsActive && deletedPercent > catalog.maxDeletionPercent) {
+      Some(
+        RemoteCatalogError(
+          s"catalog ${catalog.id.value}",
+          f"${toDelete.size} of $managedCount managed entities would be deleted ($deletedPercent%.0f%% > ${catalog.maxDeletionPercent}%%): fix the source or raise maxDeletionPercent (-1 for no limit)"
+        )
+      )
+    } else {
+      None
+    }
+  }
+
+  private def computeFinalIds(
+      tenant: Tenant,
+      databaseState: DatabaseState,
+      toDelete: Seq[(String, String)],
+      entities: Seq[RemoteEntity]
+  ): ReconcileFinalIds = {
+    val deleted = toDelete.toSet
+
+    ReconcileFinalIds(
+      kindOrder.map { kind =>
+        val keptInDb =
+          databaseState(kind).keySet.filterNot(id =>
+            deleted.contains((kind, id))
+          )
+        val fromRun = entities.filter(_.kind == kind).map(_.id).toSet
+
+        kind -> (keptInDb ++ fromRun)
+      }.toMap +
+        ("tenant" -> Set(tenant.id.value)) +
+        ("otoroshi-settings" -> tenant.otoroshiSettings.map(_.id.value))
+    )
+  }
+
+  private def prepareAllWrites(
+      tenant: Tenant,
+      metadataKey: Option[String],
+      entities: Seq[RemoteEntity],
+      finalIds: ReconcileFinalIds,
+      adoptExisting: Boolean
+  ): Future[Either[Seq[RemoteCatalogError], Seq[CatalogWrite]]] = {
+    Future
+      .sequence(kindOrder.map { kind =>
+        val kindEntities = entities.filter(_.kind == kind)
+        val raws = kindEntities.map(e =>
+          metadataKey.fold(e.content)(withCreatedByMetadata(e.content, _))
+        )
+
+        controllers(kind)
+          .prepareWrites(tenant, raws, metadataKey, finalIds, adoptExisting)
+          .map(results => kindEntities.zip(results))
+      })
+      .map { perKind =>
+        val results = perKind.flatten
+        val errors = results.collect { case (entity, Left(message)) =>
+          RemoteCatalogError(
+            entity.source,
+            s"${entity.kind} ${entity.id}: $message"
+          )
+        }
+
+        if (errors.nonEmpty) {
+          Left(errors)
+        } else {
+          Right(results.collect { case (entity, Right(write)) =>
+            CatalogWrite(entity, write)
+          })
+        }
+      }
+  }
+
+  // e.g. "metadata": { "created_by": "remote_catalog=my-catalog" }
+  private def withCreatedByMetadata(
+      json: JsObject,
+      metadataKey: String
+  ): JsObject = {
+    val current = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj())
+
+    json ++ Json.obj(
+      "metadata" -> (current ++ Json.obj("created_by" -> metadataKey))
+    )
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 3 — write (only when phase 2 found no error)
+  // ---------------------------------------------------------------------------
+
+  private def writeAll(
+      tenant: Tenant,
+      catalog: Option[RemoteCatalog],
+      writes: Seq[CatalogWrite],
+      toDelete: Seq[(String, String)],
+      dryRun: Boolean
+  ): Future[DeployReport] = {
+    runOneByOne(writes)(writeEntity(dryRun)).flatMap { upserts =>
+      if (upserts.error.isDefined) {
+        Future.successful(buildReport(tenant, runIdOf(catalog), Seq(upserts)))
+      } else {
+        val removeEntity =
+          if (catalog.exists(_.allowDeletions)) deleteEntity(tenant, dryRun)
+          else detachEntity(tenant, dryRun)
+
+        runOneByOne(toDelete)(removeEntity)
+          .map(removals =>
+            buildReport(tenant, runIdOf(catalog), Seq(upserts, removals))
+          )
+      }
+    }
+  }
+
+  private def runOneByOne[A](
+      items: Seq[A],
+      written: Seq[WrittenEntity] = Seq.empty
+  )(
+      runOne: A => Future[Either[WriteError, WrittenEntity]]
+  ): Future[WriteOutcome] = {
+    items match {
+      case Seq() => Future.successful(WriteOutcome(written, None))
+      case item +: rest =>
+        runOne(item).flatMap {
+          case Left(error) =>
+            Future.successful(WriteOutcome(written, Some(error)))
+          case Right(entity) =>
+            runOneByOne(rest, written :+ entity)(runOne)
         }
     }
   }
 
-  private def reconcile(
-      tenant: Tenant,
-      catalog: RemoteCatalog,
-      entities: Seq[RemoteEntity],
-      dryRun: Boolean
-  ): Future[DeployReport] = {
-    val metadataKey = s"remote_catalog=${catalog.id}"
-    val kindOrder =
-      Seq("team", "usage-plan", "api", "api-subscription", "cms-page")
-    val grouped = entities.groupBy(_.kind)
-    val orderedKinds = kindOrder
-      .filter(grouped.contains) ++ grouped.keySet.diff(kindOrder.toSet).toSeq
-    orderedKinds
-      .foldLeft(Future.successful(Seq.empty[ReconcileResult])) { (acc, kind) =>
-        acc.flatMap { results =>
-          val kindEntities = grouped(kind)
-          val resultF =
-            if (
-              catalog.allowedKinds.nonEmpty && !catalog.allowedKinds.contains(
-                kind
-              )
-            ) {
-              Future.successful(
-                ReconcileResult(
-                  kind,
-                  Nil,
-                  Nil,
-                  Nil,
-                  Seq(s"Kind '$kind' not allowed for this catalog")
-                )
-              )
-            } else {
-              controllers.get(kind) match {
-                case None =>
-                  Future.successful(
-                    ReconcileResult(
-                      kind,
-                      Nil,
-                      Nil,
-                      Nil,
-                      Seq(s"Unknown kind: $kind")
-                    )
-                  )
-                case Some(controller) =>
-                  reconcileKind(
-                    tenant,
-                    metadataKey,
-                    kind,
-                    controller,
-                    kindEntities,
-                    dryRun
-                  )
-              }
-            }
-          resultF.map(r => results :+ r)
+  private def writeEntity(dryRun: Boolean)(
+      write: CatalogWrite
+  ): Future[Either[WriteError, WrittenEntity]] = {
+    val kind = write.entity.kind
+    val written = WrittenEntity(kind, write.entity.id, write.prepared.action)
+    val errorPrefix =
+      s"Error writing ${write.entity.id} (${write.entity.source})"
+
+    if (dryRun) {
+      Future.successful(Right(written))
+    } else {
+      write.prepared
+        .write()
+        .value
+        .map {
+          case Left(error) =>
+            Left(WriteError(kind, s"$errorPrefix: ${error.getErrorMessage()}"))
+          case Right(_) => Right(written)
         }
-      }
-      .map(results =>
-        DeployReport(catalog.id, tenant.id.value, results, DateTime.now())
+        .recover { case e: Throwable =>
+          Left(WriteError(kind, s"$errorPrefix: ${e.getMessage}"))
+        }
+    }
+  }
+
+  private def deleteEntity(tenant: Tenant, dryRun: Boolean)(
+      kindAndId: (String, String)
+  ): Future[Either[WriteError, WrittenEntity]] = {
+    val (kind, id) = kindAndId
+    val errorPrefix = s"Error deleting $id"
+
+    if (dryRun) {
+      Future.successful(Right(WrittenEntity(kind, id, "deleted")))
+    } else {
+      controllers(kind)
+        .doDeleteById(tenant, id)
+        .map {
+          case Left(err)     => Left(WriteError(kind, s"$errorPrefix: $err"))
+          case Right(action) => Right(WrittenEntity(kind, id, action))
+        }
+        .recover { case e: Throwable =>
+          Left(WriteError(kind, s"$errorPrefix: ${e.getMessage}"))
+        }
+    }
+  }
+
+  // allowDeletions off: the entity stays, without its catalog tag
+  private def detachEntity(tenant: Tenant, dryRun: Boolean)(
+      kindAndId: (String, String)
+  ): Future[Either[WriteError, WrittenEntity]] = {
+    val (kind, id) = kindAndId
+    val detached = WrittenEntity(kind, id, "detached")
+
+    if (dryRun) {
+      Future.successful(Right(detached))
+    } else {
+      val repo = controllers(kind).entityStore(tenant, env.dataStore)
+
+      repo
+        .execute(
+          s"UPDATE ${repo.tableName} SET content = content #- '{metadata,created_by}' " +
+            "WHERE _id = $1 AND content->>'_tenant' = $2",
+          Seq(id, tenant.id.value)
+        )
+        .map(_ => Right(detached))
+        .recover { case e: Throwable =>
+          Left(WriteError(kind, s"Error detaching $id: ${e.getMessage}"))
+        }
+    }
+  }
+
+  private def buildReport(
+      tenant: Tenant,
+      catalogId: RemoteCatalogId,
+      outcomes: Seq[WriteOutcome]
+  ): DeployReport = {
+    val written = outcomes.flatMap(_.written)
+    val errors = outcomes.flatMap(_.error)
+
+    def idsOf(kind: String, action: String): Seq[String] =
+      written.filter(w => w.kind == kind && w.action == action).map(_.id)
+
+    val results = kindOrder.map { kind =>
+      ReconcileResult(
+        kind = kind,
+        created = idsOf(kind, "created"),
+        updated = idsOf(kind, "updated"),
+        deleted = idsOf(kind, "deleted"),
+        detached = idsOf(kind, "detached"),
+        errors = errors.filter(_.kind == kind).map(_.message)
       )
-  }
+    }
 
-  private def reconcileKind(
-      tenant: Tenant,
-      metadataKey: String,
-      kind: String,
-      controller: AdminApiController[?, ? <: ValueType],
-      entities: Seq[RemoteEntity],
-      dryRun: Boolean
-  ): Future[ReconcileResult] = {
-    val remoteIds = entities.map(_.id).toSet
-    Future
-      .sequence(entities.map { entity =>
-        val raw = enrichWithMetadata(entity.content, metadataKey)
-        controller
-          .reconcileUpsert(tenant, raw, dryRun)
-          .map {
-            case Left(err) =>
-              (
-                Option.empty[String],
-                Option.empty[String],
-                Some(s"Error upserting ${entity.id} of kind $kind: $err")
-              )
-            case Right("created") => (Some(entity.id), None, None)
-            case Right("updated") => (None, Some(entity.id), None)
-            case Right(_)         => (None, None, None)
-          }
-          .recover { case e: Throwable =>
-            (
-              Option.empty[String],
-              Option.empty[String],
-              Some(s"Error on ${entity.id} of kind $kind: ${e.getMessage}")
-            )
-          }
-      })
-      .flatMap { outcomes =>
-        val created = outcomes.flatMap(_._1)
-        val updated = outcomes.flatMap(_._2)
-        val errors = outcomes.flatMap(_._3)
-        handleDeletions(tenant, metadataKey, controller, remoteIds, dryRun)
-          .map { case (deleted, delErrors) =>
-            ReconcileResult(
-              kind,
-              created,
-              updated,
-              deleted,
-              errors ++ delErrors
-            )
-          }
-      }
-  }
-
-  private def handleDeletions(
-      tenant: Tenant,
-      metadataKey: String,
-      controller: AdminApiController[?, ? <: ValueType],
-      remoteIds: Set[String],
-      dryRun: Boolean
-  ): Future[(Seq[String], Seq[String])] = {
-    controller
-      .reconcileListManaged(tenant)
-      .flatMap { managed =>
-        val toDelete = managed.collect {
-          case (id, metadata)
-              if metadata.get("created_by").contains(metadataKey) && !remoteIds
-                .contains(id) =>
-            id
-        }
-        if (toDelete.isEmpty)
-          Future.successful((Seq.empty[String], Seq.empty[String]))
-        else if (dryRun) Future.successful((toDelete, Seq.empty[String]))
-        else
-          Future
-            .sequence(
-              toDelete.map(id => controller.reconcileDelete(tenant, id))
-            )
-            .map(_ => (toDelete, Seq.empty[String]))
-      }
-      .recover { case e: Throwable =>
-        logger.warn(s"handleDeletions failed: ${e.getMessage}")
-        (Seq.empty[String], Seq(s"Deletion failed: ${e.getMessage}"))
-      }
+    DeployReport(catalogId.value, tenant.id.value, results, DateTime.now())
   }
 
   private def doUndeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
   ): Future[Either[JsValue, DeployReport]] = {
-    val metadataKey = s"remote_catalog=${catalog.id}"
-    Future
-      .sequence(controllers.toSeq.map { case (kind, controller) =>
-        controller
-          .reconcileListManaged(tenant)
-          .flatMap { managed =>
-            val ids = managed.collect {
-              case (id, metadata)
-                  if metadata.get("created_by").contains(metadataKey) =>
-                id
-            }
-            if (ids.isEmpty)
-              Future.successful(ReconcileResult(kind, Nil, Nil, Nil, Nil))
-            else
-              Future
-                .sequence(ids.map(id => controller.reconcileDelete(tenant, id)))
-                .map(_ => ReconcileResult(kind, Nil, Nil, ids, Nil))
+    val metadataKey = s"remote_catalog=${catalog.id.value}"
+
+    readDatabaseState(tenant)
+      .flatMap { databaseState =>
+        val managed =
+          computeEntitiesToDelete(databaseState, Some(metadataKey), Seq.empty)
+
+        runOneByOne(managed)(deleteEntity(tenant, dryRun = false))
+      }
+      .map(deletions => Right(buildReport(tenant, catalog.id, Seq(deletions))))
+  }
+
+  // ---------------------------------------------------------------------------
+  // Export
+  // ---------------------------------------------------------------------------
+
+  def exportEntities(
+      tenant: Tenant,
+      selection: ExportSelection,
+      format: ExportFormat
+  ): Source[ByteString, ?] = {
+    val filters = exportFilters(tenant, selection)
+    val documents = Source(kindOrder.filter(filters.contains))
+      .flatMapConcat(kind =>
+        documentsOf(kind, controllers(kind), tenant, filters(kind))
+      )
+
+    format match {
+      case ExportFormat.Zip =>
+        documents
+          .map { case (path, document) =>
+            ArchiveMetadata(path) ->
+              Source.single(ByteString(Yaml.write(document)))
           }
-          .recover { case e: Throwable =>
-            ReconcileResult(
-              kind,
-              Nil,
-              Nil,
-              Nil,
-              Seq(s"Error undeploying kind $kind: ${e.getMessage}")
-            )
+          .via(Archive.zip())
+      case ExportFormat.MultiDocument =>
+        documents
+          .map { case (_, document) => ByteString(Yaml.write(document)) }
+          .intersperse(ByteString("---\n"))
+    }
+  }
+
+  // e.g. keyring-1 with children -> Map("keyring" -> _id = keyring-1, "api-subscription" -> keyring = keyring-1)
+  private def exportFilters(
+      tenant: Tenant,
+      selection: ExportSelection
+  ): Map[String, SqlFilter] =
+    selection match {
+      case ExportSelection.WholeTenant(includeManaged) =>
+        val predicates =
+          if (includeManaged) {
+            Seq.empty
+          } else {
+            Seq("content->'metadata'->>'created_by' IS NULL")
           }
-      })
-      .map { results =>
-        Right(
-          DeployReport(
-            catalog.id,
-            tenant.id.value,
-            results.filter(r => r.deleted.nonEmpty || r.errors.nonEmpty),
-            DateTime.now()
-          )
+
+        kindOrder.map(kind => kind -> (predicates, Seq.empty)).toMap
+
+      case ExportSelection.OneEntity(kind, id, withChildren) =>
+        val root: Map[String, SqlFilter] = Map(kind -> (Seq("_id = $1"), Seq(id)))
+
+        if (withChildren) {
+          root ++ childrenFilters(tenant, kind, id)
+        } else {
+          root
+        }
+    }
+
+  private def childrenFilters(
+      tenant: Tenant,
+      kind: String,
+      id: String
+  ): Map[String, SqlFilter] = {
+    val apiTable = env.dataStore.apiRepo.forTenant(tenant).tableName
+
+    def byField(field: String): SqlFilter =
+      (Seq(s"content->>'$field' = $$1"), Seq(id))
+
+    def plansOfApis(apisWhere: String): SqlFilter =
+      (
+        Seq(
+          "_id IN (SELECT jsonb_array_elements_text(content->'possibleUsagePlans') " +
+            s"FROM $apiTable WHERE $apisWhere AND content->>'_tenant' = $$2)"
+        ),
+        Seq(id, tenant.id.value)
+      )
+
+    kind match {
+      case "team" =>
+        Map(
+          "usage-plan" -> plansOfApis("content->>'team' = $1"),
+          "api" -> byField("team"),
+          "keyring" -> byField("team"),
+          "api-subscription" -> byField("team")
         )
+      case "api" =>
+        Map(
+          "usage-plan" -> plansOfApis("_id = $1"),
+          "api-subscription" -> byField("api")
+        )
+      case "usage-plan" => Map("api-subscription" -> byField("plan"))
+      case "keyring"    => Map("api-subscription" -> byField("keyring"))
+      case _            => Map.empty
+    }
+  }
+
+  // e.g. ("api/api-weather.yaml", { "apiVersion": "daikoku.io/v1", "kind": "api", "spec": {...} })
+  private def documentsOf[Of, Id <: ValueType](
+      kind: String,
+      controller: AdminApiController[Of, Id],
+      tenant: Tenant,
+      filter: SqlFilter
+  ): Source[(String, JsObject), ?] = {
+    val (predicates, params) = filter
+
+    controller
+      .entityStore(tenant, env.dataStore)
+      .streamAllRawFormatted(predicates, params)
+      .map(entity =>
+        s"$kind/${controller.getId(entity).value}.yaml" ->
+          exportDocument(kind, controller, entity)
+      )
+  }
+
+  // e.g. { "apiVersion": "daikoku.io/v1", "kind": "keyring", "spec": { ...without apiKey, integrationToken } }
+  private def exportDocument[Of, Id <: ValueType](
+      kind: String,
+      controller: AdminApiController[Of, Id],
+      entity: Of
+  ): JsObject = {
+    val spec = controller.toJson(entity).as[JsObject]
+    val exported =
+      if (kind == "keyring")
+        KeyringAdminApiController.secretFields.foldLeft(spec)(_ - _)
+      else spec
+
+    Json.obj(
+      "apiVersion" -> "daikoku.io/v1",
+      "kind" -> kind,
+      "spec" -> exported
+    )
+  }
+
+  // ---------------------------------------------------------------------------
+  // Run history
+  // ---------------------------------------------------------------------------
+
+  private def saveRun(
+      tenant: Tenant,
+      catalog: RemoteCatalog,
+      result: Either[JsValue, DeployReport]
+  ): Future[Unit] = {
+    val run = toRun(tenant, catalog.id, result)
+
+    env.dataStore.remoteCatalogRunRepo
+      .forTenant(tenant)
+      .save(run)
+      .flatMap(_ => pruneRuns(tenant, catalog))
+      .recover { case e =>
+        logger.error(s"cannot save the run of catalog ${catalog.id.value}", e)
       }
   }
 
-  private def enrichWithMetadata(
-      json: JsObject,
-      metadataKey: String
-  ): JsObject = {
-    val current =
-      (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty)
-    json ++ Json.obj("metadata" -> (current + ("created_by" -> metadataKey)))
+  private def toRun(
+      tenant: Tenant,
+      catalogId: RemoteCatalogId,
+      result: Either[JsValue, DeployReport]
+  ): RemoteCatalogRun =
+    result match {
+      case Right(report) =>
+        val status =
+          if (report.isPartial) RemoteCatalogRunStatus.Partial
+          else RemoteCatalogRunStatus.Completed
+
+        RemoteCatalogRun(
+          id = DatastoreId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          catalog = catalogId,
+          at = report.timestamp,
+          status = status,
+          created = report.results.flatMap(_.created),
+          updated = report.results.flatMap(_.updated),
+          deleted = report.results.flatMap(_.deleted),
+          detached = report.results.flatMap(_.detached),
+          errors = report.errors
+        )
+      case Left(error) =>
+        RemoteCatalogRun(
+          id = DatastoreId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          catalog = catalogId,
+          at = DateTime.now(),
+          status = RemoteCatalogRunStatus.Failed,
+          created = Seq.empty,
+          updated = Seq.empty,
+          deleted = Seq.empty,
+          errors = failureMessages(error)
+        )
+    }
+
+  private val runsKept = 20
+
+  private def pruneRuns(
+      tenant: Tenant,
+      catalog: RemoteCatalog
+  ): Future[Unit] = {
+    env.dataStore.remoteCatalogRunRepo
+      .findByCatalog(tenant.id, catalog.id)
+      .flatMap { newestFirst =>
+        val oldIds = newestFirst.drop(runsKept).map(_.id)
+
+        if (oldIds.isEmpty) {
+          Future.unit
+        } else {
+          env.dataStore.remoteCatalogRunRepo
+            .forTenant(tenant)
+            .deleteByIds(oldIds)
+            .map(_ => ())
+        }
+      }
   }
+
+  // e.g. Seq("file:///catalog/teams.yaml: document 2: Missing required field '_id'")
+  private def failureMessages(error: JsValue): Seq[String] =
+    (error \ "errors").asOpt[Seq[JsObject]] match {
+      case Some(details) if details.nonEmpty =>
+        details.map(d =>
+          s"${(d \ "source").as[String]}: ${(d \ "message").as[String]}"
+        )
+      case _ => (error \ "error").asOpt[String].toSeq
+    }
 }

@@ -118,4 +118,25 @@ Daikoku drives Otoroshi. Subscribing provisions an API key on the Otoroshi side 
 and background jobs reconcile the two systems: `OtoroshiSynchronizerJob`,
 `OtoroshiEntitiesVerifierJob`, plus apikey secret rotation and subscription expiration jobs. Otoroshi
 enforces quotas/routing; Daikoku is the portal/system of record.
-</content>
+
+## Remote catalogs
+
+A **remote catalog** (`RemoteCatalog`, table `remote_catalogs`, tenant-scoped) describes entities of
+the kinds `team`, `usage-plan`, `api`, `keyring`, `api-subscription` and `cms-page` as files in a
+source (GitHub, GitLab, HTTP, server folder). `RemoteCatalogEngine` reconciles the tenant with them.
+
+- **Run**: one deploy, test (dry run), validate or undeploy. A run is all or nothing: read and parse,
+  then validate every document against the database and the run itself, then apply in `kindOrder`
+  (removals in reverse). Persisted runs (`RemoteCatalogRun`, last 20 per catalog) are `completed`,
+  `partial` (stopped during the apply) or `failed` (nothing applied).
+- **Ownership**: an entity written by a catalog carries `metadata.created_by = remote_catalog=<id>`.
+  A catalog only updates or removes its own entities. An untagged entity is refused unless the catalog
+  has `adoptExisting`; an entity tagged by another catalog is always refused.
+- **Detach**: removing the tag. Deleting a catalog detaches its entities; with `allowDeletions` off,
+  an entity removed from the source is detached instead of deleted.
+- **Team folders** (`folderPerTeam`): in a shared repository, `teams/<teamId>/` may only declare the
+  entities of that team (the consumer team for keyrings and subscriptions).
+- **Catalog token**: authenticates the CI routes (`_validate`, `_test`, `_deploy`, `_undeploy`) and is
+  the secret of the GitHub / GitLab webhook.
+
+Runs go through `RemoteCatalogJob`, so the job lock serializes them per tenant across instances.

@@ -69,6 +69,52 @@ a:hover {
   text-decoration: underline;
 }
 
+.external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: variables.$primary-color;
+
+  &:hover {
+    color: variables.$primary-color-800;
+    text-decoration: underline;
+  }
+}
+
+.drop-zone {
+  outline: 2px dashed transparent;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+
+  &.--active {
+    outline-color: variables.$primary-color;
+  }
+}
+
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: variables.$level2_bg-color;
+  border-radius: 0.25rem;
+
+  &__result {
+    max-height: 40vh;
+    overflow: auto;
+  }
+}
+
+.editor-placeholder {
+  position: absolute;
+  top: 4px;
+  left: 2.5rem;
+  color: variables.$text-color-secondary;
+  font-family: monospace;
+  pointer-events: none;
+}
+
 a.nav-link.active {
   background-color: rgb(233, 236, 239);
 }

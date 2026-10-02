@@ -8,6 +8,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.*
+import org.joda.time.DateTime
 import play.api.libs.json.*
 import fr.maif.daikoku.services.CmsPage
 
@@ -445,8 +446,7 @@ case class Tenant(
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
     defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
-      None,
-    remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
+      None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -791,8 +791,7 @@ object SchedulingMode {
 }
 
 case class RemoteCatalogScheduling(
-    enabled: Boolean = false,
-    deployArgs: JsObject = Json.obj()
+    enabled: Boolean = false
 )
 
 case class RemoteCatalogSource(
@@ -801,11 +800,43 @@ case class RemoteCatalogSource(
 )
 
 case class RemoteCatalog(
-    id: String,
+    id: RemoteCatalogId,
+    tenant: TenantId,
     name: String,
     enabled: Boolean = true,
     source: RemoteCatalogSource = RemoteCatalogSource(),
     scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
     allowedKinds: Set[String] = Set.empty,
-    testDeployArgs: JsObject = Json.obj()
-)
+    maxDeletionPercent: Int = 30,
+    adoptExisting: Boolean = false,
+    folderPerTeam: Boolean = false,
+    allowDeletions: Boolean = true,
+    token: String = IdGenerator.token(64)
+) extends CanJson[RemoteCatalog] {
+  def asJson: JsValue = json.RemoteCatalogFormat.writes(this)
+}
+
+enum RemoteCatalogRunStatus(val value: String):
+  case Completed extends RemoteCatalogRunStatus("completed")
+  case Partial extends RemoteCatalogRunStatus("partial")
+  case Failed extends RemoteCatalogRunStatus("failed")
+
+object RemoteCatalogRunStatus {
+  def fromValue(v: String): Option[RemoteCatalogRunStatus] =
+    RemoteCatalogRunStatus.values.find(_.value == v)
+}
+
+case class RemoteCatalogRun(
+    id: DatastoreId,
+    tenant: TenantId,
+    catalog: RemoteCatalogId,
+    at: DateTime,
+    status: RemoteCatalogRunStatus,
+    created: Seq[String],
+    updated: Seq[String],
+    deleted: Seq[String],
+    detached: Seq[String] = Seq.empty,
+    errors: Seq[String]
+) extends CanJson[RemoteCatalogRun] {
+  def asJson: JsValue = json.RemoteCatalogRunFormat.writes(this)
+}

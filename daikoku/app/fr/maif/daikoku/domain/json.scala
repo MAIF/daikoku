@@ -31,6 +31,14 @@ object json {
     def r = new scala.util.matching.Regex(sc.parts.mkString)
   }
 
+  // keeps the text values only, e.g. {"owner": "ops", "priority": 1} -> Map("owner" -> "ops")
+  private def readTextMetadata(json: JsValue): Map[String, String] =
+    (json \ "metadata")
+      .asOpt[JsObject]
+      .map(_.fields.collect { case (key, JsString(value)) => key -> value })
+      .getOrElse(Seq.empty)
+      .toMap
+
   val BillingTimeUnitFormat = new Format[BillingTimeUnit] {
     override def reads(json: JsValue): JsResult[BillingTimeUnit] =
       Try {
@@ -856,9 +864,7 @@ object json {
             testing = (json \ "testing").asOpt(using TestingFormat),
             documentation =
               (json \ "documentation").asOpt(using ApiDocumentationFormat),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty)
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -1919,10 +1925,7 @@ object json {
               (json \ "defaultAuthorizedOtoroshiEntities")
                 .asOpt(using SeqTeamAuthorizedEntitiesFormat),
             teamCreationSecurity =
-              (json \ "teamCreationSecurity").asOpt[Boolean],
-            remoteCatalogs = (json \ "remoteCatalogs")
-              .asOpt(using SeqRemoteCatalogFormat)
-              .getOrElse(Seq.empty)
+              (json \ "teamCreationSecurity").asOpt[Boolean]
           )
         )
       } recover { case e: Throwable =>
@@ -2007,8 +2010,7 @@ object json {
         "teamCreationSecurity" -> o.teamCreationSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "remoteCatalogs" -> SeqRemoteCatalogFormat.writes(o.remoteCatalogs)
+          .as[JsValue]
       )
   }
 
@@ -2217,9 +2219,7 @@ object json {
               .getOrElse(Set.empty[UserWithPermission]),
             authorizedOtoroshiEntities = (json \ "authorizedOtoroshiEntities")
               .asOpt(using SeqTeamAuthorizedEntitiesFormat),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty),
+            metadata = readTextMetadata(json),
             apiKeyVisibility = (json \ "apiKeyVisibility")
               .asOpt[String]
               .flatMap(TeamApiKeyVisibility.apply),
@@ -2365,9 +2365,7 @@ object json {
             state = (json \ "state")
               .asOpt(using ApiStateFormat)
               .getOrElse(ApiState.Created),
-            metadata = (json \ "metadata")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty)
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -2676,7 +2674,8 @@ object json {
                   }
                 case _: JsUndefined => None
               },
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true)
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            metadata = readTextMetadata(json)
           )
         )
       } recover { case e =>
@@ -2706,7 +2705,8 @@ object json {
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "enabled" -> o.enabled
+        "enabled" -> o.enabled,
+        "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq)
       )
   }
 
@@ -4911,6 +4911,17 @@ object json {
     override def writes(o: AssetId): JsValue = JsString(o.value)
   }
 
+  val RemoteCatalogIdFormat = new Format[RemoteCatalogId] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogId] =
+      Try {
+        JsSuccess(RemoteCatalogId(json.as[String]))
+      } recover { case e =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogId): JsValue = JsString(o.value)
+  }
+
   val CmsFileFormat = new Format[CmsFile] {
     override def writes(o: CmsFile): JsValue =
       Json.obj(
@@ -5010,8 +5021,7 @@ object json {
           name = (json \ "name").as[String],
           picture = (json \ "picture").asOpt[String].filter(_.trim.nonEmpty),
           tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
-          metadata =
-            (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
+          metadata = readTextMetadata(json),
           body = (json \ "body").asOpt[String].getOrElse(""),
           contentType =
             (json \ "contentType").asOpt[String].getOrElse("text/html"),
@@ -5383,9 +5393,7 @@ object json {
       Try {
         JsSuccess(
           RemoteCatalogScheduling(
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-            deployArgs =
-              (json \ "deployArgs").asOpt[JsObject].getOrElse(Json.obj())
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false)
           )
         )
       } recover { case e: Throwable =>
@@ -5394,8 +5402,7 @@ object json {
 
     override def writes(o: RemoteCatalogScheduling): JsValue =
       Json.obj(
-        "enabled" -> o.enabled,
-        "deployArgs" -> o.deployArgs
+        "enabled" -> o.enabled
       )
   }
 
@@ -5404,7 +5411,8 @@ object json {
       Try {
         JsSuccess(
           RemoteCatalog(
-            id = (json \ "id").as[String],
+            id = (json \ "_id").as(using RemoteCatalogIdFormat),
+            tenant = (json \ "_tenant").as(using TenantIdFormat),
             name = (json \ "name").as[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             source = (json \ "source")
@@ -5415,8 +5423,17 @@ object json {
               .getOrElse(RemoteCatalogScheduling()),
             allowedKinds =
               (json \ "allowedKinds").asOpt[Set[String]].getOrElse(Set.empty),
-            testDeployArgs =
-              (json \ "testDeployArgs").asOpt[JsObject].getOrElse(Json.obj())
+            maxDeletionPercent =
+              (json \ "maxDeletionPercent").asOpt[Int].getOrElse(30),
+            adoptExisting =
+              (json \ "adoptExisting").asOpt[Boolean].getOrElse(false),
+            folderPerTeam =
+              (json \ "folderPerTeam").asOpt[Boolean].getOrElse(false),
+            allowDeletions =
+              (json \ "allowDeletions").asOpt[Boolean].getOrElse(true),
+            token = (json \ "token")
+              .asOpt[String]
+              .getOrElse(IdGenerator.token(64))
           )
         )
       } recover { case e: Throwable =>
@@ -5425,21 +5442,59 @@ object json {
 
     override def writes(o: RemoteCatalog): JsValue =
       Json.obj(
-        "id" -> o.id,
+        "_id" -> RemoteCatalogIdFormat.writes(o.id),
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
         "name" -> o.name,
         "enabled" -> o.enabled,
         "source" -> RemoteCatalogSourceFormat.writes(o.source),
         "scheduling" -> RemoteCatalogSchedulingFormat.writes(o.scheduling),
         "allowedKinds" -> JsArray(o.allowedKinds.map(JsString.apply).toSeq),
-        "testDeployArgs" -> o.testDeployArgs
+        "maxDeletionPercent" -> o.maxDeletionPercent,
+        "adoptExisting" -> o.adoptExisting,
+        "folderPerTeam" -> o.folderPerTeam,
+        "allowDeletions" -> o.allowDeletions,
+        "token" -> o.token
       )
   }
 
-  val SeqRemoteCatalogFormat =
-    Format(
-      Reads.seq(using RemoteCatalogFormat),
-      Writes.seq(using RemoteCatalogFormat)
-    )
+  val RemoteCatalogRunFormat = new Format[RemoteCatalogRun] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogRun] =
+      Try {
+        JsSuccess(
+          RemoteCatalogRun(
+            id = (json \ "_id").as(using DatastoreIdFormat),
+            tenant = (json \ "_tenant").as(using TenantIdFormat),
+            catalog = (json \ "catalog").as(using RemoteCatalogIdFormat),
+            at = (json \ "at").as(using DateTimeFormat),
+            status = RemoteCatalogRunStatus
+              .fromValue((json \ "status").as[String])
+              .get,
+            created = (json \ "created").as[Seq[String]],
+            updated = (json \ "updated").as[Seq[String]],
+            deleted = (json \ "deleted").as[Seq[String]],
+            detached =
+              (json \ "detached").asOpt[Seq[String]].getOrElse(Seq.empty),
+            errors = (json \ "errors").as[Seq[String]]
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogRun): JsValue =
+      Json.obj(
+        "_id" -> DatastoreIdFormat.writes(o.id),
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
+        "catalog" -> RemoteCatalogIdFormat.writes(o.catalog),
+        "at" -> DateTimeFormat.writes(o.at),
+        "status" -> o.status.value,
+        "created" -> o.created,
+        "updated" -> o.updated,
+        "deleted" -> o.deleted,
+        "detached" -> o.detached,
+        "errors" -> o.errors
+      )
+  }
 
   val FlagsFormat = new Format[DaikokuFlags] {
     override def reads(json: JsValue): JsResult[DaikokuFlags] =

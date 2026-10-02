@@ -2,8 +2,11 @@ package fr.maif.daikoku.services.catalog.sources
 
 import fr.maif.daikoku.domain.RemoteCatalog
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
-import play.api.Logger
+import fr.maif.daikoku.services.catalog.{
+  CatalogSource,
+  RemoteCatalogError,
+  RemoteEntity
+}
 import play.api.libs.json._
 
 import java.io.File
@@ -15,8 +18,6 @@ import scala.util.Try
 class CatalogSourceFile extends CatalogSource {
 
   import scala.sys.process._
-
-  private val logger = Logger("daikoku-remote-catalog-source-file")
 
   override def sourceKind: String = "file"
 
@@ -45,93 +46,123 @@ class CatalogSourceFile extends CatalogSource {
     }
   }
 
-  override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
+  private def readFile(file: File): Either[JsValue, String] = {
+    Try(
+      new String(Files.readAllBytes(file.toPath), StandardCharsets.UTF_8)
+    ).toEither.left
+      .map(e => Json.obj("error" -> s"Cannot read file: ${e.getMessage}"))
+  }
+
+  private def readAndParse(
+      file: File
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
+    val sourceName = s"file://${file.getAbsolutePath}"
+
+    readFile(file) match {
+      case Left(err) => Left(Seq(SourceUtils.fetchError(sourceName, err)))
+      case Right(rawContent) =>
+        SourceUtils.parseEntityContent(rawContent, sourceName)
+    }
+  }
+
+  private def fetchDirectory(
+      dir: File,
+      recursive: Boolean
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
+    val sourceName = s"file://${dir.getAbsolutePath}"
+    val entityFiles: Either[Seq[RemoteCatalogError], Seq[File]] =
+      if (recursive) {
+        SourceUtils
+          .resolveLocalGlob(dir, "**")
+          .left
+          .map(err => Seq(SourceUtils.fetchError(sourceName, err)))
+          .map(_.map(relativePath => new File(dir, relativePath)))
+      } else {
+        Option(dir.listFiles())
+          .toRight(Seq(RemoteCatalogError(sourceName, "Cannot list directory")))
+          .map(
+            _.filter(f => f.isFile && SourceUtils.isEntityFile(f.getName)).toSeq
+          )
+      }
+
+    entityFiles.flatMap(files =>
+      RemoteCatalogError.collect(files.map(readAndParse))
+    )
+  }
+
+  private def fetchFile(
+      file: File,
+      path: String
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+    val sourceName = s"file://$path"
+
+    readFile(file) match {
+      case Left(err) =>
+        Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
+      case Right(rawContent) =>
+        SourceUtils.isDeployListing(rawContent) match {
+          case Some(arr) =>
+            val baseDir = file.getAbsoluteFile.getParentFile
+            SourceUtils.resolveDeployListing(
+              arr,
+              relativePath =>
+                Future.successful(readFile(new File(baseDir, relativePath))),
+              sourceName,
+              resolveGlob = Some(glob =>
+                Future.successful(SourceUtils.resolveLocalGlob(baseDir, glob))
+              )
+            )
+          case None =>
+            Future.successful(
+              SourceUtils.parseEntityContent(rawContent, sourceName)
+            )
+        }
+    }
+  }
+
+  override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val path = (catalog.source.config \ "path").asOpt[String].getOrElse("")
+    val file = new File(path)
+    val hasPreCommand =
+      (catalog.source.config \ "pre_command")
+        .asOpt[Seq[String]]
+        .exists(_.nonEmpty)
 
-    runPreCommand(catalog) match {
-      case Left(err) =>
-        Future.successful(
-          Left(Json.obj("error" -> err)): Either[JsValue, Seq[RemoteEntity]]
-        )
-      case Right(()) =>
-        Try {
-          val file = new File(path)
-          if (file.isDirectory) {
-            val entityFiles =
-              file
-                .listFiles()
-                .filter(f => f.isFile && SourceUtils.isEntityFile(f.getName))
-                .toSeq
-            val entities = entityFiles.flatMap { f =>
-              val rawContent =
-                new String(Files.readAllBytes(f.toPath), StandardCharsets.UTF_8)
-              SourceUtils.parseEntityContent(
-                rawContent,
-                s"file://${f.getAbsolutePath}"
-              )
-            }
-            Future.successful(
-              Right(entities): Either[JsValue, Seq[RemoteEntity]]
+    def disabled(what: String, key: String) =
+      Future.successful(
+        Left(
+          Seq(
+            RemoteCatalogError(
+              sourceKind,
+              s"$what is disabled on this instance (daikoku.remoteCatalogJob.$key)"
             )
-          } else {
-            val rawContent = new String(
-              Files.readAllBytes(file.toPath),
-              StandardCharsets.UTF_8
-            )
-            SourceUtils.isDeployListing(rawContent) match {
-              case Some(arr) =>
-                val basePath = file.getParentFile.getAbsolutePath
-                SourceUtils.resolveDeployListing(
-                  arr,
-                  relativePath => {
-                    Try {
-                      val relFile = new File(basePath, relativePath)
-                      val relContent =
-                        new String(
-                          Files.readAllBytes(relFile.toPath),
-                          StandardCharsets.UTF_8
-                        )
-                      Future.successful(
-                        Right(relContent): Either[JsValue, String]
-                      )
-                    }.getOrElse {
-                      Future.successful(
-                        Left(
-                          Json.obj("error" -> s"Cannot read file $relativePath")
-                        ): Either[JsValue, String]
-                      )
-                    }
-                  },
-                  s"file://$path",
-                  resolveGlob = Some(glob =>
-                    Future.successful(
-                      Right(
-                        SourceUtils.resolveLocalGlob(new File(basePath), glob)
-                      ): Either[JsValue, Seq[String]]
-                    )
-                  )
-                )
-              case None =>
-                Future.successful(
-                  Right(
-                    SourceUtils.parseEntityContent(rawContent, s"file://$path")
-                  ): Either[JsValue, Seq[
-                    RemoteEntity
-                  ]]
-                )
-            }
-          }
-        }.recover { case e: Throwable =>
-          logger.error(s"Error reading file $path", e)
-          Future.successful(
-            Left(
-              Json.obj("error" -> s"Error reading file: ${e.getMessage}")
-            ): Either[JsValue, Seq[RemoteEntity]]
           )
-        }.get
+        )
+      )
+
+    if (!env.config.remoteCatalogAllowFileSource) {
+      disabled("file source", "allowFileSource")
+    } else if (hasPreCommand && !env.config.remoteCatalogAllowPreCommand) {
+      disabled("pre_command", "allowPreCommand")
+    } else {
+      runPreCommand(catalog) match {
+        case Left(err) =>
+          Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
+        case Right(()) =>
+          if (file.isDirectory) {
+            val recursive = (catalog.source.config \ "recursive")
+              .asOpt[Boolean]
+              .getOrElse(false)
+            Future.successful(fetchDirectory(file, recursive))
+          } else {
+            fetchFile(file, path)
+          }
+      }
     }
   }
 }

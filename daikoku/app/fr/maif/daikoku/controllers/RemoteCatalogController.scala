@@ -3,9 +3,24 @@ package fr.maif.daikoku.controllers
 import fr.maif.daikoku.actions.DaikokuAction
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async._
-import fr.maif.daikoku.domain.{RemoteCatalog, Tenant}
+import fr.maif.daikoku.domain.json.RemoteCatalogFormat
+import fr.maif.daikoku.domain.{
+  RemoteCatalog,
+  RemoteCatalogId,
+  RemoteCatalogRun,
+  RemoteCatalogRunStatus,
+  Tenant
+}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{DeployReport, RemoteCatalogEngine}
+import fr.maif.daikoku.jobs.RemoteCatalogJob
+import fr.maif.daikoku.services.catalog.{
+  CatalogFile,
+  DeployReport,
+  ExportFormat,
+  ExportSelection,
+  RemoteCatalogEngine
+}
+import fr.maif.daikoku.utils.IdGenerator
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
 
@@ -14,6 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class RemoteCatalogController(
     DaikokuAction: DaikokuAction,
     engine: RemoteCatalogEngine,
+    job: RemoteCatalogJob,
     env: Env,
     cc: ControllerComponents
 ) extends AbstractController(cc) {
@@ -21,7 +37,108 @@ class RemoteCatalogController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  private val auditUserId = "remote-catalog-job"
+  def list(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed remote catalogs")
+      )(tenantId, ctx) { (tenant, _) =>
+        env.dataStore.remoteCatalogRepo
+          .forTenant(tenant)
+          .findAll()
+          .map(catalogs => Ok(JsArray(catalogs.map(_.asJson))))
+      }
+    }
+
+  def create(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has created a remote catalog")
+      )(tenantId, ctx) { (tenant, _) =>
+        val body = ctx.request.body.asOpt[JsObject].getOrElse(Json.obj()) ++
+          Json.obj(
+            "_id" -> IdGenerator.token(32),
+            "_tenant" -> tenant.id.value,
+            "token" -> IdGenerator.token(64)
+          )
+
+        RemoteCatalogFormat.reads(body) match {
+          case JsError(_) =>
+            Future.successful(
+              BadRequest(Json.obj("error" -> "Bad remote catalog format"))
+            )
+          case JsSuccess(catalog, _) =>
+            env.dataStore.remoteCatalogRepo
+              .forTenant(tenant)
+              .save(catalog)
+              .map(_ => Created(catalog.asJson))
+        }
+      }
+    }
+
+  def update(tenantId: String, catalogId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has updated remote catalog $catalogId")
+      )(tenantId, ctx) { (tenant, _) =>
+        withCatalog(tenant, catalogId) { existing =>
+          val body =
+            ctx.request.body.asOpt[JsObject].getOrElse(Json.obj()) ++
+              Json.obj(
+                "_id" -> existing.id.value,
+                "_tenant" -> tenant.id.value,
+                "token" -> existing.token
+              )
+
+          RemoteCatalogFormat.reads(body) match {
+            case JsError(_) =>
+              Future.successful(
+                BadRequest(Json.obj("error" -> "Bad remote catalog format"))
+              )
+            case JsSuccess(catalog, _) =>
+              env.dataStore.remoteCatalogRepo
+                .forTenant(tenant)
+                .save(catalog)
+                .map(_ => Ok(catalog.asJson))
+          }
+        }
+      }
+    }
+
+  def delete(tenantId: String, catalogId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has deleted remote catalog $catalogId")
+      )(tenantId, ctx) { (tenant, _) =>
+        withCatalog(tenant, catalogId) { existing =>
+          engine
+            .detach(tenant, existing)
+            .flatMap(_ =>
+              env.dataStore.remoteCatalogRepo
+                .forTenant(tenant)
+                .deleteById(existing.id)
+            )
+            .map(_ => NoContent)
+        }
+      }
+    }
+
+  def regenerateToken(tenantId: String, catalogId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has regenerated the token of remote catalog $catalogId"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        withCatalog(tenant, catalogId) { existing =>
+          val regenerated = existing.copy(token = IdGenerator.token(64))
+
+          env.dataStore.remoteCatalogRepo
+            .forTenant(tenant)
+            .save(regenerated)
+            .map(_ => Ok(regenerated.asJson))
+        }
+      }
+    }
 
   def deploy(tenantId: String, catalogId: String) =
     DaikokuAction.async { ctx =>
@@ -29,8 +146,61 @@ class RemoteCatalogController(
         AuditTrailEvent(s"@{user.name} has deployed remote catalog $catalogId")
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.deploy(tenant, catalog, Json.obj()).map(toResult)
+          job.deploy(tenant, catalog).map(toResult)
         )
+      }
+    }
+
+  def exportEntities(
+      tenantId: String,
+      all: Boolean,
+      kind: Option[String],
+      id: Option[String],
+      children: Boolean,
+      format: String
+  ) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has exported ${id.getOrElse("the tenant")} as a catalog"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        val selection = (kind, id) match {
+          case (Some(entityKind), Some(entityId)) =>
+            ExportSelection.OneEntity(entityKind, entityId, children)
+          case _ => ExportSelection.WholeTenant(includeManaged = all)
+        }
+        val (exportFormat, extension, contentType) = format match {
+          case "yaml" => (ExportFormat.MultiDocument, "yaml", "application/yaml")
+          case _      => (ExportFormat.Zip, "zip", "application/zip")
+        }
+        val fileName = id.getOrElse(tenant.humanReadableId)
+
+        Future.successful(
+          Ok.chunked(engine.exportEntities(tenant, selection, exportFormat))
+            .as(contentType)
+            .withHeaders(
+              CONTENT_DISPOSITION -> s"attachment; filename=$fileName.$extension"
+            )
+        )
+      }
+    }
+
+  def loadResources(tenantId: String, dryRun: Boolean) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has loaded resources (dryRun: $dryRun)")
+      )(tenantId, ctx) { (tenant, _) =>
+        CatalogFile.readAll(ctx.request.body) match {
+          case None =>
+            Future.successful(
+              BadRequest(
+                Json.obj("error" -> "Expected an array of {path, content}")
+              )
+            )
+          case Some(files) =>
+            engine.loadResources(tenant, files, dryRun).map(dryRunResult)
+        }
       }
     }
 
@@ -40,7 +210,7 @@ class RemoteCatalogController(
         AuditTrailEvent(s"@{user.name} has tested remote catalog $catalogId")
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.dryRun(tenant, catalog, Json.obj()).map(toResult)
+          engine.dryRun(tenant, catalog).map(dryRunResult)
         )
       }
     }
@@ -53,7 +223,7 @@ class RemoteCatalogController(
         )
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.undeploy(tenant, catalog).map(toResult)
+          job.undeploy(tenant, catalog).map(toResult)
         )
       }
     }
@@ -65,29 +235,10 @@ class RemoteCatalogController(
           s"@{user.name} has accessed remote catalog history $catalogId"
         )
       )(tenantId, ctx) { (tenant, _) =>
-        env.dataStore.auditTrailRepo
-          .findByUser(tenant.id, auditUserId)
-          .map { events =>
-            val runs = events
-              .filter(e =>
-                (e \ "details" \ "catalog_id").asOpt[String].contains(catalogId)
-              )
-              .take(10)
-              .map(e =>
-                Json.obj(
-                  "at" -> (e \ "@timestamp").toOption.getOrElse(JsNull),
-                  "created" -> (e \ "details" \ "created")
-                    .asOpt[JsArray]
-                    .getOrElse(Json.arr()),
-                  "updated" -> (e \ "details" \ "updated")
-                    .asOpt[JsArray]
-                    .getOrElse(Json.arr()),
-                  "deleted" -> (e \ "details" \ "deleted")
-                    .asOpt[JsArray]
-                    .getOrElse(Json.arr())
-                )
-              )
-            Ok(JsArray(runs))
+        env.dataStore.remoteCatalogRunRepo
+          .findByCatalog(tenant.id, RemoteCatalogId(catalogId))
+          .map { runs =>
+            Ok(JsArray(runs.map(_.asJson)))
           }
       }
     }
@@ -95,13 +246,20 @@ class RemoteCatalogController(
   private def withCatalog(tenant: Tenant, catalogId: String)(
       f: RemoteCatalog => Future[Result]
   ): Future[Result] =
-    tenant.remoteCatalogs.find(_.id == catalogId) match {
-      case None =>
-        Future.successful(
-          NotFound(Json.obj("error" -> "Remote catalog not found"))
-        )
-      case Some(catalog) => f(catalog)
-    }
+    env.dataStore.remoteCatalogRepo
+      .forTenant(tenant)
+      .findById(catalogId)
+      .flatMap {
+        case None =>
+          Future.successful(
+            NotFound(Json.obj("error" -> "Remote catalog not found"))
+          )
+        case Some(catalog) => f(catalog)
+      }
+
+  private def dryRunResult(run: RemoteCatalogRun): Result =
+    if (run.status == RemoteCatalogRunStatus.Failed) BadRequest(run.asJson)
+    else Ok(run.asJson)
 
   private def toResult(result: Either[JsValue, DeployReport]): Result =
     result match {

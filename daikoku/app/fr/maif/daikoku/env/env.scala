@@ -530,6 +530,23 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.remoteCatalogJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
+  lazy val remoteCatalogAllowFileSource: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowFileSource")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowPreCommand: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowPreCommand")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowedHosts: Seq[String] = {
+    val key = "daikoku.remoteCatalogJob.allowedHosts"
+    val hosts = scala.util
+      .Try(underlying.getOptional[Seq[String]](key))
+      .getOrElse(underlying.getOptional[String](key).map(_.split(",").toSeq))
+
+    hosts
+      .getOrElse(Seq.empty)
+      .map(_.trim.toLowerCase)
+      .filter(_.nonEmpty)
+  }
 
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")

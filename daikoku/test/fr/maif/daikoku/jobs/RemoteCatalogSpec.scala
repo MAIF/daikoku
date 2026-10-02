@@ -2,12 +2,18 @@ package fr.maif.daikoku.jobs
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.services.CmsPage
+import fr.maif.daikoku.services.catalog.{
+  RemoteCatalogEngine,
+  RemoteContentParser
+}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.ws.WSBodyReadables._
 import play.api.libs.ws.WSResponse
 
 import java.nio.charset.StandardCharsets
@@ -59,21 +65,92 @@ class RemoteCatalogSpec
   private def teamDoc(t: Team): JsObject =
     t.asJson.as[JsObject] ++ Json.obj("kind" -> "team")
 
+  private def planDoc(p: UsagePlan): JsObject =
+    p.asJson.as[JsObject] ++ Json.obj("kind" -> "usage-plan")
+
+  private def apiDoc(a: Api): JsObject =
+    a.asJson.as[JsObject] ++ Json.obj("kind" -> "api")
+
+  private def cmsPageDoc(p: CmsPage): JsObject =
+    p.asJson.as[JsObject] ++ Json.obj("kind" -> "cms-page")
+
+  // what a user writes in a catalog: no secret, Daikoku generates them
+  private def keyringDoc(id: String, name: String): JsObject =
+    Json.obj(
+      "kind" -> "keyring",
+      "_id" -> id,
+      "_tenant" -> tenant.id.value,
+      "team" -> defaultAdminTeam.id.value,
+      "customName" -> name,
+      "otoroshiSettings" -> Json.obj("type" -> "Internal")
+    )
+
+  private val catalogTag = Map("created_by" -> "remote_catalog=cat-file")
+
+  // an api of the admin team exposing a single plan
+  private def apiWithOnePlan(version: String): (Api, UsagePlan) = {
+    val generated =
+      generateApi(version, tenant.id, defaultAdminTeam.id, Seq.empty)
+    val plan = generated.plans.head.copy(
+      id = UsagePlanId(s"plan-$version"),
+      customName = s"plan $version"
+    )
+    val api = generated.api.copy(
+      possibleUsagePlans = Seq(plan.id),
+      defaultUsagePlan = Some(plan.id)
+    )
+
+    (api, plan)
+  }
+
+  private def multiKindCatalog(path: String): RemoteCatalog =
+    fileCatalog("cat-file", path).copy(allowedKinds =
+      RemoteCatalogEngine.kindOrder.toSet
+    )
+
   private def writeFile(content: String): String = {
     val p = Files.createTempFile("daikoku-catalog", ".json")
     Files.write(p, content.getBytes(StandardCharsets.UTF_8))
     p.toAbsolutePath.toString
   }
 
+  private def writeDir(files: Map[String, String]): java.nio.file.Path = {
+    val dir = Files.createTempDirectory("daikoku-catalog")
+    files.foreach { case (name, content) =>
+      val target = dir.resolve(name)
+      Files.createDirectories(target.getParent)
+      Files.write(target, content.getBytes(StandardCharsets.UTF_8))
+    }
+    dir
+  }
+
   private def fileCatalog(id: String, path: String): RemoteCatalog =
     RemoteCatalog(
-      id = id,
+      id = RemoteCatalogId(id),
+      tenant = tenant.id,
       name = "test catalog",
       source =
         RemoteCatalogSource(kind = "file", config = Json.obj("path" -> path)),
       scheduling = RemoteCatalogScheduling(enabled = true),
       allowedKinds = Set("team")
     )
+
+  // team-a at the root of the folder, team-b in a subfolder
+  private def nestedFolderCatalog(recursive: Boolean): RemoteCatalog = {
+    val dir = writeDir(
+      Map(
+        "team-a.json" -> Json.stringify(teamDoc(aTeam("team-a", "A"))),
+        "sub/team-b.json" -> Json.stringify(teamDoc(aTeam("team-b", "B")))
+      )
+    ).toAbsolutePath.toString
+
+    fileCatalog("cat-file", dir).copy(source =
+      RemoteCatalogSource(
+        kind = "file",
+        config = Json.obj("path" -> dir, "recursive" -> recursive)
+      )
+    )
+  }
 
   private def runNow(t: Tenant, runBy: Runner = Runner.Scheduler): JobOutcome =
     Await.result(job.run(t, runBy), 15.seconds)
@@ -133,6 +210,12 @@ class RemoteCatalogSpec
       body = Json.obj().some
     )(using tenant)
 
+  private def historyCall(session: UserSession, catalogId: String): WSResponse =
+    httpJsonCallBlocking(
+      path =
+        s"/api/tenants/${tenant.id.value}/remote-catalogs/$catalogId/history"
+    )(using tenant, session)
+
   private def getTeam(id: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
       path = s"/admin-api/teams/$id",
@@ -146,6 +229,99 @@ class RemoteCatalogSpec
       method = "GET",
       headers = getAdminApiHeader(adminApiKeyring)
     )(using tenant)
+
+  private def getPlan(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/usage-plans/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+
+  private def getCmsPage(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/cms-pages/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+
+  private def getKeyring(id: String): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/keyrings/$id",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+
+  private def exportFiles(all: Boolean): Map[String, String] = {
+    val resp = httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/remote-catalogs/_export?all=$all",
+      method = "GET",
+      headers = getAdminApiHeader(adminApiKeyring)
+    )(using tenant)
+    resp.status mustBe 200
+
+    unzip(resp)
+  }
+
+  // e.g. Map("team/team-a.yaml" -> "apiVersion: daikoku.io/v1\nkind: team\nspec: ...")
+  private def unzip(resp: WSResponse): Map[String, String] = {
+    val zip = new java.util.zip.ZipInputStream(
+      new java.io.ByteArrayInputStream(resp.bodyAsBytes.toArray)
+    )
+    Iterator
+      .continually(zip.getNextEntry)
+      .takeWhile(_ != null)
+      .map(entry =>
+        entry.getName -> new String(zip.readAllBytes(), StandardCharsets.UTF_8)
+      )
+      .toMap
+  }
+
+  // e.g. exportCall(session, "kind=api&id=api-weather&children=true&format=yaml")
+  private def exportCall(session: UserSession, query: String): WSResponse =
+    httpJsonCallBlocking(
+      path = s"/api/tenants/${tenant.id.value}/remote-catalogs/_export?$query"
+    )(using tenant, session)
+
+  // e.g. Seq("api" -> "api-weather", "usage-plan" -> "plan-free")
+  private def yamlDocuments(resp: WSResponse): Seq[(String, String)] =
+    RemoteContentParser
+      .parseRawContent(resp.body, "export")
+      .toOption
+      .value
+      .map(entity => entity.kind -> entity.id)
+
+  private def validateFiles(
+      catalogId: String,
+      files: Map[String, String]
+  ): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/remote-catalogs/$catalogId/_validate",
+      method = "POST",
+      headers = getAdminApiHeader(adminApiKeyring),
+      body = filesBody(files).some
+    )(using tenant)
+
+  private def filesBody(files: Map[String, String]): JsArray =
+    JsArray(files.toSeq.map { case (path, content) =>
+      Json.obj("path" -> path, "content" -> content)
+    })
+
+  private def loadCall(
+      session: UserSession,
+      files: Map[String, String],
+      dryRun: Boolean
+  ): WSResponse =
+    httpJsonCallBlocking(
+      path =
+        s"/api/tenants/${tenant.id.value}/remote-catalogs/_load?dryRun=$dryRun",
+      method = "POST",
+      body = filesBody(files).some
+    )(using tenant, session)
+
+  private def errorMessages(resp: WSResponse): Seq[String] =
+    (resp.json \ "errors")
+      .as[Seq[JsObject]]
+      .map(e => (e \ "message").as[String])
 
   private def kindResult(resp: WSResponse, kind: String): JsObject =
     (resp.json \ "results")
@@ -163,8 +339,8 @@ class RemoteCatalogSpec
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -184,8 +360,8 @@ class RemoteCatalogSpec
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -202,8 +378,8 @@ class RemoteCatalogSpec
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -229,8 +405,8 @@ class RemoteCatalogSpec
         )
       )
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -252,12 +428,157 @@ class RemoteCatalogSpec
       getTeam("team-b").status mustBe 404
     }
 
-    "not write anything in dry-run (_test)" in {
-      val path =
-        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+    "detach instead of delete the entities removed from the source when deletions are off" in {
+      val path = writeFile(
+        Json.stringify(
+          JsArray(
+            Seq(teamDoc(aTeam("team-a", "A")), teamDoc(aTeam("team-b", "B")))
+          )
+        )
+      )
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs =
+          Seq(fileCatalog("cat-file", path).copy(allowDeletions = false)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      rewriteFile(path, Json.stringify(teamDoc(aTeam("team-a", "A"))))
+
+      val removal = kindResult(deployCall("cat-file", "_deploy"), "team")
+      (removal \ "detached").as[Int] mustBe 1
+      (removal \ "deleted").as[Int] mustBe 0
+
+      val teamB = getTeam("team-b")
+      teamB.status mustBe 200
+      (teamB.json \ "metadata" \ "created_by").asOpt[String] mustBe None
+    }
+
+    "not apply maxDeletionPercent when deletions are off" in {
+      val teams = (1 to 6).map(i => aTeam(s"team-$i", s"Team $i"))
+      val path = writeFile(Json.stringify(JsArray(teams.map(teamDoc))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs =
+          Seq(fileCatalog("cat-file", path).copy(allowDeletions = false)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      rewriteFile(path, Json.stringify(teamDoc(teams.head)))
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "team") \ "detached").as[Int] mustBe 5
+    }
+
+    "apply nothing when one file of the folder is invalid" in {
+      val dir = writeDir(
+        Map(
+          "team-a.json" -> Json.stringify(teamDoc(aTeam("team-a", "A"))),
+          "team-b.json" -> Json.stringify(teamDoc(aTeam("team-b", "B")))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs =
+          Seq(fileCatalog("cat-file", dir.toAbsolutePath.toString)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "team") \ "created")
+        .as[Int] mustBe 2
+
+      rewriteFile(
+        dir.resolve("team-a.json").toString,
+        Json.stringify(teamDoc(aTeam("team-a", "A Renamed")))
+      )
+      rewriteFile(
+        dir.resolve("team-b.json").toString,
+        Json.stringify(teamDoc(aTeam("team-b", "B")) - "_id")
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+
+      val errors = (deploy.json \ "errors").as[Seq[JsObject]]
+      errors.map(e => (e \ "message").as[String]) mustBe Seq(
+        "Missing required field '_id'"
+      )
+      (errors.head \ "source").as[String] must endWith("team-b.json")
+
+      getTeam("team-b").status mustBe 200
+      (getTeam("team-a").json \ "name").as[String] mustBe "A"
+    }
+
+    "read only the first level of a folder by default" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(nestedFolderCatalog(recursive = false)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "team") \ "created")
+        .as[Int] mustBe 1
+      getTeam("team-a").status mustBe 200
+      getTeam("team-b").status mustBe 404
+    }
+
+    "read the subfolders when the folder is recursive" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(nestedFolderCatalog(recursive = true)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "team") \ "created")
+        .as[Int] mustBe 2
+      getTeam("team-a").status mustBe 200
+      getTeam("team-b").status mustBe 200
+    }
+
+    "refuse a listing entry pointing outside the listing folder" in {
+      val dir = writeDir(
+        Map(
+          "listing/catalog.json" -> Json.stringify(Json.arr("../outside.json")),
+          "outside.json" -> Json.stringify(teamDoc(aTeam("team-out", "Out")))
+        )
+      )
+      val listing = dir.resolve("listing/catalog.json").toAbsolutePath.toString
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", listing)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq(
+        "Listing entries must stay inside the listing folder (no absolute path, no '..')"
+      )
+      getTeam("team-out").status mustBe 404
+    }
+
+    "resolve a reference to an entity created by the same run, in dry-run" in {
+      val (api, plan) = apiWithOnePlan("same-run")
+      val path =
+        writeFile(Json.stringify(JsArray(Seq(apiDoc(api), planDoc(plan)))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -265,7 +586,398 @@ class RemoteCatalogSpec
 
       val test = deployCall("cat-file", "_test")
       test.status mustBe 200
-      (kindResult(test, "team") \ "created").as[Int] mustBe 1
+      (test.json \ "created").as[Seq[String]] must contain allOf (
+        plan.id.value,
+        api.id.value
+      )
+
+      getPlan(plan.id.value).status mustBe 404
+      getApi(api.id.value).status mustBe 404
+    }
+
+    "reject a reference to an entity the run would delete, and apply nothing" in {
+      val (api, plan) = apiWithOnePlan("removed-plan")
+      val managedApi = api.copy(metadata = catalogTag)
+      val managedPlan = plan.copy(metadata = catalogTag)
+      val path = writeFile(Json.stringify(apiDoc(managedApi)))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(managedApi),
+        usagePlans = Seq(managedPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy).exists(
+        _.contains(s"Usage Plan (${plan.id.value}) not found")
+      ) mustBe true
+
+      getPlan(plan.id.value).status mustBe 200
+      getApi(api.id.value).status mustBe 200
+    }
+
+    "reject an entity that already exists but is not managed by the catalog" in {
+      val manual = aTeam("team-manual", "Created by hand")
+      val path = writeFile(
+        Json.stringify(teamDoc(aTeam("team-manual", "From the catalog")))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam, manual),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy).exists(
+        _.contains("already exists and is not managed by this catalog")
+      ) mustBe true
+
+      (getTeam("team-manual").json \ "name").as[String] mustBe "Created by hand"
+    }
+
+    "adopt an existing unmanaged entity when adoptExisting is on" in {
+      val manual = aTeam("team-manual", "Created by hand")
+      val path = writeFile(
+        Json.stringify(teamDoc(aTeam("team-manual", "From the catalog")))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs =
+          Seq(fileCatalog("cat-file", path).copy(adoptExisting = true)),
+        teams = Seq(defaultAdminTeam, manual),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "team") \ "updated").as[Int] mustBe 1
+
+      val team = getTeam("team-manual").json
+      (team \ "name").as[String] mustBe "From the catalog"
+      (team \ "metadata" \ "created_by")
+        .as[String] mustBe "remote_catalog=cat-file"
+    }
+
+    "never adopt an entity managed by another catalog" in {
+      val other = aTeam("team-other", "Owned elsewhere")
+        .copy(metadata = Map("created_by" -> "remote_catalog=cat-other"))
+      val path = writeFile(
+        Json.stringify(teamDoc(aTeam("team-other", "From the catalog")))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs =
+          Seq(fileCatalog("cat-file", path).copy(adoptExisting = true)),
+        teams = Seq(defaultAdminTeam, other),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy).exists(
+        _.contains("already exists and is not managed by this catalog")
+      ) mustBe true
+
+      (getTeam("team-other").json \ "name").as[String] mustBe "Owned elsewhere"
+    }
+
+    "reject documents without _tenant or with another tenant, and apply nothing" in {
+      val path = writeFile(
+        Json.stringify(
+          JsArray(
+            Seq(
+              teamDoc(aTeam("team-no-tenant", "No tenant")) - "_tenant",
+              teamDoc(aTeam("team-other", "Other")) ++ Json
+                .obj("_tenant" -> "another-tenant")
+            )
+          )
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq(
+        "team team-no-tenant: missing required field '_tenant'",
+        s"team team-other: _tenant 'another-tenant' is not the catalog tenant '${tenant.id.value}'"
+      )
+
+      getTeam("team-no-tenant").status mustBe 404
+      getTeam("team-other").status mustBe 404
+    }
+
+    "keep the document metadata next to created_by" in {
+      val team =
+        aTeam("team-meta", "Meta").copy(metadata = Map("owner" -> "ops"))
+      val path = writeFile(Json.stringify(teamDoc(team)))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      val metadata = (getTeam("team-meta").json \ "metadata").as[JsObject]
+      (metadata \ "owner").as[String] mustBe "ops"
+      (metadata \ "created_by").as[String] mustBe "remote_catalog=cat-file"
+    }
+
+    "keep the text metadata and the catalog tag when a metadata value is not text" in {
+      val doc = teamDoc(aTeam("team-meta", "Meta")) ++ Json.obj(
+        "metadata" -> Json.obj("owner" -> "ops", "priority" -> 1)
+      )
+      val path = writeFile(Json.stringify(doc))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      val metadata = (getTeam("team-meta").json \ "metadata").as[JsObject]
+      (metadata \ "owner").as[String] mustBe "ops"
+      (metadata \ "created_by").as[String] mustBe "remote_catalog=cat-file"
+      (metadata \ "priority").toOption mustBe None
+    }
+
+    "fail without deleting anything when the run would delete more than maxDeletionPercent" in {
+      val teams = (1 to 5).map(i => aTeam(s"team-$i", s"Team $i"))
+      val path = writeFile(Json.stringify(JsArray(teams.map(teamDoc))))
+      val catalog = fileCatalog("cat-file", path)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(catalog),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+      rewriteFile(path, Json.stringify(JsArray(teams.take(3).map(teamDoc))))
+
+      val blocked = deployCall("cat-file", "_deploy")
+      blocked.status mustBe 400
+      errorMessages(blocked) mustBe Seq(
+        "2 of 5 managed entities would be deleted (40% > 30%): fix the source or raise maxDeletionPercent (-1 for no limit)"
+      )
+      teams.foreach(team => getTeam(team.id.value).status mustBe 200)
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(catalog.copy(maxDeletionPercent = -1)),
+        teams = Seq(defaultAdminTeam) ++ teams.map(
+          _.copy(metadata = catalogTag)
+        ),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val unlimited = deployCall("cat-file", "_deploy")
+      unlimited.status mustBe 200
+      (kindResult(unlimited, "team") \ "deleted").as[Int] mustBe 2
+      getTeam("team-4").status mustBe 404
+      getTeam("team-5").status mustBe 404
+    }
+
+    "refuse a pre_command when the instance does not allow it" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val withPreCommand = fileCatalog("cat-file", path).copy(source =
+        RemoteCatalogSource(
+          kind = "file",
+          config =
+            Json.obj("path" -> path, "pre_command" -> Json.arr("echo", "hi"))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(withPreCommand),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq(
+        "pre_command is disabled on this instance (daikoku.remoteCatalogJob.allowPreCommand)"
+      )
+      getTeam("team-weather").status mustBe 404
+    }
+
+    "delete the managed entities of a kind removed entirely from the source" in {
+      val page = defaultCmsPage.copy(id = CmsPageId("page-catalog"))
+      val path = writeFile(
+        Json.stringify(
+          JsArray(Seq(teamDoc(aTeam("team-a", "A")), cmsPageDoc(page)))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      (kindResult(deployCall("cat-file", "_deploy"), "cms-page") \ "created")
+        .as[Int] mustBe 1
+      getCmsPage("page-catalog").status mustBe 200
+
+      rewriteFile(path, Json.stringify(teamDoc(aTeam("team-a", "A"))))
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "cms-page") \ "deleted").as[Int] mustBe 1
+      getCmsPage("page-catalog").status mustBe 404
+      getTeam("team-a").status mustBe 200
+    }
+
+    "delete an api and its plan removed together from the source" in {
+      val (api, plan) = apiWithOnePlan("removed-together")
+      val managedApi = api.copy(metadata = catalogTag)
+      val managedPlan = plan.copy(metadata = catalogTag)
+      val path = writeFile(Json.stringify(teamDoc(aTeam("team-a", "A"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(managedApi),
+        usagePlans = Seq(managedPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "api") \ "deleted").as[Int] mustBe 1
+      (deploy.json \ "status").as[String] mustBe "completed"
+
+      getApi(api.id.value).status mustBe 404
+      getPlan(plan.id.value).status mustBe 404
+      getTeam("team-a").status mustBe 200
+    }
+
+    "create a keyring with secrets generated by Daikoku" in {
+      val path = writeFile(
+        Json.stringify(keyringDoc("keyring-cat", "From the catalog"))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (kindResult(deploy, "keyring") \ "created").as[Int] mustBe 1
+
+      val keyring = getKeyring("keyring-cat").json
+      (keyring \ "apiKey" \ "clientSecret").as[String] must not be empty
+      (keyring \ "integrationToken").as[String] must not be empty
+      (keyring \ "metadata" \ "created_by")
+        .as[String] mustBe "remote_catalog=cat-file"
+    }
+
+    "keep the keyring secrets when the catalog updates it" in {
+      val path = writeFile(Json.stringify(keyringDoc("keyring-cat", "Before")))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+      val secret =
+        (getKeyring("keyring-cat").json \ "apiKey" \ "clientSecret").as[String]
+
+      rewriteFile(path, Json.stringify(keyringDoc("keyring-cat", "After")))
+
+      (kindResult(deployCall("cat-file", "_deploy"), "keyring") \ "updated")
+        .as[Int] mustBe 1
+      val keyring = getKeyring("keyring-cat").json
+      (keyring \ "customName").as[String] mustBe "After"
+      (keyring \ "apiKey" \ "clientSecret").as[String] mustBe secret
+    }
+
+    "resolve a keyring created by the same run, in dry-run" in {
+      val (api, plan) = apiWithOnePlan("with-keyring")
+      val subscription = adminApiSubscription.copy(
+        id = ApiSubscriptionId("sub-catalog"),
+        api = api.id,
+        plan = plan.id,
+        keyring = KeyringId("keyring-cat")
+      )
+      val path = writeFile(
+        Json.stringify(
+          JsArray(
+            Seq(
+              apiDoc(api),
+              planDoc(plan),
+              keyringDoc("keyring-cat", "From the catalog"),
+              subscription.asJson.as[JsObject] ++
+                Json.obj("kind" -> "api-subscription")
+            )
+          )
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val test = deployCall("cat-file", "_test")
+      test.status mustBe 200
+      (test.json \ "created").as[Seq[String]] must contain allOf (
+        "keyring-cat",
+        "sub-catalog"
+      )
+      getKeyring("keyring-cat").status mustBe 404
+    }
+
+    "not write anything in dry-run (_test)" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val test = deployCall("cat-file", "_test")
+      test.status mustBe 200
+      (test.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
       getTeam("team-weather").status mustBe 404
     }
 
@@ -273,8 +985,8 @@ class RemoteCatalogSpec
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       setupEnvBlocking(
-        tenants =
-          Seq(tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
         keyrings = Seq(adminApiKeyring)
@@ -287,10 +999,35 @@ class RemoteCatalogSpec
       getTeam("team-weather").status mustBe 404
     }
 
+    "detach the deployed entities when the catalog is deleted" in {
+      val team = aTeam("team-weather", "Weather")
+        .copy(metadata = Map("owner" -> "weather"))
+      val path = writeFile(Json.stringify(teamDoc(team)))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      httpJsonCallWithoutSessionBlocking(
+        path = "/admin-api/remote-catalogs/cat-file",
+        method = "DELETE",
+        headers = getAdminApiHeader(adminApiKeyring)
+      )(using tenant).status mustBe 200
+
+      val metadata = (getTeam("team-weather").json \ "metadata").as[JsObject]
+      metadata.keys must not contain "created_by"
+      (metadata \ "owner").as[String] mustBe "weather"
+    }
+
     "preserve runtime social fields (stars/issues/posts/issuesTags) on API update" in {
       val withPlans = defaultApi
       val baseApi = withPlans.api.copy(
         team = defaultAdminTeam.id,
+        metadata = Map("created_by" -> "remote_catalog=cat-api"),
         stars = 5,
         issues = Seq(ApiIssueId("issue-1")),
         posts = Seq(ApiPostId("post-1")),
@@ -311,7 +1048,8 @@ class RemoteCatalogSpec
 
       val path = writeFile(Json.stringify(incoming))
       val catalog = RemoteCatalog(
-        id = "cat-api",
+        id = RemoteCatalogId("cat-api"),
+        tenant = tenant.id,
         name = "api catalog",
         source =
           RemoteCatalogSource(kind = "file", config = Json.obj("path" -> path)),
@@ -320,7 +1058,8 @@ class RemoteCatalogSpec
       )
 
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(remoteCatalogs = Seq(catalog))),
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(catalog),
         teams = Seq(defaultAdminTeam),
         apis = Seq(baseApi),
         usagePlans = withPlans.plans,
@@ -344,15 +1083,380 @@ class RemoteCatalogSpec
     }
   }
 
+  "Remote catalog export" should {
+    "export the tenant so that a catalog adopting it validates the files" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs =
+          Seq(multiKindCatalog("unused").copy(adoptExisting = true))
+      )
+
+      val files = exportFiles(all = false)
+      files.keys must contain allOf (
+        s"team/${defaultAdminTeam.id.value}.yaml",
+        s"usage-plan/${adminApiPlan.id.value}.yaml",
+        s"api/${adminApi.id.value}.yaml",
+        s"keyring/${adminApiKeyring.id.value}.yaml",
+        s"api-subscription/${adminApiSubscription.id.value}.yaml"
+      )
+      files(s"keyring/${adminApiKeyring.id.value}.yaml") must not include
+        adminApiKeyring.apiKey.clientSecret
+
+      val validated = validateFiles("cat-file", files)
+      withClue(validated.body) {
+        validated.status mustBe 200
+      }
+      (validated.json \ "status").as[String] mustBe "completed"
+    }
+
+    "leave out the entities already managed by a catalog unless all is set" in {
+      val managed = aTeam("team-managed", "Managed").copy(metadata = catalogTag)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam, managed),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      exportFiles(all = false).keys must not contain "team/team-managed.yaml"
+      exportFiles(all = true).keys must contain("team/team-managed.yaml")
+    }
+
+    "export one entity alone as a single YAML document" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp =
+        exportCall(session, s"kind=api&id=${adminApi.id.value}&format=yaml")
+
+      resp.status mustBe 200
+      resp.header("Content-Disposition").value must include(
+        s"${adminApi.id.value}.yaml"
+      )
+      yamlDocuments(resp) mustBe Seq("api" -> adminApi.id.value)
+    }
+
+    "export an api with its plans and its subscriptions" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=api&id=${adminApi.id.value}&children=true&format=zip"
+      )
+
+      resp.status mustBe 200
+      unzip(resp).keySet mustBe Set(
+        s"api/${adminApi.id.value}.yaml",
+        s"usage-plan/${adminApiPlan.id.value}.yaml",
+        s"api-subscription/${adminApiSubscription.id.value}.yaml"
+      )
+    }
+
+    "export a team with its children, which a catalog adopting them validates" in {
+      val otherTeam = aTeam("team-other", "Other")
+      val other = generateApi("other", tenant.id, otherTeam.id, Seq.empty)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, otherTeam),
+        apis = Seq(adminApi, other.api),
+        usagePlans = adminApiPlan +: other.plans,
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs =
+          Seq(multiKindCatalog("unused").copy(adoptExisting = true))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val files = unzip(
+        exportCall(
+          session,
+          s"kind=team&id=${defaultAdminTeam.id.value}&children=true&format=zip"
+        )
+      )
+
+      files.keySet mustBe Set(
+        s"team/${defaultAdminTeam.id.value}.yaml",
+        s"usage-plan/${adminApiPlan.id.value}.yaml",
+        s"api/${adminApi.id.value}.yaml",
+        s"keyring/${adminApiKeyring.id.value}.yaml",
+        s"api-subscription/${adminApiSubscription.id.value}.yaml"
+      )
+
+      val validated = validateFiles("cat-file", files)
+      withClue(validated.body) {
+        validated.status mustBe 200
+      }
+    }
+
+    "export a keyring with its subscriptions in one YAML file, without its secrets" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=keyring&id=${adminApiKeyring.id.value}&children=true&format=yaml"
+      )
+
+      yamlDocuments(resp) mustBe Seq(
+        "keyring" -> adminApiKeyring.id.value,
+        "api-subscription" -> adminApiSubscription.id.value
+      )
+      resp.body[String] must not include adminApiKeyring.apiKey.clientSecret
+      resp.body[String] must not include adminApiKeyring.integrationToken
+    }
+
+    "export the 2000 subscriptions of an api" in {
+      val subscriptions = (1 to 2000).map(i =>
+        adminApiSubscription.copy(id = ApiSubscriptionId(s"sub-$i"))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi),
+        usagePlans = Seq(adminApiPlan),
+        subscriptions = subscriptions,
+        keyrings = Seq(adminApiKeyring)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = exportCall(
+        session,
+        s"kind=api&id=${adminApi.id.value}&children=true&format=yaml"
+      )
+
+      yamlDocuments(resp).count(_._1 == "api-subscription") mustBe 2000
+    }
+  }
+
+  "Resource loader" should {
+    "check the documents without writing anything" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      val resp = loadCall(session, files, dryRun = true)
+
+      resp.status mustBe 200
+      (resp.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      loadTeam("team-weather") mustBe None
+    }
+
+    "create the documents without any catalog tag" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 200
+      loadTeam("team-weather").value.metadata.get("created_by") mustBe None
+    }
+
+    "refuse a document whose id already exists" in {
+      val existing = aTeam("team-weather", "Weather")
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, existing)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(existing.copy(name = "Renamed")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-weather").value.name mustBe "Weather"
+    }
+
+    "refuse an entity managed by a catalog" in {
+      val managed = aTeam("team-managed", "Managed").copy(metadata = catalogTag)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, managed)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(managed.copy(name = "Renamed")))
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-managed").value.name mustBe "Managed"
+    }
+
+    "create nothing when one document is invalid" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val files = Map(
+        "a.yaml" -> Json.stringify(teamDoc(aTeam("team-a", "A"))),
+        "b.yaml" -> Json.stringify(teamDoc(aTeam("team-b", "B")) - "_tenant")
+      )
+
+      val resp = loadCall(session, files, dryRun = false)
+
+      resp.status mustBe 400
+      loadTeam("team-a") mustBe None
+    }
+
+    "be refused to a user who is not a tenant admin" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(user, tenant)
+      val files = Map(
+        "team.yaml" -> Json.stringify(teamDoc(aTeam("team-weather", "Weather")))
+      )
+
+      loadCall(session, files, dryRun = true).status mustBe 403
+    }
+  }
+
+  "Remote catalog run history" should {
+    "record a completed run with the created ids" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+
+      val runs = historyCall(session, "cat-file").json.as[Seq[JsObject]]
+      runs.size mustBe 1
+      (runs.head \ "status").as[String] mustBe "completed"
+      (runs.head \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      (runs.head \ "errors").as[Seq[String]] mustBe empty
+    }
+
+    "record a failed run with the file and the message of the error" in {
+      val withoutId = teamDoc(aTeam("team-weather", "Weather")) - "_id"
+      val path = writeFile(Json.stringify(withoutId))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      deployCall("cat-file", "_deploy").status mustBe 400
+
+      val runs = historyCall(session, "cat-file").json.as[Seq[JsObject]]
+      runs.size mustBe 1
+      (runs.head \ "status").as[String] mustBe "failed"
+      (runs.head \ "created").as[Seq[String]] mustBe empty
+      val errors = (runs.head \ "errors").as[Seq[String]]
+      errors.size mustBe 1
+      errors.head must include(path)
+      errors.head must include("Missing required field '_id'")
+    }
+
+    "keep only the 20 most recent runs, newest first" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      deployCall("cat-file", "_deploy").status mustBe 200
+      val firstRunId =
+        (historyCall(session, "cat-file").json.as[Seq[JsObject]].head \ "_id")
+          .as[String]
+
+      (1 to 20).foreach(_ =>
+        deployCall("cat-file", "_deploy").status mustBe 200
+      )
+
+      val runs = historyCall(session, "cat-file").json.as[Seq[JsObject]]
+      val ids = runs.map(run => (run \ "_id").as[String])
+      val dates = runs.map(run => (run \ "at").as[Long])
+      runs.size mustBe 20
+      ids must not contain firstRunId
+      dates mustBe dates.sorted.reverse
+    }
+  }
+
   "RemoteCatalogJob (scheduler path)" should {
 
     "sync an enabled file catalog and tag entities with created_by" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
 
-      outcomeName(runNow(t)) mustBe "completed"
+      outcomeName(runNow(tenant)) mustBe "completed"
 
       val team = loadTeam("team-weather").value
       team.metadata.get("created_by") mustBe Some("remote_catalog=cat-file")
@@ -364,10 +1468,13 @@ class RemoteCatalogSpec
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       val disabled = fileCatalog("cat-file", path)
         .copy(scheduling = RemoteCatalogScheduling(enabled = false))
-      val t = tenant.copy(remoteCatalogs = Seq(disabled))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(disabled)
+      )
 
-      outcomeName(runNow(t)) mustBe "skipped"
+      outcomeName(runNow(tenant)) mustBe "skipped"
       // skipReason fires before the claim: not even a JobInformation row is written
       reload() mustBe None
       loadTeam("team-weather") mustBe None
@@ -381,16 +1488,19 @@ class RemoteCatalogSpec
           )
         )
       )
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
 
-      outcomeName(runNow(t)) mustBe "completed"
+      outcomeName(runNow(tenant)) mustBe "completed"
       loadTeam("team-a") mustBe defined
       loadTeam("team-b") mustBe defined
 
       rewriteFile(path, Json.stringify(teamDoc(aTeam("team-a", "A"))))
 
-      outcomeName(runNow(t)) mustBe "completed"
+      outcomeName(runNow(tenant)) mustBe "completed"
       loadTeam("team-a") mustBe defined
       loadTeam("team-b") mustBe None
     }
@@ -398,27 +1508,31 @@ class RemoteCatalogSpec
     "be idempotent: a second run on an unchanged source leaves the DB as is" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
 
-      outcomeName(runNow(t)) mustBe "completed"
+      outcomeName(runNow(tenant)) mustBe "completed"
       val afterFirstRun = loadTeam("team-weather").value.asJson
 
-      outcomeName(runNow(t)) mustBe "completed"
+      outcomeName(runNow(tenant)) mustBe "completed"
       loadTeam("team-weather").value.asJson mustBe afterFirstRun
     }
 
     "report a partial completion when one catalog fails but still sync the others" in {
       val okPath = writeFile(Json.stringify(teamDoc(aTeam("team-ok", "Ok"))))
-      val t = tenant.copy(remoteCatalogs =
-        Seq(
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(
           fileCatalog("cat-ok", okPath),
           fileCatalog("cat-bad", "/nonexistent/daikoku-catalog.json")
         )
       )
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
 
-      runNow(t) match {
+      runNow(tenant) match {
         case JobOutcome.PartiallyCompleted(r) =>
           r.failures.map(_.itemId) mustBe Seq("cat-bad")
         case other => fail(s"expected PartiallyCompleted, got $other")
@@ -430,14 +1544,17 @@ class RemoteCatalogSpec
     "run on manual trigger (POST /api/jobs/remote-catalog/_sync) with a valid key" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
 
       val resp = httpJsonCallWithoutSessionBlocking(
         path = "/api/jobs/remote-catalog/_sync?key=secret",
         method = "POST",
         body = Json.obj().some
-      )(using t)
+      )(using tenant)
 
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -448,14 +1565,17 @@ class RemoteCatalogSpec
     "reject a manual trigger with a wrong key" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
 
       val resp = httpJsonCallWithoutSessionBlocking(
         path = "/api/jobs/remote-catalog/_sync?key=sec",
         method = "POST",
         body = Json.obj().some
-      )(using t)
+      )(using tenant)
 
       resp.status mustBe 401
       loadTeam("team-weather") mustBe None
@@ -465,11 +1585,33 @@ class RemoteCatalogSpec
     "skip when another instance holds a valid lock" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
-      val t = tenant.copy(remoteCatalogs = Seq(fileCatalog("cat-file", path)))
-      setupEnvBlocking(tenants = Seq(t), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
       seedRunningJob()
 
-      outcomeName(runNow(t)) mustBe "skipped"
+      outcomeName(runNow(tenant)) mustBe "skipped"
+      loadTeam("team-weather") mustBe None
+    }
+
+    "refuse a manual deploy while another instance holds the lock" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      seedRunningJob()
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      (deploy.json \ "error")
+        .as[String] mustBe "Remote catalogs are busy: already running"
       loadTeam("team-weather") mustBe None
     }
   }

@@ -23,17 +23,8 @@ trait CatalogSource {
       Left(Json.obj("error" -> s"$sourceKind source does not support webhooks"))
     )
 
-  def webhookDeployExtractArgs(catalog: RemoteCatalog, payload: JsValue)(
-      implicit
+  def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, JsObject]] =
-    Future.successful(
-      Left(Json.obj("error" -> s"$sourceKind source does not support webhooks"))
-    )
-
-  def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
-      ec: ExecutionContext,
-      env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]]
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]]
 }

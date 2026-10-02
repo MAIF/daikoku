@@ -71,19 +71,20 @@ class RemoteCatalogCascadeSpec
           clientId = otoroshiAdminApiKey.clientId
         )
       ),
-      aggregationApiKeysSecurity = true.some,
-      remoteCatalogs = Seq(
-        RemoteCatalog(
-          id = catalogId,
-          name = "cascade catalog",
-          source = RemoteCatalogSource(
-            kind = "file",
-            config = Json.obj("path" -> sourceFilePath)
-          ),
-          scheduling = RemoteCatalogScheduling(enabled = true),
-          allowedKinds = Set("api", "usage-plan")
-        )
-      )
+      aggregationApiKeysSecurity = true.some
+    )
+
+  private def cascadeCatalog: RemoteCatalog =
+    RemoteCatalog(
+      id = RemoteCatalogId(catalogId),
+      tenant = tenant.id,
+      name = "cascade catalog",
+      source = RemoteCatalogSource(
+        kind = "file",
+        config = Json.obj("path" -> sourceFilePath)
+      ),
+      scheduling = RemoteCatalogScheduling(enabled = true),
+      allowedKinds = Set("api", "usage-plan")
     )
 
   private lazy val sourceFilePath: String = {
@@ -217,7 +218,8 @@ class RemoteCatalogCascadeSpec
         apis = Seq(managedApi, adminApi),
         usagePlans = Seq(catalogPlan, adminApiPlan),
         keyrings = Seq(catalogKeyring, adminApiKeyring),
-        subscriptions = Seq(catalogSub, adminApiSubscription)
+        subscriptions = Seq(catalogSub, adminApiSubscription),
+        remoteCatalogs = Seq(cascadeCatalog)
       )
       val adminSession = loginWithBlocking(userAdmin, containerTenant)
 

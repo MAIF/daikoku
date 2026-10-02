@@ -1,4 +1,4 @@
-openapi: 3.0.2
+openapi: 3.1.0
 externalDocs:
   description: Find out more about Daikoku
   url: https://maif.github.io/daikoku/
@@ -11,9 +11,41 @@ info:
     email: oss@maif.fr
   description: Admin API of Daikoku
   title: Daikoku Admin API
-  version: 16.3.0
+  version: 19.1.0-dev
 tags: []
 components:
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    NotFound:
+      description: entity not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    BadFormat:
+      description: bad entity format
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
+    Conflict:
+      description: an entity with the same id already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error"
   schemas:
     Tenant:
       description: Tenant
@@ -22,54 +54,58 @@ components:
           type: string
         enabled:
           type: boolean
-        _deleted:
-          type: boolean
-          nullable: true
         name:
           type: string
         domain:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         contact:
           type: string
         style:
-          $ref: "#/components/schemas/DaikokuStyle"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/DaikokuStyle"
+            - type: "null"
         defaultLanguage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         otoroshiSettings:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             $ref: "#/components/schemas/OtoroshiSettings"
         mailerSettings:
-          nullable: true
           oneOf:
             - $ref: "#/components/schemas/MailerSettings.ConsoleMailerSettings"
             - $ref: "#/components/schemas/MailerSettings.MailgunSettings"
             - $ref: "#/components/schemas/MailerSettings.MailjetSettings"
             - $ref: "#/components/schemas/MailerSettings.SimpleSMTPSettings"
             - $ref: "#/components/schemas/MailerSettings.SendgridSettings"
+            - type: "null"
         bucketSettings:
-          nullable: true
-          $ref: "#/components/schemas/S3Configuration"
+          anyOf:
+            - $ref: "#/components/schemas/S3Configuration"
+            - type: "null"
         authProvider:
-          nullable: true
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - local
             - otoroshi
             - ldap
             - oauth2
+            - null
         authProviderSettings:
           type: object
         auditTrailConfig:
-          nullable: false
           $ref: "#/components/schemas/AuditTrailConfig"
         isPrivate:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         adminApi:
           type: string
         adminSubscriptions:
@@ -77,46 +113,58 @@ components:
           items:
             type: string
         creationSecurity:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         subscriptionSecurity:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         apiReferenceHideForGuest:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         defaultMessage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         tenantMode:
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - default
             - maintenance
             - construction
             - translation
-          nullable: true
+            - null
         aggregationApiKeysSecurity:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         robotTxt:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         thirdPartyPaymentSettings:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             oneOf:
               - $ref: "#/components/schemas/ThirdPartyPaymentSettings.StripeSettings"
         display:
-          nullable: true
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - default
             - environment
+            - null
         environments:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
       required:
@@ -150,8 +198,7 @@ components:
     GraphQLSchema:
       type: object
     patch:
-      description: "A set of changes described in JSON Patch format:
-        http://jsonpatch.com/ (RFC 6902)"
+      description: "A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)"
       type: array
       items:
         type: object
@@ -174,53 +221,69 @@ components:
       description: DaikokuStyle
       properties:
         js:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         css:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         colorTheme:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         jsUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         cssUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         faviconUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         fontFamilyUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         title:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         unloggedHome:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         homePageVisible:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         homeCmsPage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         notFoundCmsPage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         authenticatedCmsPage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         logo:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         footer:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     ThirdPartyPaymentSettings.StripeSettings:
       description: Stripe settings
       properties:
@@ -247,11 +310,13 @@ components:
         host:
           type: string
         clientId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         clientSecret:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - id
         - url
@@ -264,8 +329,9 @@ components:
           enum:
             - console
         template:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - type
     MailerSettings.MailgunSettings:
@@ -276,13 +342,15 @@ components:
           enum:
             - mailgun
         template:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         domain:
           type: string
         eu:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         key:
           type: string
         fromTitle:
@@ -303,8 +371,9 @@ components:
           enum:
             - mailjet
         template:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         apiKeyPublic:
           type: string
         apiKeyPrivate:
@@ -327,8 +396,9 @@ components:
           enum:
             - sendgrid
         template:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         apikey:
           type: string
         fromTitle:
@@ -348,15 +418,13 @@ components:
           enum:
             - smtpClient
         template:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         host:
           type: string
         port:
           type: string
-          additionalProperties:
-            oneOf:
-              - type: integer
         fromTitle:
           type: string
         fromEmail:
@@ -381,12 +449,14 @@ components:
         secret:
           type: string
         chunkSize:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int32
-          nullable: true
         v4auth:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
       required:
         - bucket
         - endpoint
@@ -397,29 +467,34 @@ components:
       description: AuditTrailConfig
       properties:
         elasticConfigs:
-          $ref: "#/components/schemas/ElasticAnalyticsConfig"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/ElasticAnalyticsConfig"
+            - type: "null"
         auditWebhooks:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             $ref: "#/components/schemas/Webhook"
         alertsEmails:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         kafkaConfig:
-          $ref: "#/components/schemas/KafkaConfig"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/KafkaConfig"
+            - type: "null"
     Webhook:
       description: Webhook
       properties:
         url:
           type: string
         headers:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
       required:
         - url
     ElasticAnalyticsConfig:
@@ -428,60 +503,71 @@ components:
         clusterUri:
           type: string
         index:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         type:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         user:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         password:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         headers:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
       required:
         - clusterUri
     KafkaConfig:
       description: KafkaConfig
       properties:
         servers:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         keyPass:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         keystore:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         truststore:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         auditTopic:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         hostValidation:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
     User:
       description: User
       properties:
         _id:
           type: string
-        _deleted:
-          type: boolean
         tenants:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         origins:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
             enum:
@@ -494,44 +580,54 @@ components:
         email:
           type: string
         picture:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         pictureFromProvider:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         isDaikokuAdmin:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         password:
-          type: string
-          nullable: true
-          description: optionnal value but required in case of tenant has a Local
-            AuthProvider
+          type:
+            - string
+            - "null"
+          description: optionnal value but required in case of tenant has a Local AuthProvider
         hardwareKeyRegistrations:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: object
         lastTenant:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         metadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         defaultLanguage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         starredApis:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         twoFactorAuthentication:
-          $ref: "#/components/schemas/TwoFactorAuthentication"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/TwoFactorAuthentication"
+            - type: "null"
         invitation:
-          $ref: "#/components/schemas/UserInvitation"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/UserInvitation"
+            - type: "null"
       required:
         - _id
         - name
@@ -542,17 +638,20 @@ components:
         token:
           type: string
         createdAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         team:
           type: string
         notificationId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         registered:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
       required:
         - token
     TwoFactorAuthentication:
@@ -571,16 +670,136 @@ components:
         - secret
         - token
         - backupCodes
-    Team:
-      description: Team
+    RemoteCatalog:
+      description: RemoteCatalog
+      examples:
+        - _id: catalog-weather
+          _tenant: default
+          name: Weather catalog
       properties:
         _id:
           type: string
         _tenant:
           type: string
-        _deleted:
+        name:
+          type: string
+        enabled:
           type: boolean
-          nullable: true
+        source:
+          type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - file
+                - http
+                - github
+                - gitlab
+            config:
+              type: object
+        scheduling:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+        allowedKinds:
+          type: array
+          items:
+            type: string
+            enum:
+              - team
+              - usage-plan
+              - api
+              - keyring
+              - api-subscription
+              - cms-page
+        maxDeletionPercent:
+          type: integer
+          format: int32
+        adoptExisting:
+          type: boolean
+        folderPerTeam:
+          type: boolean
+          description: GitHub and GitLab only. Each teams/<teamId>/ folder may only declare the entities of that team; everything outside teams/ is tenant level
+        allowDeletions:
+          type: boolean
+          default: true
+          description: when false, an entity removed from the source is detached (it loses its catalog tag) instead of being deleted
+        token:
+          type: string
+          readOnly: true
+      required:
+        - _id
+        - _tenant
+        - name
+    CmsPage:
+      description: CmsPage
+      examples:
+        - _id: page-weather-home
+          _tenant: default
+          name: Weather home
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        name:
+          type: string
+        visible:
+          type: boolean
+        authenticated:
+          type: boolean
+        picture:
+          type:
+            - string
+            - "null"
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        contentType:
+          type: string
+        forwardRef:
+          type:
+            - string
+            - "null"
+        body:
+          type: string
+        path:
+          type:
+            - string
+            - "null"
+        exact:
+          type: boolean
+        lastPublishedDate:
+          type:
+            - integer
+            - "null"
+          format: timestamp
+      required:
+        - _id
+        - _tenant
+        - name
+    Team:
+      description: Team
+      examples:
+        - _id: team-weather
+          _tenant: default
+          type: Organization
+          name: Weather
+          contact: weather@acme.io
+          verified: true
+      properties:
+        _id:
+          type: string
+        _humanReadableId:
+          type: string
+        _tenant:
+          type: string
         type:
           type: string
           enum:
@@ -590,20 +809,23 @@ components:
         name:
           type: string
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         contact:
           type: string
         avatar:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         users:
           type: array
           items:
             $ref: "#/components/schemas/UserWithPermission"
-        authorizedEntities:
-          type: array
-          nullable: true
+        authorizedOtoroshiEntities:
+          type:
+            - array
+            - "null"
           items:
             properties:
               otoroshiSettingsId:
@@ -613,21 +835,24 @@ components:
         apiKeyVisibility:
           type: string
           enum:
-            - administrator
-            - apiEditor
-            - user
+            - Administrator
+            - ApiEditor
+            - User
         metadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         apisCreationPermission:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         verified:
           type: boolean
       required:
         - _id
         - _tenant
         - type
+        - name
         - contact
         - verified
     UserWithPermission:
@@ -646,14 +871,18 @@ components:
         - teamPermission
     Api:
       description: Api
+      examples:
+        - _id: api-weather
+          _tenant: default
+          team: team-weather
+          name: Weather API
       properties:
         _id:
           type: string
+        _humanReadableId:
+          type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         team:
           type: string
         name:
@@ -661,18 +890,33 @@ components:
         lastUpdate:
           type: integer
           format: timestamp
+        createdAt:
+          type: integer
+          format: timestamp
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         smallDescription:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
+        customHeaderCmsPage:
+          type:
+            - string
+            - "null"
+        descriptionCmsPage:
+          type:
+            - string
+            - "null"
         header:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         image:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         currentVersion:
           type: string
         supportedVersions:
@@ -680,24 +924,29 @@ components:
           items:
             type: string
         isDefault:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         testing:
-          $ref: "#/components/schemas/Testing"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/Testing"
+            - type: "null"
         documentation:
           $ref: "#/components/schemas/ApiDocumentation"
         swagger:
-          $ref: "#/components/schemas/SwaggerAccess"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/SwaggerAccess"
+            - type: "null"
         tags:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         categories:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         visibility:
@@ -712,35 +961,44 @@ components:
           items:
             type: string
         defaultUsagePlan:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         authorizedTeams:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         posts:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         issues:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         issuesTags:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             $ref: "#/components/schemas/ApiIssueTag"
         stars:
           type: integer
           format: int32
         parent:
-          type: string
+          type:
+            - string
+            - "null"
         apis:
-          type: array
+          type:
+            - array
+            - "null"
           items:
             type: string
         state:
@@ -750,23 +1008,22 @@ components:
             - published
             - blocked
             - deprecated
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
       required:
         - _id
         - _tenant
         - team
         - name
-        - lastUpdate
-        - currentVersion
-        - documentation
-        - visibility
-        - possibleUsagePlans
-        - state
     ApiIssueTag:
       description: ApiIssueTag
       properties:
         id:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         name:
           type: string
         color:
@@ -778,26 +1035,33 @@ components:
       description: Testing
       properties:
         enabled:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         auth:
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - ApiKey
             - Basic
-          nullable: true
+            - null
         name:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         username:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         password:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         config:
-          $ref: "#/components/schemas/TestingConfig"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/TestingConfig"
+            - type: "null"
     ApiDocumentation:
       description: ApiDocumentation
       properties:
@@ -806,8 +1070,9 @@ components:
         _tenant:
           type: string
         pages:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             $ref: "#/components/schemas/ApiDocumentationDetailPage"
         lastModificationAt:
@@ -829,14 +1094,17 @@ components:
       description: SwaggerAccess
       properties:
         url:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         content:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         headers:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
     Version:
       description: Version
       properties:
@@ -866,23 +1134,28 @@ components:
         tag:
           type: string
         customMetadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         customMaxPerSecond:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerDay:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerMonth:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customReadOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
       required:
         - otoroshiSettings
         - authorizedEntities
@@ -924,16 +1197,22 @@ components:
         - services
     ApiSubscription:
       description: ApiSubscription
+      examples:
+        - _id: subscription-weather
+          _tenant: default
+          keyring: keyring-weather
+          plan: plan-weather-free
+          team: team-weather
+          api: api-weather
+          createdAt: 1759190400000
+          by: user-admin
       properties:
         _id:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
-        apiKey:
-          $ref: "#/components/schemas/OtoroshiApiKey"
+        keyring:
+          type: string
         plan:
           type: string
         team:
@@ -943,72 +1222,151 @@ components:
         createdAt:
           type: integer
           format: timestamp
+        validUntil:
+          type:
+            - integer
+            - "null"
+          format: timestamp
         by:
           type: string
         customName:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         adminCustomName:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         enabled:
-          type: boolean
-          nullable: true
-        rotation:
-          $ref: "#/components/schemas/ApiSubscriptionRotation"
-        integrationToken:
-          type: string
+          type:
+            - boolean
+            - "null"
         customMetadata:
-          type: object
+          type:
+            - object
+            - "null"
         metadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         tags:
           type: array
           items:
             type: string
         customMaxPerSecond:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerDay:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerMonth:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customReadOnly:
-          type: boolean
-          nullable: true
-        parent:
+          type:
+            - boolean
+            - "null"
+        state:
           type: string
-          nullable: true
+          enum:
+            - active
+            - blocked
+        blockedBy:
+          type: array
+          items:
+            type: string
+            enum:
+              - owner
+              - lifecycle
         thirdPartySubscriptionInformations:
           oneOf:
             - $ref: "#/components/schemas/ThirdPartySubscriptionInformations.Stripe"
       required:
         - _id
         - _tenant
-        - apiKey
+        - keyring
         - plan
         - team
         - api
         - createdAt
         - by
-        - integrationToken
     ThirdPartySubscriptionInformations.Stripe:
       description: ThirdPartySubscriptionInformations
       properties:
         subscriptionId:
           type: string
         primaryElementId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         meteredElementId:
+          type:
+            - string
+            - "null"
+    Keyring:
+      description: Keyring
+      examples:
+        - _id: keyring-weather
+          _tenant: default
+          team: team-weather
+          otoroshiSettings:
+            type: Internal
+      properties:
+        _id:
           type: string
-          nullable: true
+        _tenant:
+          type: string
+        team:
+          type: string
+        customName:
+          type: string
+        apiKey:
+          $ref: "#/components/schemas/OtoroshiApiKey"
+        otoroshiSettings:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - Otoroshi
+                - Internal
+            id:
+              type: string
+          required:
+            - type
+        createdAt:
+          type: integer
+          format: timestamp
+        rotation:
+          anyOf:
+            - $ref: "#/components/schemas/ApiSubscriptionRotation"
+            - type: "null"
+        integrationToken:
+          type: string
+        bearerToken:
+          type:
+            - string
+            - "null"
+        thirdPartySubscriptionInformations:
+          oneOf:
+            - $ref: "#/components/schemas/ThirdPartySubscriptionInformations.Stripe"
+        enabled:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - _id
+        - _tenant
+        - team
+        - otoroshiSettings
     OtoroshiApiKey:
       description: OtoroshiApiKey
       properties:
@@ -1047,29 +1405,31 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         title:
           type: string
         lastModificationAt:
           type: integer
           format: timestamp
         content:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         contentType:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         remoteContentEnabled:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         remoteContentUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         remoteContentHeaders:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
       required:
         - _id
         - _tenant
@@ -1082,17 +1442,15 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         team:
           type: string
         sender:
           $ref: "#/components/schemas/NotificationSender"
         date:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         notificationType:
           type: string
           enum:
@@ -1138,7 +1496,6 @@ components:
       required:
         - api
         - team
-        - sender
     NotificationAction.TeamAccess:
       description: NotificationAction teamAccess
       properties:
@@ -1160,11 +1517,13 @@ components:
         step:
           type: string
         parentSubscriptionId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         motivation:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - api
         - plan
@@ -1181,8 +1540,9 @@ components:
         team:
           type: string
         message:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - api
         - plan
@@ -1283,8 +1643,9 @@ components:
       description: NotificationAction NewPostPublished
       properties:
         apiName:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         teamId:
           type: string
       required:
@@ -1384,9 +1745,10 @@ components:
         email:
           type: string
         id:
-          type: string
+          type:
+            - string
+            - "null"
           description: user id
-          nullable: true
       required:
         - email
         - name
@@ -1404,29 +1766,36 @@ components:
         userEmail:
           type: string
         impersonatorId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         impersonatorName:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         impersonatorEmail:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         impersonatorSessionId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         created:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         ttl:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         expires:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
       required:
         - _id
         - sessionId
@@ -1438,9 +1807,6 @@ components:
       properties:
         _id:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         _tenant:
           type: string
         team:
@@ -1550,13 +1916,15 @@ components:
           type: integer
           format: int64
         avgDuration:
-          type: number
+          type:
+            - number
+            - "null"
           format: float64
-          nullable: true
         avgOverhead:
-          type: number
+          type:
+            - number
+            - "null"
           format: float64
-          nullable: true
       required:
         - hits
         - dataIn
@@ -1593,12 +1961,14 @@ components:
         message:
           type: string
         closed:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         send:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
       required:
         - _id
         - _tenant
@@ -1625,32 +1995,34 @@ components:
         _id:
           type: string
         seqId:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int32
-          nullable: true
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         title:
           type: string
         tags:
-          type: array
-          nullable: true
+          type:
+            - array
+            - "null"
           items:
             type: string
         open:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         createdAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         closedAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         by:
           type: string
         comments:
@@ -1658,12 +2030,14 @@ components:
           items:
             $ref: "#/components/schemas/ApiIssueComment"
         lastModificationAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         apiVersion:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - _id
         - _tenant
@@ -1675,13 +2049,15 @@ components:
         by:
           type: string
         createdAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         lastModificationAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
         content:
           type: string
       required:
@@ -1694,17 +2070,15 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         title:
           type: string
         lastModificationAt:
           type: integer
           format: timestamp
         content:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - _id
         - _tenant
@@ -1724,9 +2098,10 @@ components:
         value:
           type: string
         lastModificationAt:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: timestamp
-          nullable: true
       required:
         - _id
         - _tenant
@@ -1735,31 +2110,39 @@ components:
         - language
     UsagePlan:
       description: UsagePlan
+      examples:
+        - _id: plan-weather-free
+          _tenant: default
+          customName: Free
+          subscriptionProcess:
+            steps: []
       properties:
         _id:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
-          nullable: true
         currency:
-          $ref: "#/components/schemas/Currency"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/Currency"
+            - type: "null"
         customName:
           type: string
         customDescription:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         otoroshiTarget:
-          $ref: "#/components/schemas/OtoroshiTarget"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/OtoroshiTarget"
+            - type: "null"
         billingDuration:
-          $ref: "#/components/schemas/BillingDuration"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/BillingDuration"
+            - type: "null"
         allowMultipleKeys:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         visibility:
           type: string
           enum:
@@ -1771,66 +2154,89 @@ components:
           items:
             type: string
         autoRotation:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         subscriptionProcess:
-          type: array
-          items:
-            oneOf:
-              - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
-              - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-              - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
-              - $ref: "#/components/schemas/SubscriptionDemandStep.HttpRequest"
+          type: object
+          properties:
+            steps:
+              type: array
+              items:
+                oneOf:
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.HttpRequest"
+            checkSum:
+              type:
+                - string
+                - "null"
+          required:
+            - steps
         integrationProcess:
           type: string
           enum:
             - Automatic
             - ApiKey
         aggregationApiKeysSecurity:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         swagger:
-          nullable: true
-          $ref: "#/components/schemas/SwaggerAccess"
+          anyOf:
+            - $ref: "#/components/schemas/SwaggerAccess"
+            - type: "null"
         testing:
-          nullable: true
-          $ref: "#/components/schemas/Testing"
+          anyOf:
+            - $ref: "#/components/schemas/Testing"
+            - type: "null"
         documentation:
-          nullable: true
-          $ref: "#/components/schemas/ApiDocumentation"
+          anyOf:
+            - $ref: "#/components/schemas/ApiDocumentation"
+            - type: "null"
         maxPerSecond:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         maxPerDay:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         maxPerMonth:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         costPerMonth:
-          type: integer
+          type:
+            - number
+            - "null"
           format: float64
-          nullable: true
         costPerRequest:
-          type: integer
+          type:
+            - number
+            - "null"
           format: float64
-          nullable: true
         trialPeriod:
-          $ref: "#/components/schemas/BillingDuration"
-          nullable: true
+          anyOf:
+            - $ref: "#/components/schemas/BillingDuration"
+            - type: "null"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
         paymentSettings:
-          nullable: true
           oneOf:
             - $ref: "#/components/schemas/PaymentSettings.Stripe"
+            - type: "null"
       required:
         - _id
         - _tenant
         - customName
         - subscriptionProcess
-        - integrationProcess
     Currency:
       description: Currency
       properties:
@@ -1887,33 +2293,40 @@ components:
         basePriceId:
           type: string
         additionalPriceId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - basePriceId
     ApikeyCustomization:
       description: Apikey customization
       properties:
         clientIdOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         readOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         constrainedServicesOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         metadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         customMetadata:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         tags:
-          type: array
+          type:
+            - array
+            - "null"
           items:
             type: string
-          nullable: true
         restrictions:
           $ref: "#/components/schemas/ApiKeyRestrictions"
       required:
@@ -1922,11 +2335,13 @@ components:
       description: ApiKey Restrictions
       properties:
         enabled:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         allowlast:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         allowed:
           type: array
           items:
@@ -1956,8 +2371,6 @@ components:
           type: string
         _tenant:
           type: string
-        _deleted:
-          type: boolean
         api:
           type: string
         plan:
@@ -1980,31 +2393,38 @@ components:
           type: integer
           format: timestamp
         motivation:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         parentSubscriptionId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         customReadOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         customMetadata:
           type: object
         customMaxPerSecond:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerDay:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         customMaxPerMonth:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
-          nullable: true
         adminCustomName:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - _id
         - _tenant
@@ -2055,8 +2475,9 @@ components:
         title:
           type: string
         message:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - type
         - id
@@ -2072,11 +2493,13 @@ components:
         id:
           type: string
         schema:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
         formatter:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         title:
           type: string
       required:
@@ -2110,11 +2533,14 @@ components:
             - httpRequest
         id:
           type: string
+        title:
+          type: string
         url:
           type: string
         headers:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
       required:
         - type
         - id
@@ -2235,9 +2661,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Tenant"
+                $ref: "#/components/schemas/Tenant"
         "401":
           description: unauthorized
           content:
@@ -2419,9 +2843,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/User"
         "401":
           description: unauthorized
           content:
@@ -2602,9 +3024,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Team"
+                $ref: "#/components/schemas/Team"
         "401":
           description: unauthorized
           content:
@@ -2785,9 +3205,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Api"
+                $ref: "#/components/schemas/Api"
         "401":
           description: unauthorized
           content:
@@ -2968,9 +3386,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiSubscription"
+                $ref: "#/components/schemas/ApiSubscription"
         "401":
           description: unauthorized
           content:
@@ -3075,8 +3491,7 @@ paths:
       tags:
         - api-documentation-page
     patch:
-      summary: update a api-documentation-page with JSON patch or by  merging JSON
-        object
+      summary: update a api-documentation-page with JSON patch or by  merging JSON object
       operationId: api-documentation-pages.patch
       requestBody:
         description: the patch to update the api-documentation-page or a JSON object
@@ -3152,9 +3567,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiDocumentationPage"
+                $ref: "#/components/schemas/ApiDocumentationPage"
         "401":
           description: unauthorized
           content:
@@ -3267,9 +3680,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Notification"
+                $ref: "#/components/schemas/Notification"
         "401":
           description: unauthorized
           content:
@@ -3351,9 +3762,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/UserSession"
+                $ref: "#/components/schemas/UserSession"
         "401":
           description: unauthorized
           content:
@@ -3435,9 +3844,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiKeyConsumption"
+                $ref: "#/components/schemas/ApiKeyConsumption"
         "401":
           description: unauthorized
           content:
@@ -3519,9 +3926,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/object"
+                $ref: "#/components/schemas/object"
         "401":
           description: unauthorized
           content:
@@ -3603,9 +4008,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Message"
+                $ref: "#/components/schemas/Message"
         "401":
           description: unauthorized
           content:
@@ -3755,9 +4158,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiIssue"
+                $ref: "#/components/schemas/ApiIssue"
         "401":
           description: unauthorized
           content:
@@ -3938,9 +4339,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/ApiPost"
+                $ref: "#/components/schemas/ApiPost"
         "401":
           description: unauthorized
           content:
@@ -4121,9 +4520,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/Translation"
+                $ref: "#/components/schemas/Translation"
         "401":
           description: unauthorized
           content:
@@ -4485,9 +4882,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  $ref: "#/components/schemas/SubscriptionDemand"
+                $ref: "#/components/schemas/SubscriptionDemand"
         "401":
           description: unauthorized
           content:
@@ -4602,7 +4997,7 @@ paths:
                 $ref: "#/components/schemas/GraphQLSchema"
       tags:
         - GraphQL
-  /admin-api/credentials/{token}/plans:
+  /admin-api/credentials/{token}:
     get:
       summary: get apikey from integration token
       tags:
@@ -4621,3 +5016,578 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OtoroshiApiKey"
+  /admin-api/cms-pages:
+    get:
+      summary: read all cms pages
+      operationId: cms-pages.findAll
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CmsPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+    post:
+      summary: creates a cms page
+      operationId: cms-pages.create
+      requestBody:
+        description: the cms page to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPage"
+      responses:
+        "201":
+          description: entity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmsPage"
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+  /admin-api/cms-pages/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: read a cms page
+      operationId: cms-pages.findById
+      responses:
+        "200":
+          description: found entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmsPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    put:
+      summary: update a cms page
+      operationId: cms-pages.update
+      requestBody:
+        description: the cms page to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPage"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    patch:
+      summary: update a cms page with JSON patch or by merging JSON object
+      operationId: cms-pages.patch
+      requestBody:
+        description: the patch to update the cms page or a JSON object
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/CmsPage"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+    delete:
+      summary: delete a cms page
+      operationId: cms-pages.delete
+      responses:
+        "200":
+          description: entity deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - cms-page
+  /admin-api/cms-pages/sync:
+    post:
+      summary: replace every cms page of the tenant with the given files
+      operationId: cms-pages.sync
+      requestBody:
+        description: the cms files, as sent by the CLI
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  content:
+                    type: string
+                  metadata:
+                    type: object
+                  daikoku_data:
+                    type:
+                      - object
+                      - "null"
+                    additionalProperties:
+                      type: string
+                required:
+                  - name
+                  - content
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - cms-page
+  /admin-api/keyrings:
+    get:
+      summary: read all keyrings
+      operationId: keyrings.findAll
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Keyring"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - keyring
+    post:
+      summary: creates a keyring; apiKey, integrationToken and bearerToken are generated by Daikoku, never read from the body
+      operationId: keyrings.create
+      requestBody:
+        description: the keyring to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Keyring"
+      responses:
+        "201":
+          description: entity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Keyring"
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+      tags:
+        - keyring
+  /admin-api/keyrings/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: read a keyring
+      operationId: keyrings.findById
+      responses:
+        "200":
+          description: found entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Keyring"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - keyring
+    put:
+      summary: update a keyring; its secrets, createdAt, rotation and payment information are kept
+      operationId: keyrings.update
+      requestBody:
+        description: the keyring to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Keyring"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - keyring
+    patch:
+      summary: update a keyring with JSON patch or by merging JSON object
+      operationId: keyrings.patch
+      requestBody:
+        description: the patch to update the keyring or a JSON object
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/Keyring"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - keyring
+    delete:
+      summary: delete a keyring with its subscriptions and its Otoroshi api key
+      operationId: keyrings.delete
+      responses:
+        "200":
+          description: entity deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - keyring
+  /admin-api/remote-catalogs:
+    get:
+      summary: read all remote catalogs
+      operationId: remote-catalogs.findAll
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RemoteCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - remote-catalog
+    post:
+      summary: creates a remote catalog
+      operationId: remote-catalogs.create
+      requestBody:
+        description: the remote catalog to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "201":
+          description: entity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalog"
+        "400":
+          $ref: "#/components/responses/BadFormat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/_export:
+    get:
+      summary: export the tenant as a catalog, a zip with one folder per kind and one YAML file per entity; keyring credentials are never exported
+      operationId: remote-catalogs.export
+      parameters:
+        - name: all
+          in: query
+          description: also export the entities already managed by a catalog (tagged created_by)
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: the zip archive, streamed
+          content:
+            application/zip:
+              schema:
+                type: string
+                contentMediaType: application/zip
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: read a remote catalog
+      operationId: remote-catalogs.findById
+      responses:
+        "200":
+          description: found entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    put:
+      summary: update a remote catalog
+      operationId: remote-catalogs.update
+      requestBody:
+        description: the remote catalog to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    patch:
+      summary: update a remote catalog with JSON patch or by merging JSON object
+      operationId: remote-catalogs.patch
+      requestBody:
+        description: the patch to update the remote catalog or a JSON object
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/patch"
+                - $ref: "#/components/schemas/RemoteCatalog"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+    delete:
+      summary: delete a remote catalog; the entities it deployed stay, detached (their created_by tag is removed). Undeploy first to delete them
+      operationId: remote-catalogs.delete
+      responses:
+        "200":
+          description: entity deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_validate:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: check a whole catalog sent in the request, without fetching nor writing anything
+      operationId: remote-catalogs.validate
+      requestBody:
+        description: every file of the catalog
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  content:
+                    type: string
+                required:
+                  - path
+                  - content
+      responses:
+        "200":
+          description: the catalog would deploy; the body lists what would be created, updated and deleted
+        "400":
+          description: the catalog is refused (the body lists the errors, file by file) or the request body is not an array of files
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_test:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: dry run - fetch the configured source and report what a deploy would do, without writing anything
+      operationId: remote-catalogs.test
+      responses:
+        "200":
+          description: the catalog would deploy; the body lists what would be created, updated and deleted
+        "400":
+          description: the catalog is refused; the body lists the errors, file by file
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_deploy:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: deploy the catalog - validate everything, then write; nothing is applied when validation fails
+      operationId: remote-catalogs.deploy
+      responses:
+        "200":
+          description: the catalog was applied; the body counts what was created, updated and deleted per kind (status is partial when a write failed on the way)
+        "400":
+          description: nothing was applied; the body lists the errors, file by file
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/remote-catalogs/{id}/_undeploy:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: delete every entity this catalog deployed; the catalog itself is kept
+      operationId: remote-catalogs.undeploy
+      responses:
+        "200":
+          description: the entities were deleted; the body counts them per kind
+        "400":
+          description: the catalog is being deployed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      tags:
+        - remote-catalog
+  /admin-api/state/export:
+    get:
+      summary: export the whole database as a stream, one entity per line
+      operationId: state.export
+      parameters:
+        - name: export-audit-trail
+          in: query
+          description: also export the audit trail
+          schema:
+            type: boolean
+        - name: download
+          in: query
+          description: answer with a Content-Disposition header, to download a file
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: one {type, payload} JSON object per line
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - state
+  /admin-api/state/import:
+    post:
+      summary: replace the whole database with an export - every table is emptied first
+      operationId: state.import
+      requestBody:
+        description: an export, one {type, payload} JSON object per line
+        required: true
+        content:
+          application/x-ndjson:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: import done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      tags:
+        - state
+  /admin-api/state/reset:
+    post:
+      summary: empty the database and initialise it again - only available in dev and test modes
+      operationId: state.reset
+      parameters:
+        - name: path
+          in: query
+          description: file to initialise the database from
+          schema:
+            type: string
+      responses:
+        "200":
+          description: reset done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/done"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: the instance does not run in dev or test mode
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+      tags:
+        - state

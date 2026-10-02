@@ -2,17 +2,55 @@ package fr.maif.daikoku.services.catalog
 
 import fr.maif.daikoku.utils.Yaml
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json._
 
 import scala.util.Try
 
+case class RemoteCatalogError(source: String, message: String) {
+  def json: JsValue = Json.obj("source" -> source, "message" -> message)
+}
+
+object RemoteCatalogError {
+
+  def collect[A](
+      results: Seq[Either[Seq[RemoteCatalogError], Seq[A]]]
+  ): Either[Seq[RemoteCatalogError], Seq[A]] = {
+    val errors = results.collect { case Left(errs) => errs }.flatten
+
+    if (errors.nonEmpty) {
+      Left(errors)
+    } else {
+      Right(results.collect { case Right(values) => values }.flatten)
+    }
+  }
+}
+
+case class CatalogFile(path: String, content: String)
+
+object CatalogFile {
+
+  // e.g. [{"path": "teams/weather.yaml", "content": "kind: team\n_id: ..."}]
+  def readAll(body: JsValue): Option[Seq[CatalogFile]] =
+    body.asOpt[Seq[JsObject]].flatMap { objects =>
+      val files = objects.flatMap(o =>
+        for {
+          path <- (o \ "path").asOpt[String]
+          content <- (o \ "content").asOpt[String]
+        } yield CatalogFile(path, content)
+      )
+
+      Option.when(files.size == objects.size)(files)
+    }
+}
+
+// path: the file path relative to the catalog root, e.g. "team-weather/apis/weather.yaml"
 case class RemoteEntity(
     id: String,
     kind: String,
     source: String,
     syncAt: DateTime,
-    content: JsObject
+    content: JsObject,
+    path: String = ""
 )
 
 object RemoteEntity {
@@ -23,84 +61,104 @@ object RemoteEntity {
     (json \ "spec").asOpt[JsObject].isDefined
   }
 
-  private def fromKubeStyle(
-      source: String,
-      json: JsObject
-  ): Option[RemoteEntity] = {
-    for {
-      kind <- (json \ "kind").asOpt[String]
-      spec <- (json \ "spec").asOpt[JsObject]
-      specKind = (spec \ "kind").asOpt[String]
-      resolvedKind = specKind match {
-        case Some(sk) if sk == kind || sk.endsWith(s"/$kind") => sk
-        case _                                                => kind
-      }
-      content = spec ++ Json.obj("kind" -> resolvedKind)
-      entityId <- (content \ "_id").asOpt[String]
-    } yield RemoteEntity(
-      id = entityId,
-      kind = resolvedKind,
-      source = source,
-      syncAt = DateTime.now(),
-      content = content
-    )
-  }
-
-  private def fromFlatJson(
-      source: String,
-      json: JsObject
-  ): Option[RemoteEntity] = {
-    for {
-      entityId <- (json \ "_id").asOpt[String]
-      kind <- (json \ "kind").asOpt[String]
-    } yield {
-      RemoteEntity(
-        id = entityId,
-        kind = kind,
-        source = source,
-        syncAt = DateTime.now(),
-        content = json
-      )
+  private def kubeStyleContent(json: JsObject): JsObject = {
+    val kind = (json \ "kind").as[String]
+    val spec = (json \ "spec").as[JsObject]
+    val resolvedKind = (spec \ "kind").asOpt[String] match {
+      case Some(sk) if sk == kind || sk.endsWith(s"/$kind") => sk
+      case _                                                => kind
     }
+
+    spec ++ Json.obj("kind" -> resolvedKind)
   }
 
-  def fromJson(source: String, json: JsObject): Option[RemoteEntity] = {
-    if (isKubeStyle(json)) fromKubeStyle(source, json)
-    else fromFlatJson(source, json)
+  def fromJson(
+      source: String,
+      json: JsObject
+  ): Either[Seq[RemoteCatalogError], RemoteEntity] = {
+    val content = if (isKubeStyle(json)) kubeStyleContent(json) else json
+    val id = (content \ "_id").asOpt[String]
+    val kind = (content \ "kind").asOpt[String]
+
+    (id, kind) match {
+      case (Some(entityId), Some(entityKind)) =>
+        Right(
+          RemoteEntity(
+            id = entityId,
+            kind = entityKind,
+            source = source,
+            syncAt = DateTime.now(),
+            content = content
+          )
+        )
+      case _ =>
+        val missingFields = Seq("_id" -> id, "kind" -> kind).collect {
+          case (field, None) => field
+        }
+
+        Left(
+          missingFields.map(field =>
+            RemoteCatalogError(source, s"Missing required field '$field'")
+          )
+        )
+    }
   }
 }
 
 object RemoteContentParser {
 
-  private val logger = Logger("daikoku-remote-catalog-parser")
-
-  def parse(content: JsValue, sourceName: String): Seq[RemoteEntity] = {
+  def parse(
+      content: JsValue,
+      sourceName: String
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
     content match {
-      case obj: JsObject => parseObject(obj, sourceName)
+      case obj: JsObject => RemoteEntity.fromJson(sourceName, obj).map(Seq(_))
       case arr: JsArray  => parseArray(arr, sourceName)
+      // a YAML document holding only comments loads as null
+      case JsNull => Right(Seq.empty)
       case _ =>
-        logger.warn(s"Unsupported content format from source $sourceName")
-        Seq.empty
+        Left(
+          Seq(
+            RemoteCatalogError(
+              sourceName,
+              "Unsupported content: expected an object or an array of objects"
+            )
+          )
+        )
     }
   }
 
   def parseRawContent(
       rawContent: String,
       sourceName: String
-  ): Seq[RemoteEntity] = {
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
     Try(Json.parse(rawContent)).toOption match {
       case Some(json) => parse(json, sourceName)
-      case None =>
-        splitContent(rawContent).filter(_.trim.nonEmpty).flatMap { doc =>
-          Yaml.parse(doc) match {
-            case Some(json) => parse(json, sourceName)
-            case None =>
-              logger
-                .warn(s"Cannot parse content from $sourceName as JSON or YAML")
-              Seq.empty
-          }
-        }
+      case None       => parseYamlDocuments(rawContent, sourceName)
     }
+  }
+
+  private def parseYamlDocuments(
+      rawContent: String,
+      sourceName: String
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
+    val documents = splitContent(rawContent).zipWithIndex.filter {
+      case (doc, _) => doc.trim.nonEmpty
+    }
+
+    RemoteCatalogError.collect(documents.map { case (doc, index) =>
+      val parsed = Yaml.parse(doc) match {
+        case Some(json) => parse(json, sourceName)
+        case None =>
+          Left(
+            Seq(RemoteCatalogError(sourceName, "Cannot parse as JSON or YAML"))
+          )
+      }
+
+      parsed.left.map(
+        _.map(e => e.copy(message = s"document ${index + 1}: ${e.message}"))
+      )
+    })
   }
 
   private def splitContent(content: String): Seq[String] = {
@@ -120,20 +178,22 @@ object RemoteContentParser {
     out
   }
 
-  private def parseObject(
-      obj: JsObject,
-      sourceName: String
-  ): Seq[RemoteEntity] = {
-    RemoteEntity.fromJson(sourceName, obj).toSeq
-  }
-
   private def parseArray(
       arr: JsArray,
       sourceName: String
-  ): Seq[RemoteEntity] = {
-    arr.value.flatMap {
-      case obj: JsObject => RemoteEntity.fromJson(sourceName, obj)
-      case _             => None
-    }.toSeq
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
+    RemoteCatalogError.collect(arr.value.toSeq.zipWithIndex.map {
+      case (obj: JsObject, _) =>
+        RemoteEntity.fromJson(sourceName, obj).map(Seq(_))
+      case (_, index) =>
+        Left(
+          Seq(
+            RemoteCatalogError(
+              sourceName,
+              s"element ${index + 1}: expected an object"
+            )
+          )
+        )
+    })
   }
 }

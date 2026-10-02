@@ -10,6 +10,7 @@ import {
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
+  IRemoteCatalog,
   ISafeSubscription,
   ISession,
   ISimpleOtoroshiSettings,
@@ -2705,6 +2706,35 @@ export const fetchOAuthConfiguration = (
   });
 };
 
+export const getRemoteCatalogs = (tenantId: string): PromiseWithError<Array<IRemoteCatalog>> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`);
+export const createRemoteCatalog = (
+  tenantId: string,
+  catalog: Partial<IRemoteCatalog>
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`, {
+    method: 'POST',
+    body: JSON.stringify(catalog),
+  });
+export const updateRemoteCatalog = (
+  tenantId: string,
+  catalog: IRemoteCatalog
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalog._id}`, {
+    method: 'PUT',
+    body: JSON.stringify(catalog),
+  });
+export const regenerateRemoteCatalogToken = (
+  tenantId: string,
+  catalogId: string
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_regenerate-token`, {
+    method: 'POST',
+  });
+export const deleteRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}`, {
+    method: 'DELETE',
+  });
 export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
 export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
@@ -2714,4 +2744,13 @@ export const testRemoteCatalog = (tenantId: string, catalogId: string) =>
 export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, {
     method: 'POST',
+  });
+export const loadResources = (
+  tenantId: string,
+  files: Array<{ path: string; content: string }>,
+  dryRun: boolean
+) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_load?dryRun=${dryRun}`, {
+    method: 'POST',
+    body: JSON.stringify(files),
   });
