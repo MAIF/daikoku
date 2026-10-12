@@ -1,13 +1,17 @@
 package fr.maif.daikoku.storage.drivers.postgres
 
 import fr.maif.daikoku.storage.{ActiveConn, DbConn, NoConn}
-import io.vertx.sqlclient.{Pool, Row, RowSet, SqlConnection}
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.{
-  Materializer,
-  OverflowStrategy,
-  QueueOfferResult
+import io.vertx.sqlclient.{
+  Cursor,
+  Pool,
+  PreparedStatement,
+  Row,
+  RowSet,
+  SqlConnection,
+  Transaction
 }
+import org.apache.pekko.Done
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.Source
 import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.{Configuration, Logger}
@@ -123,6 +127,28 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
     .getOptional[Boolean]("daikoku.postgres.logQueries")
     .getOrElse(false)
 
+  private class StreamCursor(
+      connection: SqlConnection,
+      statement: PreparedStatement,
+      transaction: Transaction,
+      cursor: Cursor
+  ) {
+    def read(fetchSize: Int): Future[(Seq[Row], Boolean)] =
+      cursor
+        .read(fetchSize)
+        .scala
+        .map(rows => (rows.asScala.toSeq, cursor.hasMore))
+
+    def close(): Future[Done] =
+      cursor
+        .close()
+        .scala
+        .transformWith(_ => statement.close().scala)
+        .transformWith(_ => transaction.commit().scala)
+        .transformWith(_ => connection.close().scala)
+        .map(_ => Done)
+  }
+
   // Central dispatch: uses the transaction connection when inside withTransaction,
   // otherwise borrows a connection from the pool as before.
   // Note: the lambda must be written inline for Scala's SAM conversion to
@@ -222,52 +248,35 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
       sql: String,
       params: Seq[AnyRef] = Seq.empty,
       fetchSize: Int = 50
-  )(f: Row => Option[A])(implicit mat: Materializer): Source[A, ?] = {
-    val (queue, source) = Source
-      .queue[Row](fetchSize * 2, OverflowStrategy.backpressure)
-      .preMaterialize()
+  )(f: Row => Option[A]): Source[A, ?] =
+    Source
+      .unfoldResourceAsync[(Seq[Row], Boolean), StreamCursor](
+        () => openCursor(sql, params),
+        cursor => cursor.read(fetchSize).map(Some(_)),
+        cursor => cursor.close()
+      )
+      .takeWhile({ case (_, hasMore) => hasMore }, inclusive = true)
+      .mapConcat { case (rows, _) => rows.flatMap(f) }
 
-    pool
-      .withTransaction(conn =>
-        conn.prepare(sql).compose { ps =>
-          val stream = ps.createStream(
-            fetchSize,
-            io.vertx.sqlclient.Tuple.from(params.toArray)
-          )
-          val streamDone = io.vertx.core.Promise.promise[Void]()
-          stream.pause()
-
-          def feedNext(): Unit = stream.fetch(1)
-
-          stream.handler { row =>
-            queue
-              .offer(row)
-              .foreach {
-                case QueueOfferResult.Enqueued    => feedNext()
-                case QueueOfferResult.Dropped     => feedNext()
-                case QueueOfferResult.QueueClosed => stream.close()
-                case QueueOfferResult.Failure(e) =>
-                  logger.error(s"Queue offer failed: ${e.getMessage}", e)
-                  stream.close()
-              }(using ec)
-          }
-          stream.endHandler { _ =>
-            queue.complete()
-            streamDone.complete(null)
-          }
-          stream.exceptionHandler { e =>
-            logger.error(s"Stream error: ${e.getMessage}", e)
-            queue.fail(e)
-            streamDone.fail(e)
-          }
-
-          feedNext()
-          streamDone.future()
-        }
+  private def openCursor(
+      sql: String,
+      params: Seq[AnyRef]
+  ): Future[StreamCursor] =
+    pool.getConnection().scala.flatMap { connection =>
+      val opened = for {
+        statement <- connection.prepare(sql).scala
+        transaction <- connection.begin().scala
+      } yield new StreamCursor(
+        connection,
+        statement,
+        transaction,
+        statement.cursor(io.vertx.sqlclient.Tuple.from(params.toArray))
       )
 
-    source.mapConcat(row => f(row).toList)
-  }
+      opened.recoverWith { case error =>
+        connection.close().scala.flatMap(_ => Future.failed(error))
+      }
+    }
 
   def execute(sql: String, params: Seq[AnyRef] = Seq.empty)(implicit
       dbConn: DbConn

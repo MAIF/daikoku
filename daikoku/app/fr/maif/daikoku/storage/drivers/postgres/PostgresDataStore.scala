@@ -2036,7 +2036,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
     reactivePg.queryStreamSource(s"SELECT content FROM $tableName$where", params)(
       row => row.optJsObject("content")
-    )(using env.defaultMaterializer)
+    )
   }
 
   override def streamAllRawFormatted(
@@ -2053,7 +2053,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
         row.optJsObject("content").map(format.reads).collect {
           case JsSuccess(value, _) => value
         }
-    )(using env.defaultMaterializer)
+    )
   }
 
   override def saveRaw(id: String, payload: JsObject)(implicit

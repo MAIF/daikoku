@@ -194,9 +194,10 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   Bouton « Exporter » + modale (navigation, pas de `fetch`/`blob`). Correctif : `streamAllRaw*` ignoraient
   `forTenant` (`scopedWhere` ajouté ; appelants existants en `forAllTenant`, inchangés). 2 specs : aller-retour
   export → `_validate` sur catalog `adoptExisting` = `completed`, et filtre `created_by` / `all`.
-- ⬜ Réécrire `ReactivePg.queryStreamSource` avec l'API `Cursor` pull de Vert.x (`read(n)` / `hasMore` / `close`) :
-  supprime `streamDone` et corrige la transaction laissée ouverte quand le client annule (`QueueClosed` →
-  `stream.close()` sans compléter `streamDone`, à confirmer). Commit à part + test connexion rendue après annulation.
+- ✅ `ReactivePg.queryStreamSource` réécrit (2026-10-12) avec l'API `Cursor` de Vert.x et `Source.unfoldResourceAsync` :
+  ouvrir (connexion, requête préparée, transaction, curseur), lire (`read(n)` + `hasMore`), fermer dans tous les cas
+  (fin, erreur, annulation). Fuite confirmée par `ReactivePgSpec` : rouge (4 lectures annulées vident le pool de test,
+  la 5e attend), puis vert. Plus de file ni de `streamDone`. Specs catalogs, dont l'export de 2000 souscriptions : 86/86.
 - Second temps : bouton d'import depuis le loader.
 
 ## Lot 5 — Fédération (contraintes composables, rien de codé en dur)
@@ -244,8 +245,11 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   connexion » abandonné (doublon du dry-run). État vide (carte, à gauche, sans tableau ni export) ; carte « Exporter ce
   tenant » sous le tableau ; création / édition dans le tiroir de droite (`CatalogEditor`). Thème : `.card` blanche en
   clair (`default.css` + replis `variables.scss`), règle morte `.card-text { height: 100px }` supprimée.
-- ⬜ Action GitHub dans le dépôt Daikoku : zip du catalog + `curl` `_validate` / `_deploy` avec le token, à confirmer.
-- ⬜ Supprimer le thème mort `Tenant.colorTheme`.
+- ~~Action GitHub dans le dépôt Daikoku~~ abandonnée le 2026-10-12 : depuis le zip, la CI tient en deux lignes (zip +
+  `curl`) documentées dans le manuel.
+- ✅ Thème mort supprimé (2026-10-12) : `Tenant.colorTheme` (ancienne copie du thème, en dur) et `colorThemePageId` /
+  `jsCmsPageId` / `cssCmsPageId`, jamais lus ; les thèmes viennent de `public/themes/default.css`. Idée non planifiée :
+  l'interface front `ITenantStyle` (`js`, `css`, `colorTheme`) ne correspond plus au `DaikokuStyle` du back.
 - Idées notées, non planifiées : page dédiée à onglets, vue des entités gérées / orphelins,
   sources différées (s3, consulkv, bitbucket, gitea / forgejo / codeberg, git), limites `maxFileSize` / `maxFiles`
   (robustesse mémoire si un gros fichier est commité par erreur).
