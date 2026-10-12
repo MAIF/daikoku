@@ -45,7 +45,7 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   Moteur découpé en sections (Entry points / Phase 1 / Orchestration / Phase 2 / Phase 3 / Undeploy / Audit).
 - ✅ Application séquentielle (`runOneByOne`) dans l'ordre des dépendances, écritures puis suppressions en ordre
   inverse. Première erreur → arrêt, aucune suppression, rapport `status: partial`. Pas de rollback.
-- 🔧 `_id` requis ✅ ; `_tenant` requis et égal au tenant du catalog ⬜.
+- ✅ `_id` requis ; `_tenant` requis et égal au tenant du catalog (voir `checkTenant` plus bas).
 - ✅ Entité existante non possédée par le catalog → erreur de validation (`prepareWrite`).
 - ✅ Références dans le run : `ReconcileFinalIds` = (base − suppressions) + run ; `validateForReconcile` / `ReadEntitiesFrom`
   sur api et api-subscription ; dry-run fiable. Validation = ~10 requêtes fixes (projection `_id`/`metadata` + `$in`).
@@ -62,7 +62,7 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
 - ✅ Garde-fou `maxDeletionPercent` par catalog (défaut 30, -1 = illimité, ignoré sous 5 entités gérées). Dépassé → le
   run échoue en phase 2 avec l'erreur, rien n'est appliqué ; l'utilisateur ajuste et relance. **Pas de flux de
   confirmation** (décision du 2026-09-29). Champ dans le form UI + i18n.
-- 🔧 Sécurité : ✅ `file` / `pre_command` désactivés par défaut (`daikoku.remoteCatalogJob.allowFileSource` /
+- ✅ Sécurité : ✅ `file` / `pre_command` désactivés par défaut (`daikoku.remoteCatalogJob.allowFileSource` /
   `allowPreCommand`, activés dans `test/resources/application.conf`) ; ✅ corps d'erreur distant non renvoyé ;
   ✅ allowlist d'hôtes (`allowedHosts`, liste HOCON ou CSV par env, `SourceUtils.checkHostAllowed` avant tout appel
   réseau dans http/GitHub/GitLab, spec 127.0.0.1 refusé) + fix du verrou `TrieMap` fuité sur exception synchrone
@@ -70,9 +70,10 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   déjà de confiance, risque d'accident mémoire seulement → idée non planifiée).
 - ✅ Suppression de `args`, `deployArgs`, `testDeployArgs` (+ `webhookDeployExtractArgs`, `parse.json` des routes
   admin-api `_deploy` / `_test`). Anciennes clés en base ignorées à la lecture, effacées au prochain enregistrement.
-- ⬜ Manuel (`manual/docs/02-usages/08-tenantusage/8-remote-catalogs.md`) et entrée dans `docs/DOMAIN.md` — reporté
-  après la partie technique (2026-09-30). Écarts relevés : docs invalides « ignorés » (faux, le run échoue), exemples
-  sans `_tenant`, rapport → tiroir, tout-ou-rien, `maxDeletionPercent`, dossier non récursif, flags
+- ✅ Manuel et entrée dans `docs/DOMAIN.md` (2026-10-01, commit `62e60e586`) : l'ancienne page `8-remote-catalogs.md`
+  devient 4 pages sous `manual/docs/02-usages/08-tenantusage/8-remote-catalogs/` (index, fichiers, CI et webhooks,
+  migration), puis `4-reference.md` le 2026-10-12. Écarts corrigés : docs invalides « ignorés » (faux, le run échoue),
+  exemples sans `_tenant`, rapport → tiroir, tout-ou-rien, `maxDeletionPercent`, dossier non récursif, flags
   `allowFileSource` / `allowPreCommand` / `allowedHosts`, historique 20 runs, admin-api CRUD + actions.
 - Specs Scala : 23 unitaires + 23 intégration au vert (dont même run en dry-run, ref vers entité supprimée,
   non possédée, kind retiré, dossier avec un fichier invalide). ⬜ Playwright du lot 1.
@@ -84,7 +85,7 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
 
 ## Lot 2 — Table dédiée, runs asynchrones, UI étape 1
 
-- 🔧 `RemoteCatalog` en table dédiée tenant-scopée + CRUD (UI + admin-api). Pas de migration ni de legacy (personne
+- ✅ `RemoteCatalog` en table dédiée tenant-scopée + CRUD (UI + admin-api). Pas de migration ni de legacy (personne
   n'utilise encore les catalogs, décision du 2026-09-30) : `tenant.remoteCatalogs` disparaît. Fait : `RemoteCatalogId`,
   `_id`/`_tenant` dans le JSON, table `remote_catalogs` (export/import, index), admin-api CRUD générique, routes UI
   list/create (id généré serveur, `_tenant` imposé)/update/delete, job et moteur sur le repo (`catalog.id.value`
@@ -125,7 +126,7 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   ~~`CatalogSchema` (JSON Schema autonome des fichiers de catalog, pour ajv / éditeur)~~ abandonné le 2026-09-30 : un
   second validateur, plus faible que le moteur (structure seule), à garder aligné ; la CI appelle `_validate` avec le
   token du catalog → idée non planifiée.
-- 🔧 `POST _validate` : entrée `{path, content}[]` = le catalog complet (comme un deploy) ; même contrôle qu'un dry-run
+- ✅ `POST _validate` : entrée `{path, content}[]` = le catalog complet (comme un deploy) ; même contrôle qu'un dry-run
   (moteur factorisé), réponse = forme d'un run (400 si `failed`). Daikoku ne fetch jamais autre chose que sa branche
   configurée. Auth (décision du 2026-09-30) : token par catalog (généré à la création, régénérable, visible par
   l'admin du tenant), header `Bearer`, routes `/api/remote-catalogs/:id/_validate|_test|_deploy|_undeploy`, aucun
@@ -148,17 +149,23 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   comme les champs structurels d'une souscription), snippet CI zip + `curl _validate`. Deux specs lisent les blocs
   YAML de la page : aller-retour (chaque champ relu à l'identique, contre les `.asOpt` qui ignorent en silence) et
   `_validate` des 6 documents ensemble. Liens depuis `index.md` et `1-files.md`.
-- ⬜ OpenAPI : écarts relevés en écrivant la référence : étape `form` absente, `teamAdmin` décrit avec `schema` /
-  `formatter` au lieu de `team`, `allowlast` au lieu de `allowLast`. Ajouter un plan à étapes au test de contrat.
+- ✅ OpenAPI (2026-10-12) : `completePlan` du test de contrat rempli (quotas, prix, durées, cible Otoroshi avec
+  personnalisation et restrictions, les 5 types d'étapes) ; rouge puis vert (32/32) après 5 corrections : étape
+  `form` ajoutée (et au `oneOf` du plan), `teamAdmin` avec `team` au lieu de `schema` / `formatter`, `allowLast`,
+  `customMetadata` en tableau `{key, possibleValues}`, unités `Hour` / `Day` / `Month` / `Year`. `teamAdmin`, `form`
+  et `ApiKeyRestrictions` stricts (`additionalProperties: false`). Reste hors catalogs : `SubscriptionDemand.steps`
+  décrit des étapes de validation, le code écrit des étapes de demande (`state`, `step`).
 - ~~Vérifier le YAML multi-documents avec ajv / check-jsonschema~~ sans objet depuis l'abandon du schéma autonome
   (2026-09-30).
 - Plus tard : `daikoku catalog validate` dans le CLI Rust.
 
 ## Lot 4 — Resource Loader et export
 
-- ⬜ Resource Loader (menu utilisateur, hors réglages tenant) : drop / coller, liste des docs détectés (kind, nom, valide ou
-  non, erreurs par chemin JSON). Même moteur que `_validate`. Structurel pour tout connecté, référentiel pour les admins.
-- 🔧 Export YAML / JSON : enveloppe `apiVersion: daikoku.io/v1` / `kind` / `spec` pour les deux, générée côté serveur depuis
+- ✅ Resource Loader (2026-10-02, commit `89864b20a`) : dans les réglages du tenant, admins du tenant seulement (et non
+  dans le menu utilisateur prévu au départ). Coller ou déposer des fichiers JSON / YAML, contrôle par le moteur de
+  `_validate` (`RemoteCatalogEngine.loadResources`, sans catalog : rien n'est tagué ni supprimé), puis création hors de
+  tout catalog. Création seule, back-office seulement.
+- ✅ Export YAML / JSON : enveloppe `apiVersion: daikoku.io/v1` / `kind` / `spec` pour les deux, générée côté serveur depuis
   le `toJson` de l'admin-api (un seul chemin d'écriture et de lecture). Test de contrat : tout export repasse par
   `_validate`. Visible par ceux qui peuvent éditer l'entité. Écrans d'édition de team, api, usage-plan, api-subscription,
   keyring, cms-page. Décisions du 2026-10-01 : sert à passer en GitOps un Daikoku **sans catalog** ; archive avec un
@@ -171,7 +178,8 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   zip `<kind>/<id>.yaml`. Un seul pipeline avec l'export du tenant (sélection tenant | entité + enfants → stream de
   documents → zip ou multi-doc), une seule route UI `_export` avec options ; l'admin-api garde son export du tenant,
   rien d'autre. Stream de bout en bout (requêtes filtrées en SQL par curseur : 2000 souscriptions sans tout charger) ;
-  téléchargement par navigation, sans loader. Entité gérée par un catalog exportée quand même. Ensuite : Resource Loader.
+  téléchargement par navigation, sans loader. Entité gérée par un catalog exportée quand même. Export par entité fait le
+  2026-10-02 (commit `89864b20a`).
 - ✅ `adoptExisting` (2026-10-01) : réglage du catalog, désactivé par défaut. Une entité déjà dans Daikoku sans
   `created_by`, décrite dans le catalog, est reprise (écrasée, taguée) ; une entité taguée par un autre catalog n'est
   jamais reprise. `prepareWrite` (règle `owner`), `Format`, OpenAPI (+ copie manuel), form + aide i18n EN / FR qui
@@ -205,9 +213,8 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   2 requêtes max (teams du tenant, puis API des plans absents du run via `possibleUsagePlans ?|`). 6 specs.
 - ~~`allowedTeams`~~ abandonné le 2026-10-01 (trop lourd, `folderPerTeam` suffit). Ancienne note : toute entité doit appartenir à (ou être) une de ces teams. Un usage-plan est rattaché à la team de
   l'API qui le référence ; cms-page refusée dès qu'il y a une contrainte de team.
-- ⬜ `folder_per_team` (config du catalog, pas dans le listing) : `<root>/<teamId>/**` impose `team == teamId` (un doc `team`
-  doit avoir `_id == teamId`) ; pas de cms-page dans un dossier de team ; fichiers directement dans `<root>/` = niveau
-  tenant, sans contrainte de team ; sous-dossier sans team correspondante → erreur.
+- ~~`folder_per_team`~~ fait sous le nom `folderPerTeam` (✅ plus haut), avec des dossiers `teams/<teamId>/` plutôt que
+  `<root>/<teamId>/`.
 - ✅ `allowDeletions` (2026-10-01, défaut true) : à false, une entité retirée du repo est **détachée** (perd son tag,
   `detachEntity` en phase 3, même rythme que `deleteEntity`) au lieu d'être supprimée ; `maxDeletionPercent` ignoré ;
   `detached` dans le rapport, le run et l'historique (colonne « Détachées ») ; Undeploy inchangé. Remettre le fichier
@@ -237,6 +244,8 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   connexion » abandonné (doublon du dry-run). État vide (carte, à gauche, sans tableau ni export) ; carte « Exporter ce
   tenant » sous le tableau ; création / édition dans le tiroir de droite (`CatalogEditor`). Thème : `.card` blanche en
   clair (`default.css` + replis `variables.scss`), règle morte `.card-text { height: 100px }` supprimée.
+- ⬜ Action GitHub dans le dépôt Daikoku : zip du catalog + `curl` `_validate` / `_deploy` avec le token, à confirmer.
+- ⬜ Supprimer le thème mort `Tenant.colorTheme`.
 - Idées notées, non planifiées : page dédiée à onglets, vue des entités gérées / orphelins,
   sources différées (s3, consulkv, bitbucket, gitea / forgejo / codeberg, git), limites `maxFileSize` / `maxFiles`
   (robustesse mémoire si un gros fichier est commité par erreur).
@@ -253,8 +262,7 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
 - Manuel : `mise run dev`, configurer un catalog http sur les fixtures de `test/resources/remote-catalog-http-fixtures/`,
   casser un fichier, vérifier que rien ne bouge et que la modale de suivi montre le fichier et le chemin en erreur.
 
-## Ménage à faire à l'approbation
+## Ménage à l'approbation
 
-Un doublon de ce plan a été écrit juste avant le passage en mode plan : `~/.claude/plans/remote-catalogs-hardening.md`,
-et la note mémoire `remote-catalogs-hardening-plan.md` pointe dessus. À l'approbation : garder un seul fichier de plan et
-faire pointer la mémoire (et `MEMORY.md`, pas encore mis à jour) dessus.
+✅ Un seul plan, celui-ci : le doublon `~/.claude/plans/remote-catalogs-hardening.md` et sa note mémoire n'existent plus,
+`MEMORY.md` pointe ici.

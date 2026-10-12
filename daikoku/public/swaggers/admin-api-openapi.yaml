@@ -2164,6 +2164,7 @@ components:
               type: array
               items:
                 oneOf:
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.Form"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
@@ -2251,16 +2252,13 @@ components:
           type: integer
           format: int64
         unit:
+          description: read case insensitively, plurals accepted (e.g. months)
           type: string
           enum:
-            - hour
-            - hours
-            - day
-            - days
-            - month
-            - months
-            - year
-            - years
+            - Hour
+            - Day
+            - Month
+            - Year
     OtoroshiTarget:
       description: Otoroshi target
       properties:
@@ -2318,9 +2316,18 @@ components:
             - object
             - "null"
         customMetadata:
-          type:
-            - object
-            - "null"
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              possibleValues:
+                type: array
+                items:
+                  type: string
+            required:
+              - key
         tags:
           type:
             - array
@@ -2333,12 +2340,13 @@ components:
         - restrictions
     ApiKeyRestrictions:
       description: ApiKey Restrictions
+      additionalProperties: false
       properties:
         enabled:
           type:
             - boolean
             - "null"
-        allowlast:
+        allowLast:
           type:
             - boolean
             - "null"
@@ -2485,6 +2493,7 @@ components:
         - title
     SubscriptionDemandStep.TeamAdmin:
       description: SubscriptionDemandState by team admin
+      additionalProperties: false
       properties:
         type:
           type: string
@@ -2492,19 +2501,14 @@ components:
             - teamAdmin
         id:
           type: string
-        schema:
-          type:
-            - object
-            - "null"
-        formatter:
-          type:
-            - string
-            - "null"
+        team:
+          type: string
         title:
           type: string
       required:
         - type
         - id
+        - team
         - title
     SubscriptionDemandStep.Payment:
       description: SubscriptionDemandState by payment
@@ -2545,6 +2549,40 @@ components:
         - type
         - id
         - url
+        - title
+    SubscriptionDemandStep.Form:
+      description: SubscriptionDemandState by form
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - form
+        id:
+          type: string
+        title:
+          type: string
+        schema:
+          type:
+            - object
+            - "null"
+        formatter:
+          type:
+            - string
+            - "null"
+        formKeysToMetadata:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        info:
+          type:
+            - string
+            - "null"
+      required:
+        - type
+        - id
         - title
     ValidationStep:
       description: ValidationStep

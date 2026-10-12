@@ -105,10 +105,56 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
   private val completePlan = UsagePlan(
     id = UsagePlanId("plan-1"),
     tenant = TenantId("tenant"),
-    customName = "Free plan",
-    customDescription = Some("A free plan"),
-    otoroshiTarget = None,
-    visibility = UsagePlanVisibility.Public
+    customName = "Gold plan",
+    customDescription = Some("A paid plan"),
+    maxPerSecond = Some(10),
+    maxPerDay = Some(10000),
+    maxPerMonth = Some(300000),
+    costPerMonth = Some(BigDecimal(49)),
+    costPerRequest = Some(BigDecimal("0.001")),
+    currency = Some(Currency("EUR")),
+    billingDuration = Some(BillingDuration(1, BillingTimeUnit.Month)),
+    trialPeriod = Some(BillingDuration(14, BillingTimeUnit.Day)),
+    otoroshiTarget = Some(
+      OtoroshiTarget(
+        otoroshiSettings = OtoroshiSettingsId("otoroshi-1"),
+        authorizedEntities =
+          Some(AuthorizedEntities(routes = Set(OtoroshiRouteId("route-1")))),
+        apikeyCustomization = ApikeyCustomization(
+          metadata = Json.obj("plan" -> "gold"),
+          customMetadata =
+            Seq(CustomMetadata("environment", Set("staging", "production"))),
+          tags = Json.arr("gold"),
+          restrictions = ApiKeyRestrictions(
+            enabled = true,
+            allowed = Seq(ApiKeyRestrictionPath("GET", "/forecasts/.*"))
+          )
+        )
+      )
+    ),
+    subscriptionProcess = SubscriptionProcess(
+      steps = Seq(
+        ValidationStep.Form(id = "form-1", title = "Your project"),
+        ValidationStep.TeamAdmin(id = "admin-1", team = TeamId("team-1")),
+        ValidationStep.Email(
+          id = "email-1",
+          emails = Seq("api@acme.io"),
+          message = Some("A new subscription to validate"),
+          title = "Email"
+        ),
+        ValidationStep.HttpRequest(
+          id = "http-1",
+          title = "Check",
+          url = "https://acme.io/check"
+        ),
+        ValidationStep.Payment(
+          id = "payment-1",
+          thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("stripe-1")
+        )
+      )
+    ),
+    visibility = UsagePlanVisibility.Private,
+    authorizedTeams = Seq(TeamId("team-1"))
   )
 
   private val completeApi = Api(
