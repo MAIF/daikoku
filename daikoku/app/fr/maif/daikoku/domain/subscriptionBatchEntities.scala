@@ -133,7 +133,13 @@ case class SubscriptionBatchDemand(
         (),
         AppError.EntityConflict("Only an accepted child can record a subscription")
       )
-      updated = item.copy(state = target, subscription = subscription.map(_.id), error = None)
+      updated = item.copy(
+        state = target,
+        subscription = subscription.map(_.id),
+        error = None,
+        reservation =
+          if (target == SubscriptionBatchItemState.Accepted) None else item.reservation
+      )
       _ <- Either.cond(
         !item.state.isClosed || updated == item,
         (),

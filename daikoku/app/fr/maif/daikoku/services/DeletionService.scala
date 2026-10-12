@@ -265,7 +265,7 @@ class DeletionService(
       // Atomic DB closure: physically delete the subs and the orphaned
       // keyrings, drop the stale notifs, save the deletion notifs + payment
       // ops, and enqueue the deferred Otoroshi work — all or nothing, no HTTP.
-      result <- EitherT.liftF(env.dataStore.withTransaction {
+      result <- EitherT.right[AppError](env.dataStore.withTransaction {
         val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
         val opRepo = env.dataStore.operationRepo.forTenant(tenant)
         for {
@@ -380,7 +380,7 @@ class DeletionService(
       s"[deletion service] :: physically deleting apis[${apis.map(_.name).mkString(",")}] and their closure"
     )
 
-    val planDeletion = Source(apis)
+    def planDeletion: Future[Unit] = Source(apis)
       .mapAsync(5)(api =>
         env.dataStore.usagePlanRepo
           .findByApi(tenant.id, api)
@@ -421,15 +421,18 @@ class DeletionService(
         } yield ()
       }
       .runWith(Sink.ignore)(using env.defaultMaterializer)
+      .map(_ => ())
 
-    val r = for {
-      _ <- planDeletion
-      _ <- Future.sequence(
-        apis.distinct.map(api => deleteApiClosure(api, tenant))
+    for {
+      _ <- EitherT(env.dataStore.blockBatchItems(
+        Some(tenant.id),
+        apiIds = apis.map(_.id).toSet
+      ))
+      _ <- EitherT.liftF[Future, AppError, Unit](planDeletion)
+      _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
+        Future.sequence(apis.distinct.map(api => deleteApiClosure(api, tenant)))
       )
     } yield ()
-
-    EitherT.liftF(r)
   }
 
   /** Physically delete an api and everything it owns in DB — posts, issues,
@@ -560,6 +563,10 @@ class DeletionService(
     val userParam = "$" + (tenantParams.size + 1)
 
     for {
+      _ <- EitherT(env.dataStore.blockBatchItems(
+        tenant.map(_.id),
+        requesterIds = Set(user.id)
+      ))
       notifs <- EitherT.right[AppError](
         env.dataStore.notificationRepo
           .forAllTenant()
@@ -673,6 +680,10 @@ class DeletionService(
         env.dataStore.teamRepo.forTenant(tenant).findById(id),
         AppError.TeamNotFound
       )
+      _ <- EitherT(env.dataStore.blockBatchItems(
+        Some(tenant.id),
+        teamIds = Set(team.id)
+      ))
       apis <- EitherT.liftF(
         env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
       )
@@ -749,6 +760,10 @@ class DeletionService(
           .findById(planId),
         AppError.PlanNotFound
       )
+      _ <- EitherT(env.dataStore.blockBatchItems(
+        Some(tenant.id),
+        planIds = Set(plan.id)
+      ))
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
           .findByApiAndPlan(tenant.id, api.id, plan.id)
@@ -869,19 +884,24 @@ class DeletionService(
           .findById(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.withTransaction {
-          for {
-            _ <- env.dataStore.subscriptionDemandRepo
-              .forTenant(tenant)
-              .deleteById(demand.id)
-            _ <- env.dataStore.stepValidatorRepo
-              .deleteByDemand(tenant.id, demand.id)
-            _ <- env.dataStore.notificationRepo
-              .deleteByDemand(tenant.id, demand.id)
-          } yield ()
-        }
-      )
+      _ <- demand.batch match {
+        case Some(reference) =>
+          EitherT(env.dataStore.cancelBatchChild(tenant.id, reference))
+        case None =>
+          EitherT.right[AppError](
+            env.dataStore.withTransaction {
+              for {
+                _ <- env.dataStore.subscriptionDemandRepo
+                  .forTenant(tenant)
+                  .deleteById(demand.id)
+                _ <- env.dataStore.stepValidatorRepo
+                  .deleteByDemand(tenant.id, demand.id)
+                _ <- env.dataStore.notificationRepo
+                  .deleteByDemand(tenant.id, demand.id)
+              } yield ()
+            }
+          )
+      }
     } yield ()
   }
 }

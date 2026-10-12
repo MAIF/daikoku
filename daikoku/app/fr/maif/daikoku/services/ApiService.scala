@@ -52,6 +52,143 @@ class ApiService(
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
 
+  private case class BatchProvisioningAuthorization(reservationToken: String)
+
+  private def validateBatchChildBeforeProvisioning(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      api: Api,
+      plan: UsagePlan,
+      team: Team,
+      requester: User
+  ): EitherT[Future, AppError, Option[BatchProvisioningAuthorization]] =
+    demand.batch match {
+      case None => EitherT.pure[Future, AppError](None)
+      case Some(reference) =>
+        EitherT(env.dataStore.withTransaction {
+          env.dataStore.subscriptionBatchDemandRepo
+            .findForUpdate(tenant.id, reference.batch)
+            .flatMap {
+              case None =>
+                Future.successful(Left(AppError.EntityNotFound("Subscription batch")))
+              case Some(batch) =>
+                (for {
+                  item <- EitherT.fromOption[Future](
+                    batch.items.find(_.id == reference.item),
+                    AppError.EntityNotFound("Subscription batch item")
+                  )
+                  child <- EitherT.fromOptionF(
+                    env.dataStore.subscriptionDemandRepo
+                      .findByBatchItem(tenant.id, reference),
+                    AppError.SubscriptionDemandNotFound
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility.validateLinkedChild(batch, item, child)
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      child == demand && !child.state.isClosed,
+                      (),
+                      AppError.EntityConflict("Subscription demand progress")
+                    )
+                  )
+                  reservation <- EitherT.fromEither[Future](
+                    item.reservation.toRight(
+                      AppError.EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      reservation.isActiveAt(DateTime.now),
+                      (),
+                      AppError.EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                  currentApi <- EitherT.fromOptionF(
+                    env.dataStore.apiRepo.forTenant(tenant).findById(item.api),
+                    AppError.ApiNotFound
+                  )
+                  currentPlan <- EitherT.fromOptionF(
+                    env.dataStore.usagePlanRepo.forTenant(tenant).findById(item.plan),
+                    AppError.PlanNotFound
+                  )
+                  currentTeam <- EitherT.fromOptionF(
+                    env.dataStore.teamRepo.forTenant(tenant).findById(batch.team),
+                    AppError.TeamNotFound
+                  )
+                  currentRequester <- EitherT.fromOptionF(
+                    env.dataStore.userRepo.findById(batch.from),
+                    AppError.UserNotFound(Some(batch.from))
+                  )
+                  currentTenant <- EitherT.fromOptionF(
+                    env.dataStore.tenantRepo.findById(tenant.id),
+                    AppError.TenantNotFound
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      currentApi == api && currentPlan == plan &&
+                        currentTeam == team && currentRequester == requester,
+                      (),
+                      AppError.EntityConflict("Subscription eligibility changed")
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility.validate(
+                      currentApi,
+                      currentPlan,
+                      currentTeam,
+                      currentRequester,
+                      currentTenant.subscriptionSecurity
+                    )
+                  )
+                  selectedKeyringId <- EitherT.fromEither[Future](
+                    item.keyringChoice match {
+                      case SubscriptionBatchKeyringChoice.Existing(keyring) =>
+                        Right(keyring)
+                      case SubscriptionBatchKeyringChoice.New(creationId) =>
+                        batch.newKeyrings
+                          .find(_.id == creationId)
+                          .toRight(AppError.EntityNotFound("Subscription batch keyring creation"))
+                          .flatMap(_.keyring.toRight(
+                            AppError.EntityConflict("Subscription batch keyring is not ready")
+                          ))
+                    }
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      child.keyring.contains(selectedKeyringId),
+                      (),
+                      AppError.BadRequestError(
+                        "The child keyring no longer matches its batch selection"
+                      )
+                    )
+                  )
+                  keyring <- EitherT.fromOptionF(
+                    env.dataStore.keyringRepo
+                      .forTenant(tenant.id)
+                      .findById(selectedKeyringId.value),
+                    AppError.EntityNotFound(s"Keyring ${selectedKeyringId.value}")
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility.validateKeyring(
+                      batch,
+                      item,
+                      currentPlan,
+                      keyring
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      reservation.isActiveAt(DateTime.now),
+                      (),
+                      AppError.EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                } yield Some(BatchProvisioningAuthorization(reservation.token))).value
+            }
+        })
+    }
+
   private def saveDemandProgress(
       demand: SubscriptionDemand,
       previous: SubscriptionDemand
@@ -73,7 +210,8 @@ class ApiService(
       previous: SubscriptionDemand,
       updated: SubscriptionDemand,
       notification: Notification,
-      subscription: Option[ApiSubscriptionId] = None
+      subscription: Option[ApiSubscriptionId] = None,
+      reservationToken: Option[String] = None
   ): EitherT[Future, AppError, Unit] =
     previous.batch match {
       case Some(_) =>
@@ -82,7 +220,8 @@ class ApiService(
             updated,
             previous,
             subscription,
-            Some(notification)
+            Some(notification),
+            reservationToken
           )
         )
       case None =>
@@ -1683,6 +1822,14 @@ class ApiService(
                 .findById(demand.plan),
               AppError.PlanNotFound
             )
+            provisioningAuthorization <- validateBatchChildBeforeProvisioning(
+              demand,
+              tenant,
+              api,
+              plan,
+              team,
+              from
+            )
             maybeSubscriptionInformations <-
               EitherT.liftF(plan.paymentSettings match {
                 case Some(settings) =>
@@ -1729,7 +1876,8 @@ class ApiService(
                 action = NotificationAction
                   .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
               ),
-              Some(subscription.id)
+              Some(subscription.id),
+              provisioningAuthorization.map(_.reservationToken)
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence((administrators ++ Seq(from)).map(admin => {
