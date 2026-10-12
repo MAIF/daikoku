@@ -136,8 +136,20 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   `copyToClipboard`, régénération confirmée, exemple curl), 6 specs (45/45). Piège trouvé : les routes token résolvent
   le tenant par le `Host`, la fixture `otherTenant` doit avoir son propre `domain`. ✅ GraphQL : aucun type pour
   RemoteCatalog, `token` exposé nulle part (vérifié le 2026-10-01).
-- ⬜ Page du manuel : contenu minimal + complet par kind (repris des `examples` de l'OpenAPI), snippet CI
-  `curl _validate` avec le token du catalog.
+- ✅ `_validate` accepte aussi un zip (2026-10-12) : `Content-Type: application/zip`, zip fait depuis la racine du
+  catalog (`cd catalog && zip -qr catalog.zip .`), seuls ses `.json` / `.yaml` / `.yml` sont lus. Corps lu en flux
+  après le contrôle du token ou de la clé admin-api (motif « Import parser » : `Accumulator.source`), 20 Mo max
+  (`limitWeighted`, 400 au-delà), 100 Mo décompressés max (budget compté sur toutes les entrées, contre les zip
+  bombs). Routes token et admin-api ; Resource Loader inchangé. Manuel (zip + `curl --data-binary`), OpenAPI
+  (`application/zip`), panneau CI + i18n. 2 specs (zip valide avec dossier et README ignorés, zip bomb) ;
+  `RemoteCatalogControllerSpec` 30/30, `RemoteCatalogSpec` 54/54, `OpenApiContractSpec` 32/32.
+- ✅ Page du manuel (2026-10-12) : minimal par kind dans `1-files.md`, complet par kind dans `4-reference.md`
+  (plan avec étapes `form` + `teamAdmin` et tableau des 5 types d'étapes, versions d'API, champs ignorés ou figés
+  comme les champs structurels d'une souscription), snippet CI zip + `curl _validate`. Deux specs lisent les blocs
+  YAML de la page : aller-retour (chaque champ relu à l'identique, contre les `.asOpt` qui ignorent en silence) et
+  `_validate` des 6 documents ensemble. Liens depuis `index.md` et `1-files.md`.
+- ⬜ OpenAPI : écarts relevés en écrivant la référence : étape `form` absente, `teamAdmin` décrit avec `schema` /
+  `formatter` au lieu de `team`, `allowlast` au lieu de `allowLast`. Ajouter un plan à étapes au test de contrat.
 - ~~Vérifier le YAML multi-documents avec ajv / check-jsonschema~~ sans objet depuis l'abandon du schéma autonome
   (2026-09-30).
 - Plus tard : `daikoku catalog validate` dans le CLI Rust.

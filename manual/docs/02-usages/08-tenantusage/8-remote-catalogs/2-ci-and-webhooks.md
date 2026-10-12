@@ -14,7 +14,9 @@ this catalog, on the tenant domain. It gives no access to the admin API.
 | `POST /api/remote-catalogs/<id>/_undeploy` | Removes the entities of the catalog. |
 
 All take `Authorization: Bearer <token>`. `_validate` expects the **whole** catalog, as it would be
-deployed, relative to the catalog root:
+deployed. The simplest is a zip made from the catalog root (`cd catalog && zip -qr catalog.zip .`),
+sent with `Content-Type: application/zip`: Daikoku reads its `.json`, `.yaml` and `.yml` files and
+ignores the rest. The body can also be a JSON array of files, relative to the catalog root:
 
 ```json
 [
@@ -23,8 +25,9 @@ deployed, relative to the catalog root:
 ]
 ```
 
-The answer is a run: `status`, `created`, `updated`, `deleted`, `detached`, `errors`. A run that
-applies nothing (`failed`) answers `400`.
+The body is limited to 20 MB, and a zip to 100 MB once unzipped. The answer is a run: `status`,
+`created`, `updated`, `deleted`, `detached`, `errors`. A run that applies nothing (`failed`) answers
+`400`, like a body that cannot be read.
 
 ## Example: GitHub Actions
 
@@ -48,20 +51,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Collect the catalog files
+      - name: Zip the catalog
         working-directory: catalog # the catalog root
-        run: |
-          find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) | sed 's|^\./||' |
-            while read -r f; do
-              jq -n --arg path "$f" --rawfile content "$f" '{path: $path, content: $content}'
-            done | jq -s . > "$RUNNER_TEMP/catalog-files.json"
+        run: zip -qr "$RUNNER_TEMP/catalog.zip" .
 
       - name: Validate
         run: |
           curl --fail-with-body -X POST "$DAIKOKU_URL/api/remote-catalogs/$CATALOG_ID/_validate" \
             -H "Authorization: Bearer $DAIKOKU_CATALOG_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @"$RUNNER_TEMP/catalog-files.json"
+            -H "Content-Type: application/zip" \
+            --data-binary @"$RUNNER_TEMP/catalog.zip"
 
       - name: Deploy
         if: github.event_name == 'push'

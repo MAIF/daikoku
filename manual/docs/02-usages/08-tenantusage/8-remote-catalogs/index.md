@@ -4,7 +4,8 @@ A remote catalog keeps tenant entities in sync with files kept outside Daikoku: 
 (GitHub, GitLab), an HTTP endpoint or a folder on the server. The files are the source of truth:
 what you add, change or remove there is created, updated or removed in Daikoku.
 
-Managed kinds: `team`, `usage-plan`, `api`, `keyring`, `api-subscription`, `cms-page`.
+Managed kinds: `team`, `usage-plan`, `api`, `keyring`, `api-subscription`, `cms-page`. The
+[reference](./4-reference.md) shows a complete document of each.
 
 Catalogs are managed by tenant admins, in the tenant settings, under `Remote catalogs`.
 

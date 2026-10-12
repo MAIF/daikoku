@@ -1,10 +1,19 @@
 package fr.maif.daikoku.services.catalog
 
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.services.catalog.sources.SourceUtils
 import fr.maif.daikoku.utils.Yaml
+import org.apache.pekko.stream.{Materializer, StreamLimitReachedException}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
 import play.api.libs.json._
 
-import scala.util.Try
+import java.nio.charset.StandardCharsets
+import java.util.zip.ZipInputStream
+import scala.annotation.tailrec
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try, Using}
 
 case class RemoteCatalogError(source: String, message: String) {
   def json: JsValue = Json.obj("source" -> source, "message" -> message)
@@ -29,6 +38,43 @@ case class CatalogFile(path: String, content: String)
 
 object CatalogFile {
 
+  val maxBodyBytes: Long = 20L * 1024 * 1024
+  val maxUnzippedBytes: Int = 100 * 1024 * 1024
+
+  def fromBody(
+      contentType: Option[String],
+      body: Source[ByteString, ?]
+  )(using env: Env): Future[Either[String, Seq[CatalogFile]]] = {
+    given Materializer = env.defaultMaterializer
+    given ExecutionContext = env.defaultExecutionContext
+
+    val bytes = body
+      .limitWeighted(maxBodyBytes)(_.size.toLong)
+      .runFold(ByteString.empty)(_ ++ _)
+
+    bytes
+      .map(parseBody(contentType, _))
+      .recover { case _: StreamLimitReachedException =>
+        Left(s"The body is over ${maxBodyBytes / 1024 / 1024} MB")
+      }
+  }
+
+  // a zip of the catalog root, or a JSON array of {path, content}
+  private def parseBody(
+      contentType: Option[String],
+      body: ByteString
+  ): Either[String, Seq[CatalogFile]] = {
+    if (contentType.contains("application/zip")) {
+      readZip(body)
+    } else {
+      val json = Try(Json.parse(body.toArray)).toOption
+
+      json
+        .flatMap(readAll)
+        .toRight("Expected an array of {path, content}, or a zip")
+    }
+  }
+
   // e.g. [{"path": "teams/weather.yaml", "content": "kind: team\n_id: ..."}]
   def readAll(body: JsValue): Option[Seq[CatalogFile]] =
     body.asOpt[Seq[JsObject]].flatMap { objects =>
@@ -40,6 +86,46 @@ object CatalogFile {
       )
 
       Option.when(files.size == objects.size)(files)
+    }
+
+  // keeps the .json, .yaml and .yml files, e.g. "teams/team-a/team.yaml"
+  def readZip(body: ByteString): Either[String, Seq[CatalogFile]] = {
+    val read = Using(new ZipInputStream(body.iterator.asInputStream)) { zip =>
+      readEntries(zip, Vector.empty, maxUnzippedBytes)
+    }
+
+    read match {
+      case Failure(_) => Left("The body is not a valid zip")
+      case Success(None) =>
+        Left(s"The zip is over ${maxUnzippedBytes / 1024 / 1024} MB unzipped")
+      case Success(Some(Seq())) =>
+        Left("The zip holds no .json, .yaml or .yml file")
+      case Success(Some(files)) => Right(files)
+    }
+  }
+
+  // None once the unzipped bytes exceed the budget, e.g. a zip bomb
+  @tailrec
+  private def readEntries(
+      zip: ZipInputStream,
+      files: Seq[CatalogFile],
+      remaining: Int
+  ): Option[Seq[CatalogFile]] =
+    Option(zip.getNextEntry) match {
+      case None => Some(files)
+      case Some(entry) =>
+        val bytes = zip.readNBytes(remaining + 1)
+        val left = remaining - bytes.length
+
+        if (left < 0) {
+          None
+        } else if (!SourceUtils.isEntityFile(entry.getName)) {
+          readEntries(zip, files, left)
+        } else {
+          val content = new String(bytes, StandardCharsets.UTF_8)
+
+          readEntries(zip, files :+ CatalogFile(entry.getName, content), left)
+        }
     }
 }
 

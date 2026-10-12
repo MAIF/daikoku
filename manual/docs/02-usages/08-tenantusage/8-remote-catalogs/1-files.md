@@ -23,7 +23,8 @@ spec:
 
 Every document needs `kind`, `_id` and `_tenant`, the latter equal to the tenant of the catalog.
 The other fields are those of the entity in the [admin API](/openapi):
-each schema there lists the required fields and publishes a minimal example.
+each schema there lists the required fields and publishes a minimal example. The
+[reference](./4-reference.md) shows a complete document for each kind.
 
 ## Minimal documents
 

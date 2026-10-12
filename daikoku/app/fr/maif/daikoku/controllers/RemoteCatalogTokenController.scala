@@ -18,10 +18,13 @@ import fr.maif.daikoku.services.catalog.{
   DeployReport,
   RemoteCatalogEngine
 }
+import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.libs.json._
+import play.api.libs.streams.Accumulator
 import play.api.mvc.{
   AbstractController,
+  BodyParser,
   ControllerComponents,
   Request,
   RequestHeader,
@@ -57,19 +60,23 @@ class RemoteCatalogTokenController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
+  private val streamedBody: BodyParser[Source[ByteString, ?]] =
+    BodyParser("Catalog files") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
+
   def validate(catalogId: String) =
-    DaikokuTenantAction.async(parse.json) { ctx =>
+    DaikokuTenantAction.async(streamedBody) { ctx =>
       withCatalogToken(ctx.tenant, catalogId, ctx.request) { catalog =>
         auditTokenAction(ctx.tenant, ctx.request, catalogId, "validate")
 
-        CatalogFile.readAll(ctx.request.body) match {
-          case None =>
-            Future.successful(
-              BadRequest(
-                Json.obj("error" -> "Expected an array of {path, content}")
-              )
-            )
-          case Some(files) =>
+        val read =
+          CatalogFile.fromBody(ctx.request.contentType, ctx.request.body)
+
+        read.flatMap {
+          case Left(error) =>
+            Future.successful(BadRequest(Json.obj("error" -> error)))
+          case Right(files) =>
             engine.validate(ctx.tenant, catalog, files).map(runResult)
         }
       }

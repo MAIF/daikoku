@@ -1428,7 +1428,7 @@
   "remote-catalog.token.copy": "Copy",
   "remote-catalog.token.regenerate": "Regenerate",
   "remote-catalog.token.regenerateConfirm": "Regenerate the token? The current one stops working immediately, for the CI and for the webhook.",
-  "remote-catalog.token.help": "This token lets a CI call _validate, _test, _deploy and _undeploy on this catalog only, with no access to the admin API. _validate expects the whole catalog as an array of {path, content}.",
+  "remote-catalog.token.help": "This token lets a CI call _validate, _test, _deploy and _undeploy on this catalog only, with no access to the admin API. _validate expects the whole catalog, zipped from its root:",
   "remote-catalog.token.deployHelp": "Deploy the catalog from a CI, e.g. after a merge on the catalog branch:",
   "remote-catalog.webhook.title": "Webhook",
   "remote-catalog.webhook.url": "Webhook URL",

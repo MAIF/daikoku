@@ -5434,7 +5434,7 @@ paths:
       summary: check a whole catalog sent in the request, without fetching nor writing anything
       operationId: remote-catalogs.validate
       requestBody:
-        description: every file of the catalog
+        description: every file of the catalog, as an array of files or as a zip of the catalog root whose .json, .yaml and .yml files are read; at most 20 MB, and 100 MB once unzipped
         required: true
         content:
           application/json:
@@ -5450,11 +5450,12 @@ paths:
                 required:
                   - path
                   - content
+          application/zip: {}
       responses:
         "200":
           description: the catalog would deploy; the body lists what would be created, updated and deleted
         "400":
-          description: the catalog is refused (the body lists the errors, file by file) or the request body is not an array of files
+          description: the catalog is refused (the body lists the errors, file by file), or the request body is neither an array of files nor a valid zip, or it is over a size limit
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

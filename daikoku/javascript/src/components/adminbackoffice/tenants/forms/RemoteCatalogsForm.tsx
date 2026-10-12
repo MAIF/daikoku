@@ -93,7 +93,7 @@ const CatalogToken = (props: {
       `curl -X POST ${catalogUrl}/${action} \\`,
       `  -H "Authorization: Bearer $DAIKOKU_CATALOG_TOKEN"${withFiles ? ' \\' : ''}`,
       ...(withFiles
-        ? ['  -H "Content-Type: application/json" \\', '  -d @catalog-files.json']
+        ? ['  -H "Content-Type: application/zip" \\', '  --data-binary @catalog.zip']
         : []),
     ].join('\n');
   const copyIcon = copied ? 'fas fa-check' : 'fas fa-copy';

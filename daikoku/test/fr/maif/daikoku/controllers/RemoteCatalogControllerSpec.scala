@@ -1,17 +1,29 @@
 package fr.maif.daikoku.controllers
 
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.services.catalog.CatalogFile
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.Yaml
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatestplus.play.PlaySpec
 import org.apache.pekko.util.ByteString
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{
+  JsArray,
+  JsError,
+  JsObject,
+  JsResult,
+  JsSuccess,
+  JsValue,
+  Json
+}
 import play.api.libs.ws.{BodyWritable, InMemoryBody, WSResponse}
 
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.util.Base64
+import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 
@@ -97,6 +109,68 @@ class RemoteCatalogControllerSpec
       .as[Seq[JsObject]]
       .head
 
+  private lazy val referenceDocuments: Seq[String] = {
+    val page = Files.readString(
+      Paths.get(
+        System.getProperty("user.dir"),
+        "../manual/docs/02-usages/08-tenantusage",
+        "8-remote-catalogs/4-reference.md"
+      )
+    )
+
+    "(?s)```yaml\n(.*?)```".r
+      .findAllMatchIn(page)
+      .map(_.group(1))
+      .toSeq
+  }
+
+  private def readBack(kind: String, document: JsObject): JsResult[JsValue] =
+    kind match {
+      case "team" =>
+        json.TeamFormat.reads(document).map(json.TeamFormat.writes)
+      case "usage-plan" =>
+        json.UsagePlanFormat.reads(document).map(json.UsagePlanFormat.writes)
+      case "api" =>
+        json.ApiFormat.reads(document).map(json.ApiFormat.writes)
+      case "keyring" =>
+        KeyringAdminApiController
+          .readPayload(document)
+          .map(json.KeyringFormat.writes)
+      case "api-subscription" =>
+        json.ApiSubscriptionFormat
+          .reads(document)
+          .map(json.ApiSubscriptionFormat.writes)
+      case "cms-page" =>
+        json.CmsPageFormat.reads(document).map(json.CmsPageFormat.writes)
+      case other => JsError(s"Unknown kind $other")
+    }
+
+  private def changedFields(
+      expected: JsValue,
+      actual: JsValue,
+      path: String = ""
+  ): Seq[String] =
+    (expected, actual) match {
+      case (expectedObject: JsObject, actualObject: JsObject) =>
+        expectedObject.fields.toSeq.flatMap { case (key, value) =>
+          (actualObject \ key).toOption match {
+            case Some(actualValue) =>
+              changedFields(value, actualValue, s"$path/$key")
+            case None => Seq(s"$path/$key")
+          }
+        }
+      case (expectedArray: JsArray, actualArray: JsArray)
+          if expectedArray.value.size == actualArray.value.size =>
+        expectedArray.value.toSeq
+          .zip(actualArray.value.toSeq)
+          .zipWithIndex
+          .flatMap { case ((expectedItem, actualItem), index) =>
+            changedFields(expectedItem, actualItem, s"$path/$index")
+          }
+      case _ if expected == actual => Seq.empty
+      case _ => Seq(path)
+    }
+
   private def tokenCall(
       catalogId: String,
       action: String,
@@ -109,6 +183,39 @@ class RemoteCatalogControllerSpec
       headers = Map("Authorization" -> s"Bearer $token"),
       body = body
     )(using tenant)
+
+  private def zipOf(files: (String, String)*): ByteString = {
+    val bytes = new ByteArrayOutputStream()
+    val zip = new ZipOutputStream(bytes)
+
+    files.foreach { case (path, content) =>
+      zip.putNextEntry(new ZipEntry(path))
+      zip.write(content.getBytes(StandardCharsets.UTF_8))
+      zip.closeEntry()
+    }
+
+    zip.close()
+    ByteString(bytes.toByteArray)
+  }
+
+  private def validateZip(
+      catalogId: String,
+      token: String,
+      zip: ByteString
+  ): WSResponse = {
+    val writable = BodyWritable[ByteString](InMemoryBody(_), "application/zip")
+
+    Await.result(
+      daikokuComponents.env.wsClient
+        .url(s"http://127.0.0.1:$port/api/remote-catalogs/$catalogId/_validate")
+        .withHttpHeaders(
+          "Host" -> tenant.domain,
+          "Authorization" -> s"Bearer $token"
+        )
+        .post(zip)(using writable),
+      10.seconds
+    )
+  }
 
   private def webhookCall(
       catalogId: String,
@@ -378,6 +485,36 @@ class RemoteCatalogControllerSpec
       errors.head must include("Missing required field '_id'")
     }
 
+    "validate a zipped catalog and ignore the other files" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+      val team = teamFile("team-weather")
+      val zip = zipOf(
+        "teams/" -> "",
+        (team \ "path").as[String] -> (team \ "content").as[String],
+        "README.md" -> "This catalog describes the weather team."
+      )
+
+      val validated = validateZip("cat-a", "tok-a", zip)
+      validated.status mustBe 200
+      (validated.json \ "status").as[String] mustBe "completed"
+      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+    }
+
+    "refuse a zip over the unzipped limit" in {
+      setupWithAdminApi(remoteCatalogs =
+        Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+      val bomb =
+        zipOf("bomb.json" -> " ".repeat(CatalogFile.maxUnzippedBytes + 1))
+
+      val validated = validateZip("cat-a", "tok-a", bomb)
+      validated.status mustBe 400
+      val error = (validated.json \ "error").as[String]
+      error mustBe "The zip is over 100 MB unzipped"
+    }
+
     "refuse a missing, wrong or foreign token, and an unknown catalog" in {
       setupWithAdminApi(remoteCatalogs =
         Seq(
@@ -483,6 +620,60 @@ class RemoteCatalogControllerSpec
       (validated.json \ "created").as[Seq[String]] must contain allOf (
         "team-weather",
         "plan-weather-free",
+        "api-weather",
+        "keyring-weather",
+        "subscription-weather",
+        "page-weather-home"
+      )
+    }
+  }
+
+  "The remote catalogs reference page" should {
+    "only show fields that Daikoku reads back as written" in {
+      val changed = referenceDocuments.flatMap { text =>
+        val document = Yaml.parse(text).get.as[JsObject]
+        val kind = (document \ "kind").as[String]
+        val written = document - "kind"
+
+        readBack(kind, written) match {
+          case JsSuccess(back, _) =>
+            changedFields(written, back).map(field => s"$kind$field")
+          case JsError(errors) => Seq(s"$kind: $errors")
+        }
+      }
+
+      referenceDocuments must have size 6
+      changed mustBe empty
+    }
+
+    "validate as one catalog" in {
+      val prodSettings = tenant.otoroshiSettings.head.copy(
+        id = OtoroshiSettingsId("otoroshi-prod")
+      )
+      val tenantWithProd = tenant.copy(
+        otoroshiSettings = tenant.otoroshiSettings + prodSettings
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenantWithProd),
+        users = Seq(tenantAdmin.copy(id = UserId("user-admin"))),
+        teams = Seq(defaultAdminTeam),
+        remoteCatalogs = Seq(aCatalog("cat-a").copy(token = "tok-a"))
+      )
+      val files = referenceDocuments.zipWithIndex.map {
+        case (document, index) =>
+          Json.obj("path" -> s"reference-$index.yaml", "content" -> document)
+      }
+
+      val validated =
+        tokenCall("cat-a", "_validate", "tok-a", Some(JsArray(files)))
+
+      withClue(validated.body) {
+        validated.status mustBe 200
+      }
+      (validated.json \ "created").as[Seq[String]] must contain allOf (
+        "team-weather",
+        "plan-weather-gold",
         "api-weather",
         "keyring-weather",
         "subscription-weather",

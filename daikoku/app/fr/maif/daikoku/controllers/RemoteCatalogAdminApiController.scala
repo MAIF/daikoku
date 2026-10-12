@@ -26,8 +26,11 @@ import fr.maif.daikoku.utils.{
   IdGenerator,
   UpdateOrCreate
 }
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import play.api.libs.json._
-import play.api.mvc.{ControllerComponents, Result}
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{BodyParser, ControllerComponents, Result}
 
 import scala.concurrent.Future
 
@@ -42,6 +45,11 @@ class RemoteCatalogAdminApiController(
       env,
       cc
     ) {
+  private val streamedBody: BodyParser[Source[ByteString, ?]] =
+    BodyParser("Catalog files") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
+
   override def entityClass = classOf[RemoteCatalog]
   override def entityName: String = "remote-catalog"
   override def pathRoot: String = s"/admin-api/${entityName}s"
@@ -142,18 +150,17 @@ class RemoteCatalogAdminApiController(
     }
 
   def validate(id: String) =
-    DaikokuApiAction.async(parse.json) { ctx =>
+    DaikokuApiAction.async(streamedBody) { ctx =>
       withCatalog(ctx.tenant, id) { catalog =>
         auditAdminApiWrite(ctx, "validate", id)
 
-        CatalogFile.readAll(ctx.request.body) match {
-          case None =>
-            Future.successful(
-              BadRequest(
-                Json.obj("error" -> "Expected an array of {path, content}")
-              )
-            )
-          case Some(files) =>
+        val read =
+          CatalogFile.fromBody(ctx.request.contentType, ctx.request.body)
+
+        read.flatMap {
+          case Left(error) =>
+            Future.successful(BadRequest(Json.obj("error" -> error)))
+          case Right(files) =>
             engine.validate(ctx.tenant, catalog, files).map(dryRunResult)
         }
       }
