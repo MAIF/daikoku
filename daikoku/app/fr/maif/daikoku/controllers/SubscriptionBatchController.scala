@@ -6,7 +6,11 @@ import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.jobs.{JobOutcome, Runner, SubscriptionBatchMaterializationJob}
+import fr.maif.daikoku.jobs.{
+  JobOutcome,
+  Runner,
+  SubscriptionBatchMaterializationJob
+}
 import fr.maif.daikoku.services.SubscriptionBatchService
 import play.api.libs.json.*
 import play.api.mvc.*
@@ -53,9 +57,13 @@ class SubscriptionBatchController(
               batchService
                 .submit(ctx.tenant.id, ctx.user, submission)
                 .value
-                .map(_.map(receipt =>
-                  Created(SubscriptionBatchSubmissionReceiptFormat.writes(receipt))
-                ))
+                .map(
+                  _.map(receipt =>
+                    Created(
+                      SubscriptionBatchSubmissionReceiptFormat.writes(receipt)
+                    )
+                  )
+                )
           }
       }
     }
@@ -108,7 +116,37 @@ class SubscriptionBatchController(
               batchService
                 .cancel(ctx.tenant.id, batch.id)
                 .value
-                .map(_.map(updated => Ok(updated.asJson)))
+                .flatMap {
+                  case Left(error) => Future.successful(Left(error))
+                  case Right(_) =>
+                    batchJob
+                      .run(
+                        ctx.tenant,
+                        Runner.Api,
+                        input = Some(batch.id),
+                        parallelism = env.config.subscriptionBatchJobBatchSize
+                      )
+                      .flatMap {
+                        case JobOutcome.Failed(message) =>
+                          Future.successful(
+                            Left(AppError.InternalServerError(message))
+                          )
+                        case _ =>
+                          env.dataStore.subscriptionBatchDemandRepo
+                            .forTenant(ctx.tenant.id)
+                            .findById(batch.id)
+                            .map {
+                              case Some(updated) =>
+                                Right(Ok(updated.asJson))
+                              case None =>
+                                Left(
+                                  AppError.EntityNotFound(
+                                    "Subscription batch"
+                                  )
+                                )
+                            }
+                      }
+                }
             case None =>
               Future.successful(
                 Left(AppError.EntityNotFound("Subscription batch"))
@@ -118,61 +156,61 @@ class SubscriptionBatchController(
     }
 
   def resume(teamId: String, batchId: String): Action[AnyContent] =
-      DaikokuAction.async { ctx =>
-        TeamMemberOnly(
-          AuditTrailEvent(
-            "@{user.name} resumed subscription batch @{batch.id}"
-          )
-        )(teamId, ctx) { team =>
-          ctx.setCtxValue("batch.id", batchId)
-          val id = SubscriptionBatchDemandId(batchId)
-          env.dataStore.subscriptionBatchDemandRepo
-            .forTenant(ctx.tenant.id)
-            .findById(id)
-            .flatMap {
-              case Some(batch) if batch.team != team.id =>
-                Future.successful(
-                  Left(AppError.EntityNotFound("Subscription batch"))
+    DaikokuAction.async { ctx =>
+      TeamMemberOnly(
+        AuditTrailEvent(
+          "@{user.name} resumed subscription batch @{batch.id}"
+        )
+      )(teamId, ctx) { team =>
+        ctx.setCtxValue("batch.id", batchId)
+        val id = SubscriptionBatchDemandId(batchId)
+        env.dataStore.subscriptionBatchDemandRepo
+          .forTenant(ctx.tenant.id)
+          .findById(id)
+          .flatMap {
+            case Some(batch) if batch.team != team.id =>
+              Future.successful(
+                Left(AppError.EntityNotFound("Subscription batch"))
+              )
+            case Some(batch)
+                if batch.from != ctx.user.id &&
+                  !ctx.user.isDaikokuAdmin &&
+                  !team.users.exists(member =>
+                    member.userId == ctx.user.id &&
+                      member.teamPermission == TeamPermission.Administrator
+                  ) =>
+              Future.successful(Left(AppError.TeamUnauthorized))
+            case Some(batch) =>
+              batchJob
+                .run(
+                  ctx.tenant,
+                  Runner.Api,
+                  input = Some(batch.id),
+                  parallelism = env.config.subscriptionBatchJobBatchSize
                 )
-              case Some(batch)
-                  if batch.from != ctx.user.id &&
-                    !ctx.user.isDaikokuAdmin &&
-                    !team.users.exists(member =>
-                      member.userId == ctx.user.id &&
-                        member.teamPermission == TeamPermission.Administrator
-                    ) =>
-                Future.successful(Left(AppError.TeamUnauthorized))
-              case Some(batch) =>
-                batchJob
-                  .run(
-                    ctx.tenant,
-                    Runner.Api,
-                    input = Some(batch.id),
-                    parallelism = env.config.subscriptionBatchJobBatchSize
-                  )
-                  .flatMap {
-                    case JobOutcome.Failed(message) =>
-                      Future.successful(
-                        Left(AppError.InternalServerError(message))
-                      )
-                    case _ =>
-                      env.dataStore.subscriptionBatchDemandRepo
-                        .forTenant(ctx.tenant.id)
-                        .findById(batch.id)
-                        .map {
-                          case Some(updated) =>
-                            Right(Accepted(updated.asJson))
-                          case None =>
-                            Left(AppError.EntityNotFound("Subscription batch"))
-                        }
-                  }
-              case None =>
-                Future.successful(
-                  Left(AppError.EntityNotFound("Subscription batch"))
-                )
-            }
-        }
+                .flatMap {
+                  case JobOutcome.Failed(message) =>
+                    Future.successful(
+                      Left(AppError.InternalServerError(message))
+                    )
+                  case _ =>
+                    env.dataStore.subscriptionBatchDemandRepo
+                      .forTenant(ctx.tenant.id)
+                      .findById(batch.id)
+                      .map {
+                        case Some(updated) =>
+                          Right(Accepted(updated.asJson))
+                        case None =>
+                          Left(AppError.EntityNotFound("Subscription batch"))
+                      }
+                }
+            case None =>
+              Future.successful(
+                Left(AppError.EntityNotFound("Subscription batch"))
+              )
+          }
       }
+    }
 
   def reconcileFailure(
       teamId: String,
@@ -214,7 +252,9 @@ class SubscriptionBatchController(
                             .value
                         case _ =>
                           Future.successful(
-                            Left(AppError.EntityNotFound("Subscription batch item"))
+                            Left(
+                              AppError.EntityNotFound("Subscription batch item")
+                            )
                           )
                       }
                 }

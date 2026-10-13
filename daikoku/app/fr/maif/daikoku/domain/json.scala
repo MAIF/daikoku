@@ -112,29 +112,31 @@ object json {
 
   val OtoroshiSettingsFormat = new Format[OtoroshiSettings] {
     override def reads(json: JsValue): JsResult[OtoroshiSettings] =
-      (json \ "keyringEmptyGroup").validateOpt(using KeyringEmptyGroupFormat).flatMap { emptyGroup =>
-      Try {
-        JsSuccess(
-          OtoroshiSettings(
-            id = (json \ "_id").as(using OtoroshiSettingsIdFormat),
-            url = (json \ "url").as[String],
-            host = (json \ "host").as[String],
-            clientId = (json \ "clientId")
-              .asOpt[String]
-              .getOrElse("admin-api-apikey-id"),
-            clientSecret = (json \ "clientSecret")
-              .asOpt[String]
-              .getOrElse("admin-api-apikey-secret"),
-            elasticConfig = (json \ "elasticConfig").asOpt(using
-              ElasticAnalyticsConfig.format
-            ),
-            keyringEmptyGroup = emptyGroup
-          )
-        )
-      } recover { case e =>
-        JsError(e.getMessage)
-      } get
-      }
+      (json \ "keyringEmptyGroup")
+        .validateOpt(using KeyringEmptyGroupFormat)
+        .flatMap { emptyGroup =>
+          Try {
+            JsSuccess(
+              OtoroshiSettings(
+                id = (json \ "_id").as(using OtoroshiSettingsIdFormat),
+                url = (json \ "url").as[String],
+                host = (json \ "host").as[String],
+                clientId = (json \ "clientId")
+                  .asOpt[String]
+                  .getOrElse("admin-api-apikey-id"),
+                clientSecret = (json \ "clientSecret")
+                  .asOpt[String]
+                  .getOrElse("admin-api-apikey-secret"),
+                elasticConfig = (json \ "elasticConfig").asOpt(using
+                  ElasticAnalyticsConfig.format
+                ),
+                keyringEmptyGroup = emptyGroup
+              )
+            )
+          } recover { case e =>
+            JsError(e.getMessage)
+          } get
+        }
 
     override def writes(o: OtoroshiSettings): JsValue =
       Json.obj(
@@ -143,7 +145,9 @@ object json {
         "host" -> o.host,
         "clientId" -> o.clientId,
         "clientSecret" -> o.clientSecret,
-        "keyringEmptyGroup" -> o.keyringEmptyGroup.map(KeyringEmptyGroupFormat.writes),
+        "keyringEmptyGroup" -> o.keyringEmptyGroup.map(
+          KeyringEmptyGroupFormat.writes
+        ),
         "elasticConfig" -> o.elasticConfig
           .map(ElasticAnalyticsConfig.format.writes)
           .getOrElse(JsNull)
@@ -1844,7 +1848,9 @@ object json {
             enabled = (json \ "enabled").as[Boolean],
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
-            additionalDomains = (json \ "additionalDomains").asOpt[Set[String]].getOrElse(Set.empty),
+            additionalDomains = (json \ "additionalDomains")
+              .asOpt[Set[String]]
+              .getOrElse(Set.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(using DaikokuStyleFormat),
@@ -1940,7 +1946,9 @@ object json {
         "_humanReadableId" -> o.name.urlPathSegmentSanitized,
         "name" -> o.name,
         "domain" -> o.domain,
-        "additionalDomains" -> JsArray(o.additionalDomains.map(JsString.apply).toSeq),
+        "additionalDomains" -> JsArray(
+          o.additionalDomains.map(JsString.apply).toSeq
+        ),
         "defaultLanguage" -> o.defaultLanguage
           .fold(JsNull.as[JsValue])(JsString.apply),
         "enabled" -> o.enabled,
@@ -2199,7 +2207,9 @@ object json {
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
+        "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
+          k.value -> JsString(v)
+        })
       )
   }
 
@@ -2649,22 +2659,33 @@ object json {
     override def writes(o: KeyringShellProvenance): JsValue = Json.obj(
       "batch" -> o.batch.value,
       "creation" -> o.creation.value,
-      "pendingItems" -> JsArray(o.pendingItems.map(SubscriptionBatchReferenceFormat.writes)),
+      "pendingItems" -> JsArray(
+        o.pendingItems.map(SubscriptionBatchReferenceFormat.writes)
+      ),
       "activatedAt" -> o.activatedAt.map(DateTimeFormat.writes)
     )
 
     override def reads(value: JsValue): JsResult[KeyringShellProvenance] =
       for {
-        batch <- (value \ "batch").validate[String].filter(JsError("Missing shell batch"))(_.trim.nonEmpty)
-        creation <- (value \ "creation").validate[String].filter(JsError("Missing shell creation"))(_.trim.nonEmpty)
-        pending <- (value \ "pendingItems").validate[Seq[SubscriptionBatchReference]](
-          using Reads.seq(SubscriptionBatchReferenceFormat)
-        )
-        _ <- if (pending.distinct.size == pending.size) JsSuccess(())
+        batch <- (value \ "batch")
+          .validate[String]
+          .filter(JsError("Missing shell batch"))(_.trim.nonEmpty)
+        creation <- (value \ "creation")
+          .validate[String]
+          .filter(JsError("Missing shell creation"))(_.trim.nonEmpty)
+        pending <- (value \ "pendingItems")
+          .validate[Seq[SubscriptionBatchReference]](using
+            Reads.seq(SubscriptionBatchReferenceFormat)
+          )
+        _ <-
+          if (pending.distinct.size == pending.size) JsSuccess(())
           else JsError("Duplicate pending keyring shell items")
         activated <- (value \ "activatedAt").validateOpt(using DateTimeFormat)
       } yield KeyringShellProvenance(
-        SubscriptionBatchDemandId(batch), SubscriptionBatchKeyringId(creation), pending, activated
+        SubscriptionBatchDemandId(batch),
+        SubscriptionBatchKeyringId(creation),
+        pending,
+        activated
       )
   }
 
@@ -2673,56 +2694,64 @@ object json {
       Json.obj("id" -> o.id, "ownershipToken" -> o.ownershipToken)
     override def reads(value: JsValue): JsResult[KeyringEmptyGroup] =
       for {
-        id <- (value \ "id").validate[String].filter(JsError("Missing empty group id"))(_.trim.nonEmpty)
-        token <- (value \ "ownershipToken").validate[String].filter(JsError("Missing empty group ownership token"))(_.trim.nonEmpty)
+        id <- (value \ "id")
+          .validate[String]
+          .filter(JsError("Missing empty group id"))(_.trim.nonEmpty)
+        token <- (value \ "ownershipToken")
+          .validate[String]
+          .filter(JsError("Missing empty group ownership token"))(
+            _.trim.nonEmpty
+          )
       } yield KeyringEmptyGroup(id, token)
   }
 
   val KeyringFormat = new Format[Keyring] {
     override def reads(json: JsValue): JsResult[Keyring] =
-      (json \ "shell").validateOpt(using KeyringShellProvenanceFormat).flatMap { shell =>
-      Try {
-        JsSuccess(
-          Keyring(
-            id = (json \ "_id").as(using KeyringIdFormat),
-            tenant = (json \ "_tenant").as(using TenantIdFormat),
-            team = (json \ "team").as(using TeamIdFormat),
-            customName = (json \ "customName")
-              .asOpt[String]
-              .getOrElse(
-                ""
-              ),
-            apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
-            otoroshiSettings = (json \ "otoroshiSettings").as(using
-              KeyringOtoroshiBindingFormat
-            ),
-            createdAt = (json \ "createdAt").as(using DateTimeFormat),
-            rotation =
-              (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
-            integrationToken = (json \ "integrationToken").as[String],
-            bearerToken = (json \ "bearerToken").asOpt[String],
-            thirdPartySubscriptionInformations =
-              (json \ "thirdPartySubscriptionInformations") match {
-                case JsDefined(value) =>
-                  value match {
-                    case JsNull => None
-                    case _ =>
-                      ThirdPartySubscriptionInformationsFormat
-                        .reads(value)
-                        .get
-                        .some
-                  }
-                case _: JsUndefined => None
-              },
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            shell = shell
-          )
-        )
-      } recover { case e =>
-        AppLogger.error("KeyringFormat error")
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      } get
+      (json \ "shell").validateOpt(using KeyringShellProvenanceFormat).flatMap {
+        shell =>
+          Try {
+            JsSuccess(
+              Keyring(
+                id = (json \ "_id").as(using KeyringIdFormat),
+                tenant = (json \ "_tenant").as(using TenantIdFormat),
+                team = (json \ "team").as(using TeamIdFormat),
+                customName = (json \ "customName")
+                  .asOpt[String]
+                  .getOrElse(
+                    ""
+                  ),
+                apiKey = (json \ "apiKey").as(using OtoroshiApiKeyFormat),
+                otoroshiSettings = (json \ "otoroshiSettings").as(using
+                  KeyringOtoroshiBindingFormat
+                ),
+                createdAt = (json \ "createdAt").as(using DateTimeFormat),
+                rotation = (json \ "rotation").asOpt(using
+                  ApiSubscriptionyRotationFormat
+                ),
+                integrationToken = (json \ "integrationToken").as[String],
+                bearerToken = (json \ "bearerToken").asOpt[String],
+                thirdPartySubscriptionInformations =
+                  (json \ "thirdPartySubscriptionInformations") match {
+                    case JsDefined(value) =>
+                      value match {
+                        case JsNull => None
+                        case _ =>
+                          ThirdPartySubscriptionInformationsFormat
+                            .reads(value)
+                            .get
+                            .some
+                      }
+                    case _: JsUndefined => None
+                  },
+                enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+                shell = shell
+              )
+            )
+          } recover { case e =>
+            AppLogger.error("KeyringFormat error")
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+          } get
       }
 
     override def writes(o: Keyring): JsValue =
@@ -2822,132 +2851,161 @@ object json {
     override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)
   }
 
-  val SubscriptionBatchItemStateFormat = new Format[SubscriptionBatchItemState] {
-    override def writes(o: SubscriptionBatchItemState): JsValue = JsString(o.name)
+  val SubscriptionBatchItemStateFormat =
+    new Format[SubscriptionBatchItemState] {
+      override def writes(o: SubscriptionBatchItemState): JsValue = JsString(
+        o.name
+      )
 
-    override def reads(value: JsValue): JsResult[SubscriptionBatchItemState] =
-      value.validate[String].flatMap { name =>
-        SubscriptionBatchItemState.values.find(_.name == name) match {
-          case Some(state) => JsSuccess(state)
-          case None        => JsError(s"Unknown subscription batch item state: $name")
+      override def reads(value: JsValue): JsResult[SubscriptionBatchItemState] =
+        value.validate[String].flatMap { name =>
+          SubscriptionBatchItemState.values.find(_.name == name) match {
+            case Some(state) => JsSuccess(state)
+            case None =>
+              JsError(s"Unknown subscription batch item state: $name")
+          }
         }
-      }
-  }
+    }
 
   val SubscriptionBatchKeyringChoiceFormat =
     new Format[SubscriptionBatchKeyringChoice] {
-      override def writes(o: SubscriptionBatchKeyringChoice): JsValue = o match {
-        case SubscriptionBatchKeyringChoice.Existing(keyring) =>
-          Json.obj("type" -> "existing", "keyring" -> keyring.asJson)
-        case SubscriptionBatchKeyringChoice.New(creation) =>
-          Json.obj("type" -> "new", "creation" -> creation.asJson)
-      }
+      override def writes(o: SubscriptionBatchKeyringChoice): JsValue =
+        o match {
+          case SubscriptionBatchKeyringChoice.Existing(keyring) =>
+            Json.obj("type" -> "existing", "keyring" -> keyring.asJson)
+          case SubscriptionBatchKeyringChoice.New(creation) =>
+            Json.obj("type" -> "new", "creation" -> creation.asJson)
+        }
 
-      override def reads(value: JsValue): JsResult[SubscriptionBatchKeyringChoice] =
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchKeyringChoice] =
         (value \ "type").validate[String].flatMap {
           case "existing" =>
-            (value \ "keyring").validate(using KeyringIdFormat)
+            (value \ "keyring")
+              .validate(using KeyringIdFormat)
               .map(SubscriptionBatchKeyringChoice.Existing.apply)
           case "new" =>
-            (value \ "creation").validate[String]
-              .map(id => SubscriptionBatchKeyringChoice.New(
-                SubscriptionBatchKeyringId(id)
-              ))
-          case other => JsError(s"Unknown subscription batch keyring choice: $other")
+            (value \ "creation")
+              .validate[String]
+              .map(id =>
+                SubscriptionBatchKeyringChoice.New(
+                  SubscriptionBatchKeyringId(id)
+                )
+              )
+          case other =>
+            JsError(s"Unknown subscription batch keyring choice: $other")
         }
     }
 
   val SubscriptionBatchItemSelectionFormat =
     new Format[SubscriptionBatchItemSelection] {
-     override def writes(o: SubscriptionBatchItemSelection): JsValue =
-       Json.obj(
-         "api" -> o.api.asJson,
-         "plan" -> o.plan.asJson,
-         "keyringChoice" -> SubscriptionBatchKeyringChoiceFormat.writes(o.keyringChoice)
-       )
+      override def writes(o: SubscriptionBatchItemSelection): JsValue =
+        Json.obj(
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "keyringChoice" -> SubscriptionBatchKeyringChoiceFormat.writes(
+            o.keyringChoice
+          )
+        )
 
-     override def reads(value: JsValue): JsResult[SubscriptionBatchItemSelection] =
-       for {
-         api <- (value \ "api").validate(using ApiIdFormat)
-         plan <- (value \ "plan").validate(using UsagePlanIdFormat)
-         keyringChoice <- (value \ "keyringChoice")
-           .validate(using SubscriptionBatchKeyringChoiceFormat)
-       } yield SubscriptionBatchItemSelection(api, plan, keyringChoice)
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchItemSelection] =
+        for {
+          api <- (value \ "api").validate(using ApiIdFormat)
+          plan <- (value \ "plan").validate(using UsagePlanIdFormat)
+          keyringChoice <- (value \ "keyringChoice")
+            .validate(using SubscriptionBatchKeyringChoiceFormat)
+        } yield SubscriptionBatchItemSelection(api, plan, keyringChoice)
     }
 
   val SubscriptionBatchNewKeyringSelectionFormat =
     new Format[SubscriptionBatchNewKeyringSelection] {
-     override def writes(o: SubscriptionBatchNewKeyringSelection): JsValue =
-       Json.obj(
-         "_id" -> o.id.asJson,
-         "customName" -> o.customName
-       )
+      override def writes(o: SubscriptionBatchNewKeyringSelection): JsValue =
+        Json.obj(
+          "_id" -> o.id.asJson,
+          "customName" -> o.customName
+        )
 
-     override def reads(value: JsValue): JsResult[SubscriptionBatchNewKeyringSelection] =
-       for {
-         id <- (value \ "_id").validate[String]
-         customName <- (value \ "customName").validate[String]
-       } yield SubscriptionBatchNewKeyringSelection(
-         SubscriptionBatchKeyringId(id),
-         customName
-       )
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchNewKeyringSelection] =
+        for {
+          id <- (value \ "_id").validate[String]
+          customName <- (value \ "customName").validate[String]
+        } yield SubscriptionBatchNewKeyringSelection(
+          SubscriptionBatchKeyringId(id),
+          customName
+        )
     }
 
   val SubscriptionBatchSubmissionFormat =
     new Format[SubscriptionBatchSubmission] {
-     override def writes(o: SubscriptionBatchSubmission): JsValue =
-       Json.obj(
-         "team" -> o.team.asJson,
-         "idempotencyKey" -> o.idempotencyKey,
-         "items" -> JsArray(o.items.map(SubscriptionBatchItemSelectionFormat.writes)),
-         "newKeyrings" -> JsArray(
-           o.newKeyrings.map(SubscriptionBatchNewKeyringSelectionFormat.writes)
-         ),
-         "motivation" -> o.motivation
-       )
+      override def writes(o: SubscriptionBatchSubmission): JsValue =
+        Json.obj(
+          "team" -> o.team.asJson,
+          "idempotencyKey" -> o.idempotencyKey,
+          "items" -> JsArray(
+            o.items.map(SubscriptionBatchItemSelectionFormat.writes)
+          ),
+          "newKeyrings" -> JsArray(
+            o.newKeyrings.map(SubscriptionBatchNewKeyringSelectionFormat.writes)
+          ),
+          "motivation" -> o.motivation
+        )
 
-     override def reads(value: JsValue): JsResult[SubscriptionBatchSubmission] =
-       for {
-         team <- (value \ "team").validate(using TeamIdFormat)
-         idempotencyKey <- (value \ "idempotencyKey").validate[String]
-         items <- (value \ "items").validate(using
-           Reads.seq(using SubscriptionBatchItemSelectionFormat)
-         )
-         newKeyrings <- (value \ "newKeyrings").validateOpt(using
-           Reads.seq(using SubscriptionBatchNewKeyringSelectionFormat)
-         ).map(_.getOrElse(Seq.empty))
-         motivation <- (value \ "motivation").validateOpt[JsObject]
-       } yield SubscriptionBatchSubmission(
-         team,
-         idempotencyKey,
-         items,
-         newKeyrings,
-         motivation
-       )
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchSubmission] =
+        for {
+          team <- (value \ "team").validate(using TeamIdFormat)
+          idempotencyKey <- (value \ "idempotencyKey").validate[String]
+          items <- (value \ "items").validate(using
+            Reads.seq(using SubscriptionBatchItemSelectionFormat)
+          )
+          newKeyrings <- (value \ "newKeyrings")
+            .validateOpt(using
+              Reads.seq(using SubscriptionBatchNewKeyringSelectionFormat)
+            )
+            .map(_.getOrElse(Seq.empty))
+          motivation <- (value \ "motivation").validateOpt[JsObject]
+        } yield SubscriptionBatchSubmission(
+          team,
+          idempotencyKey,
+          items,
+          newKeyrings,
+          motivation
+        )
     }
 
   val SubscriptionBatchSubmissionReceiptFormat =
     new Format[SubscriptionBatchSubmissionReceipt] {
-     override def writes(o: SubscriptionBatchSubmissionReceipt): JsValue =
-       Json.obj(
-         "batch" -> o.batch.asJson,
-         "state" -> o.state.name,
-         "replayed" -> o.replayed
-       )
+      override def writes(o: SubscriptionBatchSubmissionReceipt): JsValue =
+        Json.obj(
+          "batch" -> o.batch.asJson,
+          "state" -> o.state.name,
+          "replayed" -> o.replayed
+        )
 
-     override def reads(value: JsValue): JsResult[SubscriptionBatchSubmissionReceipt] =
-       for {
-         batch <- (value \ "batch").validate[String]
-         stateName <- (value \ "state").validate[String]
-         state <- SubscriptionBatchDemandState.values.find(_.name == stateName)
-           .map(JsSuccess(_))
-           .getOrElse(JsError(s"Unknown subscription batch demand state: $stateName"))
-         replayed <- (value \ "replayed").validate[Boolean]
-       } yield SubscriptionBatchSubmissionReceipt(
-         SubscriptionBatchDemandId(batch),
-         state,
-         replayed
-       )
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchSubmissionReceipt] =
+        for {
+          batch <- (value \ "batch").validate[String]
+          stateName <- (value \ "state").validate[String]
+          state <- SubscriptionBatchDemandState.values
+            .find(_.name == stateName)
+            .map(JsSuccess(_))
+            .getOrElse(
+              JsError(s"Unknown subscription batch demand state: $stateName")
+            )
+          replayed <- (value \ "replayed").validate[Boolean]
+        } yield SubscriptionBatchSubmissionReceipt(
+          SubscriptionBatchDemandId(batch),
+          state,
+          replayed
+        )
     }
 
   val SubscriptionBatchKeyringCreationFormat =
@@ -2957,56 +3015,81 @@ object json {
           "_id" -> o.id.asJson,
           "customName" -> o.customName,
           "binding" -> KeyringOtoroshiBindingFormat.writes(o.binding),
-          "keyring" -> o.keyring.map(_.asJson)
+          "keyring" -> o.keyring.map(_.asJson),
+          "ready" -> o.ready,
+          "finalized" -> o.finalized
         )
 
-      override def reads(value: JsValue): JsResult[SubscriptionBatchKeyringCreation] =
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchKeyringCreation] =
         for {
           id <- (value \ "_id").validate[String]
           customName <- (value \ "customName").validate[String]
-          binding <- (value \ "binding").validate(using KeyringOtoroshiBindingFormat)
+          binding <- (value \ "binding").validate(using
+            KeyringOtoroshiBindingFormat
+          )
           keyring <- (value \ "keyring").validateOpt(using KeyringIdFormat)
+          ready <- (value \ "ready")
+            .validateOpt[Boolean]
+            .map(_.getOrElse(keyring.isDefined))
+          finalized <- (value \ "finalized")
+            .validateOpt[Boolean]
+            .map(_.getOrElse(false))
         } yield SubscriptionBatchKeyringCreation(
-          SubscriptionBatchKeyringId(id), customName, binding, keyring
+          SubscriptionBatchKeyringId(id),
+          customName,
+          binding,
+          keyring,
+          ready,
+          finalized
         )
     }
 
-  val SubscriptionBatchItemErrorFormat = new Format[SubscriptionBatchItemError] {
-    override def writes(o: SubscriptionBatchItemError): JsValue =
-      Json.obj(
-        "code" -> o.code,
-        "message" -> o.message,
-        "date" -> DateTimeFormat.writes(o.date)
-      )
+  val SubscriptionBatchItemErrorFormat =
+    new Format[SubscriptionBatchItemError] {
+      override def writes(o: SubscriptionBatchItemError): JsValue =
+        Json.obj(
+          "code" -> o.code,
+          "message" -> o.message,
+          "date" -> DateTimeFormat.writes(o.date)
+        )
 
-    override def reads(value: JsValue): JsResult[SubscriptionBatchItemError] =
-      for {
-        code <- (value \ "code").validate[String]
-        message <- (value \ "message").validate[String]
-        date <- (value \ "date").validate(using DateTimeFormat)
-      } yield SubscriptionBatchItemError(code, message, date)
-  }
+      override def reads(value: JsValue): JsResult[SubscriptionBatchItemError] =
+        for {
+          code <- (value \ "code").validate[String]
+          message <- (value \ "message").validate[String]
+          date <- (value \ "date").validate(using DateTimeFormat)
+        } yield SubscriptionBatchItemError(code, message, date)
+    }
 
-  val SubscriptionBatchItemReservationFormat = new Format[SubscriptionBatchItemReservation] {
-    override def writes(o: SubscriptionBatchItemReservation): JsValue =
-      Json.obj(
-        "token" -> o.token,
-        "lockedAt" -> DateTimeFormat.writes(o.lockedAt),
-        "expiresAt" -> DateTimeFormat.writes(o.expiresAt)
-      )
+  val SubscriptionBatchItemReservationFormat =
+    new Format[SubscriptionBatchItemReservation] {
+      override def writes(o: SubscriptionBatchItemReservation): JsValue =
+        Json.obj(
+          "token" -> o.token,
+          "lockedAt" -> DateTimeFormat.writes(o.lockedAt),
+          "expiresAt" -> DateTimeFormat.writes(o.expiresAt)
+        )
 
-    override def reads(value: JsValue): JsResult[SubscriptionBatchItemReservation] =
-      for {
-        token <- (value \ "token").validate[String]
-        lockedAt <- (value \ "lockedAt").validate(using DateTimeFormat)
-        expiresAt <- (value \ "expiresAt").validate(using DateTimeFormat)
-        reservation = SubscriptionBatchItemReservation(token, lockedAt, expiresAt)
-        validated <- reservation.validate() match {
-          case Right(_) => JsSuccess(reservation)
-          case Left(error) => JsError(error.getErrorMessage())
-        }
-      } yield validated
-  }
+      override def reads(
+          value: JsValue
+      ): JsResult[SubscriptionBatchItemReservation] =
+        for {
+          token <- (value \ "token").validate[String]
+          lockedAt <- (value \ "lockedAt").validate(using DateTimeFormat)
+          expiresAt <- (value \ "expiresAt").validate(using DateTimeFormat)
+          reservation = SubscriptionBatchItemReservation(
+            token,
+            lockedAt,
+            expiresAt
+          )
+          validated <- reservation.validate() match {
+            case Right(_)    => JsSuccess(reservation)
+            case Left(error) => JsError(error.getErrorMessage())
+          }
+        } yield validated
+    }
 
   val SubscriptionBatchItemFormat = new Format[SubscriptionBatchItem] {
     override def writes(o: SubscriptionBatchItem): JsValue =
@@ -3015,12 +3098,16 @@ object json {
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
         "process" -> SubscriptionProcessFormat.writes(o.process),
-        "keyringChoice" -> SubscriptionBatchKeyringChoiceFormat.writes(o.keyringChoice),
+        "keyringChoice" -> SubscriptionBatchKeyringChoiceFormat.writes(
+          o.keyringChoice
+        ),
         "state" -> SubscriptionBatchItemStateFormat.writes(o.state),
         "demand" -> o.demand.map(_.asJson),
         "subscription" -> o.subscription.map(_.asJson),
         "error" -> o.error.map(SubscriptionBatchItemErrorFormat.writes),
-        "reservation" -> o.reservation.map(SubscriptionBatchItemReservationFormat.writes)
+        "reservation" -> o.reservation.map(
+          SubscriptionBatchItemReservationFormat.writes
+        )
       )
 
     override def reads(value: JsValue): JsResult[SubscriptionBatchItem] =
@@ -3031,14 +3118,32 @@ object json {
         process <- (value \ "process").validate(using SubscriptionProcessFormat)
         keyringChoice <- (value \ "keyringChoice")
           .validate(using SubscriptionBatchKeyringChoiceFormat)
-        state <- (value \ "state").validate(using SubscriptionBatchItemStateFormat)
-        demand <- (value \ "demand").validateOpt(using SubscriptionDemandIdFormat)
-        subscription <- (value \ "subscription").validateOpt(using ApiSubscriptionIdFormat)
-        error <- (value \ "error").validateOpt(using SubscriptionBatchItemErrorFormat)
-        reservation <- (value \ "reservation").validateOpt(using SubscriptionBatchItemReservationFormat)
+        state <- (value \ "state").validate(using
+          SubscriptionBatchItemStateFormat
+        )
+        demand <- (value \ "demand").validateOpt(using
+          SubscriptionDemandIdFormat
+        )
+        subscription <- (value \ "subscription").validateOpt(using
+          ApiSubscriptionIdFormat
+        )
+        error <- (value \ "error").validateOpt(using
+          SubscriptionBatchItemErrorFormat
+        )
+        reservation <- (value \ "reservation").validateOpt(using
+          SubscriptionBatchItemReservationFormat
+        )
       } yield SubscriptionBatchItem(
-        SubscriptionBatchItemId(id), api, plan, process, keyringChoice,
-        state, demand, subscription, error, reservation
+        SubscriptionBatchItemId(id),
+        api,
+        plan,
+        process,
+        keyringChoice,
+        state,
+        demand,
+        subscription,
+        error,
+        reservation
       )
   }
 
@@ -3051,7 +3156,9 @@ object json {
         "from" -> o.from.asJson,
         "idempotencyKey" -> o.idempotencyKey,
         "items" -> JsArray(o.items.map(SubscriptionBatchItemFormat.writes)),
-        "newKeyrings" -> JsArray(o.newKeyrings.map(SubscriptionBatchKeyringCreationFormat.writes)),
+        "newKeyrings" -> JsArray(
+          o.newKeyrings.map(SubscriptionBatchKeyringCreationFormat.writes)
+        ),
         "motivation" -> o.motivation,
         "date" -> DateTimeFormat.writes(o.date),
         "revision" -> o.revision,
@@ -3068,29 +3175,40 @@ object json {
         items <- (value \ "items")
           .validate(using Reads.seq(using SubscriptionBatchItemFormat))
         newKeyrings <- (value \ "newKeyrings")
-          .validate(using Reads.seq(using SubscriptionBatchKeyringCreationFormat))
+          .validate(using
+            Reads.seq(using SubscriptionBatchKeyringCreationFormat)
+          )
         motivation <- (value \ "motivation").validateOpt[JsObject]
         date <- (value \ "date").validate(using DateTimeFormat)
         revision <- (value \ "revision").validateOpt[Long].map(_.getOrElse(0L))
       } yield SubscriptionBatchDemand(
-        SubscriptionBatchDemandId(id), tenant, team, from, idempotencyKey,
-        items, newKeyrings, motivation, date, revision
+        SubscriptionBatchDemandId(id),
+        tenant,
+        team,
+        from,
+        idempotencyKey,
+        items,
+        newKeyrings,
+        motivation,
+        date,
+        revision
       )
   }
 
-  val SubscriptionBatchReferenceFormat = new Format[SubscriptionBatchReference] {
-    override def writes(o: SubscriptionBatchReference): JsValue =
-      Json.obj("batch" -> o.batch.asJson, "item" -> o.item.asJson)
+  val SubscriptionBatchReferenceFormat =
+    new Format[SubscriptionBatchReference] {
+      override def writes(o: SubscriptionBatchReference): JsValue =
+        Json.obj("batch" -> o.batch.asJson, "item" -> o.item.asJson)
 
-    override def reads(value: JsValue): JsResult[SubscriptionBatchReference] =
-      for {
-        batch <- (value \ "batch").validate[String]
-        item <- (value \ "item").validate[String]
-      } yield SubscriptionBatchReference(
-        SubscriptionBatchDemandId(batch),
-        SubscriptionBatchItemId(item)
-      )
-  }
+      override def reads(value: JsValue): JsResult[SubscriptionBatchReference] =
+        for {
+          batch <- (value \ "batch").validate[String]
+          item <- (value \ "item").validate[String]
+        } yield SubscriptionBatchReference(
+          SubscriptionBatchDemandId(batch),
+          SubscriptionBatchItemId(item)
+        )
+    }
 
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
     override def writes(o: SubscriptionDemand): JsValue =
@@ -3146,46 +3264,54 @@ object json {
           .map(t => JsArray(t.toSeq.map(JsString.apply)))
           .getOrElse(JsNull)
           .as[JsValue]
-      ) ++ o.batch.map(reference =>
-        Json.obj("batch" -> SubscriptionBatchReferenceFormat.writes(reference))
-      ).getOrElse(Json.obj())
-
-    override def reads(json: JsValue): JsResult[SubscriptionDemand] =
-      (json \ "batch").validateOpt(using SubscriptionBatchReferenceFormat).flatMap { batch =>
-      Try {
-        JsSuccess(
-          SubscriptionDemand(
-            id = (json \ "_id").as(using SubscriptionDemandIdFormat),
-            tenant = (json \ "_tenant").as(using TenantIdFormat),
-            api = (json \ "api").as(using ApiIdFormat),
-            plan = (json \ "plan").as(using UsagePlanIdFormat),
-            steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
-            state = (json \ "state").as(using SubscriptionDemandStateFormat),
-            team = (json \ "team").as(using TeamIdFormat),
-            from = (json \ "from").as(using UserIdFormat),
-            date = (json \ "date").as(using DateTimeFormat),
-            motivation = (json \ "motivation")
-              .asOpt[String]
-              .map(m => Json.obj("motivation" -> m))
-              .orElse((json \ "motivation").asOpt[JsObject]),
-            keyringCustomName = (json \ "keyringCustomName").asOpt[String],
-            keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
-            customMetadata = (json \ "customMetadata").asOpt[JsObject],
-            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
-            customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
-            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            adminCustomName = (json \ "adminCustomName").asOpt[String],
-            customName = (json \ "customName").asOpt[String],
-            tags = (json \ "tags").asOpt[Set[String]],
-            batch = batch
+      ) ++ o.batch
+        .map(reference =>
+          Json.obj(
+            "batch" -> SubscriptionBatchReferenceFormat.writes(reference)
           )
         )
-      } recover { case e =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      } get
-      }
+        .getOrElse(Json.obj())
+
+    override def reads(json: JsValue): JsResult[SubscriptionDemand] =
+      (json \ "batch")
+        .validateOpt(using SubscriptionBatchReferenceFormat)
+        .flatMap { batch =>
+          Try {
+            JsSuccess(
+              SubscriptionDemand(
+                id = (json \ "_id").as(using SubscriptionDemandIdFormat),
+                tenant = (json \ "_tenant").as(using TenantIdFormat),
+                api = (json \ "api").as(using ApiIdFormat),
+                plan = (json \ "plan").as(using UsagePlanIdFormat),
+                steps =
+                  (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
+                state =
+                  (json \ "state").as(using SubscriptionDemandStateFormat),
+                team = (json \ "team").as(using TeamIdFormat),
+                from = (json \ "from").as(using UserIdFormat),
+                date = (json \ "date").as(using DateTimeFormat),
+                motivation = (json \ "motivation")
+                  .asOpt[String]
+                  .map(m => Json.obj("motivation" -> m))
+                  .orElse((json \ "motivation").asOpt[JsObject]),
+                keyringCustomName = (json \ "keyringCustomName").asOpt[String],
+                keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
+                customMetadata = (json \ "customMetadata").asOpt[JsObject],
+                customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
+                customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
+                customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
+                customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
+                adminCustomName = (json \ "adminCustomName").asOpt[String],
+                customName = (json \ "customName").asOpt[String],
+                tags = (json \ "tags").asOpt[Set[String]],
+                batch = batch
+              )
+            )
+          } recover { case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+          } get
+        }
   }
 
   val SubscriptionDemandStepFormat = new Format[SubscriptionDemandStep] {
@@ -3885,15 +4011,16 @@ object json {
 
   val SubscriptionBatchApprovalItemFormat =
     new Format[SubscriptionBatchApprovalItem] {
-      override def reads(json: JsValue): JsResult[SubscriptionBatchApprovalItem] =
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionBatchApprovalItem] =
         Try {
           JsSuccess(
             SubscriptionBatchApprovalItem(
               item = SubscriptionBatchItemId((json \ "item").as[String]),
               plan = (json \ "plan").as(using UsagePlanIdFormat),
               demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
-              step =
-                (json \ "step").as(using SubscriptionDemandStepIdFormat)
+              step = (json \ "step").as(using SubscriptionDemandStepIdFormat)
             )
           )
         } recover { case e =>
@@ -3918,7 +4045,9 @@ object json {
               Reads.seq(using SubscriptionBatchApprovalItemFormat)
             )
           if (items.isEmpty)
-            JsError("A batch approval notification must reference at least one item")
+            JsError(
+              "A batch approval notification must reference at least one item"
+            )
           else {
             val phase = (json \ "phase").as[Int]
             if (phase < 0)
@@ -3947,7 +4076,9 @@ object json {
           "api" -> ApiIdFormat.writes(o.api),
           "team" -> TeamIdFormat.writes(o.team),
           "phase" -> o.phase,
-          "items" -> JsArray(o.items.map(SubscriptionBatchApprovalItemFormat.writes)),
+          "items" -> JsArray(
+            o.items.map(SubscriptionBatchApprovalItemFormat.writes)
+          ),
           "motivation" -> o.motivation
         )
     }
@@ -4766,7 +4897,9 @@ object json {
           "state" -> SubscriptionDemandStateFormat.writes(o.state),
           "value" -> o.value,
           "fromTenant" -> o.fromTenant.value,
-          "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
+          "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
+            k.value -> JsString(v)
+          })
         )
     }
 

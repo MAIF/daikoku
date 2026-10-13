@@ -181,7 +181,8 @@ class SubscriptionBatchEligibilitySpec extends PlaySpec {
         creationId,
         "Shared key",
         KeyringOtoroshiBinding.Internal,
-        Some(keyring.id)
+        Some(keyring.id),
+        ready = true
       )
       val selected = batchItem.copy(keyringChoice = SubscriptionBatchKeyringChoice.New(creationId))
       val parent = batch.copy(items = Seq(selected), newKeyrings = Seq(creation))
@@ -192,6 +193,12 @@ class SubscriptionBatchEligibilitySpec extends PlaySpec {
       )
 
       SubscriptionBatchEligibility.validateKeyring(parent, selected, plan, shell) mustBe Right(())
+      SubscriptionBatchEligibility.validateKeyring(
+        parent,
+        selected,
+        plan,
+        shell.copy(enabled = true)
+      ) mustBe Right(())
       SubscriptionBatchEligibility.validateKeyring(
         parent,
         selected,

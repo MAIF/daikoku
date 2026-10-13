@@ -449,9 +449,16 @@ case class Tenant(
     remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
 ) extends CanJson[Tenant] {
 
-  override def asJson: JsValue = json.TenantFormat.writes(this)
+  private def asClientJson: JsObject =
+    json.TenantFormat.writes(this).as[JsObject] ++ Json.obj(
+      "otoroshiSettings" -> JsArray(
+        otoroshiSettings.toSeq.map(_.asSafeJson)
+      )
+    )
+
+  override def asJson: JsValue = asClientJson
   def asJsonWithJwt(implicit env: Env): JsValue =
-    json.TenantFormat.writes(this).as[JsObject] ++ json.DaikokuHeader
+    asClientJson ++ json.DaikokuHeader
       .jsonHeader(id)
   def mailer(implicit env: Env): Mailer =
     mailerSettings.map(_.mailer).getOrElse(ConsoleMailer())
@@ -712,6 +719,9 @@ case class OtoroshiSettings(
     keyringEmptyGroup: Option[KeyringEmptyGroup] = None
 ) extends CanJson[OtoroshiSettings] {
   def asJson: JsValue = json.OtoroshiSettingsFormat.writes(this)
+  def asSafeJson: JsValue =
+    asJson.as[JsObject] - "keyringEmptyGroup"
+
   def toUiPayload(): JsValue = {
     Json.obj(
       "_id" -> id.value,

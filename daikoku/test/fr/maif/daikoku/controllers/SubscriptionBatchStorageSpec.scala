@@ -3108,12 +3108,18 @@ class SubscriptionBatchStorageSpec
         )
         val repo = store.subscriptionBatchDemandRepo
         Await.result(
+          repo.findPendingKeyringCreations(parent.tenant, 10),
+          5.seconds
+        ) mustBe Right(Seq(parent.id -> creation.id))
+        Await.result(
           repo.findMaterializableItems(parent.tenant, 1),
           5.seconds
         ) mustBe
           Right(Seq(SubscriptionBatchReference(parent.id, ready.id)))
         val resolved = parent.copy(newKeyrings =
-          Seq(creation.copy(keyring = Some(KeyringId("resolved"))))
+          Seq(
+            creation.copy(keyring = Some(KeyringId("resolved")), ready = true)
+          )
         )
         Await.result(
           repo.updateIfRevisionMatches(resolved),
@@ -3128,6 +3134,10 @@ class SubscriptionBatchStorageSpec
               SubscriptionBatchReference(parent.id, item.id)
             )
           )
+        Await.result(
+          repo.findPendingKeyringCreations(parent.tenant, 10),
+          5.seconds
+        ) mustBe Right(Seq.empty)
       } finally {
         Await.result(
           store.subscriptionBatchDemandRepo
@@ -3135,6 +3145,203 @@ class SubscriptionBatchStorageSpec
             .deleteAll(),
           5.seconds
         )
+      }
+    }
+
+    "reserve one disabled shared internal keyring and mark it ready idempotently" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val creation = SubscriptionBatchKeyringCreation(
+        SubscriptionBatchKeyringId("shared-internal"),
+        "Shared internal keyring",
+        KeyringOtoroshiBinding.Internal
+      )
+      val first = initial.items.head.copy(
+        keyringChoice = SubscriptionBatchKeyringChoice.New(creation.id)
+      )
+      val second = first.copy(
+        id = SubscriptionBatchItemId("second"),
+        api = ApiId("second-api"),
+        plan = UsagePlanId("second-plan")
+      )
+      val parent = initial.copy(
+        items = Seq(first, second),
+        newKeyrings = Seq(creation)
+      )
+
+      try {
+        persistEligibilityFixtures(store, parent)
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        ) mustBe defined
+        val tenant = Await
+          .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
+          .get
+
+        val prepared = Await.result(
+          daikokuComponents.apiService.prepareBatchKeyring(
+            tenant,
+            parent.id,
+            creation.id
+          ),
+          10.seconds
+        )
+        prepared.isRight mustBe true
+        val keyringId = prepared.toOption.get
+        val savedBatch = Await
+          .result(
+            store.subscriptionBatchDemandRepo
+              .forTenant(parent.tenant)
+              .findById(parent.id),
+            5.seconds
+          )
+          .get
+        val savedCreation = savedBatch.newKeyrings.find(_.id == creation.id).get
+        savedCreation.keyring mustBe Some(keyringId)
+        savedCreation.ready mustBe true
+        savedCreation.finalized mustBe false
+
+        val shell = Await
+          .result(
+            store.keyringRepo.forTenant(parent.tenant).findById(keyringId),
+            5.seconds
+          )
+          .get
+        shell.enabled mustBe false
+        shell.shell.map(_.pendingItems) mustBe Some(
+          Seq(first, second).map(item =>
+            SubscriptionBatchReference(parent.id, item.id)
+          )
+        )
+        Await.result(
+          daikokuComponents.apiService.prepareBatchKeyring(
+            tenant,
+            parent.id,
+            creation.id
+          ),
+          10.seconds
+        ) mustBe Right(keyringId)
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .findMaterializableItems(parent.tenant, 10),
+          5.seconds
+        ) mustBe Right(
+          Seq(first, second).map(item =>
+            SubscriptionBatchReference(parent.id, item.id)
+          )
+        )
+      } finally {
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
+    "clear pending shell references when canceling the remaining items of an activated keyring" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val keyringId = KeyringId("activated-shared-keyring")
+      val creation = SubscriptionBatchKeyringCreation(
+        id = SubscriptionBatchKeyringId("activated-shared"),
+        customName = "Activated shared keyring",
+        binding = KeyringOtoroshiBinding.Internal,
+        keyring = Some(keyringId),
+        ready = true,
+        finalized = true
+      )
+      val accepted = initial.items.head.copy(
+        keyringChoice = SubscriptionBatchKeyringChoice.New(creation.id),
+        state = SubscriptionBatchItemState.Accepted,
+        subscription = Some(ApiSubscriptionId("accepted-subscription"))
+      )
+      val pending = accepted.copy(
+        id = SubscriptionBatchItemId("pending"),
+        plan = UsagePlanId("pending-plan"),
+        state = SubscriptionBatchItemState.Pending,
+        subscription = None
+      )
+      val parent = initial.copy(
+        items = Seq(accepted, pending),
+        newKeyrings = Seq(creation)
+      )
+      val pendingReference =
+        SubscriptionBatchReference(parent.id, pending.id)
+
+      try {
+        persistEligibilityFixtures(store, parent)
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        ) mustBe defined
+
+        val shell = Await
+          .result(
+            store.keyringRepo.forTenant(parent.tenant).findById(keyringId),
+            5.seconds
+          )
+          .get
+        Await.result(
+          store.keyringRepo
+            .forTenant(parent.tenant)
+            .save(
+              shell.copy(
+                enabled = true,
+                shell = shell.shell.map(
+                  _.copy(
+                    pendingItems = Seq(pendingReference),
+                    activatedAt = Some(org.joda.time.DateTime.now())
+                  )
+                )
+              )
+            ),
+          5.seconds
+        ) mustBe true
+
+        val canceled = Await.result(
+          store.cancelBatch(parent.tenant, parent.id),
+          5.seconds
+        )
+        canceled.toOption.get.items.map(_.state) mustBe Seq(
+          SubscriptionBatchItemState.Accepted,
+          SubscriptionBatchItemState.Canceled
+        )
+
+        val tenant = Await
+          .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
+          .get
+        Await.result(
+          daikokuComponents.apiService.prepareBatchKeyring(
+            tenant,
+            parent.id,
+            creation.id
+          ),
+          10.seconds
+        ) mustBe Right(keyringId)
+
+        val reconciled = Await
+          .result(
+            store.keyringRepo.forTenant(parent.tenant).findById(keyringId),
+            5.seconds
+          )
+          .get
+        reconciled.enabled mustBe true
+        reconciled.shell.map(_.pendingItems) mustBe Some(Seq.empty)
+        reconciled.shell.flatMap(_.activatedAt) mustBe defined
+      } finally {
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
       }
     }
 
@@ -3228,7 +3435,9 @@ class SubscriptionBatchStorageSpec
         ) mustBe Some(parent)
 
         val ready = parent.copy(newKeyrings =
-          Seq(creation.copy(keyring = Some(KeyringId("resolved"))))
+          Seq(
+            creation.copy(keyring = Some(KeyringId("resolved")), ready = true)
+          )
         )
         Await.result(
           store.subscriptionBatchDemandRepo.updateIfRevisionMatches(ready),

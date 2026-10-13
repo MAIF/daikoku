@@ -200,6 +200,161 @@ class OtoroshiClient(env: Env) {
     }
   }
 
+  private val keyringEmptyGroupOwnershipMetadata =
+    "daikoku_keyring_empty_group_ownership"
+
+  private def otoroshiError(message: String): AppError =
+    OtoroshiError(Json.obj("error" -> message))
+
+  private def checkKeyringEmptyGroup(
+      group: JsObject,
+      configured: KeyringEmptyGroup
+  )(implicit
+      otoroshiSettings: OtoroshiSettings
+  ): Future[Either[AppError, KeyringEmptyGroup]] = {
+    val isOwned =
+      (group \ "id").asOpt[String].contains(configured.id) &&
+        (group \ "metadata" \ keyringEmptyGroupOwnershipMetadata)
+          .asOpt[String]
+          .contains(configured.ownershipToken)
+
+    if (!isOwned)
+      FastFuture.successful(
+        Left(
+          otoroshiError(
+            "The configured keyring empty group is not owned by Daikoku"
+          )
+        )
+      )
+    else {
+      def hasMembership(
+          path: String,
+          missingEndpointMeansEmpty: Boolean = false
+      ): Future[Either[AppError, Boolean]] =
+        client(path).get().map { response =>
+          if (response.status == 404 && missingEndpointMeansEmpty)
+            Right(false)
+          else if (response.status != 200)
+            Left(
+              otoroshiError(
+                s"Error while verifying the keyring empty group: ${response.status} - ${response.body}"
+              )
+            )
+          else
+            response.json.validate[JsArray] match {
+              case JsSuccess(entities, _) =>
+                Right(
+                  entities.value.exists(entity =>
+                    (entity \ "groups")
+                      .asOpt[Seq[String]]
+                      .exists(_.contains(configured.id))
+                  )
+                )
+              case JsError(errors) =>
+                Left(otoroshiError(JsError.toJson(errors).toString))
+            }
+        }
+
+      for {
+        // Recent Otoroshi versions no longer expose legacy service descriptors.
+        services <- hasMembership(
+          "/api/services",
+          missingEndpointMeansEmpty = true
+        )
+        routes <- hasMembership("/api/routes")
+      } yield for {
+        hasServices <- services
+        hasRoutes <- routes
+        _ <- Either.cond(
+          !hasServices && !hasRoutes,
+          (),
+          otoroshiError("The configured keyring empty group is not empty")
+        )
+      } yield configured
+    }
+  }
+
+  /** Create and verify the tenant-managed group used to keep batch keyring
+    * shells isolated until their first subscription is accepted.
+    */
+  def ensureKeyringEmptyGroup()(implicit
+      otoroshiSettings: OtoroshiSettings
+  ): Future[Either[AppError, KeyringEmptyGroup]] =
+    otoroshiSettings.keyringEmptyGroup match {
+      case None =>
+        FastFuture.successful(
+          Left(
+            AppError.EntityConflict(
+              "The Otoroshi keyring empty group is not configured"
+            )
+          )
+        )
+      case Some(configured) =>
+        def verifyExisting(): Future[Either[AppError, KeyringEmptyGroup]] =
+          client(s"/api/groups/${configured.id}").get().flatMap { response =>
+            if (response.status == 200)
+              response.json match {
+                case group: JsObject =>
+                  checkKeyringEmptyGroup(group, configured)
+                case _ =>
+                  FastFuture.successful(
+                    Left(
+                      otoroshiError("Invalid Otoroshi service group response")
+                    )
+                  )
+              }
+            else if (response.status == 404)
+              createAndVerify()
+            else
+              FastFuture.successful(
+                Left(
+                  otoroshiError(
+                    s"Error while reading the keyring empty group: ${response.status} - ${response.body}"
+                  )
+                )
+              )
+          }
+
+        def createAndVerify(): Future[Either[AppError, KeyringEmptyGroup]] = {
+          val group = Json.obj(
+            "id" -> configured.id,
+            "name" -> s"Daikoku keyring empty group ${configured.id}",
+            "description" -> "Managed empty group for pending Daikoku subscription batches",
+            "tags" -> Seq("daikoku-managed", "keyring-empty"),
+            "metadata" -> Json.obj(
+              keyringEmptyGroupOwnershipMetadata -> configured.ownershipToken
+            )
+          )
+          client("/api/groups").post(group).flatMap { response =>
+            if (response.status == 200 || response.status == 201)
+              response.json match {
+                case created: JsObject =>
+                  checkKeyringEmptyGroup(created, configured)
+                case _ =>
+                  FastFuture.successful(
+                    Left(
+                      otoroshiError(
+                        "Invalid created Otoroshi service group response"
+                      )
+                    )
+                  )
+              }
+            else if (response.status == 409)
+              verifyExisting()
+            else
+              FastFuture.successful(
+                Left(
+                  otoroshiError(
+                    s"Error while creating the keyring empty group: ${response.status} - ${response.body}"
+                  )
+                )
+              )
+          }
+        }
+
+        verifyExisting()
+    }
+
   def validateGroupNameFromId[A](
       groupId: String
   )(f: => Future[A])(implicit otoroshiSettings: OtoroshiSettings): Future[A] = {

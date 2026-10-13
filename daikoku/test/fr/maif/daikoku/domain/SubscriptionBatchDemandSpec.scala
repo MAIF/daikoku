@@ -323,6 +323,23 @@ class SubscriptionBatchDemandSpec extends PlaySpec {
       }
     }
 
+    "treat keyrings from before the readiness marker as already prepared" in {
+      val creation = SubscriptionBatchKeyringCreation(
+        SubscriptionBatchKeyringId("shared"),
+        "Shared",
+        KeyringOtoroshiBinding.Internal,
+        Some(KeyringId("shell"))
+      )
+      val serialized = json.SubscriptionBatchKeyringCreationFormat
+        .writes(creation)
+        .as[play.api.libs.json.JsObject] - "ready"
+
+      json.SubscriptionBatchKeyringCreationFormat
+        .reads(serialized)
+        .get
+        .ready mustBe true
+    }
+
     "derive the summary even when the serialized summary is stale" in {
       val original = batch(
         SubscriptionBatchItemState.Accepted,

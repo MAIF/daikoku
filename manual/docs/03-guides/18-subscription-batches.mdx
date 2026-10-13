@@ -105,6 +105,32 @@ matérialise. C'est cette demande enfant qui porte les étapes habituelles du
 workflow. Les formulaires sont préremplis à partir des réponses de motivation
 lorsque le plan le permet.
 
+### Cycle de vie d'un nouveau keyring
+
+La soumission enregistre le choix et le nom du keyring, mais ne contacte pas
+Otoroshi. Le job réserve d'abord un identifiant et des credentials stables pour
+le keyring, avec sa provenance de lot, puis prépare le keyring avant de
+matérialiser ses enfants. L'état `ready` n'est persisté qu'après cette
+préparation; une erreur réseau laisse donc une intention reprenable sans créer
+de demande enfant prématurément.
+
+Pour un keyring interne, la réservation est immédiatement prête. Pour une cible
+Otoroshi, Daikoku crée ou vérifie un groupe vide propre à cette configuration
+Otoroshi, puis crée une API key désactivée et autorisée uniquement sur ce
+groupe. L'identifiant et le jeton de propriété du groupe sont gérés côté
+serveur; ils ne sont pas exposés dans l'écran de configuration. Si Otoroshi
+répond de manière incertaine, le prochain passage réutilise les mêmes
+credentials, relit la clé par son `clientId` et vérifie qu'elle appartient bien
+au lot avant de poursuivre.
+
+Quand une demande enfant est acceptée pour la première fois, Daikoku retire le
+groupe vide des autorisations, conserve les entités des plans acceptés et
+active le keyring. Les autres enfants du lot continuent ensuite à utiliser ce
+même keyring et ajoutent leurs autorisations individuellement. Un refus partiel
+ne retire pas les accès déjà accordés. Si tous les items se terminent sans
+aucune souscription acceptée, le shell inutilisé est supprimé; une annulation
+déclenche également ce nettoyage.
+
 ## 3. Le worker et la progression
 
 `SubscriptionBatchMaterializationJob` est un job périodique. Hors mode Test,
@@ -129,6 +155,7 @@ Soumission
           ▼
 Job périodique (ou action _resume pour un lot)
    │
+   ├─ prépare les keyrings partagés requis (une seule fois par création)
    ├─ matérialise une tranche d'items pending
    ├─ cherche des demandes enfants waiting / inProgress exécutables
    ├─ vérifie la barrière de phase et réserve l'item + son keyring
@@ -225,13 +252,8 @@ l'API Facturation.
 
 ## Limites connues de ce premier jet
 
-- La sélection UI conservée au fil de la pagination de `/apis` et l'écran de
-  choix de plans/keyrings pour le lot ne sont pas décrits comme livrés ici.
-- Le modèle accepte un choix de nouveau keyring et la matérialisation attend
-  qu'un identifiant de keyring soit associé à cette création. Dans le code
-  actuel, le chemin qui renseigne cet identifiant après l'enregistrement du
-  parent reste à confirmer/compléter. Sans lui, les items concernés restent
-  non matérialisables.
+- La sélection UI conservée au fil de la pagination de `/apis` et l'écran
+  groupé de choix des plans/keyrings ne sont pas décrits comme livrés ici.
 - La réconciliation libère bien la réservation, mais doit encore être validée
   avec un enfant dont l'étape courante est `inProgress` : pour permettre une
   reprise sûre après confirmation d'échec, cette étape doit redevenir

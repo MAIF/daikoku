@@ -20,7 +20,11 @@ object SubscriptionBatchEligibility {
       child.api != item.api ||
       child.plan != item.plan
     )
-      Left(AppError.BadRequestError("The child does not match its linked subscription batch item"))
+      Left(
+        AppError.BadRequestError(
+          "The child does not match its linked subscription batch item"
+        )
+      )
     else Right(())
   }
 
@@ -32,7 +36,11 @@ object SubscriptionBatchEligibility {
       subscriptionSecurity: Option[Boolean]
   ): Either[AppError, Unit] = {
     if (api.tenant != plan.tenant || api.tenant != team.tenant)
-      Left(AppError.BadRequestError("The API, plan and consumer team must belong to the same tenant"))
+      Left(
+        AppError.BadRequestError(
+          "The API, plan and consumer team must belong to the same tenant"
+        )
+      )
     else if (!requester.isDaikokuAdmin && !team.includeUser(requester.id))
       Left(AppError.TeamUnauthorized)
     else if (!api.isSubscribable)
@@ -59,9 +67,15 @@ object SubscriptionBatchEligibility {
       Left(AppError.SecurityError("Subscription security"))
     else if (
       plan.paymentSettings.isDefined ||
-      plan.subscriptionProcess.steps.exists(_.isInstanceOf[ValidationStep.Payment])
+      plan.subscriptionProcess.steps.exists(
+        _.isInstanceOf[ValidationStep.Payment]
+      )
     )
-      Left(AppError.PaymentError("Paid plans are not supported in subscription batches"))
+      Left(
+        AppError.PaymentError(
+          "Paid plans are not supported in subscription batches"
+        )
+      )
     else Right(())
   }
 
@@ -82,30 +96,39 @@ object SubscriptionBatchEligibility {
       Left(AppError.SubscriptionAggregationOtoroshiConflict)
     else
       item.keyringChoice match {
-        case SubscriptionBatchKeyringChoice.Existing(id)
-            if id != keyring.id =>
-          Left(AppError.BadRequestError("The selected keyring does not match the batch item"))
+        case SubscriptionBatchKeyringChoice.Existing(id) if id != keyring.id =>
+          Left(
+            AppError.BadRequestError(
+              "The selected keyring does not match the batch item"
+            )
+          )
         case SubscriptionBatchKeyringChoice.Existing(_) =>
           Either.cond(
             keyring.shell.forall(_.activatedAt.isDefined),
             (),
-            AppError.EntityConflict("The selected keyring is reserved by a pending batch")
+            AppError.EntityConflict(
+              "The selected keyring is reserved by a pending batch"
+            )
           )
         case SubscriptionBatchKeyringChoice.New(creationId) =>
           batch.newKeyrings
             .find(_.id == creationId)
-            .toRight(AppError.EntityNotFound("Subscription batch keyring creation"))
+            .toRight(
+              AppError.EntityNotFound("Subscription batch keyring creation")
+            )
             .flatMap { creation =>
               Either.cond(
                 creation.keyring.contains(keyring.id) &&
+                  creation.ready &&
                   creation.customName == keyring.customName &&
                   creation.binding == expectedBinding &&
                   keyring.shell.exists(shell =>
                     shell.batch == batch.id && shell.creation == creation.id &&
-                      shell.pendingItems.contains(reference) && !keyring.enabled
+                      shell.pendingItems.contains(reference)
                   ),
                 (),
-                AppError.EntityConflict("The new batch keyring shell is not ready")
+                AppError
+                  .EntityConflict("The new batch keyring shell is not ready")
               )
             }
       }

@@ -47,7 +47,7 @@ class OtoroshiSettingsController(
         AuditTrailEvent(s"@{user.name} has accessed otoroshi settings list")
       )(tenantId, ctx) { (tenant, _) =>
         FastFuture.successful(
-          Ok(JsArray(tenant.otoroshiSettings.map(_.asJson).toSeq))
+          Ok(JsArray(tenant.otoroshiSettings.map(_.asSafeJson).toSeq))
         )
       }
     }
@@ -111,7 +111,7 @@ class OtoroshiSettingsController(
             FastFuture.successful(
               NotFound(Json.obj("error" -> "OtoroshiSettings not found"))
             )
-          case Some(oto) => FastFuture.successful(Ok(oto.asJson))
+          case Some(oto) => FastFuture.successful(Ok(oto.asSafeJson))
         }
       }
     }
@@ -158,29 +158,40 @@ class OtoroshiSettingsController(
             FastFuture.successful(
               NotFound(Json.obj("error" -> "OtoroshiSettings not found"))
             )
-          case Some(_) =>
+          case Some(existing) =>
             OtoroshiSettingsFormat.reads(ctx.request.body) match {
               case JsError(_) =>
                 FastFuture.successful(
                   BadRequest(Json.obj("error" -> "Error while parsing payload"))
                 )
               case JsSuccess(settings, _) =>
+                val settingsWithManagedGroup = settings.copy(
+                  keyringEmptyGroup = existing.keyringEmptyGroup.orElse(
+                    Some(
+                      KeyringEmptyGroup(
+                        IdGenerator.token(32),
+                        IdGenerator.token(64)
+                      )
+                    )
+                  )
+                )
                 def saveSettings() =
                   env.dataStore.tenantRepo
                     .save(
                       tenant.copy(otoroshiSettings =
                         tenant.otoroshiSettings
-                          .filterNot(_.id == settings.id) + settings
+                          .filterNot(_.id == settingsWithManagedGroup.id) +
+                          settingsWithManagedGroup
                       )
                     )
                     .map { _ =>
-                      Ok(settings.asJson)
+                      Ok(settingsWithManagedGroup.asSafeJson)
                     }
                 if (skipValidation)
                   saveSettings()
                 else
                   otoroshiClient
-                    .getServices()(using settings)
+                    .getServices()(using settingsWithManagedGroup)
                     .flatMap { _ =>
                       saveSettings()
                     }
@@ -210,22 +221,32 @@ class OtoroshiSettingsController(
               BadRequest(Json.obj("error" -> "Error while parsing payload"))
             )
           case JsSuccess(settings, _) =>
+            val settingsWithManagedGroup = settings.copy(
+              keyringEmptyGroup = Some(
+                KeyringEmptyGroup(
+                  IdGenerator.token(32),
+                  IdGenerator.token(64)
+                )
+              )
+            )
             def createOtoroshi() = {
-              ctx.setCtxValue("otoroshi.id", settings.id)
+              ctx.setCtxValue("otoroshi.id", settingsWithManagedGroup.id)
               env.dataStore.tenantRepo
                 .save(
                   tenant
-                    .copy(otoroshiSettings = tenant.otoroshiSettings + settings)
+                    .copy(otoroshiSettings =
+                      tenant.otoroshiSettings + settingsWithManagedGroup
+                    )
                 )
                 .map { _ =>
-                  Created(settings.asJson)
+                  Created(settingsWithManagedGroup.asSafeJson)
                 }
             }
             if (skipValidation)
               createOtoroshi()
             else
               otoroshiClient
-                .getServices()(using settings)
+                .getServices()(using settingsWithManagedGroup)
                 .flatMap { _ =>
                   createOtoroshi()
                 }

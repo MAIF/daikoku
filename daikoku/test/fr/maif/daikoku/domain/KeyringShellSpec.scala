@@ -54,6 +54,7 @@ class KeyringShellSpec extends PlaySpec {
     "round-trip shared group ownership without exposing it in the configuration UI payload" in {
       json.OtoroshiSettingsFormat.reads(settings.asJson).get mustBe settings
       (settings.toUiPayload() \ "keyringEmptyGroup").toOption mustBe None
+      (settings.asSafeJson \ "keyringEmptyGroup").toOption mustBe None
       val legacy = settings.asJson.as[JsObject] - "keyringEmptyGroup"
       json.OtoroshiSettingsFormat.reads(legacy).get.keyringEmptyGroup mustBe None
       Seq(

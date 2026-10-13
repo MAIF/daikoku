@@ -2363,6 +2363,111 @@ trait SubscriptionBatchDemandRepo
       Seq(tenant.value)
     )
 
+  def findPendingKeyringCreations(
+      tenant: TenantId,
+      limit: Int,
+      batchId: Option[SubscriptionBatchDemandId] = None
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Either[AppError, Seq[
+    (SubscriptionBatchDemandId, SubscriptionBatchKeyringId)
+  ]]] =
+    if (limit <= 0)
+      Future.successful(
+        Left(
+          AppError.BadRequestError(
+            "The keyring preparation limit must be positive"
+          )
+        )
+      )
+    else {
+      val repo = forTenant(tenant)
+      val (batchFilter, batchParams) = batchId match {
+        case Some(id) => ("AND _id = $3", Seq(id.value))
+        case None     => ("", Seq.empty[String])
+      }
+      repo
+        .queryTyped(
+          s"""SELECT content FROM ${repo.tableName}
+             |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
+             |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
+             |  WHERE item->'keyringChoice'->>'type' = 'new'
+             |    AND EXISTS (
+             |      SELECT 1 FROM jsonb_array_elements(content->'newKeyrings') AS creation
+             |      WHERE creation->>'_id' = item->'keyringChoice'->>'creation'
+             |        AND (
+             |          COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = false
+             |          AND item->>'state' = 'pending'
+             |          AND item->>'demand' IS NULL
+             |          AND item->>'reservation' IS NULL
+             |          OR COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = false
+             |          AND creation->>'keyring' IS NOT NULL
+             |          AND NOT EXISTS (
+             |            SELECT 1 FROM jsonb_array_elements(content->'items') AS open_item
+             |            WHERE open_item->>'state' NOT IN ('accepted', 'refused', 'blocked', 'failed', 'canceled')
+             |              AND open_item->'keyringChoice'->>'type' = 'new'
+             |              AND open_item->'keyringChoice'->>'creation' = creation->>'_id'
+             |          )
+             |          OR COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = true
+             |          AND COALESCE((creation->>'finalized')::boolean, false) = false
+             |          AND (
+             |            item->>'state' = 'accepted'
+             |            OR NOT EXISTS (
+             |              SELECT 1 FROM jsonb_array_elements(content->'items') AS open_item
+             |              WHERE open_item->>'state' NOT IN ('accepted', 'refused', 'blocked', 'failed', 'canceled')
+             |                AND open_item->'keyringChoice'->>'type' = 'new'
+             |                AND open_item->'keyringChoice'->>'creation' = creation->>'_id'
+             |            )
+             |          )
+             |        )
+             |    )
+             |)
+             |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
+          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
+        )
+        .map { batches =>
+          Right(
+            batches
+              .flatMap { batch =>
+                batch.newKeyrings.collect {
+                  case creation
+                      if (
+                        !creation.ready && batch.items.exists(item =>
+                          item.state == SubscriptionBatchItemState.Pending &&
+                            item.demand.isEmpty && item.reservation.isEmpty &&
+                            item.keyringChoice ==
+                            SubscriptionBatchKeyringChoice.New(creation.id)
+                        )
+                          || (
+                            creation.keyring.isDefined &&
+                              !batch.items.exists(item =>
+                                !item.state.isClosed &&
+                                  item.keyringChoice ==
+                                  SubscriptionBatchKeyringChoice
+                                    .New(creation.id)
+                              )
+                          )
+                      ) || (
+                        creation.ready && !creation.finalized &&
+                          (batch.items.exists(item =>
+                            item.state == SubscriptionBatchItemState.Accepted &&
+                              item.keyringChoice ==
+                              SubscriptionBatchKeyringChoice.New(creation.id)
+                          ) || !batch.items.exists(item =>
+                            !item.state.isClosed &&
+                              item.keyringChoice ==
+                              SubscriptionBatchKeyringChoice.New(creation.id)
+                          ))
+                      ) =>
+                    batch.id -> creation.id
+                }
+              }
+              .take(limit)
+          )
+        }
+    }
+
   def findMaterializableItems(
       tenant: TenantId,
       limit: Int,
@@ -2394,6 +2499,7 @@ trait SubscriptionBatchDemandRepo
          |      SELECT 1 FROM jsonb_array_elements(content->'newKeyrings') AS creation
          |      WHERE creation->>'_id' = item->'keyringChoice'->>'creation'
          |        AND creation->>'keyring' IS NOT NULL
+         |        AND COALESCE((creation->>'ready')::boolean, true)
          |    ))
          |)
          |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
@@ -2411,7 +2517,8 @@ trait SubscriptionBatchDemandRepo
                             true
                           case SubscriptionBatchKeyringChoice.New(id) =>
                             batch.newKeyrings.exists(creation =>
-                              creation.id == id && creation.keyring.isDefined
+                              creation.id == id && creation.keyring.isDefined &&
+                                creation.ready
                             )
                         }) =>
                     SubscriptionBatchReference(batch.id, item.id)
@@ -3152,16 +3259,16 @@ trait DataStore {
                           batch.withChildProgress(child) match {
                             case Left(error) => Future.successful(Left(error))
                             case Right(progress) =>
-                              val reconciled = progress.copy(items =
-                                progress.items.map { current =>
-                                  if (current.id == item.id)
-                                    current.copy(
-                                      error = None,
-                                      reservation = None
-                                    )
-                                  else current
-                                }
-                              )
+                              val reconciled =
+                                progress.copy(items = progress.items.map {
+                                  current =>
+                                    if (current.id == item.id)
+                                      current.copy(
+                                        error = None,
+                                        reservation = None
+                                      )
+                                    else current
+                                })
                               selectedKeyring(batch, item) match {
                                 case Left(error) =>
                                   Future.successful(Left(error))
@@ -3174,16 +3281,16 @@ trait DataStore {
                                           tenant,
                                           keyring,
                                           reservation.token
-                                          ).flatMap {
-                                            case 1L =>
-                                              Future.successful(Right(saved))
-                                            case _ =>
-                                              Future.failed(
-                                                new IllegalStateException(
-                                                  "The reconciled item's keyring reservation could not be released"
-                                                )
+                                        ).flatMap {
+                                          case 1L =>
+                                            Future.successful(Right(saved))
+                                          case _ =>
+                                            Future.failed(
+                                              new IllegalStateException(
+                                                "The reconciled item's keyring reservation could not be released"
                                               )
-                                          }
+                                            )
+                                        }
                                       case None =>
                                         Future.failed(
                                           new IllegalStateException(
@@ -3568,236 +3675,263 @@ trait DataStore {
                   subscriptionBatchDemandRepo
                     .findForUpdate(tenant, expectedAction.batch)
                     .flatMap {
-                case None =>
-                  Future.successful(
-                    Left(AppError.EntityNotFound("Subscription batch"))
-                  )
-                case Some(batch)
-                    if batch.team != expectedAction.team ||
-                      expectedAction.items.isEmpty ||
-                      expectedAction.items.map(_.item).distinct.size != expectedAction.items.size ||
-                      expectedAction.items.map(_.demand).distinct.size != expectedAction.items.size =>
-                  Future.successful(
-                    Left(
-                      AppError.EntityConflict(
-                        "Subscription batch approval references"
-                      )
-                    )
-                  )
-                case Some(batch) =>
-                  val loaded = expectedAction.items.foldLeft(
-                    Future.successful(
-                      Right(
-                        Vector.empty[
-                          (
-                              SubscriptionBatchItem,
-                              SubscriptionDemand,
-                              SubscriptionDemandStep
-                          )
-                        ]
-                      ): Either[
-                        AppError,
-                        Vector[
-                          (
-                              SubscriptionBatchItem,
-                              SubscriptionDemand,
-                              SubscriptionDemandStep
-                          )
-                        ]
-                      ]
-                    )
-                  ) { (previous, reference) =>
-                    previous.flatMap {
-                      case left @ Left(_) => Future.successful(left)
-                      case Right(current) =>
-                        batch.items.find(_.id == reference.item) match {
-                          case None =>
-                            Future.successful(
-                              Left(
-                                AppError.EntityConflict(
-                                  "Subscription batch approval item"
-                                )
-                              )
+                      case None =>
+                        Future.successful(
+                          Left(AppError.EntityNotFound("Subscription batch"))
+                        )
+                      case Some(batch)
+                          if batch.team != expectedAction.team ||
+                            expectedAction.items.isEmpty ||
+                            expectedAction.items
+                              .map(_.item)
+                              .distinct
+                              .size != expectedAction.items.size ||
+                            expectedAction.items
+                              .map(_.demand)
+                              .distinct
+                              .size != expectedAction.items.size =>
+                        Future.successful(
+                          Left(
+                            AppError.EntityConflict(
+                              "Subscription batch approval references"
                             )
-                          case Some(item)
-                              if item.api != expectedAction.api ||
-                                item.plan != reference.plan ||
-                                !item.demand.contains(reference.demand) ||
-                                item.state.isClosed =>
-                            Future.successful(
-                              Left(
-                                AppError.EntityConflict(
-                                  "Subscription batch approval item"
+                          )
+                        )
+                      case Some(batch) =>
+                        val loaded = expectedAction.items.foldLeft(
+                          Future.successful(
+                            Right(
+                              Vector.empty[
+                                (
+                                    SubscriptionBatchItem,
+                                    SubscriptionDemand,
+                                    SubscriptionDemandStep
                                 )
-                              )
-                            )
-                          case Some(item) =>
-                            subscriptionDemandRepo
-                              .findByBatchItem(
-                                tenant,
-                                SubscriptionBatchReference(
-                                  batch.id,
-                                  item.id
+                              ]
+                            ): Either[
+                              AppError,
+                              Vector[
+                                (
+                                    SubscriptionBatchItem,
+                                    SubscriptionDemand,
+                                    SubscriptionDemandStep
                                 )
-                              )
-                              .map {
-                                case Some(child)
-                                    if child.id == reference.demand &&
-                                      child.api == expectedAction.api &&
-                                      child.team == expectedAction.team &&
-                                      !child.state.isClosed =>
-                                  child.steps.lift(expectedAction.phase) match {
-                                    case Some(step)
-                                        if step.id == reference.step &&
-                                          step.state == SubscriptionDemandState.InProgress &&
-                                          step.step.isInstanceOf[ValidationStep.TeamAdmin] =>
-                                      Right(current :+ (item, child, step))
-                                    case _ =>
-                                      Left(
-                                        AppError.EntityConflict(
-                                          "Subscription batch approval step"
-                                        )
+                              ]
+                            ]
+                          )
+                        ) { (previous, reference) =>
+                          previous.flatMap {
+                            case left @ Left(_) => Future.successful(left)
+                            case Right(current) =>
+                              batch.items.find(_.id == reference.item) match {
+                                case None =>
+                                  Future.successful(
+                                    Left(
+                                      AppError.EntityConflict(
+                                        "Subscription batch approval item"
                                       )
-                                  }
-                                case _ =>
-                                  Left(
-                                    AppError.EntityConflict(
-                                      "Subscription batch approval demand"
                                     )
                                   )
-                              }
-                        }
-                    }
-                  }
-                  loaded.flatMap {
-                    case Left(error) => Future.successful(Left(error))
-                    case Right(children) =>
-                      val updatedChildren = children.map {
-                        case (item, child, step) =>
-                          val nextStep = if (accepted)
-                            step.copy(state = SubscriptionDemandState.Accepted)
-                          else
-                            step.copy(
-                              state = SubscriptionDemandState.Refused,
-                              metadata = Json.obj("by" -> actor.asJson)
-                            )
-                          val updated = child.copy(
-                            state =
-                              if (accepted) child.state
-                              else SubscriptionDemandState.Refused,
-                            steps = child.steps.map(current =>
-                              if (current.id == step.id) nextStep else current
-                            )
-                          )
-                          val outcome = if (accepted) None
-                          else
-                            Some(
-                              Notification(
-                                id = NotificationId(
-                                  fr.maif.daikoku.utils.IdGenerator.token(32)
-                                ),
-                                tenant = child.tenant,
-                                team = Some(child.team),
-                                sender = actor,
-                                notificationType = NotificationType.AcceptOnly,
-                                action = NotificationAction.ApiSubscriptionReject(
-                                  message,
-                                  child.api,
-                                  child.plan,
-                                  child.team
-                                )
-                              )
-                            )
-                          (item, child, updated, outcome)
-                      }
-                      val updatedBatch = updatedChildren.foldLeft(
-                        Right(batch): Either[
-                          AppError,
-                          SubscriptionBatchDemand
-                        ]
-                      ) { case (current, (_, _, child, _)) =>
-                        current.flatMap(_.withChildProgress(child))
-                      }
-                      updatedBatch match {
-                        case Left(error) => Future.successful(Left(error))
-                        case Right(nextBatch) =>
-                          val saved = updatedChildren.foldLeft(
-                            Future.successful(Right(()): Either[AppError, Unit])
-                          ) { case (previous, (_, _, child, outcome)) =>
-                            previous.flatMap {
-                              case left @ Left(_) => Future.successful(left)
-                              case Right(_) =>
-                                subscriptionDemandRepo
-                                  .forTenant(tenant)
-                                  .save(child)
-                                  .flatMap {
-                                    case false =>
-                                      Future.successful(
+                                case Some(item)
+                                    if item.api != expectedAction.api ||
+                                      item.plan != reference.plan ||
+                                      !item.demand.contains(reference.demand) ||
+                                      item.state.isClosed =>
+                                  Future.successful(
+                                    Left(
+                                      AppError.EntityConflict(
+                                        "Subscription batch approval item"
+                                      )
+                                    )
+                                  )
+                                case Some(item) =>
+                                  subscriptionDemandRepo
+                                    .findByBatchItem(
+                                      tenant,
+                                      SubscriptionBatchReference(
+                                        batch.id,
+                                        item.id
+                                      )
+                                    )
+                                    .map {
+                                      case Some(child)
+                                          if child.id == reference.demand &&
+                                            child.api == expectedAction.api &&
+                                            child.team == expectedAction.team &&
+                                            !child.state.isClosed =>
+                                        child.steps.lift(
+                                          expectedAction.phase
+                                        ) match {
+                                          case Some(step)
+                                              if step.id == reference.step &&
+                                                step.state == SubscriptionDemandState.InProgress &&
+                                                step.step.isInstanceOf[
+                                                  ValidationStep.TeamAdmin
+                                                ] =>
+                                            Right(
+                                              current :+ (item, child, step)
+                                            )
+                                          case _ =>
+                                            Left(
+                                              AppError.EntityConflict(
+                                                "Subscription batch approval step"
+                                              )
+                                            )
+                                        }
+                                      case _ =>
                                         Left(
                                           AppError.EntityConflict(
-                                            "Subscription batch approval child"
+                                            "Subscription batch approval demand"
                                           )
                                         )
+                                    }
+                              }
+                          }
+                        }
+                        loaded.flatMap {
+                          case Left(error) => Future.successful(Left(error))
+                          case Right(children) =>
+                            val updatedChildren = children.map {
+                              case (item, child, step) =>
+                                val nextStep =
+                                  if (accepted)
+                                    step.copy(state =
+                                      SubscriptionDemandState.Accepted
+                                    )
+                                  else
+                                    step.copy(
+                                      state = SubscriptionDemandState.Refused,
+                                      metadata = Json.obj("by" -> actor.asJson)
+                                    )
+                                val updated = child.copy(
+                                  state =
+                                    if (accepted) child.state
+                                    else SubscriptionDemandState.Refused,
+                                  steps = child.steps.map(current =>
+                                    if (current.id == step.id) nextStep
+                                    else current
+                                  )
+                                )
+                                val outcome =
+                                  if (accepted) None
+                                  else
+                                    Some(
+                                      Notification(
+                                        id = NotificationId(
+                                          fr.maif.daikoku.utils.IdGenerator
+                                            .token(32)
+                                        ),
+                                        tenant = child.tenant,
+                                        team = Some(child.team),
+                                        sender = actor,
+                                        notificationType =
+                                          NotificationType.AcceptOnly,
+                                        action = NotificationAction
+                                          .ApiSubscriptionReject(
+                                            message,
+                                            child.api,
+                                            child.plan,
+                                            child.team
+                                          )
                                       )
-                                    case true =>
-                                      outcome match {
+                                    )
+                                (item, child, updated, outcome)
+                            }
+                            val updatedBatch = updatedChildren.foldLeft(
+                              Right(batch): Either[
+                                AppError,
+                                SubscriptionBatchDemand
+                              ]
+                            ) { case (current, (_, _, child, _)) =>
+                              current.flatMap(_.withChildProgress(child))
+                            }
+                            updatedBatch match {
+                              case Left(error) => Future.successful(Left(error))
+                              case Right(nextBatch) =>
+                                val saved = updatedChildren.foldLeft(
+                                  Future.successful(
+                                    Right(()): Either[AppError, Unit]
+                                  )
+                                ) { case (previous, (_, _, child, outcome)) =>
+                                  previous.flatMap {
+                                    case left @ Left(_) =>
+                                      Future.successful(left)
+                                    case Right(_) =>
+                                      subscriptionDemandRepo
+                                        .forTenant(tenant)
+                                        .save(child)
+                                        .flatMap {
+                                          case false =>
+                                            Future.successful(
+                                              Left(
+                                                AppError.EntityConflict(
+                                                  "Subscription batch approval child"
+                                                )
+                                              )
+                                            )
+                                          case true =>
+                                            outcome match {
+                                              case None =>
+                                                Future.successful(Right(()))
+                                              case Some(value) =>
+                                                notificationRepo
+                                                  .forTenant(tenant)
+                                                  .save(value)
+                                                  .map {
+                                                    case true => Right(())
+                                                    case false =>
+                                                      Left(
+                                                        AppError.EntityConflict(
+                                                          "Subscription batch rejection notification"
+                                                        )
+                                                      )
+                                                  }
+                                            }
+                                        }
+                                  }
+                                }
+                                saved.flatMap {
+                                  case Left(error) =>
+                                    Future.successful(Left(error))
+                                  case Right(_) =>
+                                    subscriptionBatchDemandRepo
+                                      .updateIfRevisionMatches(nextBatch)
+                                      .flatMap {
                                         case None =>
-                                          Future.successful(Right(()))
-                                        case Some(value) =>
+                                          Future.successful(
+                                            Left(
+                                              AppError.EntityConflict(
+                                                "Subscription batch approval revision"
+                                              )
+                                            )
+                                          )
+                                        case Some(_) =>
+                                          val updatedNotification =
+                                            notification.copy(
+                                              status =
+                                                if (accepted)
+                                                  NotificationStatus.Accepted()
+                                                else
+                                                  NotificationStatus.Rejected()
+                                            )
                                           notificationRepo
                                             .forTenant(tenant)
-                                            .save(value)
+                                            .save(updatedNotification)
                                             .map {
-                                              case true => Right(())
+                                              case true =>
+                                                Right(updatedNotification)
                                               case false =>
                                                 Left(
                                                   AppError.EntityConflict(
-                                                    "Subscription batch rejection notification"
+                                                    "Subscription batch approval notification"
                                                   )
                                                 )
                                             }
                                       }
-                                  }
-                            }
-                          }
-                          saved.flatMap {
-                            case Left(error) => Future.successful(Left(error))
-                            case Right(_) =>
-                              subscriptionBatchDemandRepo
-                                .updateIfRevisionMatches(nextBatch)
-                                .flatMap {
-                                  case None =>
-                                    Future.successful(
-                                      Left(
-                                        AppError.EntityConflict(
-                                          "Subscription batch approval revision"
-                                        )
-                                      )
-                                    )
-                                  case Some(_) =>
-                                    val updatedNotification = notification.copy(
-                                      status =
-                                        if (accepted)
-                                          NotificationStatus.Accepted()
-                                        else NotificationStatus.Rejected()
-                                    )
-                                    notificationRepo
-                                      .forTenant(tenant)
-                                      .save(updatedNotification)
-                                      .map {
-                                        case true => Right(updatedNotification)
-                                        case false =>
-                                          Left(
-                                            AppError.EntityConflict(
-                                              "Subscription batch approval notification"
-                                            )
-                                          )
-                                      }
                                 }
-                          }
-                      }
-                  }
-              }
+                            }
+                        }
+                    }
                 case _ =>
                   Future.successful(
                     Left(
