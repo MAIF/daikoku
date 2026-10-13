@@ -70,6 +70,7 @@
   "from": "from",
   "notif.api.subscription.environment": "New subscription request for the %s environment.",
   "notif.api.subscription.default": "New subscription request for the %s plan.",
+  "notif.api.subscription.batch": "Grouped subscription request for API %s covering plans: %s.",
   "notif.api.demand.reject": "Your subscription request (%s) has been rejected.",
   "notif.api.demand.accept": "Your subscription request (%s) has been accepted.",
   "notif.api.demand.accept.see_key": "View my API key",

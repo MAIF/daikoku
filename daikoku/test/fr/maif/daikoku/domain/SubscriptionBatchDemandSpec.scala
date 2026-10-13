@@ -206,6 +206,71 @@ class SubscriptionBatchDemandSpec extends PlaySpec {
     }
   }
 
+  "ApiSubscriptionBatchDemand notification action" should {
+    "round-trip the group scope and exact child steps without adding a notification type" in {
+      val action = NotificationAction.ApiSubscriptionBatchDemand(
+        batch = SubscriptionBatchDemandId("batch"),
+        api = ApiId("api"),
+        team = TeamId("consumer"),
+        phase = 2,
+        items = Seq(
+          NotificationAction.SubscriptionBatchApprovalItem(
+            item = SubscriptionBatchItemId("plan-one"),
+            plan = UsagePlanId("plan-one-id"),
+            demand = DemandId("demand-one"),
+            step = SubscriptionDemandStepId("step-one")
+          ),
+          NotificationAction.SubscriptionBatchApprovalItem(
+            item = SubscriptionBatchItemId("plan-two"),
+            plan = UsagePlanId("plan-two-id"),
+            demand = DemandId("demand-two"),
+            step = SubscriptionDemandStepId("step-two")
+          )
+        ),
+        motivation = Some("Business use case")
+      )
+
+      val serialized = json.NotificationActionFormat.writes(action)
+      (serialized \ "type").as[String] mustBe "ApiSubscriptionBatch"
+      json.NotificationActionFormat.reads(serialized).get mustBe action
+
+      val notification = Notification(
+        id = NotificationId("notification"),
+        tenant = TenantId("tenant"),
+        team = Some(TeamId("producer")),
+        sender = NotificationSender("requester", "requester@example.com", None),
+        notificationType = NotificationType.AcceptOrReject,
+        action = action
+      )
+      json.NotificationFormat.reads(notification.asJson).get mustBe notification
+    }
+
+    "reject empty groups and negative phase indexes" in {
+      val action = Json.obj(
+        "type" -> "ApiSubscriptionBatch",
+        "batch" -> "batch",
+        "api" -> "api",
+        "team" -> "consumer",
+        "phase" -> 0,
+        "items" -> Json.arr()
+      )
+
+      json.NotificationActionFormat.reads(action).isError mustBe true
+      json.NotificationActionFormat
+        .reads(action ++ Json.obj(
+          "phase" -> -1,
+          "items" -> Json.arr(
+            Json.obj(
+              "item" -> "item",
+              "demand" -> "demand",
+              "step" -> "step"
+            )
+          )
+        ))
+        .isError mustBe true
+    }
+  }
+
   "SubscriptionBatchDemand JSON" should {
 
     "preserve revisions and read older batches without a revision" in {

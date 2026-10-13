@@ -3427,6 +3427,8 @@ object json {
           case "AccountCreationAttempt" =>
             accountCreationAttemptFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
+          case "ApiSubscriptionBatch" =>
+            ApiSubscriptionBatchDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
           case "ApiSubscriptionAccept" =>
@@ -3477,6 +3479,10 @@ object json {
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
+            )
+          case p: ApiSubscriptionBatchDemand =>
+            ApiSubscriptionBatchDemandFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiSubscriptionBatch"
             )
           case p: AccountCreationAttempt =>
             accountCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3876,6 +3882,76 @@ object json {
           .as[JsValue]
       )
   }
+
+  val SubscriptionBatchApprovalItemFormat =
+    new Format[SubscriptionBatchApprovalItem] {
+      override def reads(json: JsValue): JsResult[SubscriptionBatchApprovalItem] =
+        Try {
+          JsSuccess(
+            SubscriptionBatchApprovalItem(
+              item = SubscriptionBatchItemId((json \ "item").as[String]),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
+              step =
+                (json \ "step").as(using SubscriptionDemandStepIdFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionBatchApprovalItem): JsValue =
+        Json.obj(
+          "item" -> o.item.value,
+          "plan" -> UsagePlanIdFormat.writes(o.plan),
+          "demand" -> SubscriptionDemandIdFormat.writes(o.demand),
+          "step" -> SubscriptionDemandStepIdFormat.writes(o.step)
+        )
+    }
+
+  val ApiSubscriptionBatchDemandFormat =
+    new Format[ApiSubscriptionBatchDemand] {
+      override def reads(json: JsValue): JsResult[ApiSubscriptionBatchDemand] =
+        Try {
+          val items =
+            (json \ "items").as[Seq[SubscriptionBatchApprovalItem]](
+              Reads.seq(using SubscriptionBatchApprovalItemFormat)
+            )
+          if (items.isEmpty)
+            JsError("A batch approval notification must reference at least one item")
+          else {
+            val phase = (json \ "phase").as[Int]
+            if (phase < 0)
+              JsError("A batch approval phase cannot be negative")
+            else
+              JsSuccess(
+                ApiSubscriptionBatchDemand(
+                  batch = SubscriptionBatchDemandId(
+                    (json \ "batch").as[String]
+                  ),
+                  api = (json \ "api").as(using ApiIdFormat),
+                  team = (json \ "team").as(using TeamIdFormat),
+                  phase = phase,
+                  items = items,
+                  motivation = (json \ "motivation").asOpt[String]
+                )
+              )
+          }
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiSubscriptionBatchDemand): JsValue =
+        Json.obj(
+          "batch" -> o.batch.value,
+          "api" -> ApiIdFormat.writes(o.api),
+          "team" -> TeamIdFormat.writes(o.team),
+          "phase" -> o.phase,
+          "items" -> JsArray(o.items.map(SubscriptionBatchApprovalItemFormat.writes)),
+          "motivation" -> o.motivation
+        )
+    }
+
   val accountCreationAttemptFormat = new Format[AccountCreationAttempt] {
     override def reads(json: JsValue): JsResult[AccountCreationAttempt] =
       Try {

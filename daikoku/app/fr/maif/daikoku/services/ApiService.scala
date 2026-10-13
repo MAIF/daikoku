@@ -1235,6 +1235,203 @@ class ApiService(
       tenant: Tenant,
       step: SubscriptionDemandStep,
       actualStep: ValidationStep.TeamAdmin
+  ): EitherT[Future, AppError, Result] =
+    demand.batch match {
+      case Some(reference) =>
+        notifyBatchApiSubscription(demand, tenant, step, reference)
+      case None =>
+        notifySingleApiSubscription(demand, tenant, step, actualStep)
+    }
+
+  private def notifyBatchApiSubscription(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      step: SubscriptionDemandStep,
+      reference: SubscriptionBatchReference
+  ): EitherT[Future, AppError, Result] = {
+    import cats.implicits.*
+
+    val phaseIndex = demand.steps.indexWhere(_.id == step.id)
+    if (phaseIndex < 0)
+      EitherT.leftT(AppError.EntityConflict("Subscription batch approval phase"))
+    else
+      for {
+        batch <- EitherT.fromOptionF(
+          env.dataStore.subscriptionBatchDemandRepo
+            .forTenant(tenant.id)
+            .findById(reference.batch),
+          AppError.EntityNotFound("Subscription batch")
+        )
+        api <- EitherT.fromOptionF(
+          env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
+          AppError.ApiNotFound
+        )
+        user <- EitherT.fromOptionF(
+          env.dataStore.userRepo.findById(demand.from),
+          AppError.UserNotFound()
+        )
+        children <- EitherT.liftF(
+          Future.sequence(
+            batch.items
+              .filter(_.api == demand.api)
+              .map(item =>
+                env.dataStore.subscriptionDemandRepo
+                  .findByBatchItem(
+                    tenant.id,
+                    SubscriptionBatchReference(batch.id, item.id)
+                  )
+                  .map(item -> _)
+              )
+          )
+        )
+        approvalChildren = children.flatMap { case (item, maybeChild) =>
+          maybeChild.toSeq.flatMap { child =>
+            child.steps
+              .lift(phaseIndex)
+              .filter(_.state == SubscriptionDemandState.Waiting)
+              .collect { case childStep
+                    if childStep.step.isInstanceOf[ValidationStep.TeamAdmin] =>
+                (item, child, childStep)
+              }
+          }
+        }
+        _ <- EitherT.cond[Future][AppError, Unit](
+          approvalChildren.exists(_._2.id == demand.id),
+          (),
+          AppError.EntityConflict("Subscription batch approval phase")
+        )
+        existingNotification <- EitherT.liftF(
+          env.dataStore.notificationRepo.findPendingSubscriptionBatchApproval(
+            tenant.id,
+            batch.id,
+            api.id,
+            phaseIndex
+          )
+        )
+        notification = existingNotification.getOrElse(
+          Notification(
+            id = NotificationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = Some(api.team),
+            sender = user.asNotificationSender,
+            action = NotificationAction.ApiSubscriptionBatchDemand(
+              batch = batch.id,
+              api = api.id,
+              team = batch.team,
+              phase = phaseIndex,
+              items = approvalChildren.map { case (item, child, childStep) =>
+                NotificationAction.SubscriptionBatchApprovalItem(
+                  item.id,
+                  item.plan,
+                  child.id,
+                  childStep.id
+                )
+              },
+              motivation = demand.motivation.map(Json.stringify)
+            )
+          )
+        )
+        _ <- existingNotification match {
+          case Some(_) => EitherT.pure[Future, AppError](true)
+          case None =>
+            EitherT.liftF(
+              env.dataStore.notificationRepo
+                .forTenant(tenant.id)
+                .save(notification)
+            )
+        }
+        _ <- approvalChildren
+          .filterNot(_._2.id == demand.id)
+          .foldLeft(EitherT.pure[Future, AppError](())) {
+            case (previous, (_, child, childStep)) =>
+              previous.flatMap { _ =>
+                val updatedSteps = child.steps.map(current =>
+                  if (current.id == childStep.id)
+                    current.copy(state = SubscriptionDemandState.InProgress)
+                  else current
+                )
+                val updated = child.copy(
+                  steps = updatedSteps,
+                  state = SubscriptionDemandState.merge(
+                    updatedSteps.map(_.state)
+                  )
+                )
+                saveDemandProgress(updated, child).map(_ => ())
+              }
+          }
+        apiTeam <- EitherT.fromOptionF(
+          env.dataStore.teamRepo.forTenant(tenant.id).findById(api.team),
+          AppError.TeamNotFound
+        )
+        demandTeam <- EitherT.fromOptionF(
+          env.dataStore.teamRepo
+            .forTenant(tenant.id)
+            .findById(demand.team),
+          AppError.TeamNotFound
+        )
+        plans <- EitherT.liftF(
+          env.dataStore.usagePlanRepo
+            .forTenant(tenant.id)
+            .findByIds(approvalChildren.map(_._2.plan).distinct)
+        )
+        admins <- EitherT.liftF(
+          env.dataStore.userRepo.findByIds(apiTeam.admins().toSeq)
+        )
+        tenantLanguage = tenant.defaultLanguage.getOrElse("en")
+        _ <- existingNotification match {
+          case Some(_) => EitherT.pure[Future, AppError](())
+          case None =>
+            EitherT.right[AppError](
+              Future.sequence(admins.map { admin =>
+                implicit val language: String =
+                  admin.defaultLanguage.getOrElse(tenantLanguage)
+                val notificationUrl =
+                  env.getDaikokuUrl(tenant, "/notifications", admin)
+                for {
+                  title <- translator.translate("mail.apikey.demand.title", tenant)
+                  body <- translator.translate(
+                    "mail.apikey.demand.body",
+                    tenant,
+                    Map(
+                      "user" -> JsString(user.name),
+                      "apiName" -> JsString(api.name),
+                      "link" -> JsString(notificationUrl),
+                      "team" -> JsString(demandTeam.name),
+                      "consumer_team_data" -> demandTeam.asJson,
+                      "producer_team_data" -> apiTeam.asJson,
+                      "notification_data" -> notification.asJson,
+                      "user_data" -> user.asJson,
+                      "recipient_data" -> admin.asJson,
+                      "api_data" -> api.asJson,
+                      "usagePlan_data" -> plans.headOption
+                        .map(_.asJson)
+                        .getOrElse(Json.obj()),
+                      "subscriptionDemand_data" -> demand.asJson,
+                      "subscriptionDemands_data" -> Json.toJson(
+                        approvalChildren.map(_._2.asJson)
+                      ),
+                      "subscriptionBatchDemand_data" -> batch.asJson,
+                      "tenant_data" -> tenant.asJson
+                    )
+                  )
+                  _ <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
+                } yield ()
+              })
+            )
+        }
+      } yield Ok(
+        Json.obj(
+          "notificationSended" -> true,
+          "creation" -> "waiting"
+        )
+      )
+  }
+
+  private def notifySingleApiSubscription(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      step: SubscriptionDemandStep,
+      actualStep: ValidationStep.TeamAdmin
   ): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
 

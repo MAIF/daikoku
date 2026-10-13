@@ -825,6 +825,28 @@ trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId] {
     )
   }
 
+  def findPendingSubscriptionBatchApproval(
+      tenant: TenantId,
+      batch: SubscriptionBatchDemandId,
+      api: ApiId,
+      phase: Int
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[Notification]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $notificationScope AND $pending " +
+        "AND content->'action'->>'type' = 'ApiSubscriptionBatch' " +
+        "AND content->'action'->>'batch' = $2 " +
+        "AND content->'action'->>'api' = $3 " +
+        "AND content->'action'->>'phase' = $4 " +
+        "LIMIT 1",
+      Seq(tenant.value, batch.value, api.value, phase.toString)
+    )
+  }
+
   /** The invitations to a team nobody has answered yet. */
   def findPendingTeamInvitations(tenant: TenantId, team: String)(implicit
       dbConn: DbConn,
@@ -3521,6 +3543,282 @@ trait DataStore {
         }
     }
   }
+
+  def resolveBatchApproval(
+      tenant: TenantId,
+      notificationId: NotificationId,
+      expectedAction: NotificationAction.ApiSubscriptionBatchDemand,
+      accepted: Boolean,
+      actor: NotificationSender,
+      message: Option[String]
+  )(implicit ec: ExecutionContext): Future[Either[AppError, Notification]] =
+    withTransaction {
+      notificationRepo
+        .forTenant(tenant)
+        .findById(notificationId)
+        .flatMap {
+          case Some(notification)
+              if notification.status == NotificationStatus.Pending() &&
+                notification.action == expectedAction =>
+            apiRepo
+              .forTenant(tenant)
+              .findById(expectedAction.api)
+              .flatMap {
+                case Some(api) if notification.team.contains(api.team) =>
+                  subscriptionBatchDemandRepo
+                    .findForUpdate(tenant, expectedAction.batch)
+                    .flatMap {
+                case None =>
+                  Future.successful(
+                    Left(AppError.EntityNotFound("Subscription batch"))
+                  )
+                case Some(batch)
+                    if batch.team != expectedAction.team ||
+                      expectedAction.items.isEmpty ||
+                      expectedAction.items.map(_.item).distinct.size != expectedAction.items.size ||
+                      expectedAction.items.map(_.demand).distinct.size != expectedAction.items.size =>
+                  Future.successful(
+                    Left(
+                      AppError.EntityConflict(
+                        "Subscription batch approval references"
+                      )
+                    )
+                  )
+                case Some(batch) =>
+                  val loaded = expectedAction.items.foldLeft(
+                    Future.successful(
+                      Right(
+                        Vector.empty[
+                          (
+                              SubscriptionBatchItem,
+                              SubscriptionDemand,
+                              SubscriptionDemandStep
+                          )
+                        ]
+                      ): Either[
+                        AppError,
+                        Vector[
+                          (
+                              SubscriptionBatchItem,
+                              SubscriptionDemand,
+                              SubscriptionDemandStep
+                          )
+                        ]
+                      ]
+                    )
+                  ) { (previous, reference) =>
+                    previous.flatMap {
+                      case left @ Left(_) => Future.successful(left)
+                      case Right(current) =>
+                        batch.items.find(_.id == reference.item) match {
+                          case None =>
+                            Future.successful(
+                              Left(
+                                AppError.EntityConflict(
+                                  "Subscription batch approval item"
+                                )
+                              )
+                            )
+                          case Some(item)
+                              if item.api != expectedAction.api ||
+                                item.plan != reference.plan ||
+                                !item.demand.contains(reference.demand) ||
+                                item.state.isClosed =>
+                            Future.successful(
+                              Left(
+                                AppError.EntityConflict(
+                                  "Subscription batch approval item"
+                                )
+                              )
+                            )
+                          case Some(item) =>
+                            subscriptionDemandRepo
+                              .findByBatchItem(
+                                tenant,
+                                SubscriptionBatchReference(
+                                  batch.id,
+                                  item.id
+                                )
+                              )
+                              .map {
+                                case Some(child)
+                                    if child.id == reference.demand &&
+                                      child.api == expectedAction.api &&
+                                      child.team == expectedAction.team &&
+                                      !child.state.isClosed =>
+                                  child.steps.lift(expectedAction.phase) match {
+                                    case Some(step)
+                                        if step.id == reference.step &&
+                                          step.state == SubscriptionDemandState.InProgress &&
+                                          step.step.isInstanceOf[ValidationStep.TeamAdmin] =>
+                                      Right(current :+ (item, child, step))
+                                    case _ =>
+                                      Left(
+                                        AppError.EntityConflict(
+                                          "Subscription batch approval step"
+                                        )
+                                      )
+                                  }
+                                case _ =>
+                                  Left(
+                                    AppError.EntityConflict(
+                                      "Subscription batch approval demand"
+                                    )
+                                  )
+                              }
+                        }
+                    }
+                  }
+                  loaded.flatMap {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(children) =>
+                      val updatedChildren = children.map {
+                        case (item, child, step) =>
+                          val nextStep = if (accepted)
+                            step.copy(state = SubscriptionDemandState.Accepted)
+                          else
+                            step.copy(
+                              state = SubscriptionDemandState.Refused,
+                              metadata = Json.obj("by" -> actor.asJson)
+                            )
+                          val updated = child.copy(
+                            state =
+                              if (accepted) child.state
+                              else SubscriptionDemandState.Refused,
+                            steps = child.steps.map(current =>
+                              if (current.id == step.id) nextStep else current
+                            )
+                          )
+                          val outcome = if (accepted) None
+                          else
+                            Some(
+                              Notification(
+                                id = NotificationId(
+                                  fr.maif.daikoku.utils.IdGenerator.token(32)
+                                ),
+                                tenant = child.tenant,
+                                team = Some(child.team),
+                                sender = actor,
+                                notificationType = NotificationType.AcceptOnly,
+                                action = NotificationAction.ApiSubscriptionReject(
+                                  message,
+                                  child.api,
+                                  child.plan,
+                                  child.team
+                                )
+                              )
+                            )
+                          (item, child, updated, outcome)
+                      }
+                      val updatedBatch = updatedChildren.foldLeft(
+                        Right(batch): Either[
+                          AppError,
+                          SubscriptionBatchDemand
+                        ]
+                      ) { case (current, (_, _, child, _)) =>
+                        current.flatMap(_.withChildProgress(child))
+                      }
+                      updatedBatch match {
+                        case Left(error) => Future.successful(Left(error))
+                        case Right(nextBatch) =>
+                          val saved = updatedChildren.foldLeft(
+                            Future.successful(Right(()): Either[AppError, Unit])
+                          ) { case (previous, (_, _, child, outcome)) =>
+                            previous.flatMap {
+                              case left @ Left(_) => Future.successful(left)
+                              case Right(_) =>
+                                subscriptionDemandRepo
+                                  .forTenant(tenant)
+                                  .save(child)
+                                  .flatMap {
+                                    case false =>
+                                      Future.successful(
+                                        Left(
+                                          AppError.EntityConflict(
+                                            "Subscription batch approval child"
+                                          )
+                                        )
+                                      )
+                                    case true =>
+                                      outcome match {
+                                        case None =>
+                                          Future.successful(Right(()))
+                                        case Some(value) =>
+                                          notificationRepo
+                                            .forTenant(tenant)
+                                            .save(value)
+                                            .map {
+                                              case true => Right(())
+                                              case false =>
+                                                Left(
+                                                  AppError.EntityConflict(
+                                                    "Subscription batch rejection notification"
+                                                  )
+                                                )
+                                            }
+                                      }
+                                  }
+                            }
+                          }
+                          saved.flatMap {
+                            case Left(error) => Future.successful(Left(error))
+                            case Right(_) =>
+                              subscriptionBatchDemandRepo
+                                .updateIfRevisionMatches(nextBatch)
+                                .flatMap {
+                                  case None =>
+                                    Future.successful(
+                                      Left(
+                                        AppError.EntityConflict(
+                                          "Subscription batch approval revision"
+                                        )
+                                      )
+                                    )
+                                  case Some(_) =>
+                                    val updatedNotification = notification.copy(
+                                      status =
+                                        if (accepted)
+                                          NotificationStatus.Accepted()
+                                        else NotificationStatus.Rejected()
+                                    )
+                                    notificationRepo
+                                      .forTenant(tenant)
+                                      .save(updatedNotification)
+                                      .map {
+                                        case true => Right(updatedNotification)
+                                        case false =>
+                                          Left(
+                                            AppError.EntityConflict(
+                                              "Subscription batch approval notification"
+                                            )
+                                          )
+                                      }
+                                }
+                          }
+                      }
+                  }
+              }
+                case _ =>
+                  Future.successful(
+                    Left(
+                      AppError.EntityConflict(
+                        "Subscription batch approval API ownership"
+                      )
+                    )
+                  )
+              }
+          case Some(_) =>
+            Future.successful(
+              Left(
+                AppError.EntityConflict(
+                  "Subscription batch approval notification is no longer pending"
+                )
+              )
+            )
+          case None =>
+            Future.successful(Left(AppError.NotificationNotFound))
+        }
+    }
 
   def cancelBatchChild(
       tenant: TenantId,

@@ -1079,6 +1079,203 @@ class SubscriptionBatchStorageSpec
       }
     }
 
+    "notify producer admins once for all plans at the same API phase" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val env = daikokuComponents.env
+      val store = env.dataStore
+      val service = daikokuComponents.subscriptionBatchService
+      val initial = newBatch()
+      val process = SubscriptionProcess(
+        Seq(
+          ValidationStep.TeamAdmin("admin", TeamId("producer")),
+          ValidationStep.TeamAdmin("second-admin", TeamId("producer"))
+        )
+      )
+      val firstItem = initial.items.head.copy(process = process)
+      val parent = initial.copy(items =
+        Seq(
+          firstItem,
+          firstItem.copy(
+            id = SubscriptionBatchItemId("second"),
+            plan = UsagePlanId("second-plan")
+          )
+        )
+      )
+      try {
+        persistEligibilityFixtures(store, parent)
+        val tenant = Await
+          .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
+          .get
+        val requester = Await
+          .result(store.userRepo.findById(parent.from), 5.seconds)
+          .get
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        val children = parent.items.map { item =>
+          Await
+            .result(
+              service
+                .materializeItem(parent.tenant, parent.id, item.id)
+                .value,
+              5.seconds
+            )
+            .toOption
+            .get
+        }
+
+        Await
+          .result(
+            daikokuComponents.apiService
+              .runSubscriptionProcess(children.head.id, tenant)(using
+                "en",
+                requester
+              )
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+
+        val firstNotifications = Await
+          .result(
+            store.notificationRepo.findPendingByTeam(
+              parent.tenant,
+              TeamId("producer")
+            ),
+            5.seconds
+          )
+          .collect {
+            case notification: Notification
+                if notification.action.isInstanceOf[
+                  NotificationAction.ApiSubscriptionBatchDemand
+                ] =>
+              notification
+          }
+        firstNotifications must have size 1
+        firstNotifications.head.action match {
+          case action: NotificationAction.ApiSubscriptionBatchDemand =>
+            action.phase mustBe 0
+            action.items.map(_.item).toSet mustBe parent.items.map(_.id).toSet
+            val resolved = Await.result(
+              store.resolveBatchApproval(
+                parent.tenant,
+                firstNotifications.head.id,
+                action,
+                accepted = true,
+                actor = requester.asNotificationSender,
+                message = None
+              ),
+              5.seconds
+            )
+            resolved.isRight mustBe true
+            resolved.toOption.get.status mustBe a[NotificationStatus.Accepted]
+            val replay = Await.result(
+              store.resolveBatchApproval(
+                parent.tenant,
+                firstNotifications.head.id,
+                action,
+                accepted = true,
+                actor = requester.asNotificationSender,
+                message = None
+              ),
+              5.seconds
+            )
+            replay.isLeft mustBe true
+          case _ => fail("Expected a grouped subscription notification")
+        }
+
+        Await
+          .result(
+            daikokuComponents.apiService
+              .runSubscriptionProcess(children.head.id, tenant)(using
+                "en",
+                requester
+              )
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        val secondNotifications = Await
+          .result(
+            store.notificationRepo.findPendingByTeam(
+              parent.tenant,
+              TeamId("producer")
+            ),
+            5.seconds
+          )
+          .collect {
+            case notification: Notification
+                if notification.action.isInstanceOf[
+                  NotificationAction.ApiSubscriptionBatchDemand
+                ] =>
+              notification
+          }
+        secondNotifications must have size 1
+        secondNotifications.head.action match {
+          case action: NotificationAction.ApiSubscriptionBatchDemand =>
+            action.phase mustBe 1
+            val rejected = Await.result(
+              store.resolveBatchApproval(
+                parent.tenant,
+                secondNotifications.head.id,
+                action,
+                accepted = false,
+                actor = requester.asNotificationSender,
+                message = Some("Not approved")
+              ),
+              5.seconds
+            )
+            rejected.isRight mustBe true
+            rejected.toOption.get.status mustBe a[NotificationStatus.Rejected]
+            val replay = Await.result(
+              store.resolveBatchApproval(
+                parent.tenant,
+                secondNotifications.head.id,
+                action,
+                accepted = false,
+                actor = requester.asNotificationSender,
+                message = Some("Not approved")
+              ),
+              5.seconds
+            )
+            replay.isLeft mustBe true
+          case _ => fail("Expected the second grouped subscription phase")
+        }
+
+        parent.items.foreach { item =>
+          val child = Await
+            .result(
+              store.subscriptionDemandRepo.findByBatchItem(
+                parent.tenant,
+                SubscriptionBatchReference(parent.id, item.id)
+              ),
+              5.seconds
+            )
+            .get
+          child.steps.head.state mustBe SubscriptionDemandState.Accepted
+          child.steps(1).state mustBe SubscriptionDemandState.Refused
+          child.state mustBe SubscriptionDemandState.Refused
+        }
+      } finally {
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
     "cancel unmaterialized items atomically and leave reserved work untouched" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val store = daikokuComponents.env.dataStore

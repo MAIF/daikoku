@@ -2053,6 +2053,29 @@ export const graphql = {
                 motivation
               }
             }
+            ... on ApiSubscriptionBatch {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+              }
+              team {
+                _id
+                name
+              }
+              phase
+              items {
+                item
+                demand
+                step
+                plan {
+                  _id
+                  customName
+                }
+              }
+            }
             ... on NewCommentOnIssue {
             __typename
               linkTo

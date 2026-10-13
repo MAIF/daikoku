@@ -70,6 +70,7 @@
   "from": "depuis",
   "notif.api.subscription.environment": "Nouvelle demande de souscription pour l'environnement %s.",
   "notif.api.subscription.default": "Nouvelle demande de souscription pour le plan %s.",
+  "notif.api.subscription.batch": "Demande groupée de souscription à l'API %s pour les plans : %s.",
   "notif.api.demand.reject": "Votre demande de souscription (%s) a été refusée.",
   "notif.api.demand.accept": "Votre demande de souscription (%s) a été acceptée.",
   "notif.api.demand.accept.see_key": "Voir ma clé d'API",

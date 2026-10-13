@@ -8,10 +8,10 @@ Cette page explique le modèle backend de souscription groupée : ce que choisit
 le consommateur, comment Daikoku conserve les demandes, comment le worker les
 fait progresser, et ce qui se passe en cas de résultat incertain.
 
-> **État du chantier :** cette page décrit l'architecture backend en cours. La
-> sélection persistante des API dans la pagination de `/apis` et une interface
-> de décision admin groupée ne sont pas encore couvertes ici. Les limites
-> actuellement connues sont récapitulées à la fin.
+> **État du chantier :** l'approbation producteur est maintenant regroupée par
+> lot, API et phase : une notification permet d'accepter ou de refuser en une
+> fois les demandes enfants incluses. Les limites encore connues sont
+> récapitulées à la fin.
 
 ## Le changement par rapport au fonctionnement historique
 
@@ -162,12 +162,27 @@ API Facturation : notification ── attente séparée ──────> fin
 La barrière est une coordination, pas une fusion des demandes : le processus
 HTTP continue d'être appelé par demande enfant. Ainsi, si un appel HTTP refuse
 le Plan A, cet item peut être refusé sans imposer le même résultat au Plan B ni
-aux autres API. Les étapes manuelles utilisent toujours le mécanisme de
-validation/notification existant pour chaque demande enfant.
+aux autres API.
 
-**Ce que la barrière ne fait pas :** elle ne fournit pas, à elle seule, une
-interface admin pour accepter d'un clic toutes les demandes d'une API. Cette
-action groupée reste un travail d'interface à concevoir.
+Pour une étape `TeamAdmin`, les enfants qui atteignent la même phase pour la
+même API sont rassemblés dans une notification `ApiSubscriptionBatch`, tout en
+réutilisant le type de notification `AcceptOrReject`. Elle référence les
+identifiants exacts des items, des demandes enfants et des étapes à décider.
+L'acceptation ou le refus vérifie ces références puis met à jour tous les
+enfants et le parent dans une transaction. Le refus clôt chaque enfant
+concerné; l'acceptation laisse le worker poursuivre les étapes suivantes de
+chaque enfant, notamment leurs éventuels appels HTTP unitaires. Les autres
+étapes manuelles ne sont pas fusionnées par cette notification.
+
+```text
+Plan A ─┐
+Plan B ─┼─> 1 notification producteur (API + phase) ─> accepter/refuser le groupe
+Plan C ─┘                                                   │
+                                     ┌───────────────────────┴─────────────────┐
+                                     ▼                                         ▼
+                              workflow enfant A                         workflow enfant B
+                              appel HTTP unitaire                       appel HTTP unitaire
+```
 
 ## 5. Réservations, keyrings partagés et appels HTTP incertains
 
@@ -212,8 +227,6 @@ l'API Facturation.
 
 - La sélection UI conservée au fil de la pagination de `/apis` et l'écran de
   choix de plans/keyrings pour le lot ne sont pas décrits comme livrés ici.
-- Le workflow d'approbation admin est encore celui des demandes enfants; une
-  décision en lot nécessite une évolution dédiée.
 - Le modèle accepte un choix de nouveau keyring et la matérialisation attend
   qu'un identifiant de keyring soit associé à cette création. Dans le code
   actuel, le chemin qui renseigne cet identifiant après l'enregistrement du
