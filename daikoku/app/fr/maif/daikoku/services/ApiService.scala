@@ -70,7 +70,9 @@ class ApiService(
             .findForUpdate(tenant.id, reference.batch)
             .flatMap {
               case None =>
-                Future.successful(Left(AppError.EntityNotFound("Subscription batch")))
+                Future.successful(
+                  Left(AppError.EntityNotFound("Subscription batch"))
+                )
               case Some(batch) =>
                 (for {
                   item <- EitherT.fromOption[Future](
@@ -83,7 +85,8 @@ class ApiService(
                     AppError.SubscriptionDemandNotFound
                   )
                   _ <- EitherT.fromEither[Future](
-                    SubscriptionBatchEligibility.validateLinkedChild(batch, item, child)
+                    SubscriptionBatchEligibility
+                      .validateLinkedChild(batch, item, child)
                   )
                   _ <- EitherT.fromEither[Future](
                     Either.cond(
@@ -94,14 +97,16 @@ class ApiService(
                   )
                   reservation <- EitherT.fromEither[Future](
                     item.reservation.toRight(
-                      AppError.EntityConflict("Subscription batch item reservation")
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
                     )
                   )
                   _ <- EitherT.fromEither[Future](
                     Either.cond(
                       reservation.isActiveAt(DateTime.now),
                       (),
-                      AppError.EntityConflict("Subscription batch item reservation")
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
                     )
                   )
                   currentApi <- EitherT.fromOptionF(
@@ -109,11 +114,15 @@ class ApiService(
                     AppError.ApiNotFound
                   )
                   currentPlan <- EitherT.fromOptionF(
-                    env.dataStore.usagePlanRepo.forTenant(tenant).findById(item.plan),
+                    env.dataStore.usagePlanRepo
+                      .forTenant(tenant)
+                      .findById(item.plan),
                     AppError.PlanNotFound
                   )
                   currentTeam <- EitherT.fromOptionF(
-                    env.dataStore.teamRepo.forTenant(tenant).findById(batch.team),
+                    env.dataStore.teamRepo
+                      .forTenant(tenant)
+                      .findById(batch.team),
                     AppError.TeamNotFound
                   )
                   currentRequester <- EitherT.fromOptionF(
@@ -129,7 +138,8 @@ class ApiService(
                       currentApi == api && currentPlan == plan &&
                         currentTeam == team && currentRequester == requester,
                       (),
-                      AppError.EntityConflict("Subscription eligibility changed")
+                      AppError
+                        .EntityConflict("Subscription eligibility changed")
                     )
                   )
                   _ <- EitherT.fromEither[Future](
@@ -148,10 +158,18 @@ class ApiService(
                       case SubscriptionBatchKeyringChoice.New(creationId) =>
                         batch.newKeyrings
                           .find(_.id == creationId)
-                          .toRight(AppError.EntityNotFound("Subscription batch keyring creation"))
-                          .flatMap(_.keyring.toRight(
-                            AppError.EntityConflict("Subscription batch keyring is not ready")
-                          ))
+                          .toRight(
+                            AppError.EntityNotFound(
+                              "Subscription batch keyring creation"
+                            )
+                          )
+                          .flatMap(
+                            _.keyring.toRight(
+                              AppError.EntityConflict(
+                                "Subscription batch keyring is not ready"
+                              )
+                            )
+                          )
                     }
                   )
                   _ <- EitherT.fromEither[Future](
@@ -167,7 +185,8 @@ class ApiService(
                     env.dataStore.keyringRepo
                       .forTenant(tenant.id)
                       .findById(selectedKeyringId.value),
-                    AppError.EntityNotFound(s"Keyring ${selectedKeyringId.value}")
+                    AppError
+                      .EntityNotFound(s"Keyring ${selectedKeyringId.value}")
                   )
                   _ <- EitherT.fromEither[Future](
                     SubscriptionBatchEligibility.validateKeyring(
@@ -181,10 +200,13 @@ class ApiService(
                     Either.cond(
                       reservation.isActiveAt(DateTime.now),
                       (),
-                      AppError.EntityConflict("Subscription batch item reservation")
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
                     )
                   )
-                } yield Some(BatchProvisioningAuthorization(reservation.token))).value
+                } yield Some(
+                  BatchProvisioningAuthorization(reservation.token)
+                )).value
             }
         })
     }
@@ -236,6 +258,86 @@ class ApiService(
           } yield ()
         })
     }
+
+  private def markBatchChildWorkflowStarted(
+      demandId: DemandId,
+      tenant: Tenant
+  ): Future[Either[AppError, Unit]] =
+    env.dataStore.subscriptionDemandRepo
+      .forTenant(tenant)
+      .findById(demandId)
+      .flatMap {
+        case Some(demand)
+            if demand.batch.isDefined &&
+              demand.state == SubscriptionDemandState.Waiting =>
+          env.dataStore.saveBatchChildProgress(
+            demand.copy(state = SubscriptionDemandState.InProgress),
+            demand
+          )
+        case Some(_) => Future.successful(Right(()))
+        case None =>
+          Future.successful(Left(AppError.SubscriptionDemandNotFound))
+      }
+
+  private def batchPhaseReady(
+      demand: SubscriptionDemand,
+      step: SubscriptionDemandStep,
+      tenant: Tenant
+  ): Future[Boolean] =
+    demand.batch match {
+      case None => Future.successful(true)
+      case Some(reference) =>
+        val phaseIndex = demand.steps.indexWhere(_.id == step.id)
+        if (phaseIndex < 0) Future.successful(false)
+        else
+          env.dataStore.subscriptionBatchDemandRepo
+            .forTenant(tenant.id)
+            .findById(reference.batch)
+            .flatMap {
+              case None => Future.successful(false)
+              case Some(batch) =>
+                val participants = batch.items.filter(item =>
+                  item.api == demand.api && item.process.steps.nonEmpty
+                )
+                Future
+                  .sequence(participants.map { item =>
+                    env.dataStore.subscriptionDemandRepo.findByBatchItem(
+                      tenant.id,
+                      SubscriptionBatchReference(batch.id, item.id)
+                    )
+                  })
+                  .map { children =>
+                    children.size == participants.size &&
+                    children.forall {
+                      case None                                => false
+                      case Some(child) if child.state.isClosed => true
+                      case Some(child) =>
+                        child.steps
+                          .lift(phaseIndex - 1)
+                          .forall(_.state.isClosed)
+                    }
+                  }
+            }
+    }
+
+  def canRunBatchChild(
+      demandId: DemandId,
+      tenant: Tenant
+  ): Future[Boolean] =
+    env.dataStore.subscriptionDemandRepo
+      .forTenant(tenant)
+      .findById(demandId)
+      .flatMap {
+        case Some(demand) if demand.batch.isDefined =>
+          demand.steps.find(!_.state.isClosed) match {
+            case Some(step) if step.state == SubscriptionDemandState.Waiting =>
+              batchPhaseReady(demand, step, tenant)
+            case None => Future.successful(true)
+            case _    => Future.successful(false)
+          }
+        case Some(_) => Future.successful(false)
+        case None    => Future.successful(false)
+      }
 
   /** Name given to a keyring when the consumer did not provide one. Kept in
     * sync with the placeholder displayed by the front (see ApiPricing.tsx).
@@ -1252,7 +1354,8 @@ class ApiService(
       _step: SubscriptionDemandStep,
       demand: SubscriptionDemand,
       tenant: Tenant,
-      maybeSessionId: Option[String] = None
+      maybeSessionId: Option[String] = None,
+      batchReservationToken: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -1288,10 +1391,13 @@ class ApiService(
           tags = tags
         )
         _ <- saveDemandProgress(updatedDemand, demand)
-        result <- runSubscriptionProcess(
+        result <- runSubscriptionProcessInternal(
           demand.id,
           tenant,
-          maybeSessionId = maybeSessionId
+          maybeSessionId,
+          None,
+          None,
+          batchReservationToken
         )
       } yield result
     }
@@ -1532,6 +1638,99 @@ class ApiService(
   )(implicit
       language: String,
       currentUser: User
+  ): EitherT[Future, AppError, Result] =
+    EitherT(
+      env.dataStore.subscriptionDemandRepo
+        .forTenant(tenant)
+        .findById(demandId)
+        .flatMap {
+          case None =>
+            Future.successful(Left(AppError.SubscriptionDemandNotFound))
+          case Some(demand) =>
+            demand.batch match {
+              case None =>
+                runSubscriptionProcessInternal(
+                  demandId,
+                  tenant,
+                  maybeSessionId,
+                  from,
+                  host,
+                  None
+                ).value
+              case Some(reference) =>
+                val now = DateTime.now
+                val reservation = SubscriptionBatchItemReservation(
+                  IdGenerator.token(32),
+                  now,
+                  now.plus(
+                    env.config.subscriptionBatchReservationDuration.toMillis
+                  )
+                )
+                env.dataStore
+                  .reserveBatchItem(tenant.id, reference, reservation)
+                  .flatMap {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(acquired) =>
+                      runSubscriptionProcessInternal(
+                        demandId,
+                        tenant,
+                        maybeSessionId,
+                        from,
+                        host,
+                        Some(acquired.token)
+                      ).value.flatMap {
+                        case Right(result) =>
+                          markBatchChildWorkflowStarted(demandId, tenant)
+                            .flatMap {
+                              case Right(_) =>
+                                env.dataStore
+                                  .releaseBatchItemReservation(
+                                    tenant.id,
+                                    reference,
+                                    acquired.token
+                                  )
+                                  .map(_.map(_ => result))
+                              case Left(error) =>
+                                env.dataStore
+                                  .markBatchItemRetryableError(
+                                    tenant.id,
+                                    reference,
+                                    acquired.token,
+                                    SubscriptionBatchItemError(
+                                      "workflow_execution_failed",
+                                      error.getErrorMessage()
+                                    )
+                                  )
+                                  .map(_.flatMap(_ => Left(error)))
+                            }
+                        case Left(error) =>
+                          env.dataStore
+                            .markBatchItemRetryableError(
+                              tenant.id,
+                              reference,
+                              acquired.token,
+                              SubscriptionBatchItemError(
+                                "workflow_execution_failed",
+                                error.getErrorMessage()
+                              )
+                            )
+                            .map(_.flatMap(_ => Left(error)))
+                      }
+                  }
+            }
+        }
+    )
+
+  private def runSubscriptionProcessInternal(
+      demandId: DemandId,
+      tenant: Tenant,
+      maybeSessionId: Option[String],
+      from: Option[String],
+      host: Option[String],
+      batchReservationToken: Option[String]
+  )(implicit
+      language: String,
+      currentUser: User
   ): EitherT[Future, AppError, Result] = {
     def runRightProcess(
         step: SubscriptionDemandStep,
@@ -1542,6 +1741,19 @@ class ApiService(
       val run = step.step match {
         case ValidationStep.Email(_, emails, template, _) =>
           val value: EitherT[Future, AppError, Result] = for {
+            _ <- demand.batch match {
+              case None => EitherT.pure[Future, AppError](true)
+              case Some(_) =>
+                val started = demand.copy(
+                  state = SubscriptionDemandState.InProgress,
+                  steps = demand.steps.map(current =>
+                    if (current.id == step.id)
+                      current.copy(state = SubscriptionDemandState.InProgress)
+                    else current
+                  )
+                )
+                saveDemandProgress(started, demand)
+            }
             title <- EitherT.liftF(
               translator.translate("mail.subscription.validation.title", tenant)
             )
@@ -1642,7 +1854,13 @@ class ApiService(
             host = host
           )
         case s: ValidationStep.HttpRequest =>
-          callHttpRequestStep(s, step, demand, tenant)
+          callHttpRequestStep(
+            s,
+            step,
+            demand,
+            tenant,
+            batchReservationToken = batchReservationToken
+          )
         case _: ValidationStep.Form =>
           EitherT.pure[Future, AppError](Ok(Json.obj("done" -> true)))
       }
@@ -1791,7 +2009,23 @@ class ApiService(
           EitherT.pure[Future, AppError](tuple)
       }
       .flatMap {
-        case (Some(step), demand) => runRightProcess(step, demand, tenant)
+        case (Some(step), _)
+            if step.state == SubscriptionDemandState.InProgress =>
+          EitherT.pure[Future, AppError](
+            Ok(Json.obj("creation" -> "waiting"))
+          )
+        case (Some(step), demand) =>
+          EitherT
+            .liftF[Future, AppError, Boolean](
+              batchPhaseReady(demand, step, tenant)
+            )
+            .flatMap {
+              case true => runRightProcess(step, demand, tenant)
+              case false =>
+                EitherT.pure[Future, AppError](
+                  Ok(Json.obj("creation" -> "waiting"))
+                )
+            }
         case (None, demand) =>
           for {
             from <- EitherT.fromOptionF(

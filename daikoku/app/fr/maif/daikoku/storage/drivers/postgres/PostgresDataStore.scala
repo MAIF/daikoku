@@ -312,7 +312,10 @@ case class PostgresTenantCapableEmailVerificationRepo(
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
 case class PostgresTenantCapableSubscriptionBatchDemandRepo(
-    _repo: () => PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId],
+    _repo: () => PostgresRepo[
+      SubscriptionBatchDemand,
+      SubscriptionBatchDemandId
+    ],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[
       SubscriptionBatchDemand,
       SubscriptionBatchDemandId
@@ -322,12 +325,16 @@ case class PostgresTenantCapableSubscriptionBatchDemandRepo(
       SubscriptionBatchDemandId
     ]
     with SubscriptionBatchDemandRepo {
-  override def repo(): PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId] =
+  override def repo()
+      : PostgresRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId] =
     _repo()
 
   override def tenantRepo(
       tenant: TenantId
-  ): PostgresTenantAwareRepo[SubscriptionBatchDemand, SubscriptionBatchDemandId] =
+  ): PostgresTenantAwareRepo[
+    SubscriptionBatchDemand,
+    SubscriptionBatchDemandId
+  ] =
     _tenantRepo(tenant)
 }
 
@@ -466,6 +473,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "email_verifications",
     "subscription_demands",
     "subscription_batch_demands",
+    "subscription_batch_keyring_locks",
     "step_validators",
     "usage_plans",
     "assets",
@@ -1292,7 +1300,8 @@ class PostgresTenantSubscriptionBatchDemandRepo(
   override def tableName: String = "subscription_batch_demands"
   override def format: Format[SubscriptionBatchDemand] =
     json.SubscriptionBatchDemandFormat
-  override def extractId(value: SubscriptionBatchDemand): String = value.id.value
+  override def extractId(value: SubscriptionBatchDemand): String =
+    value.id.value
 }
 
 class PostgresSubscriptionBatchDemandRepo(env: Env, reactivePg: ReactivePg)
@@ -1303,7 +1312,8 @@ class PostgresSubscriptionBatchDemandRepo(env: Env, reactivePg: ReactivePg)
   override def tableName: String = "subscription_batch_demands"
   override def format: Format[SubscriptionBatchDemand] =
     json.SubscriptionBatchDemandFormat
-  override def extractId(value: SubscriptionBatchDemand): String = value.id.value
+  override def extractId(value: SubscriptionBatchDemand): String =
+    value.id.value
 }
 
 class PostgresTenantSubscriptionDemandRepo(

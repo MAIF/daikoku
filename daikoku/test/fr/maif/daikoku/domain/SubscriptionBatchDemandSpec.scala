@@ -152,6 +152,60 @@ class SubscriptionBatchDemandSpec extends PlaySpec {
     }
   }
 
+  "SubscriptionBatchSubmission" should {
+    "round-trip selected fields and optional shared keyring names" in {
+      val submission = SubscriptionBatchSubmission(
+        team = TeamId("consumer"),
+        idempotencyKey = "submission-token",
+        items = Seq(
+          SubscriptionBatchItemSelection(
+            ApiId("api"),
+            UsagePlanId("plan"),
+            SubscriptionBatchKeyringChoice.Existing(KeyringId("existing"))
+          ),
+          SubscriptionBatchItemSelection(
+            ApiId("api"),
+            UsagePlanId("other-plan"),
+            SubscriptionBatchKeyringChoice.New(SubscriptionBatchKeyringId("shared"))
+          )
+        ),
+        newKeyrings = Seq(
+          SubscriptionBatchNewKeyringSelection(
+            SubscriptionBatchKeyringId("shared"),
+            "Shared key"
+          )
+        ),
+        motivation = Some(Json.obj("reason" -> "integration"))
+      )
+
+      json.SubscriptionBatchSubmissionFormat.reads(
+        json.SubscriptionBatchSubmissionFormat.writes(submission)
+      ).get mustBe submission
+      val withoutKeyrings =
+        json.SubscriptionBatchSubmissionFormat.writes(submission).as[play.api.libs.json.JsObject] -
+          "newKeyrings"
+      json.SubscriptionBatchSubmissionFormat.reads(withoutKeyrings).get.newKeyrings mustBe empty
+      json.SubscriptionBatchSubmissionFormat.reads(
+        json.SubscriptionBatchSubmissionFormat.writes(submission)
+          .as[play.api.libs.json.JsObject] - "team"
+      ).isError mustBe true
+    }
+
+    "round-trip an idempotent submission receipt and reject unknown states" in {
+      val receipt = SubscriptionBatchSubmissionReceipt(
+        SubscriptionBatchDemandId("batch"),
+        SubscriptionBatchDemandState.PartiallyAccepted,
+        replayed = true
+      )
+      val serialized = json.SubscriptionBatchSubmissionReceiptFormat.writes(receipt)
+
+      json.SubscriptionBatchSubmissionReceiptFormat.reads(serialized).get mustBe receipt
+      json.SubscriptionBatchSubmissionReceiptFormat.reads(
+        serialized.as[play.api.libs.json.JsObject] + ("state" -> JsString("unknown"))
+      ).isError mustBe true
+    }
+  }
+
   "SubscriptionBatchDemand JSON" should {
 
     "preserve revisions and read older batches without a revision" in {

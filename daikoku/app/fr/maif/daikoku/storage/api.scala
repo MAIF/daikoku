@@ -2331,25 +2331,42 @@ trait SubscriptionBatchDemandRepo
       SubscriptionBatchDemandId
     ] {
 
+  def deleteKeyringLocksForTenant(tenant: TenantId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
+    forTenant(tenant).execute(
+      "DELETE FROM subscription_batch_keyring_locks " +
+        "WHERE content->>'_tenant' = $1",
+      Seq(tenant.value)
+    )
+
   def findMaterializableItems(
       tenant: TenantId,
-      limit: Int
+      limit: Int,
+      batchId: Option[SubscriptionBatchDemandId] = None
   )(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Either[AppError, Seq[SubscriptionBatchReference]]] =
     if (limit <= 0)
       Future.successful(
-        Left(AppError.BadRequestError("The materialization limit must be positive"))
+        Left(
+          AppError.BadRequestError("The materialization limit must be positive")
+        )
       )
     else {
       val repo = forTenant(tenant)
+      val (batchFilter, batchParams) = batchId match {
+        case Some(id) => ("AND _id = $3", Seq(id.value))
+        case None     => ("", Seq.empty[String])
+      }
       repo
         .queryTyped(
-        s"""SELECT content FROM ${repo.tableName}
-         |WHERE content->>'_tenant' = $$1 AND EXISTS (
-         |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
-         |  WHERE item->>'state' = 'pending' AND item->>'demand' IS NULL
+          s"""SELECT content FROM ${repo.tableName}
+           |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
+           |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
+           |  WHERE item->>'state' = 'pending' AND item->>'demand' IS NULL
          |    AND item->>'reservation' IS NULL
          |    AND (item->'keyringChoice'->>'type' = 'existing' OR EXISTS (
          |      SELECT 1 FROM jsonb_array_elements(content->'newKeyrings') AS creation
@@ -2358,25 +2375,84 @@ trait SubscriptionBatchDemandRepo
          |    ))
          |)
          |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
-        Seq(tenant.value, java.lang.Integer.valueOf(limit))
+          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
         )
         .map { batches =>
-          Right(batches
-            .flatMap { batch =>
-              batch.items.collect {
-                case item
-                    if item.state == SubscriptionBatchItemState.Pending &&
-                      item.demand.isEmpty && item.reservation.isEmpty && (item.keyringChoice match {
-                        case SubscriptionBatchKeyringChoice.Existing(_) => true
-                        case SubscriptionBatchKeyringChoice.New(id) =>
-                          batch.newKeyrings.exists(creation =>
-                            creation.id == id && creation.keyring.isDefined
-                          )
-                      }) =>
-                  SubscriptionBatchReference(batch.id, item.id)
+          Right(
+            batches
+              .flatMap { batch =>
+                batch.items.collect {
+                  case item
+                      if item.state == SubscriptionBatchItemState.Pending &&
+                        item.demand.isEmpty && item.reservation.isEmpty && (item.keyringChoice match {
+                          case SubscriptionBatchKeyringChoice.Existing(_) =>
+                            true
+                          case SubscriptionBatchKeyringChoice.New(id) =>
+                            batch.newKeyrings.exists(creation =>
+                              creation.id == id && creation.keyring.isDefined
+                            )
+                        }) =>
+                    SubscriptionBatchReference(batch.id, item.id)
+                }
               }
-            }
-            .take(limit))
+              .take(limit)
+          )
+        }
+    }
+
+  def findRunnableChildren(
+      tenant: TenantId,
+      limit: Int,
+      batchId: Option[SubscriptionBatchDemandId] = None
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Either[AppError, Seq[SubscriptionBatchReference]]] =
+    if (limit <= 0)
+      Future.successful(
+        Left(
+          AppError.BadRequestError(
+            "The child processing limit must be positive"
+          )
+        )
+      )
+    else {
+      val repo = forTenant(tenant)
+      val (batchFilter, batchParams) = batchId match {
+        case Some(id) => ("AND _id = $3", Seq(id.value))
+        case None     => ("", Seq.empty[String])
+      }
+      repo
+        .queryTyped(
+          s"""SELECT content FROM ${repo.tableName}
+           |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
+           |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
+           |  WHERE item->>'state' IN ('waiting', 'inProgress')
+           |    AND item->>'demand' IS NOT NULL
+           |    AND item->>'reservation' IS NULL
+           |)
+           |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
+          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
+        )
+        .map { batches =>
+          Right(
+            batches
+              .flatMap(batch =>
+                batch.items.collect {
+                  case item
+                      if Set(
+                        SubscriptionBatchItemState.Waiting,
+                        SubscriptionBatchItemState.InProgress
+                      ).contains(item.state) &&
+                        item.demand.isDefined && item.reservation.isEmpty =>
+                    SubscriptionBatchReference(
+                      batch.id,
+                      item.id
+                    )
+                }
+              )
+              .take(limit)
+          )
         }
     }
 
@@ -2410,6 +2486,27 @@ trait SubscriptionBatchDemandRepo
         "WHERE content->>'_tenant' = $1 AND content->>'team' = $2 " +
         "AND content->>'from' = $3 AND content->>'idempotencyKey' = $4",
       Seq(tenant.value, team.value, from.value, idempotencyKey)
+    )
+  }
+
+  def findOpenItem(
+      tenant: TenantId,
+      team: TeamId,
+      api: ApiId,
+      plan: UsagePlanId
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[SubscriptionBatchDemand]] = {
+    val repo = forTenant(tenant)
+    repo.queryOne(
+      s"""SELECT content FROM ${repo.tableName}
+         |WHERE content->>'_tenant' = $$1 AND content->>'team' = $$2 AND EXISTS (
+         |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
+         |  WHERE item->>'api' = $$3 AND item->>'plan' = $$4
+         |    AND item->>'state' IN ('pending', 'waiting', 'inProgress', 'retryableError')
+         |) LIMIT 1""".stripMargin,
+      Seq(tenant.value, team.value, api.value, plan.value)
     )
   }
 
@@ -2771,6 +2868,87 @@ trait EmailVerificationRepo
 }
 
 trait DataStore {
+  private def batchKeyringLockId(
+      tenant: TenantId,
+      keyring: KeyringId
+  ): String = {
+    val bytes = s"${tenant.value}\u0000${keyring.value}"
+      .getBytes(java.nio.charset.StandardCharsets.UTF_8)
+    java.security.MessageDigest
+      .getInstance("SHA-256")
+      .digest(bytes)
+      .map("%02x".format(_))
+      .mkString
+  }
+
+  private def selectedKeyring(
+      batch: SubscriptionBatchDemand,
+      item: SubscriptionBatchItem
+  ): Either[AppError, KeyringId] =
+    item.keyringChoice match {
+      case SubscriptionBatchKeyringChoice.Existing(keyring) =>
+        Right(keyring)
+      case SubscriptionBatchKeyringChoice.New(creationId) =>
+        batch.newKeyrings
+          .find(_.id == creationId)
+          .toRight(
+            AppError.EntityNotFound("Subscription batch keyring creation")
+          )
+          .flatMap(
+            _.keyring.toRight(
+              AppError.EntityConflict("Subscription batch keyring is not ready")
+            )
+          )
+    }
+
+  private def acquireBatchKeyringLock(
+      tenant: TenantId,
+      keyring: KeyringId,
+      reference: SubscriptionBatchReference,
+      reservation: SubscriptionBatchItemReservation
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    val lockId = batchKeyringLockId(tenant, keyring)
+    val content = Json.obj(
+      "_tenant" -> tenant.value,
+      "keyring" -> keyring.value,
+      "batch" -> reference.batch.value,
+      "item" -> reference.item.value,
+      "token" -> reservation.token,
+      "lockedAt" -> reservation.lockedAt.getMillis,
+      "expiresAt" -> reservation.expiresAt.getMillis
+    )
+    subscriptionBatchDemandRepo
+      .forTenant(tenant)
+      .execute(
+        "INSERT INTO subscription_batch_keyring_locks (_id, content) " +
+          "VALUES ($1, $2::jsonb) ON CONFLICT (_id) DO NOTHING",
+        Seq(
+          lockId,
+          new io.vertx.core.json.JsonObject(Json.stringify(content))
+        )
+      )
+      .map(_ == 1L)
+  }
+
+  private def releaseBatchKeyringLock(
+      tenant: TenantId,
+      keyring: KeyringId,
+      token: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Long] =
+    subscriptionBatchDemandRepo
+      .forTenant(tenant)
+      .execute(
+        "DELETE FROM subscription_batch_keyring_locks " +
+          "WHERE _id = $1 AND content->>'token' = $2",
+        Seq(batchKeyringLockId(tenant, keyring), token)
+      )
+
   def reserveBatchItem(
       tenant: TenantId,
       reference: SubscriptionBatchReference,
@@ -2810,23 +2988,198 @@ trait DataStore {
                       )
                     )
                   case Some(item) =>
-                    val updated =
-                      batch.copy(items = batch.items.map { current =>
-                        if (current.id == item.id)
-                          current.copy(reservation = Some(reservation))
-                        else current
-                      })
-                    subscriptionBatchDemandRepo
-                      .updateIfRevisionMatches(updated)
-                      .flatMap {
-                        case Some(_) => Future.successful(Right(reservation))
-                        case None =>
-                          Future.failed(
-                            new IllegalStateException(
-                              "A locked subscription batch changed while reserving its item"
+                    selectedKeyring(batch, item) match {
+                      case Left(error) => Future.successful(Left(error))
+                      case Right(keyring) =>
+                        acquireBatchKeyringLock(
+                          tenant,
+                          keyring,
+                          reference,
+                          reservation
+                        ).flatMap {
+                          case false =>
+                            Future.successful(
+                              Left(
+                                AppError.EntityConflict(
+                                  "Subscription batch keyring reservation"
+                                )
+                              )
                             )
+                          case true =>
+                            val updated =
+                              batch.copy(items = batch.items.map { current =>
+                                if (current.id == item.id)
+                                  current.copy(reservation = Some(reservation))
+                                else current
+                              })
+                            subscriptionBatchDemandRepo
+                              .updateIfRevisionMatches(updated)
+                              .flatMap {
+                                case Some(_) =>
+                                  Future.successful(Right(reservation))
+                                case None =>
+                                  Future.failed(
+                                    new IllegalStateException(
+                                      "A locked subscription batch changed while reserving its item"
+                                    )
+                                  )
+                              }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  def markBatchItemRetryableError(
+      tenant: TenantId,
+      reference: SubscriptionBatchReference,
+      token: String,
+      error: SubscriptionBatchItemError
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[AppError, SubscriptionBatchDemand]] =
+    withTransaction {
+      subscriptionBatchDemandRepo
+        .findForUpdate(tenant, reference.batch)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.items.find(_.id == reference.item) match {
+              case None =>
+                Future.successful(
+                  Left(AppError.EntityNotFound("Subscription batch item"))
+                )
+              case Some(item) if !item.reservation.exists(_.token == token) =>
+                Future.successful(
+                  Left(
+                    AppError
+                      .EntityConflict("Subscription batch item reservation")
+                  )
+                )
+              case Some(item) if item.state.isClosed =>
+                Future.successful(
+                  Left(AppError.EntityConflict("Subscription batch item state"))
+                )
+              case Some(item) =>
+                val updated = batch.copy(items = batch.items.map { current =>
+                  if (current.id == item.id)
+                    current.copy(
+                      state = SubscriptionBatchItemState.RetryableError,
+                      error = Some(error)
+                    )
+                  else current
+                })
+                subscriptionBatchDemandRepo
+                  .updateIfRevisionMatches(updated)
+                  .map {
+                    case Some(saved) => Right(saved)
+                    case None =>
+                      throw new IllegalStateException(
+                        "A locked subscription batch changed while recording a child workflow error"
+                      )
+                  }
+            }
+        }
+    }
+
+  def reconcileBatchItemFailure(
+      tenant: TenantId,
+      reference: SubscriptionBatchReference
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[AppError, SubscriptionBatchDemand]] =
+    withTransaction {
+      subscriptionBatchDemandRepo
+        .findForUpdate(tenant, reference.batch)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.items.find(_.id == reference.item) match {
+              case None =>
+                Future.successful(
+                  Left(AppError.EntityNotFound("Subscription batch item"))
+                )
+              case Some(item) =>
+                val canReconcile =
+                  item.state == SubscriptionBatchItemState.RetryableError ||
+                    (item.state == SubscriptionBatchItemState.InProgress &&
+                      item.error.exists(_.code == "reservation_expired"))
+                (item.reservation, canReconcile) match {
+                  case (Some(reservation), true) =>
+                    val reference =
+                      SubscriptionBatchReference(batch.id, item.id)
+                    subscriptionDemandRepo
+                      .findByBatchItem(tenant, reference)
+                      .flatMap {
+                        case None =>
+                          Future.successful(
+                            Left(AppError.SubscriptionDemandNotFound)
                           )
+                        case Some(child) if child.state.isClosed =>
+                          Future.successful(
+                            Left(AppError.SubscriptionDemandClosed)
+                          )
+                        case Some(child) =>
+                          batch.withChildProgress(child) match {
+                            case Left(error) => Future.successful(Left(error))
+                            case Right(progress) =>
+                              val reconciled = progress.copy(items =
+                                progress.items.map { current =>
+                                  if (current.id == item.id)
+                                    current.copy(
+                                      error = None,
+                                      reservation = None
+                                    )
+                                  else current
+                                }
+                              )
+                              selectedKeyring(batch, item) match {
+                                case Left(error) =>
+                                  Future.successful(Left(error))
+                                case Right(keyring) =>
+                                  subscriptionBatchDemandRepo
+                                    .updateIfRevisionMatches(reconciled)
+                                    .flatMap {
+                                      case Some(saved) =>
+                                        releaseBatchKeyringLock(
+                                          tenant,
+                                          keyring,
+                                          reservation.token
+                                          ).flatMap {
+                                            case 1L =>
+                                              Future.successful(Right(saved))
+                                            case _ =>
+                                              Future.failed(
+                                                new IllegalStateException(
+                                                  "The reconciled item's keyring reservation could not be released"
+                                                )
+                                              )
+                                          }
+                                      case None =>
+                                        Future.failed(
+                                          new IllegalStateException(
+                                            "A locked subscription batch changed while reconciling its failed item"
+                                          )
+                                        )
+                                    }
+                              }
+                          }
                       }
+                  case _ =>
+                    Future.successful(
+                      Left(
+                        AppError.EntityConflict(
+                          "Only a failed or expired subscription batch item can be reconciled"
+                        )
+                      )
+                    )
                 }
             }
         }
@@ -2876,6 +3229,13 @@ trait DataStore {
               case Some(item) =>
                 val now = org.joda.time.DateTime.now
                 item.reservation match {
+                  case None if expiresAt.isEmpty && item.state.isClosed =>
+                    selectedKeyring(batch, item) match {
+                      case Left(error) => Future.successful(Left(error))
+                      case Right(keyring) =>
+                        releaseBatchKeyringLock(tenant, keyring, token)
+                          .map(_ => Right(None))
+                    }
                   case Some(current)
                       if current.token == token && current.isActiveAt(now) =>
                     if (expiresAt.isDefined && item.state.isClosed)
@@ -2909,6 +3269,13 @@ trait DataStore {
                       subscriptionBatchDemandRepo
                         .updateIfRevisionMatches(updated)
                         .flatMap {
+                          case Some(_) if renewed.isEmpty =>
+                            selectedKeyring(batch, item) match {
+                              case Left(error) => Future.successful(Left(error))
+                              case Right(keyring) =>
+                                releaseBatchKeyringLock(tenant, keyring, token)
+                                  .map(_ => Right(renewed))
+                            }
                           case Some(_) => Future.successful(Right(renewed))
                           case None =>
                             Future.failed(
@@ -3026,16 +3393,26 @@ trait DataStore {
                     Right(())
                   else
                     for {
-                      item <- batch.items.find(_.id == reference.item)
-                        .toRight(AppError.EntityNotFound("Subscription batch item"))
+                      item <- batch.items
+                        .find(_.id == reference.item)
+                        .toRight(
+                          AppError.EntityNotFound("Subscription batch item")
+                        )
                       reservation <- item.reservation
-                        .toRight(AppError.EntityConflict("Subscription batch reservation"))
+                        .toRight(
+                          AppError
+                            .EntityConflict("Subscription batch reservation")
+                        )
                       token <- reservationToken
-                        .toRight(AppError.EntityConflict("Subscription batch reservation"))
+                        .toRight(
+                          AppError
+                            .EntityConflict("Subscription batch reservation")
+                        )
                       _ <- Either.cond(
                         reservation.token == token,
                         (),
-                        AppError.EntityConflict("Subscription batch reservation")
+                        AppError
+                          .EntityConflict("Subscription batch reservation")
                       )
                     } yield ()
                 val subscription
@@ -3053,89 +3430,91 @@ trait DataStore {
                   }
                 reservationCheck match {
                   case Left(error) => Future.successful(Left(error))
-                  case Right(_) => subscription.flatMap {
-                    case Left(error) => Future.successful(Left(error))
-                    case Right(result) =>
-                    val progress: Future[Either[AppError, Unit]] =
-                      batch.withChildProgress(child, result) match {
-                        case Left(error) => Future.successful(Left(error))
-                        case Right(updated) =>
-                          subscriptionDemandRepo
-                            .findByBatchItem(child.tenant, reference)
-                            .flatMap {
-                              case None =>
-                                Future.successful(
-                                  Left(AppError.SubscriptionDemandNotFound)
-                                )
-                              case Some(current)
-                                  if current.id != child.id || current.state.isClosed =>
-                                Future.successful(
-                                  Left(AppError.SubscriptionDemandClosed)
-                                )
-                              case Some(current) if current != expected =>
-                                Future.successful(
-                                  Left(
-                                    AppError
-                                      .EntityConflict(
-                                        "Subscription demand progress"
+                  case Right(_) =>
+                    subscription.flatMap {
+                      case Left(error) => Future.successful(Left(error))
+                      case Right(result) =>
+                        val progress: Future[Either[AppError, Unit]] =
+                          batch.withChildProgress(child, result) match {
+                            case Left(error) => Future.successful(Left(error))
+                            case Right(updated) =>
+                              subscriptionDemandRepo
+                                .findByBatchItem(child.tenant, reference)
+                                .flatMap {
+                                  case None =>
+                                    Future.successful(
+                                      Left(AppError.SubscriptionDemandNotFound)
+                                    )
+                                  case Some(current)
+                                      if current.id != child.id || current.state.isClosed =>
+                                    Future.successful(
+                                      Left(AppError.SubscriptionDemandClosed)
+                                    )
+                                  case Some(current) if current != expected =>
+                                    Future.successful(
+                                      Left(
+                                        AppError
+                                          .EntityConflict(
+                                            "Subscription demand progress"
+                                          )
                                       )
+                                    )
+                                  case Some(_) =>
+                                    subscriptionDemandRepo
+                                      .forTenant(child.tenant)
+                                      .save(child)
+                                      .flatMap {
+                                        case false =>
+                                          Future.failed(
+                                            new IllegalStateException(
+                                              "The batch child progress could not be saved"
+                                            )
+                                          )
+                                        case true if updated == batch =>
+                                          Future.successful(Right(()))
+                                        case true =>
+                                          subscriptionBatchDemandRepo
+                                            .updateIfRevisionMatches(updated)
+                                            .flatMap {
+                                              case Some(_) =>
+                                                Future.successful(Right(()))
+                                              case None =>
+                                                Future.failed(
+                                                  new IllegalStateException(
+                                                    "A locked subscription batch changed while saving child progress"
+                                                  )
+                                                )
+                                            }
+                                      }
+                                }
+                          }
+                        progress.flatMap {
+                          case Left(error) => Future.successful(Left(error))
+                          case Right(_) =>
+                            notification match {
+                              case None => Future.successful(Right(()))
+                              case Some(value)
+                                  if value.tenant != child.tenant =>
+                                Future.failed(
+                                  new IllegalArgumentException(
+                                    "The batch notification tenant does not match its child"
                                   )
                                 )
-                              case Some(_) =>
-                                subscriptionDemandRepo
+                              case Some(value) =>
+                                notificationRepo
                                   .forTenant(child.tenant)
-                                  .save(child)
+                                  .save(value)
                                   .flatMap {
+                                    case true => Future.successful(Right(()))
                                     case false =>
                                       Future.failed(
                                         new IllegalStateException(
-                                          "The batch child progress could not be saved"
+                                          "The batch outcome notification could not be saved"
                                         )
                                       )
-                                    case true if updated == batch =>
-                                      Future.successful(Right(()))
-                                    case true =>
-                                      subscriptionBatchDemandRepo
-                                        .updateIfRevisionMatches(updated)
-                                        .flatMap {
-                                          case Some(_) =>
-                                            Future.successful(Right(()))
-                                          case None =>
-                                            Future.failed(
-                                              new IllegalStateException(
-                                                "A locked subscription batch changed while saving child progress"
-                                              )
-                                            )
-                                        }
                                   }
                             }
-                      }
-                    progress.flatMap {
-                      case Left(error) => Future.successful(Left(error))
-                      case Right(_) =>
-                        notification match {
-                          case None => Future.successful(Right(()))
-                          case Some(value) if value.tenant != child.tenant =>
-                            Future.failed(
-                              new IllegalArgumentException(
-                                "The batch notification tenant does not match its child"
-                              )
-                            )
-                          case Some(value) =>
-                            notificationRepo
-                              .forTenant(child.tenant)
-                              .save(value)
-                              .flatMap {
-                                case true => Future.successful(Right(()))
-                                case false =>
-                                  Future.failed(
-                                    new IllegalStateException(
-                                      "The batch outcome notification could not be saved"
-                                    )
-                                  )
-                              }
                         }
-                      }
                     }
                 }
             }
@@ -3152,11 +3531,15 @@ trait DataStore {
         .findForUpdate(tenant, reference.batch)
         .flatMap {
           case None =>
-            Future.successful(Left(AppError.EntityNotFound("Subscription batch")))
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
           case Some(batch) =>
             batch.items.find(_.id == reference.item) match {
               case None =>
-                Future.successful(Left(AppError.EntityNotFound("Subscription batch item")))
+                Future.successful(
+                  Left(AppError.EntityNotFound("Subscription batch item"))
+                )
               case Some(item) if item.demand.isEmpty =>
                 Future.successful(Left(AppError.SubscriptionDemandNotFound))
               case Some(item) if item.reservation.isDefined =>
@@ -3168,68 +3551,265 @@ trait DataStore {
                   )
                 )
               case Some(item) =>
-                subscriptionDemandRepo.findByBatchItem(tenant, reference).flatMap {
-                  case None =>
-                    Future.successful(Left(AppError.SubscriptionDemandNotFound))
-                  case Some(child)
-                      if item.demand.contains(child.id) && child.batch.contains(reference) &&
-                        child.tenant == tenant =>
-                    def clearWorkflowArtifacts() =
-                      for {
-                        _ <- stepValidatorRepo.deleteByDemand(tenant, child.id)
-                        _ <- notificationRepo.deleteByDemand(tenant, child.id)
-                      } yield ()
-
-                    if (child.state.isClosed) {
-                      clearWorkflowArtifacts().map(_ => Right(()))
-                    } else {
-                      val canceled = child.copy(
-                        state = SubscriptionDemandState.Canceled,
-                        steps = child.steps.map { step =>
-                          if (step.state.isClosed) step
-                          else step.copy(state = SubscriptionDemandState.Canceled)
-                        }
+                subscriptionDemandRepo
+                  .findByBatchItem(tenant, reference)
+                  .flatMap {
+                    case None =>
+                      Future.successful(
+                        Left(AppError.SubscriptionDemandNotFound)
                       )
-                      batch.withChildProgress(canceled) match {
-                        case Left(error) =>
-                          Future.successful(Left(error))
-                        case Right(synchronizedBatch) =>
-                          subscriptionDemandRepo
-                            .forTenant(tenant)
-                            .save(canceled)
-                            .flatMap {
-                              case false =>
-                                Future.failed(
-                                  new IllegalStateException(
-                                    "The batch child could not be canceled"
+                    case Some(child)
+                        if item.demand.contains(child.id) && child.batch
+                          .contains(reference) &&
+                          child.tenant == tenant =>
+                      def clearWorkflowArtifacts() =
+                        for {
+                          _ <- stepValidatorRepo.deleteByDemand(
+                            tenant,
+                            child.id
+                          )
+                          _ <- notificationRepo.deleteByDemand(tenant, child.id)
+                        } yield ()
+
+                      if (child.state.isClosed) {
+                        clearWorkflowArtifacts().map(_ => Right(()))
+                      } else {
+                        val canceled = child.copy(
+                          state = SubscriptionDemandState.Canceled,
+                          steps = child.steps.map { step =>
+                            if (step.state.isClosed) step
+                            else
+                              step
+                                .copy(state = SubscriptionDemandState.Canceled)
+                          }
+                        )
+                        batch.withChildProgress(canceled) match {
+                          case Left(error) =>
+                            Future.successful(Left(error))
+                          case Right(synchronizedBatch) =>
+                            subscriptionDemandRepo
+                              .forTenant(tenant)
+                              .save(canceled)
+                              .flatMap {
+                                case false =>
+                                  Future.failed(
+                                    new IllegalStateException(
+                                      "The batch child could not be canceled"
+                                    )
                                   )
-                                )
-                              case true =>
-                                subscriptionBatchDemandRepo
-                                  .updateIfRevisionMatches(synchronizedBatch)
-                                  .flatMap {
-                                    case None =>
-                                      Future.failed(
-                                        new IllegalStateException(
-                                          "A locked subscription batch changed while canceling its child"
+                                case true =>
+                                  subscriptionBatchDemandRepo
+                                    .updateIfRevisionMatches(synchronizedBatch)
+                                    .flatMap {
+                                      case None =>
+                                        Future.failed(
+                                          new IllegalStateException(
+                                            "A locked subscription batch changed while canceling its child"
+                                          )
                                         )
-                                      )
-                                    case Some(_) =>
-                                      clearWorkflowArtifacts().map(_ => Right(()))
-                                  }
-                            }
+                                      case Some(_) =>
+                                        clearWorkflowArtifacts()
+                                          .map(_ => Right(()))
+                                    }
+                              }
+                        }
                       }
-                    }
-                  case Some(_) =>
-                    Future.successful(
-                      Left(
-                        AppError.BadRequestError(
-                          "The child does not match its linked subscription batch item"
+                    case Some(_) =>
+                      Future.successful(
+                        Left(
+                          AppError.BadRequestError(
+                            "The child does not match its linked subscription batch item"
+                          )
                         )
                       )
-                    )
-                }
+                  }
             }
+        }
+    }
+
+  def cancelBatch(
+      tenant: TenantId,
+      batchId: SubscriptionBatchDemandId
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[AppError, SubscriptionBatchDemand]] =
+    withTransaction {
+      subscriptionBatchDemandRepo
+        .findForUpdate(tenant, batchId)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch)
+              if batch.items.exists(item =>
+                !item.state.isClosed && item.reservation.isDefined
+              ) =>
+            Future.successful(
+              Left(
+                AppError.EntityConflict(
+                  "A reserved subscription batch item cannot be canceled"
+                )
+              )
+            )
+          case Some(batch) =>
+            type Prepared = Either[
+              AppError,
+              (SubscriptionBatchDemand, Vector[SubscriptionDemand])
+            ]
+
+            def prepareItem(
+                state: Prepared,
+                item: SubscriptionBatchItem
+            ): Future[Prepared] =
+              state match {
+                case Left(error) => Future.successful(Left(error))
+                case Right((current, children)) if item.state.isClosed =>
+                  Future.successful(Right((current, children)))
+                case Right((current, children)) if item.demand.isEmpty =>
+                  val updated =
+                    current.copy(items = current.items.map { sibling =>
+                      if (sibling.id == item.id)
+                        sibling.copy(
+                          state = SubscriptionBatchItemState.Canceled,
+                          error = None,
+                          reservation = None
+                        )
+                      else sibling
+                    })
+                  Future.successful(Right((updated, children)))
+                case Right((current, children)) =>
+                  val reference = SubscriptionBatchReference(batch.id, item.id)
+                  subscriptionDemandRepo
+                    .findByBatchItem(tenant, reference)
+                    .flatMap {
+                      case None =>
+                        Future.successful(
+                          Left(AppError.SubscriptionDemandNotFound)
+                        )
+                      case Some(child)
+                          if !item.demand.contains(child.id) ||
+                            !child.batch.contains(reference) ||
+                            child.tenant != tenant || child.team != batch.team ||
+                            child.from != batch.from || child.api != item.api ||
+                            child.plan != item.plan =>
+                        Future.successful(
+                          Left(
+                            AppError.BadRequestError(
+                              "The child does not match its linked subscription batch item"
+                            )
+                          )
+                        )
+                      case Some(child) if child.state.isClosed =>
+                        val subscription: Future[
+                          Either[AppError, Option[ApiSubscription]]
+                        ] =
+                          child.state match {
+                            case SubscriptionDemandState.Accepted =>
+                              item.subscription match {
+                                case Some(id) =>
+                                  apiSubscriptionRepo
+                                    .forTenant(tenant)
+                                    .findById(id)
+                                    .map {
+                                      case Some(value) => Right(Some(value))
+                                      case None =>
+                                        Left(AppError.SubscriptionNotFound)
+                                    }
+                                case None =>
+                                  Future.successful(
+                                    Left(
+                                      AppError.EntityConflict(
+                                        "The accepted batch child has no subscription"
+                                      )
+                                    )
+                                  )
+                              }
+                            case _ => Future.successful(Right(None))
+                          }
+                        subscription.map {
+                          case Left(error) => Left(error)
+                          case Right(value) =>
+                            current
+                              .withChildProgress(child, value)
+                              .map(_ -> children)
+                        }
+                      case Some(child) =>
+                        val canceled = child.copy(
+                          state = SubscriptionDemandState.Canceled,
+                          steps = child.steps.map { step =>
+                            if (step.state.isClosed) step
+                            else
+                              step
+                                .copy(state = SubscriptionDemandState.Canceled)
+                          }
+                        )
+                        Future.successful(
+                          current.withChildProgress(canceled).map { updated =>
+                            updated -> (children :+ canceled)
+                          }
+                        )
+                    }
+              }
+
+            batch.items
+              .foldLeft(
+                Future.successful(
+                  Right((batch, Vector.empty[SubscriptionDemand])): Prepared
+                )
+              ) { (previous, item) =>
+                previous.flatMap(state => prepareItem(state, item))
+              }
+              .flatMap {
+                case Left(error) => Future.successful(Left(error))
+                case Right((updated, children)) if updated == batch =>
+                  Future.successful(Right(batch))
+                case Right((updated, children)) =>
+                  children
+                    .foldLeft(Future.successful(true)) { (previous, child) =>
+                      previous.flatMap {
+                        case false => Future.successful(false)
+                        case true =>
+                          subscriptionDemandRepo.forTenant(tenant).save(child)
+                      }
+                    }
+                    .flatMap {
+                      case false =>
+                        Future.failed(
+                          new IllegalStateException(
+                            "A subscription batch child could not be canceled"
+                          )
+                        )
+                      case true =>
+                        subscriptionBatchDemandRepo
+                          .updateIfRevisionMatches(updated)
+                          .flatMap {
+                            case None =>
+                              Future.failed(
+                                new IllegalStateException(
+                                  "A locked subscription batch changed while canceling its items"
+                                )
+                              )
+                            case Some(saved) =>
+                              children
+                                .foldLeft(Future.successful(())) {
+                                  (previous, child) =>
+                                    previous.flatMap { _ =>
+                                      stepValidatorRepo
+                                        .deleteByDemand(tenant, child.id)
+                                        .flatMap(_ =>
+                                          notificationRepo.deleteByDemand(
+                                            tenant,
+                                            child.id
+                                          )
+                                        )
+                                        .map(_ => ())
+                                    }
+                                }
+                                .map(_ => Right(saved))
+                          }
+                    }
+              }
         }
     }
 
@@ -3240,7 +3820,10 @@ trait DataStore {
       teamIds: Set[TeamId] = Set.empty,
       requesterIds: Set[UserId] = Set.empty
   )(implicit ec: ExecutionContext): Future[Either[AppError, Unit]] = {
-    def matches(batch: SubscriptionBatchDemand, item: SubscriptionBatchItem): Boolean =
+    def matches(
+        batch: SubscriptionBatchDemand,
+        item: SubscriptionBatchItem
+    ): Boolean =
       tenant.forall(_ == batch.tenant) &&
         (apiIds.contains(item.api) || planIds.contains(item.plan) ||
           teamIds.contains(batch.team) || requesterIds.contains(batch.from))
@@ -3257,165 +3840,226 @@ trait DataStore {
         .findAll()
         .flatMap { batches =>
           val candidates = batches.filter(batch =>
-            batch.items.exists(item => !item.state.isClosed && matches(batch, item))
+            batch.items
+              .exists(item => !item.state.isClosed && matches(batch, item))
           )
-          candidates.foldLeft(Future.successful(Vector.empty[SubscriptionBatchDemand])) {
-            (previous, candidate) =>
+          candidates
+            .foldLeft(
+              Future.successful(Vector.empty[SubscriptionBatchDemand])
+            ) { (previous, candidate) =>
               previous.flatMap { locked =>
                 subscriptionBatchDemandRepo
                   .findForUpdate(candidate.tenant, candidate.id)
                   .map(_.fold(locked)(locked :+ _))
               }
-          }.flatMap { lockedBatches =>
-            val reserved = lockedBatches.exists(batch =>
-              batch.items.exists(item =>
-                !item.state.isClosed && matches(batch, item) && item.reservation.isDefined
-              )
-            )
-            if (reserved)
-              Future.successful(
-                Left(
-                  AppError.EntityConflict(
-                    "A resource with reserved subscription batch work cannot be deleted"
-                  )
+            }
+            .flatMap { lockedBatches =>
+              val reserved = lockedBatches.exists(batch =>
+                batch.items.exists(item =>
+                  !item.state.isClosed && matches(
+                    batch,
+                    item
+                  ) && item.reservation.isDefined
                 )
               )
-            else {
-              def prepareBatch(
-                  batch: SubscriptionBatchDemand
-              ): Future[Either[AppError, PreparedBatch]] = {
-                val targets = batch.items.filter(item =>
-                  !item.state.isClosed && matches(batch, item)
-                )
-                targets.foldLeft(
-                  Future.successful(
-                    Right((batch, Vector.empty[(SubscriptionDemand, SubscriptionDemand)]))
-                      : Either[AppError, (SubscriptionBatchDemand, Vector[(SubscriptionDemand, SubscriptionDemand)])]
+              if (reserved)
+                Future.successful(
+                  Left(
+                    AppError.EntityConflict(
+                      "A resource with reserved subscription batch work cannot be deleted"
+                    )
                   )
-                ) { (previous, item) =>
-                  previous.flatMap {
-                    case Left(error) => Future.successful(Left(error))
-                    case Right((currentBatch, children)) =>
-                      item.demand match {
-                        case None =>
-                          val updated = item.copy(
-                            state = SubscriptionBatchItemState.Blocked,
-                            error = Some(SubscriptionBatchItemError(
-                              "resource_deleted",
-                              "The API, plan, team, or requester was deleted"
-                            ))
+                )
+              else {
+                def prepareBatch(
+                    batch: SubscriptionBatchDemand
+                ): Future[Either[AppError, PreparedBatch]] = {
+                  val targets = batch.items.filter(item =>
+                    !item.state.isClosed && matches(batch, item)
+                  )
+                  targets
+                    .foldLeft(
+                      Future.successful(
+                        Right(
+                          (
+                            batch,
+                            Vector
+                              .empty[(SubscriptionDemand, SubscriptionDemand)]
                           )
-                          Future.successful(Right((
-                            currentBatch.copy(items = currentBatch.items.map(existing =>
-                              if (existing.id == item.id) updated else existing
-                            )),
-                            children
-                          )))
-                        case Some(_) =>
-                          val reference = SubscriptionBatchReference(batch.id, item.id)
-                          subscriptionDemandRepo
-                            .findByBatchItem(batch.tenant, reference)
-                            .map {
-                              case None =>
-                                Left(AppError.SubscriptionDemandNotFound)
-                              case Some(child)
-                                  if item.demand.contains(child.id) &&
-                                    child.batch.contains(reference) &&
-                                    child.tenant == batch.tenant &&
-                                    child.team == batch.team &&
-                                    child.from == batch.from &&
-                                    child.api == item.api &&
-                                    child.plan == item.plan &&
-                                    !child.state.isClosed =>
-                                val blocked = child.copy(
-                                  state = SubscriptionDemandState.Blocked,
-                                  steps = child.steps.map { step =>
-                                    if (step.state.isClosed) step
-                                    else step.copy(state = SubscriptionDemandState.Blocked)
-                                  }
-                                )
-                                currentBatch.withChildProgress(blocked).map { updated =>
-                                  val blockedItem = updated.items.find(_.id == item.id).get.copy(
-                                    error = Some(SubscriptionBatchItemError(
-                                      "resource_deleted",
-                                      "The API, plan, team, or requester was deleted"
-                                    ))
+                        ): Either[
+                          AppError,
+                          (
+                              SubscriptionBatchDemand,
+                              Vector[(SubscriptionDemand, SubscriptionDemand)]
+                          )
+                        ]
+                      )
+                    ) { (previous, item) =>
+                      previous.flatMap {
+                        case Left(error) => Future.successful(Left(error))
+                        case Right((currentBatch, children)) =>
+                          item.demand match {
+                            case None =>
+                              val updated = item.copy(
+                                state = SubscriptionBatchItemState.Blocked,
+                                error = Some(
+                                  SubscriptionBatchItemError(
+                                    "resource_deleted",
+                                    "The API, plan, team, or requester was deleted"
                                   )
+                                )
+                              )
+                              Future.successful(
+                                Right(
                                   (
-                                    updated.copy(items = updated.items.map(existing =>
-                                      if (existing.id == item.id) blockedItem else existing
-                                    )),
-                                    children :+ (child -> blocked)
-                                  )
-                                }
-                              case Some(_) =>
-                                Left(
-                                  AppError.BadRequestError(
-                                    "The child does not match its linked subscription batch item"
+                                    currentBatch.copy(items =
+                                      currentBatch.items.map(existing =>
+                                        if (existing.id == item.id) updated
+                                        else existing
+                                      )
+                                    ),
+                                    children
                                   )
                                 )
-                            }
-                      }
-                  }
-                }.map(_.map { case (updated, children) =>
-                  PreparedBatch(batch, updated, children)
-                })
-              }
-
-              lockedBatches.foldLeft(
-                Future.successful(Vector.empty[Either[AppError, PreparedBatch]])
-              ) { (previous, batch) =>
-                previous.flatMap { prepared =>
-                  prepareBatch(batch).map(prepared :+ _)
-                }
-              }.flatMap { prepared =>
-                prepared.collectFirst { case Left(error) => error } match {
-                  case Some(error) => Future.successful(Left(error))
-                  case None =>
-                    val changed = prepared.collect { case Right(value) => value }
-                      .filter(value => value.after != value.before)
-                    changed.foldLeft(Future.successful(())) { (previous, value) =>
-                      previous.flatMap { _ =>
-                        value.children.foldLeft(Future.successful(())) {
-                          case (saved, (_, child)) =>
-                            saved.flatMap { _ =>
+                              )
+                            case Some(_) =>
+                              val reference =
+                                SubscriptionBatchReference(batch.id, item.id)
                               subscriptionDemandRepo
-                                .forTenant(child.tenant)
-                                .save(child)
-                                .flatMap {
-                                  case true =>
-                                    stepValidatorRepo.deleteByDemand(child.tenant, child.id)
-                                      .flatMap(_ =>
-                                        notificationRepo.deleteByDemand(child.tenant, child.id)
-                                      )
-                                      .map(_ => ())
-                                  case false =>
-                                    Future.failed(
-                                      new IllegalStateException(
-                                        "A batch child could not be blocked before deleting its resource"
+                                .findByBatchItem(batch.tenant, reference)
+                                .map {
+                                  case None =>
+                                    Left(AppError.SubscriptionDemandNotFound)
+                                  case Some(child)
+                                      if item.demand.contains(child.id) &&
+                                        child.batch.contains(reference) &&
+                                        child.tenant == batch.tenant &&
+                                        child.team == batch.team &&
+                                        child.from == batch.from &&
+                                        child.api == item.api &&
+                                        child.plan == item.plan &&
+                                        !child.state.isClosed =>
+                                    val blocked = child.copy(
+                                      state = SubscriptionDemandState.Blocked,
+                                      steps = child.steps.map { step =>
+                                        if (step.state.isClosed) step
+                                        else
+                                          step.copy(state =
+                                            SubscriptionDemandState.Blocked
+                                          )
+                                      }
+                                    )
+                                    currentBatch
+                                      .withChildProgress(blocked)
+                                      .map { updated =>
+                                        val blockedItem = updated.items
+                                          .find(_.id == item.id)
+                                          .get
+                                          .copy(
+                                            error = Some(
+                                              SubscriptionBatchItemError(
+                                                "resource_deleted",
+                                                "The API, plan, team, or requester was deleted"
+                                              )
+                                            )
+                                          )
+                                        (
+                                          updated.copy(items =
+                                            updated.items.map(existing =>
+                                              if (existing.id == item.id)
+                                                blockedItem
+                                              else existing
+                                            )
+                                          ),
+                                          children :+ (child -> blocked)
+                                        )
+                                      }
+                                  case Some(_) =>
+                                    Left(
+                                      AppError.BadRequestError(
+                                        "The child does not match its linked subscription batch item"
                                       )
                                     )
                                 }
-                            }
-                        }.flatMap { _ =>
-                          subscriptionBatchDemandRepo
-                            .updateIfRevisionMatches(value.after)
-                            .flatMap {
-                              case Some(_) => Future.successful(())
-                              case None =>
-                                Future.failed(
-                                  new IllegalStateException(
-                                    "A locked subscription batch changed while blocking deleted-resource items"
-                                  )
-                                )
-                            }
-                        }
+                          }
                       }
-                    }.map(_ => Right(()))
+                    }
+                    .map(_.map { case (updated, children) =>
+                      PreparedBatch(batch, updated, children)
+                    })
                 }
+
+                lockedBatches
+                  .foldLeft(
+                    Future
+                      .successful(Vector.empty[Either[AppError, PreparedBatch]])
+                  ) { (previous, batch) =>
+                    previous.flatMap { prepared =>
+                      prepareBatch(batch).map(prepared :+ _)
+                    }
+                  }
+                  .flatMap { prepared =>
+                    prepared.collectFirst { case Left(error) => error } match {
+                      case Some(error) => Future.successful(Left(error))
+                      case None =>
+                        val changed = prepared
+                          .collect { case Right(value) => value }
+                          .filter(value => value.after != value.before)
+                        changed
+                          .foldLeft(Future.successful(())) {
+                            (previous, value) =>
+                              previous.flatMap { _ =>
+                                value.children
+                                  .foldLeft(Future.successful(())) {
+                                    case (saved, (_, child)) =>
+                                      saved.flatMap { _ =>
+                                        subscriptionDemandRepo
+                                          .forTenant(child.tenant)
+                                          .save(child)
+                                          .flatMap {
+                                            case true =>
+                                              stepValidatorRepo
+                                                .deleteByDemand(
+                                                  child.tenant,
+                                                  child.id
+                                                )
+                                                .flatMap(_ =>
+                                                  notificationRepo
+                                                    .deleteByDemand(
+                                                      child.tenant,
+                                                      child.id
+                                                    )
+                                                )
+                                                .map(_ => ())
+                                            case false =>
+                                              Future.failed(
+                                                new IllegalStateException(
+                                                  "A batch child could not be blocked before deleting its resource"
+                                                )
+                                              )
+                                          }
+                                      }
+                                  }
+                                  .flatMap { _ =>
+                                    subscriptionBatchDemandRepo
+                                      .updateIfRevisionMatches(value.after)
+                                      .flatMap {
+                                        case Some(_) => Future.successful(())
+                                        case None =>
+                                          Future.failed(
+                                            new IllegalStateException(
+                                              "A locked subscription batch changed while blocking deleted-resource items"
+                                            )
+                                          )
+                                      }
+                                  }
+                              }
+                          }
+                          .map(_ => Right(()))
+                    }
+                  }
               }
             }
-          }
         }
     }
   }

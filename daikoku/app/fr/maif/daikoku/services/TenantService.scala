@@ -145,6 +145,8 @@ class TenantService(
       _ <- env.dataStore.subscriptionBatchDemandRepo
         .forTenant(tenant)
         .deleteAll()
+      _ <- env.dataStore.subscriptionBatchDemandRepo
+        .deleteKeyringLocksForTenant(tenant.id)
       _ <- env.dataStore.apiDocumentationPageRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.notificationRepo.forTenant(tenant).deleteAll()
       _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAll()

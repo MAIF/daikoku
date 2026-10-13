@@ -32,6 +32,32 @@ enum SubscriptionBatchKeyringChoice {
   case New(creation: SubscriptionBatchKeyringId)
 }
 
+case class SubscriptionBatchItemSelection(
+    api: ApiId,
+    plan: UsagePlanId,
+    keyringChoice: SubscriptionBatchKeyringChoice
+)
+
+case class SubscriptionBatchNewKeyringSelection(
+    id: SubscriptionBatchKeyringId,
+    customName: String
+)
+
+/** Client-controlled submission fields; tenant, requester and plan process are resolved server-side. */
+case class SubscriptionBatchSubmission(
+    team: TeamId,
+    idempotencyKey: String,
+    items: Seq[SubscriptionBatchItemSelection],
+    newKeyrings: Seq[SubscriptionBatchNewKeyringSelection] = Seq.empty,
+    motivation: Option[JsObject] = None
+)
+
+case class SubscriptionBatchSubmissionReceipt(
+    batch: SubscriptionBatchDemandId,
+    state: SubscriptionBatchDemandState,
+    replayed: Boolean
+)
+
 case class SubscriptionBatchReference(
     batch: SubscriptionBatchDemandId,
     item: SubscriptionBatchItemId

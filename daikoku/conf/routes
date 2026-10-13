@@ -128,6 +128,11 @@ GET     /api/subscription/_decline                                      fr.maif.
 GET     /api/subscription/team/:teamId/demands/:demandId                fr.maif.daikoku.controllers.ApiController.getSubscriptionDemand(teamId, demandId)
 GET     /api/subscription/team/:teamId/demands/:demandId/_run           fr.maif.daikoku.controllers.ApiController.runProcess(teamId, demandId)
 DELETE  /api/subscription/team/:teamId/demands/:demandId/_cancel        fr.maif.daikoku.controllers.ApiController.cancelProcess(teamId, demandId)
+POST    /api/subscription/team/:teamId/batches                          fr.maif.daikoku.controllers.SubscriptionBatchController.submit(teamId)
+GET     /api/subscription/team/:teamId/batches/:batchId                 fr.maif.daikoku.controllers.SubscriptionBatchController.get(teamId, batchId)
+DELETE  /api/subscription/team/:teamId/batches/:batchId                 fr.maif.daikoku.controllers.SubscriptionBatchController.cancel(teamId, batchId)
+POST    /api/subscription/team/:teamId/batches/:batchId/_resume         fr.maif.daikoku.controllers.SubscriptionBatchController.resume(teamId, batchId)
+POST    /api/subscription/team/:teamId/batches/:batchId/items/:itemId/_reconcile-failure fr.maif.daikoku.controllers.SubscriptionBatchController.reconcileFailure(teamId, batchId, itemId)
 
 GET     /api/subscriptions/teams/:teamId                        fr.maif.daikoku.controllers.ApiController.getSubscriptionsOfTeam(teamId)
 GET     /api/apis/:apiId/pages/:id/content                      fr.maif.daikoku.controllers.ApiController.getDocumentationPageRemoteContent(apiId, id)
@@ -488,4 +493,3 @@ GET      /admin-api/schema                               fr.maif.daikoku.control
 
 ### NoDocs ###
 GET     /*path                      fr.maif.daikoku.controllers.HomeController.indexWithPath(path)
-
