@@ -1,12 +1,13 @@
 import classNames from 'classnames';
 import { useContext, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 
-import { ModalContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 
 
 export const RightPanel = () => {
+  const { translate } = useContext(I18nContext);
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
 
   useEffect(() => {
@@ -58,7 +59,17 @@ export const RightPanel = () => {
               closed: !rightPanelContent,
             })}
           >
-            <div className="m-2 p-2">
+            <div className="m-2 p-2 d-flex align-items-center gap-2">
+              {rightPanelContent?.onBack && (
+                <button
+                  className="btn --icon-only --secondary --small --ghost"
+                  title={translate('Back')}
+                  aria-label={translate('Back')}
+                  onClick={rightPanelContent.onBack}
+                >
+                  <ArrowLeft />
+                </button>
+              )}
               <button className="btn --icon-only --secondary right-panel__back " onClick={closeRightPanel}>
                 <X />
               </button>

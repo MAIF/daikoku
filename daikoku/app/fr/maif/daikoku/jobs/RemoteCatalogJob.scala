@@ -1,19 +1,21 @@
 package fr.maif.daikoku.jobs
 
 import fr.maif.daikoku.audit.JobEvent
-import fr.maif.daikoku.domain.{JobName, RemoteCatalog, Tenant}
-import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{
-  CatalogSources,
-  DeployReport,
-  RemoteCatalogEngine
+import fr.maif.daikoku.domain.{
+  JobName,
+  RemoteCatalog,
+  RemoteCatalogRun,
+  RemoteCatalogRunStatus,
+  Tenant
 }
+import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.services.catalog.{CatalogSources, RemoteCatalogEngine}
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.{Future, Promise}
 
-type CatalogResult = Either[JsValue, DeployReport]
+type CatalogResult = Either[JsValue, RemoteCatalogRun]
 
 enum RemoteCatalogJobInput:
   case AllEnabled
@@ -106,12 +108,12 @@ class RemoteCatalogJob(
       case RemoteCatalogJobInput.Deploy(catalog, result) =>
         engine
           .deploy(tenant, catalog)
-          .andThen(result.complete(_))
+          .andThen(run => result.complete(run.map(Right(_))))
           .map(withResult(JobRunResult.empty, catalog, _))
       case RemoteCatalogJobInput.Undeploy(catalog, result) =>
         engine
           .undeploy(tenant, catalog)
-          .andThen(result.complete(_))
+          .andThen(run => result.complete(run.map(Right(_))))
           .map(withResult(JobRunResult.empty, catalog, _))
     }
 
@@ -142,24 +144,20 @@ class RemoteCatalogJob(
   private def withResult(
       acc: JobRunResult,
       catalog: RemoteCatalog,
-      result: CatalogResult
+      run: RemoteCatalogRun
   ): JobRunResult =
-    result match {
-      case Right(report) if report.isPartial =>
-        acc.copy(
-          processed = acc.processed + 1,
-          failures = acc.failures :+ JobItemFailure(
-            catalog.id.value,
-            report.errors.mkString(", ")
-          )
+    if (run.status == RemoteCatalogRunStatus.Completed) {
+      acc.copy(processed = acc.processed + 1, succeeded = acc.succeeded + 1)
+    } else {
+      val errors =
+        run.errors.map(error => s"${error.source}: ${error.message}")
+
+      acc.copy(
+        processed = acc.processed + 1,
+        failures = acc.failures :+ JobItemFailure(
+          catalog.id.value,
+          errors.mkString(", ")
         )
-      case Right(_) =>
-        acc.copy(processed = acc.processed + 1, succeeded = acc.succeeded + 1)
-      case Left(err) =>
-        acc.copy(
-          processed = acc.processed + 1,
-          failures =
-            acc.failures :+ JobItemFailure(catalog.id.value, Json.stringify(err))
-        )
+      )
     }
 }

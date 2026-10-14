@@ -6,7 +6,10 @@ import { GlobalContext } from '../../contexts/globalContext';
 
 export type ExportedKind = 'team' | 'usage-plan' | 'api' | 'keyring' | 'api-subscription' | 'cms-page';
 
-type ExportOptions = { children: boolean; format: 'yaml' | 'zip' };
+type ExportOptions = {
+  children: boolean;
+  format: 'yaml' | 'zip';
+};
 
 const KINDS_WITH_CHILDREN: Array<ExportedKind> = ['team', 'usage-plan', 'api', 'keyring'];
 
@@ -50,7 +53,10 @@ export const useExportEntity = () => {
           defaultValue: 'yaml',
         },
       },
-      value: { children: false, format: 'yaml' },
+      value: {
+        children: false,
+        format: 'yaml',
+      },
       onSubmit: (options) => download(kind, id, options),
       actionLabel: translate('remote-catalog.modal.exportBtn'),
     });
@@ -59,7 +65,10 @@ export const useExportEntity = () => {
     if (KINDS_WITH_CHILDREN.includes(kind)) {
       chooseOptions(kind, id);
     } else {
-      download(kind, id, { children: false, format: 'yaml' });
+      download(kind, id, {
+        children: false,
+        format: 'yaml'
+      });
     }
   };
 

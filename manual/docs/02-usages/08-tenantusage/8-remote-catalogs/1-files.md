@@ -58,6 +58,12 @@ team: team-weather
 otoroshiSettings:
   type: Otoroshi
   id: otoroshi-prod       # an Otoroshi settings id of the tenant
+apiKey:                   # an existing key of that Otoroshi instance
+  clientName: weather-mobile-app
+  clientId: weather-mobile-app-client-id
+  clientSecret: weather-mobile-app-client-secret
+integrationToken: weather-mobile-app-integration-token
+createdAt: 1759190400000
 ---
 kind: api-subscription
 _id: subscription-weather
@@ -73,11 +79,17 @@ kind: cms-page
 _id: page-weather-home
 _tenant: default
 name: Weather home
+---
+kind: api-documentation-page
+_id: page-weather-start
+_tenant: default
+title: Getting started
+content: Subscribe to a plan, then call the API with the key of your keyring.
 ```
 
-A keyring never carries credentials: Daikoku generates `apiKey` and `integrationToken` when it
-creates the keyring and keeps them on update. The Otoroshi key is created when a subscription uses
-the keyring.
+A keyring carries its credentials, `apiKey` and `integrationToken`, stored as written: Daikoku
+generates nothing. The key must already exist in the Otoroshi instance of the keyring, with the
+same `clientId` and `clientSecret`: Daikoku does not create it.
 
 ## Folders and listings
 
@@ -112,6 +124,7 @@ The folder `teams/<team id>/` may only declare the entities of that team:
 | `api`, `keyring` | its `team` is the team id |
 | `api-subscription` | its `team`, the **consumer** team, is the team id |
 | `usage-plan` | it is referenced by an API of the team, in the run or in Daikoku |
+| `api-documentation-page` | it is used by an API or a plan of the team declared in the run |
 | `cms-page` | never |
 
 A folder that matches no team is an error. Everything outside `teams/` is tenant level and is not

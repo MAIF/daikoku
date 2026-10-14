@@ -1562,6 +1562,9 @@ object json {
             remoteContentUrl = (json \ "remoteContentUrl").asOpt[String],
             remoteContentHeaders = (json \ "remoteContentHeaders")
               .asOpt[Map[String, String]]
+              .getOrElse(Map.empty[String, String]),
+            metadata = (json \ "metadata")
+              .asOpt[Map[String, String]]
               .getOrElse(Map.empty[String, String])
           )
         )
@@ -1587,7 +1590,8 @@ object json {
           .as[JsValue],
         "remoteContentHeaders" -> JsObject(
           o.remoteContentHeaders.view.mapValues(JsString.apply).toSeq
-        )
+        ),
+        "metadata" -> o.metadata
       )
   }
   val ApiPostFormat = new Format[ApiPost] {
@@ -5457,6 +5461,62 @@ object json {
       )
   }
 
+  val RemoteCatalogRunEntityFormat = new Format[RemoteCatalogRunEntity] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogRunEntity] =
+      Try {
+        JsSuccess(
+          RemoteCatalogRunEntity(
+            kind = (json \ "kind").as[String],
+            id = (json \ "id").as[String],
+            name = (json \ "name").asOpt[String]
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogRunEntity): JsValue =
+      Json.obj(
+        "kind" -> o.kind,
+        "id" -> o.id,
+        "name" -> o.name.map(JsString.apply).getOrElse(JsNull)
+      )
+  }
+
+  val RemoteCatalogErrorFormat = new Format[RemoteCatalogError] {
+    override def reads(json: JsValue): JsResult[RemoteCatalogError] =
+      Try {
+        JsSuccess(
+          RemoteCatalogError(
+            source = (json \ "source").as[String],
+            message = (json \ "message").as[String],
+            entity = (json \ "entity").asOpt(using RemoteCatalogRunEntityFormat)
+          )
+        )
+      } recover { case e: Throwable =>
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: RemoteCatalogError): JsValue =
+      Json.obj(
+        "source" -> o.source,
+        "message" -> o.message,
+        "entity" -> o.entity
+          .map(RemoteCatalogRunEntityFormat.writes)
+          .getOrElse(JsNull)
+      )
+  }
+
+  val SeqRemoteCatalogRunEntityFormat = Format(
+    Reads.seq(using RemoteCatalogRunEntityFormat),
+    Writes.seq(using RemoteCatalogRunEntityFormat)
+  )
+
+  val SeqRemoteCatalogErrorFormat = Format(
+    Reads.seq(using RemoteCatalogErrorFormat),
+    Writes.seq(using RemoteCatalogErrorFormat)
+  )
+
   val RemoteCatalogRunFormat = new Format[RemoteCatalogRun] {
     override def reads(json: JsValue): JsResult[RemoteCatalogRun] =
       Try {
@@ -5469,12 +5529,15 @@ object json {
             status = RemoteCatalogRunStatus
               .fromValue((json \ "status").as[String])
               .get,
-            created = (json \ "created").as[Seq[String]],
-            updated = (json \ "updated").as[Seq[String]],
-            deleted = (json \ "deleted").as[Seq[String]],
+            created =
+              (json \ "created").as(using SeqRemoteCatalogRunEntityFormat),
+            updated =
+              (json \ "updated").as(using SeqRemoteCatalogRunEntityFormat),
+            deleted =
+              (json \ "deleted").as(using SeqRemoteCatalogRunEntityFormat),
             detached =
-              (json \ "detached").asOpt[Seq[String]].getOrElse(Seq.empty),
-            errors = (json \ "errors").as[Seq[String]]
+              (json \ "detached").as(using SeqRemoteCatalogRunEntityFormat),
+            errors = (json \ "errors").as(using SeqRemoteCatalogErrorFormat)
           )
         )
       } recover { case e: Throwable =>
@@ -5488,11 +5551,11 @@ object json {
         "catalog" -> RemoteCatalogIdFormat.writes(o.catalog),
         "at" -> DateTimeFormat.writes(o.at),
         "status" -> o.status.value,
-        "created" -> o.created,
-        "updated" -> o.updated,
-        "deleted" -> o.deleted,
-        "detached" -> o.detached,
-        "errors" -> o.errors
+        "created" -> SeqRemoteCatalogRunEntityFormat.writes(o.created),
+        "updated" -> SeqRemoteCatalogRunEntityFormat.writes(o.updated),
+        "deleted" -> SeqRemoteCatalogRunEntityFormat.writes(o.deleted),
+        "detached" -> SeqRemoteCatalogRunEntityFormat.writes(o.detached),
+        "errors" -> SeqRemoteCatalogErrorFormat.writes(o.errors)
       )
   }
 

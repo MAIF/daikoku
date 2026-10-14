@@ -245,7 +245,7 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     ),
     KindContract(
       "Keyring",
-      Reads(KeyringAdminApiController.readPayload),
+      json.KeyringFormat,
       completeKeyring.asJson.as[JsObject]
     ),
     KindContract(

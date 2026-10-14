@@ -15,7 +15,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.RemoteCatalogJob
 import fr.maif.daikoku.services.catalog.{
   CatalogFile,
-  DeployReport,
+  CatalogSources,
   ExportFormat,
   ExportSelection,
   RemoteCatalogEngine
@@ -49,6 +49,23 @@ class RemoteCatalogController(
       }
     }
 
+  def settings(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed remote catalogs settings")
+      )(tenantId, ctx) { (_, _) =>
+        Future.successful(
+          Ok(
+            Json.obj(
+              "allowFileSource" -> env.config.remoteCatalogAllowFileSource,
+              "allowPreCommand" -> env.config.remoteCatalogAllowPreCommand,
+              "allowedHosts" -> env.config.remoteCatalogAllowedHosts
+            )
+          )
+        )
+      }
+    }
+
   def create(tenantId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
@@ -67,10 +84,15 @@ class RemoteCatalogController(
               BadRequest(Json.obj("error" -> "Bad remote catalog format"))
             )
           case JsSuccess(catalog, _) =>
-            env.dataStore.remoteCatalogRepo
-              .forTenant(tenant)
-              .save(catalog)
-              .map(_ => Created(catalog.asJson))
+            CatalogSources.disabledReason(catalog) match {
+              case Some(reason) =>
+                Future.successful(BadRequest(Json.obj("error" -> reason)))
+              case None =>
+                env.dataStore.remoteCatalogRepo
+                  .forTenant(tenant)
+                  .save(catalog)
+                  .map(_ => Created(catalog.asJson))
+            }
         }
       }
     }
@@ -95,10 +117,15 @@ class RemoteCatalogController(
                 BadRequest(Json.obj("error" -> "Bad remote catalog format"))
               )
             case JsSuccess(catalog, _) =>
-              env.dataStore.remoteCatalogRepo
-                .forTenant(tenant)
-                .save(catalog)
-                .map(_ => Ok(catalog.asJson))
+              CatalogSources.disabledReason(catalog) match {
+                case Some(reason) =>
+                  Future.successful(BadRequest(Json.obj("error" -> reason)))
+                case None =>
+                  env.dataStore.remoteCatalogRepo
+                    .forTenant(tenant)
+                    .save(catalog)
+                    .map(_ => Ok(catalog.asJson))
+              }
           }
         }
       }
@@ -199,7 +226,7 @@ class RemoteCatalogController(
               )
             )
           case Some(files) =>
-            engine.loadResources(tenant, files, dryRun).map(dryRunResult)
+            engine.loadResources(tenant, files, dryRun).map(runResult)
         }
       }
     }
@@ -210,7 +237,7 @@ class RemoteCatalogController(
         AuditTrailEvent(s"@{user.name} has tested remote catalog $catalogId")
       )(tenantId, ctx) { (tenant, _) =>
         withCatalog(tenant, catalogId)(catalog =>
-          engine.dryRun(tenant, catalog).map(dryRunResult)
+          engine.dryRun(tenant, catalog).map(runResult)
         )
       }
     }
@@ -257,13 +284,13 @@ class RemoteCatalogController(
         case Some(catalog) => f(catalog)
       }
 
-  private def dryRunResult(run: RemoteCatalogRun): Result =
+  private def runResult(run: RemoteCatalogRun): Result =
     if (run.status == RemoteCatalogRunStatus.Failed) BadRequest(run.asJson)
     else Ok(run.asJson)
 
-  private def toResult(result: Either[JsValue, DeployReport]): Result =
+  private def toResult(result: Either[JsValue, RemoteCatalogRun]): Result =
     result match {
-      case Left(err)     => BadRequest(err)
-      case Right(report) => Ok(report.json)
+      case Left(err)  => BadRequest(err)
+      case Right(run) => runResult(run)
     }
 }

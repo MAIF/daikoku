@@ -8,7 +8,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { ITenantFull } from '../../../types';
 import { Can, manage, tenant as TENANT } from '../../utils';
-import { CatalogRun } from './CatalogRuns';
+import { CatalogRun, RunReport } from './CatalogRuns';
 
 const FILES_DOC_URL =
   'https://maif.github.io/daikoku/docs/usages/tenantusage/remote-catalogs/files';
@@ -40,26 +40,39 @@ const EditorPlaceholder = () => {
 
 const LoadResult = (props: { run: CatalogRun; dryRun: boolean }) => {
   const { translate } = useContext(I18nContext);
+  const { openRightPanel } = useContext(ModalContext);
 
   const count = props.run.created.length;
+  const errorCount = props.run.errors.length;
   const messageKey = props.dryRun
     ? 'resource-loader.result.valid'
     : 'resource-loader.result.created';
 
-  if (props.run.errors.length > 0) {
-    return (
-      <div className="text-danger small">
-        {props.run.errors.map((error, i) => (
-          <div key={i}>{error}</div>
-        ))}
-      </div>
-    );
-  }
+  const showReport = () =>
+    openRightPanel({
+      title: translate('resource-loader.title'),
+      content: <RunReport run={props.run} />,
+    });
 
   return (
-    <div className="d-flex align-items-center gap-1">
-      <Check size={16} />
-      {translate({ key: messageKey, plural: count > 1, replacements: [String(count)] })}
+    <div className="d-flex align-items-center gap-2">
+      {errorCount > 0 ? (
+        <span className="text-danger">
+          {translate({
+            key: 'remote-catalog.report.errorCount',
+            plural: errorCount > 1,
+            replacements: [String(errorCount)],
+          })}
+        </span>
+      ) : (
+        <span className="d-flex align-items-center gap-1">
+          <Check size={16} />
+          {translate({ key: messageKey, plural: count > 1, replacements: [String(count)] })}
+        </span>
+      )}
+      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={showReport}>
+        {translate('remote-catalog.report.open')}
+      </button>
     </div>
   );
 };

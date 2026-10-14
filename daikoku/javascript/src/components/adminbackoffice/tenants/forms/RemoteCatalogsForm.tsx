@@ -2,13 +2,15 @@ import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { ExternalLink } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { Suspense, use, useContext, useState } from 'react';
 
 import { QUERY_KEYS } from '../../../../constants/queryKeys';
 import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import {
+  IFileSourceConfig,
   IRemoteCatalog,
+  IRemoteCatalogSettings,
   isError,
   ITenantFull,
   RemoteCatalogSourceKind,
@@ -18,10 +20,23 @@ import { clientFetchData, DynamicTable, DynamicTableFeatures, FilterDef } from '
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { DismissibleError } from '../../../utils/DismissibleError';
-import { CatalogRun, HistoryRuns } from '../../remotecatalogs/CatalogRuns';
+import {
+  CatalogRun,
+  HistoryRuns,
+  RunReport,
+  useRunDate,
+} from '../../remotecatalogs/CatalogRuns';
 
 const SOURCE_KINDS: Array<RemoteCatalogSourceKind> = ['file', 'http', 'github', 'gitlab'];
-const ENTITY_KINDS = ['team', 'usage-plan', 'api', 'keyring', 'api-subscription', 'cms-page'];
+const ENTITY_KINDS = [
+  'team',
+  'cms-page',
+  'api-documentation-page',
+  'usage-plan',
+  'api',
+  'keyring',
+  'api-subscription',
+];
 
 const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   name: '',
@@ -35,6 +50,27 @@ const emptyCatalog = (): Partial<IRemoteCatalog> => ({
   allowDeletions: true,
 });
 
+const blockedReason = (
+  catalog: Partial<IRemoteCatalog>,
+  settings?: IRemoteCatalogSettings
+): string | undefined => {
+  if (!settings || catalog.source?.kind !== 'file') {
+    return undefined;
+  }
+
+  if (!settings.allowFileSource) {
+    return 'remote-catalog.blocked.fileSource';
+  }
+
+  const preCommand = (catalog.source.config as IFileSourceConfig).pre_command ?? [];
+
+  if (!settings.allowPreCommand && preCommand.length > 0) {
+    return 'remote-catalog.blocked.preCommand';
+  } else {
+    return undefined;
+  }
+};
+
 const useRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   useQuery({
     queryKey: QUERY_KEYS.remoteCatalogHistory(tenantId, catalogId),
@@ -46,9 +82,53 @@ const useRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
     refetchInterval: 10_000,
   });
 
+type RunResponse = Promise<ResponseError | CatalogRun>;
+
+type RunningAction = { label: string; response: RunResponse };
+
+const catchNetworkError = (response: RunResponse): RunResponse =>
+  response.catch((e: Error) => ({ error: e.message }));
+
+const PendingRun = (props: { label: string }) => (
+  <div className="d-flex align-items-center gap-2 text-muted mb-3">
+    <i className="fas fa-spinner fa-spin" />
+    {props.label}
+  </div>
+);
+
+const TestOutcome = (props: { response: RunResponse }) => {
+  const run = use(props.response);
+
+  if (isError(run)) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        {run.error}
+      </div>
+    );
+  }
+
+  return <RunReport run={run} />;
+};
+
+const ActionError = (props: { response: RunResponse }) => {
+  const run = use(props.response);
+
+  if (isError(run)) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        {run.error}
+      </div>
+    );
+  }
+
+  return null;
+};
+
 const CatalogHistory = (props: {
   tenantId: string;
   catalog: IRemoteCatalog;
+  running?: RunningAction;
+  onShowReport: (run: CatalogRun) => void;
 }) => {
   const { translate } = useContext(I18nContext);
 
@@ -69,7 +149,16 @@ const CatalogHistory = (props: {
           <i className={refreshIcon} />
         </button>
       </div>
-      <HistoryRuns isLoading={history.isLoading} data={history.data} />
+      {props.running && (
+        <Suspense fallback={<PendingRun label={props.running.label} />}>
+          <ActionError response={props.running.response} />
+        </Suspense>
+      )}
+      <HistoryRuns
+        isLoading={history.isLoading}
+        data={history.data}
+        onShowReport={props.onShowReport}
+      />
     </div>
   );
 };
@@ -179,6 +268,7 @@ const CatalogEditor = (props: {
   tenantId: string;
   catalog?: IRemoteCatalog;
   schema: Schema;
+  warning?: string;
   onSaved: () => void;
 }) => {
   const { translate } = useContext(I18nContext);
@@ -202,6 +292,11 @@ const CatalogEditor = (props: {
   return (
     <>
       {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
+      {!!props.warning && (
+        <div className="alert alert-warning" role="alert">
+          {props.warning}
+        </div>
+      )}
       <Form<IRemoteCatalog>
         schema={props.schema}
         value={props.catalog ?? (emptyCatalog() as IRemoteCatalog)}
@@ -259,9 +354,9 @@ const CatalogFlow = () => {
 
 export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, confirm, alert, openRightPanel, closeRightPanel } =
-    useContext(ModalContext);
+  const { openFormModal, confirm, openRightPanel, closeRightPanel } = useContext(ModalContext);
   const queryClient = useQueryClient();
+  const runDate = useRunDate();
   const [error, setError] = useState<string>();
 
   const queryKey = QUERY_KEYS.remoteCatalogs(props.tenant._id);
@@ -274,30 +369,107 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
   });
   const isEmpty = Array.isArray(catalogsQuery.data) && catalogsQuery.data.length === 0;
 
-  const showHistory = (catalog: IRemoteCatalog) =>
+  const settingsQuery = useQuery({
+    queryKey: QUERY_KEYS.remoteCatalogSettings(props.tenant._id),
+    queryFn: () => Services.getRemoteCatalogSettings(props.tenant._id),
+  });
+  const settings =
+    settingsQuery.data && !isError(settingsQuery.data) ? settingsQuery.data : undefined;
+
+  const fileSourceAllowed = settings?.allowFileSource ?? true;
+  const preCommandAllowed = settings?.allowPreCommand ?? true;
+
+  const sourceKinds = (catalog?: IRemoteCatalog) => {
+    if (fileSourceAllowed || catalog?.source.kind === 'file') {
+      return SOURCE_KINDS;
+    } else {
+      return SOURCE_KINDS.filter((kind) => kind !== 'file');
+    }
+  };
+
+  const allowedHosts = settings?.allowedHosts ?? [];
+  const allowedHostsHelp =
+    allowedHosts.length > 0
+      ? translate({
+          key: 'remote-catalog.help.allowedHosts',
+          replacements: [allowedHosts.join(', ')],
+        })
+      : undefined;
+
+  const warningFor = (catalog?: IRemoteCatalog) => {
+    const reason = catalog ? blockedReason(catalog, settings) : undefined;
+
+    return reason ? translate(reason) : undefined;
+  };
+
+  const showHistory = (catalog: IRemoteCatalog, running?: RunningAction) =>
     openRightPanel({
-      title: `${catalog.name} — ${translate('remote-catalog.action.history')}`,
-      content: <CatalogHistory tenantId={props.tenant._id} catalog={catalog} />,
+      title: `${catalog.name} · ${translate('remote-catalog.action.history')}`,
+      content: (
+        <CatalogHistory
+          tenantId={props.tenant._id}
+          catalog={catalog}
+          running={running}
+          onShowReport={(run) => showReport(catalog, run)}
+        />
+      ),
     });
+
+  const showReport = (catalog: IRemoteCatalog, run: CatalogRun) => {
+    const title = translate({
+      key: 'remote-catalog.report.title',
+      replacements: [runDate(run.at)],
+    });
+
+    openRightPanel({
+      title: `${catalog.name} · ${title}`,
+      content: <RunReport run={run} />,
+      onBack: () => showHistory(catalog),
+    });
+  };
 
   const showToken = (catalog: IRemoteCatalog) =>
     openRightPanel({
-      title: `${catalog.name} — ${translate('remote-catalog.action.token')}`,
+      title: `${catalog.name} · ${translate('remote-catalog.action.token')}`,
       content: (
         <CatalogToken tenantId={props.tenant._id} catalog={catalog} onRegenerated={refresh} />
       ),
     });
 
-  const deploy = (catalog: IRemoteCatalog) =>
-    Services.deployRemoteCatalog(props.tenant._id, catalog._id).then(() => showHistory(catalog));
+  const runAndShowHistory = (catalog: IRemoteCatalog, label: string, request: RunResponse) => {
+    const response = catchNetworkError(request);
 
-  const dryRun = (catalog: IRemoteCatalog) =>
-    Services.testRemoteCatalog(props.tenant._id, catalog._id).then((run) =>
-      alert({
-        title: `${catalog.name} — ${translate('remote-catalog.action.test')}`,
-        message: <HistoryRuns isLoading={false} data={[run]} />,
+    response.then(() =>
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.remoteCatalogHistory(props.tenant._id, catalog._id),
       })
     );
+
+    showHistory(catalog, { label, response });
+  };
+
+  const deploy = (catalog: IRemoteCatalog) =>
+    runAndShowHistory(
+      catalog,
+      translate('remote-catalog.pending.deploy'),
+      Services.deployRemoteCatalog(props.tenant._id, catalog._id)
+    );
+
+  const dryRun = (catalog: IRemoteCatalog) => {
+    const response = catchNetworkError(
+      Services.testRemoteCatalog(props.tenant._id, catalog._id)
+    );
+
+    openRightPanel({
+      title: `${catalog.name} · ${translate('remote-catalog.action.test')}`,
+      content: (
+        <Suspense fallback={<PendingRun label={translate('remote-catalog.pending.test')} />}>
+          <TestOutcome response={response} />
+        </Suspense>
+      ),
+      onBack: () => showHistory(catalog),
+    });
+  };
 
   const undeploy = (catalog: IRemoteCatalog) =>
     confirm({
@@ -308,12 +480,14 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
         return;
       }
 
-      Services.undeployRemoteCatalog(props.tenant._id, catalog._id).then(() =>
-        showHistory(catalog)
+      runAndShowHistory(
+        catalog,
+        translate('remote-catalog.pending.undeploy'),
+        Services.undeployRemoteCatalog(props.tenant._id, catalog._id)
       );
     });
 
-  const catalogSchema = (): Schema => ({
+  const catalogSchema = (catalog?: IRemoteCatalog): Schema => ({
     name: {
       type: type.string,
       label: translate('remote-catalog.label.name'),
@@ -334,7 +508,8 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
           format: format.select,
           label: translate('remote-catalog.label.kind'),
           defaultValue: 'http',
-          options: SOURCE_KINDS,
+          options: sourceKinds(catalog),
+          help: fileSourceAllowed ? undefined : translate('remote-catalog.help.fileSourceDisabled'),
           constraints: [constraints.required(translate('remote-catalog.constraint.kind'))],
         },
         config: {
@@ -367,16 +542,26 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
               label: translate('remote-catalog.label.preCommand'),
               help: translate('remote-catalog.help.preCommand'),
               placeholder: 'aws',
-              visible: ({ rawValues }) => rawValues.source.kind === 'file',
+              visible: ({ rawValues }) => {
+                const preCommand = rawValues.source.config?.pre_command ?? [];
+                const shown = preCommandAllowed || preCommand.length > 0;
+
+                return rawValues.source.kind === 'file' && shown;
+              },
             },
             // --- http ---
             url: {
               type: type.string,
               label: translate('remote-catalog.label.url'),
+              help: allowedHostsHelp,
               visible: ({ rawValues }) => rawValues.source.kind === 'http',
               constraints: [
                 constraints.when('source.kind', (k) => k === 'http', [
                   constraints.required(translate('remote-catalog.constraint.url')),
+                  constraints.matches(
+                    /^https?:\/\//,
+                    translate('remote-catalog.constraint.httpUrl')
+                  ),
                 ]),
               ],
             },
@@ -422,7 +607,9 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
             base_url: {
               type: type.string,
               label: translate('remote-catalog.label.baseUrl'),
-              help: translate('remote-catalog.help.baseUrl'),
+              help: allowedHostsHelp
+                ? `${translate('remote-catalog.help.baseUrl')} ${allowedHostsHelp}`
+                : translate('remote-catalog.help.baseUrl'),
               visible: ({ rawValues }) =>
                 rawValues.source.kind === 'github' || rawValues.source.kind === 'gitlab',
             },
@@ -496,7 +683,8 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
         <CatalogEditor
           tenantId={props.tenant._id}
           catalog={catalog}
-          schema={catalogSchema()}
+          schema={catalogSchema(catalog)}
+          warning={warningFor(catalog)}
           onSaved={() => {
             closeRightPanel();
             refresh();
@@ -540,7 +728,9 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
 
   // a plain navigation lets the browser stream the zip to disk
   const exportTenant = () =>
-    openFormModal<{ all: boolean }>({
+    openFormModal<{
+      all: boolean;
+    }>({
       title: translate('remote-catalog.modal.export'),
       schema: {
         all: {
@@ -550,7 +740,9 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
           defaultValue: false,
         },
       },
-      value: { all: false },
+      value: {
+        all: false,
+      },
       onSubmit: ({ all }) => {
         window.location.assign(
           `/api/tenants/${props.tenant._id}/remote-catalogs/_export?all=${all}`
@@ -568,7 +760,22 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
     columnHelper.accessor('source.kind', {
       id: 'source',
       meta: { title: translate('remote-catalog.label.source'), size: 15 },
-      cell: (info) => <span className="badge bg-secondary">{info.getValue()}</span>,
+      cell: (info) => {
+        const warning = warningFor(info.row.original);
+
+        return (
+          <span className="d-inline-flex align-items-center gap-2">
+            <span className="badge bg-secondary">{info.getValue()}</span>
+            {!!warning && (
+              <i
+                className="fas fa-exclamation-triangle text-warning"
+                title={warning}
+                aria-label={warning}
+              />
+            )}
+          </span>
+        );
+      },
     }),
     columnHelper.accessor('enabled', {
       id: 'enabled',
@@ -584,7 +791,7 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
       meta: { title: translate('remote-catalog.label.scheduling'), size: 10 },
       cell: (info) => {
         const sched = info.row.original.scheduling;
-        if (!sched?.enabled) return <span className="text-muted">—</span>;
+        if (!sched?.enabled) return <span className="text-muted">-</span>;
         return <i className="fas fa-check text-success" />;
       },
     }),

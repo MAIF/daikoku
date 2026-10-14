@@ -15,7 +15,6 @@ import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.services.catalog.{
   CatalogFile,
   CatalogSources,
-  DeployReport,
   RemoteCatalogEngine
 }
 import org.apache.pekko.stream.scaladsl.Source
@@ -178,10 +177,10 @@ class RemoteCatalogTokenController(
     }
   }
 
-  private def toResult(result: Either[JsValue, DeployReport]): Result =
+  private def toResult(result: Either[JsValue, RemoteCatalogRun]): Result =
     result match {
-      case Left(err)     => BadRequest(err)
-      case Right(report) => Ok(report.json)
+      case Left(err)  => BadRequest(err)
+      case Right(run) => runResult(run)
     }
 
   private def runResult(run: RemoteCatalogRun): Result =

@@ -161,6 +161,14 @@ categories: [Data]
 image: https://cdn.acme.io/apis/weather.png
 possibleUsagePlans: [plan-weather-gold]
 defaultUsagePlan: plan-weather-gold
+documentation:
+  _id: doc-weather
+  _tenant: default
+  lastModificationAt: 1759190400000
+  pages:
+    - id: page-weather-start
+      title: Getting started
+      children: []
 swagger:
   url: https://weather.acme.io/openapi.json
   headers: {}
@@ -178,8 +186,42 @@ metadata:
 - Versions: a new version is another `api` document with the same `name`, its own `_id` and
   `currentVersion`, and `parent` set to the first version. `isDefault` marks the version shown first.
   Quote a version that YAML would read as a number, like `"2.0"`.
-- `documentation`: its pages are not a catalog kind and must already exist in Daikoku. Left out,
-  the pages of the API are kept.
+- `documentation.pages`: the tree of the API pages, each with its `id`, `title` and `children`. Each
+  page is an [`api-documentation-page`](#documentation-page), declared in the run or already in
+  Daikoku, children included. Left out, the pages of the API are kept.
+
+## Documentation page
+
+```yaml
+kind: api-documentation-page
+_id: page-weather-start
+_tenant: default
+title: Getting started
+contentType: text/markdown
+content: |
+  # Getting started
+
+  Subscribe to a plan, then call the API with the key of your keyring.
+lastModificationAt: 1759190400000
+metadata:
+  section: weather
+```
+
+- A page of the documentation of an API or of a plan, listed by its `id` in their
+  `documentation.pages` tree.
+- `contentType`: the format of the page, for example `text/markdown`, `text/html`, `text/asciidoc`
+  or `application/pdf`.
+- `content`: the page itself, inline. For a binary format (PDF, image, video), set
+  `remoteContentEnabled: true` and `remoteContentUrl` instead, with `remoteContentHeaders` when the
+  URL needs them.
+- `contentType: cms/page` shows the CMS page set in `cmsPage`, declared in the run or already in
+  Daikoku: `content` is then not needed.
+- A link to a Daikoku asset (`/api/teams/.../assets/...` or `/tenant-assets/...`) only works on the
+  Daikoku that stores the asset: host the file elsewhere to share a catalog between instances.
+- `lastModificationAt`: left out, it takes the time of the run, and the page counts as updated at
+  every run.
+- With `folderPerTeam`, a page under `teams/<team>/` must be used by an API or a plan of that team
+  declared in the run.
 
 ## Keyring
 
@@ -192,6 +234,11 @@ customName: Weather mobile app
 otoroshiSettings:
   type: Otoroshi
   id: otoroshi-prod
+apiKey:
+  clientName: weather-mobile-app
+  clientId: weather-mobile-app-client-id
+  clientSecret: weather-mobile-app-client-secret
+integrationToken: weather-mobile-app-integration-token
 enabled: true
 createdAt: 1759190400000
 rotation:
@@ -204,11 +251,14 @@ metadata:
 ```
 
 - A keyring holds one API key for its team, the consumer team. Its subscriptions share that key.
-- `otoroshiSettings`: the Otoroshi instance where the key is created.
-- No credentials in the file: Daikoku generates `apiKey` and `integrationToken` when it creates the
-  keyring, and keeps them.
-- `createdAt` and `rotation` are read when the keyring is created, then kept. `rotationEvery` and
-  `gracePeriod` are in hours.
+- `otoroshiSettings`: the Otoroshi instance that holds the key. With `type: Internal`, the key is
+  only known to Daikoku.
+- `apiKey`, `integrationToken` and `createdAt` are required and stored as written: Daikoku generates
+  nothing. With `type: Otoroshi`, the key must already exist in that instance with the same
+  `clientId` and `clientSecret`: Daikoku does not create it, and the synchronization of the keyring
+  fails until it exists. `bearerToken` is optional.
+- `rotation`: `rotationEvery` and `gracePeriod` are in hours.
+- These fields are credentials, and an export writes them: keep the catalog files somewhere safe.
 
 ## API subscription
 

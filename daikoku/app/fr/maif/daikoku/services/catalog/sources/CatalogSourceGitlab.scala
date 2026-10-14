@@ -1,12 +1,8 @@
 package fr.maif.daikoku.services.catalog.sources
 
-import fr.maif.daikoku.domain.RemoteCatalog
+import fr.maif.daikoku.domain.{RemoteCatalog, RemoteCatalogError}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{
-  CatalogSource,
-  RemoteCatalogError,
-  RemoteEntity
-}
+import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
 import play.api.Logger
 import play.api.libs.json._
 

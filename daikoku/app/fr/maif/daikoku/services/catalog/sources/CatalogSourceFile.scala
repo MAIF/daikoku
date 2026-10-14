@@ -1,12 +1,8 @@
 package fr.maif.daikoku.services.catalog.sources
 
-import fr.maif.daikoku.domain.RemoteCatalog
+import fr.maif.daikoku.domain.{RemoteCatalog, RemoteCatalogError}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{
-  CatalogSource,
-  RemoteCatalogError,
-  RemoteEntity
-}
+import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
 import play.api.libs.json._
 
 import java.io.File
@@ -122,47 +118,50 @@ class CatalogSourceFile extends CatalogSource {
     }
   }
 
+  override def disabledReason(
+      catalog: RemoteCatalog
+  )(implicit env: Env): Option[String] = {
+    val hasPreCommand =
+      (catalog.source.config \ "pre_command")
+        .asOpt[Seq[String]]
+        .exists(_.nonEmpty)
+
+    def disabled(what: String, variable: String) =
+      s"$what is disabled on this instance, an instance administrator can enable it with $variable=true"
+
+    if (!env.config.remoteCatalogAllowFileSource) {
+      Some(disabled("The file source", "DAIKOKU_REMOTE_CATALOG_ALLOW_FILE_SOURCE"))
+    } else if (hasPreCommand && !env.config.remoteCatalogAllowPreCommand) {
+      Some(disabled("pre_command", "DAIKOKU_REMOTE_CATALOG_ALLOW_PRE_COMMAND"))
+    } else {
+      None
+    }
+  }
+
   override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val path = (catalog.source.config \ "path").asOpt[String].getOrElse("")
     val file = new File(path)
-    val hasPreCommand =
-      (catalog.source.config \ "pre_command")
-        .asOpt[Seq[String]]
-        .exists(_.nonEmpty)
 
-    def disabled(what: String, key: String) =
-      Future.successful(
-        Left(
-          Seq(
-            RemoteCatalogError(
-              sourceKind,
-              s"$what is disabled on this instance (daikoku.remoteCatalogJob.$key)"
-            )
-          )
-        )
-      )
-
-    if (!env.config.remoteCatalogAllowFileSource) {
-      disabled("file source", "allowFileSource")
-    } else if (hasPreCommand && !env.config.remoteCatalogAllowPreCommand) {
-      disabled("pre_command", "allowPreCommand")
-    } else {
-      runPreCommand(catalog) match {
-        case Left(err) =>
-          Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
-        case Right(()) =>
-          if (file.isDirectory) {
-            val recursive = (catalog.source.config \ "recursive")
-              .asOpt[Boolean]
-              .getOrElse(false)
-            Future.successful(fetchDirectory(file, recursive))
-          } else {
-            fetchFile(file, path)
-          }
-      }
+    disabledReason(catalog) match {
+      case Some(reason) =>
+        Future.successful(Left(Seq(RemoteCatalogError(sourceKind, reason))))
+      case None =>
+        runPreCommand(catalog) match {
+          case Left(err) =>
+            Future.successful(Left(Seq(RemoteCatalogError(sourceKind, err))))
+          case Right(()) =>
+            if (file.isDirectory) {
+              val recursive = (catalog.source.config \ "recursive")
+                .asOpt[Boolean]
+                .getOrElse(false)
+              Future.successful(fetchDirectory(file, recursive))
+            } else {
+              fetchFile(file, path)
+            }
+        }
     }
   }
 }

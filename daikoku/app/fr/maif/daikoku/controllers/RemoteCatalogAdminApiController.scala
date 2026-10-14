@@ -14,7 +14,7 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.RemoteCatalogJob
 import fr.maif.daikoku.services.catalog.{
   CatalogFile,
-  DeployReport,
+  CatalogSources,
   ExportFormat,
   ExportSelection,
   RemoteCatalogEngine
@@ -87,6 +87,9 @@ class RemoteCatalogAdminApiController(
         (),
         AppError.EntityConflict(s"$entityName ${entity.id.value}")
       )
+      _ <- EitherT
+        .fromEither[Future](CatalogSources.disabledReason(entity).toLeft(()))
+        .leftMap[AppError](AppError.BadRequestError.apply)
     } yield entity
 
   override def getId(entity: RemoteCatalog): RemoteCatalogId = entity.id
@@ -145,7 +148,7 @@ class RemoteCatalogAdminApiController(
       withCatalog(ctx.tenant, id) { catalog =>
         auditAdminApiWrite(ctx, "test", id)
 
-        engine.dryRun(ctx.tenant, catalog).map(dryRunResult)
+        engine.dryRun(ctx.tenant, catalog).map(runResult)
       }
     }
 
@@ -161,7 +164,7 @@ class RemoteCatalogAdminApiController(
           case Left(error) =>
             Future.successful(BadRequest(Json.obj("error" -> error)))
           case Right(files) =>
-            engine.validate(ctx.tenant, catalog, files).map(dryRunResult)
+            engine.validate(ctx.tenant, catalog, files).map(runResult)
         }
       }
     }
@@ -186,13 +189,13 @@ class RemoteCatalogAdminApiController(
       case Some(catalog) => f(catalog)
     }
 
-  private def dryRunResult(run: RemoteCatalogRun): Result =
+  private def runResult(run: RemoteCatalogRun): Result =
     if (run.status == RemoteCatalogRunStatus.Failed) BadRequest(run.asJson)
     else Ok(run.asJson)
 
-  private def toResult(result: Either[JsValue, DeployReport]): Result =
+  private def toResult(result: Either[JsValue, RemoteCatalogRun]): Result =
     result match {
-      case Left(err)     => BadRequest(err)
-      case Right(report) => Ok(report.json)
+      case Left(err)  => BadRequest(err)
+      case Right(run) => runResult(run)
     }
 }

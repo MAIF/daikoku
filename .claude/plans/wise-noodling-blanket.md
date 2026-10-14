@@ -254,6 +254,44 @@ pas de trailer co-author. Légende : ⬜ à faire · 🔧 en cours · ✅ fait.
   sources différées (s3, consulkv, bitbucket, gitea / forgejo / codeberg, git), limites `maxFileSize` / `maxFiles`
   (robustesse mémoire si un gros fichier est commité par erreur).
 
+## Lot 7 — Validate fidèle au déploiement, une seule source de vérité (2026-10-14)
+
+Fait, 5 suites vertes (`RemoteCatalogSpec`, `RemoteCatalogControllerSpec`, `RemoteCatalogCascadeSpec`,
+`AdminApiControllerSpec`, `OpenApiContractSpec`) :
+
+- ✅ Doublons `(kind, id)` refusés en phase 2 (`checkDuplicateIds`).
+- ✅ Plans : `getPlanAndCheckIt` tourne au validate via `validateForReconcile(tenant, entity, existing, …)`, avec des
+  messages explicites au lieu de `ForbiddenAction` ; le passage en visibilité `Admin` est refusé au même endroit.
+- ✅ Phase 2 sans requête par entité : users en une requête (`readKnownUsers`, clé `"user"` de `finalIds`), noms d'API
+  en mémoire contre l'état final (`checkApiNames`, `parent` lu par `readExistingEntities`), `checkTeamFolders` sur
+  `databaseState("team")`.
+- ✅ Kind `api-documentation-page` (ordre : team, cms-page, api-documentation-page, usage-plan, api, keyring,
+  api-subscription) : `metadata` sur la page, page `cms/page` sans contenu, arbre des pages de l'API et du plan vérifié
+  (`checkDocumentationPages`), folderPerTeam résolu depuis le run, `title` comme nom, export des enfants en jsonpath.
+- ✅ Une seule source de vérité, le format décide : keyring lu par `KeyringFormat` seul (secrets et `createdAt`
+  requis, rien généré ni repris de la base) ; export = sortie du format, secrets compris, sans flag ; pages sans
+  `mergeWithExisting`.
+- ✅ Spec Otoroshi (`RemoteCatalogCascadeSpec`) : un keyring de catalogue dont la clé est inconnue d'Otoroshi est créé
+  avec sa souscription (run `completed`, aucune erreur) mais la clé n'est jamais créée, la synchro échoue en 404 dans
+  les logs seulement ; une clé existante voit ses autorisations remplacées par la route du plan. `JobInformation` remis
+  à zéro dans `before` (verrou laissé par les specs de lock de `RemoteCatalogSpec`).
+- ✅ Manuel (référence, fichiers, migration, index) et OpenAPI (`Keyring`, `ApiDocumentationPage`, résumés) alignés.
+
+Reste :
+
+- ⬜ Diff en dry-run : `changes` (diffson « remembering ») sur les entités `updated` de `_validate` / `_test`, calculé
+  seulement en dry-run et jamais persisté ; affichage dans `RunReport` ; doc et OpenAPI de la réponse.
+- ⬜ Export sans admin API ni CMS API (`ApiVisibility.AdminOnly`) : retirer aussi leurs plans (`UsagePlanVisibility.Admin`),
+  les souscriptions à ces API et les keyrings qui ne portent qu'elles ; la team admin reste. Export du tenant, enfants
+  d'une team, export d'une entité ; reprendre les 2 specs d'export qui exportent le keyring admin.
+- ⬜ OpenAPI : `_deploy` et `_undeploy` décrivent encore une réponse en comptes par kind, au lieu du run.
+- ⬜ Issue à ouvrir : erreurs de lecture JSON illisibles (`JsResultException(errors:List(…))`), 148 blocs
+  `recover { … JsError(e.getMessage) }` dans `json.scala`.
+- ⬜ À trancher : keyring de catalogue lié à Otoroshi dont la clé n'existe pas (création par la synchro, refus au
+  validate ou statu quo).
+- À noter : une page sans `lastModificationAt` prend la date du run et passe `updated` à chaque run (choix du format) ;
+  `updatePlan` lance aussi `checkCustomName` et `checkAuthorizedEntities`, qui ne sont pas rejoués au validate.
+
 ## Vérification
 
 - Par lot : `mise run test:back` (specs Scala) et `mise run test:front:ldap` (Playwright), plus `npm run lint` et

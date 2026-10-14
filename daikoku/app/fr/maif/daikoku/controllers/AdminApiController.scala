@@ -424,7 +424,9 @@ class TeamAdminApiController(
     validateWith(entity, ReadEntitiesFrom.inDatabase)
 
   override def validateForReconcile(
+      tenant: Tenant,
       entity: Team,
+      existing: Option[Team],
       updateOrCreate: UpdateOrCreate,
       finalIds: ReconcileFinalIds
   ): EitherT[Future, AppError, Team] =
@@ -445,10 +447,12 @@ class TeamAdminApiController(
       _ <-
         entity.users
           .map(u =>
-            EitherT.fromOptionF[Future, AppError, User](
-              env.dataStore.userRepo.findById(u.userId),
+            checkReference(
+              readFrom,
+              "user",
+              u.userId.value,
               AppError.ParsingPayloadError(s"User ${u.userId.value} not found")
-            )
+            )(env.dataStore.userRepo.findById(u.userId))
           )
           .toList
           .sequence
@@ -526,18 +530,22 @@ class ApiAdminApiController(
       entity: Api,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, Api] =
-    validateWith(entity, updateOrCreate, ReadEntitiesFrom.inDatabase)
+    for {
+      validated <- validateWith(entity, ReadEntitiesFrom.inDatabase)
+      _ <- checkName(validated, updateOrCreate)
+    } yield validated
 
   override def validateForReconcile(
+      tenant: Tenant,
       entity: Api,
+      existing: Option[Api],
       updateOrCreate: UpdateOrCreate,
       finalIds: ReconcileFinalIds
   ): EitherT[Future, AppError, Api] =
-    validateWith(entity, updateOrCreate, finalIds)
+    validateWith(entity, finalIds)
 
   private def validateWith(
       entity: Api,
-      updateOrCreate: UpdateOrCreate,
       readFrom: ReadEntitiesFrom
   ): EitherT[Future, AppError, Api] = {
     import cats.implicits.*
@@ -579,61 +587,11 @@ class ApiAdminApiController(
         entity.team.value,
         AppError.ParsingPayloadError("Team not found")
       )(env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team))
-      _ <- updateOrCreate match {
-        case UpdateOrCreate.Update =>
-          EitherT(
-            env.dataStore.apiRepo
-              .findAnotherWithName(
-                entity.tenant,
-                entity.id,
-                entity.name,
-                entity.parent
-              )
-              .map {
-                case Some(api)
-                    if entity.parent.contains(api.id) || api.parent
-                      .contains(entity.id) =>
-                  Right(())
-                case Some(_) =>
-                  Left(AppError.ParsingPayloadError("Api name already exists"))
-                case None => Right(())
-              }
-          )
-        case UpdateOrCreate.Create =>
-          EitherT(
-            env.dataStore.apiRepo
-              .findAnotherWithName(
-                entity.tenant,
-                entity.id,
-                entity.name,
-                entity.parent
-              )
-              .map {
-                case None =>
-                  Right(())
-                // case Some(api) if entity.parent == api.parent => Right(())
-                case Some(api) if entity.parent.contains(api.id) =>
-                  Right(())
-                case Some(_) =>
-                  Left(AppError.ParsingPayloadError("Api name already exists"))
-              }
-          )
-      }
-      _ <-
-        entity.documentation.pages
-          .map(_.id)
-          .map(pageId =>
-            EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](
-              env.dataStore.apiDocumentationPageRepo
-                .forTenant(entity.tenant)
-                .findById(pageId),
-              AppError.ParsingPayloadError(
-                s"Documentation page (${pageId.value}) not found"
-              )
-            )
-          )
-          .toList
-          .sequence
+      _ <- checkDocumentationPages(
+        readFrom,
+        entity.tenant,
+        Some(entity.documentation)
+      )
       _ <- entity.parent match {
         case Some(api) =>
           checkReference(
@@ -663,6 +621,51 @@ class ApiAdminApiController(
       }
     } yield entity
   }
+
+  private def checkName(
+      entity: Api,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Unit] =
+    updateOrCreate match {
+      case UpdateOrCreate.Update =>
+        EitherT(
+          env.dataStore.apiRepo
+            .findAnotherWithName(
+              entity.tenant,
+              entity.id,
+              entity.name,
+              entity.parent
+            )
+            .map {
+              case Some(api)
+                  if entity.parent.contains(api.id) || api.parent
+                    .contains(entity.id) =>
+                Right(())
+              case Some(_) =>
+                Left(AppError.ParsingPayloadError("Api name already exists"))
+              case None => Right(())
+            }
+        )
+      case UpdateOrCreate.Create =>
+        EitherT(
+          env.dataStore.apiRepo
+            .findAnotherWithName(
+              entity.tenant,
+              entity.id,
+              entity.name,
+              entity.parent
+            )
+            .map {
+              case None =>
+                Right(())
+              // case Some(api) if entity.parent == api.parent => Right(())
+              case Some(api) if entity.parent.contains(api.id) =>
+                Right(())
+              case Some(_) =>
+                Left(AppError.ParsingPayloadError("Api name already exists"))
+            }
+        )
+    }
 
   override def getId(entity: Api): ApiId = entity.id
 
@@ -736,7 +739,9 @@ class ApiSubscriptionAdminApiController(
     validateWith(entity, updateOrCreate, ReadEntitiesFrom.inDatabase)
 
   override def validateForReconcile(
+      tenant: Tenant,
       entity: ApiSubscription,
+      existing: Option[ApiSubscription],
       updateOrCreate: UpdateOrCreate,
       finalIds: ReconcileFinalIds
   ): EitherT[Future, AppError, ApiSubscription] =
@@ -771,10 +776,12 @@ class ApiSubscriptionAdminApiController(
         entity.team.value,
         AppError.ParsingPayloadError("Team not found")
       )(env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team))
-      _ <- EitherT.fromOptionF[Future, AppError, User](
-        env.dataStore.userRepo.findById(entity.by),
+      _ <- checkReference(
+        readFrom,
+        "user",
+        entity.by.value,
         AppError.ParsingPayloadError("By not found")
-      )
+      )(env.dataStore.userRepo.findById(entity.by))
       _ <- checkReference(
         readFrom,
         "keyring",
@@ -897,6 +904,9 @@ class ApiDocumentationPageAdminApiController(
     ) {
   override def entityClass = classOf[ApiDocumentationPage]
   override def entityName: String = "api-documentation-page"
+
+  override def readMetadata(e: ApiDocumentationPage): Map[String, String] =
+    e.metadata
   override def pathRoot: String = s"/admin-api/pages"
   override def entityStore(
       tenant: Tenant,
@@ -914,18 +924,36 @@ class ApiDocumentationPageAdminApiController(
       entity: ApiDocumentationPage,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiDocumentationPage] =
+    validateWith(entity, ReadEntitiesFrom.inDatabase)
+
+  override def validateForReconcile(
+      tenant: Tenant,
+      entity: ApiDocumentationPage,
+      existing: Option[ApiDocumentationPage],
+      updateOrCreate: UpdateOrCreate,
+      finalIds: ReconcileFinalIds
+  ): EitherT[Future, AppError, ApiDocumentationPage] =
+    validateWith(entity, finalIds)
+
+  private def validateWith(
+      entity: ApiDocumentationPage,
+      readFrom: ReadEntitiesFrom
+  ): EitherT[Future, AppError, ApiDocumentationPage] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](
-        env.dataStore.tenantRepo.findById(entity.tenant),
+      _ <- checkReference(
+        readFrom,
+        "tenant",
+        entity.tenant.value,
         AppError.ParsingPayloadError("Tenant not found")
-      )
+      )(env.dataStore.tenantRepo.findById(entity.tenant))
       _ <- EitherT.cond[Future][AppError, Unit](
         entity.title.trim.nonEmpty,
         (),
         AppError.ParsingPayloadError("Documentation page title is empty")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
-        entity.remoteContentEnabled || entity.content.trim.nonEmpty,
+        entity.remoteContentEnabled || entity.content.trim.nonEmpty ||
+          entity.contentType == "cms/page",
         (),
         AppError.ParsingPayloadError("Documentation page content is empty")
       )
@@ -934,7 +962,28 @@ class ApiDocumentationPageAdminApiController(
         (),
         AppError.ParsingPayloadError("Documentation page contentType is empty")
       )
+      _ <- checkCmsPage(entity, readFrom)
     } yield entity
+
+  private def checkCmsPage(
+      entity: ApiDocumentationPage,
+      readFrom: ReadEntitiesFrom
+  ): EitherT[Future, AppError, Unit] =
+    (entity.contentType, entity.cmsPage) match {
+      case ("cms/page", Some(cmsPage)) =>
+        checkReference(
+          readFrom,
+          "cms-page",
+          cmsPage,
+          AppError.ParsingPayloadError(s"Cms page ($cmsPage) not found")
+        )(env.dataStore.cmsRepo.forTenant(entity.tenant).findById(cmsPage))
+      case ("cms/page", None) =>
+        EitherT.leftT(
+          AppError.ParsingPayloadError("Documentation page cmsPage is empty")
+        )
+      case _ =>
+        EitherT.pure(())
+    }
 
   override def getId(entity: ApiDocumentationPage): ApiDocumentationPageId =
     entity.id
@@ -1268,7 +1317,9 @@ class CmsPagesAdminApiController(
     validateWith(entity, ReadEntitiesFrom.inDatabase)
 
   override def validateForReconcile(
+      tenant: Tenant,
       entity: CmsPage,
+      existing: Option[CmsPage],
       updateOrCreate: UpdateOrCreate,
       finalIds: ReconcileFinalIds
   ): EitherT[Future, AppError, CmsPage] =
@@ -1380,6 +1431,32 @@ class UsagePlansAdminApiController(
         env.dataStore.tenantRepo.findById(entity.tenant),
         AppError.ParsingPayloadError("Tenant not found")
       )
+      validated <- validateWith(tenant, entity, ReadEntitiesFrom.inDatabase)
+    } yield validated
+
+  override def validateForReconcile(
+      tenant: Tenant,
+      entity: UsagePlan,
+      existing: Option[UsagePlan],
+      updateOrCreate: UpdateOrCreate,
+      finalIds: ReconcileFinalIds
+  ): EitherT[Future, AppError, UsagePlan] =
+    for {
+      validated <- validateWith(tenant, entity, finalIds)
+      _ <- existing match {
+        case Some(oldPlan) =>
+          usagePlanService.getPlanAndCheckIt(tenant, oldPlan, validated)
+        case None =>
+          EitherT.pure[Future, AppError](validated)
+      }
+    } yield validated
+
+  private def validateWith(
+      tenant: Tenant,
+      entity: UsagePlan,
+      readFrom: ReadEntitiesFrom
+  ): EitherT[Future, AppError, UsagePlan] =
+    for {
       _ <- entity.otoroshiTarget match {
         case Some(target) =>
           EitherT.cond[Future][AppError, Unit](
@@ -1400,6 +1477,8 @@ class UsagePlansAdminApiController(
           )
         case None => EitherT.pure[Future, AppError](())
       }
+      _ <- entity.checkEnvironment(tenant)
+      _ <- checkDocumentationPages(readFrom, entity.tenant, entity.documentation)
     } yield entity
 
   override def getId(entity: UsagePlan): UsagePlanId = entity.id

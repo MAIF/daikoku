@@ -1,11 +1,19 @@
 package fr.maif.daikoku.utils
 
 import cats.data.EitherT
+import cats.implicits.*
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.domain.{TeamType, Tenant, User, ValueType}
+import fr.maif.daikoku.domain.{
+  ApiDocumentation,
+  TeamType,
+  Tenant,
+  TenantId,
+  User,
+  ValueType
+}
 import fr.maif.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.daikoku.login.TenantHelper
 import fr.maif.daikoku.utils.Errors
@@ -215,8 +223,14 @@ case class PreparedWrite(
     write: () => EitherT[Future, AppError, Unit]
 )
 
-// entityId -> created_by, e.g. Map("plan-free" -> Some("remote_catalog=cat-git"), "plan-manual" -> None)
-type ExistingEntities = Map[String, Option[String]]
+case class ExistingEntity(
+    createdBy: Option[String],
+    name: Option[String],
+    parent: Option[String]
+)
+
+// entityId -> created_by, name and parent, e.g. Map("plan-free" -> ExistingEntity(Some("remote_catalog=cat-git"), Some("Free"), None))
+type ExistingEntities = Map[String, ExistingEntity]
 abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
@@ -241,7 +255,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
   ): EitherT[Future, AppError, Of]
 
   def validateForReconcile(
+      tenant: Tenant,
       entity: Of,
+      existing: Option[Of],
       updateOrCreate: UpdateOrCreate,
       finalIds: ReconcileFinalIds
   ): EitherT[Future, AppError, Of] =
@@ -258,6 +274,32 @@ abstract class AdminApiController[Of, Id <: ValueType](
         .exists(kind, id)(inDb)
         .map(found => Either.cond(found, (), error))
     )
+
+  // every page of the tree, children included, e.g. page-1 > (page-1-1, page-1-2)
+  protected def checkDocumentationPages(
+      readFrom: ReadEntitiesFrom,
+      tenant: TenantId,
+      documentation: Option[ApiDocumentation]
+  ): EitherT[Future, AppError, Unit] = {
+    val pageIds = documentation.toSeq.flatMap(_.docIds())
+
+    pageIds
+      .map(pageId =>
+        checkReference(
+          readFrom,
+          "api-documentation-page",
+          pageId,
+          AppError.ParsingPayloadError(s"Documentation page ($pageId) not found")
+        )(
+          env.dataStore.apiDocumentationPageRepo
+            .forTenant(tenant)
+            .findById(pageId)
+        )
+      )
+      .toList
+      .sequence
+      .map(_ => ())
+  }
 
   def getId(entity: Of): Id
 
@@ -370,7 +412,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         Left(s"$id already exists and is not managed by this catalog")
       )
     } else {
-      validateForReconcile(entity, mode, finalIds).value.map {
+      validateForReconcile(tenant, entity, existing, mode, finalIds).value.map {
         case Left(error) => Left(error.getErrorMessage())
         case Right(validated) =>
           existing match {
@@ -425,20 +467,33 @@ abstract class AdminApiController[Of, Id <: ValueType](
       .findByIds(ids)
       .map(_.map(entity => getId(entity).value -> entity).toMap)
 
-  // reads the id and the ownership mark only, never the whole entity
+  // reads the id, the ownership mark, the name and the parent only, never the whole entity
   def readExistingEntities(tenant: Tenant): Future[ExistingEntities] = {
     val table = entityStore(tenant, env.dataStore).tableName
 
     env.dataStore
       .asInstanceOf[PostgresDataStore]
       .queryRawMapped(
-        "SELECT _id, content->'metadata'->>'created_by' AS created_by " +
+        "SELECT _id, content->'metadata'->>'created_by' AS created_by, " +
+          "COALESCE(content->>'name', content->>'customName', content->>'title') AS name, " +
+          "content->>'parent' AS parent " +
           s"FROM $table WHERE content->>'_tenant' = $$1",
-        Seq(Col.str("_id"), Col.str("created_by")),
+        Seq(
+          Col.str("_id"),
+          Col.str("created_by"),
+          Col.str("name"),
+          Col.str("parent")
+        ),
         Seq(tenant.id.value)
       )
       .map(_.map { row =>
-        (row \ "_id").as[String] -> (row \ "created_by").asOpt[String]
+        val existing = ExistingEntity(
+          createdBy = (row \ "created_by").asOpt[String],
+          name = (row \ "name").asOpt[String],
+          parent = (row \ "parent").asOpt[String]
+        )
+
+        (row \ "_id").as[String] -> existing
       }.toMap)
   }
 

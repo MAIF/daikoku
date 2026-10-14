@@ -1,5 +1,6 @@
 package fr.maif.daikoku.services.catalog
 
+import fr.maif.daikoku.domain.{RemoteCatalogError, RemoteCatalogRunEntity}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.sources.SourceUtils
 import fr.maif.daikoku.utils.Yaml
@@ -14,25 +15,6 @@ import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try, Using}
-
-case class RemoteCatalogError(source: String, message: String) {
-  def json: JsValue = Json.obj("source" -> source, "message" -> message)
-}
-
-object RemoteCatalogError {
-
-  def collect[A](
-      results: Seq[Either[Seq[RemoteCatalogError], Seq[A]]]
-  ): Either[Seq[RemoteCatalogError], Seq[A]] = {
-    val errors = results.collect { case Left(errs) => errs }.flatten
-
-    if (errors.nonEmpty) {
-      Left(errors)
-    } else {
-      Right(results.collect { case Right(values) => values }.flatten)
-    }
-  }
-}
 
 case class CatalogFile(path: String, content: String)
 
@@ -137,7 +119,16 @@ case class RemoteEntity(
     syncAt: DateTime,
     content: JsObject,
     path: String = ""
-)
+) {
+  def runEntity: RemoteCatalogRunEntity = {
+    val name = (content \ "name")
+      .asOpt[String]
+      .orElse((content \ "customName").asOpt[String])
+      .orElse((content \ "title").asOpt[String])
+
+    RemoteCatalogRunEntity(kind, id, name)
+  }
+}
 
 object RemoteEntity {
 

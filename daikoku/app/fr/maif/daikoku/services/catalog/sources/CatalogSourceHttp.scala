@@ -1,24 +1,27 @@
 package fr.maif.daikoku.services.catalog.sources
 
-import fr.maif.daikoku.domain.RemoteCatalog
+import fr.maif.daikoku.domain.{RemoteCatalog, RemoteCatalogError}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{
-  CatalogSource,
-  RemoteCatalogError,
-  RemoteEntity
-}
+import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
 import play.api.Logger
 import play.api.libs.json._
 
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class CatalogSourceHttp extends CatalogSource {
 
   private val logger = Logger("daikoku-remote-catalog-source-http")
 
   override def sourceKind: String = "http"
+
+  private def isHttpUrl(url: String): Boolean =
+    Try(new URI(url)).toOption
+      .flatMap(uri => Option(uri.getScheme))
+      .exists(scheme => scheme == "http" || scheme == "https")
 
   override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
@@ -33,8 +36,15 @@ class CatalogSourceHttp extends CatalogSource {
     val sourceName = s"http://$url"
 
     val blocked =
-      if (url.isEmpty) Some(RemoteCatalogError(sourceKind, "No URL configured"))
-      else SourceUtils.checkHostAllowed(url, sourceName, env)
+      if (url.isEmpty) {
+        Some(RemoteCatalogError(sourceKind, "No URL configured"))
+      } else if (!isHttpUrl(url)) {
+        Some(
+          RemoteCatalogError(sourceKind, s"'$url' is not an http or https URL")
+        )
+      } else {
+        SourceUtils.checkHostAllowed(url, sourceName, env)
+      }
 
     blocked match {
       case Some(error) => Future.successful(Left(Seq(error)))

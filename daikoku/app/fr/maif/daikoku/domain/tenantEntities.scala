@@ -568,16 +568,6 @@ case class SendgridSettings(
   }
 }
 
-// case class IdentitySettings(
-//   identityThroughOtoroshi: Boolean,
-//   stateHeaderName: String = "Otoroshi-State",
-//   stateRespHeaderName: String = "Otoroshi-State-Resp",
-//   claimHeaderName: String = "Otoroshi-Claim",
-//   claimSecret: String = "secret",
-// ) extends CanJson[OtoroshiSettings] {
-//   def asJson: JsValue = json.IdentitySettingsFormat.writes(this)
-// }
-
 case class OtoroshiSettings(
     id: OtoroshiSettingsId,
     url: String,
@@ -702,17 +692,40 @@ object RemoteCatalogRunStatus {
     RemoteCatalogRunStatus.values.find(_.value == v)
 }
 
+case class RemoteCatalogRunEntity(kind: String, id: String, name: Option[String])
+
+case class RemoteCatalogError(
+    source: String,
+    message: String,
+    entity: Option[RemoteCatalogRunEntity] = None
+)
+
+object RemoteCatalogError {
+
+  def collect[A](
+      results: Seq[Either[Seq[RemoteCatalogError], Seq[A]]]
+  ): Either[Seq[RemoteCatalogError], Seq[A]] = {
+    val errors = results.collect { case Left(errs) => errs }.flatten
+
+    if (errors.nonEmpty) {
+      Left(errors)
+    } else {
+      Right(results.collect { case Right(values) => values }.flatten)
+    }
+  }
+}
+
 case class RemoteCatalogRun(
     id: DatastoreId,
     tenant: TenantId,
     catalog: RemoteCatalogId,
     at: DateTime,
     status: RemoteCatalogRunStatus,
-    created: Seq[String],
-    updated: Seq[String],
-    deleted: Seq[String],
-    detached: Seq[String] = Seq.empty,
-    errors: Seq[String]
+    created: Seq[RemoteCatalogRunEntity],
+    updated: Seq[RemoteCatalogRunEntity],
+    deleted: Seq[RemoteCatalogRunEntity],
+    detached: Seq[RemoteCatalogRunEntity],
+    errors: Seq[RemoteCatalogError]
 ) extends CanJson[RemoteCatalogRun] {
   def asJson: JsValue = json.RemoteCatalogRunFormat.writes(this)
 }

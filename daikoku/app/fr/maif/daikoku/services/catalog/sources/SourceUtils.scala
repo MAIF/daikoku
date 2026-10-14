@@ -1,11 +1,8 @@
 package fr.maif.daikoku.services.catalog.sources
 
+import fr.maif.daikoku.domain.RemoteCatalogError
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.catalog.{
-  RemoteCatalogError,
-  RemoteContentParser,
-  RemoteEntity
-}
+import fr.maif.daikoku.services.catalog.{RemoteContentParser, RemoteEntity}
 import fr.maif.daikoku.utils.Yaml
 import play.api.libs.json._
 
@@ -141,7 +138,7 @@ object SourceUtils {
         Some(
           RemoteCatalogError(
             sourceName,
-            s"Host '$h' is not allowed on this instance (daikoku.remoteCatalogJob.allowedHosts)"
+            s"Host '$h' is not allowed on this instance (allowed hosts: ${allowedHosts.mkString(", ")})"
           )
         )
     }

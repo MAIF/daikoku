@@ -12,7 +12,7 @@ import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.libs.ws.WSBodyReadables._
 import play.api.libs.ws.WSResponse
 
@@ -75,14 +75,25 @@ class RemoteCatalogSpec
     p.asJson.as[JsObject] ++ Json.obj("kind" -> "cms-page")
 
   // what a user writes in a catalog: no secret, Daikoku generates them
-  private def keyringDoc(id: String, name: String): JsObject =
+  private def keyringDoc(
+      id: String,
+      name: String,
+      clientSecret: String = "secret-1"
+  ): JsObject =
     Json.obj(
       "kind" -> "keyring",
       "_id" -> id,
       "_tenant" -> tenant.id.value,
       "team" -> defaultAdminTeam.id.value,
       "customName" -> name,
-      "otoroshiSettings" -> Json.obj("type" -> "Internal")
+      "otoroshiSettings" -> Json.obj("type" -> "Internal"),
+      "apiKey" -> Json.obj(
+        "clientName" -> s"$id-client",
+        "clientId" -> s"$id-client-id",
+        "clientSecret" -> clientSecret
+      ),
+      "integrationToken" -> s"$id-token",
+      "createdAt" -> 1760000000000L
     )
 
   private val catalogTag = Map("created_by" -> "remote_catalog=cat-file")
@@ -323,13 +334,22 @@ class RemoteCatalogSpec
       .as[Seq[JsObject]]
       .map(e => (e \ "message").as[String])
 
-  private def kindResult(resp: WSResponse, kind: String): JsObject =
-    (resp.json \ "results")
-      .as[JsArray]
-      .value
-      .map(_.as[JsObject])
-      .find(r => (r \ "kind").as[String] == kind)
-      .get
+  private def kindResult(resp: WSResponse, kind: String): JsObject = {
+    def countOf(action: String): Int =
+      (resp.json \ action)
+        .as[Seq[JsObject]]
+        .count(entity => (entity \ "kind").as[String] == kind)
+
+    Json.obj(
+      "created" -> countOf("created"),
+      "updated" -> countOf("updated"),
+      "deleted" -> countOf("deleted"),
+      "detached" -> countOf("detached")
+    )
+  }
+
+  private def idsOf(run: JsValue, action: String): Seq[String] =
+    (run \ action).as[Seq[JsObject]].map(entity => (entity \ "id").as[String])
 
   // RemoteContentParser coverage lives in the pure unit spec
   // fr.maif.daikoku.services.catalog.RemoteContentParserSpec (no DB needed).
@@ -586,7 +606,7 @@ class RemoteCatalogSpec
 
       val test = deployCall("cat-file", "_test")
       test.status mustBe 200
-      (test.json \ "created").as[Seq[String]] must contain allOf (
+      idsOf(test.json, "created") must contain allOf (
         plan.id.value,
         api.id.value
       )
@@ -713,12 +733,74 @@ class RemoteCatalogSpec
       val deploy = deployCall("cat-file", "_deploy")
       deploy.status mustBe 400
       errorMessages(deploy) mustBe Seq(
-        "team team-no-tenant: missing required field '_tenant'",
-        s"team team-other: _tenant 'another-tenant' is not the catalog tenant '${tenant.id.value}'"
+        "Missing required field '_tenant'",
+        s"_tenant 'another-tenant' is not the catalog tenant '${tenant.id.value}'"
       )
+
+      val erroredIds = (deploy.json \ "errors")
+        .as[Seq[JsObject]]
+        .map(error => (error \ "entity" \ "id").as[String])
+
+      erroredIds mustBe Seq("team-no-tenant", "team-other")
 
       getTeam("team-no-tenant").status mustBe 404
       getTeam("team-other").status mustBe 404
+    }
+
+    "reject a new usage plan whose name is not an environment of the tenant, and apply nothing" in {
+      val devPlan = defaultApi.plans.head.copy(
+        id = UsagePlanId("plan-dev"),
+        customName = envModeDev
+      )
+      val stagingPlan = defaultApi.plans.head.copy(
+        id = UsagePlanId("plan-staging"),
+        customName = "staging"
+      )
+      val path = writeFile(
+        Json.stringify(JsArray(Seq(planDoc(devPlan), planDoc(stagingPlan))))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenantEnvMode),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+      errorMessages(deploy) mustBe Seq("Conflict with Plan custom name")
+
+      val erroredIds = (deploy.json \ "errors")
+        .as[Seq[JsObject]]
+        .map(error => (error \ "entity" \ "id").as[String])
+
+      erroredIds mustBe Seq(stagingPlan.id.value)
+
+      getPlan(devPlan.id.value).status mustBe 404
+      getPlan(stagingPlan.id.value).status mustBe 404
+    }
+
+    "reject in dry-run a usage plan renamed to a name that is not an environment of the tenant" in {
+      val plan = defaultApi.plans.head.copy(
+        id = UsagePlanId("plan-dev"),
+        customName = envModeDev,
+        metadata = catalogTag
+      )
+      val path =
+        writeFile(Json.stringify(planDoc(plan.copy(customName = "staging"))))
+      setupEnvBlocking(
+        tenants = Seq(tenantEnvMode),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        usagePlans = Seq(plan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val test = deployCall("cat-file", "_test")
+      test.status mustBe 400
+      errorMessages(test) mustBe Seq("Conflict with Plan custom name")
     }
 
     "keep the document metadata next to created_by" in {
@@ -821,9 +903,43 @@ class RemoteCatalogSpec
       val deploy = deployCall("cat-file", "_deploy")
       deploy.status mustBe 400
       errorMessages(deploy) mustBe Seq(
-        "pre_command is disabled on this instance (daikoku.remoteCatalogJob.allowPreCommand)"
+        "pre_command is disabled on this instance, an instance administrator can enable it with DAIKOKU_REMOTE_CATALOG_ALLOW_PRE_COMMAND=true"
       )
       getTeam("team-weather").status mustBe 404
+    }
+
+    "refuse to save a catalog whose pre_command the instance does not allow" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      val withPreCommand = fileCatalog("cat-file", path).copy(source =
+        RemoteCatalogSource(
+          kind = "file",
+          config =
+            Json.obj("path" -> path, "pre_command" -> Json.arr("echo", "hi"))
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = "/admin-api/remote-catalogs",
+        method = "POST",
+        headers = getAdminApiHeader(adminApiKeyring),
+        body = withPreCommand.asJson.some
+      )(using tenant)
+
+      resp.status mustBe 400
+      (resp.json \ "error").as[String] mustBe
+        "pre_command is disabled on this instance, an instance administrator can enable it with DAIKOKU_REMOTE_CATALOG_ALLOW_PRE_COMMAND=true"
+      httpJsonCallWithoutSessionBlocking(
+        path = "/admin-api/remote-catalogs/cat-file",
+        method = "GET",
+        headers = getAdminApiHeader(adminApiKeyring)
+      )(using tenant).status mustBe 404
     }
 
     "delete the managed entities of a kind removed entirely from the source" in {
@@ -879,7 +995,7 @@ class RemoteCatalogSpec
       getTeam("team-a").status mustBe 200
     }
 
-    "create a keyring with secrets generated by Daikoku" in {
+    "create a keyring with the secrets of the catalog" in {
       val path = writeFile(
         Json.stringify(keyringDoc("keyring-cat", "From the catalog"))
       )
@@ -896,13 +1012,36 @@ class RemoteCatalogSpec
       (kindResult(deploy, "keyring") \ "created").as[Int] mustBe 1
 
       val keyring = getKeyring("keyring-cat").json
-      (keyring \ "apiKey" \ "clientSecret").as[String] must not be empty
-      (keyring \ "integrationToken").as[String] must not be empty
+      (keyring \ "apiKey" \ "clientSecret").as[String] mustBe "secret-1"
+      (keyring \ "integrationToken").as[String] mustBe "keyring-cat-token"
       (keyring \ "metadata" \ "created_by")
         .as[String] mustBe "remote_catalog=cat-file"
     }
 
-    "keep the keyring secrets when the catalog updates it" in {
+    "refuse a keyring without its secrets" in {
+      val keyring =
+        keyringDoc("keyring-cat", "No secrets") - "apiKey" - "integrationToken"
+      val path = writeFile(Json.stringify(keyring))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 400
+
+      val messages = (deploy.json \ "errors")
+        .as[Seq[JsObject]]
+        .map(error => (error \ "message").as[String])
+
+      messages.mkString must include("'apiKey' is undefined")
+      getKeyring("keyring-cat").status mustBe 404
+    }
+
+    "replace the keyring secrets with those of the catalog" in {
       val path = writeFile(Json.stringify(keyringDoc("keyring-cat", "Before")))
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -913,16 +1052,17 @@ class RemoteCatalogSpec
       )
 
       deployCall("cat-file", "_deploy").status mustBe 200
-      val secret =
-        (getKeyring("keyring-cat").json \ "apiKey" \ "clientSecret").as[String]
 
-      rewriteFile(path, Json.stringify(keyringDoc("keyring-cat", "After")))
+      val rotated =
+        keyringDoc("keyring-cat", "After", clientSecret = "secret-2")
+
+      rewriteFile(path, Json.stringify(rotated))
 
       (kindResult(deployCall("cat-file", "_deploy"), "keyring") \ "updated")
         .as[Int] mustBe 1
       val keyring = getKeyring("keyring-cat").json
       (keyring \ "customName").as[String] mustBe "After"
-      (keyring \ "apiKey" \ "clientSecret").as[String] mustBe secret
+      (keyring \ "apiKey" \ "clientSecret").as[String] mustBe "secret-2"
     }
 
     "resolve a keyring created by the same run, in dry-run" in {
@@ -957,7 +1097,7 @@ class RemoteCatalogSpec
 
       val test = deployCall("cat-file", "_test")
       test.status mustBe 200
-      (test.json \ "created").as[Seq[String]] must contain allOf (
+      idsOf(test.json, "created") must contain allOf (
         "keyring-cat",
         "sub-catalog"
       )
@@ -977,7 +1117,7 @@ class RemoteCatalogSpec
 
       val test = deployCall("cat-file", "_test")
       test.status mustBe 200
-      (test.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      idsOf(test.json, "created") mustBe Seq("team-weather")
       getTeam("team-weather").status mustBe 404
     }
 
@@ -1105,8 +1245,9 @@ class RemoteCatalogSpec
         s"keyring/${adminApiKeyring.id.value}.yaml",
         s"api-subscription/${adminApiSubscription.id.value}.yaml"
       )
-      files(s"keyring/${adminApiKeyring.id.value}.yaml") must not include
+      files(s"keyring/${adminApiKeyring.id.value}.yaml") must include(
         adminApiKeyring.apiKey.clientSecret
+      )
 
       val validated = validateFiles("cat-file", files)
       withClue(validated.body) {
@@ -1212,7 +1353,7 @@ class RemoteCatalogSpec
       }
     }
 
-    "export a keyring with its subscriptions in one YAML file, without its secrets" in {
+    "export a keyring with its subscriptions in one YAML file, with its secrets" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin),
@@ -1233,8 +1374,8 @@ class RemoteCatalogSpec
         "keyring" -> adminApiKeyring.id.value,
         "api-subscription" -> adminApiSubscription.id.value
       )
-      resp.body[String] must not include adminApiKeyring.apiKey.clientSecret
-      resp.body[String] must not include adminApiKeyring.integrationToken
+      resp.body[String] must include(adminApiKeyring.apiKey.clientSecret)
+      resp.body[String] must include(adminApiKeyring.integrationToken)
     }
 
     "export the 2000 subscriptions of an api" in {
@@ -1276,7 +1417,7 @@ class RemoteCatalogSpec
       val resp = loadCall(session, files, dryRun = true)
 
       resp.status mustBe 200
-      (resp.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      idsOf(resp.json, "created") mustBe Seq("team-weather")
       loadTeam("team-weather") mustBe None
     }
 
@@ -1367,7 +1508,7 @@ class RemoteCatalogSpec
   }
 
   "Remote catalog run history" should {
-    "record a completed run with the created ids" in {
+    "record a completed run with the kind, id and name of each created entity" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
       setupEnvBlocking(
@@ -1385,8 +1526,32 @@ class RemoteCatalogSpec
       val runs = historyCall(session, "cat-file").json.as[Seq[JsObject]]
       runs.size mustBe 1
       (runs.head \ "status").as[String] mustBe "completed"
-      (runs.head \ "created").as[Seq[String]] mustBe Seq("team-weather")
-      (runs.head \ "errors").as[Seq[String]] mustBe empty
+      (runs.head \ "created").as[Seq[JsObject]] mustBe Seq(
+        Json.obj("kind" -> "team", "id" -> "team-weather", "name" -> "Weather")
+      )
+      (runs.head \ "errors").as[Seq[JsObject]] mustBe empty
+    }
+
+    "name a deleted entity from the database" in {
+      val path =
+        writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(
+          defaultAdminTeam,
+          aTeam("team-gone", "Gone").copy(metadata = catalogTag)
+        ),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path))
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+
+      deploy.status mustBe 200
+      (deploy.json \ "deleted").as[Seq[JsObject]] mustBe Seq(
+        Json.obj("kind" -> "team", "id" -> "team-gone", "name" -> "Gone")
+      )
     }
 
     "record a failed run with the file and the message of the error" in {
@@ -1407,11 +1572,14 @@ class RemoteCatalogSpec
       val runs = historyCall(session, "cat-file").json.as[Seq[JsObject]]
       runs.size mustBe 1
       (runs.head \ "status").as[String] mustBe "failed"
-      (runs.head \ "created").as[Seq[String]] mustBe empty
-      val errors = (runs.head \ "errors").as[Seq[String]]
+      idsOf(runs.head, "created") mustBe empty
+
+      val errors = (runs.head \ "errors").as[Seq[JsObject]]
+
       errors.size mustBe 1
-      errors.head must include(path)
-      errors.head must include("Missing required field '_id'")
+      (errors.head \ "source").as[String] must include(path)
+      (errors.head \ "message").as[String] mustBe "Missing required field '_id'"
+      (errors.head \ "entity").as[JsValue] mustBe JsNull
     }
 
     "keep only the 20 most recent runs, newest first" in {

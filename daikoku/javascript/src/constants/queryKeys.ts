@@ -3,6 +3,7 @@ export const QUERY_KEYS = {
   plansByApi: () => ['apiPricing', 'plans'] as const,
   apiSubscriptions: (apiId: string, teamId: string) => ['api-subscription', apiId, teamId],
   remoteCatalogs: (tenantId: string) => ['remote-catalogs', tenantId],
+  remoteCatalogSettings: (tenantId: string) => ['remote-catalog-settings', tenantId],
   remoteCatalogHistory: (tenantId: string, catalogId: string) => [
     'remote-catalog-history',
     tenantId,

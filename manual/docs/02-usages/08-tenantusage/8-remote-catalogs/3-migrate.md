@@ -12,10 +12,12 @@ A tenant built by hand can be moved under a catalog without recreating anything.
    keyring/keyring-weather.yaml
    api-subscription/subscription-weather.yaml
    cms-page/page-weather-home.yaml
+   api-documentation-page/page-weather-start.yaml
    ```
 
    By default only the entities managed by no catalog are exported; tick the option to export
-   everything. Keyring credentials are never exported. The same export is available on the admin API:
+   everything. The files hold the credentials as stored (keyring keys, headers, testing
+   credentials): keep them somewhere safe. The same export is available on the admin API:
    `GET /admin-api/remote-catalogs/_export?all=false`.
 
 2. **Commit** the files in a repository. Rearrange them as you like, for instance in

@@ -1,6 +1,6 @@
 package fr.maif.daikoku.services.catalog
 
-import fr.maif.daikoku.domain.RemoteCatalog
+import fr.maif.daikoku.domain.{RemoteCatalog, RemoteCatalogError}
 import fr.maif.daikoku.env.Env
 import play.api.libs.json._
 
@@ -11,6 +11,9 @@ trait CatalogSource {
   def sourceKind: String
 
   def supportsWebhook: Boolean = false
+
+  def disabledReason(catalog: RemoteCatalog)(implicit env: Env): Option[String] =
+    None
 
   def webhookDeploySelect(
       possibleCatalogs: Seq[RemoteCatalog],

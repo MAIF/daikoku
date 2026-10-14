@@ -11,6 +11,7 @@ import {
   IOtoroshiSettings,
   IQuotas,
   IRemoteCatalog,
+  IRemoteCatalogSettings,
   ISafeSubscription,
   ISession,
   ISimpleOtoroshiSettings,
@@ -2708,6 +2709,10 @@ export const fetchOAuthConfiguration = (
 
 export const getRemoteCatalogs = (tenantId: string): PromiseWithError<Array<IRemoteCatalog>> =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs`);
+export const getRemoteCatalogSettings = (
+  tenantId: string
+): PromiseWithError<IRemoteCatalogSettings> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_settings`);
 export const createRemoteCatalog = (
   tenantId: string,
   catalog: Partial<IRemoteCatalog>

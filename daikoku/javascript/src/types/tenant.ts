@@ -226,6 +226,11 @@ export interface IRemoteCatalog {
   allowDeletions: boolean;
   token: string;
 }
+export interface IRemoteCatalogSettings {
+  allowFileSource: boolean;
+  allowPreCommand: boolean;
+  allowedHosts: Array<string>;
+}
 
 export type TranslationItem = string | { s: string; p: string };
 export interface ITranslation {

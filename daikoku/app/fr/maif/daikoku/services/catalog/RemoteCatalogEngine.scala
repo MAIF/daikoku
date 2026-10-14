@@ -2,6 +2,7 @@ package fr.maif.daikoku.services.catalog
 
 import fr.maif.daikoku.controllers.{
   ApiAdminApiController,
+  ApiDocumentationPageAdminApiController,
   ApiSubscriptionAdminApiController,
   CmsPagesAdminApiController,
   KeyringAdminApiController,
@@ -11,16 +12,20 @@ import fr.maif.daikoku.controllers.{
 import fr.maif.daikoku.domain.{
   DatastoreId,
   RemoteCatalog,
+  RemoteCatalogError,
   RemoteCatalogId,
   RemoteCatalogRun,
+  RemoteCatalogRunEntity,
   RemoteCatalogRunStatus,
   Tenant,
   ValueType
 }
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 import fr.maif.daikoku.utils.{
   AdminApiController,
   ExistingEntities,
+  ExistingEntity,
   IdGenerator,
   PreparedWrite,
   ReconcileFinalIds,
@@ -36,45 +41,6 @@ import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ReconcileResult(
-    kind: String,
-    created: Seq[String],
-    updated: Seq[String],
-    deleted: Seq[String],
-    detached: Seq[String],
-    errors: Seq[String]
-) {
-  def json: JsValue = Json.obj(
-    "kind" -> kind,
-    "created" -> created.size,
-    "updated" -> updated.size,
-    "deleted" -> deleted.size,
-    "detached" -> detached.size,
-    "errors" -> JsArray(errors.map(JsString.apply))
-  )
-}
-
-case class DeployReport(
-    catalogId: String,
-    tenant: String,
-    results: Seq[ReconcileResult],
-    timestamp: DateTime
-) {
-  def errors: Seq[String] = results.flatMap(_.errors)
-
-  def isPartial: Boolean = errors.nonEmpty
-
-  def status: String = if (isPartial) "partial" else "completed"
-
-  def json: JsValue = Json.obj(
-    "catalog_id" -> catalogId,
-    "tenant" -> tenant,
-    "status" -> status,
-    "results" -> JsArray(results.map(_.json)),
-    "timestamp" -> timestamp.toString
-  )
-}
-
 enum ExportSelection:
   case WholeTenant(includeManaged: Boolean)
   case OneEntity(kind: String, id: String, withChildren: Boolean)
@@ -84,7 +50,15 @@ enum ExportFormat:
 
 object RemoteCatalogEngine {
   val kindOrder: Seq[String] =
-    Seq("team", "usage-plan", "api", "keyring", "api-subscription", "cms-page")
+    Seq(
+      "team",
+      "cms-page",
+      "api-documentation-page",
+      "usage-plan",
+      "api",
+      "keyring",
+      "api-subscription"
+    )
 }
 
 class RemoteCatalogEngine(
@@ -94,7 +68,8 @@ class RemoteCatalogEngine(
     teamController: TeamAdminApiController,
     cmsPageController: CmsPagesAdminApiController,
     apiSubscriptionController: ApiSubscriptionAdminApiController,
-    keyringController: KeyringAdminApiController
+    keyringController: KeyringAdminApiController,
+    apiDocumentationPageController: ApiDocumentationPageAdminApiController
 ) {
 
   private implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -108,7 +83,8 @@ class RemoteCatalogEngine(
       teamController.entityName -> teamController,
       cmsPageController.entityName -> cmsPageController,
       apiSubscriptionController.entityName -> apiSubscriptionController,
-      keyringController.entityName -> keyringController
+      keyringController.entityName -> keyringController,
+      apiDocumentationPageController.entityName -> apiDocumentationPageController
     )
 
   import RemoteCatalogEngine.kindOrder
@@ -121,14 +97,17 @@ class RemoteCatalogEngine(
 
   private case class CatalogWrite(entity: RemoteEntity, prepared: PreparedWrite)
 
-  private case class WrittenEntity(kind: String, id: String, action: String)
-
-  private case class WriteError(kind: String, message: String)
+  private case class WrittenEntity(
+      entity: RemoteCatalogRunEntity,
+      action: String
+  )
 
   private case class WriteOutcome(
       written: Seq[WrittenEntity],
-      error: Option[WriteError]
+      error: Option[RemoteCatalogError]
   )
+
+  private type RunResult = Either[Seq[RemoteCatalogError], WriteOutcome]
 
   // ---------------------------------------------------------------------------
   // Entry points
@@ -137,13 +116,14 @@ class RemoteCatalogEngine(
   def deploy(
       tenant: Tenant,
       catalog: RemoteCatalog
-  ): Future[Either[JsValue, DeployReport]] = {
+  ): Future[RemoteCatalogRun] = {
     logger.info(
       s"deploying catalog ${catalog.id.value} / ${catalog.source.kind} on tenant ${tenant.id.value}"
     )
     Future.unit
       .flatMap(_ => doFetchAndReconcile(tenant, catalog, dryRun = false))
-      .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
+      .map(result => toRun(tenant, catalog.id, result))
+      .flatMap(run => saveRun(tenant, catalog, run).map(_ => run))
   }
 
   def dryRun(
@@ -189,13 +169,14 @@ class RemoteCatalogEngine(
   def undeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
-  ): Future[Either[JsValue, DeployReport]] = {
+  ): Future[RemoteCatalogRun] = {
     logger.info(
       s"undeploying catalog ${catalog.id.value} on tenant ${tenant.id.value}"
     )
     Future.unit
       .flatMap(_ => doUndeploy(tenant, catalog))
-      .flatMap(result => saveRun(tenant, catalog, result).map(_ => result))
+      .map(result => toRun(tenant, catalog.id, result))
+      .flatMap(run => saveRun(tenant, catalog, run).map(_ => run))
   }
 
   // the deployed entities stay in Daikoku, no longer managed by any catalog
@@ -220,12 +201,17 @@ class RemoteCatalogEngine(
       tenant: Tenant,
       catalog: RemoteCatalog,
       dryRun: Boolean
-  ): Future[Either[JsValue, DeployReport]] = {
+  ): Future[RunResult] = {
     CatalogSources.get(catalog.source.kind) match {
       case None =>
         Future.successful(
           Left(
-            Json.obj("error" -> s"Unknown source kind: ${catalog.source.kind}")
+            Seq(
+              RemoteCatalogError(
+                s"catalog ${catalog.id.value}",
+                s"Unknown source kind: ${catalog.source.kind}"
+              )
+            )
           )
         )
       case Some(source) =>
@@ -242,17 +228,10 @@ class RemoteCatalogEngine(
       catalog: Option[RemoteCatalog],
       fetched: Either[Seq[RemoteCatalogError], Seq[RemoteEntity]],
       dryRun: Boolean
-  ): Future[Either[JsValue, DeployReport]] =
+  ): Future[RunResult] =
     fetched match {
       case Left(errors) =>
-        Future.successful(
-          Left(
-            errorsJson(
-              s"Catalog ${runIdOf(catalog).value} could not be read, nothing was applied",
-              errors
-            )
-          )
-        )
+        Future.successful(Left(errors))
       case Right(entities) =>
         val validationErrors = entities.flatMap(entity =>
           checkKind(catalog.fold(Set.empty[String])(_.allowedKinds), entity) ++
@@ -260,27 +239,9 @@ class RemoteCatalogEngine(
         )
 
         if (validationErrors.nonEmpty) {
-          Future.successful(
-            Left(
-              errorsJson(
-                s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
-                validationErrors
-              )
-            )
-          )
+          Future.successful(Left(validationErrors))
         } else {
-          checkTeamFolders(tenant, catalog, entities).flatMap { teamErrors =>
-            if (teamErrors.isEmpty) reconcile(tenant, catalog, entities, dryRun)
-            else
-              Future.successful(
-                Left(
-                  errorsJson(
-                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
-                    teamErrors
-                  )
-                )
-              )
-          }
+          reconcile(tenant, catalog, entities, dryRun)
         }
     }
 
@@ -292,12 +253,19 @@ class RemoteCatalogEngine(
       allowedKinds.isEmpty || allowedKinds.contains(entity.kind)
 
     if (!controllers.contains(entity.kind)) {
-      Some(RemoteCatalogError(entity.source, s"Unknown kind: ${entity.kind}"))
+      Some(
+        RemoteCatalogError(
+          entity.source,
+          s"Unknown kind: ${entity.kind}",
+          Some(entity.runEntity)
+        )
+      )
     } else if (!kindIsAllowed) {
       Some(
         RemoteCatalogError(
           entity.source,
-          s"Kind '${entity.kind}' not allowed for this catalog"
+          s"Kind '${entity.kind}' not allowed for this catalog",
+          Some(entity.runEntity)
         )
       )
     } else {
@@ -308,36 +276,36 @@ class RemoteCatalogEngine(
   private def checkTenant(
       tenant: Tenant,
       entity: RemoteEntity
-  ): Option[RemoteCatalogError] = {
-    val prefix = s"${entity.kind} ${entity.id}"
-
+  ): Option[RemoteCatalogError] =
     (entity.content \ "_tenant").asOpt[String] match {
       case None =>
         Some(
           RemoteCatalogError(
             entity.source,
-            s"$prefix: missing required field '_tenant'"
+            "Missing required field '_tenant'",
+            Some(entity.runEntity)
           )
         )
       case Some(value) if value != tenant.id.value =>
         Some(
           RemoteCatalogError(
             entity.source,
-            s"$prefix: _tenant '$value' is not the catalog tenant '${tenant.id.value}'"
+            s"_tenant '$value' is not the catalog tenant '${tenant.id.value}'",
+            Some(entity.runEntity)
           )
         )
       case Some(_) => None
     }
-  }
 
   // folderPerTeam: teams/<teamId>/ may only declare the entities of that team
   // e.g. [teams/team-mobile/sub.yaml (team: team-weather)]
-  //   -> Seq(RemoteCatalogError(".../sub.yaml", "api-subscription sub-1: belongs to team 'team-weather', not to 'teams/team-mobile'"))
+  //   -> Seq(RemoteCatalogError(".../sub.yaml", "Belongs to team 'team-weather', not to 'teams/team-mobile'", Some(sub-1)))
   //      Seq.empty when folderPerTeam is off, the source is not GitHub / GitLab or nothing is under teams/
   private def checkTeamFolders(
       tenant: Tenant,
       catalog: Option[RemoteCatalog],
-      entities: Seq[RemoteEntity]
+      entities: Seq[RemoteEntity],
+      dbTeams: ExistingEntities
   ): Future[Seq[RemoteCatalogError]] = {
     val isGitSource =
       catalog.exists(c => Set("github", "gitlab").contains(c.source.kind))
@@ -346,7 +314,7 @@ class RemoteCatalogEngine(
         .flatMap(entity => teamFolderOf(entity).map(entity -> _))
 
     if (catalog.exists(_.folderPerTeam) && isGitSource && inTeamFolders.nonEmpty) {
-      checkEachTeamFolder(tenant, entities, inTeamFolders)
+      checkEachTeamFolder(tenant, entities, inTeamFolders, dbTeams)
     } else {
       Future.successful(Seq.empty)
     }
@@ -357,7 +325,8 @@ class RemoteCatalogEngine(
   private def checkEachTeamFolder(
       tenant: Tenant,
       entities: Seq[RemoteEntity],
-      inTeamFolders: Seq[(RemoteEntity, String)]
+      inTeamFolders: Seq[(RemoteEntity, String)],
+      dbTeams: ExistingEntities
   ): Future[Seq[RemoteCatalogError]] = {
     val runPlans = runPlanTeams(entities)
 
@@ -368,40 +337,46 @@ class RemoteCatalogEngine(
       .filterNot(runPlans.contains)
       .toSet
 
-    for {
-      dbTeams <- controllers("team").readExistingEntities(tenant)
-      dbPlans <- dbPlanTeams(tenant, plansToRead)
-    } yield {
+    dbPlanTeams(tenant, plansToRead).map { dbPlans =>
       val runTeams = entities.filter(_.kind == "team").map(_.id)
       val knownTeams = dbTeams.keySet ++ runTeams
       val planTeams = dbPlans ++ runPlans
+      val pageTeams = runPageTeams(entities, planTeams)
 
       inTeamFolders.flatMap { case (entity, folder) =>
-        teamFolderError(entity, folder, knownTeams, planTeams)
-          .map(message => RemoteCatalogError(entity.source, message))
+        teamFolderError(entity, folder, knownTeams, planTeams, pageTeams)
+          .map(message =>
+            RemoteCatalogError(entity.source, message, Some(entity.runEntity))
+          )
       }
     }
   }
 
   // e.g. api-weather (team: team-weather) in "team-weather" -> None
-  //      api-weather (team: team-weather) in "team-mobile"  -> Some("... belongs to team 'team-weather', not to 'teams/team-mobile'")
-  //      anything in "unknown-team"                          -> Some("... folder 'teams/unknown-team' does not match any team")
+  //      api-weather (team: team-weather) in "team-mobile"  -> Some("Belongs to team 'team-weather', not to 'teams/team-mobile'")
+  //      anything in "unknown-team"                          -> Some("Folder 'teams/unknown-team' does not match any team")
   private def teamFolderError(
       entity: RemoteEntity,
       folder: String,
       knownTeams: Set[String],
-      planTeams: Map[String, String]
+      planTeams: Map[String, String],
+      pageTeams: Map[String, String]
   ): Option[String] = {
-    val prefix = s"${entity.kind} ${entity.id}"
-    val owner = ownerTeam(entity, planTeams)
+    val owner = ownerTeam(entity, planTeams, pageTeams)
+    val isUnusedPage =
+      entity.kind == "api-documentation-page" && owner.isEmpty
 
     if (!knownTeams.contains(folder)) {
-      Some(s"$prefix: folder 'teams/$folder' does not match any team")
+      Some(s"Folder 'teams/$folder' does not match any team")
     } else if (entity.kind == "cms-page") {
-      Some(s"$prefix: a cms-page cannot be declared in a team folder")
+      Some("A cms-page cannot be declared in a team folder")
+    } else if (isUnusedPage) {
+      Some(
+        "A documentation page in a team folder must be used by an api or a plan of the catalog"
+      )
     } else if (!owner.contains(folder)) {
       Some(
-        s"$prefix: belongs to team '${owner.getOrElse("none")}', not to 'teams/$folder'"
+        s"Belongs to team '${owner.getOrElse("none")}', not to 'teams/$folder'"
       )
     } else {
       None
@@ -419,15 +394,18 @@ class RemoteCatalogEngine(
 
   // e.g. team team-weather -> Some("team-weather")
   //      usage-plan plan-free with planTeams(plan-free -> team-weather) -> Some("team-weather")
+  //      api-documentation-page page-1 with pageTeams(page-1 -> team-weather) -> Some("team-weather")
   //      api / keyring / api-subscription -> their "team" field
   private def ownerTeam(
       entity: RemoteEntity,
-      planTeams: Map[String, String]
+      planTeams: Map[String, String],
+      pageTeams: Map[String, String]
   ): Option[String] =
     entity.kind match {
-      case "team"       => Some(entity.id)
-      case "usage-plan" => planTeams.get(entity.id)
-      case _            => (entity.content \ "team").asOpt[String]
+      case "team"                   => Some(entity.id)
+      case "usage-plan"             => planTeams.get(entity.id)
+      case "api-documentation-page" => pageTeams.get(entity.id)
+      case _                        => (entity.content \ "team").asOpt[String]
     }
 
   // e.g. Map("plan-free" -> "team-weather")
@@ -443,6 +421,31 @@ class RemoteCatalogEngine(
           .flatMap(plan => team.map(plan -> _))
       }
       .toMap
+
+  // e.g. api-weather (team-weather) with page-1, plan-free (team-weather) with page-2
+  //   -> Map("page-1" -> "team-weather", "page-2" -> "team-weather")
+  private def runPageTeams(
+      entities: Seq[RemoteEntity],
+      planTeams: Map[String, String]
+  ): Map[String, String] =
+    entities.flatMap { entity =>
+      val team = entity.kind match {
+        case "api"        => (entity.content \ "team").asOpt[String]
+        case "usage-plan" => planTeams.get(entity.id)
+        case _            => None
+      }
+      val pageIds =
+        documentationPageIds(entity.content \ "documentation" \ "pages")
+
+      team.toSeq.flatMap(owner => pageIds.map(_ -> owner))
+    }.toMap
+
+  // e.g. [{ "id": "page-1", "children": [{ "id": "page-1-1", "children": [] }] }] -> Seq("page-1", "page-1-1")
+  private def documentationPageIds(pages: JsLookupResult): Seq[String] =
+    pages.asOpt[Seq[JsObject]].getOrElse(Seq.empty).flatMap { page =>
+      (page \ "id").asOpt[String].toSeq ++
+        documentationPageIds(page \ "children")
+    }
 
   // one query for every plan, e.g. Map("plan-gold" -> "team-weather")
   private def dbPlanTeams(
@@ -470,12 +473,6 @@ class RemoteCatalogEngine(
         )
     }
 
-  private def errorsJson(
-      message: String,
-      errors: Seq[RemoteCatalogError]
-  ): JsValue =
-    Json.obj("error" -> message, "errors" -> JsArray(errors.map(_.json)))
-
   // ---------------------------------------------------------------------------
   // Orchestration — phase 2 then phase 3
   // ---------------------------------------------------------------------------
@@ -485,27 +482,32 @@ class RemoteCatalogEngine(
       catalog: Option[RemoteCatalog],
       entities: Seq[RemoteEntity],
       dryRun: Boolean
-  ): Future[Either[JsValue, DeployReport]] = {
+  ): Future[RunResult] = {
     val metadataKey = catalog.map(c => s"remote_catalog=${c.id.value}")
 
-    readDatabaseState(tenant).flatMap { databaseState =>
+    val databaseReads =
+      readDatabaseState(tenant).zip(readKnownUsers(entities))
+
+    databaseReads.flatMap { (databaseState, knownUsers) =>
       val toDelete =
         computeEntitiesToDelete(databaseState, metadataKey, entities)
-      val finalIds = computeFinalIds(tenant, databaseState, toDelete, entities)
+      val finalIds =
+        computeFinalIds(tenant, databaseState, toDelete, entities, knownUsers)
       val deletionLimitError =
         catalog.flatMap(c => checkDeletionLimit(c, databaseState, toDelete))
+      val checkErrors =
+        checkDuplicateIds(catalog, entities).toSeq ++
+          deletionLimitError ++
+          checkApiNames(databaseState, toDelete, entities)
+      val teamFolderErrors =
+        checkTeamFolders(tenant, catalog, entities, databaseState("team"))
 
-      deletionLimitError match {
-        case Some(error) =>
-          Future.successful(
-            Left(
-              errorsJson(
-                s"Catalog ${runIdOf(catalog).value} would delete too many entities, nothing was applied",
-                Seq(error)
-              )
-            )
-          )
-        case None =>
+      teamFolderErrors.flatMap { teamErrors =>
+        val allErrors = checkErrors ++ teamErrors
+
+        if (allErrors.nonEmpty) {
+          Future.successful(Left(allErrors))
+        } else {
           prepareAllWrites(
             tenant,
             metadataKey,
@@ -514,17 +516,11 @@ class RemoteCatalogEngine(
             catalog.exists(_.adoptExisting)
           ).flatMap {
             case Left(errors) =>
-              Future.successful(
-                Left(
-                  errorsJson(
-                    s"Catalog ${runIdOf(catalog).value} is invalid, nothing was applied",
-                    errors
-                  )
-                )
-              )
+              Future.successful(Left(errors))
             case Right(writes) =>
               writeAll(tenant, catalog, writes, toDelete, dryRun).map(Right(_))
           }
+        }
       }
     }
   }
@@ -543,19 +539,56 @@ class RemoteCatalogEngine(
       .map(_.toMap)
   }
 
+  // one query for every user of the catalog
+  // e.g. team-a (members user-1, user-2), sub-1 (by user-3), user-2 unknown -> Set("user-1", "user-3")
+  private def readKnownUsers(
+      entities: Seq[RemoteEntity]
+  ): Future[Set[String]] = {
+    val referenced = entities.flatMap(referencedUsers).distinct
+
+    if (referenced.isEmpty) {
+      Future.successful(Set.empty)
+    } else {
+      val table = env.dataStore.userRepo.tableName
+
+      env.dataStore
+        .asInstanceOf[PostgresDataStore]
+        .queryRawMapped(
+          s"SELECT _id FROM $table WHERE _id = ANY($$1::text[])",
+          Seq(Col.str("_id")),
+          Seq(referenced.toArray)
+        )
+        .map(_.map(row => (row \ "_id").as[String]).toSet)
+    }
+  }
+
+  // e.g. team -> its members, api-subscription -> its "by"
+  private def referencedUsers(entity: RemoteEntity): Seq[String] =
+    entity.kind match {
+      case "team" =>
+        (entity.content \ "users")
+          .asOpt[Seq[JsObject]]
+          .getOrElse(Seq.empty)
+          .flatMap(member => (member \ "userId").asOpt[String])
+      case "api-subscription" =>
+        (entity.content \ "by").asOpt[String].toSeq
+      case _ =>
+        Seq.empty
+    }
+
   private def computeEntitiesToDelete(
       databaseState: DatabaseState,
       metadataKey: Option[String],
       entities: Seq[RemoteEntity]
-  ): Seq[(String, String)] = {
+  ): Seq[RemoteCatalogRunEntity] = {
     val remoteIds = entities.map(e => (e.kind, e.id)).toSet
 
     kindOrder.reverse.flatMap { kind =>
       databaseState(kind).toSeq.collect {
-        case (id, createdBy)
-            if metadataKey.exists(key => createdBy.contains(key)) &&
+        case (id, existing)
+            if metadataKey.exists(key => existing.createdBy.contains(key)) &&
               !remoteIds.contains((kind, id)) =>
-          (kind, id)
+          RemoteCatalogRunEntity(kind, id, existing.name)
       }
     }
   }
@@ -563,12 +596,12 @@ class RemoteCatalogEngine(
   private def checkDeletionLimit(
       catalog: RemoteCatalog,
       databaseState: DatabaseState,
-      toDelete: Seq[(String, String)]
+      toDelete: Seq[RemoteCatalogRunEntity]
   ): Option[RemoteCatalogError] = {
     val metadataKey = s"remote_catalog=${catalog.id.value}"
     val managedCount = databaseState.values
       .flatMap(_.values)
-      .count(_.contains(metadataKey))
+      .count(_.createdBy.contains(metadataKey))
     val deletedPercent =
       if (managedCount == 0) 0.0 else toDelete.size * 100.0 / managedCount
     val limitIsActive = catalog.allowDeletions &&
@@ -586,13 +619,89 @@ class RemoteCatalogEngine(
     }
   }
 
+  // e.g. plan-free declared in two files
+  //   -> Some(RemoteCatalogError("catalog cat-git", "Declared more than once: usage-plan 'plan-free'"))
+  private def checkDuplicateIds(
+      catalog: Option[RemoteCatalog],
+      entities: Seq[RemoteEntity]
+  ): Option[RemoteCatalogError] = {
+    val keys = entities.map(entity => (entity.kind, entity.id))
+
+    if (keys.toSet.size == keys.size) {
+      None
+    } else {
+      val duplicates = keys
+        .diff(keys.distinct)
+        .distinct
+        .map { case (kind, id) => s"$kind '$id'" }
+        .mkString(", ")
+
+      Some(
+        RemoteCatalogError(
+          s"catalog ${runIdOf(catalog).value}",
+          s"Declared more than once: $duplicates"
+        )
+      )
+    }
+  }
+
+  // final apis = the catalog apis + the database apis it neither replaces nor deletes
+  // e.g. api-a "Weather" in the catalog, api-b "Weather" kept in database -> an error on api-a
+  //      api-a and api-b swapping their names -> Seq.empty
+  //      api-a "Weather" and its version api-a-v2 "Weather" -> Seq.empty
+  private def checkApiNames(
+      databaseState: DatabaseState,
+      toDelete: Seq[RemoteCatalogRunEntity],
+      entities: Seq[RemoteEntity]
+  ): Seq[RemoteCatalogError] = {
+    val catalogApis = entities
+      .filter(_.kind == "api")
+      .map(api =>
+        api -> ExistingEntity(
+          createdBy = None,
+          name = (api.content \ "name").asOpt[String],
+          parent = (api.content \ "parent").asOpt[String]
+        )
+      )
+    val replacedOrDeleted =
+      catalogApis.map { case (api, _) => api.id }.toSet ++
+        toDelete.filter(_.kind == "api").map(_.id)
+    val keptApis = databaseState("api").toSeq.filterNot { case (id, _) =>
+      replacedOrDeleted.contains(id)
+    }
+    val finalApis =
+      keptApis ++ catalogApis.map { case (api, existing) => api.id -> existing }
+    val finalApisByName = finalApis.groupBy { case (_, api) => api.name }
+
+    catalogApis.flatMap {
+      case (api, ExistingEntity(_, Some(name), None)) =>
+        val conflict = finalApisByName
+          .getOrElse(Some(name), Seq.empty)
+          .collectFirst {
+            case (id, other) if id != api.id && !other.parent.contains(api.id) =>
+              id
+          }
+
+        conflict.map(id =>
+          RemoteCatalogError(
+            api.source,
+            s"Api name '$name' is already used by '$id'",
+            Some(api.runEntity)
+          )
+        )
+      case _ =>
+        None
+    }
+  }
+
   private def computeFinalIds(
       tenant: Tenant,
       databaseState: DatabaseState,
-      toDelete: Seq[(String, String)],
-      entities: Seq[RemoteEntity]
+      toDelete: Seq[RemoteCatalogRunEntity],
+      entities: Seq[RemoteEntity],
+      knownUsers: Set[String]
   ): ReconcileFinalIds = {
-    val deleted = toDelete.toSet
+    val deleted = toDelete.map(entity => (entity.kind, entity.id)).toSet
 
     ReconcileFinalIds(
       kindOrder.map { kind =>
@@ -605,7 +714,8 @@ class RemoteCatalogEngine(
         kind -> (keptInDb ++ fromRun)
       }.toMap +
         ("tenant" -> Set(tenant.id.value)) +
-        ("otoroshi-settings" -> tenant.otoroshiSettings.map(_.id.value))
+        ("otoroshi-settings" -> tenant.otoroshiSettings.map(_.id.value)) +
+        ("user" -> knownUsers)
     )
   }
 
@@ -630,10 +740,7 @@ class RemoteCatalogEngine(
       .map { perKind =>
         val results = perKind.flatten
         val errors = results.collect { case (entity, Left(message)) =>
-          RemoteCatalogError(
-            entity.source,
-            s"${entity.kind} ${entity.id}: $message"
-          )
+          RemoteCatalogError(entity.source, message, Some(entity.runEntity))
         }
 
         if (errors.nonEmpty) {
@@ -666,21 +773,22 @@ class RemoteCatalogEngine(
       tenant: Tenant,
       catalog: Option[RemoteCatalog],
       writes: Seq[CatalogWrite],
-      toDelete: Seq[(String, String)],
+      toDelete: Seq[RemoteCatalogRunEntity],
       dryRun: Boolean
-  ): Future[DeployReport] = {
+  ): Future[WriteOutcome] = {
     runOneByOne(writes)(writeEntity(dryRun)).flatMap { upserts =>
       if (upserts.error.isDefined) {
-        Future.successful(buildReport(tenant, runIdOf(catalog), Seq(upserts)))
+        Future.successful(upserts)
       } else {
+        val source = s"catalog ${runIdOf(catalog).value}"
         val removeEntity =
-          if (catalog.exists(_.allowDeletions)) deleteEntity(tenant, dryRun)
-          else detachEntity(tenant, dryRun)
+          if (catalog.exists(_.allowDeletions)) {
+            deleteEntity(tenant, source, dryRun)
+          } else {
+            detachEntity(tenant, source, dryRun)
+          }
 
-        runOneByOne(toDelete)(removeEntity)
-          .map(removals =>
-            buildReport(tenant, runIdOf(catalog), Seq(upserts, removals))
-          )
+        runOneByOne(toDelete, upserts.written)(removeEntity)
       }
     }
   }
@@ -689,7 +797,7 @@ class RemoteCatalogEngine(
       items: Seq[A],
       written: Seq[WrittenEntity] = Seq.empty
   )(
-      runOne: A => Future[Either[WriteError, WrittenEntity]]
+      runOne: A => Future[Either[RemoteCatalogError, WrittenEntity]]
   ): Future[WriteOutcome] = {
     items match {
       case Seq() => Future.successful(WriteOutcome(written, None))
@@ -705,11 +813,16 @@ class RemoteCatalogEngine(
 
   private def writeEntity(dryRun: Boolean)(
       write: CatalogWrite
-  ): Future[Either[WriteError, WrittenEntity]] = {
-    val kind = write.entity.kind
-    val written = WrittenEntity(kind, write.entity.id, write.prepared.action)
-    val errorPrefix =
-      s"Error writing ${write.entity.id} (${write.entity.source})"
+  ): Future[Either[RemoteCatalogError, WrittenEntity]] = {
+    val entity = write.entity
+    val written = WrittenEntity(entity.runEntity, write.prepared.action)
+
+    def writeError(message: String): RemoteCatalogError =
+      RemoteCatalogError(
+        entity.source,
+        s"Write failed: $message",
+        Some(entity.runEntity)
+      )
 
     if (dryRun) {
       Future.successful(Right(written))
@@ -718,101 +831,81 @@ class RemoteCatalogEngine(
         .write()
         .value
         .map {
-          case Left(error) =>
-            Left(WriteError(kind, s"$errorPrefix: ${error.getErrorMessage()}"))
-          case Right(_) => Right(written)
+          case Left(error) => Left(writeError(error.getErrorMessage()))
+          case Right(_)    => Right(written)
         }
         .recover { case e: Throwable =>
-          Left(WriteError(kind, s"$errorPrefix: ${e.getMessage}"))
+          Left(writeError(e.getMessage))
         }
     }
   }
 
-  private def deleteEntity(tenant: Tenant, dryRun: Boolean)(
-      kindAndId: (String, String)
-  ): Future[Either[WriteError, WrittenEntity]] = {
-    val (kind, id) = kindAndId
-    val errorPrefix = s"Error deleting $id"
+  private def deleteEntity(tenant: Tenant, source: String, dryRun: Boolean)(
+      entity: RemoteCatalogRunEntity
+  ): Future[Either[RemoteCatalogError, WrittenEntity]] = {
+    def deleteError(message: String): RemoteCatalogError =
+      RemoteCatalogError(source, s"Delete failed: $message", Some(entity))
 
     if (dryRun) {
-      Future.successful(Right(WrittenEntity(kind, id, "deleted")))
+      Future.successful(Right(WrittenEntity(entity, "deleted")))
     } else {
-      controllers(kind)
-        .doDeleteById(tenant, id)
+      controllers(entity.kind)
+        .doDeleteById(tenant, entity.id)
         .map {
-          case Left(err)     => Left(WriteError(kind, s"$errorPrefix: $err"))
-          case Right(action) => Right(WrittenEntity(kind, id, action))
+          case Left(error)   => Left(deleteError(error))
+          case Right(action) => Right(WrittenEntity(entity, action))
         }
         .recover { case e: Throwable =>
-          Left(WriteError(kind, s"$errorPrefix: ${e.getMessage}"))
+          Left(deleteError(e.getMessage))
         }
     }
   }
 
   // allowDeletions off: the entity stays, without its catalog tag
-  private def detachEntity(tenant: Tenant, dryRun: Boolean)(
-      kindAndId: (String, String)
-  ): Future[Either[WriteError, WrittenEntity]] = {
-    val (kind, id) = kindAndId
-    val detached = WrittenEntity(kind, id, "detached")
+  private def detachEntity(tenant: Tenant, source: String, dryRun: Boolean)(
+      entity: RemoteCatalogRunEntity
+  ): Future[Either[RemoteCatalogError, WrittenEntity]] = {
+    val detached = WrittenEntity(entity, "detached")
 
     if (dryRun) {
       Future.successful(Right(detached))
     } else {
-      val repo = controllers(kind).entityStore(tenant, env.dataStore)
+      val repo = controllers(entity.kind).entityStore(tenant, env.dataStore)
 
       repo
         .execute(
           s"UPDATE ${repo.tableName} SET content = content #- '{metadata,created_by}' " +
             "WHERE _id = $1 AND content->>'_tenant' = $2",
-          Seq(id, tenant.id.value)
+          Seq(entity.id, tenant.id.value)
         )
         .map(_ => Right(detached))
         .recover { case e: Throwable =>
-          Left(WriteError(kind, s"Error detaching $id: ${e.getMessage}"))
+          Left(
+            RemoteCatalogError(
+              source,
+              s"Detach failed: ${e.getMessage}",
+              Some(entity)
+            )
+          )
         }
     }
-  }
-
-  private def buildReport(
-      tenant: Tenant,
-      catalogId: RemoteCatalogId,
-      outcomes: Seq[WriteOutcome]
-  ): DeployReport = {
-    val written = outcomes.flatMap(_.written)
-    val errors = outcomes.flatMap(_.error)
-
-    def idsOf(kind: String, action: String): Seq[String] =
-      written.filter(w => w.kind == kind && w.action == action).map(_.id)
-
-    val results = kindOrder.map { kind =>
-      ReconcileResult(
-        kind = kind,
-        created = idsOf(kind, "created"),
-        updated = idsOf(kind, "updated"),
-        deleted = idsOf(kind, "deleted"),
-        detached = idsOf(kind, "detached"),
-        errors = errors.filter(_.kind == kind).map(_.message)
-      )
-    }
-
-    DeployReport(catalogId.value, tenant.id.value, results, DateTime.now())
   }
 
   private def doUndeploy(
       tenant: Tenant,
       catalog: RemoteCatalog
-  ): Future[Either[JsValue, DeployReport]] = {
+  ): Future[RunResult] = {
     val metadataKey = s"remote_catalog=${catalog.id.value}"
+    val source = s"catalog ${catalog.id.value}"
 
     readDatabaseState(tenant)
       .flatMap { databaseState =>
         val managed =
           computeEntitiesToDelete(databaseState, Some(metadataKey), Seq.empty)
 
-        runOneByOne(managed)(deleteEntity(tenant, dryRun = false))
+        runOneByOne(managed)(deleteEntity(tenant, source, dryRun = false))
       }
-      .map(deletions => Right(buildReport(tenant, catalog.id, Seq(deletions))))
+      .map(Right(_))
   }
 
   // ---------------------------------------------------------------------------
@@ -890,9 +983,35 @@ class RemoteCatalogEngine(
         Seq(id, tenant.id.value)
       )
 
+    val planTable = env.dataStore.usagePlanRepo.forTenant(tenant).tableName
+    val pageIds =
+      "jsonb_path_query(content, 'lax $.documentation.pages.**.id') #>> '{}'"
+
+    // the documentation pages, children included, of the apis and of their plans
+    def pagesOfApis(apisWhere: String): SqlFilter = {
+      val apis =
+        s"FROM $apiTable WHERE $apisWhere AND content->>'_tenant' = $$2"
+      val apiPages = s"SELECT $pageIds $apis"
+      val planPages =
+        s"SELECT $pageIds FROM $planTable WHERE _id IN " +
+          s"(SELECT jsonb_array_elements_text(content->'possibleUsagePlans') $apis)"
+
+      (Seq(s"_id IN ($apiPages UNION $planPages)"), Seq(id, tenant.id.value))
+    }
+
+    def pagesOfPlan: SqlFilter =
+      (
+        Seq(
+          s"_id IN (SELECT $pageIds FROM $planTable " +
+            "WHERE _id = $1 AND content->>'_tenant' = $2)"
+        ),
+        Seq(id, tenant.id.value)
+      )
+
     kind match {
       case "team" =>
         Map(
+          "api-documentation-page" -> pagesOfApis("content->>'team' = $1"),
           "usage-plan" -> plansOfApis("content->>'team' = $1"),
           "api" -> byField("team"),
           "keyring" -> byField("team"),
@@ -900,10 +1019,15 @@ class RemoteCatalogEngine(
         )
       case "api" =>
         Map(
+          "api-documentation-page" -> pagesOfApis("_id = $1"),
           "usage-plan" -> plansOfApis("_id = $1"),
           "api-subscription" -> byField("api")
         )
-      case "usage-plan" => Map("api-subscription" -> byField("plan"))
+      case "usage-plan" =>
+        Map(
+          "api-documentation-page" -> pagesOfPlan,
+          "api-subscription" -> byField("plan")
+        )
       case "keyring"    => Map("api-subscription" -> byField("keyring"))
       case _            => Map.empty
     }
@@ -927,24 +1051,17 @@ class RemoteCatalogEngine(
       )
   }
 
-  // e.g. { "apiVersion": "daikoku.io/v1", "kind": "keyring", "spec": { ...without apiKey, integrationToken } }
+  // e.g. { "apiVersion": "daikoku.io/v1", "kind": "keyring", "spec": { ... } }
   private def exportDocument[Of, Id <: ValueType](
       kind: String,
       controller: AdminApiController[Of, Id],
       entity: Of
-  ): JsObject = {
-    val spec = controller.toJson(entity).as[JsObject]
-    val exported =
-      if (kind == "keyring")
-        KeyringAdminApiController.secretFields.foldLeft(spec)(_ - _)
-      else spec
-
+  ): JsObject =
     Json.obj(
       "apiVersion" -> "daikoku.io/v1",
       "kind" -> kind,
-      "spec" -> exported
+      "spec" -> controller.toJson(entity)
     )
-  }
 
   // ---------------------------------------------------------------------------
   // Run history
@@ -953,10 +1070,8 @@ class RemoteCatalogEngine(
   private def saveRun(
       tenant: Tenant,
       catalog: RemoteCatalog,
-      result: Either[JsValue, DeployReport]
+      run: RemoteCatalogRun
   ): Future[Unit] = {
-    val run = toRun(tenant, catalog.id, result)
-
     env.dataStore.remoteCatalogRunRepo
       .forTenant(tenant)
       .save(run)
@@ -969,39 +1084,37 @@ class RemoteCatalogEngine(
   private def toRun(
       tenant: Tenant,
       catalogId: RemoteCatalogId,
-      result: Either[JsValue, DeployReport]
-  ): RemoteCatalogRun =
-    result match {
-      case Right(report) =>
-        val status =
-          if (report.isPartial) RemoteCatalogRunStatus.Partial
-          else RemoteCatalogRunStatus.Completed
-
-        RemoteCatalogRun(
-          id = DatastoreId(IdGenerator.token(32)),
-          tenant = tenant.id,
-          catalog = catalogId,
-          at = report.timestamp,
-          status = status,
-          created = report.results.flatMap(_.created),
-          updated = report.results.flatMap(_.updated),
-          deleted = report.results.flatMap(_.deleted),
-          detached = report.results.flatMap(_.detached),
-          errors = report.errors
-        )
-      case Left(error) =>
-        RemoteCatalogRun(
-          id = DatastoreId(IdGenerator.token(32)),
-          tenant = tenant.id,
-          catalog = catalogId,
-          at = DateTime.now(),
-          status = RemoteCatalogRunStatus.Failed,
-          created = Seq.empty,
-          updated = Seq.empty,
-          deleted = Seq.empty,
-          errors = failureMessages(error)
+      result: RunResult
+  ): RemoteCatalogRun = {
+    val (status, written, errors) = result match {
+      case Left(errors) =>
+        (RemoteCatalogRunStatus.Failed, Seq.empty[WrittenEntity], errors)
+      case Right(WriteOutcome(written, Some(error))) =>
+        (RemoteCatalogRunStatus.Partial, written, Seq(error))
+      case Right(WriteOutcome(written, None)) =>
+        (
+          RemoteCatalogRunStatus.Completed,
+          written,
+          Seq.empty[RemoteCatalogError]
         )
     }
+
+    def entitiesWith(action: String): Seq[RemoteCatalogRunEntity] =
+      written.filter(_.action == action).map(_.entity)
+
+    RemoteCatalogRun(
+      id = DatastoreId(IdGenerator.token(32)),
+      tenant = tenant.id,
+      catalog = catalogId,
+      at = DateTime.now(),
+      status = status,
+      created = entitiesWith("created"),
+      updated = entitiesWith("updated"),
+      deleted = entitiesWith("deleted"),
+      detached = entitiesWith("detached"),
+      errors = errors
+    )
+  }
 
   private val runsKept = 20
 
@@ -1024,14 +1137,4 @@ class RemoteCatalogEngine(
         }
       }
   }
-
-  // e.g. Seq("file:///catalog/teams.yaml: document 2: Missing required field '_id'")
-  private def failureMessages(error: JsValue): Seq[String] =
-    (error \ "errors").asOpt[Seq[JsObject]] match {
-      case Some(details) if details.nonEmpty =>
-        details.map(d =>
-          s"${(d \ "source").as[String]}: ${(d \ "message").as[String]}"
-        )
-      case _ => (error \ "error").asOpt[String].toSeq
-    }
 }

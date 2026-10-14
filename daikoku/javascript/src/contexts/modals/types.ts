@@ -26,6 +26,7 @@ export interface IBaseModalProps {
 export type IRightPanelProps = {
   title: string;
   content: JSX.Element;
+  onBack?: () => void;
 };
 
 export type TModalContext = {

@@ -133,15 +133,17 @@ class RemoteCatalogControllerSpec
       case "api" =>
         json.ApiFormat.reads(document).map(json.ApiFormat.writes)
       case "keyring" =>
-        KeyringAdminApiController
-          .readPayload(document)
-          .map(json.KeyringFormat.writes)
+        json.KeyringFormat.reads(document).map(json.KeyringFormat.writes)
       case "api-subscription" =>
         json.ApiSubscriptionFormat
           .reads(document)
           .map(json.ApiSubscriptionFormat.writes)
       case "cms-page" =>
         json.CmsPageFormat.reads(document).map(json.CmsPageFormat.writes)
+      case "api-documentation-page" =>
+        json.ApiDocumentationPageFormat
+          .reads(document)
+          .map(json.ApiDocumentationPageFormat.writes)
       case other => JsError(s"Unknown kind $other")
     }
 
@@ -170,6 +172,11 @@ class RemoteCatalogControllerSpec
       case _ if expected == actual => Seq.empty
       case _ => Seq(path)
     }
+
+  private def createdIds(resp: WSResponse): Seq[String] =
+    (resp.json \ "created")
+      .as[Seq[JsObject]]
+      .map(entity => (entity \ "id").as[String])
 
   private def tokenCall(
       catalogId: String,
@@ -306,7 +313,14 @@ class RemoteCatalogControllerSpec
       "_id" -> id,
       "_tenant" -> tenant.id.value,
       "team" -> team,
-      "otoroshiSettings" -> Json.obj("type" -> "Internal")
+      "otoroshiSettings" -> Json.obj("type" -> "Internal"),
+      "apiKey" -> Json.obj(
+        "clientName" -> s"$id-client",
+        "clientId" -> s"$id-client-id",
+        "clientSecret" -> s"$id-secret"
+      ),
+      "integrationToken" -> s"$id-token",
+      "createdAt" -> 1760000000000L
     )
 
   private def teamFile(teamId: String): JsObject = {
@@ -456,7 +470,7 @@ class RemoteCatalogControllerSpec
       )
       validated.status mustBe 200
       (validated.json \ "status").as[String] mustBe "completed"
-      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      createdIds(validated) mustBe Seq("team-weather")
 
       val team = daikokuComponents.env.dataStore.teamRepo
         .forTenant(tenant)
@@ -480,9 +494,10 @@ class RemoteCatalogControllerSpec
         tokenCall("cat-a", "_validate", "tok-a", Some(Json.arr(broken)))
       validated.status mustBe 400
       (validated.json \ "status").as[String] mustBe "failed"
-      val errors = (validated.json \ "errors").as[Seq[String]]
-      errors.head must startWith("teams/broken.json")
-      errors.head must include("Missing required field '_id'")
+      val errors = (validated.json \ "errors").as[Seq[JsObject]]
+
+      (errors.head \ "source").as[String] mustBe "teams/broken.json"
+      (errors.head \ "message").as[String] mustBe "Missing required field '_id'"
     }
 
     "validate a zipped catalog and ignore the other files" in {
@@ -499,7 +514,7 @@ class RemoteCatalogControllerSpec
       val validated = validateZip("cat-a", "tok-a", zip)
       validated.status mustBe 200
       (validated.json \ "status").as[String] mustBe "completed"
-      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      createdIds(validated) mustBe Seq("team-weather")
     }
 
     "refuse a zip over the unzipped limit" in {
@@ -584,7 +599,7 @@ class RemoteCatalogControllerSpec
         Some(Json.arr(teamFile("team-weather")))
       )
       validated.status mustBe 200
-      (validated.json \ "created").as[Seq[String]] mustBe Seq("team-weather")
+      createdIds(validated) mustBe Seq("team-weather")
     }
 
     "accept the minimal examples published in the OpenAPI document" in {
@@ -617,7 +632,7 @@ class RemoteCatalogControllerSpec
       withClue(validated.body) {
         validated.status mustBe 200
       }
-      (validated.json \ "created").as[Seq[String]] must contain allOf (
+      createdIds(validated) must contain allOf (
         "team-weather",
         "plan-weather-free",
         "api-weather",
@@ -642,7 +657,7 @@ class RemoteCatalogControllerSpec
         }
       }
 
-      referenceDocuments must have size 6
+      referenceDocuments must have size 7
       changed mustBe empty
     }
 
@@ -671,7 +686,7 @@ class RemoteCatalogControllerSpec
       withClue(validated.body) {
         validated.status mustBe 200
       }
-      (validated.json \ "created").as[Seq[String]] must contain allOf (
+      createdIds(validated) must contain allOf (
         "team-weather",
         "plan-weather-gold",
         "api-weather",
@@ -775,7 +790,9 @@ class RemoteCatalogControllerSpec
 
   "A catalog with one folder per team" should {
     def runErrors(resp: WSResponse): Seq[String] =
-      (resp.json \ "errors").as[Seq[String]]
+      (resp.json \ "errors")
+        .as[Seq[JsObject]]
+        .map(error => (error \ "message").as[String])
 
     "accept a team folder holding the team and its keyring" in {
       setupWithAdminApi(Seq(folderCatalog(folderPerTeam = true)))
@@ -819,7 +836,7 @@ class RemoteCatalogControllerSpec
       )
       resp.status mustBe 400
       runErrors(resp).exists(
-        _.contains("keyring kr-a: belongs to team 'team-a', not to 'teams/team-b'")
+        _.contains("Belongs to team 'team-a', not to 'teams/team-b'")
       ) mustBe true
     }
 
@@ -831,7 +848,7 @@ class RemoteCatalogControllerSpec
       )
       resp.status mustBe 400
       runErrors(resp).exists(
-        _.contains("folder 'teams/ghost' does not match any team")
+        _.contains("Folder 'teams/ghost' does not match any team")
       ) mustBe true
     }
 
@@ -845,7 +862,7 @@ class RemoteCatalogControllerSpec
       )
       resp.status mustBe 400
       runErrors(resp).exists(
-        _.contains("a cms-page cannot be declared in a team folder")
+        _.contains("A cms-page cannot be declared in a team folder")
       ) mustBe true
     }
 
