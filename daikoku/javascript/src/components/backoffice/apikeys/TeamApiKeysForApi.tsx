@@ -217,18 +217,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       }
     );
 
-  const toggleKeyringOLD = (keyringId: string, enabled: boolean) =>
-    Services.toggleKeyring(props.team._id, keyringId, enabled).then(() => {
-      toast.success(
-        translate(
-          enabled
-            ? 'keyring.successfully.enabled'
-            : 'keyring.successfully.disabled'
-        )
-      );
-      invalidate();
-    });
-
   const toggleKeyring = useMutation({
     mutationFn: ({ keyringId, enabled }: { keyringId: string; enabled: boolean }) =>
       Services.toggleKeyring(props.team._id, keyringId, enabled),
