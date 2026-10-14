@@ -1,11 +1,11 @@
 import {constraints, type} from '@maif/react-forms';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useMutation, UseMutationResult, useQuery, useQueryClient} from '@tanstack/react-query';
 import classNames from 'classnames';
 import {isBefore} from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleQuestionMark, Copy, Ellipsis,
-  EllipsisVertical, KeyRound, Link as LucideLink, Terminal,
+  EllipsisVertical, KeyRound, Link as LucideLink, Loader, Terminal,
   Users
 } from "lucide-react";
 import React, {useContext, useEffect, useState, type ReactNode, useRef} from 'react';
@@ -49,6 +49,7 @@ import {QUERY_KEYS} from "../../../constants/queryKeys";
 import Pagination from "../../utils/Pagination";
 import debounce from "lodash/debounce";
 import {FeedbackButton} from "../../utils/FeedbackButton";
+import {IApiSubscriptionGql} from "../apis";
 
 
 const DisplayLink = ({value}: { value: string }) => {
@@ -216,7 +217,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       }
     );
 
-  const toggleKeyring = (keyringId: string, enabled: boolean) =>
+  const toggleKeyringOLD = (keyringId: string, enabled: boolean) =>
     Services.toggleKeyring(props.team._id, keyringId, enabled).then(() => {
       toast.success(
         translate(
@@ -228,19 +229,35 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       invalidate();
     });
 
-  const toggleApiKey = (subscription: IKeyringSubscriptionGql) =>
-    Services.archiveApiKey(
-      props.team._id,
-      subscription._id,
-      !subscription.enabled
-    ).then(() => {
+  const toggleKeyring = useMutation({
+    mutationFn: ({ keyringId, enabled }: { keyringId: string; enabled: boolean }) =>
+      Services.toggleKeyring(props.team._id, keyringId, enabled),
+    onSuccess: (_result, { enabled }) => {
       toast.success(
-        subscription.enabled
+        translate(
+          enabled
+            ? 'keyring.successfully.enabled'
+            : 'keyring.successfully.disabled'
+        )
+      );
+      return invalidate()
+    },
+  });
+
+
+  const toggleApiKey = useMutation({
+    mutationFn: ({ sub }: { sub: IKeyringSubscriptionGql; keyringId: string }) =>
+      Services.archiveApiKey(props.team._id, sub._id, !sub.enabled),
+    onSuccess: (_result, { sub, keyringId }) => {
+      // `sub` = variables passées à mutate : l'état *avant* le toggle
+      toast.success(
+        sub.enabled
           ? translate('subscription.successfully.disabled')
           : translate('subscription.successfully.enabled')
       );
-      invalidate();
-    });
+      return queryClient.invalidateQueries({queryKey: QUERY_KEYS.keyringSubscriptions(keyringId) })
+    },
+  });
 
   const toggleApiKeyRotation = (
     keyringId: string,
@@ -483,7 +500,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                   currentTeam={props.team}
                   keyring={keyring}
                   updateKeyringName={(name) => updateKeyringName(keyring._id, name)}
-                  toggleKeyring={(enabled) => toggleKeyring(keyring._id, enabled)}
+                  toggleKeyring={toggleKeyring}
                   toggle={toggleApiKey}
                   toggleRotation={toggleApiKeyRotation}
                   regenerateSecret={() => regenerateSecret(keyring)}
@@ -563,8 +580,8 @@ type KeyringCardProps = {
   keyring: IKeyringForApiGql;
   currentTeam?: ITeamSimple;
   updateKeyringName: (name: string) => Promise<void>;
-  toggleKeyring: (enabled: boolean) => Promise<void>;
-  toggle: (subscription: IKeyringSubscriptionGql) => Promise<void>;
+  toggleKeyring: UseMutationResult<unknown, Error, { keyringId: string; enabled: boolean }>;
+  toggle: UseMutationResult<unknown, Error, { sub: IKeyringSubscriptionGql; keyringId: string }>;
   toggleRotation: (
     keyringId: string,
     enabled: boolean,
@@ -770,6 +787,32 @@ export const KeyringCard = ({
       meta: {className: 'action-cell', size: 5},
       cell: (info) => {
         const sub = info.cell.row.original
+        const rowPending = toggle.isPending && toggle.variables?.sub._id === sub._id;
+        const toggleInFlight = useRef(false);
+
+        const toggleApiSubscriptionState = (sub: IKeyringSubscriptionGql) => {
+          if (api.state === 'blocked' || toggleInFlight.current) return;
+          toggleInFlight.current = true;
+          const confirmation = sub.state === 'active'
+            ? confirm({ message: translate('subscription.disable.confirm') })
+            : Promise.resolve(true);
+
+          return confirmation
+            .then((ok) => {
+              if (ok) return toggle.mutateAsync({sub, keyringId: keyring._id});
+            })
+            .catch((error) => {
+              const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+                ? error.error
+                : 'Oops something went wrong';
+              toast.error(translate(message));
+            })
+            .finally(() => {
+              toggleInFlight.current = false;
+            });
+        }
+
+
         return (
           <span>
             <Can I={manage} a={apikey} team={currentTeam}>
@@ -779,12 +822,14 @@ export const KeyringCard = ({
                   aria-label={translate('subscription.actions')}
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
+                  aria-busy={rowPending}
+                  disabled={rowPending}
                   id={`dropdown-${sub._id}`}
                 >
-                  <EllipsisVertical
-                    className="cursor-pointer dropdown-menu-button"
-                    style={{fontSize: '18px'}}
-                  />
+                {rowPending ? <Loader className="--rotate" size={24} /> : <EllipsisVertical
+                  className="cursor-pointer dropdown-menu-button"
+                  style={{ fontSize: '18px' }}
+                />}
                 </button>
                 <div
                   className="dropdown-menu dropdown-menu-end"
@@ -806,18 +851,7 @@ export const KeyringCard = ({
                   {sub.state !== 'blocked' && (
                     <button
                       className="dropdown-item cursor-pointer"
-                      onClick={() =>
-                        sub.enabled ? 
-                        confirm({message: translate('subscription.disable.confirm')})
-                          .then((ok) => {
-                            if (ok) {
-                              toggle(sub)
-                                .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }));
-                            }
-                          })
-                          :toggle(sub)
-                            .then(r => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) }))
-                      }
+                      onClick={() => toggleApiSubscriptionState(sub)}
                     >
                       {sub.enabled
                         ? translate('subscription.disable.button.label')
@@ -857,6 +891,30 @@ export const KeyringCard = ({
 
   const queryClient = useQueryClient();
   const [folding, setFolding] = useState(false);
+
+  const keyringPending = toggleKeyring.isPending && toggleKeyring.variables?.keyringId === keyring._id;
+  const toggleInFlight = useRef(false);
+  const toggleKeyringState = (keyring: IKeyringForApiGql) => {
+    if (api.state === 'blocked' || toggleInFlight.current) return;
+    toggleInFlight.current = true;
+    const confirmation = keyring.enabled
+      ? confirm({ message: translate('subscription.disable.confirm') })
+      : Promise.resolve(true);
+
+    return confirmation
+      .then((ok) => {
+        if (ok) return toggleKeyring.mutateAsync({keyringId:keyring._id,enabled:!keyring.enabled});
+      })
+      .catch((error) => {
+        const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+          ? error.error
+          : 'Oops something went wrong';
+        toast.error(translate(message));
+      })
+      .finally(() => {
+        toggleInFlight.current = false;
+      });
+  }
 
   return (
     <div
@@ -979,12 +1037,14 @@ export const KeyringCard = ({
               aria-label={translate('keyring.actions')}
               data-bs-toggle="dropdown"
               aria-expanded="false"
+              aria-busy={keyringPending}
+              disabled={keyringPending}
               id={`keyring-dropdown-${keyring._id}`}
             >
-              <EllipsisVertical
-                className="dropdown-menu-button cursor-pointer"
-                style={{fontSize: '20px'}}
-              />
+              {keyringPending ? <Loader className="--rotate" size={24} /> : <EllipsisVertical
+                className="cursor-pointer dropdown-menu-button"
+                style={{ fontSize: '18px' }}
+              />}
             </button>
             <div
               className="dropdown-menu dropdown-menu-end"
@@ -1014,17 +1074,7 @@ export const KeyringCard = ({
               </button>
               {/* TODO: better label */}
               <button className={classNames('dropdown-item cursor-pointer')}
-                      onClick={
-                        () =>
-                        withLoader(async () => {
-                          if (keyring.enabled) {
-                            const ok = await confirm({ message: translate('keyring.disable.confirm') });
-                            if (!ok) return;
-                          }
-                          toggleKeyring(!keyring.enabled);
-                          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
-                        })
-                      }
+                onClick={() => toggleKeyringState(keyring)}
               >
                 {translate(
                   keyring.enabled
