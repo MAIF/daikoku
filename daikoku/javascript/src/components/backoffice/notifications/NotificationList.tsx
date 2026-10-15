@@ -32,7 +32,7 @@ import {
 import { BulkAction, DynamicTable, DynamicTableColumnCtx, DynamicTableFeatures, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
 import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
+import { SimpleApiKeyCard} from "../apikeys";
 import { IApiSubscriptionGql } from '../apis';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
