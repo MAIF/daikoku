@@ -20,13 +20,39 @@ class DeletionService(
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
     otoroshiSynchronizerJob: OtoroshiSynchronizerJob,
-    keyringService: KeyringService
+    keyringService: KeyringService,
+    apiService: ApiService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
   private val systemUser = User.system
+
+  private def blockBatchItems(
+      tenant: Option[TenantId],
+      apiIds: Set[ApiId] = Set.empty,
+      planIds: Set[UsagePlanId] = Set.empty,
+      teamIds: Set[TeamId] = Set.empty,
+      requesterIds: Set[UserId] = Set.empty
+  ): EitherT[Future, AppError, Unit] =
+    for {
+      affected <- EitherT(
+        env.dataStore
+          .blockBatchItems(tenant, apiIds, planIds, teamIds, requesterIds)
+      )
+      _ <- affected.foldLeft(EitherT.pure[Future, AppError](())) {
+        (previous, batch) =>
+          for {
+            _ <- previous
+            tenantSettings <- EitherT.fromOptionF(
+              env.dataStore.tenantRepo.findById(batch.tenant),
+              AppError.TenantNotFound
+            )
+            _ <- apiService.advanceSubscriptionBatch(tenantSettings, batch.id)
+          } yield ()
+      }
+    } yield ()
 
   /** Physically delete a user and the tenant-local traces the queue used to
     * clean up (team-invitation notifications, and their chat messages unless
@@ -424,10 +450,10 @@ class DeletionService(
       .map(_ => ())
 
     for {
-      _ <- EitherT(env.dataStore.blockBatchItems(
+      _ <- blockBatchItems(
         Some(tenant.id),
         apiIds = apis.map(_.id).toSet
-      ))
+      )
       _ <- EitherT.liftF[Future, AppError, Unit](planDeletion)
       _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
         Future.sequence(apis.distinct.map(api => deleteApiClosure(api, tenant)))
@@ -563,10 +589,10 @@ class DeletionService(
     val userParam = "$" + (tenantParams.size + 1)
 
     for {
-      _ <- EitherT(env.dataStore.blockBatchItems(
+      _ <- blockBatchItems(
         tenant.map(_.id),
         requesterIds = Set(user.id)
-      ))
+      )
       notifs <- EitherT.right[AppError](
         env.dataStore.notificationRepo
           .forAllTenant()
@@ -680,10 +706,10 @@ class DeletionService(
         env.dataStore.teamRepo.forTenant(tenant).findById(id),
         AppError.TeamNotFound
       )
-      _ <- EitherT(env.dataStore.blockBatchItems(
+      _ <- blockBatchItems(
         Some(tenant.id),
         teamIds = Set(team.id)
-      ))
+      )
       apis <- EitherT.liftF(
         env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
       )
@@ -760,10 +786,10 @@ class DeletionService(
           .findById(planId),
         AppError.PlanNotFound
       )
-      _ <- EitherT(env.dataStore.blockBatchItems(
+      _ <- blockBatchItems(
         Some(tenant.id),
         planIds = Set(plan.id)
-      ))
+      )
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
           .findByApiAndPlan(tenant.id, api.id, plan.id)
@@ -887,6 +913,10 @@ class DeletionService(
       _ <- demand.batch match {
         case Some(reference) =>
           EitherT(env.dataStore.cancelBatchChild(tenant.id, reference))
+            .flatMap(_ =>
+              apiService.advanceSubscriptionBatch(tenant, reference.batch)
+            )
+            .map(_ => ())
         case None =>
           EitherT.right[AppError](
             env.dataStore.withTransaction {

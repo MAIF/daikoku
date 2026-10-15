@@ -552,15 +552,8 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
 
-  lazy val subscriptionBatchJobInterval: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.subscriptionBatchJob.interval")
-    .map(_.millis)
-    .getOrElse(5.seconds)
-  lazy val subscriptionBatchJobBatchSize: Int = underlying
-    .getOptional[Int]("daikoku.subscriptionBatchJob.batchSize")
-    .getOrElse(10)
   lazy val subscriptionBatchReservationDuration: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.subscriptionBatchJob.reservationDuration")
+    .getOptional[Long]("daikoku.subscriptionBatch.reservationDuration")
     .map(_.millis)
     .getOrElse(10.minutes)
 

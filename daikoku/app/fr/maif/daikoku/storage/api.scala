@@ -923,12 +923,30 @@ trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId] {
       ec: ExecutionContext
   ): Future[Long] = {
     val repo = forTenant(tenant)
-    repo.execute(
-      s"DELETE FROM ${repo.tableName} " +
-        "WHERE content->>'_tenant' = $1 " +
-        "AND content->'action'->>'demand' = $2",
-      Seq(tenant.value, demand.value)
-    )
+    for {
+      deleted <- repo.execute(
+        s"DELETE FROM ${repo.tableName} " +
+          "WHERE content->>'_tenant' = $1 " +
+          "AND (content->'action'->>'demand' = $2 OR (" +
+          "content->'action'->>'type' = 'ApiSubscriptionBatch' " +
+          s"AND $pending AND EXISTS (" +
+          "SELECT 1 FROM jsonb_array_elements(content->'action'->'items') AS item " +
+          "WHERE item->>'demand' = $2) AND NOT EXISTS (" +
+          "SELECT 1 FROM jsonb_array_elements(content->'action'->'items') AS item " +
+          "WHERE item->>'demand' <> $2)))",
+        Seq(tenant.value, demand.value)
+      )
+      updated <- repo.execute(
+        s"UPDATE ${repo.tableName} SET content = jsonb_set(content, '{action,items}', (" +
+          "SELECT jsonb_agg(item) FROM jsonb_array_elements(content->'action'->'items') AS item " +
+          "WHERE item->>'demand' <> $2)) " +
+          s"WHERE content->>'_tenant' = $$1 AND $pending " +
+          "AND content->'action'->>'type' = 'ApiSubscriptionBatch' AND EXISTS (" +
+          "SELECT 1 FROM jsonb_array_elements(content->'action'->'items') AS item " +
+          "WHERE item->>'demand' = $2)",
+        Seq(tenant.value, demand.value)
+      )
+    } yield deleted + updated
   }
 }
 
@@ -2365,224 +2383,92 @@ trait SubscriptionBatchDemandRepo
 
   def findPendingKeyringCreations(
       tenant: TenantId,
-      limit: Int,
-      batchId: Option[SubscriptionBatchDemandId] = None
+      batchId: SubscriptionBatchDemandId
   )(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Either[AppError, Seq[
     (SubscriptionBatchDemandId, SubscriptionBatchKeyringId)
   ]]] =
-    if (limit <= 0)
-      Future.successful(
-        Left(
-          AppError.BadRequestError(
-            "The keyring preparation limit must be positive"
-          )
+    forTenant(tenant).findById(batchId).map {
+      case None => Left(AppError.EntityNotFound("Subscription batch"))
+      case Some(batch) =>
+        Right(
+          batch.newKeyrings
+            .filter { creation =>
+              val items = batch.items.filter(
+                _.keyringChoice == SubscriptionBatchKeyringChoice
+                  .New(creation.id)
+              )
+              !creation.finalized && items.nonEmpty && (
+                if (creation.ready)
+                  items
+                    .exists(_.state == SubscriptionBatchItemState.Accepted) ||
+                  items.forall(_.state.isClosed)
+                else
+                  items.exists(item =>
+                    item.state == SubscriptionBatchItemState.Pending &&
+                      item.demand.isEmpty && item.reservation.isEmpty
+                  ) || creation.keyring.isDefined && items
+                    .forall(_.state.isClosed)
+              )
+            }
+            .map(creation => batch.id -> creation.id)
         )
-      )
-    else {
-      val repo = forTenant(tenant)
-      val (batchFilter, batchParams) = batchId match {
-        case Some(id) => ("AND _id = $3", Seq(id.value))
-        case None     => ("", Seq.empty[String])
-      }
-      repo
-        .queryTyped(
-          s"""SELECT content FROM ${repo.tableName}
-             |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
-             |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
-             |  WHERE item->'keyringChoice'->>'type' = 'new'
-             |    AND EXISTS (
-             |      SELECT 1 FROM jsonb_array_elements(content->'newKeyrings') AS creation
-             |      WHERE creation->>'_id' = item->'keyringChoice'->>'creation'
-             |        AND (
-             |          COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = false
-             |          AND item->>'state' = 'pending'
-             |          AND item->>'demand' IS NULL
-             |          AND item->>'reservation' IS NULL
-             |          OR COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = false
-             |          AND creation->>'keyring' IS NOT NULL
-             |          AND NOT EXISTS (
-             |            SELECT 1 FROM jsonb_array_elements(content->'items') AS open_item
-             |            WHERE open_item->>'state' NOT IN ('accepted', 'refused', 'blocked', 'failed', 'canceled')
-             |              AND open_item->'keyringChoice'->>'type' = 'new'
-             |              AND open_item->'keyringChoice'->>'creation' = creation->>'_id'
-             |          )
-             |          OR COALESCE((creation->>'ready')::boolean, creation->>'keyring' IS NOT NULL) = true
-             |          AND COALESCE((creation->>'finalized')::boolean, false) = false
-             |          AND (
-             |            item->>'state' = 'accepted'
-             |            OR NOT EXISTS (
-             |              SELECT 1 FROM jsonb_array_elements(content->'items') AS open_item
-             |              WHERE open_item->>'state' NOT IN ('accepted', 'refused', 'blocked', 'failed', 'canceled')
-             |                AND open_item->'keyringChoice'->>'type' = 'new'
-             |                AND open_item->'keyringChoice'->>'creation' = creation->>'_id'
-             |            )
-             |          )
-             |        )
-             |    )
-             |)
-             |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
-          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
-        )
-        .map { batches =>
-          Right(
-            batches
-              .flatMap { batch =>
-                batch.newKeyrings.collect {
-                  case creation
-                      if (
-                        !creation.ready && batch.items.exists(item =>
-                          item.state == SubscriptionBatchItemState.Pending &&
-                            item.demand.isEmpty && item.reservation.isEmpty &&
-                            item.keyringChoice ==
-                            SubscriptionBatchKeyringChoice.New(creation.id)
-                        )
-                          || (
-                            creation.keyring.isDefined &&
-                              !batch.items.exists(item =>
-                                !item.state.isClosed &&
-                                  item.keyringChoice ==
-                                  SubscriptionBatchKeyringChoice
-                                    .New(creation.id)
-                              )
-                          )
-                      ) || (
-                        creation.ready && !creation.finalized &&
-                          (batch.items.exists(item =>
-                            item.state == SubscriptionBatchItemState.Accepted &&
-                              item.keyringChoice ==
-                              SubscriptionBatchKeyringChoice.New(creation.id)
-                          ) || !batch.items.exists(item =>
-                            !item.state.isClosed &&
-                              item.keyringChoice ==
-                              SubscriptionBatchKeyringChoice.New(creation.id)
-                          ))
-                      ) =>
-                    batch.id -> creation.id
-                }
-              }
-              .take(limit)
-          )
-        }
     }
 
   def findMaterializableItems(
       tenant: TenantId,
-      limit: Int,
-      batchId: Option[SubscriptionBatchDemandId] = None
+      batchId: SubscriptionBatchDemandId
   )(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Either[AppError, Seq[SubscriptionBatchReference]]] =
-    if (limit <= 0)
-      Future.successful(
-        Left(
-          AppError.BadRequestError("The materialization limit must be positive")
+    forTenant(tenant).findById(batchId).map {
+      case None => Left(AppError.EntityNotFound("Subscription batch"))
+      case Some(batch) =>
+        Right(
+          batch.items.collect {
+            case item
+                if item.state == SubscriptionBatchItemState.Pending &&
+                  item.demand.isEmpty && item.reservation.isEmpty && (item.keyringChoice match {
+                    case SubscriptionBatchKeyringChoice.Existing(_) =>
+                      true
+                    case SubscriptionBatchKeyringChoice.New(id) =>
+                      batch.newKeyrings.exists(creation =>
+                        creation.id == id && creation.keyring.isDefined &&
+                          creation.ready
+                      )
+                  }) =>
+              SubscriptionBatchReference(batch.id, item.id)
+          }
         )
-      )
-    else {
-      val repo = forTenant(tenant)
-      val (batchFilter, batchParams) = batchId match {
-        case Some(id) => ("AND _id = $3", Seq(id.value))
-        case None     => ("", Seq.empty[String])
-      }
-      repo
-        .queryTyped(
-          s"""SELECT content FROM ${repo.tableName}
-           |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
-           |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
-           |  WHERE item->>'state' = 'pending' AND item->>'demand' IS NULL
-         |    AND item->>'reservation' IS NULL
-         |    AND (item->'keyringChoice'->>'type' = 'existing' OR EXISTS (
-         |      SELECT 1 FROM jsonb_array_elements(content->'newKeyrings') AS creation
-         |      WHERE creation->>'_id' = item->'keyringChoice'->>'creation'
-         |        AND creation->>'keyring' IS NOT NULL
-         |        AND COALESCE((creation->>'ready')::boolean, true)
-         |    ))
-         |)
-         |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
-          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
-        )
-        .map { batches =>
-          Right(
-            batches
-              .flatMap { batch =>
-                batch.items.collect {
-                  case item
-                      if item.state == SubscriptionBatchItemState.Pending &&
-                        item.demand.isEmpty && item.reservation.isEmpty && (item.keyringChoice match {
-                          case SubscriptionBatchKeyringChoice.Existing(_) =>
-                            true
-                          case SubscriptionBatchKeyringChoice.New(id) =>
-                            batch.newKeyrings.exists(creation =>
-                              creation.id == id && creation.keyring.isDefined &&
-                                creation.ready
-                            )
-                        }) =>
-                    SubscriptionBatchReference(batch.id, item.id)
-                }
-              }
-              .take(limit)
-          )
-        }
     }
 
   def findRunnableChildren(
       tenant: TenantId,
-      limit: Int,
-      batchId: Option[SubscriptionBatchDemandId] = None
+      batchId: SubscriptionBatchDemandId
   )(implicit
       dbConn: DbConn,
       ec: ExecutionContext
   ): Future[Either[AppError, Seq[SubscriptionBatchReference]]] =
-    if (limit <= 0)
-      Future.successful(
-        Left(
-          AppError.BadRequestError(
-            "The child processing limit must be positive"
-          )
-        )
-      )
-    else {
-      val repo = forTenant(tenant)
-      val (batchFilter, batchParams) = batchId match {
-        case Some(id) => ("AND _id = $3", Seq(id.value))
-        case None     => ("", Seq.empty[String])
-      }
-      repo
-        .queryTyped(
-          s"""SELECT content FROM ${repo.tableName}
-           |WHERE content->>'_tenant' = $$1 $batchFilter AND EXISTS (
-           |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
-           |  WHERE item->>'state' IN ('waiting', 'inProgress')
-           |    AND item->>'demand' IS NOT NULL
-           |    AND item->>'reservation' IS NULL
-           |)
-           |ORDER BY (content->>'date')::bigint, _id LIMIT $$2""".stripMargin,
-          Seq(tenant.value, java.lang.Integer.valueOf(limit)) ++ batchParams
-        )
-        .map { batches =>
-          Right(
-            batches
-              .flatMap(batch =>
-                batch.items.collect {
-                  case item
-                      if Set(
-                        SubscriptionBatchItemState.Waiting,
-                        SubscriptionBatchItemState.InProgress
-                      ).contains(item.state) &&
-                        item.demand.isDefined && item.reservation.isEmpty =>
-                    SubscriptionBatchReference(
-                      batch.id,
-                      item.id
-                    )
-                }
+    forTenant(tenant).findById(batchId).map {
+      case None => Left(AppError.EntityNotFound("Subscription batch"))
+      case Some(batch) =>
+        Right(
+          batch.items.collect {
+            case item
+                if Set(
+                  SubscriptionBatchItemState.Waiting,
+                  SubscriptionBatchItemState.InProgress
+                ).contains(item.state) &&
+                  item.demand.isDefined && item.reservation.isEmpty =>
+              SubscriptionBatchReference(
+                batch.id,
+                item.id
               )
-              .take(limit)
-          )
-        }
+          }
+        )
     }
 
   private[daikoku] def findForUpdate(
@@ -4277,7 +4163,9 @@ trait DataStore {
       planIds: Set[UsagePlanId] = Set.empty,
       teamIds: Set[TeamId] = Set.empty,
       requesterIds: Set[UserId] = Set.empty
-  )(implicit ec: ExecutionContext): Future[Either[AppError, Unit]] = {
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[AppError, Seq[SubscriptionBatchDemand]]] = {
     def matches(
         batch: SubscriptionBatchDemand,
         item: SubscriptionBatchItem
@@ -4513,7 +4401,7 @@ trait DataStore {
                                   }
                               }
                           }
-                          .map(_ => Right(()))
+                          .map(_ => Right(changed.map(_.after)))
                     }
                   }
               }

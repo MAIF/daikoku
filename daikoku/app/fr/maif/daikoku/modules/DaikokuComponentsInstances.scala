@@ -57,8 +57,6 @@ class DaikokuComponentsInstances(context: Context)
   lazy val keyringService = wire[KeyringService]
   lazy val apiService = wire[ApiService]
   lazy val subscriptionBatchService = wire[SubscriptionBatchService]
-  lazy val subscriptionBatchMaterializationJob =
-    wire[SubscriptionBatchMaterializationJob]
   lazy val accountService = wire[AccountCreationService]
   lazy val assetsService = wire[AssetsService]
   lazy val translationsService = wire[TranslationsService]
@@ -262,7 +260,6 @@ class DaikokuComponentsInstances(context: Context)
   anonReportingJob.start()
   keyringExpirationJob.start()
   remoteCatalogJob.start()
-  subscriptionBatchMaterializationJob.start()
   env.onStartup()
 
   applicationLifecycle.addStopHook { () =>
@@ -274,7 +271,6 @@ class DaikokuComponentsInstances(context: Context)
     notificationPurgeJob.stop()
     anonReportingJob.stop()
     remoteCatalogJob.stop()
-    subscriptionBatchMaterializationJob.stop()
     keyringExpirationJob.stop()
     env.onShutdown()
     pgPool.close()

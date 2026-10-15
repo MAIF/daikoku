@@ -195,7 +195,14 @@ class NotificationController(
                       actor = ctx.user.asNotificationSender,
                       message = None
                     )
-                    .map(_.map(_ => ()))
+                    .flatMap {
+                      case Left(error) => Future.successful(Left(error))
+                      case Right(_) =>
+                        apiService
+                          .advanceSubscriptionBatch(ctx.tenant, action.batch)
+                          .value
+                          .map(_.map(_ => ()))
+                    }
                 )
               case TeamInvitation(_, user) if user != ctx.user.id =>
                 EitherT.leftT[Future, Unit](ForbiddenAction)
@@ -518,15 +525,18 @@ class NotificationController(
 
       val result = for {
         _ <- EitherT(
-          env.dataStore.resolveBatchApproval(
-            ctx.tenant.id,
-            notification.id,
-            action,
-            accepted = false,
-            actor = ctx.user.asNotificationSender,
-            message = maybeMessage
-          ).map(_.map(_ => ()))
+          env.dataStore
+            .resolveBatchApproval(
+              ctx.tenant.id,
+              notification.id,
+              action,
+              accepted = false,
+              actor = ctx.user.asNotificationSender,
+              message = maybeMessage
+            )
+            .map(_.map(_ => ()))
         )
+        _ <- apiService.advanceSubscriptionBatch(ctx.tenant, action.batch)
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)

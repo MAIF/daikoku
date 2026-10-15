@@ -2,11 +2,6 @@ package fr.maif.daikoku.controllers
 
 import com.sun.net.httpserver.HttpServer
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.jobs.{
-  JobOutcome,
-  Runner,
-  SubscriptionBatchMaterializationJob
-}
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.services.SubscriptionBatchService
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
@@ -220,10 +215,10 @@ class SubscriptionBatchStorageSpec
   private def awaitMaterialization(
       service: SubscriptionBatchService,
       tenant: TenantId,
-      limit: Int
+      batch: SubscriptionBatchDemandId
   ): Seq[(SubscriptionBatchReference, Either[AppError, SubscriptionDemand])] =
     Await
-      .result(service.materializePendingItems(tenant, limit).value, 10.seconds)
+      .result(service.materializePendingItems(tenant, batch).value, 30.seconds)
       .fold(error => fail(error.getErrorMessage()), identity)
 
   private def newChild(
@@ -259,11 +254,6 @@ class SubscriptionBatchStorageSpec
           )
         )
       )
-      val job = new SubscriptionBatchMaterializationJob(
-        env,
-        daikokuComponents.subscriptionBatchService,
-        daikokuComponents.apiService
-      )
       var producer: Option[User] = None
       try {
         persistEligibilityFixtures(
@@ -283,14 +273,14 @@ class SubscriptionBatchStorageSpec
           .get
         producer = Some(producerUser)
 
-        Await.result(
-          job.run(tenant, Runner.Api, input = Some(parent.id), parallelism = 2),
-          10.seconds
-        ) match {
-          case JobOutcome.Completed(result) =>
-            result.failures mustBe empty
-          case other => fail(s"Unexpected producer workflow outcome: $other")
-        }
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
 
         val notifications = Await
           .result(
@@ -391,6 +381,185 @@ class SubscriptionBatchStorageSpec
       }
     }
 
+    "merge a newly materialized sibling into the existing pending approval without losing earlier references" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val first = initial.items.head.copy(
+        process = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin("admin", TeamId("producer"))
+          )
+        )
+      )
+      val second = first.copy(
+        id = SubscriptionBatchItemId("reconciled"),
+        plan = UsagePlanId("reconciled-plan"),
+        keyringChoice = SubscriptionBatchKeyringChoice.Existing(
+          KeyringId("reconciled-keyring")
+        )
+      )
+      val parent = initial.copy(items = Seq(first, second))
+      var requester = Option.empty[User]
+      try {
+        persistEligibilityFixtures(
+          store,
+          parent,
+          requesterIsDaikokuAdmin = true,
+          apiVisibility = ApiVisibility.AdminOnly
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        Await
+          .result(
+            daikokuComponents.subscriptionBatchService
+              .materializeItem(
+                parent.tenant,
+                parent.id,
+                first.id
+              )
+              .value,
+            5.seconds
+          )
+          .isRight mustBe true
+        val reference = SubscriptionBatchReference(parent.id, second.id)
+        val reservation = Await
+          .result(
+            daikokuComponents.subscriptionBatchService
+              .reserveItem(
+                parent.tenant,
+                reference,
+                5.minutes
+              )
+              .value,
+            5.seconds
+          )
+          .toOption
+          .get
+        val tenant =
+          Await.result(store.tenantRepo.findById(parent.tenant), 5.seconds).get
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        val original = Await
+          .result(
+            store.notificationRepo
+              .findPendingByTeam(parent.tenant, TeamId("producer")),
+            5.seconds
+          )
+          .head
+        val originalAction = original.action
+          .asInstanceOf[NotificationAction.ApiSubscriptionBatchDemand]
+        originalAction.items.map(_.item) mustBe Seq(first.id)
+        val user =
+          Await.result(store.userRepo.findById(parent.from), 5.seconds).get
+        requester = Some(user)
+        val session = loginWithBlocking(user, tenant)
+        Await
+          .result(
+            daikokuComponents.subscriptionBatchService
+              .releaseReservation(
+                parent.tenant,
+                reference,
+                reservation.token
+              )
+              .value,
+            5.seconds
+          )
+          .isRight mustBe true
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        val notifications = Await.result(
+          store.notificationRepo
+            .findPendingByTeam(parent.tenant, TeamId("producer")),
+          5.seconds
+        )
+        notifications must have size 1
+        notifications.head.id mustBe original.id
+        val merged = notifications.head.action
+          .asInstanceOf[NotificationAction.ApiSubscriptionBatchDemand]
+        merged.items.map(_.item).toSet mustBe Set(first.id, second.id)
+        merged.items must have size 2
+        merged.items.find(
+          _.item == first.id
+        ) mustBe originalAction.items.headOption
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).findById(original.id),
+          5.seconds
+        ) mustBe Some(notifications.head)
+        val accepted = httpJsonCallBlocking(
+          s"/api/notifications/${original.id.value}/accept",
+          method = "PUT",
+          body = Some(Json.obj())
+        )(using tenant, session)
+        accepted.status mustBe 200
+        Await
+          .result(
+            store.subscriptionBatchDemandRepo
+              .forTenant(parent.tenant)
+              .findById(parent.id),
+            5.seconds
+          )
+          .get
+          .items
+          .map(_.state) mustBe Seq.fill(2)(SubscriptionBatchItemState.Accepted)
+        Await
+          .result(
+            store.apiSubscriptionRepo.forTenant(parent.tenant).findAll(),
+            5.seconds
+          )
+          .map(_.plan)
+          .toSet mustBe Set(first.plan, second.plan)
+      } finally {
+        requester.foreach(user =>
+          Await.result(
+            store.userSessionRepo.deleteByUserEmail(user.email),
+            5.seconds
+          )
+        )
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.apiSubscriptionRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
     "accept one grouped notification and process each plan independently" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
@@ -445,11 +614,6 @@ class SubscriptionBatchStorageSpec
           )
         )
       )
-      val job = new SubscriptionBatchMaterializationJob(
-        env,
-        daikokuComponents.subscriptionBatchService,
-        daikokuComponents.apiService
-      )
       var requester: Option[User] = None
       try {
         persistEligibilityFixtures(
@@ -470,14 +634,14 @@ class SubscriptionBatchStorageSpec
           .get
         requester = Some(producer)
 
-        Await.result(
-          job.run(tenant, Runner.Api, input = Some(parent.id), parallelism = 2),
-          10.seconds
-        ) match {
-          case JobOutcome.Completed(result) =>
-            result.failures mustBe empty
-          case other => fail(s"Unexpected producer approval outcome: $other")
-        }
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
 
         val groupedNotifications = Await
           .result(
@@ -511,15 +675,6 @@ class SubscriptionBatchStorageSpec
           body = Some(Json.obj())
         )(using tenant, session)
         acceptedResponse.status mustBe 200
-
-        Await.result(
-          job.run(tenant, Runner.Api, input = Some(parent.id), parallelism = 2),
-          10.seconds
-        ) match {
-          case JobOutcome.Completed(result) =>
-            result.failures mustBe empty
-          case other => fail(s"Unexpected post-approval outcome: $other")
-        }
 
         callbackRequests.asScala.toSeq.sorted mustBe Seq(
           acceptedPlan.value,
@@ -592,10 +747,19 @@ class SubscriptionBatchStorageSpec
   }
 
   "Atomic batch submission" should {
-    "submit a consumer batch through HTTP without materializing child demands" in {
+    "submit and immediately advance a consumer batch through HTTP without replaying its effects" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val store = daikokuComponents.env.dataStore
-      val template = newBatch()
+      val initial = newBatch()
+      val template = initial.copy(items =
+        initial.items.map(
+          _.copy(process =
+            SubscriptionProcess(
+              Seq(ValidationStep.TeamAdmin("producer", TeamId("producer")))
+            )
+          )
+        )
+      )
       val selection = SubscriptionBatchSubmission(
         team = template.team,
         idempotencyKey = template.idempotencyKey,
@@ -648,7 +812,7 @@ class SubscriptionBatchStorageSpec
           )
           .get
         receipt.replayed mustBe false
-        receipt.state mustBe SubscriptionBatchDemandState.Pending
+        receipt.state mustBe SubscriptionBatchDemandState.InProgress
         val pendingPlans = httpJsonCallBlocking(
           s"/api/subscription/team/${template.team.value}/pending-plans",
           method = "GET"
@@ -669,13 +833,22 @@ class SubscriptionBatchStorageSpec
           )
           .get
         persisted.items.map(_.state) mustBe Seq(
-          SubscriptionBatchItemState.Pending
+          SubscriptionBatchItemState.InProgress
         )
-        persisted.items.foreach(_.demand mustBe None)
+        persisted.items.foreach(_.demand mustBe defined)
         Await.result(
           store.subscriptionDemandRepo.forTenant(template.tenant).count(),
           5.seconds
-        ) mustBe 0L
+        ) mustBe 1L
+        val notifications = Await.result(
+          store.notificationRepo
+            .findPendingByTeam(template.tenant, TeamId("producer")),
+          5.seconds
+        )
+        notifications must have size 1
+        notifications.head.action mustBe a[
+          NotificationAction.ApiSubscriptionBatchDemand
+        ]
 
         val replay = httpJsonCallBlocking(
           s"/api/subscription/team/${template.team.value}/batches",
@@ -689,13 +862,36 @@ class SubscriptionBatchStorageSpec
           )
           .get
         replayReceipt mustBe receipt.copy(replayed = true)
-        val closed = persisted.copy(items =
-          persisted.items.map(_.copy(state = SubscriptionBatchItemState.Canceled))
-        )
         Await.result(
-          store.subscriptionBatchDemandRepo.updateIfRevisionMatches(closed),
+          store.subscriptionDemandRepo.forTenant(template.tenant).count(),
           5.seconds
-        ) mustBe defined
+        ) mustBe 1L
+        Await
+          .result(
+            store.notificationRepo
+              .findPendingByTeam(template.tenant, TeamId("producer")),
+            5.seconds
+          )
+          .map(_.id) mustBe notifications.map(_.id)
+        val canceled = httpJsonCallBlocking(
+          s"/api/subscription/team/${template.team.value}/batches/${receipt.batch.value}",
+          method = "DELETE"
+        )(using tenant, session)
+        canceled.status mustBe 200
+        val canceledChild = Await
+          .result(
+            store.subscriptionDemandRepo
+              .forTenant(template.tenant)
+              .findById(persisted.items.head.demand.get),
+            5.seconds
+          )
+          .get
+        canceledChild.state mustBe SubscriptionDemandState.Canceled
+        Await.result(
+          store.notificationRepo
+            .findPendingByTeam(template.tenant, TeamId("producer")),
+          5.seconds
+        ) mustBe empty
         val afterCancellation = httpJsonCallBlocking(
           s"/api/subscription/team/${template.team.value}/pending-plans",
           method = "GET"
@@ -746,6 +942,14 @@ class SubscriptionBatchStorageSpec
             store.userSessionRepo.deleteByUserEmail(user.email),
             5.seconds
           )
+        )
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(template.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.notificationRepo.forTenant(template.tenant).deleteAll(),
+          5.seconds
         )
         Await.result(
           store.subscriptionBatchDemandRepo
@@ -1148,28 +1352,27 @@ class SubscriptionBatchStorageSpec
   }
 
   "SubscriptionBatchService" should {
-    "materialize only the requested slice when the durable worker runs" in {
+    "advance all 150 eligible items in one action without touching another batch or replaying uncertain work" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
       val store = env.dataStore
       val initial = newBatch()
       val process = SubscriptionProcess(
         Seq(
-          ValidationStep.Form("form", "Motivation"),
           ValidationStep.TeamAdmin("admin", TeamId("producer"))
         )
       )
       val parent = initial.copy(items =
-        (1 to 6).map(index =>
+        (1 to 151).map(index =>
           initial.items.head.copy(
-            id = SubscriptionBatchItemId(s"worker-$index"),
-            plan = UsagePlanId(s"worker-plan-$index"),
+            id = SubscriptionBatchItemId(s"direct-$index"),
+            plan = UsagePlanId(s"direct-plan-$index"),
             process = process,
             state =
-              if (index == 6) SubscriptionBatchItemState.RetryableError
+              if (index == 151) SubscriptionBatchItemState.RetryableError
               else SubscriptionBatchItemState.Pending,
             error =
-              if (index == 6)
+              if (index == 151)
                 Some(
                   SubscriptionBatchItemError(
                     "external_outcome_unknown",
@@ -1191,11 +1394,6 @@ class SubscriptionBatchStorageSpec
           )
         )
       )
-      val job = new SubscriptionBatchMaterializationJob(
-        env,
-        daikokuComponents.subscriptionBatchService,
-        daikokuComponents.apiService
-      )
       try {
         persistEligibilityFixtures(
           store,
@@ -1210,29 +1408,21 @@ class SubscriptionBatchStorageSpec
           5.seconds
         )
 
+        val tenant = Await
+          .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
+          .get
         val outcome = Await.result(
-          job.run(
-            Await
-              .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
-              .get,
-            Runner.Api,
-            input = Some(parent.id),
-            parallelism = 3
-          ),
-          10.seconds
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
+          60.seconds
         )
-        outcome match {
-          case JobOutcome.Completed(result) =>
-            result.processed mustBe 3L
-            result.succeeded mustBe 3L
-            result.failures mustBe empty
-          case other => fail(s"Unexpected batch worker outcome: $other")
-        }
+        outcome.isRight mustBe true
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
-        ) mustBe 3L
-        val afterFirstSlice = Await
+        ) mustBe 150L
+        val afterAdvancement = Await
           .result(
             store.subscriptionBatchDemandRepo
               .forTenant(parent.tenant)
@@ -1240,44 +1430,50 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        afterFirstSlice.items.take(3).map(_.state) mustBe Seq.fill(3)(
-          SubscriptionBatchItemState.Waiting
+        afterAdvancement.items.take(150).map(_.state) mustBe Seq.fill(150)(
+          SubscriptionBatchItemState.InProgress
         )
-        afterFirstSlice.items.take(3).foreach(_.reservation mustBe None)
+        afterAdvancement.items.take(150).foreach(_.reservation mustBe None)
+        afterAdvancement.items.take(150).foreach(_.demand mustBe defined)
+        afterAdvancement.items.last.demand mustBe None
+        val notifications = Await.result(
+          store.notificationRepo
+            .findPendingByTeam(parent.tenant, TeamId("producer")),
+          5.seconds
+        )
+        notifications must have size 1
+        notifications.head.action match {
+          case action: NotificationAction.ApiSubscriptionBatchDemand =>
+            action.items
+              .map(_.item)
+              .toSet mustBe parent.items.take(150).map(_.id).toSet
+          case _ =>
+            fail("Expected one grouped notification for all 150 eligible plans")
+        }
         Await
           .result(
             store.subscriptionBatchDemandRepo
               .forTenant(parent.tenant)
               .findById(otherBatch.id),
             5.seconds
-          )
-          .get
-          .items
-          .head
-          .state mustBe SubscriptionBatchItemState.Pending
+          ) mustBe Some(otherBatch)
 
         val resumed = Await.result(
-          job.run(
-            Await
-              .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
-              .get,
-            Runner.Api,
-            input = Some(parent.id),
-            parallelism = 3
-          ),
-          10.seconds
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
+          60.seconds
         )
-        resumed match {
-          case JobOutcome.Completed(result) =>
-            result.processed mustBe 2L
-            result.succeeded mustBe 2L
-            result.failures mustBe empty
-          case other => fail(s"Unexpected resumed batch worker outcome: $other")
-        }
+        resumed.isRight mustBe true
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
-        ) mustBe 5L
+        ) mustBe 150L
+        Await.result(
+          store.notificationRepo
+            .findPendingByTeam(parent.tenant, TeamId("producer")),
+          5.seconds
+        ) mustBe notifications
         val savedParent = Await
           .result(
             store.subscriptionBatchDemandRepo
@@ -1290,7 +1486,14 @@ class SubscriptionBatchStorageSpec
         savedParent.items.last.error.map(_.code) mustBe Some(
           "external_outcome_unknown"
         )
+        savedParent.items.map(_.demand) mustBe afterAdvancement.items.map(
+          _.demand
+        )
       } finally {
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
           5.seconds
@@ -1308,6 +1511,122 @@ class SubscriptionBatchStorageSpec
       }
     }
 
+    "report a technical callback failure while advancing independent siblings without automatically replaying it" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val requests = new ConcurrentLinkedQueue[String]()
+      val callback = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+      callback.createContext(
+        "/uncertain",
+        exchange => {
+          val request = Json.parse(
+            new String(
+              exchange.getRequestBody.readAllBytes(),
+              StandardCharsets.UTF_8
+            )
+          )
+          val plan = (request \ "plan" \ "_id").as[String]
+          requests.add(plan)
+          val response =
+            if (plan == "independent-plan") """{"accept":true}""" else "{}"
+          val bytes = response.getBytes(StandardCharsets.UTF_8)
+          exchange.getResponseHeaders.add("Content-Type", "application/json")
+          exchange.sendResponseHeaders(200, bytes.length.toLong)
+          exchange.getResponseBody.write(bytes)
+          exchange.getResponseBody.close()
+          exchange.close()
+        }
+      )
+      callback.start()
+      val initial = newBatch()
+      val failed = initial.items.head.copy(
+        process = SubscriptionProcess(
+          Seq(
+            ValidationStep.HttpRequest(
+              "uncertain",
+              "Uncertain callback",
+              s"http://127.0.0.1:${callback.getAddress.getPort}/uncertain"
+            ),
+            ValidationStep.Email("email", Seq.empty, None, "Email")
+          )
+        )
+      )
+      val independent = initial.items.head.copy(
+        id = SubscriptionBatchItemId("independent"),
+        api = ApiId("independent-api"),
+        plan = UsagePlanId("independent-plan"),
+        keyringChoice = SubscriptionBatchKeyringChoice.Existing(
+          KeyringId("independent-keyring")
+        ),
+        process = failed.process
+      )
+      val parent = initial.copy(items = Seq(failed, independent))
+      try {
+        persistEligibilityFixtures(store, parent)
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        val tenant =
+          Await.result(store.tenantRepo.findById(parent.tenant), 5.seconds).get
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isLeft mustBe true
+        requests.asScala.toSeq.sorted mustBe parent.items
+          .map(_.plan.value)
+          .sorted
+        val saved = Await
+          .result(
+            store.subscriptionBatchDemandRepo
+              .forTenant(parent.tenant)
+              .findById(parent.id),
+            5.seconds
+          )
+          .get
+        saved.items.head.state mustBe SubscriptionBatchItemState.RetryableError
+        saved.items.head.error.map(_.code) mustBe Some(
+          "workflow_execution_failed"
+        )
+        saved.items.head.reservation mustBe defined
+        saved.items(1).state mustBe SubscriptionBatchItemState.InProgress
+        saved.items(1).demand mustBe defined
+        saved.items(1).reservation mustBe None
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 2L
+        Await.result(
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
+          10.seconds
+        ) mustBe Right(saved)
+        requests.size() mustBe 2
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 2L
+      } finally {
+        callback.stop(0)
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
     "stop automatically after recording an uncertain child workflow result" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
@@ -1322,12 +1641,12 @@ class SubscriptionBatchStorageSpec
           store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
           5.seconds
         )
-        awaitMaterialization(service, parent.tenant, 1).size mustBe 1
+        awaitMaterialization(service, parent.tenant, parent.id).size mustBe 1
         Await
           .result(
             store.subscriptionBatchDemandRepo.findRunnableChildren(
               parent.tenant,
-              10
+              parent.id
             ),
             5.seconds
           )
@@ -1361,11 +1680,27 @@ class SubscriptionBatchStorageSpec
         marked.items.head.error.map(_.code) mustBe Some(
           "workflow_execution_failed"
         )
+        val tenant = Await
+          .result(
+            store.tenantRepo.findById(parent.tenant),
+            5.seconds
+          )
+          .get
+        Await.result(
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
+          10.seconds
+        ) mustBe Right(marked)
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 1L
         Await
           .result(
             store.subscriptionBatchDemandRepo.findRunnableChildren(
               parent.tenant,
-              10
+              parent.id
             ),
             5.seconds
           )
@@ -1386,7 +1721,7 @@ class SubscriptionBatchStorageSpec
           .result(
             store.subscriptionBatchDemandRepo.findRunnableChildren(
               parent.tenant,
-              10
+              parent.id
             ),
             5.seconds
           )
@@ -1428,25 +1763,26 @@ class SubscriptionBatchStorageSpec
       }
     }
 
-    "persist an automatic email step as started so the worker does not send it twice" in {
+    "persist an automatic email step as started so repeated advancement does not send it twice" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
       val store = env.dataStore
-      val service = daikokuComponents.subscriptionBatchService
       val initial = newBatch()
       val parent = initial.copy(items =
         initial.items.map(
           _.copy(
             process = SubscriptionProcess(
-              Seq(ValidationStep.Email("email", Seq.empty, None, "Email"))
+              Seq(
+                ValidationStep.Email(
+                  "email",
+                  Seq("approver@example.test"),
+                  None,
+                  "Email"
+                )
+              )
             )
           )
         )
-      )
-      val job = new SubscriptionBatchMaterializationJob(
-        env,
-        service,
-        daikokuComponents.apiService
       )
       try {
         persistEligibilityFixtures(store, parent)
@@ -1458,16 +1794,12 @@ class SubscriptionBatchStorageSpec
           .result(store.tenantRepo.findById(parent.tenant), 5.seconds)
           .get
         val firstRun = Await.result(
-          job.run(tenant, Runner.Api, input = Some(parent.id), parallelism = 1),
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
           10.seconds
         )
-        firstRun match {
-          case JobOutcome.Completed(result) =>
-            result.processed mustBe 2L
-            result.succeeded mustBe 2L
-            result.failures mustBe empty
-          case other => fail(s"Unexpected email workflow outcome: $other")
-        }
+        firstRun.isRight mustBe true
         val child = Await
           .result(
             store.subscriptionDemandRepo.findByBatchItem(
@@ -1478,20 +1810,40 @@ class SubscriptionBatchStorageSpec
           )
           .get
         child.state mustBe SubscriptionDemandState.InProgress
+        val validators = Await.result(
+          store.stepValidatorRepo.forTenant(parent.tenant).findAll(),
+          5.seconds
+        )
+        validators must have size 1
+        validators.head.subscriptionDemand mustBe child.id
 
         val secondRun = Await.result(
-          job.run(tenant, Runner.Api, input = Some(parent.id), parallelism = 1),
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
           10.seconds
         )
-        secondRun match {
-          case JobOutcome.Completed(result) =>
-            result.processed mustBe 0L
-            result.succeeded mustBe 0L
-            result.failures mustBe empty
-          case other =>
-            fail(s"Unexpected repeated email workflow outcome: $other")
-        }
+        secondRun.isRight mustBe true
+        Await.result(
+          store.subscriptionDemandRepo.findByBatchItem(
+            parent.tenant,
+            SubscriptionBatchReference(parent.id, parent.items.head.id)
+          ),
+          5.seconds
+        ) mustBe Some(child)
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 1L
+        Await.result(
+          store.stepValidatorRepo.forTenant(parent.tenant).findAll(),
+          5.seconds
+        ) mustBe validators
       } finally {
+        Await.result(
+          store.stepValidatorRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
           5.seconds
@@ -1506,16 +1858,42 @@ class SubscriptionBatchStorageSpec
       }
     }
 
-    "hold an API phase barrier until every participating child resolves that phase" in {
+    "continue earlier siblings when a callback releases their API phase barrier" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
       val store = env.dataStore
       val service = daikokuComponents.subscriptionBatchService
       val initial = newBatch()
+      val requests = new ConcurrentLinkedQueue[String]()
+      val callback = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+      callback.createContext(
+        "/continue",
+        exchange => {
+          val request = Json.parse(
+            new String(
+              exchange.getRequestBody.readAllBytes(),
+              StandardCharsets.UTF_8
+            )
+          )
+          requests.add((request \ "plan" \ "_id").as[String])
+          val bytes = """{"accept":true}""".getBytes(StandardCharsets.UTF_8)
+          exchange.getResponseHeaders.add("Content-Type", "application/json")
+          exchange.sendResponseHeaders(200, bytes.length.toLong)
+          exchange.getResponseBody.write(bytes)
+          exchange.getResponseBody.close()
+          exchange.close()
+        }
+      )
+      callback.start()
       val process = SubscriptionProcess(
         Seq(
           ValidationStep.Form("form", "Motivation"),
           ValidationStep.TeamAdmin("admin", TeamId("producer")),
+          ValidationStep.HttpRequest(
+            "callback",
+            "Callback",
+            s"http://127.0.0.1:${callback.getAddress.getPort}/continue"
+          ),
           ValidationStep.Email("email", Seq.empty, None, "Email")
         )
       )
@@ -1559,11 +1937,9 @@ class SubscriptionBatchStorageSpec
           )
         )
         Await.result(
-          store.subscriptionDemandRepo
-            .forTenant(parent.tenant)
-            .save(firstAfterAdmin),
+          store.saveBatchChildProgress(firstAfterAdmin, first),
           5.seconds
-        )
+        ) mustBe Right(())
         Await
           .result(
             daikokuComponents.apiService.canRunBatchChild(first.id, tenant),
@@ -1580,17 +1956,68 @@ class SubscriptionBatchStorageSpec
           )
         )
         Await.result(
-          store.subscriptionDemandRepo
-            .forTenant(parent.tenant)
-            .save(secondAfterAdmin),
+          store.saveBatchChildProgress(secondAfterAdmin, second),
           5.seconds
-        )
+        ) mustBe Right(())
         Await
           .result(
             daikokuComponents.apiService.canRunBatchChild(first.id, tenant),
             5.seconds
           ) mustBe true
+        val requester = Await
+          .result(store.userRepo.findById(parent.from), 5.seconds)
+          .get
+        Await
+          .result(
+            daikokuComponents.apiService
+              .runSubscriptionProcess(second.id, tenant)(using "en", requester)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        val continued = children.map(child =>
+          Await
+            .result(
+              store.subscriptionDemandRepo
+                .forTenant(parent.tenant)
+                .findById(child.id),
+              5.seconds
+            )
+            .get
+        )
+        continued.foreach { child =>
+          child.steps
+            .find(_.step.id == "callback")
+            .get
+            .state mustBe SubscriptionDemandState.Accepted
+          child.steps
+            .find(_.step.id == "email")
+            .get
+            .state mustBe SubscriptionDemandState.InProgress
+          child.state mustBe SubscriptionDemandState.InProgress
+        }
+        requests.asScala.toSeq.sorted mustBe parent.items
+          .map(_.plan.value)
+          .sorted
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        children.zip(continued).foreach { case (original, progressed) =>
+          Await.result(
+            store.subscriptionDemandRepo
+              .forTenant(parent.tenant)
+              .findById(original.id),
+            5.seconds
+          ) mustBe Some(progressed)
+        }
+        requests.size() mustBe 2
       } finally {
+        callback.stop(0)
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
           5.seconds
@@ -1960,7 +2387,7 @@ class SubscriptionBatchStorageSpec
       }
     }
 
-    "persist and export a 300-plan selection while creating only a requested slice" in {
+    "materialize and export all 300 plans in one action without creating children on replay" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val env = daikokuComponents.env
       val store = env.dataStore
@@ -1986,18 +2413,27 @@ class SubscriptionBatchStorageSpec
         val results = Await
           .result(
             daikokuComponents.subscriptionBatchService
-              .materializePendingItems(parent.tenant, 7)
+              .materializePendingItems(parent.tenant, parent.id)
               .value,
-            10.seconds
+            60.seconds
           )
           .toOption
           .get
-        results.size mustBe 7
+        results.size mustBe 300
         results.forall(_._2.isRight) mustBe true
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
-        ) mustBe 7L
+        ) mustBe 300L
+        awaitMaterialization(
+          daikokuComponents.subscriptionBatchService,
+          parent.tenant,
+          parent.id
+        ) mustBe empty
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 300L
         val saved = Await
           .result(
             store.subscriptionBatchDemandRepo
@@ -2007,10 +2443,10 @@ class SubscriptionBatchStorageSpec
           )
           .get
         saved.items.size mustBe 300
-        saved.items.count(_.demand.isDefined) mustBe 7
+        saved.items.count(_.demand.isDefined) mustBe 300
         saved.items.count(
           _.state == SubscriptionBatchItemState.Pending
-        ) mustBe 293
+        ) mustBe 0
         val exported = Await.result(
           store
             .exportAsStream(pretty = false, exportAuditTrail = false)(using
@@ -2129,32 +2565,42 @@ class SubscriptionBatchStorageSpec
         Await.result(
           store.subscriptionBatchDemandRepo.findMaterializableItems(
             parent.tenant,
-            10
+            parent.id
           ),
           5.seconds
         ) mustBe Right(Seq(reference.copy(item = parent.items(2).id)))
-        val prepared = awaitMaterialization(service, parent.tenant, 10)
+        val prepared = awaitMaterialization(service, parent.tenant, parent.id)
         prepared.map(_._1) mustBe Seq(reference.copy(item = parent.items(2).id))
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
         ) mustBe 1L
-        Await.result(
-          service.materializePendingItems(parent.tenant, 0).value,
-          5.seconds
-        ) mustBe
-          Left(
-            AppError.BadRequestError(
-              "The materialization limit must be positive"
-            )
+        Await
+          .result(
+            service
+              .materializePendingItems(
+                parent.tenant,
+                SubscriptionBatchDemandId("missing")
+              )
+              .value,
+            5.seconds
           )
+          .isLeft mustBe true
+        Await
+          .result(
+            service
+              .materializePendingItems(
+                TenantId("other-tenant"),
+                parent.id
+              )
+              .value,
+            5.seconds
+          )
+          .isLeft mustBe true
         Await.result(
-          store.subscriptionBatchDemandRepo
-            .findMaterializableItems(parent.tenant, 0),
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
-        ) mustBe Left(
-          AppError.BadRequestError("The materialization limit must be positive")
-        )
+        ) mustBe 1L
       } finally {
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
@@ -2805,6 +3251,288 @@ class SubscriptionBatchStorageSpec
       }
     }
 
+    "release a sibling phase barrier immediately when canceling a child through HTTP" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val first = initial.items.head.copy(
+        process = SubscriptionProcess(
+          Seq(
+            ValidationStep.TeamAdmin("admin", TeamId("producer")),
+            ValidationStep.Email("email", Seq.empty, None, "Email")
+          )
+        )
+      )
+      val second = first.copy(
+        id = SubscriptionBatchItemId("canceled"),
+        plan = UsagePlanId("canceled-plan")
+      )
+      val parent = initial.copy(items = Seq(first, second))
+      var requester = Option.empty[User]
+      try {
+        persistEligibilityFixtures(store, parent)
+        val consumer = Await
+          .result(
+            store.teamRepo.forTenant(parent.tenant).findById(parent.team),
+            5.seconds
+          )
+          .get
+        Await.result(
+          store.teamRepo
+            .forTenant(parent.tenant)
+            .save(
+              consumer.copy(
+                users = Set(
+                  UserWithPermission(parent.from, TeamPermission.Administrator)
+                )
+              )
+            ),
+          5.seconds
+        ) mustBe true
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        val children = awaitMaterialization(
+          daikokuComponents.subscriptionBatchService,
+          parent.tenant,
+          parent.id
+        ).map(_._2.toOption.get)
+        val acceptedAdmin = children.head.copy(
+          state = SubscriptionDemandState.InProgress,
+          steps = children.head.steps.map(step =>
+            if (step.step.id == "admin")
+              step.copy(state = SubscriptionDemandState.Accepted)
+            else step
+          )
+        )
+        Await.result(
+          store.saveBatchChildProgress(acceptedAdmin, children.head),
+          5.seconds
+        ) mustBe Right(())
+        val tenant =
+          Await.result(store.tenantRepo.findById(parent.tenant), 5.seconds).get
+        Await.result(
+          daikokuComponents.apiService
+            .canRunBatchChild(children.head.id, tenant),
+          5.seconds
+        ) mustBe false
+        val user =
+          Await.result(store.userRepo.findById(parent.from), 5.seconds).get
+        requester = Some(user)
+        val session = loginWithBlocking(user, tenant)
+        val canceled = httpJsonCallBlocking(
+          s"/api/subscription/team/${parent.team.value}/demands/${children(1).id.value}/_cancel",
+          method = "DELETE"
+        )(using tenant, session)
+        canceled.status mustBe 200
+        val saved = Await
+          .result(
+            store.subscriptionBatchDemandRepo
+              .forTenant(parent.tenant)
+              .findById(parent.id),
+            5.seconds
+          )
+          .get
+        saved.items(1).state mustBe SubscriptionBatchItemState.Canceled
+        saved.items(1).demand mustBe Some(children(1).id)
+        saved.items.head.state mustBe SubscriptionBatchItemState.InProgress
+        val continued = Await
+          .result(
+            store.subscriptionDemandRepo
+              .forTenant(parent.tenant)
+              .findById(children.head.id),
+            5.seconds
+          )
+          .get
+        continued.steps
+          .find(_.step.id == "email")
+          .get
+          .state mustBe SubscriptionDemandState.InProgress
+        Await
+          .result(
+            store.subscriptionDemandRepo
+              .forTenant(parent.tenant)
+              .findById(children(1).id),
+            5.seconds
+          )
+          .get
+          .state mustBe SubscriptionDemandState.Canceled
+        saved.items.foreach(_.reservation mustBe None)
+      } finally {
+        requester.foreach(user =>
+          Await.result(
+            store.userSessionRepo.deleteByUserEmail(user.email),
+            5.seconds
+          )
+        )
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
+    "retain only live children in a grouped notification after cancellation and accept the remaining request" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val first = initial.items.head.copy(
+        process = SubscriptionProcess(
+          Seq(ValidationStep.TeamAdmin("admin", TeamId("producer")))
+        )
+      )
+      val second = first.copy(
+        id = SubscriptionBatchItemId("canceled"),
+        plan = UsagePlanId("canceled-plan")
+      )
+      val parent = initial.copy(items = Seq(first, second))
+      var requester = Option.empty[User]
+      try {
+        persistEligibilityFixtures(
+          store,
+          parent,
+          requesterIsDaikokuAdmin = true,
+          apiVisibility = ApiVisibility.AdminOnly
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        val tenant =
+          Await.result(store.tenantRepo.findById(parent.tenant), 5.seconds).get
+        Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .isRight mustBe true
+        val notification = Await
+          .result(
+            store.notificationRepo
+              .findPendingByTeam(parent.tenant, TeamId("producer")),
+            5.seconds
+          )
+          .head
+        val action = notification.action
+          .asInstanceOf[NotificationAction.ApiSubscriptionBatchDemand]
+        action.items.map(_.item).toSet mustBe Set(first.id, second.id)
+        val canceledDemand = action.items.find(_.item == second.id).get.demand
+        val user =
+          Await.result(store.userRepo.findById(parent.from), 5.seconds).get
+        requester = Some(user)
+        val session = loginWithBlocking(user, tenant)
+        val cancellation = httpJsonCallBlocking(
+          s"/api/subscription/team/${parent.team.value}/demands/${canceledDemand.value}/_cancel",
+          method = "DELETE"
+        )(using tenant, session)
+        cancellation.status mustBe 200
+        val remaining = Await.result(
+          store.notificationRepo
+            .findPendingByTeam(parent.tenant, TeamId("producer")),
+          5.seconds
+        )
+        remaining must have size 1
+        remaining.head.id mustBe notification.id
+        val retainedAction = remaining.head.action
+          .asInstanceOf[NotificationAction.ApiSubscriptionBatchDemand]
+        retainedAction.items.map(_.item) mustBe Seq(first.id)
+        retainedAction.items.map(_.demand) must not contain canceledDemand
+        val accepted = httpJsonCallBlocking(
+          s"/api/notifications/${notification.id.value}/accept",
+          method = "PUT",
+          body = Some(Json.obj())
+        )(using tenant, session)
+        withClue(s"Approval response: ${accepted.json}") {
+          accepted.status mustBe 200
+        }
+        val saved = Await
+          .result(
+            store.subscriptionBatchDemandRepo
+              .forTenant(parent.tenant)
+              .findById(parent.id),
+            5.seconds
+          )
+          .get
+        saved.items.map(_.state) mustBe Seq(
+          SubscriptionBatchItemState.Accepted,
+          SubscriptionBatchItemState.Canceled
+        )
+        Await
+          .result(
+            store.subscriptionDemandRepo
+              .forTenant(parent.tenant)
+              .findById(canceledDemand),
+            5.seconds
+          )
+          .get
+          .state mustBe SubscriptionDemandState.Canceled
+        Await
+          .result(
+            store.apiSubscriptionRepo.forTenant(parent.tenant).findAll(),
+            5.seconds
+          )
+          .map(_.plan) mustBe Seq(first.plan)
+        Await
+          .result(
+            store.notificationRepo
+              .findPendingByTeam(parent.tenant, TeamId("producer")),
+            5.seconds
+          )
+          .filter(
+            _.action.isInstanceOf[NotificationAction.ApiSubscriptionBatchDemand]
+          ) mustBe empty
+        Await
+          .result(
+            store.notificationRepo
+              .forTenant(parent.tenant)
+              .findById(notification.id),
+            5.seconds
+          )
+          .get
+          .status mustBe a[NotificationStatus.Accepted]
+      } finally {
+        requester.foreach(user =>
+          Await.result(
+            store.userSessionRepo.deleteByUserEmail(user.email),
+            5.seconds
+          )
+        )
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.apiSubscriptionRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.notificationRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
+      }
+    }
+
     "cancel a batch child without breaking its parent link or leaving workflow artifacts" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val store = daikokuComponents.env.dataStore
@@ -3113,13 +3841,17 @@ class SubscriptionBatchStorageSpec
           ),
           5.seconds
         ) mustBe defined
-        Await.result(
-          store.blockBatchItems(
-            Some(parent.tenant),
-            apiIds = Set(parent.items.head.api)
-          ),
-          5.seconds
-        ) mustBe Right(())
+        Await
+          .result(
+            store.blockBatchItems(
+              Some(parent.tenant),
+              apiIds = Set(parent.items.head.api)
+            ),
+            5.seconds
+          )
+          .toOption
+          .get
+          .map(_.id) mustBe Seq(parent.id)
 
         val blocked = Await
           .result(
@@ -3311,7 +4043,7 @@ class SubscriptionBatchStorageSpec
           store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
           5.seconds
         )
-        val children = awaitMaterialization(service, parent.tenant, 4)
+        val children = awaitMaterialization(service, parent.tenant, parent.id)
           .map(_._2.toOption.get)
         val states = Seq(
           SubscriptionDemandState.Waiting,
@@ -3401,7 +4133,7 @@ class SubscriptionBatchStorageSpec
           store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
           5.seconds
         )
-        val children = awaitMaterialization(service, parent.tenant, 2)
+        val children = awaitMaterialization(service, parent.tenant, parent.id)
           .map(_._2.toOption.get)
         val refused =
           children.head.copy(state = SubscriptionDemandState.Refused)
@@ -3529,7 +4261,7 @@ class SubscriptionBatchStorageSpec
       }
     }
 
-    "prepare bounded slices and resume remaining items from storage" in {
+    "prepare every item in the requested batch and preserve tenant isolation on replay" in {
       Await.result(waitForDaikokuSetup(), 10.seconds)
       val store = daikokuComponents.env.dataStore
       val service = new SubscriptionBatchService(store)
@@ -3556,21 +4288,17 @@ class SubscriptionBatchStorageSpec
           store.subscriptionBatchDemandRepo.insertIfAbsent(foreign),
           5.seconds
         )
-        val first = awaitMaterialization(service, parent.tenant, 2)
-        first.size mustBe 2
+        val first = awaitMaterialization(service, parent.tenant, parent.id)
+        first.size mustBe 5
         first.forall(_._2.isRight) mustBe true
-        first.map(_._1.item) mustBe parent.items.take(2).map(_.id)
+        first.map(_._1.item) mustBe parent.items.map(_.id)
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
-        ) mustBe 2L
+        ) mustBe 5L
 
         val resumed = new SubscriptionBatchService(store)
-        val second = awaitMaterialization(resumed, parent.tenant, 2)
-        second.map(_._1.item) mustBe parent.items.slice(2, 4).map(_.id)
-        val last = awaitMaterialization(resumed, parent.tenant, 2)
-        last.map(_._1.item) mustBe Seq(parent.items.last.id)
-        awaitMaterialization(resumed, parent.tenant, 2) mustBe empty
+        awaitMaterialization(resumed, parent.tenant, parent.id) mustBe empty
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
@@ -3579,6 +4307,24 @@ class SubscriptionBatchStorageSpec
           store.subscriptionDemandRepo.forTenant(foreign.tenant).count(),
           5.seconds
         ) mustBe 0L
+        Await
+          .result(
+            resumed.materializePendingItems(parent.tenant, foreign.id).value,
+            5.seconds
+          )
+          .isLeft mustBe true
+        Await
+          .result(
+            resumed.materializePendingItems(foreign.tenant, parent.id).value,
+            5.seconds
+          )
+          .isLeft mustBe true
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(foreign.tenant)
+            .findById(foreign.id),
+          5.seconds
+        ) mustBe Some(foreign)
       } finally {
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
@@ -3634,11 +4380,11 @@ class SubscriptionBatchStorageSpec
         )
         val repo = store.subscriptionBatchDemandRepo
         Await.result(
-          repo.findPendingKeyringCreations(parent.tenant, 10),
+          repo.findPendingKeyringCreations(parent.tenant, parent.id),
           5.seconds
         ) mustBe Right(Seq(parent.id -> creation.id))
         Await.result(
-          repo.findMaterializableItems(parent.tenant, 1),
+          repo.findMaterializableItems(parent.tenant, parent.id),
           5.seconds
         ) mustBe
           Right(Seq(SubscriptionBatchReference(parent.id, ready.id)))
@@ -3652,7 +4398,7 @@ class SubscriptionBatchStorageSpec
           5.seconds
         ) mustBe defined
         Await.result(
-          repo.findMaterializableItems(parent.tenant, 10),
+          repo.findMaterializableItems(parent.tenant, parent.id),
           5.seconds
         ) mustBe
           Right(
@@ -3661,7 +4407,7 @@ class SubscriptionBatchStorageSpec
             )
           )
         Await.result(
-          repo.findPendingKeyringCreations(parent.tenant, 10),
+          repo.findPendingKeyringCreations(parent.tenant, parent.id),
           5.seconds
         ) mustBe Right(Seq.empty)
       } finally {
@@ -3671,6 +4417,97 @@ class SubscriptionBatchStorageSpec
             .deleteAll(),
           5.seconds
         )
+      }
+    }
+
+    "prepare all new keyrings and advance their children in one action" in {
+      Await.result(waitForDaikokuSetup(), 10.seconds)
+      val store = daikokuComponents.env.dataStore
+      val initial = newBatch()
+      val creations = (1 to 3).map(index =>
+        SubscriptionBatchKeyringCreation(
+          SubscriptionBatchKeyringId(s"creation-$index"),
+          s"Internal keyring $index",
+          KeyringOtoroshiBinding.Internal
+        )
+      )
+      val parent = initial.copy(
+        items = creations.map(creation =>
+          initial.items.head.copy(
+            id = SubscriptionBatchItemId(creation.id.value),
+            plan = UsagePlanId(creation.id.value),
+            keyringChoice = SubscriptionBatchKeyringChoice.New(creation.id),
+            process = SubscriptionProcess(
+              Seq(ValidationStep.Email("email", Seq.empty, None, "Email"))
+            )
+          )
+        ),
+        newKeyrings = creations
+      )
+      try {
+        persistEligibilityFixtures(store, parent)
+        Await.result(
+          store.subscriptionBatchDemandRepo.insertIfAbsent(parent),
+          5.seconds
+        )
+        val tenant = Await
+          .result(
+            store.tenantRepo.findById(parent.tenant),
+            5.seconds
+          )
+          .get
+        val progressed = Await
+          .result(
+            daikokuComponents.apiService
+              .advanceSubscriptionBatch(tenant, parent.id)
+              .value,
+            10.seconds
+          )
+          .fold(error => fail(error.getErrorMessage()), identity)
+        progressed.newKeyrings.foreach { creation =>
+          creation.ready mustBe true
+          creation.keyring mustBe defined
+        }
+        progressed.newKeyrings.flatMap(_.keyring).distinct must have size 3
+        progressed.items.foreach { item =>
+          item.demand mustBe defined
+          item.state mustBe SubscriptionBatchItemState.InProgress
+        }
+        val keyrings = Await.result(
+          store.keyringRepo.forTenant(parent.tenant).findAll(),
+          5.seconds
+        )
+        keyrings must have size 3
+        keyrings.foreach(_.enabled mustBe false)
+        Await.result(
+          daikokuComponents.apiService
+            .advanceSubscriptionBatch(tenant, parent.id)
+            .value,
+          10.seconds
+        ) mustBe Right(progressed)
+        Await
+          .result(
+            store.keyringRepo.forTenant(parent.tenant).findAll(),
+            5.seconds
+          )
+          .map(_.id)
+          .toSet mustBe keyrings.map(_.id).toSet
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
+          5.seconds
+        ) mustBe 3L
+      } finally {
+        Await.result(
+          store.subscriptionDemandRepo.forTenant(parent.tenant).deleteAll(),
+          5.seconds
+        )
+        Await.result(
+          store.subscriptionBatchDemandRepo
+            .forTenant(parent.tenant)
+            .deleteAll(),
+          5.seconds
+        )
+        deleteEligibilityFixtures(store, parent)
       }
     }
 
@@ -3751,7 +4588,7 @@ class SubscriptionBatchStorageSpec
         ) mustBe Right(keyringId)
         Await.result(
           store.subscriptionBatchDemandRepo
-            .findMaterializableItems(parent.tenant, 10),
+            .findMaterializableItems(parent.tenant, parent.id),
           5.seconds
         ) mustBe Right(
           Seq(first, second).map(item =>

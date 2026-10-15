@@ -86,8 +86,8 @@ Payment / HttpRequest) and tracked by a `SubscriptionDemandState`.
 
 ### SubscriptionBatchDemand
 A durable parent for a multi-plan request by one consumer team. Each item snapshots its API, plan,
-process and existing/shared-new-keyring choice. Classic `SubscriptionDemand` children are linked
-progressively, with a unique `(tenant, batch, item)` identity; creating a child and linking its parent
+process and existing/shared-new-keyring choice. Classic `SubscriptionDemand` children are created
+at submission, with a unique `(tenant, batch, item)` identity; creating a child and linking its parent
 is transactional. The parent summary is derived from independent item outcomes, so a refusal does
 not close other unfinished items.
 
@@ -101,14 +101,22 @@ form separate groups. Plans that disallow aggregation keep an individual keyring
 is sent once in `newKeyrings`, with every item in its group referencing the same creation ID.
 
 Submission idempotency is scoped to tenant, consumer team and requester. Parent mutations use a
-revision guard and row locks for operations spanning children. Item reservations retain a worker
+revision guard and row locks for operations spanning children. Item reservations retain an operation
 token and expiration; expiration does not authorize replaying an external effect. An expired
 reservation is retained with an explicit error until its outcome can be reconciled.
 
+Progression is part of the action that changes the workflow: submission, grouped approval or
+refusal, form/email validation, cancellation, resource deletion, explicit failure reconciliation or
+resume. Each action prepares the selected batch's shared keyrings, creates all eligible children and advances every
+executable child until it needs human input or a callback, or reaches a terminal state. HTTP steps
+remain individual and are executed sequentially. Phase barriers are reconsidered within the same
+action when another child unblocks them. There is no batch scheduler, periodic scan or slice size.
+After a server interruption, the explicit resume action continues persisted work; uncertain external
+effects require reconciliation before they can be retried.
+
 The persistence layer includes batch import/export, optional keyring-shell provenance (source batch,
 shared creation, pending items and activation date), and managed-empty-group identity in each
-tenant's Otoroshi configuration. These storage contracts do not themselves create safe empty
-Otoroshi keys, run a worker, expose a batch submission API or implement grouped approvals.
+tenant's Otoroshi configuration.
 
 Evolution `19.0.0_f` provisions the managed empty groups required by batch keyring shells for every
 existing tenant's Otoroshi configuration. Like other registered evolutions, it runs automatically
@@ -116,8 +124,8 @@ at startup when not already applied; administrators should plan the deployment b
 requests with new Otoroshi keyrings. It persists missing group identities before contacting Otoroshi,
 preserves existing identities, and verifies ownership and emptiness. An unavailable instance or
 invalid group fails the evolution; after correcting the configuration, rerun it to reuse the
-reserved identities and verify previously provisioned groups. Pending batches can then resume on
-the next worker cycle. Run the evolution during a maintenance window without concurrent tenant
+reserved identities and verify previously provisioned groups. Pending batches can then be resumed
+explicitly. Run the evolution during a maintenance window without concurrent tenant
 configuration changes, and ensure every configured Otoroshi instance is reachable with valid
 administrative credentials.
 

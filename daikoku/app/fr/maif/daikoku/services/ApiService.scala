@@ -45,7 +45,8 @@ class ApiService(
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
     paymentClient: PaymentClient,
-    keyringService: KeyringService
+    keyringService: KeyringService,
+    subscriptionBatchService: SubscriptionBatchService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -976,6 +977,7 @@ class ApiService(
       case Some(reference) =>
         val phaseIndex = demand.steps.indexWhere(_.id == step.id)
         if (phaseIndex < 0) Future.successful(false)
+        else if (phaseIndex == 0) Future.successful(true)
         else
           env.dataStore.subscriptionBatchDemandRepo
             .forTenant(tenant.id)
@@ -984,7 +986,8 @@ class ApiService(
               case None => Future.successful(false)
               case Some(batch) =>
                 val participants = batch.items.filter(item =>
-                  item.api == demand.api && item.process.steps.nonEmpty
+                  item.api == demand.api && item.process.steps.nonEmpty &&
+                    !item.state.isClosed
                 )
                 Future
                   .sequence(participants.map { item =>
@@ -1025,6 +1028,110 @@ class ApiService(
         case Some(_) => Future.successful(false)
         case None    => Future.successful(false)
       }
+
+  def advanceSubscriptionBatch(
+      tenant: Tenant,
+      batchId: SubscriptionBatchDemandId
+  ): EitherT[Future, AppError, SubscriptionBatchDemand] = {
+    def runChildren(): EitherT[Future, AppError, Seq[Either[AppError, Unit]]] =
+      for {
+        references <- EitherT(
+          env.dataStore.subscriptionBatchDemandRepo
+            .findRunnableChildren(tenant.id, batchId)
+        )
+        results <- EitherT
+          .liftF[Future, AppError, Vector[Either[AppError, Unit]]](
+            references.foldLeft(
+              Future.successful(Vector.empty[Either[AppError, Unit]])
+            ) { (previous, reference) =>
+              previous.flatMap { results =>
+                env.dataStore.subscriptionDemandRepo
+                  .findByBatchItem(tenant.id, reference)
+                  .flatMap {
+                    case None =>
+                      Future.successful(
+                        results :+ Left(AppError.SubscriptionDemandNotFound)
+                      )
+                    case Some(demand) =>
+                      canRunBatchChild(demand.id, tenant).flatMap {
+                        case false => Future.successful(results)
+                        case true =>
+                          env.dataStore.userRepo.findById(demand.from).flatMap {
+                            case None =>
+                              Future.successful(
+                                results :+ Left(
+                                  AppError.UserNotFound(Some(demand.from))
+                                )
+                              )
+                            case Some(requester) =>
+                              implicit val language: String =
+                                requester.defaultLanguage
+                                  .orElse(tenant.defaultLanguage)
+                                  .getOrElse("en")
+                              runSubscriptionProcessOnce(demand.id, tenant)(
+                                using
+                                language,
+                                requester
+                              ).value
+                                .map(result => results :+ result.map(_ => ()))
+                          }
+                      }
+                  }
+              }
+            }
+          )
+        // A later child can unblock an earlier sibling at the next approval phase.
+        remaining <-
+          if (results.exists(_.isRight)) runChildren()
+          else EitherT.pure[Future, AppError](Seq.empty[Either[AppError, Unit]])
+      } yield results ++ remaining
+
+    def reportFailures(
+        results: Seq[Either[AppError, Unit]]
+    ): Either[AppError, Unit] = {
+      val failures = results.collect { case Left(error) => error }
+      failures.foreach(error =>
+        AppLogger.error(
+          s"Subscription batch ${batchId.value}: ${error.getErrorMessage()}"
+        )
+      )
+      failures.headOption.toLeft(())
+    }
+
+    for {
+      creations <- EitherT(
+        env.dataStore.subscriptionBatchDemandRepo
+          .findPendingKeyringCreations(tenant.id, batchId)
+      )
+      prepared <- EitherT
+        .liftF[Future, AppError, Vector[Either[AppError, Unit]]](
+          creations.foldLeft(
+            Future.successful(Vector.empty[Either[AppError, Unit]])
+          ) { case (previous, (_, creation)) =>
+            previous.flatMap(results =>
+              prepareBatchKeyring(tenant, batchId, creation)
+                .map(result => results :+ result.map(_ => ()))
+            )
+          }
+        )
+      materialized <- subscriptionBatchService.materializePendingItems(
+        tenant.id,
+        batchId
+      )
+      progressed <- runChildren()
+      _ <- EitherT.fromEither[Future](
+        reportFailures(
+          prepared ++ materialized.map(_._2.map(_ => ())) ++ progressed
+        )
+      )
+      batch <- EitherT.fromOptionF(
+        env.dataStore.subscriptionBatchDemandRepo
+          .forTenant(tenant.id)
+          .findById(batchId),
+        AppError.EntityNotFound("Subscription batch")
+      )
+    } yield batch
+  }
 
   /** Name given to a keyring when the consumer did not provide one. Kept in
     * sync with the placeholder displayed by the front (see ApiPricing.tsx).
@@ -2048,38 +2155,60 @@ class ApiService(
             phaseIndex
           )
         )
-        notification = existingNotification.getOrElse(
-          Notification(
-            id = NotificationId(IdGenerator.token(32)),
-            tenant = tenant.id,
-            team = Some(api.team),
-            sender = user.asNotificationSender,
-            action = NotificationAction.ApiSubscriptionBatchDemand(
-              batch = batch.id,
-              api = api.id,
-              team = batch.team,
-              phase = phaseIndex,
-              items = approvalChildren.map { case (item, child, childStep) =>
-                NotificationAction.SubscriptionBatchApprovalItem(
-                  item.id,
-                  item.plan,
-                  child.id,
-                  childStep.id
+        approvalItems = approvalChildren.map { case (item, child, childStep) =>
+          NotificationAction.SubscriptionBatchApprovalItem(
+            item.id,
+            item.plan,
+            child.id,
+            childStep.id
+          )
+        }
+        notification = existingNotification
+          .map { existing =>
+            existing.action match {
+              case action: NotificationAction.ApiSubscriptionBatchDemand =>
+                existing.copy(action =
+                  action.copy(
+                    items = (action.items ++ approvalItems).distinctBy(_.item)
+                  )
                 )
-              },
-              motivation = demand.motivation.map(Json.stringify)
+              case _ => existing
+            }
+          }
+          .getOrElse(
+            Notification(
+              id = NotificationId(IdGenerator.token(32)),
+              tenant = tenant.id,
+              team = Some(api.team),
+              sender = user.asNotificationSender,
+              action = NotificationAction.ApiSubscriptionBatchDemand(
+                batch = batch.id,
+                api = api.id,
+                team = batch.team,
+                phase = phaseIndex,
+                items = approvalItems,
+                motivation = demand.motivation.map(Json.stringify)
+              )
             )
           )
-        )
-        _ <- existingNotification match {
-          case Some(_) => EitherT.pure[Future, AppError](true)
-          case None =>
-            EitherT.liftF(
+        _ <-
+          if (existingNotification.contains(notification))
+            EitherT.pure[Future, AppError](())
+          else
+            EitherT(
               env.dataStore.notificationRepo
                 .forTenant(tenant.id)
                 .save(notification)
+                .map(saved =>
+                  Either.cond(
+                    saved,
+                    (),
+                    AppError.InternalServerError(
+                      "The batch approval notification could not be saved"
+                    )
+                  )
+                )
             )
-        }
         _ <- approvalChildren
           .filterNot(_._2.id == demand.id)
           .foldLeft(EitherT.pure[Future, AppError](())) {
@@ -2452,7 +2581,8 @@ class ApiService(
               "no-reply@daikoku.io",
               None
             ),
-            (response._2 \ "message").asOpt[String]
+            (response._2 \ "message").asOpt[String],
+            advanceBatch = false
           )
     } yield r
   }
@@ -2570,6 +2700,37 @@ class ApiService(
   }
 
   def runSubscriptionProcess(
+      demandId: DemandId,
+      tenant: Tenant,
+      maybeSessionId: Option[String] = None,
+      from: Option[String] = None,
+      host: Option[String] = None
+  )(implicit
+      language: String,
+      currentUser: User
+  ): EitherT[Future, AppError, Result] =
+    for {
+      result <- runSubscriptionProcessOnce(
+        demandId,
+        tenant,
+        maybeSessionId,
+        from,
+        host
+      )
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant.id)
+          .findById(demandId),
+        AppError.SubscriptionDemandNotFound
+      )
+      _ <- demand.batch match {
+        case Some(reference) =>
+          advanceSubscriptionBatch(tenant, reference.batch).map(_ => ())
+        case None => EitherT.pure[Future, AppError](())
+      }
+    } yield result
+
+  private def runSubscriptionProcessOnce(
       demandId: DemandId,
       tenant: Tenant,
       maybeSessionId: Option[String] = None,
@@ -3400,7 +3561,8 @@ class ApiService(
       demandId: DemandId,
       stepId: SubscriptionDemandStepId,
       sender: NotificationSender,
-      maybeMessage: Option[String] = None
+      maybeMessage: Option[String] = None,
+      advanceBatch: Boolean = true
   ): EitherT[Future, AppError, Result] = {
 
     for {
@@ -3494,6 +3656,11 @@ class ApiService(
           }).flatten
         }))
       )
+      _ <- demand.batch match {
+        case Some(reference) if advanceBatch =>
+          advanceSubscriptionBatch(tenant, reference.batch).map(_ => ())
+        case _ => EitherT.pure[Future, AppError](())
+      }
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 

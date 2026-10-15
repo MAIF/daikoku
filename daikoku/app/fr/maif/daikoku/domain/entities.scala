@@ -203,6 +203,7 @@ enum JobName(val value: String):
   case RemoteCatalog extends JobName("RemoteCatalog")
   case NotificationPurge extends JobName("NotificationPurge")
   case AuditTrailPurge extends JobName("AuditTrailPurge")
+  // Kept to read job history persisted before event-driven batch processing.
   case SubscriptionBatchMaterialization
       extends JobName("SubscriptionBatchMaterialization")
 

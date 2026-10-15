@@ -498,8 +498,7 @@ class SubscriptionBatchService(dataStore: DataStore) {
 
   def materializePendingItems(
       tenant: TenantId,
-      limit: Int,
-      batch: Option[SubscriptionBatchDemandId] = None
+      batch: SubscriptionBatchDemandId
   )(implicit
       ec: ExecutionContext
   ): EitherT[Future, AppError, Seq[
@@ -507,7 +506,7 @@ class SubscriptionBatchService(dataStore: DataStore) {
   ]] =
     EitherT(
       dataStore.subscriptionBatchDemandRepo
-        .findMaterializableItems(tenant, limit, batch)
+        .findMaterializableItems(tenant, batch)
     )
       .flatMap { references =>
         EitherT.liftF(
@@ -529,20 +528,7 @@ class SubscriptionBatchService(dataStore: DataStore) {
         )
       }
 
-  def findRunnableChildren(
-      tenant: TenantId,
-      limit: Int,
-      batch: Option[SubscriptionBatchDemandId] = None
-  )(implicit
-      ec: ExecutionContext
-  ): EitherT[Future, AppError, Seq[SubscriptionBatchReference]] =
-    EitherT(
-      dataStore.subscriptionBatchDemandRepo
-        .findRunnableChildren(tenant, limit, batch)
-    )
-
-  /** Internal worker operation: persist one child without executing its
-    * workflow.
+  /** Persist one child without executing its workflow.
     */
   def materializeItem(
       tenant: TenantId,

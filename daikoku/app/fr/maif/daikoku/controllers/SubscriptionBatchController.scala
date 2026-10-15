@@ -6,12 +6,7 @@ import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.json.*
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.jobs.{
-  JobOutcome,
-  Runner,
-  SubscriptionBatchMaterializationJob
-}
-import fr.maif.daikoku.services.SubscriptionBatchService
+import fr.maif.daikoku.services.{ApiService, SubscriptionBatchService}
 import play.api.libs.json.*
 import play.api.mvc.*
 
@@ -20,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class SubscriptionBatchController(
     DaikokuAction: DaikokuAction,
     batchService: SubscriptionBatchService,
-    batchJob: SubscriptionBatchMaterializationJob,
+    apiService: ApiService,
     env: Env,
     cc: ControllerComponents
 ) extends AbstractController(cc) {
@@ -57,13 +52,22 @@ class SubscriptionBatchController(
               batchService
                 .submit(ctx.tenant.id, ctx.user, submission)
                 .value
-                .map(
-                  _.map(receipt =>
-                    Created(
-                      SubscriptionBatchSubmissionReceiptFormat.writes(receipt)
-                    )
-                  )
-                )
+                .flatMap {
+                  case Left(error) => Future.successful(Left(error))
+                  case Right(receipt) =>
+                    apiService
+                      .advanceSubscriptionBatch(ctx.tenant, receipt.batch)
+                      .value
+                      .map(
+                        _.map(batch =>
+                          Created(
+                            SubscriptionBatchSubmissionReceiptFormat.writes(
+                              receipt.copy(state = batch.state)
+                            )
+                          )
+                        )
+                      )
+                }
           }
       }
     }
@@ -151,33 +155,10 @@ class SubscriptionBatchController(
                 .flatMap {
                   case Left(error) => Future.successful(Left(error))
                   case Right(_) =>
-                    batchJob
-                      .run(
-                        ctx.tenant,
-                        Runner.Api,
-                        input = Some(batch.id),
-                        parallelism = env.config.subscriptionBatchJobBatchSize
-                      )
-                      .flatMap {
-                        case JobOutcome.Failed(message) =>
-                          Future.successful(
-                            Left(AppError.InternalServerError(message))
-                          )
-                        case _ =>
-                          env.dataStore.subscriptionBatchDemandRepo
-                            .forTenant(ctx.tenant.id)
-                            .findById(batch.id)
-                            .map {
-                              case Some(updated) =>
-                                Right(Ok(updated.asJson))
-                              case None =>
-                                Left(
-                                  AppError.EntityNotFound(
-                                    "Subscription batch"
-                                  )
-                                )
-                            }
-                      }
+                    apiService
+                      .advanceSubscriptionBatch(ctx.tenant, batch.id)
+                      .value
+                      .map(_.map(updated => Ok(updated.asJson)))
                 }
             case None =>
               Future.successful(
@@ -213,29 +194,10 @@ class SubscriptionBatchController(
                   ) =>
               Future.successful(Left(AppError.TeamUnauthorized))
             case Some(batch) =>
-              batchJob
-                .run(
-                  ctx.tenant,
-                  Runner.Api,
-                  input = Some(batch.id),
-                  parallelism = env.config.subscriptionBatchJobBatchSize
-                )
-                .flatMap {
-                  case JobOutcome.Failed(message) =>
-                    Future.successful(
-                      Left(AppError.InternalServerError(message))
-                    )
-                  case _ =>
-                    env.dataStore.subscriptionBatchDemandRepo
-                      .forTenant(ctx.tenant.id)
-                      .findById(batch.id)
-                      .map {
-                        case Some(updated) =>
-                          Right(Accepted(updated.asJson))
-                        case None =>
-                          Left(AppError.EntityNotFound("Subscription batch"))
-                      }
-                }
+              apiService
+                .advanceSubscriptionBatch(ctx.tenant, batch.id)
+                .value
+                .map(_.map(updated => Accepted(updated.asJson)))
             case None =>
               Future.successful(
                 Left(AppError.EntityNotFound("Subscription batch"))
@@ -295,9 +257,16 @@ class SubscriptionBatchController(
                   Left(AppError.EntityNotFound("Subscription batch"))
                 )
             }
-        result.map {
-          case Right(updated) => Accepted(updated.asJson)
-          case Left(error)    => AppError.render(error)
+        result.flatMap {
+          case Right(updated) =>
+            apiService
+              .advanceSubscriptionBatch(ctx.tenant, updated.id)
+              .value
+              .map {
+                case Right(progressed) => Accepted(progressed.asJson)
+                case Left(error)       => AppError.render(error)
+              }
+          case Left(error) => Future.successful(AppError.render(error))
         }
       }
     }

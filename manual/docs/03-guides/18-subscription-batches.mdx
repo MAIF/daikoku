@@ -1,266 +1,146 @@
 ---
-title: Souscriptions groupées — fonctionnement
+title: Batch subscriptions
 ---
 
-# Souscriptions groupées : fonctionnement global
+# Batch subscriptions
 
-Cette page explique le modèle backend de souscription groupée : ce que choisit
-le consommateur, comment Daikoku conserve les demandes, comment le worker les
-fait progresser, et ce qui se passe en cas de résultat incertain.
+A consumer can submit several API/plan selections together. Daikoku stores one
+`SubscriptionBatchDemand` parent and one ordinary `SubscriptionDemand` child per
+selected plan. The parent groups producer approvals and tracks independent
+outcomes; it does not replace the existing subscription workflow.
 
-> **État du chantier :** l'approbation producteur est maintenant regroupée par
-> lot, API et phase : une notification permet d'accepter ou de refuser en une
-> fois les demandes enfants incluses. Les limites encore connues sont
-> récapitulées à la fin.
+## Consumer selection
 
-## Le changement par rapport au fonctionnement historique
+The multi-API flow preserves selected APIs across catalog pages. The consumer
+first chooses a team using the existing team selector, then chooses plans and
+keyrings. In environment mode, compatible plans with the same environment name
+can share one new or existing keyring across APIs. Different Otoroshi bindings
+or read-only settings form separate groups; plans that forbid aggregation keep
+individual keyrings.
 
-Historiquement, une souscription correspond à une `SubscriptionDemand`. Pour
-souscrire à plusieurs plans, le client déclenchait donc plusieurs demandes
-indépendantes. Chacune suivait son propre processus; Daikoku ne disposait pas
-d'un objet persistant qui décrivait l'ensemble sélectionné, ni d'un mécanisme
-pour coordonner les étapes entre plusieurs demandes.
+Already subscribed plans without multiple-key support, pending unit requests,
+open batch items, unauthorized plans and unsupported processes are excluded.
 
-Le nouveau modèle ne remplace pas `SubscriptionDemand` et ne transforme pas
-une demande en une liste de souscriptions. Il ajoute un **parent de lot** qui
-garde la sélection et son état global, et conserve une demande ordinaire par
-plan sélectionné :
-
-```text
-Avant :  API A / Plan 1 ──> SubscriptionDemand 1
-         API A / Plan 2 ──> SubscriptionDemand 2
-         API B / Plan 3 ──> SubscriptionDemand 3
-         (aucun parent commun)
-
-Maintenant : SubscriptionBatchDemand
-               ├── item API A / Plan 1 ──> SubscriptionDemand 1
-               ├── item API A / Plan 2 ──> SubscriptionDemand 2
-               └── item API B / Plan 3 ──> SubscriptionDemand 3
-```
-
-Cette approche réutilise le workflow existant — formulaires, validations,
-notifications, appels HTTP et création de souscription — tout en ajoutant une
-couche de coordination. Une sélection de 300 plans reste un seul parent et
-300 items; les enfants sont créés progressivement, pas tous dans la requête
-initiale.
-
-## 1. Ce que choisit le consommateur
-
-Le contenu envoyé pour le lot contient notamment :
-
-- l'équipe consommatrice;
-- les couples API/plan sélectionnés;
-- le choix de keyring associé à chaque plan : un keyring existant ou une
-  création de keyring;
-- une clé d'idempotence pour reconnaître une répétition de la même soumission;
-- éventuellement les réponses de motivation demandées par un formulaire.
-
-Exemple conceptuel, et non contrat JSON exhaustif :
+The submission contains the consumer team, API/plan pairs, keyring choices, an
+idempotency key and optional motivation answers. For example:
 
 ```json
 {
-  "team": "equipe-consommatrice",
-  "idempotencyKey": "selection-2026-10-13",
+  "team": "consumer-team",
+  "idempotencyKey": "selection-2026-10-15",
   "items": [
     {
-      "api": "catalogue",
-      "plan": "standard",
-      "keyringChoice": { "type": "existing", "keyring": "keyring-equipe" }
+      "api": "catalog",
+      "plan": "dev",
+      "keyringChoice": { "type": "new", "creation": "dev-keyring" }
     },
     {
-      "api": "facturation",
-      "plan": "standard",
-      "keyringChoice": { "type": "new", "creation": "nouveau-keyring" }
+      "api": "billing",
+      "plan": "dev",
+      "keyringChoice": { "type": "new", "creation": "dev-keyring" }
     }
   ],
   "newKeyrings": [
-    { "id": "nouveau-keyring", "customName": "APIs internes" }
+    { "id": "dev-keyring", "customName": "Development APIs" }
   ]
 }
 ```
 
-Le tenant et le demandeur viennent du contexte authentifié, pas du corps de la
-requête. Le serveur recharge les API, plans, équipes et keyrings, vérifie les
-droits, l'éligibilité, les règles d'agrégation et la compatibilité des
-processus. Il refuse la soumission entière si elle est invalide; il ne crée pas
-un lot partiel. Une répétition avec la même clé d'idempotence renvoie le reçu
-du lot original au lieu d'en créer un second.
+The tenant and requester come from the authenticated context. The server
+validates the whole selection before saving the parent. An invalid selection
+rejects the submission, rather than silently creating a partial selection.
+Repeating the same submission key reuses the existing batch.
 
-## 2. Ce qui est enregistré
+## Direct progression, without a scheduled job
 
-Le parent `SubscriptionBatchDemand` conserve le tenant, l'équipe, le demandeur,
-la clé d'idempotence, la motivation, les keyrings à créer et la liste ordonnée
-des items. Chaque item identifie une API et un plan, le processus de
-souscription résolu côté serveur, le choix du keyring et les références vers
-sa demande enfant et sa souscription finale.
-
-Les états d'un item décrivent sa progression (`pending`, `waiting`,
-`inProgress`, `retryableError`) ou son résultat final (`accepted`, `refused`,
-`blocked`, `failed`, `canceled`). L'état global du parent est **dérivé** de ses
-items : un item refusé ne clôt pas un lot qui contient encore du travail; le
-parent peut ainsi finir en `partiallyAccepted`.
-
-Un item devient une `SubscriptionDemand` séparée lorsque le worker le
-matérialise. C'est cette demande enfant qui porte les étapes habituelles du
-workflow. Les formulaires sont préremplis à partir des réponses de motivation
-lorsque le plan le permet.
-
-### Cycle de vie d'un nouveau keyring
-
-La soumission enregistre le choix et le nom du keyring, mais ne contacte pas
-Otoroshi. Le job réserve d'abord un identifiant et des credentials stables pour
-le keyring, avec sa provenance de lot, puis prépare le keyring avant de
-matérialiser ses enfants. L'état `ready` n'est persisté qu'après cette
-préparation; une erreur réseau laisse donc une intention reprenable sans créer
-de demande enfant prématurément.
-
-Pour un keyring interne, la réservation est immédiatement prête. Pour une cible
-Otoroshi, Daikoku crée ou vérifie un groupe vide propre à cette configuration
-Otoroshi, puis crée une API key désactivée et autorisée uniquement sur ce
-groupe. L'identifiant et le jeton de propriété du groupe sont gérés côté
-serveur; ils ne sont pas exposés dans l'écran de configuration. Si Otoroshi
-répond de manière incertaine, le prochain passage réutilise les mêmes
-credentials, relit la clé par son `clientId` et vérifie qu'elle appartient bien
-au lot avant de poursuivre.
-
-Quand une demande enfant est acceptée pour la première fois, Daikoku retire le
-groupe vide des autorisations, conserve les entités des plans acceptés et
-active le keyring. Les autres enfants du lot continuent ensuite à utiliser ce
-même keyring et ajoutent leurs autorisations individuellement. Un refus partiel
-ne retire pas les accès déjà accordés. Si tous les items se terminent sans
-aucune souscription acceptée, le shell inutilisé est supprimé; une annulation
-déclenche également ce nettoyage.
-
-## 3. Le worker et la progression
-
-`SubscriptionBatchMaterializationJob` est un job périodique. Hors mode Test,
-il est démarré avec l'application; il n'a pas d'interrupteur de désactivation.
-Par défaut, il se réveille toutes les 5 secondes et traite une tranche de
-10 éléments au plus. Ces deux valeurs sont configurables :
-
-| Réglage | Configuration | Variable d'environnement | Valeur par défaut |
-| --- | --- | --- | --- |
-| Intervalle | `daikoku.subscriptionBatchJob.interval` | `DAIKOKU_SUBSCRIPTION_BATCH_JOB_INTERVAL` | 5 000 ms |
-| Taille de tranche | `daikoku.subscriptionBatchJob.batchSize` | `DAIKOKU_SUBSCRIPTION_BATCH_JOB_BATCH_SIZE` | 10 |
-| Durée de réservation | `daikoku.subscriptionBatchJob.reservationDuration` | `DAIKOKU_SUBSCRIPTION_BATCH_RESERVATION_DURATION` | 600 000 ms |
-
-Le déroulement simplifié est le suivant :
+Submission prepares the selected keyrings, creates all eligible children and
+advances their workflows in the same action. There is no periodic batch job,
+global scan, slice size or delayed creation of the next group of children.
 
 ```text
-Soumission
-   │
-   ├─ validation serveur de tout le lot
-   └─ persistance idempotente du parent
-          │
-          ▼
-Job périodique (ou action _resume pour un lot)
-   │
-   ├─ prépare les keyrings partagés requis (une seule fois par création)
-   ├─ matérialise une tranche d'items pending
-   ├─ cherche des demandes enfants waiting / inProgress exécutables
-   ├─ vérifie la barrière de phase et réserve l'item + son keyring
-   ├─ avance le workflow existant de chaque enfant retenu
-   └─ synchronise la progression de l'enfant vers le parent
-          │
-          └─ prochain cycle : traite le travail encore disponible
+Submission
+   |
+   +-- validate and persist the parent
+   +-- prepare each shared keyring once
+   +-- create all eligible child demands
+   +-- advance executable children
+           |
+           +-- automatic HTTP step: one call per child, sequentially
+           +-- producer approval: one notification per API and phase
+           +-- human input or callback: persist and wait
+           +-- completion: save the independent outcome
 ```
 
-La tranche borne le travail d'un passage : le job ne matérialise pas les
-300 enfants au moment de la soumission. Les opérations sélectionnées sont
-actuellement parcourues séquentiellement dans ce passage; `batchSize` est donc
-une limite de tranche, pas la promesse que dix appels HTTP partent en parallèle.
-L'action de reprise est limitée au lot demandé et utilise le même mécanisme.
+Producer decisions and form/email validation continue the affected batch
+directly. If advancing one child opens a phase barrier for an earlier sibling,
+that sibling continues within the same action. Waiting for input does not
+schedule background work.
 
-## 4. Barrières par API et par étape
+Cancellation, explicit failure reconciliation and the `_resume` action also
+operate directly on the requested batch. After a server interruption, use
+`POST /api/subscription/team/:teamId/batches/:batchId/_resume` to continue
+persisted work. There is no automatic restart scan.
 
-Les enfants d'une même API avancent par phase. Avant d'autoriser l'étape
-suivante, Daikoku attend que tous les enfants participants de cette API aient
-résolu la phase précédente. Un enfant terminé par un refus ou un autre état
-final ne bloque pas la phase suivante. Les autres API progressent
-indépendamment.
+Deleting an API, plan, consumer team or requester blocks the affected items and
+directly reconciles their batches, including unused keyring cleanup.
+
+## Grouped approvals and partial results
+
+Children of the same API advance by phase: the next phase waits until all
+participating children have resolved the preceding phase. Finished children
+do not block the remaining ones; other APIs progress independently.
+
+A `TeamAdmin` phase creates one `ApiSubscriptionBatch` notification containing
+the exact child demands and steps to decide. Accepting or rejecting it updates
+the children and parent transactionally, then immediately continues the batch.
+HTTP validation remains individual: one plan can be refused without canceling
+the other plans.
+
+Item states are `pending`, `waiting`, `inProgress`, `retryableError`, `accepted`,
+`refused`, `blocked`, `failed` or `canceled`. The parent's state is derived from
+its items and can finish as `partiallyAccepted`.
+
+## Shared keyring lifecycle
+
+Before creating children, Daikoku persists stable keyring identifiers and
+credentials. Internal keyrings are ready immediately. For Otoroshi, Daikoku
+creates or verifies its managed empty group, then creates a disabled API key
+authorized only on that group. The keyring becomes ready only after successful
+preparation.
+
+When the first child is accepted, Daikoku activates the keyring and replaces
+the empty-group authorization with the accepted plan's entities. Further
+accepted children add their rights to the same keyring. Refused children do not
+remove previously granted access. An unused shell is removed when all its
+items finish without an accepted subscription, including after cancellation.
+
+If preparation fails, the request reports the error. Retrying reuses the saved
+identifiers and checks the Otoroshi key's ownership instead of generating new
+credentials.
+
+## Concurrent actions and uncertain external results
+
+Before executing a child, Daikoku reserves its item and target keyring in
+PostgreSQL. The keyring lock is shared across batches, preventing concurrent
+operations on the same keyring. Revision guards and transactions protect
+parent/child updates.
+
+These protections remain necessary even without a scheduled job: a user can
+repeat an action or two callbacks can arrive concurrently. Reservation expiry
+does **not** authorize replaying an uncertain external operation.
+
+The reservation duration defaults to 600,000 ms and is configured with
+`daikoku.subscriptionBatch.reservationDuration` or
+`DAIKOKU_SUBSCRIPTION_BATCH_RESERVATION_DURATION`.
+
+A technical error is reported without preventing independent children from
+being processed. An uncertain child result remains recorded until a producer
+team administrator has verified the external outcome. Only after confirming
+failure should they call:
 
 ```text
-API Catalogue :  formulaire  ── attendre les réponses ──> appel HTTP ──> fin
-                 Plan A                    Plan B
-
-API Facturation : notification ── attente séparée ──────> fin
+POST /api/subscription/team/:teamId/batches/:batchId/items/:itemId/_reconcile-failure
 ```
 
-La barrière est une coordination, pas une fusion des demandes : le processus
-HTTP continue d'être appelé par demande enfant. Ainsi, si un appel HTTP refuse
-le Plan A, cet item peut être refusé sans imposer le même résultat au Plan B ni
-aux autres API.
-
-Pour une étape `TeamAdmin`, les enfants qui atteignent la même phase pour la
-même API sont rassemblés dans une notification `ApiSubscriptionBatch`, tout en
-réutilisant le type de notification `AcceptOrReject`. Elle référence les
-identifiants exacts des items, des demandes enfants et des étapes à décider.
-L'acceptation ou le refus vérifie ces références puis met à jour tous les
-enfants et le parent dans une transaction. Le refus clôt chaque enfant
-concerné; l'acceptation laisse le worker poursuivre les étapes suivantes de
-chaque enfant, notamment leurs éventuels appels HTTP unitaires. Les autres
-étapes manuelles ne sont pas fusionnées par cette notification.
-
-```text
-Plan A ─┐
-Plan B ─┼─> 1 notification producteur (API + phase) ─> accepter/refuser le groupe
-Plan C ─┘                                                   │
-                                     ┌───────────────────────┴─────────────────┐
-                                     ▼                                         ▼
-                              workflow enfant A                         workflow enfant B
-                              appel HTTP unitaire                       appel HTTP unitaire
-```
-
-## 5. Réservations, keyrings partagés et appels HTTP incertains
-
-Avant de faire progresser un enfant, le worker réserve atomiquement son item et
-le keyring ciblé. Le verrou de keyring est partagé entre les lots : deux lots
-différents ne peuvent donc pas avancer simultanément des opérations qui
-utilisent le même keyring. Item, réservation et verrou sont enregistrés dans
-PostgreSQL; l'acquisition du verrou utilise la transaction déjà ouverte.
-Supprimer un tenant supprime également ses verrous.
-
-Cette protection évite qu'un redémarrage ou deux exécutions du worker
-déclenchent deux fois le même effet externe. L'expiration d'une réservation
-n'autorise **pas** une reprise automatique : après un timeout, Daikoku ne peut
-pas savoir si le service distant a appliqué l'opération avant la coupure.
-
-Un item bloqué par un résultat incertain reste donc à vérifier. Le endpoint
-`POST /api/subscription/team/:teamId/batches/:batchId/items/:itemId/_reconcile-failure`
-est réservé à un administrateur de l'équipe propriétaire de l'API. Il exprime
-la décision explicite : « j'ai vérifié le système externe et l'opération a
-échoué ». Il resynchronise alors l'item depuis la demande enfant et libère la
-réservation et le verrou; le lot peut être repris. Il ne faut pas l'appeler si
-le résultat distant est toujours inconnu.
-
-## Exemple de bout en bout
-
-Une équipe choisit trois plans : deux pour l'API Catalogue et un pour
-l'API Facturation.
-
-1. Le serveur valide les trois sélections et enregistre un parent.
-2. Le worker matérialise au plus la tranche configurée en trois demandes
-   enfants (si la taille de tranche le permet).
-3. Les deux demandes Catalogue atteignent leur étape de formulaire. La phase
-   HTTP Catalogue attend que les formulaires participants soient résolus.
-4. Une fois la barrière ouverte, chaque demande passe son propre appel HTTP.
-   Un refus de l'une n'annule pas l'autre.
-5. L'API Facturation suit sa progression indépendamment.
-6. Les enfants acceptés créent leurs souscriptions habituelles. Le parent
-   reflète les résultats finaux, par exemple `partiallyAccepted` si au moins un
-   plan a été accepté et qu'un autre a été refusé.
-
-## Limites connues de ce premier jet
-
-- La sélection UI conservée au fil de la pagination de `/apis` et l'écran
-  groupé de choix des plans/keyrings ne sont pas décrits comme livrés ici.
-- La réconciliation libère bien la réservation, mais doit encore être validée
-  avec un enfant dont l'étape courante est `inProgress` : pour permettre une
-  reprise sûre après confirmation d'échec, cette étape doit redevenir
-  exécutable sans rejouer les étapes précédentes.
-- Les règles précises de participation des items annulés ou non matérialisés à
-  une barrière méritent des tests dédiés.
-
-Ces points sont volontairement exposés plutôt que masqués : ils permettent de
-discuter la nécessité de chaque mécanisme avant d'étendre davantage
-l'implémentation.
+This releases the reservation, restores the executable child state and directly
+continues the batch. Do not use it while the external outcome is still unknown.
