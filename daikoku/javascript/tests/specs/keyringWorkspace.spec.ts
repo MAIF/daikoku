@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 import {
   buildWorkspaceSubmission,
+  buildWorkspaceProposalDraft,
   getWorkspaceAssignmentError,
+  proposeWorkspaceKeyrings,
   workspacePlanKey,
   type TeamApiSubscriptions,
   type WorkspaceFolder,
@@ -78,6 +80,321 @@ test('plan identity is API-scoped and collision-safe', () => {
   expect(workspacePlanKey(item('a,b', { _id: 'c' }))).not.toBe(
     workspacePlanKey(item('a', { _id: 'b,c' }))
   );
+});
+
+test('proposal prefers imported keys and leaves the draft and subscription data unchanged', () => {
+  const assigned = item('assigned');
+  const joining = item('joining');
+  const subscriptions = existingSubscriptions([item('member')]);
+  const folders = [
+    folder('prepared', [assigned]),
+    folder('imported', [], { _id: 'existing', customName: 'Existing keys' }),
+  ];
+  const before = JSON.stringify({ plans: [assigned, joining], folders, subscriptions });
+  const proposal = proposeWorkspaceKeyrings([assigned, joining], folders, tenant, subscriptions);
+  expect(proposal.errors).toEqual([]);
+  expect(proposal.groups).toEqual([
+    {
+      key: expect.any(String),
+      environment: 'dev',
+      items: [joining],
+      destination: { type: 'folder', folderId: 'imported' },
+    },
+  ]);
+  expect(JSON.stringify({ plans: [assigned, joining], folders, subscriptions })).toBe(before);
+});
+
+test('proposal reuses a prepared key when no imported key is compatible', () => {
+  const subscriptions = existingSubscriptions([item('member')]);
+  subscriptions.subscriptions[0].customReadOnly = true;
+  const folders = [
+    folder('imported', [], { _id: 'existing', customName: null }),
+    folder('prepared', [item('assigned')]),
+  ];
+  const proposal = proposeWorkspaceKeyrings([item('joining')], folders, tenant, subscriptions);
+  expect(proposal.errors).toEqual([]);
+  expect(proposal.groups[0].destination).toEqual({ type: 'folder', folderId: 'prepared' });
+});
+
+test('proposal asks between compatible imported keys and accepts an explicit choice', () => {
+  const subscriptions = existingSubscriptions([item('member-a'), item('member-b')]);
+  const secondKeyring = { _id: 'second-existing', customName: 'Second existing keys' };
+  subscriptions.subscriptions[1].keyring = secondKeyring;
+  const folders = [
+    folder('prepared'),
+    folder('import-a', [], { _id: 'existing', customName: null }),
+    folder('import-b', [], secondKeyring),
+  ];
+  const plans = [item('joining-a'), item('joining-b')];
+  const proposal = proposeWorkspaceKeyrings(plans, folders, tenant, subscriptions);
+  expect(proposal.errors).toEqual([]);
+  expect(proposal.groups[0].destination).toEqual({
+    type: 'choice',
+    folderIds: ['import-a', 'import-b'],
+  });
+  const resolved = proposeWorkspaceKeyrings(plans, folders, tenant, subscriptions, {
+    [proposal.groups[0].key]: 'import-b',
+  });
+  expect(resolved.groups[0].destination).toEqual({ type: 'folder', folderId: 'import-b' });
+  expect(resolved.errors).toEqual([]);
+  expect(folders.every((target) => target.items.length === 0)).toBe(true);
+});
+
+test('proposal asks between prepared keys and revalidates competing choices', () => {
+  const plans = [item('development'), item('production', { _id: 'prod', customName: 'prod' })];
+  const folders = [folder('first'), folder('second')];
+  const proposal = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions);
+  expect(proposal.groups.map(({ destination }) => destination)).toEqual([
+    { type: 'choice', folderIds: ['first', 'second'] },
+    { type: 'choice', folderIds: ['first', 'second'] },
+  ]);
+  const choices = {
+    [proposal.groups[0].key]: 'first',
+    [proposal.groups[1].key]: 'first',
+  };
+  const conflicting = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions, choices);
+  expect(conflicting.errors).toEqual([
+    {
+      reason: 'subscription.workspace.invalid',
+      items: [plans[1]],
+    },
+  ]);
+  expect(conflicting.groups[1].destination).toEqual({ type: 'choice', folderIds: ['second'] });
+  const resolved = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions, {
+    ...choices,
+    [proposal.groups[1].key]: 'second',
+  });
+  expect(resolved.errors).toEqual([]);
+  expect(resolved.groups.map(({ destination }) => destination)).toEqual([
+    { type: 'folder', folderId: 'first' },
+    { type: 'folder', folderId: 'second' },
+  ]);
+});
+
+test('proposal does not promise an empty prepared key to incompatible environments', () => {
+  const plans = [item('development'), item('production', { _id: 'prod', customName: 'prod' })];
+  const folders = [folder('prepared')];
+  const proposal = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions);
+  expect(proposal.errors).toEqual([]);
+  expect(proposal.groups.map(({ destination }) => destination)).toEqual([
+    { type: 'folder', folderId: 'prepared' },
+    { type: 'new', name: 'prod' },
+  ]);
+  expect(folders[0].items).toEqual([]);
+});
+
+test('proposal creates separate keys for bindings, read-only modes and aggregation restrictions', () => {
+  const cases: Array<{ plans: WorkspacePlan[]; settings: WorkspaceTenant }> = [
+    {
+      plans: [item('first'), item('second', { otoroshiTarget: { otoroshiSettings: 'other' } })],
+      settings: tenant,
+    },
+    {
+      plans: [item('first'), item('second', { otoroshiTarget: withReadOnly(true) })],
+      settings: tenant,
+    },
+    {
+      plans: [item('first'), item('second', { aggregationApiKeysSecurity: false })],
+      settings: tenant,
+    },
+    {
+      plans: [item('first'), item('second')],
+      settings: { ...tenant, aggregationApiKeysSecurity: false },
+    },
+  ];
+  for (const { plans, settings } of cases) {
+    const proposal = proposeWorkspaceKeyrings(plans, [], settings, emptySubscriptions);
+    expect(proposal.errors).toEqual([]);
+    expect(proposal.groups).toHaveLength(2);
+    expect(
+      proposal.groups.every(
+        ({ items, destination }) => items.length === 1 && destination.type === 'new'
+      )
+    ).toBe(true);
+  }
+});
+
+test('proposal keeps exact environment groups even when environment separation is not mandatory', () => {
+  const plans = [item('first'), item('second', { customName: 'DEV' })];
+  const proposal = proposeWorkspaceKeyrings(
+    plans,
+    [],
+    {
+      ...tenant,
+      environmentAggregationApiKeysSecurity: false,
+    },
+    emptySubscriptions
+  );
+  expect(proposal.groups.map(({ environment }) => environment)).toEqual(['dev', 'DEV']);
+  expect(proposal.groups.map(({ destination }) => destination)).toEqual([
+    { type: 'new', name: 'dev' },
+    { type: 'new', name: 'DEV' },
+  ]);
+});
+
+test('proposal reports global process conflicts without choosing a subset', () => {
+  const processed = (api: string, checksum: string | null) =>
+    item(api, {
+      subscriptionProcess: [{ type: 'teamAdmin', id: 'admin', team: 'producer' }],
+      subscriptionBatchProcessChecksum: checksum,
+    });
+  const first = processed('first', 'first-process');
+  const second = processed('second', 'second-process');
+  const neutral = item('neutral');
+  for (const folders of [[], [folder('assigned', [first])]]) {
+    const proposal = proposeWorkspaceKeyrings(
+      [first, second, neutral],
+      folders,
+      tenant,
+      emptySubscriptions
+    );
+    expect(proposal.groups).toEqual([]);
+    expect(proposal.errors).toEqual([
+      {
+        reason: incompatible('process'),
+        items: [first, second, neutral],
+      },
+    ]);
+  }
+  const invalid = processed('invalid', null);
+  expect(proposeWorkspaceKeyrings([invalid], [], tenant, emptySubscriptions).errors).toEqual([
+    {
+      reason: incompatible('process'),
+      items: [invalid],
+    },
+  ]);
+});
+
+test('proposal deduplicates candidates and ignores every already assigned plan', () => {
+  const assigned = item('assigned');
+  const joining = item('joining');
+  const folders = [folder('prepared', [assigned])];
+  const proposal = proposeWorkspaceKeyrings(
+    [assigned, joining, joining],
+    folders,
+    tenant,
+    emptySubscriptions
+  );
+  expect(proposal.groups).toHaveLength(1);
+  expect(proposal.groups[0].items).toEqual([joining]);
+  expect(proposeWorkspaceKeyrings([assigned], folders, tenant, emptySubscriptions)).toEqual({
+    groups: [],
+    errors: [],
+  });
+});
+
+test('proposal never imports team keys itself or silently accepts a stale destination choice', () => {
+  const subscriptions = existingSubscriptions([item('member')]);
+  const plans = [item('joining')];
+  const proposal = proposeWorkspaceKeyrings(plans, [], tenant, subscriptions);
+  expect(proposal.groups[0].destination).toEqual({ type: 'new', name: 'dev' });
+  const stale = proposeWorkspaceKeyrings(plans, [], tenant, subscriptions, {
+    [proposal.groups[0].key]: 'removed-folder',
+  });
+  expect(stale.errors).toEqual([{ reason: 'subscription.workspace.invalid', items: plans }]);
+  expect(stale.groups[0].destination).toEqual({ type: 'choice', folderIds: [] });
+});
+
+test('proposal refuses payment settings and payment steps before assigning any plans', () => {
+  for (const paid of [
+    item('paid', {
+      paymentSettings: {
+        type: ThirdPartyPaymentType.stripe,
+        thirdPartyPaymentSettingsId: 'stripe',
+      },
+    }),
+    item('paid', {
+      subscriptionProcess: [
+        { type: 'payment', id: 'payment', thirdPartyPaymentSettingsId: 'stripe' },
+      ],
+      subscriptionBatchProcessChecksum: 'paid',
+    }),
+  ]) {
+    const proposal = proposeWorkspaceKeyrings([paid], [], tenant, emptySubscriptions);
+    expect(proposal.groups).toEqual([]);
+    expect(proposal.errors).toEqual([{ reason: incompatible('process'), items: [paid] }]);
+  }
+});
+
+test('proposal organizes 250 plans into ten environment keys and produces a valid submission', () => {
+  const plans = Array.from({ length: 25 }, (_, apiIndex) =>
+    Array.from({ length: 10 }, (_, environmentIndex) =>
+      item(`api-${apiIndex}`, {
+        _id: `plan-${environmentIndex}`,
+        customName: `environment-${environmentIndex}`,
+      })
+    )
+  ).flat();
+  const before = JSON.stringify(plans);
+  const proposal = proposeWorkspaceKeyrings(plans, [], tenant, emptySubscriptions);
+  expect(proposal.errors).toEqual([]);
+  expect(proposal.groups).toHaveLength(10);
+  expect(proposal.groups.every(({ items }) => items.length === 25)).toBe(true);
+  expect(new Set(proposal.groups.flatMap(({ items }) => items.map(workspacePlanKey))).size).toBe(
+    250
+  );
+  const folders = proposal.groups.map((group, index) => ({
+    id: `proposed-${index}`,
+    name: group.environment,
+    items: group.items,
+  }));
+  const payload = buildWorkspaceSubmission(folders, tenant, emptySubscriptions);
+  expect(payload.items).toHaveLength(250);
+  expect(payload.newKeyrings).toHaveLength(10);
+  expect(proposeWorkspaceKeyrings(plans, [], tenant, emptySubscriptions)).toEqual(proposal);
+  expect(JSON.stringify(plans)).toBe(before);
+});
+
+test('applying a proposal builds a renamed local draft without changing existing assignments', () => {
+  const assigned = item('assigned');
+  const joining = item('joining');
+  const production = item('production', { _id: 'prod', customName: 'prod' });
+  const folders = [folder('prepared', [assigned])];
+  const proposal = proposeWorkspaceKeyrings(
+    [assigned, joining, production],
+    folders,
+    tenant,
+    emptySubscriptions
+  );
+  const before = JSON.stringify(folders);
+  const productionGroup = proposal.groups.find(({ environment }) => environment === 'prod')!;
+  const next = buildWorkspaceProposalDraft(proposal, folders, tenant, emptySubscriptions, {
+    [productionGroup.key]: '  Production access  ',
+  });
+  expect(JSON.stringify(folders)).toBe(before);
+  expect(next[0].items).toEqual([assigned, joining]);
+  expect(next[1]).toEqual({
+    id: expect.any(String),
+    name: 'Production access',
+    items: [production],
+  });
+  expect(buildWorkspaceSubmission(next, tenant, emptySubscriptions).items).toHaveLength(3);
+});
+
+test('applying a proposal rejects unresolved, stale or duplicate assignments atomically', () => {
+  const plans = [item('joining')];
+  const folders = [folder('first'), folder('second')];
+  const proposal = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions);
+  const before = JSON.stringify(folders);
+  expect(() => buildWorkspaceProposalDraft(proposal, folders, tenant, emptySubscriptions)).toThrow(
+    'subscription.workspace.invalid'
+  );
+  const resolved = proposeWorkspaceKeyrings(plans, folders, tenant, emptySubscriptions, {
+    [proposal.groups[0].key]: 'first',
+  });
+  expect(() => buildWorkspaceProposalDraft(resolved, [], tenant, emptySubscriptions)).toThrow(
+    'subscription.workspace.invalid'
+  );
+  expect(() =>
+    buildWorkspaceProposalDraft(resolved, [folder('first', plans)], tenant, emptySubscriptions)
+  ).toThrow('subscription.workspace.invalid');
+  expect(JSON.stringify(folders)).toBe(before);
+  const newKey = proposeWorkspaceKeyrings(plans, [], tenant, emptySubscriptions);
+  expect(() =>
+    buildWorkspaceProposalDraft(newKey, [], tenant, emptySubscriptions, {
+      [newKey.groups[0].key]: ' ',
+    })
+  ).toThrow('subscription.workspace.name.required');
 });
 
 test('groups cross-API plans by environment only when environment aggregation is enabled', () => {

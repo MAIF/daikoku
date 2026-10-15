@@ -37,13 +37,63 @@
     align-items: start;
   }
 
-  &__folders {
+  &__browser {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
     gap: 1rem;
+    align-items: start;
+  }
+
+  &__folders,
+  &__detail {
+    min-width: 0;
     max-height: 65vh;
     overflow-y: auto;
     padding: 0.2rem;
+  }
+
+  &__zone.keyring-workspace__folder-row {
+    min-height: 0;
+    padding: 0;
+    margin-bottom: 0.5rem;
+    border-style: solid;
+
+    &.--selected {
+      border-color: $primary-color;
+    }
+
+    > small {
+      display: block;
+      padding: 0 0.75rem 0.75rem;
+    }
+  }
+
+  &__folder-select {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+
+    &:focus-visible {
+      outline: 2px solid $primary-color;
+      outline-offset: -2px;
+    }
+
+    span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    strong,
+    small {
+      display: block;
+    }
   }
 
   &__layout > &__zone {
@@ -55,7 +105,7 @@
     padding: 1rem;
     min-height: 12rem;
     border: 2px dashed $form-border-color;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     background: $level3_bg-color;
     color: $level3_text-color;
     overflow-wrap: anywhere;
@@ -87,6 +137,17 @@
     label {
       cursor: pointer;
       min-width: 0;
+    }
+  }
+
+  &__existing-access {
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid $form-border-color;
+
+    summary {
+      cursor: pointer;
+      margin-bottom: 0.75rem;
     }
   }
 
@@ -126,12 +187,54 @@
     margin-top: 1rem;
   }
 
+  &__resolution {
+    padding: 1rem 0;
+    border-top: 1px solid $form-border-color;
+    border-bottom: 1px solid $form-border-color;
+  }
+
+  &__proposal-group {
+    display: grid;
+    grid-template-columns: minmax(6rem, 0.6fr) minmax(12rem, 1.4fr) minmax(9rem, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid $form-border-color;
+    overflow-wrap: anywhere;
+
+    > * {
+      min-width: 0;
+    }
+  }
+
+  &__proposal-plans {
+    margin: 0.75rem 0 0;
+    max-height: 20rem;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 1200px) {
+    &__browser {
+      grid-template-columns: 1fr;
+    }
+
+    &__folders {
+      max-height: 18rem;
+    }
+  }
+
   @media (max-width: 900px) {
+    &__proposal-group {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
     &__layout {
       grid-template-columns: 1fr;
     }
     &__layout > &__zone,
-    &__folders {
+    &__detail {
       max-height: 55vh;
     }
   }

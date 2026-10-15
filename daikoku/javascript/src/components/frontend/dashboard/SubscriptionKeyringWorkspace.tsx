@@ -8,7 +8,17 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { Folder, FolderPlus, GripVertical, Import, Undo2, X } from 'lucide-react';
+import {
+  GripVertical,
+  Import,
+  KeyRound,
+  Layers,
+  LockKeyhole,
+  Plus,
+  Undo2,
+  WandSparkles,
+  X,
+} from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { PropsWithChildren, useContext, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -16,14 +26,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import {
+  buildWorkspaceProposalDraft,
   buildWorkspaceSubmission,
   getWorkspaceAssignmentError,
+  proposeWorkspaceKeyrings,
   workspacePlanKey,
   WorkspaceFolder,
   WorkspacePlan,
 } from '../../../services/keyringWorkspace';
 import { IApiWithAuthorization, ITeamSimple } from '../../../types';
+import { Display } from '../../../types/tenant';
 import { SubscriptionBatchPlanSelectionModal } from './SubscriptionBatchPlanSelectionModal';
+import { SubscriptionKeyringProposal } from './SubscriptionKeyringProposal';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
 import './subscriptionKeyringWorkspace.scss';
 
@@ -51,14 +65,22 @@ function WorkspaceDropZone({
   id,
   label,
   compatible,
+  targetId,
+  className = '',
   children,
-}: PropsWithChildren<{ id: string; label: string; compatible?: boolean }>) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+}: PropsWithChildren<{
+  id: string;
+  label: string;
+  compatible?: boolean;
+  targetId?: string;
+  className?: string;
+}>) {
+  const { setNodeRef, isOver } = useDroppable({ id, data: { targetId: targetId ?? id } });
   return (
     <section
       ref={setNodeRef}
       aria-label={label}
-      className={`keyring-workspace__zone ${isOver ? (compatible === false ? '--invalid' : '--over') : ''}`}
+      className={`keyring-workspace__zone ${className} ${isOver ? (compatible === false ? '--invalid' : '--over') : ''}`}
     >
       {children}
     </section>
@@ -147,12 +169,21 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     navigate('/apis', { replace: true });
   });
   const [folders, setFolders] = useState<WorkspaceFolder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
   const [destination, setDestination] = useState('');
   const [existingId, setExistingId] = useState('');
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string>();
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [arrangementUndo, setArrangementUndo] = useState<{
+    before: WorkspaceFolder[];
+    after: WorkspaceFolder[];
+    selectedFolderId: string;
+    destination: string;
+    selectedKeys: string[];
+  }>();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor)
@@ -171,6 +202,15 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       .toLocaleLowerCase()
       .includes(search.toLocaleLowerCase())
   );
+  const visiblePlanGroups = new Map<string | undefined, WorkspacePlan[]>(
+    tenant.display === Display.environment ? plans.map(({ plan }) => [plan.customName, []]) : []
+  );
+  for (const item of visiblePlans) {
+    const name = tenant.display === Display.environment ? item.plan.customName : undefined;
+    const group = visiblePlanGroups.get(name);
+    if (group) group.push(item);
+    else visiblePlanGroups.set(name, [item]);
+  }
   const existingKeyrings = [
     ...new Map(
       (subscriptionsQuery.data?.subscriptions ?? []).flatMap((subscription) =>
@@ -179,9 +219,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     ).values(),
   ].filter((keyring) => !folders.some((folder) => folder.keyring?._id === keyring._id));
   const hasUnavailablePlans = assigned.some((item) => !planMap.has(workspacePlanKey(item)));
-  const commonNames = [...new Set(unassigned.map(({ plan }) => plan.customName))].filter(
-    (name) => unassigned.filter(({ plan }) => plan.customName === name).length > 1
-  );
+  const selectedFolder = folders.find((folder) => folder.id === selectedFolderId) ?? folders[0];
 
   const prepareMove = (
     keys: string[],
@@ -226,6 +264,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       return;
     }
     setFolders(result.folders);
+    if (folderId) setSelectedFolderId(folderId);
     setSelectedKeys([]);
     setError(undefined);
   };
@@ -244,6 +283,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       },
     ]);
     setDestination(id);
+    setSelectedFolderId(id);
   };
   const importFolder = () => {
     const keyring = existingKeyrings.find((candidate) => candidate._id === existingId);
@@ -255,6 +295,60 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     ]);
     setExistingId('');
     setDestination(id);
+    setSelectedFolderId(id);
+  };
+  const applyArrangement = (next: WorkspaceFolder[]) => {
+    if (submitting) return;
+    const target = next.find(
+      (folder) =>
+        folder.items.length > (folders.find(({ id }) => id === folder.id)?.items.length ?? 0)
+    );
+    setArrangementUndo({
+      before: folders,
+      after: next,
+      selectedFolderId,
+      destination,
+      selectedKeys,
+    });
+    setFolders(next);
+    if (target) {
+      setSelectedFolderId(target.id);
+      setDestination(target.id);
+    }
+    setSelectedKeys([]);
+    setError(undefined);
+    setProposalOpen(false);
+  };
+  const arrange = () => {
+    if (submitting || !subscriptionsQuery.data || hasUnavailablePlans) return;
+    const proposal = proposeWorkspaceKeyrings(plans, folders, tenant, subscriptionsQuery.data);
+    if (
+      proposal.errors.length > 0 ||
+      proposal.groups.some(({ destination }) => destination.type === 'choice')
+    ) {
+      setError(undefined);
+      setProposalOpen(true);
+      return;
+    }
+    try {
+      applyArrangement(
+        buildWorkspaceProposalDraft(proposal, folders, tenant, subscriptionsQuery.data)
+      );
+    } catch (failure) {
+      setError(
+        translate(failure instanceof Error ? failure.message : 'subscription.workspace.invalid')
+      );
+    }
+  };
+  const undoArrangement = () => {
+    if (submitting || !arrangementUndo || folders !== arrangementUndo.after) return;
+    setFolders(arrangementUndo.before);
+    setSelectedFolderId(arrangementUndo.selectedFolderId);
+    setDestination(arrangementUndo.destination);
+    setSelectedKeys(arrangementUndo.selectedKeys);
+    setArrangementUndo(undefined);
+    setError(undefined);
+    setProposalOpen(false);
   };
   const submit = () => {
     if (!subscriptionsQuery.data || hasUnavailablePlans) return;
@@ -320,6 +414,16 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         </div>
       </header>
       <p className="alert alert-info">{translate('subscription.workspace.not.created')}</p>
+      {proposalOpen && subscriptionsQuery.data && tenant.display === Display.environment && (
+        <SubscriptionKeyringProposal
+          plans={plans}
+          folders={folders}
+          tenant={tenant}
+          subscriptions={subscriptionsQuery.data}
+          onCancel={() => setProposalOpen(false)}
+          onApply={applyArrangement}
+        />
+      )}
       {error && (
         <p role="alert" className="alert alert-danger">
           {error}
@@ -367,6 +471,28 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         >
           {translate('subscription.workspace.clear')}
         </button>
+        {tenant.display === Display.environment && (
+          <button
+            type="button"
+            className="btn --secondary ms-auto"
+            disabled={submitting || proposalOpen || unassigned.length === 0 || hasUnavailablePlans}
+            onClick={arrange}
+          >
+            <WandSparkles size={18} className="me-2" />
+            {translate('subscription.workspace.proposal.action')}
+          </button>
+        )}
+        {arrangementUndo && folders === arrangementUndo.after && (
+          <button
+            type="button"
+            className="btn --secondary"
+            disabled={submitting}
+            onClick={undoArrangement}
+          >
+            <Undo2 size={18} className="me-2" />
+            {translate('subscription.workspace.arrangement.undo')}
+          </button>
+        )}
       </div>
       <DndContext
         sensors={sensors}
@@ -376,7 +502,10 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         }}
         onDragCancel={() => setActiveKeys([])}
         onDragEnd={({ over }) => {
-          if (over) movePlans(activeKeys, over.id === 'unassigned' ? undefined : String(over.id));
+          if (over) {
+            const targetId = String(over.data.current?.targetId ?? over.id);
+            movePlans(activeKeys, targetId === 'unassigned' ? undefined : targetId);
+          }
           setActiveKeys([]);
         }}
       >
@@ -409,36 +538,55 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
               >
                 {translate('subscription.workspace.select.visible')}
               </button>
-              {commonNames.map((name) => (
-                <button
-                  type="button"
-                  key={name}
-                  className="btn --secondary --small"
-                  disabled={submitting}
-                  onClick={() =>
-                    setSelectedKeys(
-                      unassigned
-                        .filter(({ plan }) => plan.customName === name)
-                        .map(workspacePlanKey)
-                    )
-                  }
-                >
-                  {translate({ key: 'subscription.batch.select.same.plan', replacements: [name] })}
-                </button>
-              ))}
             </div>
             {!visiblePlans.length && (
               <p className="text-muted">{translate('subscription.workspace.no.plans')}</p>
             )}
-            {visiblePlans.map((item) => (
-              <WorkspacePlanCard
-                key={workspacePlanKey(item)}
-                item={item}
-                selected={selectedKeys.includes(workspacePlanKey(item))}
-                disabled={submitting}
-                onSelect={() => toggleSelection(workspacePlanKey(item))}
-              />
-            ))}
+            {[...visiblePlanGroups]
+              .filter(([, items]) => items.length > 0)
+              .map(([name, items]) => (
+                <div
+                  key={name ?? 'all'}
+                  data-environment={name}
+                  className={name === undefined ? undefined : 'mb-3'}
+                >
+                  {name !== undefined && (
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                      <h3 className="h6 mb-0">
+                        {name} <small>({items.length})</small>
+                      </h3>
+                      <button
+                        type="button"
+                        className="btn --secondary --small"
+                        aria-label={translate({
+                          key: 'subscription.workspace.select.environment',
+                          replacements: [name],
+                        })}
+                        disabled={
+                          submitting ||
+                          items.every((item) => selectedKeys.includes(workspacePlanKey(item)))
+                        }
+                        onClick={() =>
+                          setSelectedKeys((current) => [
+                            ...new Set([...current, ...items.map(workspacePlanKey)]),
+                          ])
+                        }
+                      >
+                        {translate('subscription.workspace.select.all')}
+                      </button>
+                    </div>
+                  )}
+                  {items.map((item) => (
+                    <WorkspacePlanCard
+                      key={workspacePlanKey(item)}
+                      item={item}
+                      selected={selectedKeys.includes(workspacePlanKey(item))}
+                      disabled={submitting}
+                      onSelect={() => toggleSelection(workspacePlanKey(item))}
+                    />
+                  ))}
+                </div>
+              ))}
           </WorkspaceDropZone>
           <div>
             <div className="d-flex gap-2 flex-wrap align-items-center mb-3">
@@ -448,7 +596,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                 onClick={addFolder}
                 disabled={submitting}
               >
-                <FolderPlus size={18} className="me-2" />
+                <Plus size={18} className="me-2" />
                 {translate('subscription.workspace.create')}
               </button>
               <select
@@ -477,108 +625,194 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
             </div>
             {folders.length === 0 && (
               <div className="keyring-workspace__empty">
-                <Folder size={48} />
+                <KeyRound size={48} />
                 <h2>{translate('subscription.workspace.empty.title')}</h2>
                 <p>{translate('subscription.workspace.empty.description')}</p>
               </div>
             )}
-            <div className="keyring-workspace__folders">
-              {folders.map((folder) => {
-                const reason =
-                  activeKeys.length > 0 ? prepareMove(activeKeys, folder.id).error : undefined;
-                return (
-                  <WorkspaceDropZone
-                    key={folder.id}
-                    id={folder.id}
-                    label={folder.name}
-                    compatible={!reason}
-                  >
-                    <div className="d-flex gap-2 align-items-center mb-2">
-                      <Folder size={28} className="keyring-workspace__folder-icon" />
-                      {folder.keyring ? (
-                        <h2 className="flex-grow-1 mb-0">{folder.name}</h2>
-                      ) : (
-                        <input
-                          className="form-control"
-                          value={folder.name}
-                          disabled={submitting}
-                          aria-label={translate('subscription.workspace.name')}
-                          onChange={(event) =>
-                            setFolders((current) =>
-                              current.map((candidate) =>
-                                candidate.id === folder.id
-                                  ? { ...candidate, name: event.target.value }
-                                  : candidate
-                              )
-                            )
-                          }
-                        />
-                      )}
-                      <button
-                        type="button"
-                        className="btn --secondary --icon-only"
-                        disabled={submitting}
-                        aria-label={translate({
-                          key: 'subscription.workspace.remove',
+            <div className="keyring-workspace__browser">
+              {folders.length > 0 && (
+                <section
+                  className="keyring-workspace__folders"
+                  aria-label={translate('subscription.workspace.list')}
+                >
+                  <h2>{translate('subscription.workspace.list')}</h2>
+                  {folders.map((folder) => {
+                    const reason =
+                      activeKeys.length > 0 ? prepareMove(activeKeys, folder.id).error : undefined;
+                    return (
+                      <WorkspaceDropZone
+                        key={folder.id}
+                        id={`target:${folder.id}`}
+                        targetId={folder.id}
+                        label={translate({
+                          key: 'subscription.workspace.target',
                           replacements: [folder.name],
                         })}
-                        onClick={() => {
-                          setFolders((current) =>
-                            current.filter((candidate) => candidate.id !== folder.id)
-                          );
-                          setSelectedKeys((current) =>
-                            current.filter(
-                              (key) => !folder.items.some((item) => workspacePlanKey(item) === key)
-                            )
-                          );
-                          if (destination === folder.id) setDestination('');
-                        }}
+                        compatible={!reason}
+                        className={`keyring-workspace__folder-row ${selectedFolder?.id === folder.id ? '--selected' : ''}`}
                       >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <p className="text-muted">
-                      {translate(
-                        folder.keyring
-                          ? 'subscription.workspace.existing.folder'
-                          : 'subscription.workspace.new.folder'
+                        <button
+                          type="button"
+                          className="keyring-workspace__folder-select"
+                          aria-label={folder.name}
+                          aria-pressed={selectedFolder?.id === folder.id}
+                          disabled={submitting}
+                          onClick={() => setSelectedFolderId(folder.id)}
+                        >
+                          <KeyRound size={20} className="keyring-workspace__folder-icon" />
+                          <span>
+                            <strong>{folder.name}</strong>
+                            <small>
+                              {translate(
+                                folder.keyring
+                                  ? 'subscription.workspace.existing.folder'
+                                  : 'subscription.workspace.new.folder'
+                              )}
+                              {' · '}
+                              {folder.items.length} {translate('subscription.workspace.plans')}
+                            </small>
+                          </span>
+                        </button>
+                        {reason && <small className="text-danger">{translate(reason)}</small>}
+                      </WorkspaceDropZone>
+                    );
+                  })}
+                </section>
+              )}
+              {selectedFolder &&
+                [selectedFolder].map((folder) => {
+                  const reason =
+                    activeKeys.length > 0 ? prepareMove(activeKeys, folder.id).error : undefined;
+                  const existingAccess = folder.keyring
+                    ? (subscriptionsQuery.data?.subscriptions.filter(
+                        (subscription) => subscription.keyring?._id === folder.keyring?._id
+                      ) ?? [])
+                    : [];
+                  return (
+                    <WorkspaceDropZone
+                      key={folder.id}
+                      id={folder.id}
+                      label={folder.name}
+                      compatible={!reason}
+                      className="keyring-workspace__detail"
+                    >
+                      <div className="d-flex gap-2 align-items-center mb-2">
+                        <KeyRound size={28} className="keyring-workspace__folder-icon" />
+                        {folder.keyring ? (
+                          <h2 className="flex-grow-1 mb-0">{folder.name}</h2>
+                        ) : (
+                          <input
+                            className="form-control"
+                            value={folder.name}
+                            disabled={submitting}
+                            aria-label={translate('subscription.workspace.name')}
+                            onChange={(event) =>
+                              setFolders((current) =>
+                                current.map((candidate) =>
+                                  candidate.id === folder.id
+                                    ? { ...candidate, name: event.target.value }
+                                    : candidate
+                                )
+                              )
+                            }
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className="btn --secondary --icon-only"
+                          disabled={submitting}
+                          aria-label={translate({
+                            key: 'subscription.workspace.remove',
+                            replacements: [folder.name],
+                          })}
+                          onClick={() => {
+                            setFolders((current) =>
+                              current.filter((candidate) => candidate.id !== folder.id)
+                            );
+                            setSelectedKeys((current) =>
+                              current.filter(
+                                (key) =>
+                                  !folder.items.some((item) => workspacePlanKey(item) === key)
+                              )
+                            );
+                            if (destination === folder.id) setDestination('');
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <p className="text-muted">
+                        {translate(
+                          folder.keyring
+                            ? 'subscription.workspace.existing.folder'
+                            : 'subscription.workspace.new.folder'
+                        )}
+                        {' · '}
+                        {folder.items.length} {translate('subscription.workspace.plans')}
+                      </p>
+                      {folder.keyring && (
+                        <>
+                          <p className="small text-muted">
+                            {translate('subscription.workspace.existing.preserved')}
+                          </p>
+                          <details className="keyring-workspace__existing-access">
+                            <summary>
+                              <LockKeyhole size={16} className="mx-2" aria-hidden="true" />
+                              {translate({
+                                key: 'subscription.workspace.existing.access',
+                                replacements: [String(existingAccess.length)],
+                              })}
+                            </summary>
+                            <ul className="list-unstyled mb-0">
+                              {existingAccess.map((subscription) => (
+                                <li key={subscription._id} className="keyring-workspace__plan">
+                                  <span className="flex-grow-1">
+                                    <strong>{subscription.planName || subscription.plan}</strong>
+                                    <small className="d-block text-muted">
+                                      {subscription.apiName || subscription.api}
+                                    </small>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        </>
                       )}
-                      {' · '}
-                      {folder.items.length} {translate('subscription.workspace.plans')}
-                    </p>
-                    {folder.keyring && (
-                      <p className="small text-muted">
-                        {translate('subscription.workspace.existing.preserved')}
-                      </p>
-                    )}
-                    {folder.items.map((item) => (
-                      <WorkspacePlanCard
-                        key={workspacePlanKey(item)}
-                        item={item}
-                        selected={selectedKeys.includes(workspacePlanKey(item))}
-                        disabled={submitting}
-                        onSelect={() => toggleSelection(workspacePlanKey(item))}
-                        onRemove={() => movePlans([workspacePlanKey(item)])}
-                      />
-                    ))}
-                    {folder.items.length === 0 && (
-                      <p className="keyring-workspace__hint">
-                        {translate('subscription.workspace.drop')}
-                      </p>
-                    )}
-                    {activeKeys.length > 0 && reason && (
-                      <small className="text-danger">{translate(reason)}</small>
-                    )}
-                  </WorkspaceDropZone>
-                );
-              })}
+                      <h3 className="h6 mb-3">
+                        {translate({
+                          key: 'subscription.workspace.requested.access',
+                          replacements: [String(folder.items.length)],
+                        })}
+                      </h3>
+                      {folder.items.map((item) => (
+                        <WorkspacePlanCard
+                          key={workspacePlanKey(item)}
+                          item={item}
+                          selected={selectedKeys.includes(workspacePlanKey(item))}
+                          disabled={submitting}
+                          onSelect={() => toggleSelection(workspacePlanKey(item))}
+                          onRemove={() => movePlans([workspacePlanKey(item)])}
+                        />
+                      ))}
+                      {folder.items.length === 0 && (
+                        <p className="keyring-workspace__hint">
+                          {translate('subscription.workspace.drop')}
+                        </p>
+                      )}
+                      {activeKeys.length > 0 && reason && (
+                        <small className="text-danger">{translate(reason)}</small>
+                      )}
+                    </WorkspaceDropZone>
+                  );
+                })}
             </div>
           </div>
         </div>
         <DragOverlay>
           {activeKeys.length > 0 && (
             <div className="keyring-workspace__drag-overlay">
-              <Folder size={20} />
+              <Layers size={20} />
               {translate({
                 key: 'subscription.workspace.drag.count',
                 replacements: [String(activeKeys.length)],
