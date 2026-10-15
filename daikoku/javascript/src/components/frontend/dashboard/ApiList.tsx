@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createColumnHelper, RowSelectionState } from "@tanstack/react-table"
 import { MessageCircleMore, MoreVertical } from "lucide-react"
 import { useContext, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import { I18nContext, ModalContext } from "../../../contexts"
@@ -16,7 +16,6 @@ import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
 import { SimpleTeamSelector } from "../api/SimpleTeamSelector"
-import { SubscriptionBatchPlanSelectionModal } from "./SubscriptionBatchPlanSelectionModal"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,7 +30,8 @@ export const ApiList = (props: ApiListProps) => {
 
   const { customGraphQLClient, connectedUser, tenant } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
-  const { openCustomModal } = useContext(ModalContext)
+  const { openCustomModal, close } = useContext(ModalContext)
+  const navigate = useNavigate()
 
   const queryClient = useQueryClient()
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -375,15 +375,9 @@ export const ApiList = (props: ApiListProps) => {
                     showApiKeySelectModal={(teamId) => {
                       const team = teams.find((candidate) => candidate._id === teamId);
                       if (!team) return;
-                      openCustomModal({
-                        title: translate('subscription.batch.select.plans.title'),
-                        content: (
-                          <SubscriptionBatchPlanSelectionModal
-                            apis={selectedApis}
-                            team={team}
-                            onSubmitted={() => setRowSelection({})}
-                          />
-                        ),
+                      close();
+                      navigate('/apis/subscriptions/keyrings', {
+                        state: { apis: selectedApis, team },
                       });
                     }}
                   />

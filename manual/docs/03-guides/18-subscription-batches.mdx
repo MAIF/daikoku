@@ -18,6 +18,26 @@ can share one new or existing keyring across APIs. Different Otoroshi bindings
 or read-only settings form separate groups; plans that forbid aggregation keep
 individual keyrings.
 
+### Experimental keyring folders
+
+After team selection, `/apis/subscriptions/keyrings` offers an experimental
+full-page workspace. Create new keyring folders or import existing team
+keyrings, then drag plans into them. Checkboxes and the move toolbar provide
+the same actions without dragging, including moving several plans at once.
+
+Folders can be renamed, split or removed before submission. Removing an
+imported folder never deletes the existing keyring or its subscriptions.
+Only assigned plans are submitted; empty folders are ignored. Incompatible
+moves explain the violated rule and leave the draft unchanged.
+
+Nothing is created before submitting the grouped request. The workspace uses
+the existing batch endpoint and motivation form. "Use the previous interface"
+opens the original modal without removing it from the application.
+
+This POC keeps the folder draft only while the page is open: reloading retains
+the selected APIs and team from navigation history, but resets the folders.
+Return to the catalog to change the initial API/team selection.
+
 Already subscribed plans without multiple-key support, pending unit requests,
 open batch items, unauthorized plans and unsupported processes are excluded.
 

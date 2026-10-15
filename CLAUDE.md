@@ -135,5 +135,19 @@ Data fetching uses TanStack Query; forms use `@maif/react-forms`. The built bund
   Docker is running before `mise run dev` / `mise run test:*`.
 - The all-in-one process-compose runs (`dev`, `test:back`, …) bind port 9999 for the dashboard.
 - The backend dev task exposes a JVM debugger on port 5005.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub Issues for `MAIF/daikoku`; use the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo. Read `GLOSSARY.md` and relevant decisions in `docs/adr/` when present; also read Daikoku’s existing `docs/DOMAIN.md` for its domain overview. See `docs/agents/domain.md`.
 </content>
 </invoke>

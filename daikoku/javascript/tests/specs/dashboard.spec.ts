@@ -239,10 +239,12 @@ for (const reuseExistingKeyring of [false, true]) {
     await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
     await expect(page.getByRole('heading', { name: 'Sélectionner une équipe' })).toBeVisible();
     await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
+    await page.getByRole('button', { name: 'Utiliser l\'interface précédente' }).click();
     await expect(
       page.getByRole('heading', { name: 'Choisir les plans et les trousseaux' })
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Sélectionner Batch UI plan sur les APIs' }).click();
+    const modal = page.getByRole('dialog');
+    await modal.getByRole('button', { name: 'Sélectionner Batch UI plan sur les APIs' }).click();
 
     const keyringSelect = page.getByRole('combobox', { name: 'Trousseau pour Batch UI plan' });
     await expect(keyringSelect).toHaveCount(1);
@@ -271,7 +273,7 @@ for (const reuseExistingKeyring of [false, true]) {
       });
     });
 
-    await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+    await modal.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' })
@@ -333,6 +335,7 @@ test('only selects available plans when subscribing to an environment across API
   }
   await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
   await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
+  await page.getByRole('button', { name: 'Utiliser l\'interface précédente' }).click();
   const modal = page.getByRole('dialog');
   await expect(modal.getByRole('checkbox', { name: 'Available dev', exact: true })).toHaveCount(2);
   await expect(modal.getByRole('checkbox', { name: 'Pending batch plan' })).toHaveCount(0);
@@ -348,6 +351,282 @@ test('only selects available plans when subscribing to an environment across API
   expect(payload?.items.map(({ api }) => api).sort()).toEqual([apis[1]._id, apis[2]._id].sort());
   expect(payload?.items.every(({ plan }) => plan === dev._id)).toBe(true);
   expect(payload?.newKeyrings).toHaveLength(1);
+});
+
+// These browser tests exercise the workspace UI against real catalog fixtures,
+// but intercept batch submission: they do not verify backend batch execution.
+test.describe('keyring workspace UI', () => {
+  const availableName = 'Plans non affectés';
+  const submitName = 'Envoyer la demande groupée';
+  const batchEndpoint = /\/api\/subscription\/team\/[^/]+\/batches$/;
+
+  async function seedWorkspace() {
+    const plan = generatePlan({
+      customName: 'Workspace dev',
+      aggregationApiKeysSecurity: true,
+      allowMultipleKeys: true,
+    });
+    expect((await savePlan(plan)).ok).toBe(true);
+    const apis = ['Alpha', 'Beta', 'Gamma'].map((name) => generateApi({
+      name: `Workspace ${name}`,
+      possibleUsagePlans: [plan._id],
+    }));
+    expect((await Promise.all(apis.map(saveApi))).every((response) => response.ok)).toBe(true);
+    return { apis, plan };
+  }
+
+  async function openWorkspace(
+    page: import('@playwright/test').Page,
+    apis: ReturnType<typeof generateApi>[]
+  ) {
+    await page.goto(ACCUEIL);
+    await loginAs(MICHAEL, page);
+    for (const api of apis) {
+      await page.getByRole('checkbox', { name: `Sélectionner l'API ${api.name}`, exact: true }).check();
+    }
+    await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
+    await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
+    await expect(page).toHaveURL(/\/apis\/subscriptions\/keyrings$/);
+    await expect(page.getByRole('heading', { name: 'Organiser vos trousseaux' })).toBeVisible();
+    await expect(page.getByRole('region', { name: availableName })).toBeVisible();
+  }
+
+  async function createFolder(page: import('@playwright/test').Page, name: string) {
+    await page.getByRole('button', { name: 'Créer un trousseau', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Nom du trousseau', exact: true }).last().fill(name);
+    return page.getByRole('region', { name, exact: true });
+  }
+
+  async function moveSelection(page: import('@playwright/test').Page, destination: string) {
+    await page.getByRole('combobox', { name: 'Trousseau de destination' }).selectOption({ label: destination });
+    await page.getByRole('button', { name: 'Déplacer la sélection', exact: true }).click();
+  }
+
+  test('drag, shared assignments, separate same-environment folders and reversibility', async ({ page }, testInfo) => {
+    const { apis, plan } = await seedWorkspace();
+    const submissions: ISubscriptionBatchSubmission[] = [];
+    await page.route(batchEndpoint, async (route) => {
+      submissions.push(route.request().postDataJSON());
+      await route.fulfill({ status: 201, json: { batch: { _id: 'workspace-ui' }, state: 'Pending', replayed: false } });
+    });
+    await openWorkspace(page, apis);
+    await page.reload();
+    const available = page.getByRole('region', { name: availableName });
+    await expect(available.getByRole('checkbox')).toHaveCount(3);
+    const first = await createFolder(page, 'Shared workspace');
+    const label = (index: number) => `${apis[index].name} / ${plan.customName}`;
+
+    const handle = available.getByRole('button', { name: `Déplacer ${label(0)}`, exact: true });
+    await handle.scrollIntoViewIfNeeded();
+    const source = await handle.boundingBox();
+    const target = await first.boundingBox();
+    expect(source).not.toBeNull();
+    expect(target).not.toBeNull();
+    await page.mouse.move(source!.x + source!.width / 2, source!.y + source!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(source!.x + source!.width / 2 + 12, source!.y + source!.height / 2, { steps: 3 });
+    await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2, { steps: 20 });
+    await page.mouse.up();
+    await expect(first.getByRole('checkbox', { name: `Sélectionner ${label(0)}`, exact: true })).toBeVisible();
+    const nextPlan = available.getByRole('checkbox', { name: `Sélectionner ${label(1)}`, exact: true });
+    await nextPlan.focus();
+    // PointerSensor suppresses clicks for 50ms after release; use a real-length
+    // keyboard press so its synthetic click occurs after that cleanup.
+    await nextPlan.press('Space', { delay: 75 });
+    await expect(page.getByText('1 plans sélectionnés', { exact: true })).toBeVisible();
+    await moveSelection(page, 'Shared workspace');
+    await expect(first.getByRole('checkbox')).toHaveCount(2);
+
+    const second = await createFolder(page, 'Separate workspace');
+    await first.getByRole('checkbox', { name: `Sélectionner ${label(0)}`, exact: true }).check();
+    await moveSelection(page, 'Separate workspace');
+    await expect(first.getByRole('checkbox')).toHaveCount(1);
+    await expect(second.getByRole('checkbox')).toHaveCount(1);
+    const layout = await page.evaluate(() => {
+      const heading = document.querySelector('.keyring-workspace h1')!;
+      const ancestors: { className: string; scrollTop: number }[] = [];
+      for (let element = heading.parentElement; element; element = element.parentElement) {
+        element.scrollTop = 0;
+        ancestors.push({ className: element.className, scrollTop: element.scrollTop });
+      }
+      window.scrollTo(0, 0);
+      let navbar = document.querySelector('img[alt="user menu"]')?.parentElement;
+      while (navbar && getComputedStyle(navbar).position !== 'fixed') {
+        navbar = navbar.parentElement;
+      }
+      return {
+        headingTop: heading.getBoundingClientRect().top,
+        navbarBottom: navbar?.getBoundingClientRect().bottom,
+        ancestors,
+      };
+    });
+    console.log('Workspace layout at scroll origin:', JSON.stringify(layout));
+    await page.screenshot({
+      path: process.env.KEYRING_WORKSPACE_SCREENSHOT || testInfo.outputPath('keyring-workspace-populated.png'),
+      fullPage: true,
+    });
+    await second.getByRole('button', { name: `Retirer ${label(0)} du trousseau`, exact: true }).click();
+    await expect(available.getByRole('checkbox')).toHaveCount(2);
+    await available.getByRole('checkbox', { name: `Sélectionner ${label(0)}`, exact: true }).check();
+    await moveSelection(page, 'Separate workspace');
+    await page.getByRole('button', { name: 'Retirer le dossier Separate workspace', exact: true }).click();
+    await expect(available.getByRole('checkbox')).toHaveCount(2);
+    await expect(second).toHaveCount(0);
+    await createFolder(page, 'Empty omitted');
+    await first.getByRole('textbox', { name: 'Nom du trousseau', exact: true }).fill('Renamed shared workspace');
+    expect(submissions).toHaveLength(0);
+    await page.getByRole('button', { name: submitName, exact: true }).click();
+    await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0].newKeyrings).toEqual([{ _id: expect.any(String), customName: 'Renamed shared workspace' }]);
+    expect(submissions[0].items).toEqual([{
+      api: apis[1]._id,
+      plan: plan._id,
+      keyringChoice: { type: 'new', creation: submissions[0].newKeyrings[0]._id },
+    }]);
+  });
+
+  test('imports an existing keyring without creating or modifying it before submit', async ({ page }) => {
+    const { apis, plan } = await seedWorkspace();
+    await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, (route) => route.fulfill({
+      json: [{
+        _id: 'workspace-existing-subscription',
+        api: apis[0]._id,
+        apiName: apis[0].name,
+        plan: plan._id,
+        planName: plan.customName,
+        customName: null,
+        keyring: { _id: 'workspace-existing-keyring', customName: 'Imported workspace' },
+      }],
+    }));
+    const writes: string[] = [];
+    page.on('request', (request) => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method()) &&
+          /\/api\/(?:keyrings|subscription(?:\/|s\/))/.test(request.url())) writes.push(request.url());
+    });
+    let payload: ISubscriptionBatchSubmission | undefined;
+    await page.route(batchEndpoint, (route) => {
+      payload = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { batch: { _id: 'workspace-import' }, state: 'Pending', replayed: false } });
+    });
+    await openWorkspace(page, apis);
+    await page.getByRole('combobox', { name: 'Trousseau existant', exact: true }).selectOption('workspace-existing-keyring');
+    await page.getByRole('button', { name: 'Importer le trousseau', exact: true }).click();
+    const folder = page.getByRole('region', { name: 'Imported workspace', exact: true });
+    await expect(folder.getByRole('textbox', { name: 'Nom du trousseau' })).toHaveCount(0);
+    await page.getByRole('checkbox', { name: `Sélectionner ${apis[1].name} / ${plan.customName}`, exact: true }).check();
+    await moveSelection(page, 'Imported workspace');
+    await expect(folder.getByRole('checkbox')).toHaveCount(1);
+    expect(writes).toEqual([]);
+    await page.getByRole('button', { name: submitName, exact: true }).click();
+    await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    expect(payload?.newKeyrings).toEqual([]);
+    expect(payload?.items).toEqual([{
+      api: apis[1]._id, plan: plan._id,
+      keyringChoice: { type: 'existing', keyring: 'workspace-existing-keyring' },
+    }]);
+    expect(writes).toHaveLength(1);
+  });
+
+  for (const incompatibility of ['binding', 'readonly', 'environment'] as const) {
+    test(`rejects incompatible ${incompatibility} atomically`, async ({ page }) => {
+      const { apis, plan } = await seedWorkspace();
+      if (incompatibility === 'binding') {
+        const headers = {
+          Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+          'Content-Type': 'application/json',
+        };
+        const tenantResponse = await fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, { headers });
+        expect(tenantResponse.ok).toBe(true);
+        const tenantData = await tenantResponse.json();
+        const response = await fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify([{
+            op: 'add', path: '/otoroshiSettings/-',
+            value: { ...tenantData.otoroshiSettings[0], _id: 'workspace-other-otoroshi' },
+          }]),
+        });
+        expect(response.ok).toBe(true);
+      }
+      if (incompatibility === 'environment') {
+        const response = await fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([{ op: 'replace', path: '/environmentAggregationApiKeysSecurity', value: true }]),
+        });
+        expect(response.ok).toBe(true);
+      }
+      const incompatible = generatePlan({
+        ...plan,
+        _id: `${plan._id}-other`,
+        customName: incompatibility === 'environment' ? 'Workspace prod' : plan.customName,
+        otoroshiTarget: {
+          ...plan.otoroshiTarget,
+          otoroshiSettings: incompatibility === 'binding' ? 'workspace-other-otoroshi' : plan.otoroshiTarget.otoroshiSettings,
+          apikeyCustomization: { ...plan.otoroshiTarget.apikeyCustomization, readOnly: incompatibility === 'readonly' },
+        },
+      });
+      expect((await savePlan(incompatible)).ok).toBe(true);
+      const otherApi = generateApi({ name: 'Workspace incompatible', possibleUsagePlans: [incompatible._id] });
+      expect((await saveApi(otherApi)).ok).toBe(true);
+      await openWorkspace(page, [apis[0], apis[1], otherApi]);
+      const folder = await createFolder(page, 'Compatible only');
+      await page.getByRole('checkbox', { name: `Sélectionner ${apis[0].name} / ${plan.customName}`, exact: true }).check();
+      await moveSelection(page, 'Compatible only');
+      const compatibleCheckbox = page.getByRole('checkbox', { name: `Sélectionner ${apis[1].name} / ${plan.customName}`, exact: true });
+      const incompatibleCheckbox = page.getByRole('checkbox', { name: `Sélectionner ${otherApi.name} / ${incompatible.customName}`, exact: true });
+      await compatibleCheckbox.check();
+      await incompatibleCheckbox.check();
+      await moveSelection(page, 'Compatible only');
+      const reasons = {
+        binding: 'Ces plans ciblent des instances Otoroshi différentes.',
+        readonly: 'Les plans en lecture seule et en écriture ne peuvent pas partager ce trousseau.',
+        environment: 'Ces plans appartiennent à des environnements différents.',
+      };
+      await expect(page.getByRole('alert')).toHaveText(reasons[incompatibility]);
+      await expect(folder.getByRole('checkbox')).toHaveCount(1);
+      await expect(page.getByRole('region', { name: availableName }).getByRole('checkbox')).toHaveCount(2);
+      await expect(compatibleCheckbox).toBeChecked();
+      await expect(incompatibleCheckbox).toBeChecked();
+    });
+  }
+
+  test('retries an unchanged draft with the same idempotency and folder IDs', async ({ page }) => {
+    const { apis, plan } = await seedWorkspace();
+    const payloads: ISubscriptionBatchSubmission[] = [];
+    await page.route(batchEndpoint, async (route) => {
+      payloads.push(route.request().postDataJSON());
+      await route.fulfill(payloads.length === 1
+        ? { status: 500, json: { error: 'Workspace temporary failure' } }
+        : { status: 201, json: { batch: { _id: 'workspace-retry' }, state: 'Pending', replayed: false } });
+    });
+    await openWorkspace(page, apis);
+    const folder = await createFolder(page, 'Retry workspace');
+    await page.getByRole('checkbox', { name: `Sélectionner ${apis[0].name} / ${plan.customName}`, exact: true }).check();
+    await moveSelection(page, 'Retry workspace');
+    await page.getByRole('button', { name: submitName, exact: true }).click();
+    await expect(page.getByText('Workspace temporary failure', { exact: true })).toBeVisible();
+    await expect(folder.getByRole('checkbox')).toHaveCount(1);
+    await page.getByRole('button', { name: submitName, exact: true }).click();
+    await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    expect(payloads).toHaveLength(2);
+    expect(payloads[0].idempotencyKey).toEqual(expect.any(String));
+    expect(payloads[1]).toEqual(payloads[0]);
+  });
+
+  test('direct URL without catalog selection offers a safe return', async ({ page }) => {
+    await page.goto(ACCUEIL);
+    await loginAs(MICHAEL, page);
+    await page.goto(`http://localhost:${exposedPort}/apis/subscriptions/keyrings`);
+    await expect(page.getByText('Choisissez des APIs et une équipe consommatrice depuis le catalogue pour organiser leurs trousseaux.')).toBeVisible();
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await expect(page).toHaveURL(/\/apis$/);
+    await expect(page.getByRole('link', { name: 'API papier', exact: true })).toBeVisible();
+  });
 });
 
 test.fixme('apilist display specials api', async ({ page }) => {

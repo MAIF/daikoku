@@ -1,31 +1,16 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { GraphQLClient } from 'graphql-request';
-import { nanoid } from 'nanoid';
 import { useContext, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import * as Services from '../../../services';
 import {
   buildBatchKeyringSelection,
   findCompatibleKeyringsForGroup,
   groupBatchPlansByKeyring,
-  isBatchPlanAvailable,
   isPlanSelectableForBatch,
 } from '../../../services/subscriptions';
-import {
-  IApiGQL,
-  IApiWithAuthorization,
-  ITeamSimple,
-  IUsagePlanGQL,
-  isError,
-} from '../../../types';
-
-type PlanSet = {
-  api: IApiWithAuthorization;
-  plans: IUsagePlanGQL[];
-};
+import { IApiWithAuthorization, ITeamSimple, IUsagePlanGQL } from '../../../types';
+import { useSubscriptionBatch } from './useSubscriptionBatch';
 
 type SelectedPlan = {
   api: IApiWithAuthorization;
@@ -40,89 +25,24 @@ type Props = {
 
 const planKey = (apiId: string, planId: string) => `${apiId}:${planId}`;
 
-async function fetchPlansForApi(
-  customGraphQLClient: GraphQLClient,
-  api: IApiWithAuthorization
-): Promise<PlanSet> {
-  const pageSize = 100;
-  const plans: IUsagePlanGQL[] = [];
-  let offset = 0;
-  let total = Number.MAX_SAFE_INTEGER;
-
-  while (offset < total) {
-    const result = await customGraphQLClient.request<{
-      plansByApi: { plans: IUsagePlanGQL[]; totalFiltered: number };
-    }>(Services.graphql.plansByApi, {
-      filterTable: JSON.stringify([]),
-      sortingTable: JSON.stringify([]),
-      limit: pageSize,
-      offset,
-      apiId: api.api._id,
-    });
-    plans.push(...result.plansByApi.plans);
-    total = result.plansByApi.totalFiltered;
-    if (result.plansByApi.plans.length === 0) break;
-    offset += result.plansByApi.plans.length;
-  }
-
-  return { api, plans };
-}
-
 export const SubscriptionBatchPlanSelectionModal = ({ apis, team, onSubmitted }: Props) => {
   const { translate } = useContext(I18nContext);
-  const { customGraphQLClient, tenant } = useContext(GlobalContext);
-  const { close, openFormModal } = useContext(ModalContext);
-  const queryClient = useQueryClient();
-  const teamId = team._id;
+  const { tenant } = useContext(GlobalContext);
+  const { close } = useContext(ModalContext);
   const [selectedPlanKeys, setSelectedPlanKeys] = useState<string[]>([]);
   const [keyringChoices, setKeyringChoices] = useState<Record<string, string>>({});
   const [keyringNames, setKeyringNames] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  const plansQuery = useQuery({
-    queryKey: ['subscription-batch-plans', apis.map(({ api }) => api._id).sort()],
-    queryFn: () => Promise.all(apis.map((api) => fetchPlansForApi(customGraphQLClient, api))),
+  const {
+    subscriptionsQuery,
+    availablePlanSets,
+    submitting,
+    submitWithMotivation,
+    loading,
+    failed,
+  } = useSubscriptionBatch(apis, team, () => {
+    onSubmitted();
+    close();
   });
-
-  const subscriptionsQuery = useQuery({
-    queryKey: ['subscription-batch-keyrings', teamId],
-    queryFn: async () => {
-      const subscriptions = await Services.getAllTeamSubscriptions(teamId);
-      if (subscriptions.length === 0) return { subscriptions, apis: [] };
-      const apiIds = [...new Set(subscriptions.map((subscription) => subscription.api))];
-      const { apis: subscriptionApis } = await customGraphQLClient.request<{
-        apis: IApiGQL[];
-      }>(Services.graphql.apisByIdsWithPlans, { ids: apiIds });
-      return { subscriptions, apis: subscriptionApis };
-    },
-    enabled: !!teamId,
-  });
-
-  const pendingPlansQuery = useQuery({
-    queryKey: ['subscription-batch-pending-plans', teamId],
-    queryFn: async () => {
-      const result = await Services.getPendingSubscriptionPlans(teamId);
-      if (isError(result)) throw new Error(result.error);
-      return result;
-    },
-  });
-
-  const availablePlanSets = useMemo(() => {
-    if (!subscriptionsQuery.data || !pendingPlansQuery.data) return [];
-    return (plansQuery.data ?? []).map(({ api, plans }) => ({
-      api,
-      plans: plans.filter((plan) =>
-        isBatchPlanAvailable({
-          apiId: api.api._id,
-          ownerTeamId: api.api.team._id,
-          plan,
-          teamId,
-          subscriptions: subscriptionsQuery.data.subscriptions,
-          pendingPlans: pendingPlansQuery.data,
-        })
-      ),
-    }));
-  }, [plansQuery.data, subscriptionsQuery.data, pendingPlansQuery.data, teamId]);
 
   const selectedPlans = useMemo<SelectedPlan[]>(() => {
     return availablePlanSets.flatMap(({ api, plans }) =>
@@ -191,78 +111,32 @@ export const SubscriptionBatchPlanSelectionModal = ({ apis, team, onSubmitted }:
     if (compatible) setSelectedPlanKeys((current) => [...new Set([...current, ...keys])]);
   };
 
-  const submit = async (motivation?: object) => {
+  const submitSelection = () => {
     if (!subscriptionsQuery.data || selectedPlans.length === 0) return;
-    setSubmitting(true);
-    try {
-      if (
-        keyringGroups.some(
-          (group) =>
-            keyringChoices[group.key] &&
-            !group.keyrings.some((keyring) => keyring._id === keyringChoices[group.key])
-        )
-      ) {
-        toast.error(translate('subscription.batch.keyring.invalid'));
-        return;
-      }
-      const { items, newKeyrings } = buildBatchKeyringSelection(
-        keyringGroups,
-        keyringChoices,
-        keyringNames,
-        team.name
-      );
-      const response = await Services.submitSubscriptionBatch(teamId, {
-        team: teamId,
-        idempotencyKey: nanoid(),
-        items,
-        newKeyrings,
-        motivation,
-      });
-      if (isError(response)) {
-        toast.error(response.error);
-        return;
-      }
-      toast.info(
-        translate({
-          key: 'subscription.batch.submitted',
-          replacements: [String(items.length), team.name],
-        })
-      );
-      queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
-      queryClient.invalidateQueries({ queryKey: ['subscription-batch-keyrings', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['subscription-batch-pending-plans', teamId] });
-      onSubmitted();
-      close();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : translate('subscription.batch.failed'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const submitWithMotivation = () => {
-    const formStep = selectedPlans
-      .flatMap(({ plan }) => plan.subscriptionProcess.filter((step) => step.type === 'form'))
-      .at(0);
-    if (!formStep || formStep.type !== 'form') {
-      void submit();
+    if (
+      keyringGroups.some(
+        (group) =>
+          keyringChoices[group.key] &&
+          !group.keyrings.some((keyring) => keyring._id === keyringChoices[group.key])
+      )
+    ) {
+      toast.error(translate('subscription.batch.keyring.invalid'));
       return;
     }
-    openFormModal({
-      title: translate('motivations.modal.title'),
-      noClose: true,
-      schema: formStep.schema,
-      actionLabel: translate('Send'),
-      description: formStep.info ? (
-        <div className="alert alert-info" dangerouslySetInnerHTML={{ __html: formStep.info }} />
-      ) : undefined,
-      onSubmit: (motivation) => submit(motivation),
-    });
+    const selection = buildBatchKeyringSelection(
+      keyringGroups,
+      keyringChoices,
+      keyringNames,
+      team.name
+    );
+    submitWithMotivation(
+      selection,
+      selectedPlans.map(({ plan }) => plan)
+    );
   };
 
-  if (plansQuery.isLoading || subscriptionsQuery.isLoading || pendingPlansQuery.isLoading)
-    return <p>{translate('Loading...')}</p>;
-  if (plansQuery.isError || pendingPlansQuery.isError || subscriptionsQuery.isError) {
+  if (loading) return <p>{translate('Loading...')}</p>;
+  if (failed) {
     return <p className="text-danger">{translate('subscription.batch.plans.failed')}</p>;
   }
 
@@ -420,7 +294,7 @@ export const SubscriptionBatchPlanSelectionModal = ({ apis, team, onSubmitted }:
             subscriptionsQuery.isLoading ||
             subscriptionsQuery.isError
           }
-          onClick={submitWithMotivation}
+          onClick={submitSelection}
         >
           {translate('subscription.batch.submit')}
         </button>

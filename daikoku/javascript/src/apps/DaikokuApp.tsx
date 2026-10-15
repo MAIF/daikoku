@@ -39,6 +39,7 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { Signup } from '../components/frontend/account/signup';
 import { Dashboard } from '../components/frontend/dashboard/Dashboard';
+import { SubscriptionKeyringWorkspace } from '../components/frontend/dashboard/SubscriptionKeyringWorkspace';
 import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { ColorThemeMigrationAlert } from '../components/utils/ColorThemeMigrationAlert';
@@ -226,6 +227,9 @@ export const DaikokuApp = () => {
                 <Route element={<RouteWithFooterLayout />}>
                   <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
                     <Dashboard />
+                  </FrontOfficeRoute>} />
+                  <Route path="/apis/subscriptions/keyrings" element={<FrontOfficeRoute title={translate('subscription.workspace.title')}>
+                    <SubscriptionKeyringWorkspace />
                   </FrontOfficeRoute>} />
                   <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                     <NotificationList />

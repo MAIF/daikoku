@@ -91,14 +91,29 @@ at submission, with a unique `(tenant, batch, item)` identity; creating a child 
 is transactional. The parent summary is derived from independent item outcomes, so a refusal does
 not close other unfinished items.
 
-The multi-API consumer flow first reuses the team-selection modal, then presents plan selection.
+The multi-API consumer flow first reuses the team-selection modal. An experimental dedicated
+page at `/apis/subscriptions/keyrings` then lets consumers organize plans into keyring folders.
+Consumers can create multiple new folders, import existing team keyrings, drag individual or
+selected plans between folders, or use checkboxes and the move toolbar without dragging.
+Removing a folder returns its plans to the unassigned list; it does not delete an existing keyring.
+Only assigned plans are submitted and empty folders are ignored. The page keeps a "previous
+interface" action that opens the original plan-selection modal, so the experiment is reversible.
+Both interfaces share plan loading, availability filtering, motivation forms and batch submission.
+The folder layout is a local, unsaved draft: reloading the page retains the selected APIs and team
+from navigation history, but resets the folders. Opening the URL without a selection returns a
+catalog link rather than creating a request.
+
 The plan picker excludes existing subscriptions when multiple keys are forbidden, pending unit
 requests and open batch items (even before child materialization), unauthorized plans and plans
 unsupported by the batch workflow. Environment shortcuts operate on remaining eligible plans only.
-In the environment workflow, selected plans with the same name share a keyring choice across APIs:
+In the original environment workflow, selected plans with the same name share a keyring choice across APIs:
 one new keyring or an existing compatible keyring. Different Otoroshi bindings or read-only modes
 form separate groups. Plans that disallow aggregation keep an individual keyring. A shared creation
 is sent once in `newKeyrings`, with every item in its group referencing the same creation ID.
+The folder experiment allows manual grouping and splitting instead. Assignments enforce compatible
+subscription processes, tenant/plan aggregation permissions, Otoroshi bindings and read-only modes;
+environment names must also match when environment aggregation security is enabled. Imports check
+all existing keyring members. Invalid moves are rejected atomically with an explanation.
 
 Submission idempotency is scoped to tenant, consumer team and requester. Parent mutations use a
 revision guard and row locks for operations spanning children. Item reservations retain an operation
