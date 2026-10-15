@@ -96,7 +96,7 @@ const PendingRun = (props: { label: string }) => (
   </div>
 );
 
-const TestOutcome = (props: { response: RunResponse }) => {
+const RunOutcome = (props: { response: RunResponse }) => {
   const run = use(props.response);
 
   if (isError(run)) {
@@ -448,28 +448,43 @@ export const RemoteCatalogsForm = (props: { tenant: ITenantFull }) => {
     showHistory(catalog, { label, response });
   };
 
-  const deploy = (catalog: IRemoteCatalog) =>
-    runAndShowHistory(
-      catalog,
-      translate('remote-catalog.pending.deploy'),
-      Services.deployRemoteCatalog(props.tenant._id, catalog._id)
-    );
+  const runAndShowReport = (
+    catalog: IRemoteCatalog,
+    action: 'test' | 'deploy',
+    request: RunResponse
+  ) => {
+    const response = catchNetworkError(request);
 
-  const dryRun = (catalog: IRemoteCatalog) => {
-    const response = catchNetworkError(
-      Services.testRemoteCatalog(props.tenant._id, catalog._id)
+    response.then(() =>
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.remoteCatalogHistory(props.tenant._id, catalog._id),
+      })
     );
 
     openRightPanel({
-      title: `${catalog.name} · ${translate('remote-catalog.action.test')}`,
+      title: `${catalog.name} · ${translate(`remote-catalog.action.${action}`)}`,
       content: (
-        <Suspense fallback={<PendingRun label={translate('remote-catalog.pending.test')} />}>
-          <TestOutcome response={response} />
+        <Suspense fallback={<PendingRun label={translate(`remote-catalog.pending.${action}`)} />}>
+          <RunOutcome response={response} />
         </Suspense>
       ),
       onBack: () => showHistory(catalog),
     });
   };
+
+  const deploy = (catalog: IRemoteCatalog) =>
+    runAndShowReport(
+      catalog,
+      'deploy',
+      Services.deployRemoteCatalog(props.tenant._id, catalog._id)
+    );
+
+  const dryRun = (catalog: IRemoteCatalog) =>
+    runAndShowReport(
+      catalog,
+      'test',
+      Services.testRemoteCatalog(props.tenant._id, catalog._id)
+    );
 
   const undeploy = (catalog: IRemoteCatalog) =>
     confirm({

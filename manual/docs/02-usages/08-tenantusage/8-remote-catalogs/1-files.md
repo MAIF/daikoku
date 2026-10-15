@@ -63,7 +63,6 @@ apiKey:                   # an existing key of that Otoroshi instance
   clientId: weather-mobile-app-client-id
   clientSecret: weather-mobile-app-client-secret
 integrationToken: weather-mobile-app-integration-token
-createdAt: 1759190400000
 ---
 kind: api-subscription
 _id: subscription-weather

@@ -513,7 +513,8 @@ class ApiAdminApiController(
       posts = existing.posts,
       issues = existing.issues,
       issuesTags = existing.issuesTags,
-      stars = existing.stars
+      stars = existing.stars,
+      testing = existing.testing
     )
 
   override def pathRoot: String = s"/admin-api/${entityName}s"
@@ -1408,6 +1409,12 @@ class UsagePlansAdminApiController(
   override def entityName: String = "usage-plan"
 
   override def readMetadata(e: UsagePlan): Map[String, String] = e.metadata
+
+  override def mergeWithExisting(
+      existing: UsagePlan,
+      incoming: UsagePlan
+  ): UsagePlan =
+    incoming.copy(testing = existing.testing)
 
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(

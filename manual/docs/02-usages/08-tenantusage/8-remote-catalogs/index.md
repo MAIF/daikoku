@@ -35,7 +35,9 @@ Each entity written by a catalog carries the metadata `created_by: remote_catalo
 - An entity that already exists without a tag (created by hand) is refused, unless the catalog has
   **Adopt existing entities** on: it is then overwritten and tagged.
 - An entity tagged by another catalog is always refused.
-- Some fields are never taken from the files: the stars, issues, posts and issue tags of an API.
+- On an update, some fields keep their value in Daikoku whatever the files say: the stars, issues,
+  posts and issue tags of an API, and the test configuration (`testing`) of an API or a plan, set in
+  the back office with its Otoroshi key.
 
 :::note
 A run writes the desired state directly. It does not trigger the side effects of the back office:
@@ -64,11 +66,13 @@ changing the state of an API through a catalog does not notify its subscribers.
 
 ## Actions
 
-- **Deploy**: runs now and applies.
-- **Test**: the same run without writing anything. Use it to preview a change.
+- **Deploy**: runs now and applies. The report shows the changes of each updated entity, field by
+  field: removed lines in red, added lines in green.
+- **Test**: the same run without writing anything, with the same report. Use it to preview a change.
 - **Undeploy**: removes every entity tagged by the catalog. The catalog is kept.
 - **History**: the last 20 runs with their created, updated, deleted and detached entities and their
-  errors. A run is `completed`, `partial` (stopped during the apply) or `failed` (nothing applied).
+  errors, without the changes. A run is `completed`, `partial` (stopped during the apply) or `failed`
+  (nothing applied).
 - **CI & webhook**: the catalog token and the webhook URL, see [CI and webhooks](./2-ci-and-webhooks.md).
 - **Delete**: removes the catalog and **detaches** its entities, which stay in Daikoku. Run Undeploy
   first to delete them too.

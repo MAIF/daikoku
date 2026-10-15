@@ -279,12 +279,34 @@ Fait, 5 suites vertes (`RemoteCatalogSpec`, `RemoteCatalogControllerSpec`, `Remo
 
 Reste :
 
-- ⬜ Diff en dry-run : `changes` (diffson « remembering ») sur les entités `updated` de `_validate` / `_test`, calculé
-  seulement en dry-run et jamais persisté ; affichage dans `RunReport` ; doc et OpenAPI de la réponse.
-- ⬜ Export sans admin API ni CMS API (`ApiVisibility.AdminOnly`) : retirer aussi leurs plans (`UsagePlanVisibility.Admin`),
-  les souscriptions à ces API et les keyrings qui ne portent qu'elles ; la team admin reste. Export du tenant, enfants
-  d'une team, export d'une entité ; reprendre les 2 specs d'export qui exportent le keyring admin.
-- ⬜ OpenAPI : `_deploy` et `_undeploy` décrivent encore une réponse en comptes par kind, au lieu du run.
+- ✅ `testing` d'une API et d'un plan gardé à la mise à jour, comme stars / issues / posts / issue tags
+  (`mergeWithExisting`) : saisi dans le back-office avec sa clé Otoroshi, le catalogue ne le gère pas ; pris du
+  fichier à la création seulement. Spec des champs gardés de l'API étendue, spec du plan, manuel (`index.md`).
+  `RemoteCatalogSpec` 60/60 (2026-10-15).
+- ✅ Diff (2026-10-15) : `PreparedWrite.changes` = diff diffson « remembering » (LCS `Patience`) entre `toJson(old)` et
+  `toJson(merged)`, donc après le merge ; calculé par `writeEntity` au dry-run comme au deploy, rendu dans la réponse,
+  retiré par `saveRun` : jamais dans un run enregistré ni dans l'historique. Rapport façon `git diff` (`EntityDiff`,
+  `catalogRuns.scss` sur les variables du thème) : par champ (`documentation.pages[0].title`), lignes `-` rouges et
+  `+` vertes, valeurs en YAML, compteurs `+N -M`, entités dépliées par défaut, bouton visible. Tables alignées :
+  colonne dédiée au chevron, `table-layout: fixed` et `<colgroup>` (rapport et historique). Déployer ouvre le
+  rapport de sa réponse comme Tester (`runAndShowReport`, `RunOutcome`), retour vers l'historique. Manuel (CI,
+  actions) ; OpenAPI ; spec (`_test` et `_deploy` rendent l'opération, le run en base n'en a pas). Specs à relancer.
+  ⬜ Playwright.
+- 🔧 Export sans admin API ni CMS API (2026-10-15) : ✅ export global (UI et admin-api) filtré en flux par
+  `withoutAdminApis` (`statefulMapConcat`) : API `AdminOnly`, plans `Admin`, souscriptions à ces API, keyrings qui ne
+  portent qu'elles ; la team admin reste ; l'export global lit les souscriptions avant les keyrings. Spec de l'export du
+  tenant réécrite sur une API ordinaire (`defaultApi`, keyring et souscription de `teamConsumer`) ; manuel
+  (migration). Compile et specs à lancer (le dev de l'utilisateur tournait). ⬜ Plus tard : export d'une entité et
+  enfants d'une team, boutons Exporter masqués sur les entités admin.
+- ✅ OpenAPI (2026-10-15) : schéma `RemoteCatalogRun` (+ `RemoteCatalogRunEntity` avec `changes`,
+  `RemoteCatalogChange`, `RemoteCatalogError`, stricts) sur les 200 / 400 de `_validate`, `_test`, `_deploy` et
+  `_undeploy`, à la place des « comptes par kind » ; test de contrat du run, `OpenApiContractSpec` 33/33. Enum
+  `allowedKinds` de `RemoteCatalog` complété (`api-documentation-page`) ; copie `manual/static/openapi/` resynchronisée
+  (`cp` comme `update-dev-manual.yml`, diff vide).
+- ✅ `createdAt` d'un keyring facultatif dans un catalogue seulement (2026-10-15) : le format reste strict (admin-api,
+  base) ; `fromCatalogJson` (lecture des documents de catalogue, `fromJson` par défaut) met la date du jour quand elle
+  manque, `mergeWithExisting` garde la date en base à la mise à jour. Manuel (référence, document minimal). Pas de
+  spec (jugée inutile).
 - ⬜ Issue à ouvrir : erreurs de lecture JSON illisibles (`JsResultException(errors:List(…))`), 148 blocs
   `recover { … JsError(e.getMessage) }` dans `json.scala`.
 - ⬜ À trancher : keyring de catalogue lié à Otoroshi dont la clé n'existe pas (création par la synchro, refus au

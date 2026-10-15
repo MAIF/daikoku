@@ -3,7 +3,7 @@ package fr.maif.daikoku.controllers
 import cats.data.EitherT
 import cats.implicits.*
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.json.KeyringFormat
+import fr.maif.daikoku.domain.json.{DateTimeFormat, KeyringFormat}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.KeyringService
 import fr.maif.daikoku.storage.{DataStore, Repo}
@@ -14,6 +14,7 @@ import fr.maif.daikoku.utils.{
   ReconcileFinalIds,
   UpdateOrCreate
 }
+import org.joda.time.DateTime
 import play.api.libs.json.*
 import play.api.mvc.ControllerComponents
 
@@ -41,11 +42,23 @@ class KeyringAdminApiController(
   override def getId(entity: Keyring): KeyringId = entity.id
   override def readMetadata(e: Keyring): Map[String, String] = e.metadata
 
+  override def mergeWithExisting(
+      existing: Keyring,
+      incoming: Keyring
+  ): Keyring =
+    incoming.copy(createdAt = existing.createdAt)
+
   override def fromJson(entity: JsValue): Either[String, Keyring] =
     KeyringFormat
       .reads(entity)
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+
+  override def fromCatalogJson(entity: JsValue): Either[String, Keyring] = {
+    val today = Json.obj("createdAt" -> DateTimeFormat.writes(DateTime.now()))
+
+    fromJson(today ++ entity.as[JsObject])
+  }
 
   override def doDelete(
       tenant: Tenant,

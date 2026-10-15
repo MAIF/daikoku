@@ -29,6 +29,14 @@ The body is limited to 20 MB, and a zip to 100 MB once unzipped. The answer is a
 `created`, `updated`, `deleted`, `detached`, `errors`. A run that applies nothing (`failed`) answers
 `400`, like a body that cannot be read.
 
+In the answer of `_validate`, `_test` and `_deploy`, each updated entity also lists its `changes`:
+the JSON Patch from the entity in Daikoku to the one the files describe, with the value in Daikoku in
+`old`. The history keeps the entities only.
+
+```json
+{ "op": "replace", "path": "/description", "old": "Forecasts", "value": "Forecasts and observations" }
+```
+
 ## Example: GitHub Actions
 
 Validate every pull request, deploy after a merge on `main`:

@@ -253,10 +253,12 @@ metadata:
 - A keyring holds one API key for its team, the consumer team. Its subscriptions share that key.
 - `otoroshiSettings`: the Otoroshi instance that holds the key. With `type: Internal`, the key is
   only known to Daikoku.
-- `apiKey`, `integrationToken` and `createdAt` are required and stored as written: Daikoku generates
-  nothing. With `type: Otoroshi`, the key must already exist in that instance with the same
-  `clientId` and `clientSecret`: Daikoku does not create it, and the synchronization of the keyring
-  fails until it exists. `bearerToken` is optional.
+- `apiKey` and `integrationToken` are required and stored as written: Daikoku generates nothing.
+  With `type: Otoroshi`, the key must already exist in that instance with the same `clientId` and
+  `clientSecret`: Daikoku does not create it, and the synchronization of the keyring fails until it
+  exists. `bearerToken` is optional.
+- `createdAt`: left out, a new keyring takes the time of the run. An update always keeps the date
+  already in Daikoku.
 - `rotation`: `rotationEvery` and `gracePeriod` are in hours.
 - These fields are credentials, and an export writes them: keep the catalog files somewhere safe.
 

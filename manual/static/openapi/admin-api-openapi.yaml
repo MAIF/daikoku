@@ -713,6 +713,7 @@ components:
               - keyring
               - api-subscription
               - cms-page
+              - api-documentation-page
         maxDeletionPercent:
           type: integer
           format: int32
@@ -732,6 +733,114 @@ components:
         - _id
         - _tenant
         - name
+    RemoteCatalogRun:
+      description: what a run did (deploy, undeploy) or would do (validate, test)
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        catalog:
+          type: string
+        at:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - completed
+            - partial
+            - failed
+          description: partial when a write failed on the way, failed when nothing was applied
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteCatalogRunEntity"
+        updated:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteCatalogRunEntity"
+        deleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteCatalogRunEntity"
+        detached:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteCatalogRunEntity"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteCatalogError"
+      required:
+        - _id
+        - _tenant
+        - catalog
+        - at
+        - status
+        - created
+        - updated
+        - deleted
+        - detached
+        - errors
+    RemoteCatalogRunEntity:
+      description: an entity of a run
+      properties:
+        kind:
+          type: string
+        id:
+          type: string
+        name:
+          type:
+            - string
+            - "null"
+        changes:
+          type: array
+          description: on an updated entity, in the answer of a dry run (validate, test) or of a deploy, never in the history - the JSON Patch from the entity in Daikoku to the one the files describe
+          items:
+            $ref: "#/components/schemas/RemoteCatalogChange"
+      required:
+        - kind
+        - id
+        - name
+      additionalProperties: false
+    RemoteCatalogChange:
+      description: a JSON Patch operation, with the value in Daikoku in old
+      properties:
+        op:
+          type: string
+          enum:
+            - add
+            - remove
+            - replace
+        path:
+          type: string
+          description: JSON Pointer of the field, e.g. /description
+        value:
+          description: the value the files describe (add, replace)
+        old:
+          description: the value in Daikoku (remove, replace)
+      required:
+        - op
+        - path
+      additionalProperties: false
+    RemoteCatalogError:
+      description: an error of a run
+      properties:
+        source:
+          type: string
+          description: the file in error (its path or URL), or catalog <id> for an error on the whole catalog
+        message:
+          type: string
+        entity:
+          anyOf:
+            - $ref: "#/components/schemas/RemoteCatalogRunEntity"
+            - type: "null"
+      required:
+        - source
+        - message
+        - entity
+      additionalProperties: false
     CmsPage:
       description: CmsPage
       examples:
@@ -1317,6 +1426,12 @@ components:
           team: team-weather
           otoroshiSettings:
             type: Internal
+          apiKey:
+            clientName: weather-mobile-app
+            clientId: weather-mobile-app-client-id
+            clientSecret: weather-mobile-app-client-secret
+          integrationToken: weather-mobile-app-integration-token
+          createdAt: 1759190400000
       properties:
         _id:
           type: string
@@ -1366,7 +1481,10 @@ components:
         - _id
         - _tenant
         - team
+        - apiKey
         - otoroshiSettings
+        - createdAt
+        - integrationToken
     OtoroshiApiKey:
       description: OtoroshiApiKey
       properties:
@@ -1430,11 +1548,18 @@ components:
           type:
             - object
             - "null"
+        cmsPage:
+          type:
+            - string
+            - "null"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
       required:
         - _id
         - _tenant
         - title
-        - lastModificationAt
     Notification:
       description: Notification
       properties:
@@ -2164,6 +2289,7 @@ components:
               type: array
               items:
                 oneOf:
+                  - $ref: "#/components/schemas/SubscriptionDemandStep.Form"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.Email"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
                   - $ref: "#/components/schemas/SubscriptionDemandStep.Payment"
@@ -2251,16 +2377,13 @@ components:
           type: integer
           format: int64
         unit:
+          description: read case insensitively, plurals accepted (e.g. months)
           type: string
           enum:
-            - hour
-            - hours
-            - day
-            - days
-            - month
-            - months
-            - year
-            - years
+            - Hour
+            - Day
+            - Month
+            - Year
     OtoroshiTarget:
       description: Otoroshi target
       properties:
@@ -2318,9 +2441,18 @@ components:
             - object
             - "null"
         customMetadata:
-          type:
-            - object
-            - "null"
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              possibleValues:
+                type: array
+                items:
+                  type: string
+            required:
+              - key
         tags:
           type:
             - array
@@ -2333,12 +2465,13 @@ components:
         - restrictions
     ApiKeyRestrictions:
       description: ApiKey Restrictions
+      additionalProperties: false
       properties:
         enabled:
           type:
             - boolean
             - "null"
-        allowlast:
+        allowLast:
           type:
             - boolean
             - "null"
@@ -2485,6 +2618,7 @@ components:
         - title
     SubscriptionDemandStep.TeamAdmin:
       description: SubscriptionDemandState by team admin
+      additionalProperties: false
       properties:
         type:
           type: string
@@ -2492,19 +2626,14 @@ components:
             - teamAdmin
         id:
           type: string
-        schema:
-          type:
-            - object
-            - "null"
-        formatter:
-          type:
-            - string
-            - "null"
+        team:
+          type: string
         title:
           type: string
       required:
         - type
         - id
+        - team
         - title
     SubscriptionDemandStep.Payment:
       description: SubscriptionDemandState by payment
@@ -2545,6 +2674,40 @@ components:
         - type
         - id
         - url
+        - title
+    SubscriptionDemandStep.Form:
+      description: SubscriptionDemandState by form
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - form
+        id:
+          type: string
+        title:
+          type: string
+        schema:
+          type:
+            - object
+            - "null"
+        formatter:
+          type:
+            - string
+            - "null"
+        formKeysToMetadata:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        info:
+          type:
+            - string
+            - "null"
+      required:
+        - type
+        - id
         - title
     ValidationStep:
       description: ValidationStep
@@ -5187,7 +5350,7 @@ paths:
       tags:
         - keyring
     post:
-      summary: creates a keyring; apiKey, integrationToken and bearerToken are generated by Daikoku, never read from the body
+      summary: creates a keyring; apiKey, integrationToken and bearerToken are stored as written in the body, Daikoku generates nothing
       operationId: keyrings.create
       requestBody:
         description: the keyring to create
@@ -5330,7 +5493,7 @@ paths:
         - remote-catalog
   /admin-api/remote-catalogs/_export:
     get:
-      summary: export the tenant as a catalog, a zip with one folder per kind and one YAML file per entity; keyring credentials are never exported
+      summary: export the tenant as a catalog, a zip with one folder per kind and one YAML file per entity; the files hold the credentials as stored, keep them somewhere safe
       operationId: remote-catalogs.export
       parameters:
         - name: all
@@ -5434,7 +5597,7 @@ paths:
       summary: check a whole catalog sent in the request, without fetching nor writing anything
       operationId: remote-catalogs.validate
       requestBody:
-        description: every file of the catalog
+        description: every file of the catalog, as an array of files or as a zip of the catalog root whose .json, .yaml and .yml files are read; at most 20 MB, and 100 MB once unzipped
         required: true
         content:
           application/json:
@@ -5450,11 +5613,22 @@ paths:
                 required:
                   - path
                   - content
+          application/zip: {}
       responses:
         "200":
-          description: the catalog would deploy; the body lists what would be created, updated and deleted
+          description: the catalog would deploy; the run lists what would be created, updated (with the changes) and deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalogRun"
         "400":
-          description: the catalog is refused (the body lists the errors, file by file) or the request body is not an array of files
+          description: the catalog is refused (the failed run lists the errors, file by file), or the request body is neither an array of files nor a valid zip, or it is over a size limit
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/RemoteCatalogRun"
+                  - $ref: "#/components/schemas/error"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -5469,9 +5643,17 @@ paths:
       operationId: remote-catalogs.test
       responses:
         "200":
-          description: the catalog would deploy; the body lists what would be created, updated and deleted
+          description: the catalog would deploy; the run lists what would be created, updated (with the changes) and deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalogRun"
         "400":
-          description: the catalog is refused; the body lists the errors, file by file
+          description: the catalog is refused; the failed run lists the errors, file by file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalogRun"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -5486,9 +5668,19 @@ paths:
       operationId: remote-catalogs.deploy
       responses:
         "200":
-          description: the catalog was applied; the body counts what was created, updated and deleted per kind (status is partial when a write failed on the way)
+          description: the catalog was applied; the run lists what was created, updated (with the changes) and deleted (status partial when a write failed on the way)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalogRun"
         "400":
-          description: nothing was applied; the body lists the errors, file by file
+          description: nothing was applied, and the failed run lists the errors, file by file; or the remote catalogs of the tenant are busy
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/RemoteCatalogRun"
+                  - $ref: "#/components/schemas/error"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -5503,7 +5695,11 @@ paths:
       operationId: remote-catalogs.undeploy
       responses:
         "200":
-          description: the entities were deleted; the body counts them per kind
+          description: the entities were deleted; the run lists them (status partial when a delete failed on the way)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteCatalogRun"
         "400":
           description: the catalog is being deployed
           content:

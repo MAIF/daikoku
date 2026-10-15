@@ -1542,6 +1542,10 @@
   "remote-catalog.report.errors": "Erreurs",
   "remote-catalog.report.empty": "Aucune entité à afficher",
   "remote-catalog.report.col.id": "Id",
+  "remote-catalog.report.changeCount": {
+    "s": "%s changement",
+    "p": "%s changements"
+  },
   "remote-catalog.pending.test": "Test en cours…",
   "remote-catalog.pending.deploy": "Déploiement en cours…",
   "remote-catalog.pending.undeploy": "Retrait en cours…",

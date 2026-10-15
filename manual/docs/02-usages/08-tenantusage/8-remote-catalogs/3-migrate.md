@@ -16,7 +16,9 @@ A tenant built by hand can be moved under a catalog without recreating anything.
    ```
 
    By default only the entities managed by no catalog are exported; tick the option to export
-   everything. The files hold the credentials as stored (keyring keys, headers, testing
+   everything. The admin API and the CMS API are never exported, nor their plans, their
+   subscriptions and the keyrings that only hold those: Daikoku creates them with each tenant.
+   The files hold the credentials as stored (keyring keys, headers, testing
    credentials): keep them somewhere safe. The same export is available on the admin API:
    `GET /admin-api/remote-catalogs/_export?all=false`.
 

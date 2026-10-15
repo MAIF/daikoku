@@ -98,6 +98,28 @@ class RemoteCatalogSpec
 
   private val catalogTag = Map("created_by" -> "remote_catalog=cat-file")
 
+  private val consumerKeyring = adminApiKeyring.copy(
+    id = KeyringId("keyring-consumer"),
+    team = teamConsumer.id,
+    customName = "Consumer keyring",
+    apiKey = OtoroshiApiKey(
+      clientName = "consumer-client",
+      clientId = "consumer-client-id",
+      clientSecret = "consumer-client-secret"
+    ),
+    integrationToken = "consumer-integration-token"
+  )
+
+  private val consumerSubscription = adminApiSubscription.copy(
+    id = ApiSubscriptionId("subscription-consumer"),
+    api = defaultApi.api.id,
+    plan = defaultApi.plans.head.id,
+    team = teamConsumer.id,
+    keyring = consumerKeyring.id,
+    by = userAdmin.id,
+    customName = Some("Consumer key")
+  )
+
   // an api of the admin team exposing a single plan
   private def apiWithOnePlan(version: String): (Api, UsagePlan) = {
     val generated =
@@ -1121,6 +1143,43 @@ class RemoteCatalogSpec
       getTeam("team-weather").status mustBe 404
     }
 
+    "report the changes of an updated entity, and keep them out of the history" in {
+      val team = aTeam("team-weather", "Weather").copy(metadata = catalogTag)
+      val path = writeFile(
+        Json.stringify(teamDoc(team.copy(description = "Forecasts")))
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(fileCatalog("cat-file", path)),
+        teams = Seq(defaultAdminTeam, team),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+      val expected = Json.arr(
+        Json.obj(
+          "op" -> "replace",
+          "path" -> "/description",
+          "value" -> "Forecasts",
+          "old" -> ""
+        )
+      )
+
+      val test = deployCall("cat-file", "_test")
+      test.status mustBe 200
+      (test.json \ "updated" \ 0 \ "changes").as[JsArray] mustBe expected
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      (deploy.json \ "updated" \ 0 \ "changes").as[JsArray] mustBe expected
+
+      val saved = Await.result(
+        daikokuComponents.env.dataStore.remoteCatalogRunRepo
+          .findByCatalog(tenant.id, RemoteCatalogId("cat-file")),
+        10.seconds
+      )
+      saved.flatMap(_.updated).map(_.changes) mustBe Seq(None)
+    }
+
     "undeploy managed entities" in {
       val path =
         writeFile(Json.stringify(teamDoc(aTeam("team-weather", "Weather"))))
@@ -1163,7 +1222,7 @@ class RemoteCatalogSpec
       (metadata \ "owner").as[String] mustBe "weather"
     }
 
-    "preserve runtime social fields (stars/issues/posts/issuesTags) on API update" in {
+    "preserve runtime fields (stars/issues/posts/issuesTags/testing) on API update" in {
       val withPlans = defaultApi
       val baseApi = withPlans.api.copy(
         team = defaultAdminTeam.id,
@@ -1171,7 +1230,14 @@ class RemoteCatalogSpec
         stars = 5,
         issues = Seq(ApiIssueId("issue-1")),
         posts = Seq(ApiPostId("post-1")),
-        issuesTags = Set(ApiIssueTag(ApiIssueTagId("tag-1"), "bug", "#ff0000"))
+        issuesTags = Set(ApiIssueTag(ApiIssueTagId("tag-1"), "bug", "#ff0000")),
+        testing = Some(
+          Testing(
+            enabled = true,
+            username = Some("testing-client-id"),
+            password = Some("testing-client-secret")
+          )
+        )
       )
 
       // what the catalog serves: same API (matched by _id) but with social fields blanked + one non-social field changed
@@ -1181,7 +1247,8 @@ class RemoteCatalogSpec
           stars = 0,
           issues = Seq.empty,
           posts = Seq.empty,
-          issuesTags = Set.empty
+          issuesTags = Set.empty,
+          testing = None
         )
         .asJson
         .as[JsObject] ++ Json.obj("kind" -> "api")
@@ -1220,19 +1287,55 @@ class RemoteCatalogSpec
       (get.json \ "issues").as[Seq[String]] mustBe Seq("issue-1")
       (get.json \ "posts").as[Seq[String]] mustBe Seq("post-1")
       (get.json \ "issuesTags").as[JsArray].value.size mustBe 1
+      (get.json \ "testing" \ "username").as[String] mustBe "testing-client-id"
+    }
+
+    "preserve the testing of a usage plan on update" in {
+      val plan = defaultApi.plans.head.copy(
+        id = UsagePlanId("plan-tested"),
+        testing = Some(
+          Testing(
+            enabled = true,
+            username = Some("testing-client-id"),
+            password = Some("testing-client-secret")
+          )
+        ),
+        metadata = catalogTag
+      )
+      val incoming = plan.copy(
+        customName = "Renamed by catalog",
+        testing = None
+      )
+      val path = writeFile(Json.stringify(planDoc(incoming)))
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        remoteCatalogs = Seq(multiKindCatalog(path)),
+        teams = Seq(defaultAdminTeam),
+        usagePlans = Seq(plan),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring)
+      )
+
+      val deploy = deployCall("cat-file", "_deploy")
+      deploy.status mustBe 200
+      idsOf(deploy.json, "updated") mustBe Seq(plan.id.value)
+
+      val saved = getPlan(plan.id.value).json
+      (saved \ "customName").as[String] mustBe "Renamed by catalog"
+      (saved \ "testing" \ "username").as[String] mustBe "testing-client-id"
     }
   }
 
   "Remote catalog export" should {
-    "export the tenant so that a catalog adopting it validates the files" in {
+    "export the tenant without its admin API, so that a catalog adopting it validates the files" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi),
-        usagePlans = Seq(adminApiPlan),
-        subscriptions = Seq(adminApiSubscription),
-        keyrings = Seq(adminApiKeyring),
+        users = Seq(tenantAdmin, userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(adminApi, defaultApi.api),
+        usagePlans = adminApiPlan +: defaultApi.plans,
+        subscriptions = Seq(adminApiSubscription, consumerSubscription),
+        keyrings = Seq(adminApiKeyring, consumerKeyring),
         remoteCatalogs =
           Seq(multiKindCatalog("unused").copy(adoptExisting = true))
       )
@@ -1240,13 +1343,19 @@ class RemoteCatalogSpec
       val files = exportFiles(all = false)
       files.keys must contain allOf (
         s"team/${defaultAdminTeam.id.value}.yaml",
+        s"usage-plan/${defaultApi.plans.head.id.value}.yaml",
+        s"api/${defaultApi.api.id.value}.yaml",
+        s"keyring/${consumerKeyring.id.value}.yaml",
+        s"api-subscription/${consumerSubscription.id.value}.yaml"
+      )
+      files.keys must contain noneOf (
         s"usage-plan/${adminApiPlan.id.value}.yaml",
         s"api/${adminApi.id.value}.yaml",
         s"keyring/${adminApiKeyring.id.value}.yaml",
         s"api-subscription/${adminApiSubscription.id.value}.yaml"
       )
-      files(s"keyring/${adminApiKeyring.id.value}.yaml") must include(
-        adminApiKeyring.apiKey.clientSecret
+      files(s"keyring/${consumerKeyring.id.value}.yaml") must include(
+        consumerKeyring.apiKey.clientSecret
       )
 
       val validated = validateFiles("cat-file", files)

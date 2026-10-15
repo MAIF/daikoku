@@ -220,7 +220,8 @@ case class ReconcileFinalIds(byKind: Map[String, Set[String]])
 case class PreparedWrite(
     id: String,
     action: String,
-    write: () => EitherT[Future, AppError, Unit]
+    write: () => EitherT[Future, AppError, Unit],
+    changes: () => Option[JsArray]
 )
 
 case class ExistingEntity(
@@ -356,6 +357,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def mergeWithExisting(existing: Of, incoming: Of): Of = incoming
 
+  def fromCatalogJson(entity: JsValue): Either[String, Of] = fromJson(entity)
+
   def prepareWrites(
       tenant: Tenant,
       raws: Seq[JsValue],
@@ -363,7 +366,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       finalIds: ReconcileFinalIds,
       adoptExisting: Boolean
   ): Future[Seq[Either[String, PreparedWrite]]] = {
-    val parsed = raws.map(fromJson)
+    val parsed = raws.map(fromCatalogJson)
     val parsedIds = parsed.collect { case Right(entity) => getId(entity) }
 
     readByIds(tenant, parsedIds).flatMap { existingById =>
@@ -421,7 +424,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
                 PreparedWrite(
                   id,
                   "created",
-                  () => doCreate(tenant, validated).map(_ => ())
+                  () => doCreate(tenant, validated).map(_ => ()),
+                  () => None
                 )
               )
             case Some(old) =>
@@ -432,7 +436,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   PreparedWrite(
                     id,
                     "unchanged",
-                    () => EitherT.pure[Future, AppError](())
+                    () => EitherT.pure[Future, AppError](()),
+                    () => None
                   )
                 )
               } else {
@@ -440,13 +445,26 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   PreparedWrite(
                     id,
                     "updated",
-                    () => doUpdate(tenant, old, merged).map(_ => ())
+                    () => doUpdate(tenant, old, merged).map(_ => ()),
+                    () => Some(changesBetween(old, merged))
                   )
                 )
               }
           }
       }
     }
+  }
+
+  private def changesBetween(old: Of, merged: Of): JsArray = {
+    import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
+    import diffson.lcs.Patience
+    import diffson.playJson.*
+
+    implicit val lcs: Patience[JsValue] = new Patience[JsValue]
+
+    val patch = diffson.diff(toJson(old), toJson(merged))
+
+    DiffsonProtocol.JsonPatchFormat.writes(patch).as[JsArray]
   }
 
   def doDeleteById(tenant: Tenant, id: String): Future[Either[String, String]] =

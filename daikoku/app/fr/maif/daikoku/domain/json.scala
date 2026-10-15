@@ -5468,19 +5468,26 @@ object json {
           RemoteCatalogRunEntity(
             kind = (json \ "kind").as[String],
             id = (json \ "id").as[String],
-            name = (json \ "name").asOpt[String]
+            name = (json \ "name").asOpt[String],
+            changes = (json \ "changes").asOpt[JsArray]
           )
         )
       } recover { case e: Throwable =>
         JsError(e.getMessage)
       } get
 
-    override def writes(o: RemoteCatalogRunEntity): JsValue =
-      Json.obj(
+    override def writes(o: RemoteCatalogRunEntity): JsValue = {
+      val entity = Json.obj(
         "kind" -> o.kind,
         "id" -> o.id,
         "name" -> o.name.map(JsString.apply).getOrElse(JsNull)
       )
+
+      o.changes match {
+        case Some(changes) => entity + ("changes" -> changes)
+        case None          => entity
+      }
+    }
   }
 
   val RemoteCatalogErrorFormat = new Format[RemoteCatalogError] {

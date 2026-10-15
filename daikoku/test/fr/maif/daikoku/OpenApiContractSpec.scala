@@ -235,6 +235,51 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     allowedKinds = Set("team", "api")
   )
 
+  private val completeRun = RemoteCatalogRun(
+    id = DatastoreId("run-1"),
+    tenant = TenantId("tenant"),
+    catalog = RemoteCatalogId("catalog-1"),
+    at = DateTime.now(),
+    status = RemoteCatalogRunStatus.Partial,
+    created = Seq(RemoteCatalogRunEntity("team", "team-1", Some("Team"))),
+    updated = Seq(
+      RemoteCatalogRunEntity(
+        kind = "api",
+        id = "api-1",
+        name = Some("Weather API"),
+        changes = Some(
+          Json.arr(
+            Json.obj(
+              "op" -> "replace",
+              "path" -> "/name",
+              "value" -> "Weather API",
+              "old" -> "Weather"
+            ),
+            Json.obj(
+              "op" -> "add",
+              "path" -> "/tags/0",
+              "value" -> "forecast"
+            ),
+            Json.obj(
+              "op" -> "remove",
+              "path" -> "/categories/0",
+              "old" -> "Data"
+            )
+          )
+        )
+      )
+    ),
+    deleted = Seq.empty,
+    detached = Seq(RemoteCatalogRunEntity("usage-plan", "plan-1", None)),
+    errors = Seq(
+      RemoteCatalogError(
+        source = "apis/api-2.yaml",
+        message = "Write failed: Team not found",
+        entity = Some(RemoteCatalogRunEntity("api", "api-2", Some("Other API")))
+      )
+    )
+  )
+
   private val contracts = Seq(
     KindContract("Team", json.TeamFormat, completeTeam.asJson.as[JsObject]),
     KindContract("Api", json.ApiFormat, completeApi.asJson.as[JsObject]),
@@ -295,6 +340,12 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
 
         notReallyRequired mustBe empty
       }
+    }
+  }
+
+  "The RemoteCatalogRun schema" should {
+    "accept a run with changes and errors and list all its fields" in {
+      schemaErrors("RemoteCatalogRun", completeRun.asJson) mustBe empty
     }
   }
 

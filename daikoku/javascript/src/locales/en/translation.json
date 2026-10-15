@@ -1523,6 +1523,10 @@
   "remote-catalog.report.errors": "Errors",
   "remote-catalog.report.empty": "No entity to show",
   "remote-catalog.report.col.id": "Id",
+  "remote-catalog.report.changeCount": {
+    "s": "%s change",
+    "p": "%s changes"
+  },
   "remote-catalog.pending.test": "Testing…",
   "remote-catalog.pending.deploy": "Deploying…",
   "remote-catalog.pending.undeploy": "Undeploying…",

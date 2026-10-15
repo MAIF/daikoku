@@ -10,6 +10,7 @@ import fr.maif.daikoku.controllers.{
   UsagePlansAdminApiController
 }
 import fr.maif.daikoku.domain.{
+  ApiVisibility,
   DatastoreId,
   RemoteCatalog,
   RemoteCatalogError,
@@ -39,6 +40,7 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 enum ExportSelection:
@@ -815,7 +817,8 @@ class RemoteCatalogEngine(
       write: CatalogWrite
   ): Future[Either[RemoteCatalogError, WrittenEntity]] = {
     val entity = write.entity
-    val written = WrittenEntity(entity.runEntity, write.prepared.action)
+    val withChanges = entity.runEntity.copy(changes = write.prepared.changes())
+    val written = WrittenEntity(withChanges, write.prepared.action)
 
     def writeError(message: String): RemoteCatalogError =
       RemoteCatalogError(
@@ -918,10 +921,22 @@ class RemoteCatalogEngine(
       format: ExportFormat
   ): Source[ByteString, ?] = {
     val filters = exportFilters(tenant, selection)
-    val documents = Source(kindOrder.filter(filters.contains))
-      .flatMapConcat(kind =>
-        documentsOf(kind, controllers(kind), tenant, filters(kind))
-      )
+
+    def documentsIn(order: Seq[String]) =
+      Source(order.filter(filters.contains))
+        .flatMapConcat(kind =>
+          documentsOf(kind, controllers(kind), tenant, filters(kind))
+        )
+
+    val documents = selection match {
+      case ExportSelection.WholeTenant(_) =>
+        val subscriptionsFirst =
+          kindOrder.filterNot(_ == "keyring") :+ "keyring"
+
+        withoutAdminApis(documentsIn(subscriptionsFirst))
+      case ExportSelection.OneEntity(_, _, _) =>
+        documentsIn(kindOrder)
+    }
 
     format match {
       case ExportFormat.Zip =>
@@ -937,6 +952,56 @@ class RemoteCatalogEngine(
           .intersperse(ByteString("---\n"))
     }
   }
+
+  private def withoutAdminApis(
+      documents: Source[(String, JsObject), ?]
+  ): Source[(String, JsObject), ?] =
+    documents.statefulMapConcat { () =>
+      val adminApis = mutable.Set.empty[String]
+      val adminKeyrings = mutable.Set.empty[String]
+      val otherKeyrings = mutable.Set.empty[String]
+
+      document => {
+        val (_, envelope) = document
+        val spec = envelope \ "spec"
+
+        val kept = (envelope \ "kind").as[String] match {
+          case "api" =>
+            val admin = (spec \ "visibility").as[String] == "AdminOnly"
+
+            if (admin) {
+              adminApis += (spec \ "_id").as[String]
+            }
+
+            !admin
+          case "usage-plan" =>
+            (spec \ "visibility").as[String] != "Admin"
+          case "api-subscription" =>
+            val admin = adminApis.contains((spec \ "api").as[String])
+            val keyring = (spec \ "keyring").as[String]
+
+            if (admin) {
+              adminKeyrings += keyring
+            } else {
+              otherKeyrings += keyring
+            }
+
+            !admin
+          case "keyring" =>
+            val id = (spec \ "_id").as[String]
+
+            !adminKeyrings.contains(id) || otherKeyrings.contains(id)
+          case _ =>
+            true
+        }
+
+        if (kept) {
+          List(document)
+        } else {
+          Nil
+        }
+      }
+    }
 
   // e.g. keyring-1 with children -> Map("keyring" -> _id = keyring-1, "api-subscription" -> keyring = keyring-1)
   private def exportFilters(
@@ -1072,9 +1137,12 @@ class RemoteCatalogEngine(
       catalog: RemoteCatalog,
       run: RemoteCatalogRun
   ): Future[Unit] = {
+    val withoutChanges =
+      run.copy(updated = run.updated.map(_.copy(changes = None)))
+
     env.dataStore.remoteCatalogRunRepo
       .forTenant(tenant)
-      .save(run)
+      .save(withoutChanges)
       .flatMap(_ => pruneRuns(tenant, catalog))
       .recover { case e =>
         logger.error(s"cannot save the run of catalog ${catalog.id.value}", e)

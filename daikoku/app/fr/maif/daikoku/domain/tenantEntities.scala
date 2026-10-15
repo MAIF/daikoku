@@ -692,7 +692,12 @@ object RemoteCatalogRunStatus {
     RemoteCatalogRunStatus.values.find(_.value == v)
 }
 
-case class RemoteCatalogRunEntity(kind: String, id: String, name: Option[String])
+case class RemoteCatalogRunEntity(
+    kind: String,
+    id: String,
+    name: Option[String],
+    changes: Option[JsArray] = None
+)
 
 case class RemoteCatalogError(
     source: String,
