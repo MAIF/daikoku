@@ -91,6 +91,15 @@ progressively, with a unique `(tenant, batch, item)` identity; creating a child 
 is transactional. The parent summary is derived from independent item outcomes, so a refusal does
 not close other unfinished items.
 
+The multi-API consumer flow first reuses the team-selection modal, then presents plan selection.
+The plan picker excludes existing subscriptions when multiple keys are forbidden, pending unit
+requests and open batch items (even before child materialization), unauthorized plans and plans
+unsupported by the batch workflow. Environment shortcuts operate on remaining eligible plans only.
+In the environment workflow, selected plans with the same name share a keyring choice across APIs:
+one new keyring or an existing compatible keyring. Different Otoroshi bindings or read-only modes
+form separate groups. Plans that disallow aggregation keep an individual keyring. A shared creation
+is sent once in `newKeyrings`, with every item in its group referencing the same creation ID.
+
 Submission idempotency is scoped to tenant, consumer team and requester. Parent mutations use a
 revision guard and row locks for operations spanning children. Item reservations retain a worker
 token and expiration; expiration does not authorize replaying an external effect. An expired
@@ -100,6 +109,17 @@ The persistence layer includes batch import/export, optional keyring-shell prove
 shared creation, pending items and activation date), and managed-empty-group identity in each
 tenant's Otoroshi configuration. These storage contracts do not themselves create safe empty
 Otoroshi keys, run a worker, expose a batch submission API or implement grouped approvals.
+
+Evolution `19.0.0_f` provisions the managed empty groups required by batch keyring shells for every
+existing tenant's Otoroshi configuration. Like other registered evolutions, it runs automatically
+at startup when not already applied; administrators should plan the deployment before using batch
+requests with new Otoroshi keyrings. It persists missing group identities before contacting Otoroshi,
+preserves existing identities, and verifies ownership and emptiness. An unavailable instance or
+invalid group fails the evolution; after correcting the configuration, rerun it to reuse the
+reserved identities and verify previously provisioned groups. Pending batches can then resume on
+the next worker cycle. Run the evolution during a maintenance window without concurrent tenant
+configuration changes, and ensure every configured Otoroshi instance is reachable with valid
+administrative credentials.
 
 ### Notification
 Domain events with a Pending / Accepted / Rejected status: API access requests, team invitations,

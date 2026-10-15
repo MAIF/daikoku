@@ -68,6 +68,38 @@ class SubscriptionBatchController(
       }
     }
 
+  def pendingPlans(teamId: String): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      TeamMemberOnly(
+        AuditTrailEvent(
+          "@{user.name} viewed pending subscription plans for @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        for {
+          demands <- env.dataStore.subscriptionDemandRepo.findByStates(
+            ctx.tenant.id,
+            Seq(
+              SubscriptionDemandState.Waiting,
+              SubscriptionDemandState.InProgress
+            ),
+            teams = Some(Seq(team.id))
+          )
+          batchItems <- env.dataStore.subscriptionBatchDemandRepo
+            .findOpenItemsForTeam(ctx.tenant.id, team.id)
+        } yield Right(
+          Ok(
+            JsArray(
+              (demands.map(demand => demand.api -> demand.plan) ++ batchItems)
+                .distinct
+                .map { case (api, plan) =>
+                  Json.obj("api" -> api.value, "plan" -> plan.value)
+                }
+            )
+          )
+        )
+      }
+    }
+
   def get(teamId: String, batchId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamMemberOnly(

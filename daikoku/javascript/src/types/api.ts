@@ -443,6 +443,30 @@ export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
   keyring: IKeyring | null;
 }
 
+export type ISubscriptionBatchKeyringChoice =
+  | { type: 'existing'; keyring: string }
+  | { type: 'new'; creation: string };
+
+export interface ISubscriptionBatchItemSelection {
+  api: string;
+  plan: string;
+  keyringChoice: ISubscriptionBatchKeyringChoice;
+}
+
+export interface ISubscriptionBatchSubmission {
+  team: string;
+  idempotencyKey: string;
+  items: ISubscriptionBatchItemSelection[];
+  newKeyrings: Array<{ _id: string; customName: string }>;
+  motivation?: object;
+}
+
+export interface ISubscriptionBatchSubmissionReceipt {
+  batch: string;
+  state: 'pending' | 'inProgress' | 'accepted' | 'partiallyAccepted' | 'failed' | 'canceled';
+  replayed: boolean;
+}
+
 export interface ISubscriptionCustomization {
   customMetadata?: object;
   customMaxPerSecond?: number;

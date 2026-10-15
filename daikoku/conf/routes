@@ -129,6 +129,7 @@ GET     /api/subscription/team/:teamId/demands/:demandId                fr.maif.
 GET     /api/subscription/team/:teamId/demands/:demandId/_run           fr.maif.daikoku.controllers.ApiController.runProcess(teamId, demandId)
 DELETE  /api/subscription/team/:teamId/demands/:demandId/_cancel        fr.maif.daikoku.controllers.ApiController.cancelProcess(teamId, demandId)
 POST    /api/subscription/team/:teamId/batches                          fr.maif.daikoku.controllers.SubscriptionBatchController.submit(teamId)
+GET     /api/subscription/team/:teamId/pending-plans                    fr.maif.daikoku.controllers.SubscriptionBatchController.pendingPlans(teamId)
 GET     /api/subscription/team/:teamId/batches/:batchId                 fr.maif.daikoku.controllers.SubscriptionBatchController.get(teamId, batchId)
 DELETE  /api/subscription/team/:teamId/batches/:batchId                 fr.maif.daikoku.controllers.SubscriptionBatchController.cancel(teamId, batchId)
 POST    /api/subscription/team/:teamId/batches/:batchId/_resume         fr.maif.daikoku.controllers.SubscriptionBatchController.resume(teamId, batchId)

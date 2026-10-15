@@ -1,8 +1,9 @@
 import test, { expect } from '@playwright/test';
 import { addDays } from 'date-fns';
 import { IApi } from '../../src/types';
+import type { ISubscriptionBatchSubmission } from '../../src/types/api';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
-import { generateApi, saveApi } from './apis';
+import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 
@@ -163,6 +164,190 @@ test('apilist pagination', async ({ page }) => {
   await expect(page.getByRole('listitem', { name: 'New API-24' })).toBeVisible();
   // await page.getByRole('button', { name: 'Page 3' }).click();
   // await expect(page.getByRole('article', { name: 'New API-12' })).toBeVisible();
+});
+
+for (const reuseExistingKeyring of [false, true]) {
+  test(`submits a batch using APIs selected across pages (${reuseExistingKeyring ? 'existing' : 'new'} keyring)`, async ({
+    page,
+  }) => {
+    const plan = generatePlan({
+      customName: 'Batch UI plan',
+      aggregationApiKeysSecurity: true,
+      allowMultipleKeys: reuseExistingKeyring,
+    });
+    const planResponse = await savePlan(plan);
+    expect(planResponse.ok).toBeTruthy();
+
+    const apis = Array.from({ length: 21 }, (_, idx) =>
+      generateApi({
+        name: `Batch UI API-${String(idx).padStart(2, '0')}`,
+        smallDescription: 'API used by the batch selection UI test',
+        description: 'API used by the batch selection UI test',
+        possibleUsagePlans: [plan._id],
+      })
+    );
+    const apiResponses = await Promise.all(apis.map((api) => saveApi(api)));
+    expect(apiResponses.every((response) => response.ok)).toBeTruthy();
+
+    if (reuseExistingKeyring) {
+      await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              _id: 'existing-batch-subscription',
+              api: apis[0]._id,
+              apiName: apis[0].name,
+              plan: plan._id,
+              planName: plan.customName,
+              customName: null,
+              keyring: {
+                _id: 'existing-batch-keyring',
+                customName: 'Existing environment keyring',
+              },
+            },
+          ]),
+        });
+      });
+    }
+
+    await page.goto(ACCUEIL);
+    await loginAs(MICHAEL, page);
+
+    const firstPageCheckbox = page
+      .getByRole('checkbox', { name: /Sélectionner l'API Batch UI API-/ })
+      .first();
+    await expect(firstPageCheckbox).toBeVisible();
+    const firstApiLabel = await firstPageCheckbox.getAttribute('aria-label');
+    await firstPageCheckbox.check();
+    await expect(page.getByText('1 ligne sélectionnée', { exact: true })).toBeVisible();
+    const firstApiIndex = Number(firstApiLabel?.match(/Batch UI API-(\d+)/)?.[1]);
+
+    await page.getByRole('button', { name: 'Page 2' }).click();
+    const secondPageCheckbox = page
+      .getByRole('checkbox', { name: /Sélectionner l'API Batch UI API-/ })
+      .first();
+    await expect(secondPageCheckbox).toBeVisible();
+    await expect(page.getByText('1 ligne sélectionnée', { exact: true })).toBeVisible();
+    const secondApiLabel = await secondPageCheckbox.getAttribute('aria-label');
+    expect(secondApiLabel).not.toBe(firstApiLabel);
+    await secondPageCheckbox.check();
+    await expect(page.getByText('2 lignes sélectionnées', { exact: true })).toBeVisible();
+    const secondApiIndex = Number(secondApiLabel?.match(/Batch UI API-(\d+)/)?.[1]);
+
+    await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
+    await expect(page.getByRole('heading', { name: 'Sélectionner une équipe' })).toBeVisible();
+    await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Choisir les plans et les trousseaux' })
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Sélectionner Batch UI plan sur les APIs' }).click();
+
+    const keyringSelect = page.getByRole('combobox', { name: 'Trousseau pour Batch UI plan' });
+    await expect(keyringSelect).toHaveCount(1);
+    await expect(keyringSelect).toBeEnabled();
+    const keyringName = page.getByRole('textbox', {
+      name: 'Nom du nouveau trousseau pour Batch UI plan',
+    });
+    if (reuseExistingKeyring) {
+      await keyringSelect.selectOption({ label: 'Existing environment keyring' });
+      await expect(keyringName).toBeHidden();
+    } else {
+      await keyringName.fill('Shared batch UI keyring');
+    }
+
+    let submittedPayload: ISubscriptionBatchSubmission | undefined;
+    await page.route(/\/api\/subscription\/team\/[^/]+\/batches$/, async (route) => {
+      submittedPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          batch: { _id: 'batch-ui-test' },
+          state: 'Pending',
+          replayed: false,
+        }),
+      });
+    });
+
+    await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+    await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' })
+    ).toBeHidden();
+    expect(submittedPayload?.items).toHaveLength(2);
+    expect(submittedPayload?.items.map((item) => item.plan)).toEqual([plan._id, plan._id]);
+    expect(submittedPayload?.items.map((item) => item.api)).toEqual(
+      expect.arrayContaining([apis[firstApiIndex]._id, apis[secondApiIndex]._id])
+    );
+    if (reuseExistingKeyring) {
+      expect(submittedPayload?.newKeyrings).toEqual([]);
+      expect(submittedPayload?.items.map((item) => item.keyringChoice)).toEqual([
+        { type: 'existing', keyring: 'existing-batch-keyring' },
+        { type: 'existing', keyring: 'existing-batch-keyring' },
+      ]);
+    } else {
+      expect(submittedPayload?.newKeyrings).toEqual([
+        { _id: expect.any(String), customName: 'Shared batch UI keyring' },
+      ]);
+      expect(submittedPayload?.items.map((item) => item.keyringChoice)).toEqual([
+        { type: 'new', creation: submittedPayload?.newKeyrings[0]._id },
+        { type: 'new', creation: submittedPayload?.newKeyrings[0]._id },
+      ]);
+    }
+  });
+}
+
+test('only selects available plans when subscribing to an environment across APIs', async ({ page }) => {
+  const dev = generatePlan({ customName: 'Available dev', aggregationApiKeysSecurity: true });
+  const pending = generatePlan({ customName: 'Pending batch plan' });
+  const privatePlan = generatePlan({ customName: 'Unauthorized plan', visibility: 'Private' });
+  const planResponses = await Promise.all([dev, pending, privatePlan].map(savePlan));
+  expect(planResponses.every((response) => response.ok)).toBe(true);
+  const apis = Array.from({ length: 3 }, (_, index) => generateApi({
+    name: `Plan eligibility API-${index}`,
+    possibleUsagePlans: [dev._id, pending._id, privatePlan._id],
+  }));
+  const apiResponses = await Promise.all(apis.map(saveApi));
+  expect(apiResponses.every((response) => response.ok)).toBe(true);
+
+  await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, (route) => route.fulfill({
+    json: [{
+      _id: 'already-subscribed',
+      api: apis[0]._id,
+      apiName: apis[0].name,
+      plan: dev._id,
+      planName: dev.customName,
+      customName: null,
+      keyring: { _id: 'existing-dev-keyring', customName: 'Dev keyring' },
+    }],
+  }));
+  await page.route(/\/api\/subscription\/team\/[^/]+\/pending-plans$/, (route) => route.fulfill({
+    json: apis.map((api) => ({ api: api._id, plan: pending._id })),
+  }));
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  for (const api of apis) {
+    await page.getByRole('checkbox', { name: `Sélectionner l'API ${api.name}`, exact: true }).check();
+  }
+  await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
+  await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
+  const modal = page.getByRole('dialog');
+  await expect(modal.getByRole('checkbox', { name: 'Available dev', exact: true })).toHaveCount(2);
+  await expect(modal.getByRole('checkbox', { name: 'Pending batch plan' })).toHaveCount(0);
+  await expect(modal.getByRole('checkbox', { name: 'Unauthorized plan' })).toHaveCount(0);
+  await modal.getByRole('button', { name: 'Sélectionner Available dev sur les APIs' }).click();
+  let payload: ISubscriptionBatchSubmission | undefined;
+  await page.route(/\/api\/subscription\/team\/[^/]+\/batches$/, (route) => {
+    payload = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { batch: 'availability-test', state: 'pending', replayed: false } });
+  });
+  await modal.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+  await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+  expect(payload?.items.map(({ api }) => api).sort()).toEqual([apis[1]._id, apis[2]._id].sort());
+  expect(payload?.items.every(({ plan }) => plan === dev._id)).toBe(true);
+  expect(payload?.newKeyrings).toHaveLength(1);
 });
 
 test.fixme('apilist display specials api', async ({ page }) => {

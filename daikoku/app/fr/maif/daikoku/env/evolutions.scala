@@ -2533,6 +2533,102 @@ object evolution_1900_e extends EvolutionScript {
     }
 }
 
+object evolution_1900_f extends EvolutionScript {
+  override def version: String = "19.0.0_f"
+
+  private[daikoku] def provisionTenant(
+      tenant: Tenant,
+      dataStore: DataStore,
+      otoroshiClient: OtoroshiClient
+  )(implicit ec: ExecutionContext): Future[Done] = {
+    val configured = tenant.copy(otoroshiSettings =
+      tenant.otoroshiSettings.map(settings =>
+        if (settings.keyringEmptyGroup.isDefined) settings
+        else
+          settings.copy(keyringEmptyGroup =
+            Some(
+              KeyringEmptyGroup(
+                IdGenerator.token(32),
+                IdGenerator.token(64)
+              )
+            )
+          )
+      )
+    )
+    val persisted =
+      if (configured == tenant) Future.successful(())
+      else
+        dataStore.tenantRepo.save(configured).flatMap {
+          case true => Future.successful(())
+          case false =>
+            Future.failed(
+              new IllegalStateException(
+                s"Evolution $version: could not save empty group identities for tenant ${tenant.id.value}"
+              )
+            )
+        }
+
+    persisted.flatMap { _ =>
+      configured.otoroshiSettings.toSeq
+        .sortBy(_.id.value)
+        .foldLeft(Future.successful(Done)) { (previous, settings) =>
+          previous.flatMap { _ =>
+            otoroshiClient
+              .ensureKeyringEmptyGroup()(using settings)
+              .flatMap {
+                case Right(_) =>
+                  logger.info(
+                    s"Evolution $version: verified empty group for tenant ${tenant.id.value}, Otoroshi ${settings.id.value}"
+                  )
+                  Future.successful(Done)
+                case Left(error) =>
+                  Future.failed(
+                    new IllegalStateException(
+                      s"Evolution $version: tenant ${tenant.id.value}, Otoroshi ${settings.id.value}: ${error.getErrorMessage()}"
+                    )
+                  )
+              }
+          }
+        }
+    }
+  }
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        otoroshiClient: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - provision managed empty groups in existing Otoroshi instances"
+      )
+      dataStore.tenantRepo
+        .streamAllRaw()
+        .mapAsync(1) { value =>
+          TenantFormat.reads(value) match {
+            case JsSuccess(tenant, _) =>
+              provisionTenant(tenant, dataStore, otoroshiClient)
+            case JsError(errors) =>
+              Future.failed(
+                new IllegalStateException(
+                  s"Evolution $version: invalid tenant: ${JsError.toJson(errors)}"
+                )
+              )
+          }
+        }
+        .runWith(Sink.ignore)(using mat)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2564,7 +2660,8 @@ object evolutions {
       evolution_1900_b,
       evolution_1900_c,
       evolution_1900_d,
-      evolution_1900_e
+      evolution_1900_e,
+      evolution_1900_f
     )
   def run(
       dataStore: DataStore,

@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createColumnHelper } from "@tanstack/react-table"
+import { createColumnHelper, RowSelectionState } from "@tanstack/react-table"
 import { MessageCircleMore, MoreVertical } from "lucide-react"
 import { useContext, useMemo, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
-import { I18nContext } from "../../../contexts"
+import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
@@ -15,6 +15,8 @@ import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
+import { SimpleTeamSelector } from "../api/SimpleTeamSelector"
+import { SubscriptionBatchPlanSelectionModal } from "./SubscriptionBatchPlanSelectionModal"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,10 +29,12 @@ type ApiListProps = {
 export const ApiList = (props: ApiListProps) => {
   const pageSize = 20;
 
-  const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
+  const { customGraphQLClient, connectedUser, tenant } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
+  const { openCustomModal } = useContext(ModalContext)
 
   const queryClient = useQueryClient()
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -55,6 +59,34 @@ export const ApiList = (props: ApiListProps) => {
     const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
 
     return [
+      ...(connectedUser.isGuest
+        ? []
+        : [
+            columnHelper.display({
+              id: 'select',
+              enableColumnFilter: false,
+              header: ({ table }) => (
+                <input
+                  type="checkbox"
+                  aria-label={translate('table.select.page.label')}
+                  checked={table.getIsAllPageRowsSelected()}
+                  onChange={table.getToggleAllPageRowsSelectedHandler()}
+                />
+              ),
+              cell: ({ row }) => (
+                <input
+                  type="checkbox"
+                  aria-label={translate({
+                    key: 'table.select.row.label',
+                    replacements: [row.original.api.name],
+                  })}
+                  checked={row.getIsSelected()}
+                  disabled={!row.getCanSelect()}
+                  onChange={row.getToggleSelectedHandler()}
+                />
+              ),
+            }),
+          ]),
       columnHelper.display({
         id: 'favorite',
         enableColumnFilter: false,
@@ -303,6 +335,64 @@ export const ApiList = (props: ApiListProps) => {
       getRowId={row => row.api._id}
       getRowAriaLabel={row => row.api.name}
       countLabelKey="API"
+      enableRowSelection={!connectedUser.isGuest}
+      persistSelectionAcrossPages
+      rowSelection={rowSelection}
+      setRowSelection={setRowSelection}
+      isRowSelectable={(row) =>
+        ['published', 'deprecated'].includes(row.api.state) &&
+        row.api.possibleUsagePlans.length > 0
+      }
+      bulkActions={[
+        {
+          label: translate('subscription.batch.select.apis.action'),
+          onClick: async (selectedApis) => {
+            const teams = myTeamsRequest.data && !isError(myTeamsRequest.data)
+              ? myTeamsRequest.data.filter((team) =>
+                  team.type !== 'Admin' &&
+                  (!tenant.subscriptionSecurity || team.type !== 'Personal')
+                )
+              : [];
+            openCustomModal({
+              title: translate('team.selection.title'),
+              content: (
+                teams.length === 0 ? (
+                  <p>{translate('subscription.batch.no.available.team')}</p>
+                ) : (
+                  <SimpleTeamSelector
+                    teams={teams.map((team) => ({
+                      team,
+                      disabledFor: selectedApis.every(({ api, authorizations }) =>
+                        api.team._id === team._id ||
+                        api.visibility === 'Public' ||
+                        (api.visibility === 'AdminOnly'
+                          ? connectedUser.isDaikokuAdmin
+                          : authorizations.some((authorization) =>
+                              authorization.team === team._id && authorization.authorized
+                            ))
+                      ) ? [] : [translate('subscription.batch.no.available.team')],
+                    }))}
+                    showApiKeySelectModal={(teamId) => {
+                      const team = teams.find((candidate) => candidate._id === teamId);
+                      if (!team) return;
+                      openCustomModal({
+                        title: translate('subscription.batch.select.plans.title'),
+                        content: (
+                          <SubscriptionBatchPlanSelectionModal
+                            apis={selectedApis}
+                            team={team}
+                            onSubmitted={() => setRowSelection({})}
+                          />
+                        ),
+                      });
+                    }}
+                  />
+                )
+              ),
+            })
+          },
+        },
+      ]}
     />
   )
 }

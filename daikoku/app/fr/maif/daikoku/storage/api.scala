@@ -2618,6 +2618,32 @@ trait SubscriptionBatchDemandRepo
     )
   }
 
+  def findOpenItemsForTeam(
+      tenant: TenantId,
+      team: TeamId
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[(ApiId, UsagePlanId)]] = {
+    val repo = forTenant(tenant)
+    repo
+      .query(
+        s"""SELECT content FROM ${repo.tableName}
+           |WHERE content->>'_tenant' = $$1 AND content->>'team' = $$2 AND EXISTS (
+           |  SELECT 1 FROM jsonb_array_elements(content->'items') AS item
+           |  WHERE item->>'state' IN ('pending', 'waiting', 'inProgress', 'retryableError')
+           |)""".stripMargin,
+        Seq(tenant.value, team.value)
+      )
+      .map(
+        _.flatMap(
+          _.items
+            .filterNot(_.state.isClosed)
+            .map(item => item.api -> item.plan)
+        ).distinct
+      )
+  }
+
   def findOpenItem(
       tenant: TenantId,
       team: TeamId,
