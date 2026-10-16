@@ -8,7 +8,7 @@ import { DaikokuApp } from './apps';
 import { GlobalContext, GlobalContextProvider } from './contexts/globalContext';
 import { I18nProvider } from './contexts/i18n-context';
 
-import { BrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import '@maif/react-forms/lib/index.css';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -57,8 +57,9 @@ const reactfromProviderOption: Option = {
   }
 }
 
-root.render(
-  <BrowserRouter>
+const router = createBrowserRouter([{
+  path: '*',
+  element: (
     <QueryClientProvider client={queryClient}>
       <GlobalContextProvider>
         <I18nProvider>
@@ -69,5 +70,7 @@ root.render(
         </I18nProvider>
       </GlobalContextProvider>
     </QueryClientProvider>
-  </BrowserRouter>
-);
+  ),
+}]);
+
+root.render(<RouterProvider router={router} />);

@@ -239,25 +239,19 @@ for (const reuseExistingKeyring of [false, true]) {
     await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
     await expect(page.getByRole('heading', { name: 'Sélectionner une équipe' })).toBeVisible();
     await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
-    await page.getByRole('button', { name: 'Utiliser l\'interface précédente' }).click();
-    await expect(
-      page.getByRole('heading', { name: 'Choisir les plans et les trousseaux' })
-    ).toBeVisible();
-    const modal = page.getByRole('dialog');
-    await modal.getByRole('button', { name: 'Sélectionner Batch UI plan sur les APIs' }).click();
-
-    const keyringSelect = page.getByRole('combobox', { name: 'Trousseau pour Batch UI plan' });
-    await expect(keyringSelect).toHaveCount(1);
-    await expect(keyringSelect).toBeEnabled();
-    const keyringName = page.getByRole('textbox', {
-      name: 'Nom du nouveau trousseau pour Batch UI plan',
-    });
+    await expect(page.getByRole('heading', { name: "Préparer vos clés d'API" })).toBeVisible();
+    const keyringName = reuseExistingKeyring ? 'Existing environment keyring' : 'Shared batch UI keyring';
     if (reuseExistingKeyring) {
-      await keyringSelect.selectOption({ label: 'Existing environment keyring' });
-      await expect(keyringName).toBeHidden();
+      await page.getByRole('button', { name: "Importer des clés d'API", exact: true }).click();
+      const importer = page.getByRole('dialog', { name: "Importer des clés d'API", exact: true });
+      await importer.getByRole('checkbox', { name: 'Sélectionner la clé Existing environment keyring', exact: true }).check();
+      await importer.getByRole('button', { name: 'Importer la sélection (1)', exact: true }).click();
     } else {
-      await keyringName.fill('Shared batch UI keyring');
+      await page.getByRole('button', { name: "Préparer une clé d'API", exact: true }).click();
+      await page.getByRole('textbox', { name: "Nom de la clé d'API", exact: true }).fill(keyringName);
     }
+    await page.getByRole('button', { name: 'Sélectionner les plans visibles', exact: true }).click();
+    await page.getByRole('button', { name: keyringName, exact: true }).press('Enter');
 
     let submittedPayload: ISubscriptionBatchSubmission | undefined;
     await page.route(/\/api\/subscription\/team\/[^/]+\/batches$/, async (route) => {
@@ -273,7 +267,7 @@ for (const reuseExistingKeyring of [false, true]) {
       });
     });
 
-    await modal.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+    await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' })
@@ -335,18 +329,20 @@ test('only selects available plans when subscribing to an environment across API
   }
   await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
   await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
-  await page.getByRole('button', { name: 'Utiliser l\'interface précédente' }).click();
-  const modal = page.getByRole('dialog');
-  await expect(modal.getByRole('checkbox', { name: 'Available dev', exact: true })).toHaveCount(2);
-  await expect(modal.getByRole('checkbox', { name: 'Pending batch plan' })).toHaveCount(0);
-  await expect(modal.getByRole('checkbox', { name: 'Unauthorized plan' })).toHaveCount(0);
-  await modal.getByRole('button', { name: 'Sélectionner Available dev sur les APIs' }).click();
+  const available = page.getByRole('region', { name: 'Plans non affectés', exact: true });
+  await expect(available.getByRole('checkbox', { name: /\/ Available dev$/ })).toHaveCount(2);
+  await expect(available.getByRole('checkbox', { name: /Pending batch plan/ })).toHaveCount(0);
+  await expect(available.getByRole('checkbox', { name: /Unauthorized plan/ })).toHaveCount(0);
+  await page.getByRole('button', { name: "Préparer une clé d'API", exact: true }).click();
+  await page.getByRole('textbox', { name: "Nom de la clé d'API", exact: true }).fill('Available dev');
+  await available.getByRole('button', { name: 'Sélectionner les plans visibles', exact: true }).click();
+  await page.getByRole('button', { name: 'Available dev', exact: true }).press('Enter');
   let payload: ISubscriptionBatchSubmission | undefined;
   await page.route(/\/api\/subscription\/team\/[^/]+\/batches$/, (route) => {
     payload = route.request().postDataJSON();
     return route.fulfill({ status: 201, json: { batch: 'availability-test', state: 'pending', replayed: false } });
   });
-  await modal.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+  await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
   await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
   expect(payload?.items.map(({ api }) => api).sort()).toEqual([apis[1]._id, apis[2]._id].sort());
   expect(payload?.items.every(({ plan }) => plan === dev._id)).toBe(true);
@@ -389,6 +385,11 @@ test.describe('keyring workspace UI', () => {
     await expect(page).toHaveURL(/\/apis\/subscriptions\/keyrings$/);
     await expect(page.getByRole('heading', { name: "Préparer vos clés d'API" })).toBeVisible();
     await expect(page.getByRole('region', { name: availableName })).toBeVisible();
+    await expect(page.getByRole('button', { name: "Utiliser l'interface précédente", exact: true })).toHaveCount(0);
+    await expect(page.getByText('Interface expérimentale', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('combobox', { name: "Clé d'API de destination", exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Déplacer la sélection', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('combobox', { name: "Clé d'API existante", exact: true })).toHaveCount(0);
   }
 
   async function createFolder(page: import('@playwright/test').Page, name: string) {
@@ -398,9 +399,73 @@ test.describe('keyring workspace UI', () => {
   }
 
   async function moveSelection(page: import('@playwright/test').Page, destination: string) {
-    await page.getByRole('combobox', { name: "Clé d'API de destination" }).selectOption({ label: destination });
-    await page.getByRole('button', { name: 'Déplacer la sélection', exact: true }).click();
+    const target = page.getByRole('button', { name: destination, exact: true });
+    await target.focus();
+    await expect(target).toBeFocused();
+    await target.press('Enter');
   }
+
+  test('empty workspace leaves without a warning', async ({ page }) => {
+    const { apis } = await seedWorkspace();
+    await openWorkspace(page, apis);
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await expect(page).toHaveURL(/\/apis$/);
+    await expect(page.getByRole('dialog', { name: 'Quitter la préparation ?', exact: true })).toHaveCount(0);
+  });
+
+  test('protects a prepared draft on internal navigation until leaving is confirmed', async ({ page }) => {
+    const { apis } = await seedWorkspace();
+    await openWorkspace(page, apis);
+    const folder = await createFolder(page, 'Unsaved draft');
+    const confirmation = page.getByRole('dialog', { name: 'Quitter la préparation ?', exact: true });
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation.getByRole('button', { name: 'Rester', exact: true })).toBeFocused();
+    await expect(confirmation.locator('.modal-content')).toHaveCount(1);
+    await expect(page.locator('dialog')).toHaveCount(0);
+    await confirmation.getByRole('button', { name: 'Rester', exact: true }).press('Enter');
+    await expect(confirmation).toHaveCount(0);
+    await expect(folder.getByRole('textbox', { name: "Nom de la clé d'API", exact: true })).toHaveValue('Unsaved draft');
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await confirmation.locator('.btn-close').click();
+    await expect(confirmation).toHaveCount(0);
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await page.locator('.modal-backdrop').click({ position: { x: 5, y: 5 } });
+    await expect(confirmation).toHaveCount(0);
+    await expect(folder.getByRole('textbox', { name: "Nom de la clé d'API", exact: true })).toHaveValue('Unsaved draft');
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    await confirmation.getByRole('button', { name: 'Quitter et perdre le brouillon', exact: true }).click();
+    await expect(page).toHaveURL(/\/apis$/);
+  });
+
+  test('browser back can be cancelled without losing the draft', async ({ page }) => {
+    const { apis } = await seedWorkspace();
+    await openWorkspace(page, apis);
+    await createFolder(page, 'Back navigation draft');
+    await page.goBack();
+    const confirmation = page.getByRole('dialog', { name: 'Quitter la préparation ?', exact: true });
+    await expect(confirmation).toBeVisible();
+    await confirmation.press('Escape');
+    await expect(confirmation).toHaveCount(0);
+    await expect(page).toHaveURL(/\/apis\/subscriptions\/keyrings$/);
+    await expect(page.getByRole('textbox', { name: "Nom de la clé d'API", exact: true })).toHaveValue('Back navigation draft');
+    await page.goBack();
+    await confirmation.getByRole('button', { name: 'Quitter et perdre le brouillon', exact: true }).click();
+    await expect(page).toHaveURL(/\/apis$/);
+  });
+
+  test('reload warns natively and cancelling keeps the draft', async ({ page }) => {
+    const { apis } = await seedWorkspace();
+    await openWorkspace(page, apis);
+    await createFolder(page, 'Reload draft');
+    const dialogPromise = page.waitForEvent('dialog');
+    const reload = page.reload().catch(() => undefined);
+    const dialog = await dialogPromise;
+    expect(dialog.type()).toBe('beforeunload');
+    await dialog.dismiss();
+    await reload;
+    await expect(page.getByRole('textbox', { name: "Nom de la clé d'API", exact: true })).toHaveValue('Reload draft');
+  });
 
   test('wand applies immediately and undo restores the draft without server writes', async ({ page }) => {
     const { apis, plan } = await seedWorkspace();
@@ -619,6 +684,7 @@ test.describe('keyring workspace UI', () => {
     expect(submissions).toHaveLength(0);
     await page.getByRole('button', { name: submitName, exact: true }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    await expect(page).toHaveURL(/\/apis$/);
     expect(submissions).toHaveLength(1);
     expect(submissions[0].newKeyrings).toEqual([{ _id: expect.any(String), customName: 'Renamed shared workspace' }]);
     expect(submissions[0].items).toEqual([{
@@ -663,6 +729,66 @@ test.describe('keyring workspace UI', () => {
     await expect(page.getByText('0 plans sélectionnés', { exact: true })).toBeVisible();
   });
 
+  test('hides the import action when the team has no existing keys', async ({ page }) => {
+    const { apis } = await seedWorkspace();
+    await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, (route) => route.fulfill({ json: [] }));
+    await openWorkspace(page, apis);
+    await expect(page.getByRole('button', { name: "Importer des clés d'API", exact: true })).toHaveCount(0);
+  });
+
+  test('imports several keys with searchable selection, cancellation and no server writes', async ({ page }) => {
+    const { apis, plan } = await seedWorkspace();
+    const names = ['Development keys', 'Production keys', 'Remaining keys'];
+    await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, (route) => route.fulfill({
+      json: names.map((name, index) => ({
+        _id: `import-member-${index}`,
+        api: apis[index]._id,
+        apiName: apis[index].name,
+        plan: plan._id,
+        planName: plan.customName,
+        customName: null,
+        keyring: { _id: `import-key-${index}`, customName: name },
+      })),
+    }));
+    await openWorkspace(page, apis);
+    const writes: string[] = [];
+    page.on('request', (request) => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method()) &&
+          /\/api\/(?:keyrings|subscription(?:\/|s\/))/.test(request.url())) writes.push(request.url());
+    });
+    const open = page.getByRole('button', { name: "Importer des clés d'API", exact: true });
+    const modal = page.getByRole('dialog', { name: "Importer des clés d'API", exact: true });
+    await open.click();
+    await expect(modal.getByRole('button', { name: 'Importer la sélection (0)', exact: true })).toBeDisabled();
+    await modal.getByRole('checkbox', { name: 'Sélectionner la clé Development keys', exact: true }).check();
+    await modal.getByRole('searchbox').fill('Production');
+    await expect(modal.getByRole('checkbox')).toHaveCount(1);
+    await modal.getByRole('checkbox', { name: 'Sélectionner la clé Production keys', exact: true }).check();
+    await modal.getByRole('searchbox').fill('No matching key');
+    await expect(modal.getByRole('status')).toHaveText('Aucune clé ne correspond à cette recherche.');
+    await expect(modal.getByRole('button', { name: 'Importer la sélection (2)', exact: true })).toBeEnabled();
+    await modal.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await expect(modal).toHaveCount(0);
+    await expect(page.locator('.keyring-workspace__folder-select')).toHaveCount(0);
+    await open.click();
+    await expect(modal.getByRole('checkbox', { checked: true })).toHaveCount(0);
+    await modal.getByRole('checkbox', { name: 'Sélectionner la clé Development keys', exact: true }).check();
+    await modal.getByRole('searchbox').fill('Production');
+    await modal.getByRole('checkbox', { name: 'Sélectionner la clé Production keys', exact: true }).check();
+    await modal.getByRole('button', { name: 'Importer la sélection (2)', exact: true }).click();
+    await expect(modal).toHaveCount(0);
+    await expect(page.locator('.keyring-workspace__folder-select')).toHaveCount(2);
+    await open.click();
+    await expect(modal.getByRole('checkbox')).toHaveCount(1);
+    await modal.getByRole('checkbox', { name: 'Sélectionner la clé Remaining keys', exact: true }).check();
+    await modal.getByRole('button', { name: 'Importer la sélection (1)', exact: true }).click();
+    await expect(page.locator('.keyring-workspace__folder-select')).toHaveCount(3);
+    await expect(open).toHaveCount(0);
+    await page.getByRole('button', { name: 'Retirer Remaining keys du brouillon', exact: true }).click();
+    await expect(open).toBeVisible();
+    expect(writes).toEqual([]);
+  });
+
   test('imports an existing keyring without creating or modifying it before submit', async ({ page }) => {
     const { apis, plan } = await seedWorkspace();
     await page.route(/\/api\/subscriptions\/teams\/[^/]+$/, (route) => route.fulfill({
@@ -687,8 +813,10 @@ test.describe('keyring workspace UI', () => {
       return route.fulfill({ status: 201, json: { batch: { _id: 'workspace-import' }, state: 'Pending', replayed: false } });
     });
     await openWorkspace(page, apis);
-    await page.getByRole('combobox', { name: "Clé d'API existante", exact: true }).selectOption('workspace-existing-keyring');
-    await page.getByRole('button', { name: 'Ajouter la clé au brouillon', exact: true }).click();
+    await page.getByRole('button', { name: "Importer des clés d'API", exact: true }).click();
+    const importer = page.getByRole('dialog', { name: "Importer des clés d'API", exact: true });
+    await importer.getByRole('checkbox', { name: 'Sélectionner la clé Imported workspace', exact: true }).check();
+    await importer.getByRole('button', { name: 'Importer la sélection (1)', exact: true }).click();
     const folder = page.getByRole('region', { name: 'Imported workspace', exact: true });
     await expect(folder.getByRole('textbox', { name: "Nom de la clé d'API" })).toHaveCount(0);
     await expect(folder.getByText(/^Ajouts à une clé existante ·/)).toBeVisible();
@@ -802,8 +930,13 @@ test.describe('keyring workspace UI', () => {
     await page.getByRole('button', { name: submitName, exact: true }).click();
     await expect(page.getByText('Workspace temporary failure', { exact: true })).toBeVisible();
     await expect(folder.getByRole('checkbox')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
+    const confirmation = page.getByRole('dialog', { name: 'Quitter la préparation ?', exact: true });
+    await expect(confirmation).toBeVisible();
+    await confirmation.getByRole('button', { name: 'Rester', exact: true }).click();
     await page.getByRole('button', { name: submitName, exact: true }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
+    await expect(page).toHaveURL(/\/apis$/);
     expect(payloads).toHaveLength(2);
     expect(payloads[0].idempotencyKey).toEqual(expect.any(String));
     expect(payloads[1]).toEqual(payloads[0]);

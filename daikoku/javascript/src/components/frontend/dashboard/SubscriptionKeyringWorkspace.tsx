@@ -20,8 +20,8 @@ import {
   X,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { PropsWithChildren, useContext, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PropsWithChildren, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useBeforeUnload, useBlocker, useLocation, useNavigate } from 'react-router-dom';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -36,7 +36,6 @@ import {
 } from '../../../services/keyringWorkspace';
 import { IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { Display } from '../../../types/tenant';
-import { SubscriptionBatchPlanSelectionModal } from './SubscriptionBatchPlanSelectionModal';
 import { SubscriptionKeyringProposal } from './SubscriptionKeyringProposal';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
 import './subscriptionKeyringWorkspace.scss';
@@ -152,11 +151,124 @@ function WorkspacePlanCard({
   );
 }
 
+function WorkspaceKeyringImport({
+  keyrings,
+  onImport,
+  onCancel,
+}: {
+  keyrings: NonNullable<WorkspaceFolder['keyring']>[];
+  onImport: (ids: string[]) => void;
+  onCancel: () => void;
+}) {
+  const { translate } = useContext(I18nContext);
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const query = search.trim().toLocaleLowerCase();
+  const visibleKeyrings = keyrings.filter((keyring) =>
+    `${keyring.customName ?? ''} ${keyring._id}`.toLocaleLowerCase().includes(query)
+  );
+  return (
+    <>
+      <input
+        type="search"
+        className="form-control mb-3"
+        autoFocus
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        aria-label={translate('subscription.workspace.import.search')}
+        placeholder={translate('subscription.workspace.import.search')}
+      />
+      <div className="keyring-workspace__import-options">
+        {visibleKeyrings.map((keyring) => (
+          <label
+            key={keyring._id}
+            className={`keyring-workspace__plan ${selectedIds.includes(keyring._id) ? '--selected' : ''}`}
+          >
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(keyring._id)}
+              aria-label={translate({
+                key: 'subscription.workspace.import.select',
+                replacements: [keyring.customName || keyring._id],
+              })}
+              onChange={() =>
+                setSelectedIds((current) =>
+                  current.includes(keyring._id)
+                    ? current.filter((id) => id !== keyring._id)
+                    : [...current, keyring._id]
+                )
+              }
+            />
+            <KeyRound size={20} className="keyring-workspace__folder-icon" />
+            <span>
+              <strong>{keyring.customName || keyring._id}</strong>
+              {keyring.customName && <small className="d-block text-muted">{keyring._id}</small>}
+            </span>
+          </label>
+        ))}
+        {visibleKeyrings.length === 0 && (
+          <p className="text-muted" role="status">
+            {translate('subscription.workspace.import.empty')}
+          </p>
+        )}
+      </div>
+      <div className="d-flex flex-wrap justify-content-between gap-2 mt-3">
+        <button type="button" className="btn --secondary" onClick={onCancel}>
+          {translate('Cancel')}
+        </button>
+        <button
+          type="button"
+          className="btn --primary"
+          disabled={selectedIds.length === 0}
+          onClick={() => onImport(selectedIds)}
+        >
+          <Import size={18} className="me-2" />
+          {translate({
+            key: 'subscription.workspace.import.confirm',
+            replacements: [String(selectedIds.length)],
+          })}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function WorkspaceLeaveConfirmation({
+  onStay,
+  onLeave,
+}: {
+  onStay: () => void;
+  onLeave: () => void;
+}) {
+  const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
+  useEffect(() => {
+    let active = true;
+    confirm({
+      title: translate('subscription.workspace.leave.title'),
+      message: translate('subscription.workspace.leave.message'),
+      cancelLabel: translate('subscription.workspace.leave.stay'),
+      okLabel: translate('subscription.workspace.leave.confirm'),
+      defaultCancel: true,
+    }).then((leave) => {
+      if (active) {
+        if (leave) onLeave();
+        else onStay();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return null;
+}
+
 function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
   const { close, openCustomModal } = useContext(ModalContext);
   const navigate = useNavigate();
+  const submitted = useRef(false);
   const {
     availablePlanSets,
     subscriptionsQuery,
@@ -165,15 +277,20 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     submitting,
     submitWithMotivation,
   } = useSubscriptionBatch(apis, team, () => {
+    submitted.current = true;
     close();
     navigate('/apis', { replace: true });
   });
   const [folders, setFolders] = useState<WorkspaceFolder[]>([]);
+  const blocker = useBlocker(() => folders.length > 0 && !submitted.current);
+  useBeforeUnload((event) => {
+    if (folders.length === 0 || submitted.current) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
   const [selectedFolderId, setSelectedFolderId] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
-  const [destination, setDestination] = useState('');
-  const [existingId, setExistingId] = useState('');
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string>();
   const [proposalOpen, setProposalOpen] = useState(false);
@@ -181,7 +298,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     before: WorkspaceFolder[];
     after: WorkspaceFolder[];
     selectedFolderId: string;
-    destination: string;
     selectedKeys: string[];
   }>();
   const sensors = useSensors(
@@ -282,20 +398,39 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         items: [],
       },
     ]);
-    setDestination(id);
     setSelectedFolderId(id);
   };
-  const importFolder = () => {
-    const keyring = existingKeyrings.find((candidate) => candidate._id === existingId);
-    if (!keyring) return;
-    const id = nanoid();
-    setFolders((current) => [
-      ...current,
-      { id, name: keyring.customName || keyring._id, keyring, items: [] },
-    ]);
-    setExistingId('');
-    setDestination(id);
-    setSelectedFolderId(id);
+  const openKeyringImport = () => {
+    if (submitting || existingKeyrings.length === 0) return;
+    openCustomModal({
+      title: translate('subscription.workspace.import.open'),
+      content: (
+        <WorkspaceKeyringImport
+          keyrings={existingKeyrings}
+          onCancel={close}
+          onImport={(ids) => {
+            if (submitting) return;
+            const imported = existingKeyrings
+              .filter((keyring) => ids.includes(keyring._id))
+              .map((keyring) => ({
+                id: nanoid(),
+                name: keyring.customName || keyring._id,
+                keyring,
+                items: [],
+              }));
+            setFolders((current) => [
+              ...current,
+              ...imported.filter(
+                (candidate) =>
+                  !current.some((folder) => folder.keyring?._id === candidate.keyring._id)
+              ),
+            ]);
+            if (imported.length > 0) setSelectedFolderId(imported[0].id);
+            close();
+          }}
+        />
+      ),
+    });
   };
   const applyArrangement = (next: WorkspaceFolder[]) => {
     if (submitting) return;
@@ -307,13 +442,11 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       before: folders,
       after: next,
       selectedFolderId,
-      destination,
       selectedKeys,
     });
     setFolders(next);
     if (target) {
       setSelectedFolderId(target.id);
-      setDestination(target.id);
     }
     setSelectedKeys([]);
     setError(undefined);
@@ -344,7 +477,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     if (submitting || !arrangementUndo || folders !== arrangementUndo.after) return;
     setFolders(arrangementUndo.before);
     setSelectedFolderId(arrangementUndo.selectedFolderId);
-    setDestination(arrangementUndo.destination);
     setSelectedKeys(arrangementUndo.selectedKeys);
     setArrangementUndo(undefined);
     setError(undefined);
@@ -365,18 +497,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       );
     }
   };
-  const openPreviousInterface = () =>
-    openCustomModal({
-      title: translate('subscription.batch.select.plans.title'),
-      content: (
-        <SubscriptionBatchPlanSelectionModal
-          apis={apis}
-          team={team}
-          onSubmitted={() => navigate('/apis', { replace: true })}
-        />
-      ),
-    });
-
   if (loading) return <p className="p-4">{translate('Loading...')}</p>;
   if (failed)
     return (
@@ -388,32 +508,23 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
 
   return (
     <div className="keyring-workspace">
+      {blocker.state === 'blocked' && (
+        <WorkspaceLeaveConfirmation onStay={blocker.reset} onLeave={blocker.proceed} />
+      )}
       <header className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
         <div>
-          <span className="badge --warning mb-2">
-            {translate('subscription.workspace.experimental')}
-          </span>
           <h1>{translate('subscription.workspace.title')}</h1>
-          <p className="mb-1">{translate('subscription.workspace.description')}</p>
-          <p className="text-muted">
+          <p className="text-muted mb-0">
             {translate('Team')}: <strong>{team.name}</strong>
           </p>
         </div>
         <div className="d-flex gap-2 flex-wrap">
-          <button
-            type="button"
-            className="btn --secondary"
-            disabled={submitting}
-            onClick={openPreviousInterface}
-          >
-            {translate('subscription.workspace.previous')}
-          </button>
           <Link className={`btn --secondary ${submitting ? 'disabled' : ''}`} to="/apis">
             {translate('subscription.workspace.back')}
           </Link>
         </div>
       </header>
-      <p className="alert alert-info">{translate('subscription.workspace.not.created')}</p>
+      <p className="small text-muted mb-3">{translate('subscription.workspace.not.created')}</p>
       {proposalOpen && subscriptionsQuery.data && tenant.display === Display.environment && (
         <SubscriptionKeyringProposal
           plans={plans}
@@ -441,28 +552,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
             replacements: [String(selectedKeys.length)],
           })}
         </span>
-        <select
-          className="form-select"
-          aria-label={translate('subscription.workspace.destination')}
-          value={destination}
-          onChange={(event) => setDestination(event.target.value)}
-          disabled={submitting}
-        >
-          <option value="">{translate('subscription.workspace.unassigned')}</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="btn --secondary"
-          disabled={submitting || selectedKeys.length === 0}
-          onClick={() => movePlans(selectedKeys, destination || undefined)}
-        >
-          {translate('subscription.workspace.move')}
-        </button>
         <button
           type="button"
           className="btn --secondary"
@@ -599,29 +688,17 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                 <Plus size={18} className="me-2" />
                 {translate('subscription.workspace.create')}
               </button>
-              <select
-                className="form-select keyring-workspace__import"
-                value={existingId}
-                aria-label={translate('subscription.workspace.existing')}
-                disabled={submitting}
-                onChange={(event) => setExistingId(event.target.value)}
-              >
-                <option value="">{translate('subscription.workspace.existing')}</option>
-                {existingKeyrings.map((keyring) => (
-                  <option key={keyring._id} value={keyring._id}>
-                    {keyring.customName || keyring._id}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="btn --secondary"
-                onClick={importFolder}
-                disabled={submitting || !existingId}
-              >
-                <Import size={18} className="me-2" />
-                {translate('subscription.workspace.import')}
-              </button>
+              {existingKeyrings.length > 0 && (
+                <button
+                  type="button"
+                  className="btn --secondary"
+                  onClick={openKeyringImport}
+                  disabled={submitting}
+                >
+                  <Import size={18} className="me-2" />
+                  {translate('subscription.workspace.import.open')}
+                </button>
+              )}
             </div>
             {folders.length === 0 && (
               <div className="keyring-workspace__empty">
@@ -656,9 +733,23 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                           type="button"
                           className="keyring-workspace__folder-select"
                           aria-label={folder.name}
+                          aria-description={
+                            selectedKeys.length > 0
+                              ? translate({
+                                  key: 'subscription.workspace.assign.selection',
+                                  replacements: [folder.name],
+                                })
+                              : undefined
+                          }
                           aria-pressed={selectedFolder?.id === folder.id}
                           disabled={submitting}
                           onClick={() => setSelectedFolderId(folder.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' && selectedKeys.length > 0 && !submitting) {
+                              event.preventDefault();
+                              movePlans(selectedKeys, folder.id);
+                            }
+                          }}
                         >
                           <KeyRound size={20} className="keyring-workspace__folder-icon" />
                           <span>
@@ -736,7 +827,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                                   !folder.items.some((item) => workspacePlanKey(item) === key)
                               )
                             );
-                            if (destination === folder.id) setDestination('');
                           }}
                         >
                           <X size={16} />

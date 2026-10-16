@@ -24,10 +24,19 @@
     margin-bottom: 1rem;
   }
 
-  &__toolbar .form-select,
-  &__import {
-    width: auto;
-    max-width: 20rem;
+  &__import-options {
+    max-height: min(50vh, 24rem);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    padding: 0.2rem;
+
+    label {
+      cursor: pointer;
+    }
+
+    span {
+      min-width: 0;
+    }
   }
 
   &__layout {

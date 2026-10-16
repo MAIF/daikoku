@@ -9,8 +9,19 @@ export const Confirm = (props: ConfirmProps) => {
   const { translate } = useContext(I18nContext);
 
   const defaultButton = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && props.defaultCancel) {
+      e.preventDefault();
+      props.cancel();
+      return;
+    }
     if (e.key === 'Enter') {
-      props.ok();
+      if (props.defaultCancel) {
+        if (e.target instanceof HTMLElement && e.target.closest('button')) return;
+        e.preventDefault();
+        props.cancel();
+      } else {
+        props.ok();
+      }
     }
   };
 
@@ -26,7 +37,7 @@ export const Confirm = (props: ConfirmProps) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title" id="modal-title">{props.title || translate("Confirm")}</h5>
-        <button type="button" className="btn-close" onClick={props.cancel} />
+        <button type="button" className="btn-close" aria-label={translate('Close')} onClick={props.cancel} />
       </div>
       <div className="modal-body">
         <div className="modal-description">
@@ -36,7 +47,7 @@ export const Confirm = (props: ConfirmProps) => {
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn --secondary" onClick={props.cancel}>
+        <button type="button" className="btn --secondary" autoFocus={props.defaultCancel} onClick={props.cancel}>
           {props.cancelLabel || translate('Cancel')}
         </button>
         <button type="button" className="btn --primary" onClick={props.ok}>
