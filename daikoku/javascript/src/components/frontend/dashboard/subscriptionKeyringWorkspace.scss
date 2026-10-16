@@ -143,6 +143,16 @@
     &.--selected {
       outline: 2px solid $primary-color;
     }
+    &.--unavailable {
+      background: $level2_bg-color;
+      color: $level2_text-color;
+      border-style: dashed;
+
+      label,
+      button {
+        cursor: not-allowed;
+      }
+    }
     label {
       cursor: pointer;
       min-width: 0;

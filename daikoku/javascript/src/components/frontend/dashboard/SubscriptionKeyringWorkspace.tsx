@@ -36,6 +36,7 @@ import {
 } from '../../../services/keyringWorkspace';
 import { IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { Display } from '../../../types/tenant';
+import { isPlanSelectableForBatch } from '../../../services/subscriptions';
 import { SubscriptionKeyringProposal } from './SubscriptionKeyringProposal';
 import { SubscriptionKeyringReview } from './SubscriptionKeyringReview';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
@@ -91,12 +92,14 @@ function WorkspacePlanCard({
   item,
   selected,
   disabled,
+  selectionError,
   onSelect,
   onRemove,
 }: {
   item: WorkspacePlan;
   selected: boolean;
   disabled: boolean;
+  selectionError?: string;
   onSelect: () => void;
   onRemove?: () => void;
 }) {
@@ -109,7 +112,8 @@ function WorkspacePlanCard({
   return (
     <div
       ref={setNodeRef}
-      className={`keyring-workspace__plan ${selected ? '--selected' : ''}`}
+      className={`keyring-workspace__plan ${selected ? '--selected' : ''} ${selectionError ? '--unavailable' : ''}`}
+      title={selectionError ? translate(selectionError) : undefined}
       style={{ opacity: isDragging ? 0.4 : 1 }}
       data-testid="workspace-plan"
       data-plan-key={workspacePlanKey(item)}
@@ -138,6 +142,7 @@ function WorkspacePlanCard({
           {item.api.state === 'deprecated' && (
             <span className="badge --warning mt-1">{translate('subscription.workspace.deprecated.badge')}</span>
           )}
+          {selectionError && <small className="d-block text-muted mt-1">{translate(selectionError)}</small>}
         </span>
       </label>
       {onRemove && (
@@ -318,11 +323,30 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
   const assigned = folders.flatMap((folder) => folder.items);
   const assignedKeys = new Set(assigned.map(workspacePlanKey));
   const unassigned = plans.filter((item) => !assignedKeys.has(workspacePlanKey(item)));
+  const batchPlans = [
+    ...assigned.map(({ plan }) => plan),
+    ...selectedKeys.flatMap((key) => {
+      const item = planMap.get(key);
+      return item ? [item.plan] : [];
+    }),
+  ];
+  const canSelectPlan = (item: WorkspacePlan) => isPlanSelectableForBatch(item.plan, batchPlans);
+  const bulkSelection = (items: WorkspacePlan[]) => {
+    const candidates = items.filter(canSelectPlan);
+    return {
+      keys: candidates.map(workspacePlanKey),
+      requiresProcessChoice: candidates.length > 0 && !isPlanSelectableForBatch(
+        candidates[0].plan,
+        [...batchPlans, ...candidates.slice(1).map(({ plan }) => plan)]
+      ),
+    };
+  };
   const visiblePlans = unassigned.filter((item) =>
     `${item.api.name} ${item.plan.customName}`
       .toLocaleLowerCase()
       .includes(search.toLocaleLowerCase())
   );
+  const visibleSelection = bulkSelection(visiblePlans);
   const visiblePlanGroups = new Map<string | undefined, WorkspacePlan[]>(
     tenant.display === Display.environment ? plans.map(({ plan }) => [plan.customName, []]) : []
   );
@@ -660,18 +684,24 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
               <button
                 type="button"
                 className="btn --secondary --small"
-                disabled={submitting || !visiblePlans.length}
-                onClick={() => setSelectedKeys(visiblePlans.map(workspacePlanKey))}
+                disabled={submitting || visibleSelection.keys.length === 0 || visibleSelection.requiresProcessChoice}
+                title={visibleSelection.requiresProcessChoice ? translate('subscription.workspace.selection.process.choose') : undefined}
+                onClick={() => setSelectedKeys((current) => [...new Set([...current, ...visibleSelection.keys])])}
               >
                 {translate('subscription.workspace.select.visible')}
               </button>
             </div>
+            {visibleSelection.requiresProcessChoice && (
+              <p className="small text-muted">{translate('subscription.workspace.selection.process.choose')}</p>
+            )}
             {!visiblePlans.length && (
               <p className="text-muted">{translate('subscription.workspace.no.plans')}</p>
             )}
             {[...visiblePlanGroups]
               .filter(([, items]) => items.length > 0)
-              .map(([name, items]) => (
+              .map(([name, items]) => {
+                const selection = bulkSelection(items);
+                return (
                 <div
                   key={name ?? 'all'}
                   data-environment={name}
@@ -691,11 +721,14 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                         })}
                         disabled={
                           submitting ||
-                          items.every((item) => selectedKeys.includes(workspacePlanKey(item)))
+                          selection.requiresProcessChoice ||
+                          selection.keys.length === 0 ||
+                          selection.keys.every((key) => selectedKeys.includes(key))
                         }
+                        title={selection.requiresProcessChoice ? translate('subscription.workspace.selection.process.choose') : undefined}
                         onClick={() =>
                           setSelectedKeys((current) => [
-                            ...new Set([...current, ...items.map(workspacePlanKey)]),
+                            ...new Set([...current, ...selection.keys]),
                           ])
                         }
                       >
@@ -708,12 +741,14 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                       key={workspacePlanKey(item)}
                       item={item}
                       selected={selectedKeys.includes(workspacePlanKey(item))}
-                      disabled={submitting}
+                      disabled={submitting || !canSelectPlan(item)}
+                      selectionError={canSelectPlan(item) ? undefined : 'subscription.workspace.incompatible.process'}
                       onSelect={() => toggleSelection(workspacePlanKey(item))}
                     />
                   ))}
                 </div>
-              ))}
+                );
+              })}
           </WorkspaceDropZone>
           <div>
             <div className="d-flex gap-2 flex-wrap align-items-center mb-3">

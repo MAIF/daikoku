@@ -158,6 +158,7 @@
   "subscription.workspace.proposal.incomplete": "Des destinations restent à choisir.",
   "subscription.workspace.select.environment": "Sélectionner tous les plans visibles de %s",
   "subscription.workspace.selected": "%s plans sélectionnés",
+  "subscription.workspace.selection.process.choose": "Plusieurs processus de souscription sont présents. Sélectionnez d'abord un plan pour choisir un ensemble compatible.",
   "subscription.workspace.destination": "Clé d'API de destination",
   "subscription.workspace.assign.selection": "Entrée pour affecter les plans sélectionnés à %s",
   "subscription.workspace.list": "Clés d'API",
