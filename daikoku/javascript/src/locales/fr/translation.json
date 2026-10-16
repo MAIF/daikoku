@@ -119,6 +119,8 @@
   "subscription.batch.keyrings.failed": "Impossible de charger les trousseaux compatibles",
   "subscription.batch.submit": "Envoyer la demande groupée",
   "subscription.workspace.title": "Préparer vos clés d'API",
+  "subscription.workspace.deprecated.badge": "API dépréciée",
+  "subscription.workspace.deprecated.warning": "Ces API sont dépréciées : %s. Vous pouvez poursuivre la demande, mais leur utilisation se fait à vos risques et périls.",
   "subscription.workspace.review.open": "Vérifier la demande",
   "subscription.workspace.review.title": "Vérifier la demande",
   "subscription.workspace.review.back": "Modifier la préparation",

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { IApiGQL } from '../types';
-import type { ISubscriptionBatchSubmission, IUsagePlanGQL } from '../types/api';
+import type { ApiState, ISubscriptionBatchSubmission, IUsagePlanGQL } from '../types/api';
 import type { ITenant } from '../types/tenant';
 import {
   findCompatibleKeyringsForGroup,
@@ -9,7 +9,7 @@ import {
 } from './subscriptions';
 
 export type WorkspacePlan = {
-  api: Pick<IApiGQL, '_id' | 'name'>;
+  api: Pick<IApiGQL, '_id' | 'name'> & { state?: ApiState };
   plan: IUsagePlanGQL;
 };
 

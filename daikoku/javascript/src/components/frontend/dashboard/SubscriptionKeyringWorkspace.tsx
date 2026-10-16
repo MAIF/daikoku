@@ -135,6 +135,9 @@ function WorkspacePlanCard({
         <span>
           <strong>{item.plan.customName}</strong>
           <small className="d-block text-muted">{item.api.name}</small>
+          {item.api.state === 'deprecated' && (
+            <span className="badge --warning mt-1">{translate('subscription.workspace.deprecated.badge')}</span>
+          )}
         </span>
       </label>
       {onRemove && (

@@ -119,6 +119,8 @@
   "subscription.batch.keyrings.failed": "Could not load compatible keyrings",
   "subscription.batch.submit": "Submit grouped request",
   "subscription.workspace.title": "Prepare your API keys",
+  "subscription.workspace.deprecated.badge": "Deprecated API",
+  "subscription.workspace.deprecated.warning": "These APIs are deprecated: %s. You may proceed with the request, but use them at your own risk.",
   "subscription.workspace.review.open": "Review request",
   "subscription.workspace.review.title": "Review request",
   "subscription.workspace.review.back": "Edit preparation",

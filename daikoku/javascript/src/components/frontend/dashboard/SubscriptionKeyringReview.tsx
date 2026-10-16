@@ -9,6 +9,7 @@ import {
 } from '../../../services/keyringWorkspace';
 
 function ReviewPlans({ items }: { items: WorkspacePlan[] }) {
+  const { translate } = useContext(I18nContext);
   return (
     <ul className="list-unstyled keyring-workspace__review-plans">
       {items.map((item) => (
@@ -16,6 +17,9 @@ function ReviewPlans({ items }: { items: WorkspacePlan[] }) {
           <span>
             <strong>{item.plan.customName}</strong>
             <small className="d-block text-muted">{item.api.name}</small>
+            {item.api.state === 'deprecated' && (
+              <span className="badge --warning mt-1">{translate('subscription.workspace.deprecated.badge')}</span>
+            )}
           </span>
         </li>
       ))}
@@ -45,6 +49,11 @@ export function SubscriptionKeyringReview({
   const { translate } = useContext(I18nContext);
   const requested = folders.filter(({ items }) => items.length > 0);
   const count = requested.reduce((total, folder) => total + folder.items.length, 0);
+  const deprecatedApis = [...new Map(
+    requested.flatMap(({ items }) => items)
+      .filter(({ api }) => api.state === 'deprecated')
+      .map(({ api }) => [api._id, api.name])
+  ).values()];
   const groups = [
     {
       key: 'subscription.workspace.review.new',
@@ -70,6 +79,14 @@ export function SubscriptionKeyringReview({
         </button>
       </header>
       <p>{translate('subscription.workspace.review.approvals')}</p>
+      {deprecatedApis.length > 0 && (
+        <p className="alert alert-warning" role="alert">
+          {translate({
+            key: 'subscription.workspace.deprecated.warning',
+            replacements: [deprecatedApis.join(', ')],
+          })}
+        </p>
+      )}
       {error && <p className="alert alert-danger" role="alert">{error}</p>}
       {unavailable && (
         <p className="alert alert-danger" role="alert">
