@@ -91,26 +91,38 @@ at submission, with a unique `(tenant, batch, item)` identity; creating a child 
 is transactional. The parent summary is derived from independent item outcomes, so a refusal does
 not close other unfinished items.
 
-The multi-API consumer flow first reuses the team-selection modal. An experimental dedicated
-page at `/apis/subscriptions/keyrings` then lets consumers organize plans into keyring folders.
-Consumers can create multiple new folders, import existing team keyrings, drag individual or
-selected plans between folders, or use checkboxes and the move toolbar without dragging.
-Removing a folder returns its plans to the unassigned list; it does not delete an existing keyring.
-Only assigned plans are submitted and empty folders are ignored. The page keeps a "previous
-interface" action that opens the original plan-selection modal, so the experiment is reversible.
-Both interfaces share plan loading, availability filtering, motivation forms and batch submission.
-The folder layout is a local, unsaved draft: reloading the page retains the selected APIs and team
-from navigation history, but resets the folders. Opening the URL without a selection returns a
-catalog link rather than creating a request.
+The multi-API consumer flow first reuses the team-selection modal, then opens the API key
+preparation workspace at `/apis/subscriptions/keyrings`. The UI presents keyrings as API keys,
+with a destination list and a detail panel. Consumers can prepare multiple named new keys or
+search and import several existing team keys. Existing access is shown separately from requested
+additions and cannot be removed from this workspace. Individual or selected plans can be dragged
+onto a destination; checkboxes and Enter on a destination provide a non-drag alternative.
+Removing a key from the draft returns its requested plans to the unassigned list without deleting
+the existing keyring or subscriptions.
+
+In environment mode, unassigned plans are grouped by environment. "Arrange by environment"
+preserves existing assignments and reuses compatible draft destinations, preferring imported keys,
+or prepares new keys. Ambiguous destinations and incompatible process sets require consumer
+choices; excluded plans remain unassigned. The arrangement can be undone until a subsequent
+change to the keys or assignments.
+
+The review screen separates new keys, additions to existing keys and unassigned plans, and warns
+about deprecated APIs. Consumers can return to editing before submission. Only assigned plans
+are submitted; keys without additions are ignored. No server-side creation occurs before the final
+submission and any required motivation form.
+
+The preparation remains a local, unsaved draft. Navigation is guarded once a key is in the draft,
+and reload/close uses a browser warning. Confirming departure discards the draft. Reloading retains
+the initial APIs and team from navigation history but resets keys and assignments. Opening the URL
+without a selection displays a catalog link rather than creating a request.
 
 The plan picker excludes existing subscriptions when multiple keys are forbidden, pending unit
 requests and open batch items (even before child materialization), unauthorized plans and plans
 unsupported by the batch workflow. Environment shortcuts operate on remaining eligible plans only.
-In the original environment workflow, selected plans with the same name share a keyring choice across APIs:
-one new keyring or an existing compatible keyring. Different Otoroshi bindings or read-only modes
-form separate groups. Plans that disallow aggregation keep an individual keyring. A shared creation
-is sent once in `newKeyrings`, with every item in its group referencing the same creation ID.
-The folder experiment allows manual grouping and splitting instead. Assignments enforce compatible
+Different Otoroshi bindings or read-only modes require separate keys. Plans that disallow
+aggregation keep an individual keyring. A shared creation is sent once in `newKeyrings`, with every
+item in its group referencing the same creation ID. Manual assignments allow grouping and splitting
+within the compatibility rules. Assignments enforce compatible
 subscription processes, tenant/plan aggregation permissions, Otoroshi bindings and read-only modes;
 environment names must also match when environment aggregation security is enabled. Imports check
 all existing keyring members. Invalid moves are rejected atomically with an explanation.
@@ -131,7 +143,9 @@ effects require reconciliation before they can be retried.
 
 The persistence layer includes batch import/export, optional keyring-shell provenance (source batch,
 shared creation, pending items and activation date), and managed-empty-group identity in each
-tenant's Otoroshi configuration.
+tenant's Otoroshi configuration. Batch preparation allocates and saves this managed-empty-group
+identity if missing, then creates or verifies the Otoroshi group before provisioning the disabled
+shell key.
 
 Evolution `19.0.0_f` provisions the managed empty groups required by batch keyring shells for every
 existing tenant's Otoroshi configuration. Like other registered evolutions, it runs automatically

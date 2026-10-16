@@ -18,28 +18,89 @@ can share one new or existing keyring across APIs. Different Otoroshi bindings
 or read-only settings form separate groups; plans that forbid aggregation keep
 individual keyrings.
 
-### Experimental keyring folders
-
-After team selection, `/apis/subscriptions/keyrings` offers an experimental
-full-page workspace. Create new keyring folders or import existing team
-keyrings, then drag plans into them. Checkboxes and the move toolbar provide
-the same actions without dragging, including moving several plans at once.
-
-Folders can be renamed, split or removed before submission. Removing an
-imported folder never deletes the existing keyring or its subscriptions.
-Only assigned plans are submitted; empty folders are ignored. Incompatible
-moves explain the violated rule and leave the draft unchanged.
-
-Nothing is created before submitting the grouped request. The workspace uses
-the existing batch endpoint and motivation form. "Use the previous interface"
-opens the original modal without removing it from the application.
-
-This POC keeps the folder draft only while the page is open: reloading retains
-the selected APIs and team from navigation history, but resets the folders.
-Return to the catalog to change the initial API/team selection.
-
 Already subscribed plans without multiple-key support, pending unit requests,
 open batch items, unauthorized plans and unsupported processes are excluded.
+
+### Prepare API keys
+
+After team selection, `/apis/subscriptions/keyrings` opens the API key
+preparation workspace. Each key in the draft represents a keyring: the
+credentials that will be shared by its accepted subscriptions.
+
+1. Use **Prepare an API key** to add a new key and give it a name, or
+   **Import API keys** to search and select several existing team keys.
+2. Select a key in the list to inspect its requested access. For an imported
+   key, existing access is displayed separately and cannot be removed here.
+3. Drag one plan, or a selection of plans, onto a key in the list or its
+   detail panel. Without dragging, check the plans, focus the destination
+   key in the list and press **Enter** to assign them.
+4. Remove an assigned plan to return it to the unassigned list. Removing a
+   key from the draft returns all its requested plans to that list; it never
+   deletes an existing key or its subscriptions.
+
+Search filters the unassigned plans by API or plan name. In environment mode,
+plans are displayed by environment, with an action to select all visible
+plans in an environment.
+
+### Arrange by environment
+
+In environment mode, **Arrange by environment** organizes the unassigned
+plans while preserving assignments already made. It reuses compatible keys
+already in the draft, preferring imported keys, or prepares new keys when
+needed. Import existing keys first if you want the arrangement to use them.
+
+If several destinations are possible, the workspace asks you to choose.
+If subscription processes are incompatible, choose a compatible set; the
+other plans remain unassigned. Different Otoroshi bindings, read-only modes
+and aggregation permissions can require separate keys even within the same
+environment.
+
+**Undo arrangement** restores the draft as it was before the arrangement.
+This action remains available until a subsequent change to the prepared keys
+or their assignments.
+
+### Compatibility rules
+
+Sharing a key requires aggregation to be allowed by both the portal and the
+plans. Plans sharing a key must target the same Otoroshi instance and have
+compatible read-only settings. The selected subscription processes must
+also be compatible with the batch workflow.
+
+In environment mode, when `environmentAggregationApiKeysSecurity` is enabled,
+plans sharing a key must have the same environment name. A single request can
+still contain dev and prod plans assigned to separate keys. Imported keys
+are also checked against their existing subscriptions.
+
+An incompatible move explains the violated rule and leaves the entire
+selection unchanged. These rules are checked again before submission and
+by the server.
+
+### Review and submit
+
+**Review request** opens a summary separating new keys from additions to
+existing keys. Expand each key to inspect its requested plans. Plans left
+unassigned are listed separately and will not be submitted; keys without
+additions are ignored. Deprecated APIs are highlighted with a warning.
+Use **Edit preparation** to return to the draft without submitting.
+
+Nothing is created or requested until **Submit grouped request**. If the
+selected process requires a motivation form, it is presented before sending.
+Requested access remains subject to the applicable approvals: submitting
+does not mean every plan has been accepted.
+
+### Unsaved draft
+
+The preparation is local to the page, not a saved server-side draft. Once
+keys have been added to the draft, leaving through application navigation
+asks for confirmation. Reloading or closing the page uses the browser's
+unsaved-changes warning. Confirming departure discards the preparation.
+
+Reloading retains the initial API and team selection from navigation history,
+but resets the prepared keys and assignments. Return to the catalog to change
+the initial selection. Opening the workspace URL without that selection
+displays a link back to the catalog.
+
+## Submission payload
 
 The submission contains the consumer team, API/plan pairs, keyring choices, an
 idempotency key and optional motivation answers. For example:
@@ -61,7 +122,7 @@ idempotency key and optional motivation answers. For example:
     }
   ],
   "newKeyrings": [
-    { "id": "dev-keyring", "customName": "Development APIs" }
+    { "_id": "dev-keyring", "customName": "Development APIs" }
   ]
 }
 ```
@@ -127,6 +188,12 @@ credentials. Internal keyrings are ready immediately. For Otoroshi, Daikoku
 creates or verifies its managed empty group, then creates a disabled API key
 authorized only on that group. The keyring becomes ready only after successful
 preparation.
+
+If the Otoroshi configuration has no managed empty-group identity yet, batch
+preparation allocates and saves it before creating or verifying the group.
+The configured Otoroshi connection must have permission to manage that group
+and the API key; provisioning errors are reported rather than granting access
+without preparation.
 
 When the first child is accepted, Daikoku activates the keyring and replaces
 the empty-group authorization with the accepted plan's entities. Further
