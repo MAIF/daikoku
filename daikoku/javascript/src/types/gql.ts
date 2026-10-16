@@ -2,11 +2,11 @@ import { IApiSubscriptionGql } from '../components';
 import {
   ApiState,
   IApi,
-  IAuthorizedEntities,
+  IAuthorizedEntities, IRotation,
   ISubscriptionDemandState,
   IValidationStep,
 } from './api';
-import { TeamPermission } from './team';
+import {ITeamSimple, TeamPermission} from './team';
 import { ITenant } from './tenant';
 
 export interface ITeamFullGql {
@@ -169,3 +169,56 @@ export interface IAccountCreationGQL {
   fromTenant: ITenant;
   metadata: object;
 }
+
+export interface ApiKeysListForApiProps {
+  team: ITeamSimple,
+  api: IApi,
+  ownerTeam: ITeamSimple,
+  linkToChildren?: (api: IApi, teamHrId: string) => string,
+}
+
+export interface IKeyringSubscriptionGql {
+  _id: string;
+  customName: string | null;
+  adminCustomName?: string;
+  enabled: boolean;
+  state: 'active' | 'blocked';
+  createdAt: number;
+  validUntil?: number;
+  tags: Array<string>;
+  lastUsage?: number;
+  plan: { _id: string; customName: string; isRotationLocked?: boolean };
+  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
+}
+
+export interface IKeyringForApiGql {
+  _id: string;
+  customName: string;
+  enabled: boolean;
+  integrationToken: string;
+  bearerToken?: string;
+  apiKey: { clientId: string; clientSecret: string; clientName: string };
+  rotation?: IRotation;
+  subscriptions: Array<IKeyringSubscriptionGql>;
+  team: ITeamSimple;
+  subscriptionsCount: number;
+  isRotationLocked: boolean;
+  environments: Array<string>;
+}
+
+export interface IKeyringSubscriptionGql {
+  _id: string;
+  customName: string | null;
+  adminCustomName?: string;
+  enabled: boolean;
+  state: 'active' | 'blocked';
+  createdAt: number;
+  validUntil?: number;
+  tags: Array<string>;
+  lastUsage?: number;
+  plan: { _id: string; customName: string; isRotationLocked?: boolean };
+  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
+}
+
+
+
