@@ -27,6 +27,8 @@ object CatalogSources {
 
   def get(name: String): Option[CatalogSource] = sources.get(name)
 
-  def disabledReason(catalog: RemoteCatalog)(implicit env: Env): Option[String] =
+  def disabledReason(catalog: RemoteCatalog)(implicit
+      env: Env
+  ): Option[String] =
     get(catalog.source.kind).flatMap(_.disabledReason(catalog))
 }

@@ -70,12 +70,14 @@ object SourceUtils {
       ec: ExecutionContext
   ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
     val rawPaths = deployArray.value.flatMap(_.asOpt[String]).toSeq
-    val outsideErrors = rawPaths.filter(isOutsideListing).map(path =>
-      RemoteCatalogError(
-        s"$sourceName/$path",
-        "Listing entries must stay inside the listing folder (no absolute path, no '..')"
+    val outsideErrors = rawPaths
+      .filter(isOutsideListing)
+      .map(path =>
+        RemoteCatalogError(
+          s"$sourceName/$path",
+          "Listing entries must stay inside the listing folder (no absolute path, no '..')"
+        )
       )
-    )
 
     def fetchAndParse(
         relativePath: String

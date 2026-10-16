@@ -118,7 +118,8 @@ class ApiController(
               EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
-                if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url, request = ctx.request)
+                if (url.startsWith("/"))
+                  env.getDaikokuUrl(ctx.tenant, url, request = ctx.request)
                 else url
               EitherT(Try {
                 env.wsClient

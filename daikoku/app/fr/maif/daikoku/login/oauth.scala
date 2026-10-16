@@ -9,7 +9,12 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
-import fr.maif.daikoku.utils.{AlgoSettings, IdGenerator, InputMode, getFilteredMetadataFromOauth}
+import fr.maif.daikoku.utils.{
+  AlgoSettings,
+  IdGenerator,
+  InputMode,
+  getFilteredMetadataFromOauth
+}
 import org.apache.commons.codec.binary.Base64 as ApacheBase64
 import play.api.Logger
 import play.api.libs.json.*
@@ -562,7 +567,8 @@ object OAuth2Support {
           userInfoUrl = userInfoUrl,
           loginUrl = loginUrl,
           logoutUrl = logoutUrl,
-          callbackUrl = env.getDaikokuUrl(tenant, "/auth/oauth2/callback", request),
+          callbackUrl =
+            env.getDaikokuUrl(tenant, "/auth/oauth2/callback", request),
           scope = scope,
           accessTokenField = "access_token",
           useJson = false,

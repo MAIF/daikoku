@@ -1850,7 +1850,9 @@ object json {
             enabled = (json \ "enabled").as[Boolean],
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
-            additionalDomains = (json \ "additionalDomains").asOpt[Set[String]].getOrElse(Set.empty),
+            additionalDomains = (json \ "additionalDomains")
+              .asOpt[Set[String]]
+              .getOrElse(Set.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(using DaikokuStyleFormat),
@@ -1943,7 +1945,9 @@ object json {
         "_humanReadableId" -> o.name.urlPathSegmentSanitized,
         "name" -> o.name,
         "domain" -> o.domain,
-        "additionalDomains" -> JsArray(o.additionalDomains.map(JsString.apply).toSeq),
+        "additionalDomains" -> JsArray(
+          o.additionalDomains.map(JsString.apply).toSeq
+        ),
         "defaultLanguage" -> o.defaultLanguage
           .fold(JsNull.as[JsValue])(JsString.apply),
         "enabled" -> o.enabled,
@@ -2201,7 +2205,9 @@ object json {
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
+        "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
+          k.value -> JsString(v)
+        })
       )
   }
 
@@ -4378,7 +4384,9 @@ object json {
           "state" -> SubscriptionDemandStateFormat.writes(o.state),
           "value" -> o.value,
           "fromTenant" -> o.fromTenant.value,
-          "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) => k.value -> JsString(v) })
+          "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
+            k.value -> JsString(v)
+          })
         )
     }
 

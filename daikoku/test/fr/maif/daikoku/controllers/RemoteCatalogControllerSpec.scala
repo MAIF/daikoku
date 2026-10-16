@@ -170,7 +170,7 @@ class RemoteCatalogControllerSpec
             changedFields(expectedItem, actualItem, s"$path/$index")
           }
       case _ if expected == actual => Seq.empty
-      case _ => Seq(path)
+      case _                       => Seq(path)
     }
 
   private def createdIds(resp: WSResponse): Seq[String] =
@@ -724,7 +724,8 @@ class RemoteCatalogControllerSpec
     "ignore a GitHub ping" in {
       setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
 
-      val resp = githubWebhook("cat-gh", "tok-gh", "ping", Json.obj("zen" -> "ok"))
+      val resp =
+        githubWebhook("cat-gh", "tok-gh", "ping", Json.obj("zen" -> "ok"))
       resp.status mustBe 202
       (resp.json \ "ignored").as[String] mustBe "not a push event"
     }
@@ -732,7 +733,12 @@ class RemoteCatalogControllerSpec
     "refuse a GitHub delivery signed with another secret or not signed" in {
       setupWithAdminApi(Seq(githubCatalog("cat-gh", "tok-gh")))
 
-      githubWebhook("cat-gh", "wrong", "push", githubPush("main")).status mustBe 401
+      githubWebhook(
+        "cat-gh",
+        "wrong",
+        "push",
+        githubPush("main")
+      ).status mustBe 401
       webhookCall(
         "cat-gh",
         Json.stringify(githubPush("main")),
@@ -771,7 +777,9 @@ class RemoteCatalogControllerSpec
         Json.stringify(
           Json.obj(
             "ref" -> "refs/heads/main",
-            "project" -> Json.obj("web_url" -> "https://gitlab.com/acme/catalog")
+            "project" -> Json.obj(
+              "web_url" -> "https://gitlab.com/acme/catalog"
+            )
           )
         ),
         Map("X-Gitlab-Event" -> "Push Hook", "X-Gitlab-Token" -> "tok-gl")
@@ -783,8 +791,12 @@ class RemoteCatalogControllerSpec
     "refuse webhooks on a source that does not support them" in {
       setupWithAdminApi(Seq(aCatalog("cat-http").copy(token = "tok-http")))
 
-      githubWebhook("cat-http", "tok-http", "push", githubPush("main"))
-        .status mustBe 400
+      githubWebhook(
+        "cat-http",
+        "tok-http",
+        "push",
+        githubPush("main")
+      ).status mustBe 400
     }
   }
 

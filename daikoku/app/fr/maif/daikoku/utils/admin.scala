@@ -290,7 +290,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
           readFrom,
           "api-documentation-page",
           pageId,
-          AppError.ParsingPayloadError(s"Documentation page ($pageId) not found")
+          AppError.ParsingPayloadError(
+            s"Documentation page ($pageId) not found"
+          )
         )(
           env.dataStore.apiDocumentationPageRepo
             .forTenant(tenant)

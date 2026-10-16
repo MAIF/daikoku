@@ -1,7 +1,7 @@
 import { ITenant } from './tenant';
-import {IApi} from "./api";
-import {ITeamSimple} from "./team";
-import {IKeyringForApiGql, IKeyringSubscriptionGql} from "./gql";
+import { IApi } from './api';
+import { ITeamSimple } from './team';
+import { IKeyringForApiGql, IKeyringSubscriptionGql } from './gql';
 
 export type TOption = {
   value: string;
@@ -50,5 +50,4 @@ export interface IKeyringSubscriptionsWithCount {
   subscriptions: Array<IKeyringSubscriptionGql>;
   total: number;
   totalFiltered: number;
-};
-
+}

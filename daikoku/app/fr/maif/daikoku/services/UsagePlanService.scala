@@ -169,17 +169,23 @@ class UsagePlanService(
       case _
           if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
         EitherT.leftT(
-          AppError.Forbidden("The payment settings of a plan cannot change once set")
+          AppError.Forbidden(
+            "The payment settings of a plan cannot change once set"
+          )
         )
       case _
           if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
         EitherT.leftT(
-          AppError.Forbidden("The cost per month of a plan cannot change once set")
+          AppError.Forbidden(
+            "The cost per month of a plan cannot change once set"
+          )
         )
       case _
           if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan.costPerRequest =>
         EitherT.leftT(
-          AppError.Forbidden("The cost per request of a plan cannot change once set")
+          AppError.Forbidden(
+            "The cost per request of a plan cannot change once set"
+          )
         )
       case _
           if !tenant.aggregationApiKeysSecurity.exists(identity) &&

@@ -313,9 +313,11 @@ class RemoteCatalogEngine(
       catalog.exists(c => Set("github", "gitlab").contains(c.source.kind))
 
     val inTeamFolders = entities
-        .flatMap(entity => teamFolderOf(entity).map(entity -> _))
+      .flatMap(entity => teamFolderOf(entity).map(entity -> _))
 
-    if (catalog.exists(_.folderPerTeam) && isGitSource && inTeamFolders.nonEmpty) {
+    if (
+      catalog.exists(_.folderPerTeam) && isGitSource && inTeamFolders.nonEmpty
+    ) {
       checkEachTeamFolder(tenant, entities, inTeamFolders, dbTeams)
     } else {
       Future.successful(Seq.empty)
@@ -680,7 +682,8 @@ class RemoteCatalogEngine(
         val conflict = finalApisByName
           .getOrElse(Some(name), Seq.empty)
           .collectFirst {
-            case (id, other) if id != api.id && !other.parent.contains(api.id) =>
+            case (id, other)
+                if id != api.id && !other.parent.contains(api.id) =>
               id
           }
 
@@ -1020,7 +1023,9 @@ class RemoteCatalogEngine(
         kindOrder.map(kind => kind -> (predicates, Seq.empty)).toMap
 
       case ExportSelection.OneEntity(kind, id, withChildren) =>
-        val root: Map[String, SqlFilter] = Map(kind -> (Seq("_id = $1"), Seq(id)))
+        val root: Map[String, SqlFilter] = Map(
+          kind -> (Seq("_id = $1"), Seq(id))
+        )
 
         if (withChildren) {
           root ++ childrenFilters(tenant, kind, id)
@@ -1093,8 +1098,8 @@ class RemoteCatalogEngine(
           "api-documentation-page" -> pagesOfPlan,
           "api-subscription" -> byField("plan")
         )
-      case "keyring"    => Map("api-subscription" -> byField("keyring"))
-      case _            => Map.empty
+      case "keyring" => Map("api-subscription" -> byField("keyring"))
+      case _         => Map.empty
     }
   }
 

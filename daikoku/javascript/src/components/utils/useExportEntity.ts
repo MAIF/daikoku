@@ -4,7 +4,8 @@ import { useContext } from 'react';
 import { I18nContext, ModalContext } from '../../contexts';
 import { GlobalContext } from '../../contexts/globalContext';
 
-export type ExportedKind = 'team' | 'usage-plan' | 'api' | 'keyring' | 'api-subscription' | 'cms-page';
+export type ExportedKind =
+  'team' | 'usage-plan' | 'api' | 'keyring' | 'api-subscription' | 'cms-page';
 
 type ExportOptions = {
   children: boolean;
@@ -67,7 +68,7 @@ export const useExportEntity = () => {
     } else {
       download(kind, id, {
         children: false,
-        format: 'yaml'
+        format: 'yaml',
       });
     }
   };

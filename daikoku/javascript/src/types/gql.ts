@@ -2,11 +2,12 @@ import { IApiSubscriptionGql } from '../components';
 import {
   ApiState,
   IApi,
-  IAuthorizedEntities, IRotation,
+  IAuthorizedEntities,
+  IRotation,
   ISubscriptionDemandState,
   IValidationStep,
 } from './api';
-import {ITeamSimple, TeamPermission} from './team';
+import { ITeamSimple, TeamPermission } from './team';
 import { ITenant } from './tenant';
 
 export interface ITeamFullGql {
@@ -171,10 +172,10 @@ export interface IAccountCreationGQL {
 }
 
 export interface ApiKeysListForApiProps {
-  team: ITeamSimple,
-  api: IApi,
-  ownerTeam: ITeamSimple,
-  linkToChildren?: (api: IApi, teamHrId: string) => string,
+  team: ITeamSimple;
+  api: IApi;
+  ownerTeam: ITeamSimple;
+  linkToChildren?: (api: IApi, teamHrId: string) => string;
 }
 
 export interface IKeyringSubscriptionGql {
@@ -219,6 +220,3 @@ export interface IKeyringSubscriptionGql {
   plan: { _id: string; customName: string; isRotationLocked?: boolean };
   api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
 }
-
-
-

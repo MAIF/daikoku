@@ -1485,7 +1485,11 @@ class UsagePlansAdminApiController(
         case None => EitherT.pure[Future, AppError](())
       }
       _ <- entity.checkEnvironment(tenant)
-      _ <- checkDocumentationPages(readFrom, entity.tenant, entity.documentation)
+      _ <- checkDocumentationPages(
+        readFrom,
+        entity.tenant,
+        entity.documentation
+      )
     } yield entity
 
   override def getId(entity: UsagePlan): UsagePlanId = entity.id

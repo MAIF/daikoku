@@ -135,8 +135,7 @@ class RemoteCatalogAdminApiController(
             ExportSelection.WholeTenant(includeManaged = all),
             ExportFormat.Zip
           )
-        )
-          .as("application/zip")
+        ).as("application/zip")
           .withHeaders(
             CONTENT_DISPOSITION -> s"attachment; filename=${ctx.tenant.humanReadableId}.zip"
           )

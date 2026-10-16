@@ -225,10 +225,18 @@ class AccountCreationService {
     val mailData = Map(
       "tenant" -> JsString(tenant.name),
       "urlAccept" -> JsString(
-        env.getDaikokuUrl(tenant, pathAccept, accountCreation.preferredDomains.get(tenant.id))
+        env.getDaikokuUrl(
+          tenant,
+          pathAccept,
+          accountCreation.preferredDomains.get(tenant.id)
+        )
       ),
       "urlDecline" -> JsString(
-        env.getDaikokuUrl(tenant, pathDecline, accountCreation.preferredDomains.get(tenant.id))
+        env.getDaikokuUrl(
+          tenant,
+          pathDecline,
+          accountCreation.preferredDomains.get(tenant.id)
+        )
       ),
       "userName" -> JsString(accountCreation.name),
       "userEmail" -> JsString(accountCreation.email),

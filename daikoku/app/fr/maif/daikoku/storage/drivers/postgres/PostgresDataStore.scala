@@ -2034,9 +2034,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(s"$tableName.streamAllRaw()")
     val (where, params) = scopedWhere(Seq.empty)
 
-    reactivePg.queryStreamSource(s"SELECT content FROM $tableName$where", params)(
-      row => row.optJsObject("content")
-    )
+    reactivePg.queryStreamSource(
+      s"SELECT content FROM $tableName$where",
+      params
+    )(row => row.optJsObject("content"))
   }
 
   override def streamAllRawFormatted(
@@ -2048,11 +2049,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(s"$tableName.streamAllRawFormatted($predicates)")
     val (where, scopedParams) = scopedWhere(predicates, params)
 
-    reactivePg.queryStreamSource(s"SELECT content FROM $tableName$where", scopedParams)(
-      row =>
-        row.optJsObject("content").map(format.reads).collect {
-          case JsSuccess(value, _) => value
-        }
+    reactivePg.queryStreamSource(
+      s"SELECT content FROM $tableName$where",
+      scopedParams
+    )(row =>
+      row.optJsObject("content").map(format.reads).collect {
+        case JsSuccess(value, _) => value
+      }
     )
   }
 

@@ -127,7 +127,9 @@ class RemoteCatalogTokenController(
             handleWebhook(ctx.tenant, catalog, ctx.request)
           case _ =>
             Future.successful(
-              Unauthorized(Json.obj("error" -> "Invalid remote catalog webhook"))
+              Unauthorized(
+                Json.obj("error" -> "Invalid remote catalog webhook")
+              )
             )
         }
     }
@@ -171,7 +173,8 @@ class RemoteCatalogTokenController(
             Accepted(Json.obj("deploying" -> catalog.id.value))
           case _ =>
             Accepted(
-              Json.obj("ignored" -> "not the repository or branch of the catalog")
+              Json
+                .obj("ignored" -> "not the repository or branch of the catalog")
             )
         }
     }
@@ -247,7 +250,10 @@ class RemoteCatalogTokenController(
     catalog.source.kind match {
       case "github" =>
         val expected = "sha256=" +
-          RemoteCatalogTokenController.hmacSha256Hex(catalog.token, request.body)
+          RemoteCatalogTokenController.hmacSha256Hex(
+            catalog.token,
+            request.body
+          )
 
         request.headers
           .get("X-Hub-Signature-256")

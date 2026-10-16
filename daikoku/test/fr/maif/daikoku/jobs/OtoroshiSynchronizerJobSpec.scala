@@ -119,8 +119,7 @@ class OtoroshiSynchronizerJobSpec
         apiKey = OtoroshiApiKey(
           clientName = "daikoku_test_missing_key",
           clientId = "missing-key-client-id",
-          clientSecret =
-            "missing-key-client-secret"
+          clientSecret = "missing-key-client-secret"
         ),
         otoroshiSettings =
           KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),

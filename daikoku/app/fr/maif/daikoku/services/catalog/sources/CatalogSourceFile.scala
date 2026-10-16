@@ -130,7 +130,9 @@ class CatalogSourceFile extends CatalogSource {
       s"$what is disabled on this instance, an instance administrator can enable it with $variable=true"
 
     if (!env.config.remoteCatalogAllowFileSource) {
-      Some(disabled("The file source", "DAIKOKU_REMOTE_CATALOG_ALLOW_FILE_SOURCE"))
+      Some(
+        disabled("The file source", "DAIKOKU_REMOTE_CATALOG_ALLOW_FILE_SOURCE")
+      )
     } else if (hasPreCommand && !env.config.remoteCatalogAllowPreCommand) {
       Some(disabled("pre_command", "DAIKOKU_REMOTE_CATALOG_ALLOW_PRE_COMMAND"))
     } else {

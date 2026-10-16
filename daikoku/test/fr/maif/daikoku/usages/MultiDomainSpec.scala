@@ -8,16 +8,19 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
 import cats.implicits.*
-import fr.maif.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import org.scalatest.BeforeAndAfter
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import play.api.libs.ws.WSBodyWritables.writeableOf_urlEncodedForm
 
-
 class MultiDomainSpec()
-  extends PlaySpec
+    extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfter
@@ -62,7 +65,9 @@ class MultiDomainSpec()
 
   def getLastEmailhtml(mailer: GenericContainer): String = {
     daikokuComponents.env.wsClient
-      .url(s"http://localhost:${mailer.mappedPort(8025)}/api/v1/message/latest/raw")
+      .url(
+        s"http://localhost:${mailer.mappedPort(8025)}/api/v1/message/latest/raw"
+      )
       .get()
       .futureValue
       .body
@@ -104,19 +109,30 @@ class MultiDomainSpec()
   "a local login" must {
     "record the host it was made on" in withContainers { mailer =>
       val t = tenantWithMailer(mailer)
-      setupEnvBlocking(tenants = Seq(t), users = Seq(user), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(t),
+        users = Seq(user),
+        teams = Seq(defaultAdminTeam)
+      )
 
       def login(host: String) =
         daikokuComponents.env.wsClient
           .url(s"http://127.0.0.1:$port/auth/Local/callback")
-          .withHttpHeaders("Host" -> host, "Content-Type" -> "application/x-www-form-urlencoded")
+          .withHttpHeaders(
+            "Host" -> host,
+            "Content-Type" -> "application/x-www-form-urlencoded"
+          )
           .withFollowRedirects(false)
-          .post(Map("username" -> Seq(user.email), "password" -> Seq("password")))
+          .post(
+            Map("username" -> Seq(user.email), "password" -> Seq("password"))
+          )
           .futureValue
 
       def preferred() =
         daikokuComponents.env.dataStore.userRepo
-          .findById(user.id).futureValue.flatMap(_.preferredDomains.get(t.id))
+          .findById(user.id)
+          .futureValue
+          .flatMap(_.preferredDomains.get(t.id))
 
       login("alias.localhost").status mustBe 303
       preferred() mustBe Some("alias.localhost")
@@ -127,37 +143,48 @@ class MultiDomainSpec()
   }
 
   "a mail link" must {
-    "fall back to the primary domain when preferredDomain is foreign" in withContainers { mailer =>
-      val t = tenantWithMailer(mailer)
-      Await.result(cleanMailerServer(mailer.mappedPort(8025)), 5.seconds)
-      setupEnvBlocking(
-        tenants = Seq(t),
-        users = Seq(userAdmin, user.copy(preferredDomains = Map(t.id -> "evil.example"))),
-        teams = Seq(
-          defaultAdminTeam,
-          teamOwner.copy(users = Set(
-            UserWithPermission(userAdmin.id, Administrator),
-          )))
-      )
+    "fall back to the primary domain when preferredDomain is foreign" in withContainers {
+      mailer =>
+        val t = tenantWithMailer(mailer)
+        Await.result(cleanMailerServer(mailer.mappedPort(8025)), 5.seconds)
+        setupEnvBlocking(
+          tenants = Seq(t),
+          users = Seq(
+            userAdmin,
+            user.copy(preferredDomains = Map(t.id -> "evil.example"))
+          ),
+          teams = Seq(
+            defaultAdminTeam,
+            teamOwner.copy(users =
+              Set(
+                UserWithPermission(userAdmin.id, Administrator)
+              )
+            )
+          )
+        )
 
-      val session = loginWithBlocking(userAdmin, t)
-      val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwner.id.value}/members",
-        method = "POST",
-        body = Some(Json.obj("members" -> Json.arr(user.id.asJson)))
-      )(using t, session)
-      resp.status mustBe 200
+        val session = loginWithBlocking(userAdmin, t)
+        val resp = httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwner.id.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(user.id.asJson)))
+        )(using t, session)
+        resp.status mustBe 200
 
-      val body = getLastEmailhtml(mailer)
-      body must include(s"localhost:8080/notification")
-      body must not include "evil.example"
+        val body = getLastEmailhtml(mailer)
+        body must include(s"localhost:8080/notification")
+        body must not include "evil.example"
     }
   }
 
   "a browser redirect" must {
     "stay on the alias the request came from" in withContainers { mailer =>
       val t = tenantWithMailer(mailer)
-      setupEnvBlocking(tenants = Seq(t), users = Seq(user), teams = Seq(defaultAdminTeam))
+      setupEnvBlocking(
+        tenants = Seq(t),
+        users = Seq(user),
+        teams = Seq(defaultAdminTeam)
+      )
       val session = loginWithBlocking(user, t)
 
       val resp = httpJsonCallBlocking(
@@ -165,7 +192,9 @@ class MultiDomainSpec()
         headers = Map("Host" -> "alias.localhost")
       )(using t, session)
 
-      resp.header("Location").getOrElse("") must startWith("http://alias.localhost")
+      resp.header("Location").getOrElse("") must startWith(
+        "http://alias.localhost"
+      )
     }
   }
 

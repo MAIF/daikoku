@@ -2229,7 +2229,8 @@ class TenantControllerSpec()
       val duplicate = httpJsonCallBlocking(
         path = s"/api/tenants/${tenant2.id.value}",
         method = "PUT",
-        body = Some(tenant2.copy(additionalDomains = Set(tenant2.domain)).asJson)
+        body =
+          Some(tenant2.copy(additionalDomains = Set(tenant2.domain)).asJson)
       )(using tenant2, session)
       duplicate.status mustBe 400
     }

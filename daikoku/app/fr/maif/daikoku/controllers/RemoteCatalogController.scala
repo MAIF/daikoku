@@ -198,8 +198,9 @@ class RemoteCatalogController(
           case _ => ExportSelection.WholeTenant(includeManaged = all)
         }
         val (exportFormat, extension, contentType) = format match {
-          case "yaml" => (ExportFormat.MultiDocument, "yaml", "application/yaml")
-          case _      => (ExportFormat.Zip, "zip", "application/zip")
+          case "yaml" =>
+            (ExportFormat.MultiDocument, "yaml", "application/yaml")
+          case _ => (ExportFormat.Zip, "zip", "application/zip")
         }
         val fileName = id.getOrElse(tenant.humanReadableId)
 

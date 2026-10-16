@@ -86,7 +86,9 @@ class KeyringService(
             apis.find(_.id == apiId),
             AppError.ApiNotFound
           )
-          .flatMap(api => deletionService.deleteSubscriptions(subs, api, tenant))
+          .flatMap(api =>
+            deletionService.deleteSubscriptions(subs, api, tenant)
+          )
       }
       _ <- EitherT.liftF[Future, AppError, Unit](
         if (subscriptions.isEmpty) deleteEmptyKeyring(tenant, keyring)
@@ -95,7 +97,10 @@ class KeyringService(
     } yield ()
   }
 
-  private def deleteEmptyKeyring(tenant: Tenant, keyring: Keyring): Future[Unit] =
+  private def deleteEmptyKeyring(
+      tenant: Tenant,
+      keyring: Keyring
+  ): Future[Unit] =
     env.dataStore.withTransaction {
       for {
         _ <- env.dataStore.keyringRepo.forTenant(tenant).deleteById(keyring.id)

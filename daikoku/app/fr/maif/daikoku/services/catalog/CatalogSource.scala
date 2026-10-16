@@ -12,7 +12,9 @@ trait CatalogSource {
 
   def supportsWebhook: Boolean = false
 
-  def disabledReason(catalog: RemoteCatalog)(implicit env: Env): Option[String] =
+  def disabledReason(catalog: RemoteCatalog)(implicit
+      env: Env
+  ): Option[String] =
     None
 
   def webhookDeploySelect(
