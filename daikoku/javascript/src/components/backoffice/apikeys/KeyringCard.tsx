@@ -1,13 +1,21 @@
 import { constraints, type } from '@maif/react-forms';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createColumnHelper } from "@tanstack/react-table";
 import {
-  ChevronDown, CircleQuestionMark, Copy,
-  EllipsisVertical, KeyRound, Link as LucideLink, Loader, Terminal, ChevronUp, Users
+  ChevronDown,
+  ChevronUp,
+  CircleQuestionMark, Copy,
+  EllipsisVertical, KeyRound,
+  Loader,
+  Link as LucideLink,
+  Terminal,
+  Users
 } from "lucide-react";
-import { useContext, useState, type ReactNode, useRef } from 'react';
+import { useContext, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import {
   I18nContext,
   ModalContext,
@@ -16,10 +24,20 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
+  IKeyringForApiGql,
+  IKeyringSubscriptionGql,
+  IKeyringSubscriptionsWithCount,
   IRotation,
   ITeamSimple,
   isError
 } from '../../../types';
+import {
+  DynamicTable,
+  DynamicTableColumnCtx,
+  DynamicTableFeatures,
+  FetchData,
+  FetchResult
+} from "../../inputs";
 import {
   BeautifulTitle,
   Can,
@@ -28,19 +46,7 @@ import {
   formatDate,
   manage,
 } from '../../utils';
-import {
-  DynamicTable,
-  DynamicTableColumnCtx,
-  DynamicTableFeatures,
-  FetchData,
-  FetchResult
-} from "../../inputs";
-import { createColumnHelper } from "@tanstack/react-table";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
-import {
-  IKeyringForApiGql, IKeyringSubscriptionsWithCount,
-  IKeyringSubscriptionGql
-} from "../../../types";
+import classNames from 'classnames';
 
 interface KeyringCardProps {
   api: IApi;
@@ -59,10 +65,8 @@ export const KeyringCard = ({
 
   const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
-  const toggleInFlight = useRef(false);
-  // useEffect(() => {
-  //   queryClient.invalidateQueries({queryKey: ['data']});
-  // }, [queryClient]);
+  const actionsInFlight = useRef(new Set<string>());
+  const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
 
 
 
@@ -71,36 +75,46 @@ export const KeyringCard = ({
       ? error.error
       : 'Oops something went wrong';
 
+  const withPendingAction = async (
+    targetId: string,
+    action: () => Promise<unknown>
+  ) => {
+    if (actionsInFlight.current.has(targetId)) return;
+    actionsInFlight.current.add(targetId);
+    setPendingActions(new Set(actionsInFlight.current));
+
+    try {
+      return await action();
+    } catch (error) {
+      toast.error(translate(errorMessage(error)));
+    } finally {
+      actionsInFlight.current.delete(targetId);
+      setPendingActions(new Set(actionsInFlight.current));
+    }
+  };
+
   const guardedToggle = (
+    targetId: string,
     needsConfirm: boolean,
     confirmMessage: string,
     action: () => Promise<unknown>
   ) => {
-    if (api.state === 'blocked' || toggleInFlight.current) return;
-    toggleInFlight.current = true;
-
-    const confirmation = needsConfirm
-      ? confirm({ message: confirmMessage })
-      : Promise.resolve(true);
-
-    return confirmation
-      .then((confirmed) => {
-        if (!confirmed) return;
-        return action();
-      })
-      .catch((error) => toast.error(translate(errorMessage(error))))
-      .finally(() => {
-        toggleInFlight.current = false;
-      });
+    if (api.state === 'blocked') return;
+    return withPendingAction(targetId, async () => {
+      const confirmed = needsConfirm
+        ? await confirm({ message: confirmMessage })
+        : true;
+      if (confirmed) return action();
+    });
   };
 
   const toggleKeyringState = (keyring: IKeyringForApiGql) =>
-    guardedToggle(keyring.enabled, translate('keyring.disable.confirm'), () =>
+    guardedToggle(`keyring:${keyring._id}`, keyring.enabled, translate('keyring.disable.confirm'), () =>
       toggleKeyring.mutateAsync({ keyringId: keyring._id, enabled: !keyring.enabled })
     );
 
   const toggleSubscriptionState = (sub: IKeyringSubscriptionGql) =>
-    guardedToggle(sub.enabled, translate('subscription.disable.confirm'), () =>
+    guardedToggle(`subscription:${sub._id}`, sub.enabled, translate('subscription.disable.confirm'), () =>
       toggleApiKey.mutateAsync({ sub, keyringId: keyring._id })
     );
 
@@ -179,7 +193,7 @@ export const KeyringCard = ({
       toast.error(translate('rotation.error.message'));
       return Promise.resolve();
     }
-    return Services.toggleKeyringRotation(
+    return withPendingAction(`keyring:${keyringId}`, () => Services.toggleKeyringRotation(
       currentTeam?._id as string,
       keyringId,
       enabled,
@@ -188,22 +202,21 @@ export const KeyringCard = ({
     ).then(() => {
       toast.success(translate('subscription.rotation.successfully.setup'));
       invalidate();
-    });
+    }));
   };
 
   const regenerateSecret = (keyring: IKeyringForApiGql) =>
-    confirm({ message: translate('reset.secret.confirm') }).then((ok) => {
+    withPendingAction(`keyring:${keyring._id}`, () => confirm({ message: translate('reset.secret.confirm') }).then((ok) => {
       if (!ok) return;
 
       return Services.regenerateApiKeySecret(currentTeam?._id as string, keyring._id).then(() => {
         invalidate();
         toast.success(translate('secret reseted successfully'));
       });
-    });
+    }));
 
   const transferApiKey = (
     subscription: IKeyringSubscriptionGql,
-    callback: () => void
   ) =>
     Services.getSubscriptionTransferLink(currentTeam?._id as string, subscription._id).then(
       (response) => {
@@ -219,7 +232,6 @@ export const KeyringCard = ({
                     .writeText(response.link)
                     .then(() => {
                       toast.info(translate('credential.copy.success'));
-                      callback();
                       close();
                     })
                     .catch(() =>
@@ -270,12 +282,12 @@ export const KeyringCard = ({
       },
       actionLabel: translate('Confirm'),
       onSubmit: () =>
-        Services.deleteKeyring(currentTeam?._id as string, keyring._id).then((r) => {
+        withPendingAction(`keyring:${keyring._id}`, () => Services.deleteKeyring(currentTeam?._id as string, keyring._id).then((r) => {
           if (!isError(r)) {
             invalidate();
             toast.success(translate('keyring.delete.success'));
           }
-        }),
+        })),
     });
 
   const confirmationSchema = (subscription: IKeyringSubscriptionGql) => ({
@@ -328,13 +340,13 @@ export const KeyringCard = ({
       schema: confirmationSchema(subscription),
       actionLabel: translate('Confirm'),
       onSubmit: () =>
-        Services.deleteApiSubscription(currentTeam?._id as string, subscription._id).then(
+        withPendingAction(`subscription:${subscription._id}`, () => Services.deleteApiSubscription(currentTeam?._id as string, subscription._id).then(
           () => {
             invalidate();
             callback();
             toast.success(translate('apikeys.delete.success.message'));
           }
-        ),
+        )),
     });
   };
 
@@ -366,29 +378,17 @@ export const KeyringCard = ({
       schema: confirmationSchema(subscription),
       actionLabel: translate('Confirm'),
       onSubmit: () =>
-        Services.makeUniqueApiKey(currentTeam?._id as string, subscription._id).then(() => {
+        withPendingAction(`subscription:${subscription._id}`, () => Services.makeUniqueApiKey(currentTeam?._id as string, subscription._id).then(() => {
           invalidate();
           callback();
           toast.success(
             translate('team_apikey_for_api.ask_for_make_unique.success_message')
           );
-        }),
+        })),
     });
   };
 
 
-  //TODO isPending Ask to UX
-  const [isPending, setIsPending] = useState(false);
-
-  const withLoader = (fn: () => Promise<any> | void) => {
-    setIsPending(true);
-    const result = fn();
-    if (result && typeof result.finally === 'function') {
-      return result.finally(() => setIsPending(false));
-    }
-    setIsPending(false);
-    return result;
-  };
 
   const aggregated = keyring.subscriptionsCount > 1;
   const isApiCMS =
@@ -570,14 +570,14 @@ export const KeyringCard = ({
       meta: { className: 'action-cell', size: 5 },
       cell: (info) => {
         const sub = info.cell.row.original
-        const rowPending = toggleApiKey.isPending && toggleApiKey.variables?.sub._id === sub._id;
+        const rowPending = pendingActions.has(`subscription:${sub._id}`);
 
         return (
           <span>
             <Can I={manage} a={apikey} team={currentTeam}>
               <div className="dropdown">
                 <button
-                  className="btn --ghost --small --icon-only dropdown"
+                  className="btn --ghost --small --icon-only dropdown dropdown-menu-button"
                   aria-label={translate('subscription.actions')}
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
@@ -586,7 +586,6 @@ export const KeyringCard = ({
                   id={`dropdown-${sub._id}`}
                 >
                   {rowPending ? <Loader className="--rotate" size={24} /> : <EllipsisVertical
-                    className="cursor-pointer dropdown-menu-button"
                     style={{ fontSize: '18px' }}
                   />}
                 </button>
@@ -598,11 +597,7 @@ export const KeyringCard = ({
                   {!aggregated && (
                     <span
                       className="dropdown-item cursor-pointer"
-                      onClick={() => withLoader(() =>
-                        transferApiKey(
-                          sub,
-                          () => invalidateSubscriptions())
-                      )}
+                      onClick={() => transferApiKey(sub)}
                     >
                       {translate('subscription.transfer.label')}
                     </span>
@@ -620,12 +615,10 @@ export const KeyringCard = ({
                   {aggregated && (
                     <button
                       className="dropdown-item cursor-pointer danger"
-                      onClick={() => withLoader(() =>
-                        makeUniqueApiKey(
-                          sub,
-                          keyring,
-                          () => invalidateSubscriptions()
-                        )
+                      onClick={() => makeUniqueApiKey(
+                        sub,
+                        keyring,
+                        () => invalidateSubscriptions()
                       )}
                     >
                       {translate('subscription.extract.button.label')}
@@ -634,12 +627,11 @@ export const KeyringCard = ({
                   <div className="dropdown-divider" />
                   <button
                     className="dropdown-item cursor-pointer danger"
-                    onClick={() => withLoader(() =>
-                      deleteApiKey(
-                        sub,
-                        keyring,
-                        () => invalidateSubscriptions()
-                      ))}
+                    onClick={() => deleteApiKey(
+                      sub,
+                      keyring,
+                      () => invalidateSubscriptions()
+                    )}
                   >
                     {translate('subscription.delete.button.label')}
                   </button>
@@ -654,7 +646,7 @@ export const KeyringCard = ({
 
   const [folding, setFolding] = useState(false);
 
-  const keyringPending = toggleKeyring.isPending && toggleKeyring.variables?.keyringId === keyring._id;
+  const keyringPending = pendingActions.has(`keyring:${keyring._id}`);
   const invalidateSubscriptions = () =>
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
 
@@ -699,7 +691,7 @@ export const KeyringCard = ({
           aria-label={translate('keyring.details')}
           aria-expanded={!folding}
           onClick={() => setFolding(!folding)}>
-          <ChevronDown />
+          {folding ? <ChevronUp /> : <ChevronDown />}
         </button>
       </div>
 
@@ -730,7 +722,10 @@ export const KeyringCard = ({
         <Can I={manage} a={apikey} team={currentTeam}>
           <div className="dropdown ms-auto">
             <button
-              className="btn --secondary --small --icon-only  "
+              className={classNames("btn --secondary --small --icon-only dropdown-menu-button", {
+                "--ghost": keyringPending,
+                "--secondary": !keyringPending,
+              })}
               aria-label={translate('keyring.actions')}
               data-bs-toggle="dropdown"
               aria-expanded="false"
@@ -739,7 +734,6 @@ export const KeyringCard = ({
               id={`keyring-dropdown-${keyring._id}`}
             >
               {keyringPending ? <Loader className="--rotate" size={24} /> : <EllipsisVertical
-                className="cursor-pointer dropdown-menu-button"
                 style={{ fontSize: '18px' }}
               />}
             </button>
@@ -761,8 +755,7 @@ export const KeyringCard = ({
                         placeholder: translate('keyring.custom.name.placeholder'),
                       },
                     },
-                    onSubmit: (data) =>
-                      withLoader(() => updateKeyringName(keyring._id, data.customName ?? '')),
+                    onSubmit: (data) => () => updateKeyringName(keyring._id, data.customName ?? ''),
                     value: { customName: keyring.customName },
                   })
                 }
@@ -790,15 +783,13 @@ export const KeyringCard = ({
                       schema: settingsSchema,
                       onSubmit: (data: IRotation) => {
                         if (keyring.enabled) {
-                          withLoader(() =>
-                            toggleApiKeyRotation(
-                              keyring._id,
-                              data.enabled,
-                              data.rotationEvery,
-                              data.gracePeriod,
-                              keyring.isRotationLocked
-                            )
-                          );
+                          return toggleApiKeyRotation(
+                            keyring._id,
+                            data.enabled,
+                            data.rotationEvery,
+                            data.gracePeriod,
+                            keyring.isRotationLocked
+                          )
                         }
                       },
                       value: keyring.rotation,
@@ -812,14 +803,14 @@ export const KeyringCard = ({
               <button
                 className={`dropdown-item cursor-pointer danger${keyring.enabled ? '' : ' disabled'}`}
                 onClick={() => {
-                  if (keyring.enabled) withLoader(() => regenerateSecret(keyring));
+                  if (keyring.enabled) regenerateSecret(keyring);
                 }}
               >
                 {translate('subscription.reset.secret.label')}
               </button>
               <button
                 className="dropdown-item cursor-pointer danger"
-                onClick={() => withLoader(() => deleteKeyring(keyring))}
+                onClick={() => deleteKeyring(keyring)}
               >
                 {translate('keyring.delete.label')}
               </button>

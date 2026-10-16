@@ -90,7 +90,8 @@ export const TeamApiSubscriptions = ({
   const queryKey = QUERY_KEYS.apiSubscriptions(api._id, currentTeam._id);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
-  const toggleInFlight = useRef(false);
+  const togglesInFlight = useRef(new Set<string>());
+  const [pendingToggles, setPendingToggles] = useState<Set<string>>(new Set());
   const toggleSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
       Services.archiveSubscriptionByOwner(
@@ -208,7 +209,7 @@ export const TeamApiSubscriptions = ({
       meta: { title: translate("Actions"), size: 8, className: 'action-cell' },
       cell: (info) => {
         const sub = info.row.original;
-        const rowPending = toggleSubscription.isPending && toggleSubscription.variables?._id === sub._id;
+        const rowPending = pendingToggles.has(sub._id);
 
         return (
           <Can I={manage} a={API} team={currentTeam}>
@@ -242,7 +243,7 @@ export const TeamApiSubscriptions = ({
                 {api.state !== 'blocked' && (
                   <button
                     className="dropdown-item cursor-pointer danger"
-                    disabled={toggleSubscription.isPending}
+                    disabled={rowPending}
                     onClick={() => toggleApiSubscriptionState(sub)}
                   >
                   {sub.state === 'active'
@@ -310,26 +311,26 @@ export const TeamApiSubscriptions = ({
     // },
   });
 
-  const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
-    if (api.state === 'blocked' || toggleInFlight.current) return;
-    toggleInFlight.current = true;
-    const confirmation = sub.state === 'active'
-      ? confirm({ message: translate('subscription.disable.confirm') })
-      : Promise.resolve(true);
+  const toggleApiSubscriptionState = async (sub: IApiSubscriptionGql) => {
+    if (api.state === 'blocked' || togglesInFlight.current.has(sub._id)) return;
+    togglesInFlight.current.add(sub._id);
+    setPendingToggles(new Set(togglesInFlight.current));
 
-    return confirmation
-      .then((ok) => {
-        if (ok) return toggleSubscription.mutateAsync(sub);
-      })
-      .catch((error) => {
-        const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
-          ? error.error
-          : 'Oops something went wrong';
-        toast.error(translate(message));
-      })
-      .finally(() => {
-        toggleInFlight.current = false;
-      });
+    try {
+      const confirmed = sub.state === 'active'
+        ? await confirm({ message: translate('subscription.disable.confirm') })
+        : true;
+      if (!confirmed) return;
+      return await toggleSubscription.mutateAsync(sub);
+    } catch (error) {
+      const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+        ? error.error
+        : 'Oops something went wrong';
+      toast.error(translate(message));
+    } finally {
+      togglesInFlight.current.delete(sub._id);
+      setPendingToggles(new Set(togglesInFlight.current));
+    }
   }
 
   const regenerateSecret = (sub: IApiSubscriptionGql) => {
