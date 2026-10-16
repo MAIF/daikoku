@@ -11,7 +11,7 @@ info:
     email: oss@maif.fr
   description: Admin API of Daikoku
   title: Daikoku Admin API
-  version: 19.1.0-dev
+  version: 19.1.0-rc.1
 tags: []
 components:
   parameters:
