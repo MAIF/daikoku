@@ -1573,33 +1573,42 @@ class ApiService(
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
             )
-            
-            _ <- EitherT.right[AppError](Future.sequence(
-              recipent
-                .map(recipient => translator.translate(
-                  "mail.checkout.body",
-                  tenant,
-                  Map(
-                    "api.name" -> JsString(api.name),
-                    "api.plan" -> JsString(
-                      plan.customName
-                    ),
-                    "link" -> JsString(
-                      env.getDaikokuUrl(
+
+            _ <- EitherT.right[AppError](
+              Future.sequence(
+                recipent
+                  .map(recipient =>
+                    translator
+                      .translate(
+                        "mail.checkout.body",
                         tenant,
-                        s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
-                        recipient
+                        Map(
+                          "api.name" -> JsString(api.name),
+                          "api.plan" -> JsString(
+                            plan.customName
+                          ),
+                          "link" -> JsString(
+                            env.getDaikokuUrl(
+                              tenant,
+                              s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
+                              recipient
+                            )
+                          ),
+                          "producer_team_data" -> ownerTeam.asJson,
+                          "consumer_team_data" -> team.asJson,
+                          "user_data" -> user.asSimpleJson,
+                          "api_data" -> api.asJson,
+                          "usagePlan_data" -> plan.asJson,
+                          "subscriptionDemand_data" -> demand.asJson
+                        )
                       )
-                    ),
-                    "producer_team_data" -> ownerTeam.asJson,
-                    "consumer_team_data" -> team.asJson,
-                    "user_data" -> user.asSimpleJson,
-                    "api_data" -> api.asJson,
-                    "usagePlan_data" -> plan.asJson,
-                    "subscriptionDemand_data" -> demand.asJson
+                      .flatMap(body =>
+                        tenant.mailer
+                          .send(title, Seq(recipient.email), body, tenant)
+                      )
                   )
-                )
-                .flatMap(body => tenant.mailer.send(title, Seq(recipient.email), body, tenant)))))
+              )
+            )
           } yield (step.some, demand)
         case tuple =>
           EitherT.pure[Future, AppError](tuple)
