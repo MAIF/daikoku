@@ -21,9 +21,9 @@ HOST=localhost
 ADMIN_KEY="Basic <base64(clientId:clientSecret)>"
 CATALOG_DIR="<absolute path to this folder>"
 
-curl -X PATCH "$BASE/admin-api/tenants/default" \
+curl -X POST "$BASE/admin-api/remote-catalogs" \
   -H "Authorization: $ADMIN_KEY" -H "Host: $HOST" -H "Content-Type: application/json" \
-  -d "{\"remoteCatalogs\":[{\"id\":\"demo-file\",\"name\":\"Demo (file)\",\"enabled\":true,\"source\":{\"kind\":\"file\",\"config\":{\"path\":\"$CATALOG_DIR\"}},\"scheduling\":{\"enabled\":false,\"mode\":\"interval\"},\"allowedKinds\":[],\"testDeployArgs\":{}}]}"
+  -d "{\"_id\":\"demo-file\",\"_tenant\":\"default\",\"name\":\"Demo (file)\",\"enabled\":true,\"source\":{\"kind\":\"file\",\"config\":{\"path\":\"$CATALOG_DIR\"}},\"scheduling\":{\"enabled\":false},\"allowedKinds\":[]}"
 ```
 
 ## Deploy / test / undeploy

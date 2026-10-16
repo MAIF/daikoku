@@ -20,7 +20,7 @@ SEED_FILES=(
 )
 
 # admin_key_client_id:admin_key_client_secret — présent dans tous les seeds
-ADMIN_API_AUTH="Authorization: Basic $(echo 'admin_key_client_id:admin_key_client_secret' | base64 | tr -d '\n')"
+ADMIN_API_AUTH="Authorization: Basic $(printf '%s' 'admin_key_client_id:admin_key_client_secret' | base64 | tr -d '\n')"
 
 COOKIE_JAR="$(mktemp)"
 EXPORT_TMP="$(mktemp)"
@@ -112,8 +112,8 @@ for rel_path in "${SEED_FILES[@]}"; do
         exit 1
     fi
 
-    mv "$EXPORT_TMP" "$seed_file"
-    EXPORT_TMP="$(mktemp)"
+    # drop the session opened by login()
+    grep -v '"type":"user_sessions"' "$EXPORT_TMP" > "$seed_file"
     echo "  Updated."
 done
 

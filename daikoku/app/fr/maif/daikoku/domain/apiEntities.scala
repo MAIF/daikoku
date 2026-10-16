@@ -356,6 +356,19 @@ case class UsagePlan(
       documentation.map(d => d.copy(pages = d.pages ++ pages))
     )
 
+  def checkEnvironment(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] =
+    tenant.display match {
+      case TenantDisplay.Environment =>
+        EitherT.cond[Future](
+          tenant.environments.contains(customName),
+          (),
+          AppError.EntityConflict("Plan custom name")
+        )
+      case _ => EitherT.pure[Future, AppError](())
+    }
+
   def checkCustomName(
       tenant: Tenant,
       plans: Seq[UsagePlan],
@@ -367,12 +380,14 @@ case class UsagePlan(
     // FIXME: check conflict with extisting name in case of creation but
     (apiVisibility, tenant.display) match {
       case (_, TenantDisplay.Environment) =>
-        EitherT.cond[Future](
-          !existingNames.contains(customName) && tenant.environments
-            .contains(customName),
-          (),
-          AppError.EntityConflict("Plan custom name")
-        )
+        for {
+          _ <- checkEnvironment(tenant)
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !existingNames.contains(customName),
+            (),
+            AppError.EntityConflict("Plan custom name")
+          )
+        } yield ()
       case _ => EitherT.pure[Future, AppError](())
     }
   }
@@ -522,7 +537,8 @@ case class ApiDocumentationPage(
     cmsPage: Option[String] = None,
     remoteContentEnabled: Boolean = false,
     remoteContentUrl: Option[String] = None,
-    remoteContentHeaders: Map[String, String] = Map.empty[String, String]
+    remoteContentHeaders: Map[String, String] = Map.empty[String, String],
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[ApiDocumentationPage] {
   // def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = id.toString

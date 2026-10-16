@@ -1,0 +1,369 @@
+package fr.maif.daikoku
+
+import com.networknt.schema.{InputFormat, SchemaRegistry, SpecificationVersion}
+import fr.maif.daikoku.controllers.KeyringAdminApiController
+import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.services.CmsPage
+import fr.maif.daikoku.utils.Yaml
+import org.joda.time.DateTime
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import play.api.libs.json._
+
+import java.nio.file.{Files, Paths}
+import scala.jdk.CollectionConverters._
+
+// Guards the admin API OpenAPI document against drifting away from the code:
+// the served version, the routes, and (per catalog kind) the JSON formats.
+class OpenApiContractSpec extends AnyWordSpec with Matchers {
+
+  private val pwd = System.getProperty("user.dir")
+
+  private val spec: JsObject = {
+    val text =
+      Files.readString(
+        Paths.get(s"$pwd/public/swaggers/admin-api-openapi.yaml")
+      )
+
+    Yaml.parse(text).get.as[JsObject]
+  }
+
+  private val specPaths: Set[String] =
+    (spec \ "paths").as[JsObject].keys.toSet
+
+  // the descriptor routes describe the API, they are not part of it
+  private val descriptorRoutes =
+    Set("/admin-api/swagger.json", "/admin-api/openapi.json")
+
+  // e.g. "GET  /admin-api/teams/:id  fr...findById(id)" -> "/admin-api/teams/{id}"
+  private val routePaths: Set[String] =
+    Files
+      .readAllLines(Paths.get(s"$pwd/conf/routes"))
+      .asScala
+      .map(_.trim)
+      .filter(_.matches("^(GET|POST|PUT|PATCH|DELETE)\\s+/admin-api/.*"))
+      .map(_.split("\\s+")(1))
+      .map(_.replaceAll(":([A-Za-z0-9_]+)", "{$1}"))
+      .toSet
+      .diff(descriptorRoutes)
+
+  private val registry =
+    SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12)
+
+  private def componentSchema(name: String): JsObject =
+    (spec \ "components" \ "schemas" \ name).as[JsObject]
+
+  // the component becomes the root schema, next to the components its $ref point to;
+  // additionalProperties: false refuses every field the schema forgot to list
+  private def schemaErrors(schemaName: String, entity: JsValue): Seq[String] = {
+    val root = Json.obj(
+      "$schema" -> "https://json-schema.org/draft/2020-12/schema",
+      "components" -> (spec \ "components").as[JsObject]
+    ) ++ componentSchema(schemaName) ++ Json.obj(
+      "additionalProperties" -> false
+    )
+
+    registry
+      .getSchema(Json.stringify(root), InputFormat.JSON)
+      .validate(Json.stringify(entity), InputFormat.JSON)
+      .asScala
+      .toSeq
+      .map(error => s"${error.getInstanceLocation}: ${error.getMessage}")
+  }
+
+  // e.g. KindContract("Team", json.TeamFormat, aTeam.asJson)
+  // pendingDrifts: instance paths whose schema is being fixed on another branch
+  private case class KindContract(
+      schemaName: String,
+      reads: Reads[?],
+      complete: JsObject,
+      pendingDrifts: Set[String] = Set.empty
+  ) {
+    def isPending(error: String): Boolean =
+      pendingDrifts.exists(path => error.startsWith(s"$path:"))
+
+    def required: Seq[String] =
+      (componentSchema(schemaName) \ "required").as[Seq[String]]
+
+    // the minimal document published in the schema, the one users copy
+    def minimal: JsObject =
+      (componentSchema(schemaName) \ "examples").as[Seq[JsObject]].head
+  }
+
+  private val completeTeam = Team(
+    id = TeamId("team-1"),
+    tenant = TenantId("tenant"),
+    `type` = TeamType.Organization,
+    name = "Team",
+    description = "A team",
+    users =
+      Set(UserWithPermission(UserId("user-1"), TeamPermission.Administrator)),
+    contact = "team@acme.io",
+    avatar = Some("https://acme.io/avatar.png")
+  )
+
+  private val completePlan = UsagePlan(
+    id = UsagePlanId("plan-1"),
+    tenant = TenantId("tenant"),
+    customName = "Gold plan",
+    customDescription = Some("A paid plan"),
+    maxPerSecond = Some(10),
+    maxPerDay = Some(10000),
+    maxPerMonth = Some(300000),
+    costPerMonth = Some(BigDecimal(49)),
+    costPerRequest = Some(BigDecimal("0.001")),
+    currency = Some(Currency("EUR")),
+    billingDuration = Some(BillingDuration(1, BillingTimeUnit.Month)),
+    trialPeriod = Some(BillingDuration(14, BillingTimeUnit.Day)),
+    otoroshiTarget = Some(
+      OtoroshiTarget(
+        otoroshiSettings = OtoroshiSettingsId("otoroshi-1"),
+        authorizedEntities =
+          Some(AuthorizedEntities(routes = Set(OtoroshiRouteId("route-1")))),
+        apikeyCustomization = ApikeyCustomization(
+          metadata = Json.obj("plan" -> "gold"),
+          customMetadata =
+            Seq(CustomMetadata("environment", Set("staging", "production"))),
+          tags = Json.arr("gold"),
+          restrictions = ApiKeyRestrictions(
+            enabled = true,
+            allowed = Seq(ApiKeyRestrictionPath("GET", "/forecasts/.*"))
+          )
+        )
+      )
+    ),
+    subscriptionProcess = SubscriptionProcess(
+      steps = Seq(
+        ValidationStep.Form(id = "form-1", title = "Your project"),
+        ValidationStep.TeamAdmin(id = "admin-1", team = TeamId("team-1")),
+        ValidationStep.Email(
+          id = "email-1",
+          emails = Seq("api@acme.io"),
+          message = Some("A new subscription to validate"),
+          title = "Email"
+        ),
+        ValidationStep.HttpRequest(
+          id = "http-1",
+          title = "Check",
+          url = "https://acme.io/check"
+        ),
+        ValidationStep.Payment(
+          id = "payment-1",
+          thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("stripe-1")
+        )
+      )
+    ),
+    visibility = UsagePlanVisibility.Private,
+    authorizedTeams = Seq(TeamId("team-1"))
+  )
+
+  private val completeApi = Api(
+    id = ApiId("api-1"),
+    tenant = TenantId("tenant"),
+    team = completeTeam.id,
+    name = "Weather API",
+    lastUpdate = DateTime.now(),
+    smallDescription = "Weather forecasts",
+    description = "Weather forecasts for every city",
+    currentVersion = Version("1.0.0"),
+    state = ApiState.Published,
+    documentation = ApiDocumentation(
+      id = ApiDocumentationId("doc-1"),
+      tenant = TenantId("tenant"),
+      pages = Seq.empty,
+      lastModificationAt = DateTime.now()
+    ),
+    swagger = None,
+    possibleUsagePlans = Seq(completePlan.id),
+    defaultUsagePlan = Some(completePlan.id),
+    tags = Set("weather"),
+    categories = Set("Public data"),
+    visibility = ApiVisibility.Public,
+    authorizedTeams = Seq(completeTeam.id)
+  )
+
+  private val completeSubscription = ApiSubscription(
+    id = ApiSubscriptionId("subscription-1"),
+    tenant = TenantId("tenant"),
+    plan = completePlan.id,
+    createdAt = DateTime.now(),
+    team = completeTeam.id,
+    api = completeApi.id,
+    by = UserId("user-1"),
+    customName = Some("Weather key"),
+    keyring = KeyringId("keyring-1")
+  )
+
+  private val completeCmsPage = CmsPage(
+    id = CmsPageId("page-1"),
+    tenant = TenantId("tenant"),
+    visible = true,
+    authenticated = false,
+    name = "Home",
+    forwardRef = None,
+    tags = List("home"),
+    metadata = Map("owner" -> "docs"),
+    contentType = "text/html",
+    body = "<h1>Home</h1>",
+    path = Some("/home")
+  )
+
+  private val completeKeyring = Keyring(
+    id = KeyringId("keyring-1"),
+    tenant = TenantId("tenant"),
+    team = completeTeam.id,
+    customName = "Weather keyring",
+    apiKey = OtoroshiApiKey(
+      clientName = "weather",
+      clientId = "client-id",
+      clientSecret = "client-secret"
+    ),
+    otoroshiSettings = KeyringOtoroshiBinding.Internal,
+    createdAt = DateTime.now(),
+    integrationToken = "integration-token",
+    metadata = Map("created_by" -> "remote_catalog=catalog-1")
+  )
+
+  private val completeCatalog = RemoteCatalog(
+    id = RemoteCatalogId("catalog-1"),
+    tenant = TenantId("tenant"),
+    name = "Weather catalog",
+    source = RemoteCatalogSource(
+      kind = "github",
+      config = Json.obj("repo" -> "acme/catalog")
+    ),
+    allowedKinds = Set("team", "api")
+  )
+
+  private val completeRun = RemoteCatalogRun(
+    id = DatastoreId("run-1"),
+    tenant = TenantId("tenant"),
+    catalog = RemoteCatalogId("catalog-1"),
+    at = DateTime.now(),
+    status = RemoteCatalogRunStatus.Partial,
+    created = Seq(RemoteCatalogRunEntity("team", "team-1", Some("Team"))),
+    updated = Seq(
+      RemoteCatalogRunEntity(
+        kind = "api",
+        id = "api-1",
+        name = Some("Weather API"),
+        changes = Some(
+          Json.arr(
+            Json.obj(
+              "op" -> "replace",
+              "path" -> "/name",
+              "value" -> "Weather API",
+              "old" -> "Weather"
+            ),
+            Json.obj(
+              "op" -> "add",
+              "path" -> "/tags/0",
+              "value" -> "forecast"
+            ),
+            Json.obj(
+              "op" -> "remove",
+              "path" -> "/categories/0",
+              "old" -> "Data"
+            )
+          )
+        )
+      )
+    ),
+    deleted = Seq.empty,
+    detached = Seq(RemoteCatalogRunEntity("usage-plan", "plan-1", None)),
+    errors = Seq(
+      RemoteCatalogError(
+        source = "apis/api-2.yaml",
+        message = "Write failed: Team not found",
+        entity = Some(RemoteCatalogRunEntity("api", "api-2", Some("Other API")))
+      )
+    )
+  )
+
+  private val contracts = Seq(
+    KindContract("Team", json.TeamFormat, completeTeam.asJson.as[JsObject]),
+    KindContract("Api", json.ApiFormat, completeApi.asJson.as[JsObject]),
+    KindContract(
+      "RemoteCatalog",
+      json.RemoteCatalogFormat,
+      completeCatalog.asJson.as[JsObject]
+    ),
+    KindContract(
+      "Keyring",
+      json.KeyringFormat,
+      completeKeyring.asJson.as[JsObject]
+    ),
+    KindContract(
+      "CmsPage",
+      json.CmsPageFormat,
+      completeCmsPage.asJson.as[JsObject]
+    ),
+    KindContract(
+      "ApiSubscription",
+      json.ApiSubscriptionFormat,
+      completeSubscription.asJson.as[JsObject]
+    ),
+    KindContract(
+      "UsagePlan",
+      json.UsagePlanFormat,
+      completePlan.asJson.as[JsObject],
+      // the Stripe billing branch reworks PaymentSettings and its schema
+      pendingDrifts = Set("/paymentSettings")
+    )
+  )
+
+  contracts.foreach { contract =>
+    s"The ${contract.schemaName} schema" should {
+      "accept a complete entity and list all its fields" in {
+        val errors = schemaErrors(contract.schemaName, contract.complete)
+          .filterNot(contract.isPending)
+
+        errors mustBe empty
+      }
+
+      "publish a minimal example holding the required fields only" in {
+        schemaErrors(contract.schemaName, contract.minimal) mustBe empty
+        contract.minimal.keys mustBe contract.required.toSet
+      }
+
+      "require nothing more than what the format needs" in {
+        contract.reads.reads(contract.minimal).isSuccess mustBe true
+      }
+
+      "require every field the format cannot do without" in {
+        // meaningless while the minimal document itself is refused
+        assume(contract.reads.reads(contract.minimal).isSuccess)
+
+        val notReallyRequired = contract.required.filter(field =>
+          contract.reads.reads(contract.minimal - field).isSuccess
+        )
+
+        notReallyRequired mustBe empty
+      }
+    }
+  }
+
+  "The RemoteCatalogRun schema" should {
+    "accept a run with changes and errors and list all its fields" in {
+      schemaErrors("RemoteCatalogRun", completeRun.asJson) mustBe empty
+    }
+  }
+
+  "The admin API OpenAPI document" should {
+    "be OpenAPI 3.1" in {
+      (spec \ "openapi").as[String] mustBe "3.1.0"
+    }
+
+    "declare the version of the build" in {
+      (spec \ "info" \ "version").as[String] mustBe BuildInfo.version
+    }
+
+    "document every admin API route" in {
+      routePaths.diff(specPaths).toSeq.sorted mustBe empty
+    }
+
+    "document no route that does not exist" in {
+      specPaths.diff(routePaths).toSeq.sorted mustBe empty
+    }
+  }
+}

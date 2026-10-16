@@ -436,6 +436,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 action: () => navigateTo('settings/remote-catalogs'),
                 className: { active: subTab === 'remote-catalogs' },
               },
+              resourceLoader: {
+                label: translate('resource-loader.title'),
+                action: () => navigateTo('settings/resource-loader'),
+                className: { active: subTab === 'resource-loader' },
+              },
             },
           },
           message: {

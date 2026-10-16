@@ -30,7 +30,7 @@ Init states (under `config/`) used when running Daikoku locally
 
 | File | Auth provider | Pairs with |
 |---|---|---|
-| `config/daikoku_state_local.ndjson` | Local | `docker-compose-otoroshi.yml` |
+| `config/daikoku_state_local.ndjson` | Local | `docker-compose-local.yml` |
 | `config/daikoku_state_ldap.ndjson` | LDAP | `docker-compose-ldap.yml` |
 | `config/daikoku_state_oidc.ndjson` | OAuth2 | `docker-compose-oidc.yml` |
 

@@ -6,10 +6,10 @@ import { toast } from "sonner";
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { EllipsisVertical, Loader, RefreshCcw } from "lucide-react";
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { I18nContext, ModalContext } from "../../../contexts";
 import { GlobalContext } from "../../../contexts/globalContext";
 import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
 import * as Services from "../../../services";
 import {
   IApi,
@@ -22,7 +22,6 @@ import {
 import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   api as API,
-  BeautifulTitle,
   Can,
   formatDate,
   manage
@@ -311,26 +310,28 @@ export const TeamApiSubscriptions = ({
     // },
   });
 
-  const toggleApiSubscriptionState = async (sub: IApiSubscriptionGql) => {
-    if (api.state === 'blocked' || togglesInFlight.current.has(sub._id)) return;
+  const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
+    if (api.state === 'blocked' || togglesInFlight.current.has(sub._id)) return Promise.resolve();
     togglesInFlight.current.add(sub._id);
     setPendingToggles(new Set(togglesInFlight.current));
 
-    try {
-      const confirmed = sub.state === 'active'
-        ? await confirm({ message: translate('subscription.disable.confirm') })
-        : true;
-      if (!confirmed) return;
-      return await toggleSubscription.mutateAsync(sub);
-    } catch (error) {
-      const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
-        ? error.error
-        : 'Oops something went wrong';
-      toast.error(translate(message));
-    } finally {
-      togglesInFlight.current.delete(sub._id);
-      setPendingToggles(new Set(togglesInFlight.current));
-    }
+    return Promise.resolve()
+      .then(() => sub.state === 'active'
+        ? confirm({ message: translate('subscription.disable.confirm') })
+        : true)
+      .then((confirmed) => {
+        if (confirmed) return toggleSubscription.mutateAsync(sub);
+      })
+      .catch((error) => {
+        const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+          ? error.error
+          : 'Oops something went wrong';
+        toast.error(translate(message));
+      })
+      .finally(() => {
+        togglesInFlight.current.delete(sub._id);
+        setPendingToggles(new Set(togglesInFlight.current));
+      });
   }
 
   const regenerateSecret = (sub: IApiSubscriptionGql) => {

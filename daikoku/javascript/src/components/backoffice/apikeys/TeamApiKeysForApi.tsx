@@ -1,7 +1,8 @@
 import {useQuery} from '@tanstack/react-query';
 import sortBy from 'lodash/sortBy';
 import {
-  ChevronLeft, ChevronRight, Ellipsis,
+  ChevronDown,
+  ChevronLeft, ChevronRight, ChevronUp, Ellipsis,
 } from "lucide-react";
 import {useContext, useEffect, useState, useRef} from 'react';
 import {Link, useParams} from 'react-router-dom';
@@ -10,10 +11,11 @@ import {
   I18nContext,
   useTeamBackOffice,
 } from '../../../contexts';
-import {GlobalContext} from '../../../contexts/globalContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
+  IKeyringSubscriptionGql,
   ITeamSimple,
   isError
 } from '../../../types';
@@ -29,10 +31,37 @@ import debounce from "lodash/debounce";
 import { KeyringCard } from './KeyringCard';
 import {IKeyringForApiGql, ApiKeysListForApiProps} from "../../../types";
 
+const DisplayLink = ({ value }: { value: string }) => {
+  const [displayLink, setDisplayLink] = useState(false)
+  const { translate } = useContext(I18nContext);
+  return (
+    <div>{translate("subscriptions.link.explanation.1")}
+      <ol>
+        <li>{translate("subscriptions.link.explanation.2")}</li>
+        <li>{translate("subscriptions.link.explanation.3")}</li>
+        <li>{translate("subscriptions.link.explanation.4")}</li>
+      </ol>
+      <span className='a-fake' onClick={() => setDisplayLink(!displayLink)}>
+        {!!displayLink && <ChevronUp className='me-1' />}
+        {!displayLink && <ChevronDown className='me-1' />}
+        {displayLink ? translate('subscriptions.hide.link') : translate('subscriptions.display.link')}
+      </span>
+      {displayLink && <div className='api-susbcription__display-link'>
+        {value}
+      </div>}
+    </div>
+  )
+}
+
+export type IKeyringSubscriptionsWithCount = {
+  subscriptions: Array<IKeyringSubscriptionGql>;
+  total: number;
+  totalFiltered: number;
+};
 
 export const TeamApiKeysForApi = () => {
-  const {currentTeam} = useTeamBackOffice();
-  const {Translation} = useContext(I18nContext);
+  const { currentTeam } = useTeamBackOffice();
+  const { Translation } = useContext(I18nContext);
 
   const params = useParams();
 
@@ -60,7 +89,7 @@ export const TeamApiKeysForApi = () => {
 
 
   if (apiQuery.isLoading || teamQuery.isLoading) {
-    return <Spinner/>
+    return <Spinner />
   } else if (apiQuery.data && !isError(apiQuery.data) && teamQuery.data && !isError(teamQuery.data)) {
     const apiLink = `/${teamQuery.data._humanReadableId}/${apiQuery.data._humanReadableId}/${apiQuery.data.currentVersion}/description`;
 
@@ -115,7 +144,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   let List;
   if (keyringsQuery.isLoading) {
-    List = <Spinner/>;
+    List = <Spinner />;
   } else if (keyringsQuery.data && !isError(keyringsQuery.data)) {
     const keyrings = keyringsQuery.data.keyrings.keyringsWithSubCountAndRotation;
     const sorted = sortBy(keyrings, [
@@ -131,8 +160,8 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             <span className="small">
               <span className="fw-bold">{totalFiltered}</span>
               {totalFiltered < total
-                ? ` ${translate({key: "keyring.count", plural: totalFiltered > 1})} (sur ${total})`
-                : ` ${translate({key: "keyring.count", plural: totalFiltered > 1})}`}
+                ? ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })} (sur ${total})`
+                : ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })}`}
             </span>
           </div>
         <div className="d-flex flex-row flex-wrap keyring-card-container">
@@ -202,7 +231,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           onChange={debounce(e => {
             setSearched(e.target.value)
             setPage(0)
-            }, 500
+          }, 500
           )}
         />
       </div>

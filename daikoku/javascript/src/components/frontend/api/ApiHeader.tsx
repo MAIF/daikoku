@@ -13,6 +13,7 @@ import { converter } from '../../../services/showdown';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { api as API, Can, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
+import { useExportEntity } from '../../utils/useExportEntity';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
 import { reservedCharacters } from '../../utils/tenantUtils';
 import { CmsViewer } from '../CmsViewer';
@@ -37,6 +38,7 @@ export const ApiHeader = ({
   const { openRightPanel, closeRightPanel, prompt, openFormModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
+  const { canExport, exportEntity } = useExportEntity();
 
   const [versions, setApiVersions] = useState<Array<string>>([]);
 
@@ -293,6 +295,15 @@ export const ApiHeader = ({
                     })}
                 >
                   {translate("api.home.config.api.menu.new_version")}
+                </button>
+              </li>}
+              {canExport && <li role='none'>
+                <button
+                  role='menuitem'
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => exportEntity('api', api._id)}
+                >
+                  {translate('remote-catalog.exportEntity.button')}
                 </button>
               </li>}
               <div className="dropdown-divider" role='none' />

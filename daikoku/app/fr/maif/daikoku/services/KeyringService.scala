@@ -25,7 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class KeyringService(
     env: Env,
-    otoroshiClient: OtoroshiClient
+    otoroshiClient: OtoroshiClient,
+    deletionService: DeletionService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -60,75 +61,63 @@ class KeyringService(
         OtoroshiApiKeyFormat.writes(keyring.apiKey)
       )
 
-  /** Physically delete the keyring and enqueue the removal of its underlying
-    * Otoroshi api key on the deletion queue (self-contained: the operation
-    * carries the clientId and settings, since the row is gone). No-op when the
-    * keyring is already gone, so callers can invoke this idempotently. Returns
-    * true when the keyring was deleted.
+  /** Delete the keyring with its subscriptions. deleteSubscriptions drops the
+    * keyring and its Otoroshi api key along with its last subscription; a
+    * keyring without subscription is deleted directly.
     */
   def deleteKeyring(
-      tenant: TenantId,
-      keyring: KeyringId
-  ): Future[Boolean] =
-    env.dataStore.keyringRepo.forTenant(tenant).findById(keyring).flatMap {
-      case None    => Future.successful(false)
-      case Some(k) =>
-        // Resolve the full OtoroshiSettings now and embed them in the payload,
-        // so the queued cleanup no longer needs the tenant (which may itself be
-        // deleted before the queue runs).
-        env.dataStore.tenantRepo.findById(tenant).flatMap { maybeTenant =>
-          val otoroshiPayload = k.otoroshiSettings match {
-            case KeyringOtoroshiBinding.Otoroshi(id) =>
-              maybeTenant
-                .flatMap(_.otoroshiSettings.find(_.id == id))
-                .map(settings =>
-                  Json.obj(
-                    "clientId" -> k.apiKey.clientId,
-                    "otoroshiSettings" ->
-                      json.OtoroshiSettingsFormat.writes(settings)
-                  )
-                )
-            case KeyringOtoroshiBinding.Internal => None
-          }
-          env.dataStore.withTransaction {
-            for {
-              _ <- env.dataStore.keyringRepo
-                .forTenant(tenant)
-                .deleteById(keyring)
-              _ <- otoroshiPayload match {
-                case Some(p) =>
-                  env.dataStore.operationRepo
-                    .forTenant(tenant)
-                    .save(
-                      Operation(
-                        DatastoreId(IdGenerator.token(32)),
-                        tenant = tenant,
-                        itemId = k.id.value,
-                        itemType = ItemType.Keyring,
-                        action = OperationAction.Delete,
-                        payload = Some(p)
-                      )
-                    )
-                    .map(_ => ())
-                case None => Future.successful(())
-              }
-            } yield true
-          }
-        }
-    }
+      tenant: Tenant,
+      keyring: Keyring
+  ): EitherT[Future, AppError, Unit] = {
+    import cats.implicits.*
 
-  /** Physically delete the keyring when no subscription references it anymore.
-    */
-  def deleteKeyringIfEmpty(
-      tenant: TenantId,
-      keyring: KeyringId
-  ): Future[Boolean] =
-    env.dataStore.apiSubscriptionRepo
-      .countByKeyring(tenant, keyring)
-      .flatMap {
-        case 0L => deleteKeyring(tenant, keyring)
-        case _  => Future.successful(false)
+    for {
+      subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+        env.dataStore.apiSubscriptionRepo.findByKeyring(tenant.id, keyring.id)
+      )
+      apis <- EitherT.liftF[Future, AppError, Seq[Api]](
+        env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findByIds(subscriptions.map(_.api).distinct)
+      )
+      _ <- subscriptions.groupBy(_.api).toList.traverse { case (apiId, subs) =>
+        EitherT
+          .fromOption[Future][AppError, Api](
+            apis.find(_.id == apiId),
+            AppError.ApiNotFound
+          )
+          .flatMap(api => deletionService.deleteSubscriptions(subs, api, tenant))
       }
+      _ <- EitherT.liftF[Future, AppError, Unit](
+        if (subscriptions.isEmpty) deleteEmptyKeyring(tenant, keyring)
+        else Future.unit
+      )
+    } yield ()
+  }
+
+  private def deleteEmptyKeyring(tenant: Tenant, keyring: Keyring): Future[Unit] =
+    env.dataStore.withTransaction {
+      for {
+        _ <- env.dataStore.keyringRepo.forTenant(tenant).deleteById(keyring.id)
+        _ <- deletionService.otoroshiTargetPayload(keyring, tenant) match {
+          case Some(payload) =>
+            env.dataStore.operationRepo
+              .forTenant(tenant)
+              .save(
+                Operation(
+                  DatastoreId(IdGenerator.token(32)),
+                  tenant = tenant.id,
+                  itemId = keyring.id.value,
+                  itemType = ItemType.Keyring,
+                  action = OperationAction.Delete,
+                  payload = Some(payload)
+                )
+              )
+              .map(_ => ())
+          case None => Future.unit
+        }
+      } yield ()
+    }
 
   def toggleKeyringRotation(
       tenant: Tenant,

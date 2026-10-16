@@ -19,7 +19,7 @@ jobs:
           node-version: 'lts/*'
       - name: copy openapi
         id: openapi
-        run: cp ./daikoku/public/swaggers/admin-api-openapi.yaml ./manual/static/admin-api-openapi.yaml
+        run: cp ./daikoku/public/swaggers/admin-api-openapi.yaml ./manual/static/openapi/admin-api-openapi.yaml
       - name: Generate dev documentation website
         id: doc
         run: |

@@ -323,6 +323,7 @@ class LoginFilter(env: Env)(implicit
       case "/daikoku.home.min.js.map"   => "/"
       case "/daikoku.login.min.js.map"  => "/"
       case r"/assets/.*"                => "/"
+      case r"/_/customization.*"        => "/"
       case _                            => uri
     }
   }

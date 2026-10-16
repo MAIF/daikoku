@@ -51,6 +51,12 @@ class RemoteCatalogCascadeSpec
 
   before {
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+    Await.result(
+      daikokuComponents.env.dataStore.JobInformationRepo
+        .forAllTenant()
+        .deleteAll(),
+      10.seconds
+    )
   }
 
   private val catalogId = "cat-cascade"
@@ -71,19 +77,20 @@ class RemoteCatalogCascadeSpec
           clientId = otoroshiAdminApiKey.clientId
         )
       ),
-      aggregationApiKeysSecurity = true.some,
-      remoteCatalogs = Seq(
-        RemoteCatalog(
-          id = catalogId,
-          name = "cascade catalog",
-          source = RemoteCatalogSource(
-            kind = "file",
-            config = Json.obj("path" -> sourceFilePath)
-          ),
-          scheduling = RemoteCatalogScheduling(enabled = true),
-          allowedKinds = Set("api", "usage-plan")
-        )
-      )
+      aggregationApiKeysSecurity = true.some
+    )
+
+  private def cascadeCatalog: RemoteCatalog =
+    RemoteCatalog(
+      id = RemoteCatalogId(catalogId),
+      tenant = tenant.id,
+      name = "cascade catalog",
+      source = RemoteCatalogSource(
+        kind = "file",
+        config = Json.obj("path" -> sourceFilePath)
+      ),
+      scheduling = RemoteCatalogScheduling(enabled = true),
+      allowedKinds = Set("api", "usage-plan")
     )
 
   private lazy val sourceFilePath: String = {
@@ -164,7 +171,7 @@ class RemoteCatalogCascadeSpec
     resp.status mustBe 200
   }
 
-  private def otoroshiKeyStatus(clientId: String): Int =
+  private def otoroshiKey(clientId: String): WSResponse =
     httpJsonCallWithoutSessionBlocking(
       path = s"/api/apikeys/$clientId",
       baseUrl = "http://otoroshi-api.oto.tools",
@@ -174,7 +181,10 @@ class RemoteCatalogCascadeSpec
         "Host" -> "otoroshi-api.oto.tools"
       ),
       port = container.mappedPort(8080)
-    )(using containerTenant).status
+    )(using containerTenant)
+
+  private def otoroshiKeyStatus(clientId: String): Int =
+    otoroshiKey(clientId).status
 
   private def undeploy(): WSResponse =
     httpJsonCallWithoutSessionBlocking(
@@ -183,6 +193,38 @@ class RemoteCatalogCascadeSpec
       headers = getAdminApiHeader(adminApiKeyring),
       body = Json.obj().some
     )(using containerTenant)
+
+  private def keyringCatalog: RemoteCatalog =
+    cascadeCatalog.copy(
+      id = RemoteCatalogId("cat-keyring"),
+      name = "keyring catalog",
+      allowedKinds = Set("keyring", "api-subscription")
+    )
+
+  private def deploy(catalog: RemoteCatalog): WSResponse =
+    httpJsonCallWithoutSessionBlocking(
+      path = s"/admin-api/remote-catalogs/${catalog.id.value}/_deploy",
+      method = "POST",
+      headers = getAdminApiHeader(adminApiKeyring),
+      body = Json.obj().some
+    )(using containerTenant)
+
+  // e.g. keyring-from-catalog bound to the Otoroshi of the container, and sub-from-catalog on it
+  private def keyringWithSubscription(apiKey: OtoroshiApiKey): JsArray = {
+    val keyring = catalogKeyring.copy(
+      id = KeyringId("keyring-from-catalog"),
+      apiKey = apiKey
+    )
+    val subscription = catalogSub.copy(
+      id = ApiSubscriptionId("sub-from-catalog"),
+      keyring = keyring.id
+    )
+
+    Json.arr(
+      keyring.asJson.as[JsObject] ++ Json.obj("kind" -> "keyring"),
+      subscription.asJson.as[JsObject] ++ Json.obj("kind" -> "api-subscription")
+    )
+  }
 
   private def dbSubscription(id: ApiSubscriptionId): Option[ApiSubscription] =
     Await.result(
@@ -207,6 +249,22 @@ class RemoteCatalogCascadeSpec
       5.second
     )
 
+  private def setupKeyringCatalog(): UserSession = {
+    Await.result(waitForDaikokuSetup(), 5.second)
+    setupEnvBlocking(
+      tenants = Seq(containerTenant),
+      users = Seq(userAdmin, userApiEditor, user, tenantAdmin),
+      teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+      apis = Seq(managedApi, adminApi),
+      usagePlans = Seq(catalogPlan, adminApiPlan),
+      keyrings = Seq(adminApiKeyring),
+      subscriptions = Seq(adminApiSubscription),
+      remoteCatalogs = Seq(keyringCatalog)
+    )
+
+    loginWithBlocking(userAdmin, containerTenant)
+  }
+
   "Remote catalog cascade" should {
     "delete a managed API through _undeploy and cascade to its subscription, keyring and otoroshi key" in {
       Await.result(waitForDaikokuSetup(), 5.second)
@@ -217,7 +275,8 @@ class RemoteCatalogCascadeSpec
         apis = Seq(managedApi, adminApi),
         usagePlans = Seq(catalogPlan, adminApiPlan),
         keyrings = Seq(catalogKeyring, adminApiKeyring),
-        subscriptions = Seq(catalogSub, adminApiSubscription)
+        subscriptions = Seq(catalogSub, adminApiSubscription),
+        remoteCatalogs = Seq(cascadeCatalog)
       )
       val adminSession = loginWithBlocking(userAdmin, containerTenant)
 
@@ -225,7 +284,9 @@ class RemoteCatalogCascadeSpec
       otoroshiKeyStatus(otoroshiApiKey1.clientId) mustBe 200
 
       val resp = undeploy()
-      resp.status mustBe 200
+      withClue(resp.body) {
+        resp.status mustBe 200
+      }
 
       org.awaitility.Awaitility.await.atMost(20.seconds.toJava) until { () =>
         dbSubscription(catalogSub.id).isEmpty
@@ -237,6 +298,48 @@ class RemoteCatalogCascadeSpec
       dbSubscription(catalogSub.id) mustBe None
       dbKeyring(catalogKeyring.id) mustBe None
       otoroshiKeyStatus(otoroshiApiKey1.clientId) mustBe 404
+    }
+
+    "deploy a keyring unknown to Otoroshi and its subscription without creating the key" in {
+      val unknownKey = OtoroshiApiKey(
+        clientName = "unknown-to-otoroshi",
+        clientId = "unknown-client-id",
+        clientSecret = "unknown-client-secret"
+      )
+      writeSource(Json.stringify(keyringWithSubscription(unknownKey)))
+      val session = setupKeyringCatalog()
+
+      val run = deploy(keyringCatalog)
+      withClue(run.body) {
+        run.status mustBe 200
+      }
+      (run.json \ "status").as[String] mustBe "completed"
+      (run.json \ "errors").as[Seq[JsObject]] mustBe empty
+
+      dbKeyring(KeyringId("keyring-from-catalog")) mustBe defined
+      dbSubscription(ApiSubscriptionId("sub-from-catalog")) mustBe defined
+
+      triggerSyncJob(session)
+      otoroshiKeyStatus(unknownKey.clientId) mustBe 404
+    }
+
+    "deploy a keyring known to Otoroshi and its subscription, then sync the plan routes on its key" in {
+      writeSource(Json.stringify(keyringWithSubscription(otoroshiApiKey2)))
+      val session = setupKeyringCatalog()
+
+      val run = deploy(keyringCatalog)
+      withClue(run.body) {
+        run.status mustBe 200
+      }
+      (run.json \ "status").as[String] mustBe "completed"
+
+      triggerSyncJob(session)
+
+      val key = otoroshiKey(otoroshiApiKey2.clientId)
+      key.status mustBe 200
+      (key.json \ "authorizedEntities").as[Seq[String]] mustBe Seq(
+        s"route_$parentRouteId"
+      )
     }
   }
 }

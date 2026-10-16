@@ -1,7 +1,7 @@
 package fr.maif.daikoku.utils
 
 import org.yaml.snakeyaml.constructor.SafeConstructor
-import org.yaml.snakeyaml.{LoaderOptions, Yaml => SnakeYaml}
+import org.yaml.snakeyaml.{DumperOptions, LoaderOptions, Yaml => SnakeYaml}
 import play.api.libs.json._
 
 import scala.jdk.CollectionConverters._
@@ -15,6 +15,13 @@ object Yaml {
 
   def parse(content: String): Option[JsValue] =
     Try(convert(loader().load[Any](content))).toOption
+
+  // YAML is a superset of JSON: snakeyaml reads the JSON text as is
+  def write(json: JsValue): String = {
+    val options = new DumperOptions()
+    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)
+    new SnakeYaml(options).dump(loader().load[Any](Json.stringify(json)))
+  }
 
   private def convert(value: Any): JsValue = value match {
     case null => JsNull

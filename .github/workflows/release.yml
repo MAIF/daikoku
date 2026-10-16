@@ -56,7 +56,8 @@ jobs:
       id: version
       run: |
         find ./manual -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
-        find ./daikoku/public/swaggers -type f -name 'admin-api-openapi.*' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
+        # info.version is the only 2-space-indented "version" key of the OpenAPI document
+        sed -i 's/^  version: .*/  version: ${{ github.event.inputs.releaseversion }}/' ./daikoku/public/swaggers/admin-api-openapi.yaml
         echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
     - name: Commit formatted sources
       if: steps.version.outputs.diff != '0'

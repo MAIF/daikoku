@@ -1,0 +1,99 @@
+# Remote catalogs
+
+A remote catalog keeps tenant entities in sync with files kept outside Daikoku: a Git repository
+(GitHub, GitLab), an HTTP endpoint or a folder on the server. The files are the source of truth:
+what you add, change or remove there is created, updated or removed in Daikoku.
+
+Managed kinds: `team`, `usage-plan`, `api`, `keyring`, `api-subscription`, `cms-page`,
+`api-documentation-page`. The
+[reference](./4-reference.md) shows a complete document of each.
+
+Catalogs are managed by tenant admins, in the tenant settings, under `Remote catalogs`.
+
+## How a run works
+
+A run is all or nothing.
+
+1. **Read.** Daikoku fetches and parses every file. An unreadable file, an invalid YAML/JSON document,
+   a document without `_id`, `kind` or `_tenant`, or a `_tenant` other than the catalog's fails the
+   run. Nothing is applied.
+2. **Validate.** Every document is validated as the admin API would, against the database **and** the
+   other documents of the run: an API may reference a plan declared in the same run. Any error fails
+   the run. Nothing is applied.
+3. **Apply.** Writes go one by one in dependency order: `team`, `cms-page`,
+   `api-documentation-page`, `usage-plan`, `api`, `keyring`, `api-subscription`. Removals go in
+   reverse order. The first write error stops the run
+   with the status `partial`. There is no rollback.
+
+Every error is reported with its file, so one run lists all the problems at once.
+
+## Ownership
+
+Each entity written by a catalog carries the metadata `created_by: remote_catalog=<catalog id>`.
+
+- A catalog only updates and removes the entities carrying **its** tag.
+- An entity that already exists without a tag (created by hand) is refused, unless the catalog has
+  **Adopt existing entities** on: it is then overwritten and tagged.
+- An entity tagged by another catalog is always refused.
+- On an update, some fields keep their value in Daikoku whatever the files say: the stars, issues,
+  posts and issue tags of an API, and the test configuration (`testing`) of an API or a plan, set in
+  the back office with its Otoroshi key.
+
+:::note
+A run writes the desired state directly. It does not trigger the side effects of the back office:
+changing the state of an API through a catalog does not notify its subscribers.
+:::
+
+## Catalog settings
+
+| Setting | Effect |
+|---|---|
+| Source | Where the files are read, see below. |
+| Scheduling | Opts the catalog in the background job (see [Operators](#operators)). |
+| Allowed kinds | Restricts the kinds the catalog may declare. Empty: all. |
+| Max deletion percent | A run deleting more than this share of the managed entities fails without applying anything. Default `30`, `-1` for no limit, ignored under 5 managed entities. |
+| Delete the entities removed from the source | On (default): a removed entity is deleted. Off: it is **detached** (it loses its tag and stays). |
+| Adopt existing entities | Takes over the untagged entities the files describe. Meant for a one-off migration, see [Move an existing tenant](./3-migrate.md). |
+| One folder per team | GitHub / GitLab only, see [Team folders](./1-files.md#team-folders). |
+
+### Sources
+
+| Kind | Configuration |
+|---|---|
+| `github`, `gitlab` | `repo` (`owner/name`, or an organization / group with `repo_patterns`), `branch` (default `main`), `path` (file, listing or folder), `token`, `base_url` for self-hosted instances, `recursive` to read subfolders. |
+| `http` | `url` (a document or a listing), `headers`, `timeout` in ms (default `30000`). |
+| `file` | `path` on the server (file, listing or folder), `recursive`, `pre_command`. Disabled unless the instance allows it: until then the back office does not offer it and a catalog using it cannot be saved. |
+
+## Actions
+
+- **Deploy**: runs now and applies. The report shows the changes of each updated entity, field by
+  field: removed lines in red, added lines in green.
+- **Test**: the same run without writing anything, with the same report. Use it to preview a change.
+- **Undeploy**: removes every entity tagged by the catalog. The catalog is kept.
+- **History**: the last 20 runs with their created, updated, deleted and detached entities and their
+  errors, without the changes. A run is `completed`, `partial` (stopped during the apply) or `failed`
+  (nothing applied).
+- **CI & webhook**: the catalog token and the webhook URL, see [CI and webhooks](./2-ci-and-webhooks.md).
+- **Delete**: removes the catalog and **detaches** its entities, which stay in Daikoku. Run Undeploy
+  first to delete them too.
+
+One run at a time per tenant: a deploy started while another one runs is refused.
+
+## Operators
+
+| Key | Default | Effect |
+|---|---|---|
+| `daikoku.remoteCatalogJob.enabled` | `false` | Starts the background job. |
+| `daikoku.remoteCatalogJob.mode` | `interval` | `interval` or `cron`. |
+| `daikoku.remoteCatalogJob.interval` | `60000` | Period in ms, in `interval` mode. |
+| `daikoku.remoteCatalogJob.cronExpression` | | Cron expression, in `cron` mode. |
+| `daikoku.remoteCatalogJob.key` | `secret` | Key of `POST /api/jobs/remote-catalog/_sync?key=<key>`, which runs the job now for the tenant of the request domain. |
+| `daikoku.remoteCatalogJob.allowFileSource` | `false` | Allows the `file` source (`DAIKOKU_REMOTE_CATALOG_ALLOW_FILE_SOURCE`). |
+| `daikoku.remoteCatalogJob.allowPreCommand` | `false` | Allows `pre_command` on the `file` source (`DAIKOKU_REMOTE_CATALOG_ALLOW_PRE_COMMAND`). |
+| `daikoku.remoteCatalogJob.allowedHosts` | `[]` | Hosts the `http`, `github` and `gitlab` sources may call. Empty: any. A list or a comma-separated environment variable. |
+
+Each key has an environment variable, e.g. `DAIKOKU_REMOTE_CATALOG_JOB_ENABLED`,
+`DAIKOKU_REMOTE_CATALOG_ALLOWED_HOSTS`. The job runs every enabled catalog whose scheduling is on.
+
+A catalog using a disabled `file` source or `pre_command` is refused when saved (`400`). One saved
+before the instance disabled it fails each run, with the variable to set in the error.

@@ -53,11 +53,14 @@ Run these via `mise run <task>` (see `mise.toml` for the full list).
 
 ### Dev
 
-- `mise run dev` — **primary dev entry point.** Starts backend + frontend + containers via
-  process-compose, seeded with the "light" dataset. Dashboard on port 9999.
-- `mise run dev:empty` — same, but with an empty database.
-- `mise run dev:back` / `mise run dev:front` — run only one side (two terminals) for finer control.
-  Backend runs with JVM debug on port 5005 and sbt `~run` (hot reload).
+- `mise run dev` — **primary dev entry point.** Starts Postgres, backend, frontend and the containers
+  (Otoroshi, SMTP) via process-compose, seeded with `dev/config/daikoku_state_local.ndjson` (local
+  auth, `admin@foo.bar` / `password`). Dashboard on port 9999. Backend runs with JVM debug on port
+  5005 and sbt `~run` (hot reload).
+- `mise run dev --lite` — same without Otoroshi nor SMTP: Postgres, backend and frontend only.
+- `mise run dev --mode <ldap|oidc|empty|dump>` — other auth providers, an empty database
+  (`admin@daikoku.io` / `password`) or a restored `dev/dumps/dump.sql`. `--test` opens the Playwright
+  UI (ldap, oidc and local modes).
 - `mise run doc` — serve the Docusaurus docs locally.
 
 ### Tests

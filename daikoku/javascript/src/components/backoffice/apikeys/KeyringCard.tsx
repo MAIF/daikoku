@@ -47,6 +47,7 @@ import {
   manage,
 } from '../../utils';
 import classNames from 'classnames';
+import { useExportEntity } from '../../utils/useExportEntity';
 
 interface KeyringCardProps {
   api: IApi;
@@ -68,6 +69,8 @@ export const KeyringCard = ({
   const actionsInFlight = useRef(new Set<string>());
   const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
 
+  const { canExport, exportEntity } = useExportEntity();
+
 
 
   const errorMessage = (error: unknown) =>
@@ -75,22 +78,23 @@ export const KeyringCard = ({
       ? error.error
       : 'Oops something went wrong';
 
-  const withPendingAction = async (
+  const withPendingAction = <T,>(
     targetId: string,
-    action: () => Promise<unknown>
+    action: () => Promise<T>
   ) => {
-    if (actionsInFlight.current.has(targetId)) return;
+    if (actionsInFlight.current.has(targetId)) return Promise.resolve();
     actionsInFlight.current.add(targetId);
     setPendingActions(new Set(actionsInFlight.current));
 
-    try {
-      return await action();
-    } catch (error) {
-      toast.error(translate(errorMessage(error)));
-    } finally {
-      actionsInFlight.current.delete(targetId);
-      setPendingActions(new Set(actionsInFlight.current));
-    }
+    return Promise.resolve()
+      .then(action)
+      .catch((error) => {
+        toast.error(translate(errorMessage(error)));
+      })
+      .finally(() => {
+        actionsInFlight.current.delete(targetId);
+        setPendingActions(new Set(actionsInFlight.current));
+      });
   };
 
   const guardedToggle = (
@@ -100,11 +104,13 @@ export const KeyringCard = ({
     action: () => Promise<unknown>
   ) => {
     if (api.state === 'blocked') return;
-    return withPendingAction(targetId, async () => {
-      const confirmed = needsConfirm
-        ? await confirm({ message: confirmMessage })
-        : true;
-      if (confirmed) return action();
+    return withPendingAction(targetId, () => {
+      const confirmation = needsConfirm
+        ? confirm({ message: confirmMessage })
+        : Promise.resolve(true);
+      return confirmation.then((confirmed) => {
+        if (confirmed) return action();
+      });
     });
   };
 
@@ -624,6 +630,14 @@ export const KeyringCard = ({
                       {translate('subscription.extract.button.label')}
                     </button>
                   )}
+                  {canExport && (
+                    <button
+                      className="dropdown-item cursor-pointer"
+                      onClick={() => exportEntity('api-subscription', sub._id)}
+                    >
+                      {translate('remote-catalog.exportEntity.button')}
+                    </button>
+                  )}
                   <div className="dropdown-divider" />
                   <button
                     className="dropdown-item cursor-pointer danger"
@@ -755,7 +769,7 @@ export const KeyringCard = ({
                         placeholder: translate('keyring.custom.name.placeholder'),
                       },
                     },
-                    onSubmit: (data) => () => updateKeyringName(keyring._id, data.customName ?? ''),
+                    onSubmit: (data) => updateKeyringName(keyring._id, data.customName ?? ''),
                     value: { customName: keyring.customName },
                   })
                 }
@@ -797,6 +811,14 @@ export const KeyringCard = ({
                   }}
                 >
                   {translate('subscription.rotation.update.label')}
+                </button>
+              )}
+              {canExport && (
+                <button
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => exportEntity('keyring', keyring._id)}
+                >
+                  {translate('remote-catalog.exportEntity.button')}
                 </button>
               )}
               <div className="dropdown-divider" />

@@ -1,11 +1,19 @@
 package fr.maif.daikoku.utils
 
 import cats.data.EitherT
+import cats.implicits.*
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.domain.{TeamType, Tenant, User, ValueType}
+import fr.maif.daikoku.domain.{
+  ApiDocumentation,
+  TeamType,
+  Tenant,
+  TenantId,
+  User,
+  ValueType
+}
 import fr.maif.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.daikoku.login.TenantHelper
 import fr.maif.daikoku.utils.Errors
@@ -17,6 +25,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json.*
 import play.api.mvc.*
 import fr.maif.daikoku.storage.{DataStore, Repo}
+import fr.maif.daikoku.storage.drivers.postgres.{Col, PostgresDataStore}
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -184,6 +193,45 @@ object UpdateOrCreate {
   }
 }
 
+trait ReadEntitiesFrom {
+  def exists(kind: String, id: String)(
+      inDb: => Future[Option[?]]
+  ): Future[Boolean]
+}
+
+object ReadEntitiesFrom {
+  val inDatabase: ReadEntitiesFrom = new ReadEntitiesFrom {
+    def exists(kind: String, id: String)(
+        inDb: => Future[Option[?]]
+    ): Future[Boolean] =
+      inDb.map(_.isDefined)(using ExecutionContext.parasitic)
+  }
+}
+
+// e.g. Map("usage-plan" -> Set("plan-free"), "api" -> Set("api-x", "api-legacy"))
+case class ReconcileFinalIds(byKind: Map[String, Set[String]])
+    extends ReadEntitiesFrom {
+  def exists(kind: String, id: String)(
+      inDb: => Future[Option[?]]
+  ): Future[Boolean] =
+    Future.successful(byKind.getOrElse(kind, Set.empty).contains(id))
+}
+
+case class PreparedWrite(
+    id: String,
+    action: String,
+    write: () => EitherT[Future, AppError, Unit],
+    changes: () => Option[JsArray]
+)
+
+case class ExistingEntity(
+    createdBy: Option[String],
+    name: Option[String],
+    parent: Option[String]
+)
+
+// entityId -> created_by, name and parent, e.g. Map("plan-free" -> ExistingEntity(Some("remote_catalog=cat-git"), Some("Free"), None))
+type ExistingEntities = Map[String, ExistingEntity]
 abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
@@ -206,6 +254,54 @@ abstract class AdminApiController[Of, Id <: ValueType](
       entity: Of,
       updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, Of]
+
+  def validateForReconcile(
+      tenant: Tenant,
+      entity: Of,
+      existing: Option[Of],
+      updateOrCreate: UpdateOrCreate,
+      finalIds: ReconcileFinalIds
+  ): EitherT[Future, AppError, Of] =
+    validate(entity, updateOrCreate)
+
+  protected def checkReference(
+      readFrom: ReadEntitiesFrom,
+      kind: String,
+      id: String,
+      error: AppError
+  )(inDb: => Future[Option[?]]): EitherT[Future, AppError, Unit] =
+    EitherT(
+      readFrom
+        .exists(kind, id)(inDb)
+        .map(found => Either.cond(found, (), error))
+    )
+
+  // every page of the tree, children included, e.g. page-1 > (page-1-1, page-1-2)
+  protected def checkDocumentationPages(
+      readFrom: ReadEntitiesFrom,
+      tenant: TenantId,
+      documentation: Option[ApiDocumentation]
+  ): EitherT[Future, AppError, Unit] = {
+    val pageIds = documentation.toSeq.flatMap(_.docIds())
+
+    pageIds
+      .map(pageId =>
+        checkReference(
+          readFrom,
+          "api-documentation-page",
+          pageId,
+          AppError.ParsingPayloadError(s"Documentation page ($pageId) not found")
+        )(
+          env.dataStore.apiDocumentationPageRepo
+            .forTenant(tenant)
+            .findById(pageId)
+        )
+      )
+      .toList
+      .sequence
+      .map(_ => ())
+  }
+
   def getId(entity: Of): Id
 
   def doCreate(tenant: Tenant, entity: Of): EitherT[Future, AppError, Of] =
@@ -259,65 +355,165 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def readMetadata(e: Of): Map[String, String] = Map.empty
 
-  def reconcileMerge(existing: Of, incoming: Of): Of = incoming
+  def mergeWithExisting(existing: Of, incoming: Of): Of = incoming
 
-  def reconcileUpsert(
+  def fromCatalogJson(entity: JsValue): Either[String, Of] = fromJson(entity)
+
+  def prepareWrites(
       tenant: Tenant,
-      raw: JsValue,
-      dryRun: Boolean = false
-  ): Future[Either[String, String]] =
-    fromJson(raw) match {
-      case Left(err) => Future.successful(Left(err))
-      case Right(entity) =>
-        entityStore(tenant, env.dataStore)
-          .findById(getId(entity).value)
-          .flatMap { existing =>
-            val mode =
-              if (existing.isDefined) UpdateOrCreate.Update
-              else UpdateOrCreate.Create
-            validate(entity, mode).value.flatMap {
-              case Left(error) =>
-                Future.successful(Left(error.getErrorMessage()))
-              case Right(validated) =>
-                existing match {
-                  case Some(old) =>
-                    val toSave = reconcileMerge(old, validated)
-                    if (toJson(old) == toJson(toSave))
-                      Future.successful(Right("unchanged"))
-                    else if (dryRun) Future.successful(Right("updated"))
-                    else
-                      doUpdate(tenant, old, toSave).value.map {
-                        case Left(error) => Left(error.getErrorMessage())
-                        case Right(_)    => Right("updated")
-                      }
-                  case None =>
-                    if (dryRun) Future.successful(Right("created"))
-                    else
-                      doCreate(tenant, validated).value.map {
-                        case Left(error) => Left(error.getErrorMessage())
-                        case Right(_)    => Right("created")
-                      }
-                }
-            }
-          }
-    }
+      raws: Seq[JsValue],
+      metadataKey: Option[String],
+      finalIds: ReconcileFinalIds,
+      adoptExisting: Boolean
+  ): Future[Seq[Either[String, PreparedWrite]]] = {
+    val parsed = raws.map(fromCatalogJson)
+    val parsedIds = parsed.collect { case Right(entity) => getId(entity) }
 
-  def reconcileDelete(tenant: Tenant, id: String): Future[Boolean] =
+    readByIds(tenant, parsedIds).flatMap { existingById =>
+      Future.sequence(parsed.map {
+        case Left(error) => Future.successful(Left(error))
+        case Right(entity) =>
+          val existing = existingById.get(getId(entity).value)
+
+          prepareWrite(
+            tenant,
+            entity,
+            existing,
+            metadataKey,
+            finalIds,
+            adoptExisting
+          )
+      })
+    }
+  }
+
+  // e.g. team-a absent from DB -> PreparedWrite("team-a", "created", () => doCreate(...))
+  //      team-a in DB, identical -> PreparedWrite("team-a", "unchanged", no-op)
+  //      team-a in DB, created by hand -> Left("team-a already exists and is not managed by this catalog"),
+  //        or adopted (updated with the catalog tag) when adoptExisting
+  //      team-a in DB, created by another catalog -> Left(...), even when adoptExisting
+  private def prepareWrite(
+      tenant: Tenant,
+      entity: Of,
+      existing: Option[Of],
+      metadataKey: Option[String],
+      finalIds: ReconcileFinalIds,
+      adoptExisting: Boolean
+  ): Future[Either[String, PreparedWrite]] = {
+    val id = getId(entity).value
+    val owner = existing.map(old => readMetadata(old).get("created_by"))
+    val refused = owner match {
+      case Some(Some(key)) => !metadataKey.contains(key)
+      case Some(None)      => !adoptExisting
+      case None            => false
+    }
+    val mode =
+      if (existing.isDefined) UpdateOrCreate.Update else UpdateOrCreate.Create
+
+    if (refused) {
+      Future.successful(
+        Left(s"$id already exists and is not managed by this catalog")
+      )
+    } else {
+      validateForReconcile(tenant, entity, existing, mode, finalIds).value.map {
+        case Left(error) => Left(error.getErrorMessage())
+        case Right(validated) =>
+          existing match {
+            case None =>
+              Right(
+                PreparedWrite(
+                  id,
+                  "created",
+                  () => doCreate(tenant, validated).map(_ => ()),
+                  () => None
+                )
+              )
+            case Some(old) =>
+              val merged = mergeWithExisting(old, validated)
+
+              if (toJson(old) == toJson(merged)) {
+                Right(
+                  PreparedWrite(
+                    id,
+                    "unchanged",
+                    () => EitherT.pure[Future, AppError](()),
+                    () => None
+                  )
+                )
+              } else {
+                Right(
+                  PreparedWrite(
+                    id,
+                    "updated",
+                    () => doUpdate(tenant, old, merged).map(_ => ()),
+                    () => Some(changesBetween(old, merged))
+                  )
+                )
+              }
+          }
+      }
+    }
+  }
+
+  private def changesBetween(old: Of, merged: Of): JsArray = {
+    import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
+    import diffson.lcs.Patience
+    import diffson.playJson.*
+
+    implicit val lcs: Patience[JsValue] = new Patience[JsValue]
+
+    val patch = diffson.diff(toJson(old), toJson(merged))
+
+    DiffsonProtocol.JsonPatchFormat.writes(patch).as[JsArray]
+  }
+
+  def doDeleteById(tenant: Tenant, id: String): Future[Either[String, String]] =
     entityStore(tenant, env.dataStore).findById(id).flatMap {
-      case None => Future.successful(false)
+      case None => Future.successful(Right("already-deleted"))
       case Some(entity) =>
         doDelete(tenant, entity).value.map {
-          case Left(_)  => false
-          case Right(_) => true
+          case Left(error) => Left(error.getErrorMessage())
+          case Right(_)    => Right("deleted")
         }
     }
 
-  def reconcileListManaged(
-      tenant: Tenant
-  ): Future[Seq[(String, Map[String, String])]] =
+  private def readByIds(
+      tenant: Tenant,
+      ids: Seq[Id]
+  ): Future[Map[String, Of]] =
     entityStore(tenant, env.dataStore)
-      .findAll()
-      .map(_.map(e => (getId(e).value, readMetadata(e))))
+      .findByIds(ids)
+      .map(_.map(entity => getId(entity).value -> entity).toMap)
+
+  // reads the id, the ownership mark, the name and the parent only, never the whole entity
+  def readExistingEntities(tenant: Tenant): Future[ExistingEntities] = {
+    val table = entityStore(tenant, env.dataStore).tableName
+
+    env.dataStore
+      .asInstanceOf[PostgresDataStore]
+      .queryRawMapped(
+        "SELECT _id, content->'metadata'->>'created_by' AS created_by, " +
+          "COALESCE(content->>'name', content->>'customName', content->>'title') AS name, " +
+          "content->>'parent' AS parent " +
+          s"FROM $table WHERE content->>'_tenant' = $$1",
+        Seq(
+          Col.str("_id"),
+          Col.str("created_by"),
+          Col.str("name"),
+          Col.str("parent")
+        ),
+        Seq(tenant.id.value)
+      )
+      .map(_.map { row =>
+        val existing = ExistingEntity(
+          createdBy = (row \ "created_by").asOpt[String],
+          name = (row \ "name").asOpt[String],
+          parent = (row \ "parent").asOpt[String]
+        )
+
+        (row \ "_id").as[String] -> existing
+      }.toMap)
+  }
 
   def findAll(): Action[AnyContent] =
     DaikokuApiAction.async { ctx =>

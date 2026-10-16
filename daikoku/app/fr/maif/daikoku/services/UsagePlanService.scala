@@ -148,7 +148,7 @@ class UsagePlanService(
     EitherT.pure[Future, AppError](updatedPlan)
   }
 
-  private def getPlanAndCheckIt(
+  def getPlanAndCheckIt(
       tenant: Tenant,
       oldPlan: UsagePlan,
       newPlan: UsagePlan
@@ -160,17 +160,27 @@ class UsagePlanService(
             .map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(
             _.otoroshiSettings
           ) =>
-        EitherT.leftT(AppError.ForbiddenAction)
+        EitherT.leftT(
+          AppError.Forbidden(
+            "The Otoroshi settings of a plan cannot change: use the migration API"
+          )
+        )
       // Handle prices changes or payment settings deletion (addition is really forbidden)
       case _
           if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
-        EitherT.leftT(AppError.ForbiddenAction)
+        EitherT.leftT(
+          AppError.Forbidden("The payment settings of a plan cannot change once set")
+        )
       case _
           if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
-        EitherT.leftT(AppError.ForbiddenAction)
+        EitherT.leftT(
+          AppError.Forbidden("The cost per month of a plan cannot change once set")
+        )
       case _
           if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan.costPerRequest =>
-        EitherT.leftT(AppError.ForbiddenAction)
+        EitherT.leftT(
+          AppError.Forbidden("The cost per request of a plan cannot change once set")
+        )
       case _
           if !tenant.aggregationApiKeysSecurity.exists(identity) &&
             newPlan.aggregationApiKeysSecurity.exists(identity) =>
@@ -183,6 +193,8 @@ class UsagePlanService(
             autoRotation = newPlan.autoRotation
           )
         )
+      case _ if newPlan.visibility == UsagePlanVisibility.Admin =>
+        EitherT.leftT(AppError.Forbidden("A plan cannot become an admin plan"))
       case _ => EitherT.pure(newPlan)
     }
   }
