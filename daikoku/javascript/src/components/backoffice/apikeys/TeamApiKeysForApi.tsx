@@ -1,7 +1,8 @@
 import {useQuery} from '@tanstack/react-query';
 import sortBy from 'lodash/sortBy';
 import {
-  ChevronLeft, ChevronRight, Ellipsis,
+  ChevronDown,
+  ChevronLeft, ChevronRight, ChevronUp, Ellipsis,
 } from "lucide-react";
 import {useContext, useEffect, useState, useRef} from 'react';
 import {Link, useParams} from 'react-router-dom';
@@ -14,6 +15,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
+  IKeyringSubscriptionGql,
   ITeamSimple,
   isError
 } from '../../../types';
