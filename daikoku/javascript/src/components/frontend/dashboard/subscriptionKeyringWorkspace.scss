@@ -196,6 +196,23 @@
     margin-top: 1rem;
   }
 
+  &__review-key {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid $form-border-color;
+    overflow-wrap: anywhere;
+  }
+
+  &__review-key summary {
+    cursor: pointer;
+  }
+
+  &__review-plans {
+    max-height: 24rem;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    margin: 0.75rem 0 0;
+  }
+
   &__resolution {
     padding: 1rem 0;
     border-top: 1px solid $form-border-color;
@@ -248,3 +265,4 @@
     }
   }
 }
+

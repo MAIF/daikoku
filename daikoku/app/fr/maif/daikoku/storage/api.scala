@@ -523,6 +523,14 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
 
 trait TenantRepo extends Repo[Tenant, TenantId] {
 
+  def findForUpdate(
+      id: TenantId
+  )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Option[Tenant]] =
+    queryOne(
+      s"SELECT content FROM $tableName WHERE _id = $$1 FOR UPDATE",
+      Seq(id.value)
+    )
+
   /** Resolves the tenant serving a given hostname. */
   def findByDomain(
       domain: String

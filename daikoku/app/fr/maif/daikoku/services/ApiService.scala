@@ -789,6 +789,49 @@ class ApiService(
   /** Idempotently reserve and provision the disabled keyring shell before a
     * batch item can be materialized.
     */
+  private def ensureBatchKeyringSettings(
+      tenantId: TenantId,
+      settingsId: OtoroshiSettingsId
+  ): Future[Either[AppError, OtoroshiSettings]] =
+    env.dataStore.withTransaction {
+      env.dataStore.tenantRepo.findForUpdate(tenantId).flatMap {
+        case None =>
+          Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+        case Some(currentTenant) =>
+          currentTenant.otoroshiSettings.find(_.id == settingsId) match {
+            case None =>
+              Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+            case Some(settings) if settings.keyringEmptyGroup.isDefined =>
+              Future.successful(Right(settings))
+            case Some(settings) =>
+              val configured = settings.copy(keyringEmptyGroup =
+                Some(
+                  KeyringEmptyGroup(
+                    IdGenerator.token(32),
+                    IdGenerator.token(64)
+                  )
+                )
+              )
+              env.dataStore.tenantRepo
+                .save(
+                  currentTenant.copy(otoroshiSettings =
+                    currentTenant.otoroshiSettings
+                      .filterNot(_.id == settingsId) + configured
+                  )
+                )
+                .map {
+                  case true => Right(configured)
+                  case false =>
+                    Left(
+                      AppError.EntityConflict(
+                        "Could not save the Otoroshi keyring empty group configuration"
+                      )
+                    )
+                }
+          }
+      }
+    }
+
   def prepareBatchKeyring(
       tenant: Tenant,
       batchId: SubscriptionBatchDemandId,
@@ -836,28 +879,36 @@ class ApiService(
                 case None =>
                   Future.successful(Left(AppError.OtoroshiSettingsNotFound))
                 case Some(settings) =>
-                  otoroshiClient
-                    .ensureKeyringEmptyGroup()(using settings)
-                    .flatMap {
-                      case Left(error) => Future.successful(Left(error))
-                      case Right(group) =>
-                        createOrRecoverBatchShellApiKey(
-                          batch = batch,
-                          creation = creation,
-                          keyring = keyring,
-                          settings = settings,
-                          emptyGroup = group
-                        ).flatMap {
+                  val configuredSettings =
+                    if (settings.keyringEmptyGroup.isDefined)
+                      Future.successful(Right(settings))
+                    else ensureBatchKeyringSettings(tenant.id, settings.id)
+                  configuredSettings.flatMap {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(configured) =>
+                      otoroshiClient
+                        .ensureKeyringEmptyGroup()(using configured)
+                        .flatMap {
                           case Left(error) => Future.successful(Left(error))
-                          case Right(_) =>
-                            markBatchKeyringReady(
-                              tenant.id,
-                              batchId,
-                              creationId,
-                              keyring.id
-                            ).map(_.map(_ => keyring.id))
+                          case Right(group) =>
+                            createOrRecoverBatchShellApiKey(
+                              batch = batch,
+                              creation = creation,
+                              keyring = keyring,
+                              settings = configured,
+                              emptyGroup = group
+                            ).flatMap {
+                              case Left(error) => Future.successful(Left(error))
+                              case Right(_) =>
+                                markBatchKeyringReady(
+                                  tenant.id,
+                                  batchId,
+                                  creationId,
+                                  keyring.id
+                                ).map(_.map(_ => keyring.id))
+                            }
                         }
-                    }
+                  }
               }
           }
       }

@@ -37,6 +37,7 @@ import {
 import { IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { Display } from '../../../types/tenant';
 import { SubscriptionKeyringProposal } from './SubscriptionKeyringProposal';
+import { SubscriptionKeyringReview } from './SubscriptionKeyringReview';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
 import './subscriptionKeyringWorkspace.scss';
 
@@ -294,6 +295,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string>();
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [arrangementUndo, setArrangementUndo] = useState<{
     before: WorkspaceFolder[];
     after: WorkspaceFolder[];
@@ -482,8 +484,18 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     setError(undefined);
     setProposalOpen(false);
   };
+  const openReview = () => {
+    if (!subscriptionsQuery.data || hasUnavailablePlans || submitting || assigned.length === 0) return;
+    try {
+      buildWorkspaceSubmission(folders, tenant, subscriptionsQuery.data);
+      setError(undefined);
+      setReviewOpen(true);
+    } catch (failure) {
+      setError(translate(failure instanceof Error ? failure.message : 'subscription.workspace.invalid'));
+    }
+  };
   const submit = () => {
-    if (!subscriptionsQuery.data || hasUnavailablePlans) return;
+    if (!subscriptionsQuery.data || hasUnavailablePlans || submitting) return;
     try {
       const selection = buildWorkspaceSubmission(folders, tenant, subscriptionsQuery.data);
       setError(undefined);
@@ -505,6 +517,26 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         <Link to="/apis">{translate('subscription.workspace.back')}</Link>
       </div>
     );
+
+  if (reviewOpen) {
+    return (
+      <div className="keyring-workspace">
+        {blocker.state === 'blocked' && (
+          <WorkspaceLeaveConfirmation onStay={blocker.reset} onLeave={blocker.proceed} />
+        )}
+        <SubscriptionKeyringReview
+          folders={folders}
+          unassigned={unassigned}
+          teamName={team.name}
+          submitting={submitting}
+          unavailable={hasUnavailablePlans}
+          error={error}
+          onBack={() => setReviewOpen(false)}
+          onSubmit={submit}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="keyring-workspace">
@@ -599,7 +631,10 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         }}
       >
         <div className="keyring-workspace__layout">
-          <WorkspaceDropZone id="unassigned" label={translate('subscription.workspace.unassigned')}>
+          <WorkspaceDropZone
+            id="unassigned"
+            label={translate('subscription.workspace.unassigned')}
+          >
             <h2>
               {translate('subscription.workspace.unassigned')} <small>({unassigned.length})</small>
             </h2>
@@ -929,10 +964,10 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
         <button
           type="button"
           className="btn --primary"
-          onClick={submit}
+          onClick={openReview}
           disabled={submitting || assigned.length === 0 || hasUnavailablePlans}
         >
-          {submitting ? translate('Loading...') : translate('subscription.batch.submit')}
+          {translate('subscription.workspace.review.open')}
         </button>
       </footer>
     </div>
