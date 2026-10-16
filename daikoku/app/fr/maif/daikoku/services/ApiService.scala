@@ -571,7 +571,7 @@ class ApiService(
       )
       // recompute the keyring's Otoroshi key from the updated subscription
       _ <- EitherT.liftF[Future, AppError, Unit](
-        otoroshiSynchronisator.run(subscription.keyring, tenant)
+        otoroshiSynchronisator.runSync(subscription.keyring, tenant)
       )
       keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
         env.dataStore.keyringRepo
@@ -605,7 +605,7 @@ class ApiService(
           .save(subToSave)
       )
       _ <- EitherT.right[AppError](
-        otoroshiSynchronisator.run(subscription.id, tenant)
+        otoroshiSynchronisator.runSync(subscription.id, tenant)
       )
     } yield subToSave
   }
@@ -645,7 +645,7 @@ class ApiService(
               .save(updatedSubscription)
           )
           _ <- EitherT.right[AppError](
-            otoroshiSynchronisator.run(updatedSubscription.id, tenant)
+            otoroshiSynchronisator.runSync(updatedSubscription.id, tenant)
           )
           _ <- paymentClient.toggleStateThirdPartySubscription(
             updatedSubscription
@@ -729,7 +729,7 @@ class ApiService(
       _ <- EitherT.liftF[Future, AppError, Unit](
         keyring.otoroshiSettings match {
           case KeyringOtoroshiBinding.Otoroshi(_) =>
-            otoroshiSynchronisator.run(keyring.id, tenant)
+            otoroshiSynchronisator.runSync(keyring.id, tenant)
           case KeyringOtoroshiBinding.Internal =>
             FastFuture.successful(())
         }
@@ -938,7 +938,7 @@ class ApiService(
           .save(subscription.copy(keyring = newKeyring.id))
       )
       // recompute the former keyring's key without this subscription
-      _ <- EitherT.liftF(otoroshiSynchronisator.run(oldKeyringId, tenant))
+      _ <- EitherT.liftF(otoroshiSynchronisator.runSync(oldKeyringId, tenant))
     } yield Json.obj("created" -> true)).value
   }
 

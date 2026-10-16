@@ -220,7 +220,7 @@ class QueueJob(
         env.dataStore.tenantRepo.findById(o.tenant.value)
       )
       _ <- OptionT.liftF(
-        otoroshiSynchronizerJob.run(KeyringId(o.itemId), tenant)
+        otoroshiSynchronizerJob.runSync(KeyringId(o.itemId), tenant)
       )
     } yield ())
       .getOrElse(())

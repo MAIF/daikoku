@@ -142,7 +142,7 @@ class ApiCrudService(
       )
       _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi, tenant, user)
       _ <- EitherT.liftF[Future, AppError, Unit](
-        otoroshiSynchronisator.run(newApi.id, tenant)
+        otoroshiSynchronisator.runSync(newApi.id, tenant)
       )
       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](
         updateTagsOfIssues(tenant.id, newApi)

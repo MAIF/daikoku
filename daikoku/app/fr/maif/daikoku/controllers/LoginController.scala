@@ -1120,7 +1120,7 @@ class LoginController(
 
         cypheredId =
           Cypher.encrypt(env.config.cypherSecret, randomId, ctx.tenant)
-        link = env.getDaikokuUrl(ctx.tenant, s"/reset/password?id=$cypheredId", user = ctx.user)
+        link = env.getDaikokuUrl(ctx.tenant, s"/reset/password?id=$cypheredId", user = user)
         language: String = user.defaultLanguage.getOrElse(tenantLanguage)
         title <- EitherT.liftF[Future, AppError, String](
           translator.translate(

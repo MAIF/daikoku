@@ -80,7 +80,7 @@ class UsagePlanService(
         env.dataStore.usagePlanRepo.forTenant(tenant).save(updatedPlan)
       )
       _ <- EitherT.liftF(
-        otoroshiSynchronisator.run(updatedPlan.id, tenant)
+        otoroshiSynchronisator.runSync(updatedPlan.id, tenant)
       )
       _ <- runDemandUpdate(tenant, user, oldPlan, updatedPlan, api)
       // FIXME: attention, peut etre il y en a qui sont blocked de base
