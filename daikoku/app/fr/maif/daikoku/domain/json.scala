@@ -1927,6 +1927,9 @@ object json {
             accountCreationProcess = (json \ "accountCreationProcess")
               .asOpt(using SeqValidationStepFormat)
               .getOrElse(Seq.empty),
+            teamCreationProcess = (json \ "teamCreationProcess")
+              .asOpt(using SeqValidationStepFormat)
+              .getOrElse(Seq.empty),
             defaultAuthorizedOtoroshiEntities =
               (json \ "defaultAuthorizedOtoroshiEntities")
                 .asOpt(using SeqTeamAuthorizedEntitiesFormat),
@@ -2010,6 +2013,9 @@ object json {
         "clientNamePattern" -> o.clientNamePattern,
         "accountCreationProcess" -> SeqValidationStepFormat.writes(
           o.accountCreationProcess
+        ),
+        "teamCreationProcess" -> SeqValidationStepFormat.writes(
+          o.teamCreationProcess
         ),
         "defaultAuthorizedOtoroshiEntities" -> o.defaultAuthorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
@@ -4387,6 +4393,43 @@ object json {
           "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
             k.value -> JsString(v)
           })
+        )
+    }
+
+  val TeamCreationFormat: Format[TeamCreation] =
+    new Format[TeamCreation] {
+      override def reads(json: JsValue): JsResult[TeamCreation] =
+        Try {
+          JsSuccess(
+            TeamCreation(
+              id = (json \ "_id").as(using SubscriptionDemandIdFormat),
+              randomId = (json \ "randomId").as[String],
+              email = (json \ "email").as[String],
+              name = (json \ "name").as[String],
+              avatar = (json \ "avatar").as[String],
+              creationDate = (json \ "creationDate").as(using DateTimeFormat),
+              steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
+              state = (json \ "state").as(using SubscriptionDemandStateFormat),
+              value = (json \ "value").as[JsObject],
+              fromTenant = (json \ "fromTenant").as(using TenantIdFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: TeamCreation): JsValue =
+        Json.obj(
+          "_id" -> o.id.value,
+          "randomId" -> o.randomId,
+          "email" -> o.email,
+          "name" -> o.name,
+          "avatar" -> o.avatar,
+          "creationDate" -> DateTimeFormat.writes(o.creationDate),
+          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "value" -> o.value,
+          "fromTenant" -> o.fromTenant.value
         )
     }
 

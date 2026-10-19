@@ -235,6 +235,12 @@ object NotificationAction {
       motivation: String
   ) extends NotificationAction
 
+  case class TeamCreationAttempt(
+      demand: DemandId,
+      step: SubscriptionDemandStepId,
+      motivation: String
+  ) extends NotificationAction
+
   case class ApiSubscriptionTransferSuccess(
       subscription: ApiSubscriptionId
   ) extends NotificationAction

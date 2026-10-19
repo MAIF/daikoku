@@ -6,7 +6,8 @@ import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.{
   DaikokuAction,
   DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
@@ -32,6 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(
     DaikokuAction: DaikokuAction,
+    DaikokuTenantAction: DaikokuTenantAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     env: Env,
     cc: ControllerComponents,
@@ -120,7 +122,140 @@ class TeamController(
       }
     }
 
-  def createTeam(): Action[JsValue] =
+  val passwordPattern = java.util.regex.Pattern
+    .compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$")
+
+  def validateTeamCreationForm(
+      name: String,
+      email: String
+  ): Either[AppError, Unit] = {
+
+    if (name.trim().isEmpty()) {
+      Left(AppError.BadRequestError("Name should not be empty"))
+    } else if (email.trim().isEmpty()) {
+      Left(AppError.BadRequestError("Email address should not be empty"))
+    } else {
+      Right(())
+    }
+  }
+
+  def createTeam() =
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} have create team @{team.name} - @{team.id}"
+        )
+      )(ctx) {
+        println(ctx.user)
+        val body = ctx.request.body.as[JsObject]
+        val email = (body \ "contact").as[String]
+        val name = (body \ "name").as[String]
+        val avatar =
+          (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
+
+        (for {
+          maybeTeam <- EitherT.liftF[Future, AppError, Seq[Team]](
+            env.dataStore.teamRepo.findByUser(
+              tenant = ctx.tenant.id,
+              user = ctx.user.id,
+              excludePersonal = true
+            )
+          )
+          _ <- EitherT.cond[Future](
+            !maybeTeam.exists(_.name == name),
+            (),
+            AppError.EntityConflict("Team already exists")
+          )
+          randomId = IdGenerator.token(128)
+          teamCreationId = DemandId(IdGenerator.token(32))
+          _ <- EitherT.fromEither[Future](
+            validateTeamCreationForm(
+              name,
+              email
+            )
+          )
+          test = println("env.dataStore.teamCreationRepo.save")
+          _ <- EitherT.liftF(
+            env.dataStore.teamCreationRepo
+              .save(
+                TeamCreation(
+                  id = teamCreationId,
+                  randomId = randomId,
+                  email = email,
+                  avatar = avatar,
+                  name = name,
+                  creationDate = DateTime.now(),
+                  steps = ctx.tenant.accountCreationProcess.map(step =>
+                    SubscriptionDemandStep(
+                      id = SubscriptionDemandStepId(IdGenerator.token),
+                      state = step match {
+                        case _: ValidationStep.Form =>
+                          SubscriptionDemandState.Accepted
+                        case _ => SubscriptionDemandState.Waiting
+                      },
+                      step = step
+                    )
+                  ),
+                  state = SubscriptionDemandState.Waiting,
+                  value = body - "confirmPassword" - "password",
+                  fromTenant = ctx.tenant.id
+                )
+              )
+          )
+          testo = println("env.dataStore.teamCreationRepo.saveO")
+          result <- teamService.runTeamCreationProcess(
+            teamCreationId,
+            ctx.tenant,
+            ctx.user.id
+          )
+        } yield result)
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  //  def createTeam() =
+//      (for {
+//
+//        _ <- EitherT.liftF(
+//          env.dataStore.accountCreationRepo.save(
+//            AccountCreation(
+//              id = accountCreationId,
+//              randomId = randomId,
+//              email = email,
+//              avatar = avatar,
+//              name = name,
+//              password = BCrypt.hashpw(password, BCrypt.gensalt()),
+//              creationDate = DateTime.now(),
+//              validUntil = DateTime.now().plusMinutes(15),
+//              steps = ctx.tenant.accountCreationProcess.map(step =>
+//                SubscriptionDemandStep(
+//                  id = SubscriptionDemandStepId(IdGenerator.token),
+//                  state = step match {
+//                    case _: ValidationStep.Form =>
+//                      SubscriptionDemandState.Accepted
+//                    case _ => SubscriptionDemandState.Waiting
+//                  },
+//                  step = step
+//                )
+//              ),
+//              state = SubscriptionDemandState.Waiting,
+//              value = body - "confirmPassword" - "password",
+//              fromTenant = ctx.tenant.id,
+//              preferredDomains = Map(ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some))
+//            )
+//          )
+//        )
+//        result <- accountCreationService.runAccountCreationProcess(
+//          accountCreationId,
+//          ctx.tenant
+//        )
+//      } yield result)
+//        .leftMap(_.render())
+//        .merge
+//    }
+
+  def createTeamOLD(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(

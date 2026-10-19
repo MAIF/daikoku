@@ -2,14 +2,20 @@ package fr.maif.daikoku.services
 
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
+import fr.maif.daikoku.domain.SubscriptionDemandState.Accepted
+import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
+import play.api.mvc.Result
+import play.api.mvc.Results.Ok
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -229,4 +235,509 @@ class TeamService(
         deletionService.deleteTeamByQueue(team.id, tenant.id)
     }
   }
+
+  def runTeamCreationProcess(
+      demandId: DemandId,
+      tenant: Tenant,
+      userId: UserId
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Result] = {
+
+    def processStep(
+        step: SubscriptionDemandStep,
+        teamCreation: TeamCreation
+    ): EitherT[Future, AppError, Result] = {
+
+      step.step match {
+        case s: ValidationStep.TeamAdmin =>
+          notifyTenantAdminteam(s, step, teamCreation, tenant)
+        // generate notification
+        case s: ValidationStep.Email =>
+          sendEmail(s, step, teamCreation, tenant)
+        // send email
+        case s: ValidationStep.HttpRequest =>
+          callHttpRequestStep(s, step, teamCreation, tenant)
+        // call http and check response
+        case s: ValidationStep.Form =>
+          EitherT.leftT[Future, Result](
+            AppError.BadRequestError(
+              "Only one form si available, please contact an administrator"
+            )
+          )
+        case _: ValidationStep.Payment =>
+          EitherT.leftT[Future, Result](
+            AppError.BadRequestError(
+              "Payment step is not authorized for the  moment, please contact an administrator"
+            )
+          )
+      }
+    }
+
+    for {
+      teamCreation <- EitherT.fromOptionF(
+        env.dataStore.teamCreationRepo.findById(demandId),
+        AppError.EntityNotFound("Team creation")
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        !teamCreation.state.isClosed,
+        (),
+        AppError.Forbidden("Team creation is closed")
+      )
+      maybeStep <- EitherT.pure[Future, AppError](
+        teamCreation.steps.find(!_.state.isClosed)
+      )
+
+      result <-
+        maybeStep.fold(finalizeTeamCreation(teamCreation, tenant, userId))(
+          processStep(_, teamCreation)
+        )
+    } yield result
+  }
+
+  def callHttpRequestStep(
+      step: ValidationStep.HttpRequest,
+      _step: SubscriptionDemandStep,
+      demand: TeamCreation,
+      tenant: Tenant
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Result] = {
+
+    def declineTeamCreation(): EitherT[Future, AppError, Result] = {
+      val language = tenant.defaultLanguage.getOrElse("en")
+      for {
+        _ <- EitherT.right[AppError](
+          env.dataStore.teamCreationRepo
+            .save(
+              demand.copy(
+                state = SubscriptionDemandState.Refused,
+                steps = demand.steps.map(s =>
+                  if (s.id == _step.id)
+                    s.copy(state = SubscriptionDemandState.Refused)
+                  else s
+                )
+              )
+            )
+        )
+        title <- EitherT.right[AppError](
+          translator.translate("mail.rejection.title", tenant)(using
+            messagesApi,
+            language,
+            env
+          )
+        )
+        body <- EitherT.right[AppError](
+          translator.translate(
+            "mail.api.subscription.rejection.body",
+            tenant,
+            Map(
+              "user" -> JsString(demand.name),
+              "tenant" -> JsString(tenant.name),
+              "team_creation_data" -> demand.asJson,
+              "tenant_data" -> tenant.asJson
+            )
+          )(using messagesApi, language, env)
+        )
+        _ <- EitherT.right[AppError](
+          tenant.mailer.send(title, Seq(demand.email), body, tenant)(using
+            ec,
+            translator,
+            messagesApi,
+            env,
+            language
+          )
+        )
+      } yield Ok(Json.obj("creation" -> "refused"))
+    }
+
+    for {
+      response <-
+        EitherT
+          .liftF(
+            env.wsClient
+              .url(step.url)
+              .withHttpHeaders(step.headers.toSeq*)
+              .post(Json.obj("demand" -> demand.asJson))
+          )
+          .map(_.json)
+      accept <- EitherT.fromOption[Future](
+        (response \ "accept").asOpt[Boolean],
+        AppError.BadRequestError("accept not in response call")
+      )
+      result <-
+        if (accept)
+          validateStep(_step, demand, (response \ "metadata").asOpt[JsObject])
+            .map(_ => Ok(Json.obj("done" -> true)))
+        else declineTeamCreation()
+    } yield result
+  }
+
+  private def sendEmail(
+      s: ValidationStep.Email,
+      step: SubscriptionDemandStep,
+      teamCreation: TeamCreation,
+      tenant: Tenant
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Result] = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+
+    val stepValidator = StepValidator(
+      id = DatastoreId(IdGenerator.token(32)),
+      tenant = tenant.id,
+      token = IdGenerator.token,
+      step = step.id,
+      subscriptionDemand = teamCreation.id,
+      metadata = Json.obj("email" -> teamCreation.email)
+    )
+
+    val cipheredValidationToken = {
+      encrypt(env.config.cypherSecret, stepValidator.token, tenant)
+    }
+
+    val pathAccept =
+      s"/api/team/_validate?token=$cipheredValidationToken"
+    val pathDecline =
+      s"/api/team/_decline?token=$cipheredValidationToken"
+
+    val mailType =
+      if (s.title.contains("confirm")) "confirmation" else "validation"
+    val mailData = Map(
+      "tenant" -> JsString(tenant.name),
+      "urlAccept" -> JsString(
+        env.getDaikokuUrl(
+          tenant,
+          pathAccept
+        )
+      ),
+      "userName" -> JsString(teamCreation.name),
+      "userEmail" -> JsString(teamCreation.email),
+      "message" -> JsString(s.message.getOrElse("")),
+      "team_creation_data" -> teamCreation.asJson,
+      "tenant_data" -> tenant.asJson
+    )
+    for {
+      title <- EitherT.right[AppError](
+        translator.translate(
+          s"mail.account.creation.mail.$mailType.title",
+          tenant,
+          mailData
+        )
+      )
+      body <- EitherT.right[AppError](
+        translator.translate(
+          s"mail.account.creation.mail.$mailType.body",
+          tenant,
+          mailData
+        )
+      )
+
+      _ <- EitherT.right[AppError](
+        tenant.mailer.send(
+          title,
+          s.emails.map(_.replace("${form.email}", teamCreation.email)),
+          body,
+          tenant
+        )
+      )
+      _ <- EitherT.right[AppError](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .save(stepValidator)
+      )
+    } yield {
+      Ok(Json.obj("creation" -> "waiting"))
+    }
+  }
+
+  def notifyTenantAdminteam(
+      step: ValidationStep.TeamAdmin,
+      _step: SubscriptionDemandStep,
+      teamCreation: TeamCreation,
+      tenant: Tenant
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Result] = {
+
+    val motivationPattern = "\\[\\[(.+?)\\]\\]".r
+
+    for {
+      formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
+        tenant.teamCreationProcess.collectFirst { case s: ValidationStep.Form =>
+          s
+        },
+        AppError.EntityNotFound("form step")
+      )
+      adminTeam <- EitherT.fromOptionF(
+        env.dataStore.teamRepo.findAdminTeam(tenant.id),
+        AppError.EntityNotFound("tenant team admin")
+      )
+      _ <- EitherT.cond[Future](
+        adminTeam.id == step.team,
+        (),
+        AppError.EntityNotFound("tenant Admin team")
+      )
+      motivationAsString =
+        motivationPattern
+          .findAllMatchIn(
+            formStep.formatter.getOrElse("[[motivation]]")
+          ) // FIXME: get the real default formatter
+          .foldLeft(formStep.formatter.getOrElse("[[motivation]]"))(
+            (motivation, rgxMatch) => {
+              val key = rgxMatch.group(1)
+              val replacement = (teamCreation.value \ key)
+                .asOpt[String]
+                .getOrElse(s"-- $key --")
+              motivation.replace(s"[[$key]]", replacement)
+            }
+          )
+      notification = Notification(
+        id = NotificationId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        team = Some(adminTeam.id),
+        sender = NotificationSender(
+          name = teamCreation.name,
+          email = teamCreation.email,
+          id = None
+        ),
+        action = NotificationAction
+          .TeamCreationAttempt(
+            teamCreation.id,
+            _step.id,
+            motivationAsString
+          )
+      )
+
+      tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
+
+      _ <- EitherT.right[AppError](
+        env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
+      )
+      admins <- EitherT.right[AppError](
+        env.dataStore.userRepo.findByIds(adminTeam.admins().toSeq)
+      )
+      _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
+        implicit val language: String =
+          admin.defaultLanguage.getOrElse(tenantLanguage)
+
+        val notificationUrl = env.getDaikokuUrl(tenant, "/notifications", admin)
+        val mailData = Map(
+          "tenant" -> JsString(tenant.name),
+          "userName" -> JsString(teamCreation.name),
+          "userEmail" -> JsString(teamCreation.email),
+          "urlAccept" -> JsString(notificationUrl),
+          "urlDecline" -> JsString(notificationUrl),
+          "notification_data" -> notification.asJson,
+          "team_creation_data" -> teamCreation.asJson,
+          "recipient_data" -> admin.asJson,
+          "tenant_data" -> tenant.asJson
+        )
+        (for {
+          title <- translator.translate(
+            "mail.team.creation.mail.validation.title",
+            tenant,
+            mailData
+          )
+          body <- translator.translate(
+            "mail.team.creation.mail.validation.body",
+            tenant,
+            mailData
+          )
+        } yield {
+          tenant.mailer.send(title, Seq(admin.email), body, tenant)
+        }).flatten
+      })))
+    } yield Ok(
+      Json.obj(
+        "notificationSended" -> true,
+        "creation" -> "waiting"
+      )
+    )
+  }
+
+  def finalizeTeamCreation(
+      teamCreation: TeamCreation,
+      tenant: Tenant,
+      userId: UserId
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ) = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+    println("finalizeTeamCreation")
+
+    for {
+      team = Team(
+        id = TeamId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        `type` = TeamType.Personal,
+        name = s"${teamCreation.name}",
+        description = s"Team of ${teamCreation.name}",
+        users = Set(UserWithPermission(userId, Administrator)),
+        authorizedOtoroshiEntities = None,
+        contact = teamCreation.email
+      )
+
+      formKeysToMetadata =
+        tenant.teamCreationProcess
+          .collectFirst { case s: ValidationStep.Form => s }
+          .flatMap(_.formKeysToMetadata)
+
+      metadataFromMotivation: Option[JsObject] =
+        for {
+          motiv <- teamCreation.value.some
+          keys <- formKeysToMetadata
+        } yield {
+          val filtered = motiv.fields.collect {
+            case (k, v) if keys.contains(k) => (k, v)
+          }
+          JsObject(filtered)
+        }
+
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.teamRepo
+          .forTenant(tenant.id)
+          .save(team)
+      )
+
+      mailData = Map(
+        "tenant" -> JsString(tenant.name),
+        "userName" -> JsString(teamCreation.name),
+        "userEmail" -> JsString(teamCreation.email),
+        "team_creation_data" -> teamCreation.asJson,
+        "tenant_data" -> tenant.asJson
+      )
+      title <- EitherT.liftF(
+        translator.translate(
+          "mail.team.creation.mail.accepted.title",
+          tenant,
+          mailData
+        )
+      )
+      body <- EitherT.liftF(
+        translator.translate(
+          "mail.team.creation.mail.accepted.body",
+          tenant,
+          mailData
+        )
+      )
+      _ <- EitherT.liftF(
+        tenant.mailer.send(title, Seq(teamCreation.email), body, tenant)
+      )
+      test = println("teamCreationRepo")
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.teamCreationRepo
+          .save(teamCreation.copy(state = Accepted))
+      )
+
+    } yield Ok(Json.obj("message" -> "user.validated.success"))
+  }
+
+  def validateStep(
+      step: SubscriptionDemandStep,
+      demand: TeamCreation,
+      metadata: Option[JsObject] = None
+  )(implicit
+      env: Env,
+      ec: ExecutionContext
+  ): EitherT[Future, AppError, Unit] = {
+    for {
+      _ <- step.check()
+      updatedDemand = demand.copy(
+        steps = demand.steps.map(s =>
+          if (s.id == step.id)
+            s.copy(state = SubscriptionDemandState.Accepted)
+          else s
+        ),
+        metadata = demand.metadata ++ metadata
+          .map(
+            _.fieldSet
+              .map {
+                case (a, b: JsString) => a -> b.value
+                case (a, b)           => a -> Json.stringify(b)
+              }
+              .toMap
+          )
+          .getOrElse(Map.empty)
+      )
+      _ <- EitherT.right[AppError](
+        env.dataStore.teamCreationRepo
+          .save(updatedDemand)
+      )
+    } yield ()
+  }
+
+  def rejectStep(
+      step: SubscriptionDemandStep,
+      teamCreation: TeamCreation,
+      tenant: Tenant,
+      message: Option[String]
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Unit] = {
+    // FIXME: trace with a metadata (or audit log) who reject the demand
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+
+    val mailData = Map(
+      "tenant" -> JsString(tenant.name),
+      "userName" -> JsString(teamCreation.name),
+      "userEmail" -> JsString(teamCreation.email),
+      "message" -> JsString(message.getOrElse("")),
+      "team_creation_data" -> teamCreation.asJson,
+      "tenant_data" -> tenant.asJson
+    )
+    for {
+      _ <- step.check()
+      updatedDemand = teamCreation.copy(
+        state = SubscriptionDemandState.Refused,
+        steps = teamCreation.steps.map(s =>
+          if (s.id == step.id)
+            s.copy(state = SubscriptionDemandState.Refused)
+          else s
+        )
+      )
+      _ <- EitherT.right[AppError](
+        env.dataStore.teamCreationRepo
+          .save(updatedDemand)
+      )
+
+      title <- EitherT.right[AppError](
+        translator.translate(
+          "mail.team.creation.mail.rejected.title",
+          tenant,
+          mailData
+        )
+      )
+      body <- EitherT.right[AppError](
+        translator.translate(
+          "mail.team.creation.mail.rejected.body",
+          tenant,
+          mailData
+        )
+      )
+
+      _ <- EitherT.right[AppError](
+        tenant.mailer.send(title, Seq(teamCreation.email), body, tenant)
+      )
+    } yield ()
+  }
+
 }

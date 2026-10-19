@@ -245,14 +245,14 @@ class AccountCreationService {
       "tenant_data" -> tenant.asJson
     )
     for {
-      title <- EitherT.liftF(
+      title <- EitherT.right[AppError](
         translator.translate(
           s"mail.account.creation.mail.$mailType.title",
           tenant,
           mailData
         )
       )
-      body <- EitherT.liftF(
+      body <- EitherT.right[AppError](
         translator.translate(
           s"mail.account.creation.mail.$mailType.body",
           tenant,
@@ -260,7 +260,7 @@ class AccountCreationService {
         )
       )
 
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         tenant.mailer.send(
           title,
           s.emails.map(_.replace("${form.email}", accountCreation.email)),
@@ -268,7 +268,7 @@ class AccountCreationService {
           tenant
         )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.stepValidatorRepo
           .forTenant(tenant)
           .save(stepValidator)
@@ -293,7 +293,7 @@ class AccountCreationService {
     def declineAccountCreation(): EitherT[Future, AppError, Result] = {
       val language = tenant.defaultLanguage.getOrElse("en")
       for {
-        _ <- EitherT.liftF(
+        _ <- EitherT.right[AppError](
           env.dataStore.accountCreationRepo
             .save(
               demand.copy(
@@ -306,14 +306,14 @@ class AccountCreationService {
               )
             )
         )
-        title <- EitherT.liftF(
+        title <- EitherT.right[AppError](
           translator.translate("mail.rejection.title", tenant)(using
             messagesApi,
             language,
             env
           )
         )
-        body <- EitherT.liftF(
+        body <- EitherT.right[AppError](
           translator.translate(
             "mail.api.subscription.rejection.body",
             tenant,
@@ -325,7 +325,7 @@ class AccountCreationService {
             )
           )(using messagesApi, language, env)
         )
-        _ <- EitherT.liftF(
+        _ <- EitherT.right[AppError](
           tenant.mailer.send(title, Seq(demand.email), body, tenant)(using
             ec,
             translator,
@@ -422,13 +422,13 @@ class AccountCreationService {
 
       tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
 
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       )
-      admins <- EitherT.liftF(
+      admins <- EitherT.right[AppError](
         env.dataStore.userRepo.findByIds(adminTeam.admins().toSeq)
       )
-      _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
+      _ <- EitherT.right[AppError](Future.sequence(admins.map(admin => {
         implicit val language: String =
           admin.defaultLanguage.getOrElse(tenantLanguage)
 
@@ -494,7 +494,7 @@ class AccountCreationService {
           )
           .getOrElse(Map.empty)
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.accountCreationRepo
           .save(updatedDemand)
       )
@@ -533,19 +533,19 @@ class AccountCreationService {
           else s
         )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         env.dataStore.accountCreationRepo
           .save(updatedDemand)
       )
 
-      title <- EitherT.liftF(
+      title <- EitherT.right[AppError](
         translator.translate(
           "mail.account.creation.mail.rejected.title",
           tenant,
           mailData
         )
       )
-      body <- EitherT.liftF(
+      body <- EitherT.right[AppError](
         translator.translate(
           "mail.account.creation.mail.rejected.body",
           tenant,
@@ -553,7 +553,7 @@ class AccountCreationService {
         )
       )
 
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         tenant.mailer.send(title, Seq(accountCreation.email), body, tenant)
       )
     } yield ()

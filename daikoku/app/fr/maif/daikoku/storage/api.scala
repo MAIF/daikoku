@@ -523,6 +523,20 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
     )
 }
 
+trait TeamCreationRepo extends Repo[TeamCreation, DemandId] {
+  def findByRandomId(
+      randomId: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[TeamCreation]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'randomId' = $1 LIMIT 1",
+      Seq(randomId)
+    )
+}
+
 trait TenantRepo extends Repo[Tenant, TenantId] {
 
   /** Resolves the tenant serving a given hostname. */
@@ -2666,6 +2680,8 @@ trait DataStore {
   def passwordResetRepo: PasswordResetRepo
 
   def accountCreationRepo: AccountCreationRepo
+
+  def teamCreationRepo: TeamCreationRepo
 
   def messageRepo: MessageRepo
 

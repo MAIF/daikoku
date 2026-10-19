@@ -6,7 +6,8 @@ import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.IdGenerator
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.DateTime
-import play.api.libs.json._
+import org.mindrot.jbcrypt.BCrypt
+import play.api.libs.json.*
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -210,6 +211,22 @@ case class AccountCreation(
     preferredDomains: Map[TenantId, String] = Map.empty
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
+}
+
+case class TeamCreation(
+    id: DemandId,
+    randomId: String,
+    email: String,
+    name: String,
+    avatar: String,
+    creationDate: DateTime,
+    steps: Seq[SubscriptionDemandStep],
+    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+    value: JsObject,
+    fromTenant: TenantId,
+    metadata: Map[String, String] = Map.empty
+) extends CanJson[AccountCreation] {
+  override def asJson: JsValue = json.TeamCreationFormat.writes(this)
 }
 
 sealed trait MessageType {
