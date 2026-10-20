@@ -53,6 +53,8 @@ import {
 } from '../../utils';
 import { useExportEntity } from '../../utils/useExportEntity';
 import { CmsViewerByPath } from "../CmsViewer";
+import { SubscriptionHelp } from './SubscriptionHelp';
+import { getSubscriptionHelp, isSubscriptionDisabled } from './subscriptionHelpReasons';
 
 type Option = {
   type: 'group' | 'route';
@@ -1904,25 +1906,42 @@ export const ApiPricing = (props: ApiPricingProps) => {
             isAutomaticProcess
           } = otoroshiTargetColumn(plan, props.api.name)
 
+          const subscriptionHelp = getSubscriptionHelp({
+            api: props.api,
+            plan,
+            ownerTeamId: props.ownerTeam._id,
+            teams: props.myTeams.map((team) => ({
+              ...team,
+              canAccessApiKey: CanIDoAction(connectedUser, access, apikey, team),
+            })),
+            subscriptions: props.subscriptions,
+            demands: props.inProgressDemands,
+            tenant,
+            isGuest: connectedUser.isGuest,
+            isDaikokuAdmin: connectedUser.isDaikokuAdmin,
+            initialTeamsExhausted: isAccepted,
+          });
+          const subscriptionDisabled = isSubscriptionDisabled(subscriptionHelp);
+
           return (
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
                 {
-                  !connectedUser.isGuest &&
-                  (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                  props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
+                  subscriptionDisabled &&
                   (
                     <button
                       type="button"
-                      aria-label={translate("Get API key")}
-                      className="btn --tertiary --small --icon-only"
+                      disabled
+                      aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                      className="btn --primary --small --icon-only"
                     >
                       <KeyRound size={16} />
                     </button>
                   )
                 }
                 {
+                  !subscriptionDisabled &&
                   ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
                     props.api.visibility === 'AdminOnly') &&
                   (!isAccepted || props.api.visibility === 'AdminOnly') &&
@@ -1968,6 +1987,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   )
                 }
               </div>
+              <SubscriptionHelp help={subscriptionHelp} />
               <Can I={manage} a={API} team={props.ownerTeam}>
                 <div className="p-2">
                   <div>
