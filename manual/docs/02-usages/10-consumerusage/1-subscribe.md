@@ -10,11 +10,13 @@ Otherwise, the process is followed step by step until the subscription is genera
 
 ### Subscription requirements
 
-When a plan has a subscription blocker or warning, an information button appears next to
-**Get API key** or **Request API key**. The subscription button is disabled when there is a
+When a plan has a subscription blocker or warning, hover over **Get API key** or
+**Request API key** to read its explanation, including when the button is disabled.
+Move the pointer away to close the tooltip. There is no separate information button.
+The subscription button is disabled when there is a
 global blocker or no team can subscribe. It remains usable when at least one team is eligible
-and there is no global blocker. Hover over or click/tap the information button
-to read the explanation. Move the pointer away or click/tap outside to close it.
+and there is no global blocker. Clicking the button keeps its normal subscription or login action;
+it does not open the tooltip.
 
 The help lists current blockers, grouping affected teams by reason, and suggests how to
 resolve them. It can also explain why some teams are unavailable while others can subscribe.
