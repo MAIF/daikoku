@@ -238,8 +238,7 @@ class TeamService(
 
   def runTeamCreationProcess(
       demandId: DemandId,
-      tenant: Tenant,
-      userId: UserId
+      tenant: Tenant
   )(implicit
       env: Env,
       ec: ExecutionContext,
@@ -292,7 +291,7 @@ class TeamService(
       )
 
       result <-
-        maybeStep.fold(finalizeTeamCreation(teamCreation, tenant, userId))(
+        maybeStep.fold(finalizeTeamCreation(teamCreation, tenant))(
           processStep(_, teamCreation)
         )
     } yield result
@@ -418,6 +417,12 @@ class TeamService(
         env.getDaikokuUrl(
           tenant,
           pathAccept
+        )
+      ),
+      "urlDenied" -> JsString(
+        env.getDaikokuUrl(
+          tenant,
+          pathDecline
         )
       ),
       "userName" -> JsString(teamCreation.name),
@@ -570,8 +575,7 @@ class TeamService(
 
   def finalizeTeamCreation(
       teamCreation: TeamCreation,
-      tenant: Tenant,
-      userId: UserId
+      tenant: Tenant
   )(implicit
       env: Env,
       ec: ExecutionContext,
@@ -579,18 +583,23 @@ class TeamService(
       messagesApi: MessagesApi
   ) = {
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
-    println("finalizeTeamCreation")
 
     for {
+      user <- EitherT.fromOptionF[Future, AppError, User](
+        env.dataStore.userRepo.findById(teamCreation.userId),
+        AppError.UserNotFound()
+      )
       team = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenant.id,
-        `type` = TeamType.Personal,
-        name = s"${teamCreation.name}",
-        description = s"Team of ${teamCreation.name}",
-        users = Set(UserWithPermission(userId, Administrator)),
-        authorizedOtoroshiEntities = None,
-        contact = teamCreation.email
+        `type` = TeamType.Organization,
+        name = teamCreation.name,
+        description = s"Team ${teamCreation.name}",
+        users = Set(UserWithPermission(user.id, Administrator)),
+        authorizedOtoroshiEntities = tenant.defaultAuthorizedOtoroshiEntities,
+        contact = teamCreation.email,
+        avatar = Some(teamCreation.avatar)
+        // metadata : voir ci-dessous
       )
 
       formKeysToMetadata =
@@ -639,13 +648,12 @@ class TeamService(
       _ <- EitherT.liftF(
         tenant.mailer.send(title, Seq(teamCreation.email), body, tenant)
       )
-      test = println("teamCreationRepo")
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.teamCreationRepo
           .save(teamCreation.copy(state = Accepted))
       )
 
-    } yield Ok(Json.obj("message" -> "user.validated.success"))
+    } yield Ok(Json.obj("message" -> "team.validated.success"))
   }
 
   def validateStep(
@@ -680,6 +688,122 @@ class TeamService(
           .save(updatedDemand)
       )
     } yield ()
+  }
+
+  def validateTeamCreationWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ) = {
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.teamCreationRepo
+          .findById(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- validateStep(step, demand)
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
+      )
+      result <- runTeamCreationProcess(
+        demand.id,
+        tenant
+      )
+    } yield result
+  }
+
+  def declineTeamCreationWithStepValidator(
+      validator: StepValidator,
+      tenant: Tenant
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ) = {
+    // TODO: maybe good to explain why by giving a message from user who decline
+    for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.teamCreationRepo
+          .findById(validator.subscriptionDemand),
+        AppError.EntityNotFound("Subscription demand Validator")
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == validator.step),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- rejectStep(step, demand, tenant, None)
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .deleteByStep(tenant.id, validator.step.value)
+          .map(_ > 0)
+      )
+    } yield ()
+  }
+
+  def acceptTeamCreationAttempt(
+      teamCreation: DemandId,
+      subscriptionDemandStepId: SubscriptionDemandStepId
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Either[AppError, Unit]] = {
+
+    val r: EitherT[Future, AppError, Unit] = for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.teamCreationRepo
+          .findById(teamCreation),
+        AppError.EntityNotFound("Subscription demand")
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == subscriptionDemandStepId),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- validateStep(step, demand)
+      _ <- runTeamCreationProcess(demand.id, ctx.tenant)
+    } yield ()
+    r.value
+  }
+
+  def declineTeamCreationAttempt(
+      teamCreation: DemandId,
+      subscriptionDemandStepId: SubscriptionDemandStepId,
+      tenant: Tenant,
+      message: Option[String]
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Either[AppError, Unit]] = {
+
+    val r: EitherT[Future, AppError, Unit] = for {
+      demand <- EitherT.fromOptionF(
+        env.dataStore.teamCreationRepo
+          .findById(teamCreation),
+        AppError.EntityNotFound("Subscription demand")
+      )
+      step <- EitherT.fromOption[Future](
+        demand.steps.find(_.id == subscriptionDemandStepId),
+        AppError.EntityNotFound("Validation Step")
+      )
+      _ <- rejectStep(step, demand, tenant, message)
+    } yield ()
+
+    r.value
   }
 
   def rejectStep(
@@ -739,5 +863,4 @@ class TeamService(
       )
     } yield ()
   }
-
 }

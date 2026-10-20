@@ -235,6 +235,8 @@ GET     /api/teams/:teamId/tenant/otoroshis/:oto/routes         fr.maif.daikoku.
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys           fr.maif.daikoku.controllers.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 POST    /api/teams                                      fr.maif.daikoku.controllers.TeamController.createTeam()
+GET     /api/team/_validate                             fr.maif.daikoku.controllers.TeamController.validateTeamCreationAttempt()
+GET     /api/team/_decline                              fr.maif.daikoku.controllers.TeamController.declineTeamCreationAttempt()
 GET     /api/teams/admin                                fr.maif.daikoku.controllers.TeamController.tenantAdminTeam()
 GET     /api/teams/:teamId                              fr.maif.daikoku.controllers.TeamController.team(teamId)
 PUT     /api/teams/:teamId                              fr.maif.daikoku.controllers.TeamController.updateTeam(teamId)

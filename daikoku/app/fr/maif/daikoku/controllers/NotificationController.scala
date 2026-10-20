@@ -15,7 +15,7 @@ import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationType.AcceptOnly
-import fr.maif.daikoku.domain.TeamPermission.{Administrator, TeamUser}
+import fr.maif.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.{AccountCreationService, ApiService}
@@ -130,9 +130,7 @@ class NotificationController(
     }
   def acceptNotification(notificationId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      import cats.data.*
       import cats.implicits.*
-
       implicit val c = ctx
 
       PublicUserAccess(
@@ -157,6 +155,13 @@ class NotificationController(
                   )
                 )
               case AccountCreationAttempt(demand, step, _) =>
+                EitherT(
+                  accountCreationService.acceptAccountCreationAttempt(
+                    demand,
+                    step
+                  )
+                )
+              case TeamCreationAttempt(demand, step, _) =>
                 EitherT(
                   accountCreationService.acceptAccountCreationAttempt(
                     demand,
@@ -199,7 +204,7 @@ class NotificationController(
                 EitherT(acceptTransferOwnership(ctx.tenant, teamId, apiId))
               case _ => EitherT(nothing())
             }
-            acceptedNotification <- EitherT.liftF(
+            acceptedNotification <- EitherT.right[AppError](
               env.dataStore.notificationRepo
                 .forTenant(ctx.tenant.id)
                 .save(notification.copy(status = NotificationStatus.Accepted()))
@@ -652,7 +657,7 @@ class NotificationController(
               .copy(authorizedTeams = api.authorizedTeams ++ Set(teamRequestId))
           )
       )
-      _ <- EitherT.liftF(Future.sequence(administrators.map(admin => {
+      _ <- EitherT.right[AppError](Future.sequence(administrators.map(admin => {
         implicit val lang: String = admin.defaultLanguage
           .getOrElse(tenant.defaultLanguage.getOrElse("en"))
         (for {
@@ -723,7 +728,7 @@ class NotificationController(
           )
         )
       )
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         tenant.mailer.send(title, Seq(sender.email), body, tenant)
       )
     } yield ()
@@ -862,7 +867,7 @@ class NotificationController(
         )
       )
 
-      _ <- EitherT.liftF(
+      _ <- EitherT.right[AppError](
         {
           val repo = env.dataStore.notificationRepo.forTenant(tenant)
           repo.execute(

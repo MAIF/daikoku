@@ -220,6 +220,7 @@ case class TeamCreation(
     name: String,
     avatar: String,
     creationDate: DateTime,
+    userId: UserId,
     steps: Seq[SubscriptionDemandStep],
     state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
     value: JsObject,

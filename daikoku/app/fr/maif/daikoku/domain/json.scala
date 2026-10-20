@@ -480,6 +480,7 @@ object json {
 
     override def writes(o: TenantId): JsValue = JsString(o.value)
   }
+
   val PostIdFormat = new Format[ApiPostId] {
     override def reads(json: JsValue): JsResult[ApiPostId] =
       Try {
@@ -4407,6 +4408,7 @@ object json {
               email = (json \ "email").as[String],
               name = (json \ "name").as[String],
               avatar = (json \ "avatar").as[String],
+              userId = (json \ "userId").as(using UserIdFormat),
               creationDate = (json \ "creationDate").as(using DateTimeFormat),
               steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
               state = (json \ "state").as(using SubscriptionDemandStateFormat),
@@ -4425,6 +4427,7 @@ object json {
           "email" -> o.email,
           "name" -> o.name,
           "avatar" -> o.avatar,
+          "userId" -> UserIdFormat.writes(o.userId),
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
           "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
           "state" -> SubscriptionDemandStateFormat.writes(o.state),
