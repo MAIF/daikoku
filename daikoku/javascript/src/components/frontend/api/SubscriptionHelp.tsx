@@ -1,5 +1,4 @@
-import { Info } from 'lucide-react';
-import { useContext, useId, useState } from 'react';
+import { type ReactNode, useContext, useId } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { I18nContext } from '../../../contexts';
 import {
@@ -7,16 +6,21 @@ import {
   type SubscriptionHelp as SubscriptionHelpContent,
 } from './subscriptionHelpReasons';
 
-export function SubscriptionHelp({ help }: { help: SubscriptionHelpContent }) {
+export function SubscriptionHelp({
+  help,
+  children,
+}: {
+  help: SubscriptionHelpContent;
+  children: ReactNode;
+}) {
   const { translate } = useContext(I18nContext);
-  const [open, setOpen] = useState(false);
   const contentId = useId();
   const sections = {
     blockers: getVisibleSubscriptionBlockers(help),
     warnings: help.warnings,
   };
 
-  if (!sections.blockers.length && !sections.warnings.length) return null;
+  if (!sections.blockers.length && !sections.warnings.length) return <>{children}</>;
 
   return (
     <>
@@ -26,11 +30,8 @@ export function SubscriptionHelp({ help }: { help: SubscriptionHelpContent }) {
         place="bottom-end"
         positionStrategy="fixed"
         portalRoot={document.body}
-        isOpen={open}
-        setIsOpen={setOpen}
-        openEvents={{ mouseenter: true, click: true }}
-        closeEvents={{ mouseleave: true, blur: true }}
-        globalCloseEvents={{ clickOutsideAnchor: true }}
+        openEvents={{ mouseenter: true }}
+        closeEvents={{ mouseleave: true }}
         clickable
       >
         <div
@@ -66,17 +67,9 @@ export function SubscriptionHelp({ help }: { help: SubscriptionHelpContent }) {
           )}
         </div>
       </Tooltip>
-      <button
-        type="button"
-        className="btn --tertiary --small --icon-only"
-        aria-label={translate('subscription.help.label')}
-        aria-expanded={open}
-        data-tooltip-id={contentId}
-        aria-controls={open ? contentId : undefined}
-        aria-describedby={open ? contentId : undefined}
-      >
-        <Info size={16} aria-hidden="true" />
-      </button>
+      <span className="d-inline-flex" data-tooltip-id={contentId}>
+        {children}
+      </span>
     </>
   );
 }

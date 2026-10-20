@@ -1927,6 +1927,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
+                <SubscriptionHelp help={subscriptionHelp}>
                 {
                   subscriptionDisabled &&
                   (
@@ -1986,8 +1987,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     </button>
                   )
                 }
+                </SubscriptionHelp>
               </div>
-              <SubscriptionHelp help={subscriptionHelp} />
               <Can I={manage} a={API} team={props.ownerTeam}>
                 <div className="p-2">
                   <div>
