@@ -86,7 +86,7 @@
     "sass": "^1.103.0",
     "terser": "^5.50.0",
     "typescript": "^7.0.2",
-    "vite": "8.2.2",
+    "vite": "8.3.5",
     "vite-plugin-simple-html": "^1.1.0"
   }
 }
