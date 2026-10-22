@@ -2,7 +2,9 @@
   width: 100%;
   min-width: 0;
   color: #1f2937;
-  font: 1rem/1.5 system-ui, sans-serif;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
   text-align: left;
 }
 
@@ -11,6 +13,59 @@
   box-sizing: border-box;
   overflow-x: auto;
   padding: 1rem;
+}
+
+.flow-editor .flow-editor__palette {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 0.75rem;
+  border: 1px dashed #94a3b8;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.flow-editor .flow-editor__palette-types,
+.flow-editor .flow-editor__palette-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-editor .flow-editor__palette-help {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.flow-editor .flow-editor__palette-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.flow-editor .flow-editor__palette-types > span {
+  max-width: 100%;
+}
+
+.flow-editor .flow-editor__palette-type[aria-pressed='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.flow-editor .flow-editor__palette-type:not(:disabled) {
+  cursor: grab;
+}
+
+.flow-editor .flow-editor__palette-type:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .flow-editor .flow-editor__sequence {
@@ -84,7 +139,7 @@
 }
 
 .flow-editor .flow-editor__content,
-.flow-editor .flow-editor__card > [role="alert"] {
+.flow-editor .flow-editor__card > [role='alert'] {
   padding: 0.75rem;
 }
 
@@ -125,24 +180,6 @@
   padding: 0;
 }
 
-.flow-editor .flow-editor__picker {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  gap: 0.25rem;
-  min-width: 10rem;
-  padding: 0.5rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
-  background: #fff;
-}
-
-.flow-editor .flow-editor__slot:has(.flow-editor__picker) {
-  flex-basis: 12rem;
-  gap: 0.5rem;
-  padding: 0.5rem;
-}
-
 .flow-editor .flow-editor__handle {
   display: flex;
   justify-content: center;
@@ -160,7 +197,7 @@
   pointer-events: none;
 }
 
-.flow-editor--dragging .flow-editor__slot {
+.flow-editor--inserting .flow-editor__slot {
   outline: 2px dashed #94a3b8;
   outline-offset: -4px;
   border-radius: 0.5rem;
@@ -171,14 +208,14 @@
   outline-color: #15803d;
 }
 
-.flow-editor .flow-editor__handle[aria-disabled="true"] {
+.flow-editor .flow-editor__handle[aria-disabled='true'] {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .flow-editor .flow-editor__actions > button,
 .flow-editor .flow-editor__slot > button,
-.flow-editor .flow-editor__picker > button {
+.flow-editor .flow-editor__palette button {
   border: 1px solid #94a3b8;
   background: #f8fafc;
   color: #1f2937;

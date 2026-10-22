@@ -158,18 +158,25 @@ test('process input drives display, editors, reordering, deletion and saving', a
   });
   expect(saved[3]).toEqual(process[4]);
 
+  const palette = editor.locator('.flow-editor__palette');
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.form', exact: true })
+  ).toBeDisabled();
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.team.admin', exact: true })
+  ).toBeDisabled();
+  await expect(palette.getByRole('button', { name: 'Payment', exact: true })).toBeDisabled();
+  await expect(palette.getByRole('button', { name: 'Payment', exact: true })).toHaveAttribute(
+    'draggable',
+    'false'
+  );
+  await expect(
+    palette.getByRole('button', { name: 'Payment', exact: true }).locator('..')
+  ).toHaveAttribute('title', 'subscription.process.palette.payment.unavailable');
+  await palette.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
   await editor
-    .getByRole('button', { name: 'Ajouter une carte en position 1', exact: true })
+    .getByRole('button', { name: 'subscription.process.palette.insert 1', exact: true })
     .click();
-  const picker = editor.locator('.flow-editor__picker');
-  await expect(
-    picker.getByRole('button', { name: 'subscription.process.form', exact: true })
-  ).toHaveCount(0);
-  await expect(
-    picker.getByRole('button', { name: 'subscription.process.team.admin', exact: true })
-  ).toHaveCount(0);
-  await expect(picker.getByRole('button', { name: 'Payment', exact: true })).toHaveCount(0);
-  await picker.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
   await expect(cards).toHaveCount(5);
   await expect(cards.first()).toContainText('new@example.org');
   await page.getByRole('button', { name: 'save', exact: true }).click();
@@ -312,17 +319,50 @@ test('creation preserves cancellation, email splitting and the administrator for
   const host = page.locator('#process-creation-test');
   const editor = host.locator('.flow-editor');
   const cards = editor.locator('.flow-editor__card');
+  const palette = editor.locator('.flow-editor__palette');
   const add = async (type: string, index = 0) => {
+    await palette.getByRole('button', { name: type, exact: true }).click();
     await editor
-      .getByRole('button', { name: `Ajouter une carte en position ${index + 1}`, exact: true })
-      .click();
-    await editor
-      .locator('.flow-editor__picker')
-      .getByRole('button', { name: type, exact: true })
+      .getByRole('button', {
+        name: `subscription.process.palette.insert ${index + 1}`,
+        exact: true,
+      })
       .click();
   };
+  const dragAdd = async (type: string, index = 0) => {
+    await palette
+      .getByRole('button', { name: type, exact: true })
+      .dragTo(editor.locator('.flow-editor__slot').nth(index));
+  };
   await expect(cards).toHaveCount(0);
-  await add('subscription.process.email');
+  await expect(palette.getByRole('button')).toHaveCount(5);
+  await expect(editor.locator('.flow-editor__slot button')).toHaveCount(0);
+  await palette.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
+  await expect(editor.locator('.flow-editor__slot button')).toHaveCount(1);
+  await palette.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
+  await expect(editor.locator('.flow-editor__slot button')).toHaveCount(0);
+  await palette.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
+  await palette
+    .getByRole('button', { name: 'subscription.process.httpRequest', exact: true })
+    .click();
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.httpRequest', exact: true })
+  ).toHaveAttribute('aria-pressed', 'true');
+  await palette.locator('.flow-editor__palette-help').click();
+  await expect(editor.locator('.flow-editor__slot button')).toHaveCount(0);
+  await palette.getByRole('button', { name: 'subscription.process.email', exact: true }).click();
+  await host.getByRole('button', { name: 'Cancel pending creation', exact: true }).click();
+  await expect(editor.locator('.flow-editor__slot button')).toHaveCount(0);
+  await expect(palette.getByRole('button')).toHaveCount(5);
+  const hintBox = await palette.locator('.flow-editor__palette-help').boundingBox();
+  const typesBox = await palette.locator('.flow-editor__palette-types').boundingBox();
+  expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(typesBox!.y);
+  await palette
+    .getByRole('button', { name: 'subscription.process.email', exact: true })
+    .dragTo(palette.locator('.flow-editor__palette-help'));
+  await expect(cards).toHaveCount(0);
+  await expect(editor).not.toHaveClass(/flow-editor--inserting/);
+  await dragAdd('subscription.process.email');
   await expect(cards).toHaveCount(0);
   await host.getByRole('button', { name: 'Cancel pending creation' }).click();
   await expect(cards).toHaveCount(0);
@@ -335,37 +375,46 @@ test('creation preserves cancellation, email splitting and the administrator for
   await expect(cards).toHaveCount(2);
   await expect(cards.nth(0)).toContainText('second@example.org');
   await expect(cards.nth(1)).toContainText('first@example.org');
-  await add('subscription.process.httpRequest', 1);
+  await dragAdd('subscription.process.httpRequest', 1);
   await expect(cards).toHaveCount(2);
   await host.getByRole('button', { name: 'Submit pending creation' }).click();
   await expect(cards).toHaveCount(3);
   await expect(cards.nth(1)).toContainText('https://example.org/hook');
 
-  await add('subscription.process.team.admin', 3);
+  await dragAdd('subscription.process.team.admin', 3);
   await expect(cards).toHaveCount(5);
-  await expect(cards.nth(0).locator('.flow-editor__handle')).toHaveAttribute('draggable', 'false');
-  await expect(cards.nth(1)).toContainText('owner');
-  await expect(cards.nth(1).getByRole('button', { name: 'Modifier', exact: true })).toBeDisabled();
+  await expect(cards.nth(3).locator('.flow-editor__handle')).toHaveAttribute('draggable', 'false');
+  await expect(cards.nth(4)).toContainText('owner');
+  await expect(cards.nth(4).getByRole('button', { name: 'Modifier', exact: true })).toBeDisabled();
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.form', exact: true })
+  ).toBeDisabled();
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.team.admin', exact: true })
+  ).toBeDisabled();
   await cards
-    .nth(1)
+    .nth(4)
     .getByRole('button', { name: /Supprimer/ })
     .click();
-  await add('subscription.process.team.admin', 4);
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.team.admin', exact: true })
+  ).toBeEnabled();
+  await add('subscription.process.team.admin', 1);
   await expect(cards).toHaveCount(5);
-  await expect(cards.nth(0)).toContainText('owner');
+  await expect(cards.nth(1)).toContainText('owner');
 
   await host.getByRole('button', { name: 'save', exact: true }).click();
   const saved = JSON.parse(await host.locator('#created-process').innerText()) as IValidationStep[];
   expect(saved.map((step) => step.type)).toEqual([
-    'teamAdmin',
-    'form',
     'email',
+    'teamAdmin',
     'httpRequest',
     'email',
+    'form',
   ]);
   expect(new Set(saved.map((step) => step.id)).size).toBe(5);
   expect(saved.some((step) => 'data' in step)).toBe(false);
-  expect(saved[3]).toMatchObject({ headers: { 'X-Webhook': 'approval' } });
+  expect(saved[2]).toMatchObject({ headers: { 'X-Webhook': 'approval' } });
 
   await host
     .getByRole('button', {
@@ -376,4 +425,10 @@ test('creation preserves cancellation, email splitting and the administrator for
   await host.getByRole('button', { name: 'Use documented process' }).click();
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('documented@example.org');
+  await expect(
+    palette.getByRole('button', { name: 'subscription.process.form', exact: true })
+  ).toBeEnabled();
+  await dragAdd('subscription.process.form', 1);
+  await expect(cards).toHaveCount(2);
+  await expect(cards.last()).toContainText('[[motivation]]');
 });

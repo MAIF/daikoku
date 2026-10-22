@@ -1,10 +1,16 @@
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { GripHorizontal, Pencil, Trash } from 'lucide-react';
 import type { FlowEditorCard, FlowEditorProps } from './types';
 import './flow-editor.css';
 
 const dragFormat = 'application/x-flow-editor-card';
+const defaultLabels = {
+  palette: 'Available steps',
+  hint: 'Drag a step into the flow, or select it then choose an insertion point.',
+  insert: (position: number) => `Insert at position ${position}`,
+  unavailable: 'This step cannot be added.',
+};
 
 export const FlowEditor = <Card extends FlowEditorCard>({
   value,
@@ -12,17 +18,37 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   onEdit,
   onAdd,
   cardTypes,
+  labels = defaultLabels,
   start,
   end,
 }: FlowEditorProps<Card>) => {
-  const [addingAt, setAddingAt] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<Card['type'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
-  const draggedCard = useRef<{ id: string; index: number } | null>(null);
-  const catalogTypes = (Object.keys(cardTypes) as Card['type'][]).filter(
-    (type) => cardTypes[type].canAdd !== false
-  );
+  const editorRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (selectedType === null) return;
+    const cancelOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        editorRef.current?.contains(target) &&
+        target.closest('.flow-editor__palette-type:not(:disabled), .flow-editor__slot > button')
+      ) {
+        return;
+      }
+      setSelectedType(null);
+    };
+    document.addEventListener('click', cancelOnOutsideClick);
+    return () => document.removeEventListener('click', cancelOnOutsideClick);
+  }, [selectedType]);
+  const dragSource = useRef<
+    { kind: 'card'; id: string; index: number } | { kind: 'type'; type: Card['type'] } | null
+  >(null);
+  const catalogTypes = Object.keys(cardTypes) as Card['type'][];
+  const activeType =
+    selectedType !== null && cardTypes[selectedType]?.canAdd !== false ? selectedType : null;
   const idCounts = new Map<string, number>();
   for (const card of value) {
     idCounts.set(card.id, (idCounts.get(card.id) ?? 0) + 1);
@@ -38,8 +64,11 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       setError(`Type de carte indisponible : ${type}.`);
       return;
     }
-    if (definition.canAdd === false) return;
-    setAddingAt(null);
+    if (definition.canAdd === false) {
+      setError(definition.unavailableReason ?? labels.unavailable);
+      return;
+    }
+    setSelectedType(null);
     setError(null);
     onAdd(type, index);
   };
@@ -56,21 +85,29 @@ export const FlowEditor = <Card extends FlowEditorCard>({
     const next = value.filter((_, index) => index !== from);
     next.splice(destination, 0, card);
     onChange(next);
-    setAddingAt(null);
+    setSelectedType(null);
     setError(null);
   };
 
   const isOwnDrag = (event: DragEvent) => {
-    return draggedCard.current !== null && event.dataTransfer.types.includes(dragFormat);
+    return dragSource.current !== null && event.dataTransfer.types.includes(dragFormat);
+  };
+
+  const endDrag = () => {
+    dragSource.current = null;
+    setDragging(false);
+    setDropAt(null);
   };
 
   const dropCard = (event: DragEvent, index: number) => {
     if (!isOwnDrag(event)) return;
     event.preventDefault();
-    const source = draggedCard.current;
-    draggedCard.current = null;
-    setDropAt(null);
-    setDragging(false);
+    const source = dragSource.current;
+    endDrag();
+    if (source?.kind === 'type') {
+      addCard(source.type, index);
+      return;
+    }
     if (!source || value[source.index]?.id !== source.id) {
       setError('La liste a changé pendant le déplacement. Veuillez réessayer.');
       return;
@@ -85,7 +122,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
         onDragOver={(event) => {
           if (isOwnDrag(event)) {
             event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
+            event.dataTransfer.dropEffect = dragSource.current?.kind === 'type' ? 'copy' : 'move';
             setDropAt(index);
           }
         }}
@@ -95,26 +132,17 @@ export const FlowEditor = <Card extends FlowEditorCard>({
         onDrop={(event) => dropCard(event, index)}
       >
         <span className="flow-editor__connector" aria-hidden="true" />
-        <button
-          type="button"
-          aria-label={`Ajouter une carte en position ${index + 1}`}
-          aria-expanded={addingAt === index}
-          disabled={catalogTypes.length === 0}
-          onClick={() => setAddingAt(addingAt === index ? null : index)}
-        >
-          +
-        </button>
-        {addingAt === index && catalogTypes.length > 0 && (
-          <div className="flow-editor__picker" aria-label="Types de cartes">
-            {catalogTypes.map((type) => (
-              <button key={type} type="button" onClick={() => addCard(type, index)}>
-                {cardTypes[type].label}
-              </button>
-            ))}
-            <button type="button" onClick={() => setAddingAt(null)}>
-              Annuler
-            </button>
-          </div>
+        {(activeType !== null || dragging) && (
+          <button
+            type="button"
+            aria-label={labels.insert(index + 1)}
+            tabIndex={activeType === null ? -1 : 0}
+            onClick={() => {
+              if (activeType !== null) addCard(activeType, index);
+            }}
+          >
+            {index + 1}
+          </button>
         )}
       </div>
     );
@@ -140,18 +168,15 @@ export const FlowEditor = <Card extends FlowEditorCard>({
                 event.preventDefault();
                 return;
               }
-              draggedCard.current = { id: card.id, index };
+              setSelectedType(null);
+              dragSource.current = { kind: 'card', id: card.id, index };
               setDragging(true);
               event.dataTransfer.effectAllowed = 'move';
               event.dataTransfer.setData(dragFormat, card.id);
               const element = event.currentTarget.closest('article');
               if (element) event.dataTransfer.setDragImage(element, 24, 24);
             }}
-            onDragEnd={() => {
-              draggedCard.current = null;
-              setDragging(false);
-              setDropAt(null);
-            }}
+            onDragEnd={endDrag}
           >
             <GripHorizontal size={20} aria-hidden="true" />
           </span>
@@ -187,7 +212,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
             aria-label={`Supprimer la carte ${index + 1}`}
             onClick={() => {
               onChange(value.filter((_, position) => position !== index));
-              setAddingAt(null);
+              setSelectedType(null);
             }}
           >
             <Trash stroke="#29438d" size={18} aria-hidden="true" />
@@ -211,13 +236,51 @@ export const FlowEditor = <Card extends FlowEditorCard>({
 
   return (
     <section
-      className={`flow-editor${dragging ? ' flow-editor--dragging' : ''}`}
+      ref={editorRef}
+      className={`flow-editor${dragging || activeType !== null ? ' flow-editor--inserting' : ''}`}
       aria-label="Éditeur de processus"
     >
+      <div className="flow-editor__palette" role="group" aria-label={labels.palette}>
+        <div className="flow-editor__palette-help">{labels.hint}</div>
+        <div className="flow-editor__palette-types">
+          {catalogTypes.map((type) => {
+            const definition = cardTypes[type];
+            const unavailable = definition.canAdd === false;
+            const reason = unavailable
+              ? (definition.unavailableReason ?? labels.unavailable)
+              : undefined;
+            return (
+              <span key={type} title={reason}>
+                <button
+                  type="button"
+                  className="flow-editor__palette-type"
+                  aria-label={definition.label}
+                  aria-pressed={activeType === type}
+                  disabled={unavailable}
+                  draggable={!unavailable}
+                  onClick={() => setSelectedType(activeType === type ? null : type)}
+                  onDragStart={(event) => {
+                    if (unavailable) {
+                      event.preventDefault();
+                      return;
+                    }
+                    setSelectedType(null);
+                    dragSource.current = { kind: 'type', type };
+                    setDragging(true);
+                    event.dataTransfer.effectAllowed = 'copy';
+                    event.dataTransfer.setData(dragFormat, type);
+                  }}
+                  onDragEnd={endDrag}
+                >
+                  {definition.icon}
+                  {definition.label}
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      </div>
       {error && <p role="alert">{error}</p>}
-      {catalogTypes.length === 0 && (
-        <p role="status">Aucun type de carte disponible. L’ajout est désactivé.</p>
-      )}
       <div className="flow-editor__viewport">
         <div className="flow-editor__sequence">
           <div className="flow-editor__endpoint">{start}</div>

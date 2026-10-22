@@ -310,7 +310,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        setDraft(current => [step, ...current])
+        setDraft(current => insertArrayIndex(step, current, index))
         return close();
       }
       case 'teamAdmin': {
@@ -321,7 +321,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           title: 'Admin',
         };
         if (draft.some(e => e.type === 'form')) {
-          setDraft(current => [step, ...current])
+          setDraft(current => insertArrayIndex(step, current, index))
         } else {
           const formStep: IValidationStepForm = {
             type: 'form',
@@ -337,7 +337,9 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             formatter: '[[motivation]]',
           };
           toast.info('on a ajouté un step form, obligatoire pour le bon fonctionnement du step admin')
-          setDraft(current => [formStep, step, ...current])
+          setDraft(current => [
+            ...current.slice(0, index), formStep, step, ...current.slice(index),
+          ])
         }
         return close();
       }
@@ -477,6 +479,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       Content: FormCard,
       onEdit: editFormStep,
       canAdd: !draft.some(step => step.type === 'form'),
+      unavailableReason: translate('subscription.process.palette.form.exists'),
       canMove: false,
       canDelete: false,
     },
@@ -486,6 +489,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       getTitle: step => step.title,
       Content: ValidationCard,
       canAdd: !draft.some(step => step.type === 'teamAdmin'),
+      unavailableReason: translate('subscription.process.palette.admin.exists'),
     },
     payment: {
       label: translate('Payment'),
@@ -497,6 +501,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         index={draft.findIndex(step => step.id === data.id) + 1}
       />,
       canAdd: false,
+      unavailableReason: translate('subscription.process.palette.payment.unavailable'),
     },
   };
 
@@ -514,6 +519,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         onChange={setDraft}
         onAdd={editProcess}
         cardTypes={cardTypes}
+        labels={{
+          palette: translate('subscription.process.palette.title'),
+          hint: translate('subscription.process.palette.hint'),
+          insert: position => `${translate('subscription.process.palette.insert')} ${position}`,
+          unavailable: translate('subscription.process.palette.unavailable'),
+        }}
         start={<span className="badge rounded-pill bg-light text-dark border p-2">
           <Flag size={15} aria-hidden="true" /> {translate('subscription.process.start')}
         </span>}
