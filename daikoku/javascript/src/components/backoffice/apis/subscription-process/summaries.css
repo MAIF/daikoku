@@ -1,33 +1,15 @@
 .flow-editor .card-summary {
-  margin: 0;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
   gap: 0.1rem;
   font-size: 12px;
 }
 
-.flow-editor .card-summary-row {
-  display: flex;
-  align-items: baseline;
-}
-
 .flow-editor .card-summary dt {
   flex: 0 0 5.5rem;
-  font-weight: 600;
   color: #6b7280;
-}
-
-.flow-editor .card-summary dd {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .flow-editor .card-summary code {
   padding: 0.2rem 0.6rem;
-  border-radius: 6px;
   background: #f1f3f5;
   color: #1f2937;
   font-size: 0.7rem;

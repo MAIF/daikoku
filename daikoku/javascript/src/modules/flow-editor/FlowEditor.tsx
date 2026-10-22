@@ -118,7 +118,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   const renderSlot = (index: number) => {
     return (
       <div
-        className={`flow-editor__slot${dropAt === index ? ' flow-editor__slot--over' : ''}`}
+        className={`flow-editor__slot position-relative d-grid${dropAt === index ? ' flow-editor__slot--over' : ''}`}
         onDragOver={(event) => {
           if (isOwnDrag(event)) {
             event.preventDefault();
@@ -131,9 +131,13 @@ export const FlowEditor = <Card extends FlowEditorCard>({
         }}
         onDrop={(event) => dropCard(event, index)}
       >
-        <span className="flow-editor__connector" aria-hidden="true" />
+        <span
+          className="flow-editor__connector position-absolute top-50 start-0 end-0 pe-none"
+          aria-hidden="true"
+        />
         {(activeType !== null || dragging) && (
           <button
+            className="position-relative rounded-circle p-0"
             type="button"
             aria-label={labels.insert(index + 1)}
             tabIndex={activeType === null ? -1 : 0}
@@ -157,7 +161,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       <article className="flow-editor__card" aria-label={definition?.label ?? card.type}>
         <header className="flow-editor__card-header">
           <span
-            className="flow-editor__handle"
+            className="flow-editor__handle d-flex justify-content-center p-1 mb-2 user-select-none"
             role="img"
             aria-disabled={invalidId || definition?.canMove === false}
             draggable={!invalidId && definition?.canMove !== false}
@@ -178,17 +182,19 @@ export const FlowEditor = <Card extends FlowEditorCard>({
             }}
             onDragEnd={endDrag}
           >
-            <GripHorizontal size={20} aria-hidden="true" />
+            <GripHorizontal className="pe-none" size={20} aria-hidden="true" />
           </span>
-          <div className="flow-editor__card-title">
+          <div className="flow-editor__card-title d-flex align-items-center gap-2">
             {definition?.icon && (
-              <span className="flow-editor__type-icon" aria-hidden="true">
+              <span className="flow-editor__type-icon d-grid" aria-hidden="true">
                 {definition.icon}
               </span>
             )}
             <div className="flow-editor__card-heading">
-              <span className="flow-editor__card-type">{definition?.label ?? card.type}</span>
-              {title && <h3 className="flow-editor__card-subtitle">{title}</h3>}
+              <span className="flow-editor__card-type d-block fw-normal">
+                {definition?.label ?? card.type}
+              </span>
+              {title && <h3 className="flow-editor__card-subtitle m-0 fw-bold">{title}</h3>}
             </div>
           </div>
         </header>
@@ -205,8 +211,9 @@ export const FlowEditor = <Card extends FlowEditorCard>({
             Type indisponible : {card.type}. Les données sont conservées ; édition impossible.
           </p>
         )}
-        <footer className="flow-editor__actions">
+        <footer className="flow-editor__actions d-flex flex-wrap gap-1 justify-content-between p-2">
           <button
+            className="d-inline-flex align-items-center fw-medium"
             type="button"
             disabled={invalidId || definition?.canDelete === false}
             aria-label={`Supprimer la carte ${index + 1}`}
@@ -219,6 +226,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
             Supprimer
           </button>
           <button
+            className="d-inline-flex align-items-center fw-medium"
             type="button"
             disabled={invalidId || !Content || (!definition?.onEdit && !onEdit)}
             onClick={() => {
@@ -237,12 +245,18 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   return (
     <section
       ref={editorRef}
-      className={`flow-editor${dragging || activeType !== null ? ' flow-editor--inserting' : ''}`}
+      className={`flow-editor w-100 text-start${dragging || activeType !== null ? ' flow-editor--inserting' : ''}`}
       aria-label="Éditeur de processus"
     >
-      <div className="flow-editor__palette" role="group" aria-label={labels.palette}>
-        <div className="flow-editor__palette-help">{labels.hint}</div>
-        <div className="flow-editor__palette-types">
+      <div
+        className="flow-editor__palette position-sticky top-0 z-2 rounded-3"
+        role="group"
+        aria-label={labels.palette}
+      >
+        <div className="flow-editor__palette-help d-flex flex-wrap align-items-center gap-2 mb-2 small">
+          {labels.hint}
+        </div>
+        <div className="flow-editor__palette-types d-flex flex-wrap align-items-center gap-2">
           {catalogTypes.map((type) => {
             const definition = cardTypes[type];
             const unavailable = definition.canAdd === false;
@@ -250,10 +264,10 @@ export const FlowEditor = <Card extends FlowEditorCard>({
               ? (definition.unavailableReason ?? labels.unavailable)
               : undefined;
             return (
-              <span key={type} title={reason}>
+              <span key={type} title={reason} className="mw-100">
                 <button
                   type="button"
-                  className="flow-editor__palette-type"
+                  className="flow-editor__palette-type d-inline-flex align-items-center gap-2 py-2 rounded-3 mw-100 text-start"
                   aria-label={definition.label}
                   aria-pressed={activeType === type}
                   disabled={unavailable}
@@ -281,9 +295,9 @@ export const FlowEditor = <Card extends FlowEditorCard>({
         </div>
       </div>
       {error && <p role="alert">{error}</p>}
-      <div className="flow-editor__viewport">
-        <div className="flow-editor__sequence">
-          <div className="flow-editor__endpoint">{start}</div>
+      <div className="flow-editor__viewport w-100 overflow-x-auto p-3">
+        <div className="flow-editor__sequence d-flex align-items-center">
+          <div className="flow-editor__endpoint flex-shrink-0">{start}</div>
           {value.map((card, index) => (
             <Fragment
               key={card.id && idCounts.get(card.id) === 1 ? `card:${card.id}` : `invalid:${index}`}
@@ -293,7 +307,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
             </Fragment>
           ))}
           {renderSlot(value.length)}
-          <div className="flow-editor__endpoint">{end}</div>
+          <div className="flow-editor__endpoint flex-shrink-0">{end}</div>
         </div>
       </div>
     </section>
