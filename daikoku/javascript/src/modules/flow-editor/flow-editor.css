@@ -1,0 +1,211 @@
+.flow-editor {
+  width: 100%;
+  min-width: 0;
+  color: #1f2937;
+  font: 1rem/1.5 system-ui, sans-serif;
+  text-align: left;
+}
+
+.flow-editor .flow-editor__viewport {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.flow-editor .flow-editor__sequence {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+}
+
+.flow-editor .flow-editor__endpoint {
+  flex: 0 0 auto;
+}
+
+.flow-editor .flow-editor__card {
+  flex: 0 0 22rem;
+  width: 22rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.flow-editor .flow-editor__card-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.flow-editor .flow-editor__card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-editor .flow-editor__type-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 35px;
+  height: 35px;
+  border: 1px solid #29438d;
+  border-radius: 3px;
+  background: #f4f5f9;
+  color: #29438d;
+}
+
+.flow-editor .flow-editor__card-subtitle {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.flow-editor .flow-editor__card-heading {
+  min-width: 0;
+}
+
+.flow-editor .flow-editor__card-type {
+  display: block;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+}
+
+.flow-editor .flow-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-top: 1px solid #9b9b9b;
+}
+
+.flow-editor .flow-editor__content,
+.flow-editor .flow-editor__card > [role="alert"] {
+  padding: 0.75rem;
+}
+
+.flow-editor .flow-editor__slot {
+  position: relative;
+  flex: 0 0 5rem;
+  display: grid;
+  place-items: center;
+  min-height: 5rem;
+}
+
+.flow-editor .flow-editor__connector {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 2px;
+  background: #29438d;
+  pointer-events: none;
+}
+
+.flow-editor .flow-editor__connector::after {
+  position: absolute;
+  right: 1px;
+  top: -4px;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid #29438d;
+  border-right: 2px solid #29438d;
+  transform: rotate(45deg);
+  content: '';
+}
+
+.flow-editor .flow-editor__slot > button {
+  position: relative;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.flow-editor .flow-editor__picker {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 10rem;
+  padding: 0.5rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.flow-editor .flow-editor__slot:has(.flow-editor__picker) {
+  flex-basis: 12rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.flow-editor .flow-editor__handle {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem;
+  margin-bottom: 0.5rem;
+  user-select: none;
+  cursor: grab;
+}
+
+.flow-editor .flow-editor__handle:active {
+  cursor: grabbing;
+}
+
+.flow-editor .flow-editor__handle svg {
+  pointer-events: none;
+}
+
+.flow-editor--dragging .flow-editor__slot {
+  outline: 2px dashed #94a3b8;
+  outline-offset: -4px;
+  border-radius: 0.5rem;
+}
+
+.flow-editor .flow-editor__slot--over {
+  background: #dcfce7;
+  outline-color: #15803d;
+}
+
+.flow-editor .flow-editor__handle[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-editor .flow-editor__actions > button,
+.flow-editor .flow-editor__slot > button,
+.flow-editor .flow-editor__picker > button {
+  border: 1px solid #94a3b8;
+  background: #f8fafc;
+  color: #1f2937;
+  font: inherit;
+  cursor: pointer;
+}
+
+.flow-editor .flow-editor__actions > button:disabled,
+.flow-editor .flow-editor__slot > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-editor .flow-editor__actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border-color: #6c757d;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: #29438d;
+}
+
+.flow-editor .flow-editor__actions > button:hover:not(:disabled) {
+  background: #6c757d;
+  color: #fff;
+}

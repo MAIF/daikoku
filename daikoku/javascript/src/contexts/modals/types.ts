@@ -27,6 +27,8 @@ export type IRightPanelProps = {
   title: string;
   content: JSX.Element;
   onBack?: () => void;
+  /** Initial width as a percentage of the screen (35-100). Defaults to 40. */
+  defaultSize?: number;
 };
 
 export type TModalContext = {

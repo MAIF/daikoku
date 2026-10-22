@@ -1761,7 +1761,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
             process={plan.subscriptionProcess}
             team={props.ownerTeam._id}
             tenant={tenant}
-          />
+          />,
+          defaultSize:95
         })
       }
     }
