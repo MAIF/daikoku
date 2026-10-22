@@ -352,8 +352,8 @@ test('configurer un environnement', async ({ page }) => {
     .getByRole('listitem', { name: 'dev' })
     .getByRole('menu')
     .getByRole('button', { name: 'Modifier le process' }).click();
-  await page.getByRole('button', { name: 'Ajouter une carte en position 1' }).click();
-  await page.getByRole('button', { name: 'Admin. équipe' }).click();
+    await page.getByRole('button', { name: 'Admin. équipe' }).click();
+    await page.getByRole('button', { name: 'Insérer en position' }).click();
   await page.getByRole('button', { name: 'save' }).click();
   await expect(page
     .getByRole('listitem', { name: 'dev' })

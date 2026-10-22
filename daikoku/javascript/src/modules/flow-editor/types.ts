@@ -12,6 +12,7 @@ export type CardTypeDefinition<Data> = {
   Content: ComponentType<CardContentProps<Data>>;
   onEdit?: (card: Data) => void;
   canAdd?: boolean;
+  unavailableReason?: string;
   canMove?: boolean;
   canDelete?: boolean;
 };
@@ -26,6 +27,12 @@ export type FlowEditorProps<Card extends FlowEditorCard> = {
   onEdit?: (card: Card) => void;
   onAdd: (type: Card['type'], index: number) => void;
   cardTypes: CardTypeCatalog<Card>;
+  labels?: {
+    palette: string;
+    hint: string;
+    insert: (position: number) => string;
+    unavailable: string;
+  };
   start: ReactNode;
   end: ReactNode;
 };

@@ -73,12 +73,34 @@ test('card-specific editors take precedence, with an optional global fallback', 
     editors.nth(1).getByRole('button', { name: 'Modifier', exact: true })
   ).toBeDisabled();
 
-  await editors
-    .first()
-    .getByRole('button', { name: 'Ajouter une carte en position 1', exact: true })
-    .click();
   await editors.first().getByRole('button', { name: 'Mail', exact: true }).click();
+  await editors.first().getByRole('button', { name: 'Insert at position 1', exact: true }).click();
   await expect(host.locator('output').last()).toHaveText('add:0:Mail');
   await expect(editors.first().locator('.flow-editor__card')).toHaveCount(2);
   await expect(host.locator('output')).toHaveCount(3);
+
+  await host.evaluate((element) => {
+    element.style.inset = '80px 10px auto auto';
+    element.style.width = '420px';
+    element.style.height = '180px';
+  });
+  const palette = editors.first().locator('.flow-editor__palette');
+  const initialTop = (await palette.boundingBox())!.y;
+  await host.evaluate((element) => {
+    element.scrollTop = 30;
+  });
+  await expect.poll(async () => (await palette.boundingBox())!.y).toBeCloseTo(initialTop, 0);
+  const dimensions = await editors.first().evaluate((element) => {
+    const viewport = element.querySelector('.flow-editor__viewport')!;
+    viewport.scrollLeft = 100;
+    return {
+      width: element.clientWidth,
+      totalWidth: element.scrollWidth,
+      viewportWidth: viewport.clientWidth,
+      scrollLeft: viewport.scrollLeft,
+    };
+  });
+  expect(dimensions.totalWidth).toBeLessThanOrEqual(dimensions.width);
+  expect(dimensions.viewportWidth).toBeLessThanOrEqual(dimensions.width);
+  expect(dimensions.scrollLeft).toBeGreaterThan(0);
 });
