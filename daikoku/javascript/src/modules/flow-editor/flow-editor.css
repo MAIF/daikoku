@@ -1,56 +1,24 @@
 .flow-editor {
-  width: 100%;
   min-width: 0;
   color: #1f2937;
   font:
     1rem/1.5 system-ui,
     sans-serif;
-  text-align: left;
 }
 
 .flow-editor .flow-editor__viewport {
-  width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
-  padding: 1rem;
 }
 
 .flow-editor .flow-editor__palette {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   padding: 0.75rem;
   border: 1px dashed #94a3b8;
-  border-radius: 0.5rem;
   background: #fff;
 }
 
-.flow-editor .flow-editor__palette-types,
-.flow-editor .flow-editor__palette-help {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.flow-editor .flow-editor__palette-help {
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-}
-
 .flow-editor .flow-editor__palette-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  max-width: 100%;
-  text-align: left;
+  padding-inline: 0.75rem;
   overflow-wrap: anywhere;
-}
-
-.flow-editor .flow-editor__palette-types > span {
-  max-width: 100%;
 }
 
 .flow-editor .flow-editor__palette-type[aria-pressed='true'] {
@@ -69,14 +37,8 @@
 }
 
 .flow-editor .flow-editor__sequence {
-  display: flex;
-  align-items: center;
   width: max-content;
   min-width: 100%;
-}
-
-.flow-editor .flow-editor__endpoint {
-  flex: 0 0 auto;
 }
 
 .flow-editor .flow-editor__card {
@@ -93,14 +55,7 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.flow-editor .flow-editor__card-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .flow-editor .flow-editor__type-icon {
-  display: grid;
   place-items: center;
   flex: 0 0 35px;
   height: 35px;
@@ -111,10 +66,8 @@
 }
 
 .flow-editor .flow-editor__card-subtitle {
-  margin: 0;
   font-size: 14.5px;
   line-height: 20px;
-  font-weight: 700;
 }
 
 .flow-editor .flow-editor__card-heading {
@@ -122,19 +75,12 @@
 }
 
 .flow-editor .flow-editor__card-type {
-  display: block;
   font-family: inherit;
   font-size: 12px;
   line-height: 15px;
-  font-weight: 400;
 }
 
 .flow-editor .flow-editor__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  justify-content: space-between;
-  padding: 0.5rem;
   border-top: 1px solid #9b9b9b;
 }
 
@@ -144,20 +90,14 @@
 }
 
 .flow-editor .flow-editor__slot {
-  position: relative;
   flex: 0 0 5rem;
-  display: grid;
   place-items: center;
   min-height: 5rem;
 }
 
 .flow-editor .flow-editor__connector {
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
   height: 2px;
   background: #29438d;
-  pointer-events: none;
 }
 
 .flow-editor .flow-editor__connector::after {
@@ -173,28 +113,16 @@
 }
 
 .flow-editor .flow-editor__slot > button {
-  position: relative;
-  border-radius: 50%;
   width: 2rem;
   height: 2rem;
-  padding: 0;
 }
 
 .flow-editor .flow-editor__handle {
-  display: flex;
-  justify-content: center;
-  padding: 0.25rem;
-  margin-bottom: 0.5rem;
-  user-select: none;
   cursor: grab;
 }
 
 .flow-editor .flow-editor__handle:active {
   cursor: grabbing;
-}
-
-.flow-editor .flow-editor__handle svg {
-  pointer-events: none;
 }
 
 .flow-editor--inserting .flow-editor__slot {
@@ -230,15 +158,12 @@
 }
 
 .flow-editor .flow-editor__actions > button {
-  display: inline-flex;
-  align-items: center;
   gap: 5px;
   padding: 4px 10px;
   border-radius: 8px;
   border-color: #6c757d;
   background: transparent;
   font-size: 12px;
-  font-weight: 500;
   color: #29438d;
 }
 

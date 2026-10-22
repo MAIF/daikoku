@@ -183,15 +183,15 @@ const PaymentStep = (props: ValidationStepProps) => {
           (setting) => setting._id == step.thirdPartyPaymentSettingsId
         );
       return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
+        <div className="d-flex flex-column flex-grow-1 validation-step">
+          <span className="validation-step__index d-flex justify-content-center fw-bold">
             {String(props.index).padStart(2, '0')}
           </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
+          <span className="validation-step__name d-flex justify-content-center fw-bold text-uppercase">{step.title}</span>
+          <span className="validation-step__type position-absolute d-flex justify-content-center align-items-center rounded-circle fw-bold">
             <CreditCard />
           </span>
-          <div className="d-flex flex-row validation-step__infos">
+          <div className="d-flex flex-grow-1 fst-italic validation-step__infos">
             <span>{thirdPartyPaymentSettings?.name}</span>
             <span>{thirdPartyPaymentSettings?.type}</span>
           </div>
