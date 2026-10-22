@@ -9,6 +9,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 export const RightPanel = () => {
   const { translate } = useContext(I18nContext);
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
+  const defaultSize = rightPanelContent?.defaultSize ?? 40;
 
   useEffect(() => {
     const closeOnEsc = (e: any) => {
@@ -40,8 +41,11 @@ export const RightPanel = () => {
 
   return (
     <div className={classNames("right-panel-container", { opened: rightPanelContent })}>
-      <Group orientation='horizontal'>
-        <Panel defaultSize="60" maxSize="65">
+      <Group
+        key={rightPanelContent ? `opened-${defaultSize}` : 'closed'}
+        orientation='horizontal'
+      >
+        <Panel defaultSize={`${100 - defaultSize}%`} maxSize="65%">
           <div
             className={classNames('right-panel-background', {
               opened: rightPanelContent,
@@ -52,7 +56,7 @@ export const RightPanel = () => {
 
         </Panel>
         <Separator />
-        <Panel defaultSize="40" minSize="35">
+        <Panel defaultSize={`${defaultSize}%`} minSize="35%">
           <div
             className={classNames('right-panel', {
               opened: rightPanelContent,
