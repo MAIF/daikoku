@@ -8,6 +8,29 @@ Just click the `subscribe` button. If you are member of several teams, please ch
 If the plan has no process of subscription, a green message appears to inform you that the subscription is successful.
 Otherwise, the process is followed step by step until the subscription is generated (it could take a few moment).
 
+### Subscription requirements
+
+When a plan has a subscription blocker or warning, hover over **Get API key** or
+**Request API key** to read its explanation, including when the button is disabled.
+Move the pointer away to close the tooltip. There is no separate information button.
+The subscription button is disabled when there is a
+global blocker or no team can subscribe. It remains usable when at least one team is eligible
+and there is no global blocker. Clicking the button keeps its normal subscription or login action;
+it does not open the tooltip.
+
+The help lists current blockers, grouping affected teams by reason, and suggests how to
+resolve them. It can also explain why some teams are unavailable while others can subscribe.
+The help does not list eligible teams or display administration-team and existing-plan-subscription
+messages; those team choices are handled by the team selector. These rules still apply when
+determining whether the subscription button is disabled.
+A separate **Before subscribing** section identifies additional prerequisites, such as an
+Otoroshi instance missing from the tenant settings or required custom metadata. These
+warnings do not change the subscription button or replace server-side validation.
+
+This help covers the initial subscription action, not compatibility with an existing keyring.
+Guests still use the subscription button to sign in or register; team-specific explanations
+become available after signing in.
+
 ### Payment Process
 
 When a user reaches the payment step in the subscription process, Daikoku facilitates the transition to the payment gateway to collect payment information and process the transaction. Here's how it works:
