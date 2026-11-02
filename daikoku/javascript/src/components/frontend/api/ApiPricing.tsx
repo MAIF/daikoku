@@ -54,7 +54,12 @@ import {
 import { useExportEntity } from '../../utils/useExportEntity';
 import { CmsViewerByPath } from "../CmsViewer";
 import { SubscriptionHelp } from './SubscriptionHelp';
-import { getSubscriptionHelp, isSubscriptionDisabled } from './subscriptionHelpReasons';
+import {
+  getOtoroshiTargetReason,
+  getSubscriptionHelp,
+  getVisibleSubscriptionBlockers,
+  isSubscriptionDisabled,
+} from './subscriptionHelpReasons';
 
 type Option = {
   type: 'group' | 'route';
@@ -1868,6 +1873,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
         meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
+          const targetReason = getOtoroshiTargetReason(props.api, plan);
+          if (targetReason) {
+            return (
+              <SubscriptionHelp help={{ blockers: [targetReason] }}>
+                <span className="badge bg-danger">
+                  {translate('api.pricings.otoroshi.target.value.none')}
+                </span>
+              </SubscriptionHelp>
+            );
+          }
           return (
             <span className='feature__description'>
               {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
@@ -1909,17 +1924,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           const subscriptionHelp = getSubscriptionHelp({
             api: props.api,
             plan,
-            ownerTeamId: props.ownerTeam._id,
-            teams: props.myTeams.map((team) => ({
-              ...team,
-              canAccessApiKey: CanIDoAction(connectedUser, access, apikey, team),
-            })),
-            subscriptions: props.subscriptions,
-            demands: props.inProgressDemands,
-            tenant,
             isGuest: connectedUser.isGuest,
-            isDaikokuAdmin: connectedUser.isDaikokuAdmin,
-            initialTeamsExhausted: isAccepted,
           });
           const subscriptionDisabled = isSubscriptionDisabled(subscriptionHelp);
 
@@ -1927,18 +1932,21 @@ export const ApiPricing = (props: ApiPricingProps) => {
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
-                <SubscriptionHelp help={subscriptionHelp}>
                 {
                   subscriptionDisabled &&
                   (
-                    <button
-                      type="button"
-                      disabled
-                      aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
-                      className="btn --primary --small --icon-only"
-                    >
-                      <KeyRound size={16} />
-                    </button>
+                    <Can I={manage} a={API} team={props.ownerTeam}>
+                      <SubscriptionHelp help={{ blockers: getVisibleSubscriptionBlockers(subscriptionHelp) }}>
+                        <button
+                          type="button"
+                          disabled
+                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                          className="btn --primary --small --icon-only"
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                      </SubscriptionHelp>
+                    </Can>
                   )
                 }
                 {
@@ -1987,7 +1995,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     </button>
                   )
                 }
-                </SubscriptionHelp>
               </div>
               <Can I={manage} a={API} team={props.ownerTeam}>
                 <div className="p-2">
