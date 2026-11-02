@@ -1079,3 +1079,9 @@ Thank you to all the contributors who worked on this release:
 - better graphql request for visible & accessible apis [#517](https://github.com/MAIF/daikoku/issues/517)
 - find a way to customize antd colors [#496](https://github.com/MAIF/daikoku/issues/496)
 
+## [v19.0.1] - 2026-11-02
+
+## :lady_beetle: Bug Fixes
+
+- fix: Restore Admin and CMS API access after the v19.0.0 keyring migration [#1293](https://github.com/MAIF/daikoku/issues/1293)
+
