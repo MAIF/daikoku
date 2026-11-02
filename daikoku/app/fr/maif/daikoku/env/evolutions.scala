@@ -1989,18 +1989,33 @@ object evolution_1900 extends EvolutionScript {
 
         given ExecutionContext = ec
 
-        // The whole migration is idempotent (each step is guarded so it only
-        // touches not-yet-migrated rows) and ordered (steps are chained, not
-        // run as eager vals). A keyring reuses its root subscription's id, which
-        // keeps the linking self-contained.
         for {
-          // 1. create one keyring per root subscription (no parent) targeting an
-          // otoroshi instance. Keyless subscriptions (admin api...) are handled
-          // in step 1b below.
-          _ <- dataStore.keyringRepo
+          _ <- migrateSubscriptions(query =>
+            dataStore.queryRaw(query, "content").map(_ => ())
+          )
+          // Unrelated to keyrings: reduce OtoroshiSyncApiError.api to its id.
+          _ <- dataStore.notificationRepo
             .forAllTenant()
             .execute(
-              query = """
+              query = """UPDATE notifications n
+                |SET content = jsonb_set(n.content, '{action,api}', n.content->'action'->'api'->'_id', false)
+                |WHERE n.content->'action'->>'type' = 'OtoroshiSyncApiError'""".stripMargin
+            )
+        } yield Done
+      }
+  }
+
+  private[env] def migrateSubscriptions(
+      execute: String => Future[Unit]
+  )(implicit ec: ExecutionContext): Future[Done] = {
+    // The whole migration is idempotent (each step is guarded so it only
+    // touches not-yet-migrated rows) and ordered (steps are chained, not
+    // run as eager vals). A keyring reuses its root subscription's id, which
+    // keeps the linking self-contained.
+    for {
+      // 1. create one keyring per root, including internal admin/CMS keys.
+      _ <- execute(
+        """
                 |INSERT INTO keyrings (_id, _deleted, content)
                 |SELECT s._id,
                 |       false,
@@ -2028,14 +2043,12 @@ object evolution_1900 extends EvolutionScript {
                 |WHERE s._deleted = false
                 |  AND s.content->>'parent' IS NULL
                 |  AND s.content->>'keyring' IS NULL
-                |  AND p.content->'otoroshiTarget'->>'otoroshiSettings' IS NOT NULL;
+                |ON CONFLICT (_id) DO NOTHING;
                 |""".stripMargin
-            )
-          // 2. attach root subscriptions to their keyring (= own id), drop 'parent'
-          _ <- dataStore.apiSubscriptionRepo
-            .forAllTenant()
-            .execute(
-              query = """
+      )
+      // 2. attach root subscriptions to their keyring (= own id), drop 'parent'
+      _ <- execute(
+        """
                 |UPDATE api_subscriptions s
                 |SET content = jsonb_set(s.content - 'parent', '{keyring}', to_jsonb(s._id))
                 |WHERE s._deleted = false
@@ -2043,12 +2056,10 @@ object evolution_1900 extends EvolutionScript {
                 |  AND s.content->>'keyring' IS NULL
                 |  AND EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s._id);
                 |""".stripMargin
-            )
-          // 3. attach child subscriptions to their parent's keyring, drop 'parent'
-          _ <- dataStore.apiSubscriptionRepo
-            .forAllTenant()
-            .execute(
-              query = """
+      )
+      // 3. attach child subscriptions to their parent's keyring, drop 'parent'
+      _ <- execute(
+        """
                 |UPDATE api_subscriptions s
                 |SET content = jsonb_set(s.content - 'parent', '{keyring}', to_jsonb(s.content->>'parent'))
                 |WHERE s._deleted = false
@@ -2056,44 +2067,58 @@ object evolution_1900 extends EvolutionScript {
                 |  AND s.content->>'keyring' IS NULL
                 |  AND EXISTS (SELECT 1 FROM keyrings k WHERE k._id = s.content->>'parent');
                 |""".stripMargin
-            )
-          // 4. pending demands: 'parentSubscription' (a sub id) -> the keyring of
-          // that subscription
-          _ <- dataStore.subscriptionDemandRepo
-            .forAllTenant()
-            .execute(
-              query = """
+      )
+      // 4. pending demands: 'parentSubscription' (a sub id) -> the keyring of
+      // that subscription
+      _ <- execute(
+        """
                 |UPDATE subscription_demands d
                 |SET content = jsonb_set(d.content - 'parentSubscription', '{keyring}', to_jsonb(s.content->>'keyring'))
                 |FROM api_subscriptions s
                 |WHERE d.content->>'parentSubscription' = s._id
                 |  AND s.content->>'keyring' IS NOT NULL;
                 |""".stripMargin
-            )
-          // 5. same for pending ApiSubscriptionDemand notifications
-          _ <- dataStore.notificationRepo
-            .forAllTenant()
-            .execute(
-              query = """
+      )
+      // 5. same for pending ApiSubscriptionDemand notifications
+      _ <- execute(
+        """
                 |UPDATE notifications n
                 |SET content = jsonb_set(n.content #- '{action,parentSubscriptionId}', '{action,keyring}', to_jsonb(s.content->>'keyring'))
                 |FROM api_subscriptions s
                 |WHERE n.content->'action'->>'parentSubscriptionId' = s._id
                 |  AND s.content->>'keyring' IS NOT NULL;
                 |""".stripMargin
-            )
-          // 6. Unrelated to keyring, update OtoroshiSyncApiError to reduce size of 'api' field from complete
-          // api content to api id
-          _ <- dataStore.notificationRepo
-            .forAllTenant()
-            .execute(
-              query = """UPDATE notifications n
-                |SET content = jsonb_set(n.content, '{action,api}', n.content->'action'->'api'->'_id', false)
-                |WHERE n.content->'action'->>'type' = 'OtoroshiSyncApiError'""".stripMargin
-            )
-        } yield Done
-      }
+      )
+    } yield Done
   }
+}
+
+object evolution_1901 extends EvolutionScript {
+  override def version: String = "19.0.1"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      logger.info(
+        s"Begin evolution $version - migrate remaining internal subscriptions to keyrings"
+      )
+      given ExecutionContext = ec
+
+      evolution_1900.migrateSubscriptions(query =>
+        dataStore.queryRaw(query, "content").map(_ => ())
+      )
+    }
 }
 
 object evolution_18110 extends EvolutionScript {
@@ -2561,6 +2586,7 @@ object evolutions {
       evolution_18110,
       evolution_18110_b,
       evolution_1900,
+      evolution_1901
       evolution_1900_b,
       evolution_1900_c,
       evolution_1900_d,
