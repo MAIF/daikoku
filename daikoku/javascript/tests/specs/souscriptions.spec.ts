@@ -1134,7 +1134,7 @@ test("[#1086] - un trousseau désactivé ne doit pas pouvoir être paramétré (
 
   // menu keyring : rotation + réinit. secret grisés tant que le trousseau est désactivé
   await card.locator('[id^="keyring-dropdown-"]').click();
-  
+  await page.getByRole('button', { name: 'Actions du trousseau' }).click();
   await expect(page.getByRole("button", { name: "Paramétrer la rotation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Réinit. le secret" })).toBeVisible();
 })
@@ -1172,10 +1172,11 @@ test("[Consommateur] - désactiver/réactiver un trousseau bascule la clé Otoro
   expect((await disabledKey.json()).enabled).toBe(false);
   // la souscription du trousseau reste activée côté Daikoku
 
-  await page
-    .getByRole('listitem', { name: 'api commande - prod' })
-    .getByLabel('Contenu du trousseau')
-    .click();
+  await page.getByRole('listitem', { name: 'Trousseau api commande - prod' })
+  .getByLabel('Actions du trousseau').click()
+  await page.getByRole('listitem', { name: 'Trousseau api commande - prod' })
+  .getByLabel('Contenu du trousseau')
+  .click();
 
   //Vérifier que la clé est activé
   await expect(page

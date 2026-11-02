@@ -290,7 +290,6 @@ test("Disabling keyring should prevent calling all associated routes", async ({
     authHeader,
     status: 401,
   });
-  await page.getByRole('listitem', { name: COMMAND_DEV_KEYRING }).getByLabel('Actions du trousseau').click();
   await page.getByRole("button", { name: "Activer le trousseau" }).click();
   await expect(page.getByText("Trousseau activé")).toBeVisible();
   await checkOtoroshiCall({
