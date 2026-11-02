@@ -2586,7 +2586,7 @@ object evolutions {
       evolution_18110,
       evolution_18110_b,
       evolution_1900,
-      evolution_1901
+      evolution_1901,
       evolution_1900_b,
       evolution_1900_c,
       evolution_1900_d,
