@@ -10,26 +10,24 @@ Otherwise, the process is followed step by step until the subscription is genera
 
 ### Subscription requirements
 
-When a plan has a subscription blocker or warning, hover over **Get API key** or
-**Request API key** to read its explanation, including when the button is disabled.
-Move the pointer away to close the tooltip. There is no separate information button.
-The subscription button is disabled when there is a
-global blocker or no team can subscribe. It remains usable when at least one team is eligible
-and there is no global blocker. Clicking the button keeps its normal subscription or login action;
-it does not open the tooltip.
+When an API is blocked or unpublished, or a plan has no Otoroshi target or authorized entities,
+the initial subscription button is hidden from consumers. Users with permission to manage the
+API keep a disabled button: Daikoku administrators, administrators of the owning team and its API
+editors. Being a tenant administrator alone does not grant this display permission.
 
-The help lists current blockers, grouping affected teams by reason, and suggests how to
-resolve them. It can also explain why some teams are unavailable while others can subscribe.
-The help does not list eligible teams or display administration-team and existing-plan-subscription
-messages; those team choices are handled by the team selector. These rules still apply when
-determining whether the subscription button is disabled.
-A separate **Before subscribing** section identifies additional prerequisites, such as an
-Otoroshi instance missing from the tenant settings or required custom metadata. These
-warnings do not change the subscription button or replace server-side validation.
+Hover over the disabled **Get API key** or **Request API key** button to read the API's blocked
+or unpublished status. Otoroshi configuration problems are shown separately in the **Otoroshi
+target** column, whose visibility is unchanged: a red **None** label replaces the target URL when
+the target is absent or has no authorized group, service or route. Hover over the label to read
+the corresponding explanation. Move the pointer away to close either tooltip.
 
-This help covers the initial subscription action, not compatibility with an existing keyring.
-Guests still use the subscription button to sign in or register; team-specific explanations
-become available after signing in.
+AdminOnly APIs remain exempt from the Otoroshi configuration requirement. Other team eligibility,
+pending-request, subscription, payment, instance and metadata checks are not added to this initial
+button calculation or explained by these tooltips. Existing authorization checks, team selection
+and server-side validation still apply.
+
+This behavior covers the initial per-plan subscription action, not multi-plan subscription or
+compatibility with an existing keyring. Guests still use the button to sign in or register.
 
 ### Payment Process
 

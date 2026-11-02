@@ -1,10 +1,7 @@
 import { type ReactNode, useContext, useId } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { I18nContext } from '../../../contexts';
-import {
-  getVisibleSubscriptionBlockers,
-  type SubscriptionHelp as SubscriptionHelpContent,
-} from './subscriptionHelpReasons';
+import { type SubscriptionHelp as SubscriptionHelpContent } from './subscriptionHelpReasons';
 
 export function SubscriptionHelp({
   help,
@@ -15,12 +12,8 @@ export function SubscriptionHelp({
 }) {
   const { translate } = useContext(I18nContext);
   const contentId = useId();
-  const sections = {
-    blockers: getVisibleSubscriptionBlockers(help),
-    warnings: help.warnings,
-  };
 
-  if (!sections.blockers.length && !sections.warnings.length) return <>{children}</>;
+  if (!help.blockers.length) return <>{children}</>;
 
   return (
     <>
@@ -41,30 +34,14 @@ export function SubscriptionHelp({
             overflowY: 'auto',
           }}
         >
-          {(['blockers', 'warnings'] as const).map(
-            (section) =>
-              sections[section].length > 0 && (
-                <section key={section}>
-                  <strong>{translate(`subscription.help.${section}`)}</strong>
-                  <ul className="mb-2 ps-3">
-                    {sections[section].map((item) => (
-                      <li key={item.reason} className="mb-2">
-                        {translate(`subscription.help.reason.${item.reason}`)}
-                        {item.teams.length > 0 && (
-                          <div>
-                            {translate({
-                              key: 'subscription.help.teams',
-                              replacements: [item.teams.join(', ')],
-                            })}
-                          </div>
-                        )}
-                        {item.details.length > 0 && <div>{item.details.join(', ')}</div>}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )
-          )}
+          <strong>{translate('subscription.help.blockers')}</strong>
+          <ul className="mb-2 ps-3">
+            {help.blockers.map((item) => (
+              <li key={item.reason} className="mb-2">
+                {translate(`subscription.help.reason.${item.reason}`)}
+              </li>
+            ))}
+          </ul>
         </div>
       </Tooltip>
       <span className="d-inline-flex" data-tooltip-id={contentId}>
