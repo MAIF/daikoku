@@ -1877,7 +1877,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           if (targetReason) {
             return (
               <SubscriptionHelp help={{ blockers: [targetReason] }}>
-                <span className="badge bg-danger">
+                <span className="badge bg-danger cursor-forbidden">
                   {translate('api.pricings.otoroshi.target.value.none')}
                 </span>
               </SubscriptionHelp>
@@ -1936,6 +1936,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   subscriptionDisabled &&
                   (
                     <Can I={manage} a={API} team={props.ownerTeam}>
+                      <span className="d-inline-flex cursor-forbidden">
                       <SubscriptionHelp help={{ blockers: getVisibleSubscriptionBlockers(subscriptionHelp) }}>
                         <button
                           type="button"
@@ -1946,6 +1947,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                           <KeyRound size={16} />
                         </button>
                       </SubscriptionHelp>
+                      </span>
                     </Can>
                   )
                 }
