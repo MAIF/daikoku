@@ -125,7 +125,21 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       s3RegionProvider = new AwsRegionProvider {
         override def getRegion: Region = Region.of(conf.region)
       },
-      listBucketApiVersion = ApiVersion.ListBucketVersion2
+      listBucketApiVersion = ApiVersion.ListBucketVersion2,
+      // Pekko S3 1.3 filters all headers by default with this constructor.
+      allowedHeaders = Map(
+        "InitiateMultipartUpload" -> Set(
+          "x-amz-acl",
+          "x-amz-meta-filename",
+          "x-amz-meta-title",
+          "x-amz-meta-desc",
+          "x-amz-meta-team",
+          "x-amz-meta-tenant",
+          "x-amz-meta-asset",
+          "x-amz-meta-content-type",
+          "x-amz-meta-user"
+        )
+      )
     ).withEndpointUrl(conf.endpoint)
     S3Attributes.settings(settings)
   }

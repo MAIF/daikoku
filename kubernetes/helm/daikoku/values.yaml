@@ -113,7 +113,7 @@ daikoku:
     # fields and you can leave them empty here.
     s3:
       bucket: ""                   # bucket name (must already exist on the S3 backend)
-      endpoint: ""                 # S3 endpoint URL, e.g. https://s3.eu-west-1.amazonaws.com
+      endpoint: ""                 # Bucket endpoint URL, e.g. https://<bucket>.s3.eu-west-1.amazonaws.com
       region: ""                   # e.g. eu-west-1. Empty -> "us-east-1"
       access: ""                   # access key id
       secret: ""                   # [DAIKOKU_INIT_S3_SECRET] secret access key

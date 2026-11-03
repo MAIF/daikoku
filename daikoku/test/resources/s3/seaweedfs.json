@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "assets-test",
+      "credentials": [
+        {
+          "accessKey": "assets-test",
+          "secretKey": "assets-test-password"
+        }
+      ],
+      "actions": ["Admin"]
+    }
+  ]
+}
