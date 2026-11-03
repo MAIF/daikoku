@@ -245,7 +245,6 @@ class TeamService(
       translator: Translator,
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
-
     def processStep(
         step: SubscriptionDemandStep,
         teamCreation: TeamCreation
@@ -275,7 +274,6 @@ class TeamService(
           )
       }
     }
-
     for {
       teamCreation <- EitherT.fromOptionF(
         env.dataStore.teamCreationRepo.findById(demandId),
@@ -289,7 +287,6 @@ class TeamService(
       maybeStep <- EitherT.pure[Future, AppError](
         teamCreation.steps.find(!_.state.isClosed)
       )
-
       result <-
         maybeStep.fold(finalizeTeamCreation(teamCreation, tenant))(
           processStep(_, teamCreation)
@@ -419,7 +416,7 @@ class TeamService(
           pathAccept
         )
       ),
-      "urlDenied" -> JsString(
+      "urlDecline" -> JsString(
         env.getDaikokuUrl(
           tenant,
           pathDecline
@@ -434,14 +431,14 @@ class TeamService(
     for {
       title <- EitherT.right[AppError](
         translator.translate(
-          s"mail.account.creation.mail.$mailType.title",
+          s"mail.team.creation.mail.$mailType.title",
           tenant,
           mailData
         )
       )
       body <- EitherT.right[AppError](
         translator.translate(
-          s"mail.account.creation.mail.$mailType.body",
+          s"mail.team.creation.mail.$mailType.body",
           tenant,
           mailData
         )
@@ -583,7 +580,6 @@ class TeamService(
       messagesApi: MessagesApi
   ) = {
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
-
     for {
       user <- EitherT.fromOptionF[Future, AppError, User](
         env.dataStore.userRepo.findById(teamCreation.userId),
@@ -761,7 +757,6 @@ class TeamService(
       translator: Translator,
       messagesApi: MessagesApi
   ): Future[Either[AppError, Unit]] = {
-
     val r: EitherT[Future, AppError, Unit] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.teamCreationRepo

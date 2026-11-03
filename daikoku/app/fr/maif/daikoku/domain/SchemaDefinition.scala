@@ -255,6 +255,13 @@ object SchemaDefinition {
           demands: Seq[DemandId]
       ) => ctx._1.accountCreationRepo.findByIds(demands)
     )(using HasId[AccountCreation, DemandId](_.id))
+       lazy val teamCreationsFetcher = Fetcher(
+      config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
+      fetch = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          demands: Seq[DemandId]
+      ) => ctx._1.teamCreationRepo.findByIds(demands)
+    )(using HasId[TeamCreation, DemandId](_.id))
     lazy val userSessionsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
@@ -3222,6 +3229,52 @@ object SchemaDefinition {
       )
     )
 
+    lazy val TeamCreationType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      TeamCreation
+    ](
+      ObjectTypeDescription(
+        "waiting confirmation for a neaw team."
+      ),
+      ReplaceField(
+        "userId",
+        Field("userId", StringType, resolve = _.value.userId.value)
+      ),
+      ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField(
+        "creationDate",
+        Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)
+      ),
+      ReplaceField(
+        "steps",
+        Field(
+          "steps",
+          ListType(SubscriptionDemandStepType),
+          resolve = _.value.steps
+        )
+      ),
+      ReplaceField(
+        "state",
+        Field("state", StringType, resolve = _.value.state.name)
+      ),
+      ReplaceField(
+        "fromTenant",
+        Field("fromTenant", StringType, resolve = _.value.fromTenant.value)
+      ),
+      ReplaceField(
+        "value",
+        Field(
+          "value",
+          JsonType,
+          resolve = _.value.value - "password" - "confirmPassword"
+        )
+      ),
+      ReplaceField(
+        "metadata",
+        Field("metadata", MapType, resolve = _.value.metadata)
+      )
+    )
+
     lazy val AccountCreationType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       AccountCreation
@@ -3307,6 +3360,44 @@ object SchemaDefinition {
         )
       )
     )
+
+    lazy val TeamCreationAttemptType = new PossibleObject(
+      ObjectType(
+        "TeamCreationAttempt",
+        "A notification triggered during a new team creation",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          TeamCreationAttempt
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          TeamCreationAttempt
+        ](
+          Field(
+            "demand",
+            OptionType(TeamCreationType),
+            resolve = ctx => teamCreationsFetcher.defer(ctx.value.demand)
+          ),
+          Field(
+            "step",
+            OptionType(SubscriptionDemandStepType),
+            resolve = ctx =>
+              ctx.ctx._1.teamCreationRepo // FIXME: use defer ?
+                .findById(ctx.value.demand)
+                .map {
+                  case Some(d) => d.steps.find(_.id == ctx.value.step)
+                  case None    => None
+                }
+          ),
+          Field(
+            "motivation",
+            OptionType(StringType),
+            resolve = _.value.motivation.some
+          )
+        )
+      )
+    )
+
 
     lazy val NotificationInterfaceType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
@@ -3427,6 +3518,7 @@ object SchemaDefinition {
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,
+            TeamCreationAttemptType,
             ApiDepreciationWarningType,
             ApiBlockingWarningType
           )
@@ -5237,7 +5329,8 @@ object SchemaDefinition {
         usagePlansFetcher,
         accountCreationsFetcher,
         userSessionsFetcher,
-        cmsPagesFetcher
+        cmsPagesFetcher,
+        teamCreationsFetcher
       )
     )
   }

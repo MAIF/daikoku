@@ -18,7 +18,11 @@ import fr.maif.daikoku.domain.NotificationType.AcceptOnly
 import fr.maif.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.{AccountCreationService, ApiService}
+import fr.maif.daikoku.services.{
+  AccountCreationService,
+  ApiService,
+  TeamService
+}
 import fr.maif.daikoku.utils.Translator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
@@ -39,6 +43,7 @@ class NotificationController(
     env: Env,
     apiService: ApiService,
     accountCreationService: AccountCreationService,
+    teamService: TeamService,
     translator: Translator,
     cc: ControllerComponents
 ) extends AbstractController(cc)
@@ -163,7 +168,7 @@ class NotificationController(
                 )
               case TeamCreationAttempt(demand, step, _) =>
                 EitherT(
-                  accountCreationService.acceptAccountCreationAttempt(
+                  teamService.acceptTeamCreationAttempt(
                     demand,
                     step
                   )
@@ -314,6 +319,17 @@ class NotificationController(
           case AccountCreationAttempt(demand, step, _) =>
             EitherT(
               accountCreationService.declineAccountCreationAttempt(
+                demand,
+                step,
+                ctx.tenant,
+                maybeMessage
+              )
+            ).map(_ => None)
+              .leftMap(_ => None)
+              .merge
+          case TeamCreationAttempt(demand, step, _) =>
+            EitherT(
+              teamService.declineTeamCreationAttempt(
                 demand,
                 step,
                 ctx.tenant,

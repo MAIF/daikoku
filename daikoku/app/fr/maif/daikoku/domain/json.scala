@@ -3127,6 +3127,8 @@ object json {
           case "ApiAccess" => ApiAccessFormat.reads(json)
           case "AccountCreationAttempt" =>
             accountCreationAttemptFormat.reads(json)
+          case "TeamCreationAttempt" =>
+            teamCreationAttemptFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
@@ -3288,6 +3290,10 @@ object json {
           case p: NewSubscription =>
             NewSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewSubscription"
+            )
+          case p:TeamCreationAttempt =>
+            teamCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "TeamCreationAttempt"
             )
         }
     }
@@ -3599,6 +3605,30 @@ object json {
         "motivation" -> o.motivation
       )
   }
+
+   val teamCreationAttemptFormat = new Format[TeamCreationAttempt] {
+    override def reads(json: JsValue): JsResult[TeamCreationAttempt] =
+      Try {
+        JsSuccess(
+          TeamCreationAttempt(
+            demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
+            step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
+            motivation = (json \ "motivation").as[String]
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: TeamCreationAttempt): JsValue =
+      Json.obj(
+        "demand" -> o.demand.value,
+        "step" -> o.step.value,
+        "motivation" -> o.motivation
+      )
+  }
+  
   val ApiSubscriptionTransferSuccessFormat =
     new Format[ApiSubscriptionTransferSuccess] {
 

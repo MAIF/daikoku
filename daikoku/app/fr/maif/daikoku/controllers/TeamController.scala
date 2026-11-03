@@ -124,9 +124,6 @@ class TeamController(
       }
     }
 
-  val passwordPattern = java.util.regex.Pattern
-    .compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$")
-
   def validateTeamCreationForm(
       name: String,
       email: String
@@ -175,7 +172,6 @@ class TeamController(
               email
             )
           )
-          test = println("env.dataStore.teamCreationRepo.save")
           _ <- EitherT.liftF(
             env.dataStore.teamCreationRepo
               .save(
@@ -187,7 +183,7 @@ class TeamController(
                   name = name,
                   creationDate = DateTime.now(),
                   userId = ctx.user.id,
-                  steps = ctx.tenant.accountCreationProcess.map(step =>
+                  steps = ctx.tenant.teamCreationProcess.map(step =>
                     SubscriptionDemandStep(
                       id = SubscriptionDemandStepId(IdGenerator.token),
                       state = step match {
@@ -1166,9 +1162,9 @@ class TeamController(
 
         val messageId = (isEmailConfirm, teamCreation.state) match {
           case (true, SubscriptionDemandState.Accepted) =>
-            "account-creation-validation-email"
-          case (true, _) => "account-creation-validation-email-waiting"
-          case _         => "account-creation-accept"
+            "team-creation-validation-email"
+          case (true, _) => "team-creation-validation-email-waiting"
+          case _         => "team-creation-accept"
         }
         Redirect(
           env.getDaikokuUrl(

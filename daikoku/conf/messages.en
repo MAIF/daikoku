@@ -135,6 +135,14 @@ mail.account.creation.mail.accepted.body = Hello [userName], </br>\
 Thank you for signing up on [tenant]. </br>\
 After review, we are pleased to inform you that your account creation request has been approved. </br>\
 
+mail.team.creation.mail.validation.title = New registration pending approval on [tenant]
+mail.team.creation.mail.validation.body = Hello, </br>\
+A new team just registered on [tenant].</br>\
+Team details :</br>\
+Nom : [userName]</br>\
+Email : [userEmail]</br>\
+You can <a href="[urlAccept]" target="_blank">approve</a>\ or <a href="[urlDecline]" target="_blank">reject</a>\ this team creation.
+
 
 mail.api.depreciation.warning.title = the API [apiName] has been deprecated
 mail.api.depreciation.warning.body = Hello [recipientName], </br>\

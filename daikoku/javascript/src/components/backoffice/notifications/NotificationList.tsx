@@ -21,6 +21,7 @@ import {
   Issue,
   ISubscription,
   ISubscriptionDemandGQL,
+  ITeamCreationGQL,
   ITeamFullGql,
   ITeamSimple,
   ITenant,
@@ -135,6 +136,7 @@ type NotificationActionGQL =
   | { __typename: 'CheckoutForSubscription'; plan: IUsagePlan; step: IValidationStep & { type: 'payment' }; demand: ISubscriptionDemandGQL; api: IApiGQL }
   | { __typename: 'ApiSubscriptionTransferSuccess'; subscription: ISubscription }
   | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string }
+  | { __typename: 'TeamCreationAttempt'; demand?: ITeamCreationGQL; motivation: string }
   | {
     __typename: 'ApiDepreciationWarning';
     api: IApiGQL;
@@ -216,6 +218,7 @@ export const NotificationList = () => {
     { type: "NewPostPublishedV2" },
     { type: "OtoroshiSyncApiError" },
     { type: "OtoroshiSyncSubscriptionError" },
+    { type: "TeamCreationAttempt" },
     { type: "TeamInvitation" },
     { type: "TransferApiOwnership" },
   ];
@@ -745,6 +748,38 @@ export const NotificationList = () => {
                   ),
                 })}>
                 <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
+              </a>
+            )}
+          </>
+        );
+      }
+      case 'TeamCreationAttempt': {
+        const description = translate('notif.team.creation.attempt');
+        const value = notification.action.demand?.value;
+        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form');
+        const regexp = /\[\[(.+?)\]\]/g;
+        const matches = formStep?.formatter.match(regexp);
+        const formattedValue = matches?.reduce((acc, match) => {
+          const key = match.replace('[[', '').replace(']]', '');
+          return acc.replace(match, value?.[key] || match);
+        }, formStep?.formatter ?? '');
+        return (
+          <>
+            {description}
+            {value && (
+              <a href='#' className='underline'
+                 aria-label={translate('notifications.page.team.creation.attempt.detail.button.label')}
+                 title={translate('notifications.page.team.creation.attempt.detail.button.label')}
+                 onClick={() => alert({
+                   title: translate('notifications.page.team.creation.attempt.detail.modal.title'),
+                   message: (
+                     <div>
+                       {!!formattedValue && <em>{formattedValue}</em>}
+                       <pre>{JSON.stringify(value, null, 2)}</pre>
+                     </div>
+                   ),
+                 })}>
+                <span className='ms-2'>[{translate('notifications.page.team.creation.attempt.detail.button.label')}]</span>
               </a>
             )}
           </>

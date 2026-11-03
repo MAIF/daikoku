@@ -158,6 +158,7 @@ export interface ITenant {
   otoroshiSettings: Array<ISafeOtoroshiSettings>;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
   accountCreationProcess: Array<IValidationStep>;
+  teamCreationProcess: Array<IValidationStep>;
   isPrivate: boolean;
   defaultAuthorizedOtoroshiEntities?: Array<{
     otoroshiSettingsId: string;

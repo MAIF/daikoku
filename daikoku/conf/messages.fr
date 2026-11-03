@@ -132,13 +132,13 @@ mail.account.creation.mail.accepted.body = Bonjour [userName], </br>\
 Merci de vous être inscrit sur [tenant]. </br>\
 Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\
 
-mail.team.creation.mail.validation.title = Nouvelle inscription à valider sur [tenant]
+mail.team.creation.mail.validation.title = Nouvelle équipe à valider sur [tenant]
 mail.team.creation.mail.validation.body = Bonjour, </br>\
-Un nouvel utilisateur vient de s''inscrire sur [Nom de l''application].</br>\
-Informations du compte :</br>\
+Une nouvelle équipe vient de s''inscrire sur [Nom de l''application].</br>\
+Informations sur l'équipe :</br>\
 Nom : [userName]</br>\
 Email : [userEmail]</br>\
-Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a>\ ou <a href="[urlDecline]" target="_blank">refuser</a>\ la création de ce compte.
+Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a>\ ou <a href="[urlDecline]" target="_blank">refuser</a>\ la création de l''équipe.
 
 mail.team.creation.mail.rejected.title = Votre inscription sur [tenant] n''a pas été validée
 mail.team.creation.mail.rejected.body = Bonjour [userName], </br>\

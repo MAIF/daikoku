@@ -171,6 +171,26 @@ export interface IAccountCreationGQL {
   metadata: object;
 }
 
+export interface ITeamCreationGQL {
+  id: string;
+  randomId: string;
+  email: string;
+  name: string;
+  avatar: string;
+  password: string;
+  creationDate: number;
+  validUntil: number;
+  steps: Array<{
+    id: string;
+    state: ISubscriptionDemandState;
+    step: IValidationStep;
+  }>;
+  state: ISubscriptionDemandState;
+  value: object;
+  fromTenant: ITenant;
+  metadata: object;
+}
+
 export interface ApiKeysListForApiProps {
   team: ITeamSimple;
   api: IApi;

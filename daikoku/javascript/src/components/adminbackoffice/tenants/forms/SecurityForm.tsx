@@ -216,8 +216,87 @@ export const SecurityForm = (props: {
     )
   }
 
+  const TeamCreationProcessDocumentation = (props: { close: () => void, updateProcess: (process: IValidationStep[]) => void }) => {
+    const defaultWorkflow: IValidationStep[] = [
+      {
+        id: nanoid(32),
+        type: 'form',
+        title: 'form',
+        schema: {
+          name: {
+            type: type.string,
+            label: "Name",
+            constraints: [{
+              "type": "required",
+              "message": "Your name is required"
+            }]
+          },
+          email: {
+            type: type.string,
+            label: "Email",
+            constraints: [{
+              "type": "required",
+              "message": "Your email is required"
+            }, {
+              "type": "email",
+              "message": "Your email needs to be an email"
+            }]
+          },
+        },
+        formatter: ''
+      }, {
+        id: nanoid(32),
+        type: 'email',
+        title: 'confirmation email',
+        emails: ["${form.email}"],
+        message: ""
+      },
+    ];
+
+    const defaultWorkflowWithAdmin: IValidationStep[] = [...defaultWorkflow, {
+      type: 'teamAdmin',
+      id: nanoid(),
+      title: 'admin validation',
+      team: teamQuery.data!._id
+    }];
+
+    return (
+      <div className="alert alert-info" role="alert">
+        <div className="d-flex justify-content-between">
+          <h5 className="alert-heading">{translate('tenant.security.account.creation.process.doc.title')}</h5>
+          <button type='button' aria-label={translate('tenant.security.account.creation.process.doc.close.aria')} className='btn-close' onClick={props.close} />
+        </div>
+        <p>
+          {translate('tenant.security.account.creation.process.doc.intro')}
+        </p>
+        <ul>
+          <li>
+            <strong>{translate('subscription.process.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+          </li>
+        </ul>
+        <hr />
+        <div className="mb-0">
+          {translate('tenant.security.account.creation.process.doc.footer')}
+          <div className='d-flex flex-start gap-2'>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const _tenant = props.tenant
-  const editProcess = () => {
+  const editAccountProcess = () => {
     openRightPanel({
       title: translate("tenant.security.account.creation.process.panel.title"),
       content: <SubscriptionProcessEditor
@@ -226,6 +305,19 @@ export const SecurityForm = (props: {
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
+      />
+    })
+  }
+
+  const editTeamProcess = () => {
+    openRightPanel({
+      title: translate("tenant.security.team.creation.process.panel.title"),
+      content: <SubscriptionProcessEditor
+        save={teamCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, teamCreationProcess })}
+        process={props.tenant?.teamCreationProcess ?? []}
+        team={teamQuery.data!._id}
+        tenant={props.tenant as ITenant}
+        documentation={TeamCreationProcessDocumentation}
       />
     })
   }
@@ -331,7 +423,10 @@ export const SecurityForm = (props: {
           }}
         />
         <div>
-          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editAccountProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+        </div>
+         <div>
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editTeamProcess()}>{translate("tenant.security.team.creation.process.button.label")}</button>}
         </div>
         <div>
           <button onClick={() => openModal(otoroshis)} className='btn --secondary'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
