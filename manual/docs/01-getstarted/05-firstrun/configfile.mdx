@@ -78,14 +78,13 @@ or
 
 ## Daikoku init
 
-| name | type | default value | description |
-|------|:----:|---------------|-------------|
-| `daikoku.init.host`<br />(`DAIKOKU_INIT_HOST`) | String | "localhost" | |
-| `daikoku.init.admin.name`<br />(`DAIKOKU_INIT_ADMIN_NAME`) | String | "Daikoku admin" | Daikoku default admin name |
-| `daikoku.init.admin.email`<br />(`DAIKOKU_INIT_ADMIN_EMAIL`) | String | "admin@daikoku.io" | Daikoku default admin email |
-| `daikoku.init.admin.password`<br />(`DAIKOKU_INIT_ADMIN_PASSWORD`) | String | | Daikoku default admin password |
-| `daikoku.init.data.from`<br />(`DAIKOKU_INIT_DATA_FROM`) | string | | A file path or a URL to a Daikoku export file. If the datastore is empty on startup, this file will be used to import data to the empty DB |
+The `daikoku.init.*` settings (`DAIKOKU_INIT_*` environment variables) bootstrap an **empty datastore**. They can create the initial administrator and configure the default tenant's identity, security, mailer, S3 storage, Otoroshi connection, authentication and audit destinations, or import an existing export instead.
 
+:::warning Bootstrap only
+These settings do not update an existing tenant. Once initialized, tenant settings are stored in the database and must be changed through the administration UI or API, not by restarting Daikoku with new initialization values.
+:::
+
+See [Initialize Daikoku](./initialization.md) for the complete variable reference, defaults, examples and Helm/GitOps lifecycle.
 
 ## DB configuration
 
