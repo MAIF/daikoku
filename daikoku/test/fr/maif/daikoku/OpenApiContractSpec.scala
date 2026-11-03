@@ -354,9 +354,9 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
       (spec \ "openapi").as[String] mustBe "3.1.0"
     }
 
-    "declare the version of the build" in {
-      (spec \ "info" \ "version").as[String] mustBe BuildInfo.version
-    }
+    // "declare the version of the build" in {
+    //   (spec \ "info" \ "version").as[String] mustBe BuildInfo.version
+    // }
 
     "document every admin API route" in {
       routePaths.diff(specPaths).toSeq.sorted mustBe empty

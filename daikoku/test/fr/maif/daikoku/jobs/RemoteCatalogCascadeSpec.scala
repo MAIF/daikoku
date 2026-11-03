@@ -300,7 +300,7 @@ class RemoteCatalogCascadeSpec
       otoroshiKeyStatus(otoroshiApiKey1.clientId) mustBe 404
     }
 
-    "deploy a keyring unknown to Otoroshi and its subscription without creating the key" in {
+    "deploy a keyring unknown to Otoroshi and its subscription and create the APIkey" in {
       val unknownKey = OtoroshiApiKey(
         clientName = "unknown-to-otoroshi",
         clientId = "unknown-client-id",
@@ -320,7 +320,7 @@ class RemoteCatalogCascadeSpec
       dbSubscription(ApiSubscriptionId("sub-from-catalog")) mustBe defined
 
       triggerSyncJob(session)
-      otoroshiKeyStatus(unknownKey.clientId) mustBe 404
+      otoroshiKeyStatus(unknownKey.clientId) mustBe 200
     }
 
     "deploy a keyring known to Otoroshi and its subscription, then sync the plan routes on its key" in {
