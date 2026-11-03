@@ -2262,8 +2262,8 @@ object evolution_18110_b extends EvolutionScript {
     }
 }
 
-object evolution_1900_b extends EvolutionScript {
-  override def version: String = "19.0.0_b"
+object evolution_1910 extends EvolutionScript {
+  override def version: String = "19.1.0"
 
   override def script: (
       Option[DatastoreId],
@@ -2330,8 +2330,8 @@ object evolution_1900_b extends EvolutionScript {
     }
 }
 
-object evolution_1900_c extends EvolutionScript {
-  override def version: String = "19.0.0_c"
+object evolution_1910_b extends EvolutionScript {
+  override def version: String = "19.1.0_b"
 
   override def script: (
       Option[DatastoreId],
@@ -2404,8 +2404,8 @@ object evolution_1900_c extends EvolutionScript {
     }
 }
 
-object evolution_1900_d extends EvolutionScript {
-  override def version: String = "19.0.0_d"
+object evolution_1910_c extends EvolutionScript {
+  override def version: String = "19.1.0_c"
 
   override def script: (
       Option[DatastoreId],
@@ -2431,7 +2431,7 @@ object evolution_1900_d extends EvolutionScript {
       // would silently stop covering new personal teams and the "one personal
       // team per user" uniqueness would be lost without any error.
       //
-      // Rebuilding cannot conflict: evolution_1900_c purged the rows the old
+      // Rebuilding cannot conflict: evolution_1910_b purged the rows the old
       // predicate excluded, and every existing team row has the column set,
       // so the new predicate covers exactly the same rows as the old one.
       //
@@ -2465,12 +2465,12 @@ object evolution_1900_d extends EvolutionScript {
     }
 }
 
-object evolution_1900_e extends EvolutionScript {
-  override def version: String = "19.0.0_e"
+object evolution_1910_d extends EvolutionScript {
+  override def version: String = "19.1.0_d"
 
   // The tables created with the `_deleted` column (allFields = true in the
   // former PostgresDataStore.TABLES).
-  private val tablesWithDeletedColumn = Seq(
+  private[env] val tablesWithDeletedColumn = Seq(
     "tenants",
     "password_reset",
     "account_creation",
@@ -2587,17 +2587,19 @@ object evolutions {
       evolution_18110_b,
       evolution_1900,
       evolution_1901,
-      evolution_1900_b,
-      evolution_1900_c,
-      evolution_1900_d,
-      evolution_1900_e
+      evolution_1910,
+      evolution_1910_b,
+      evolution_1910_c,
+      evolution_1910_d
     )
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Done] = {
     AppLogger.info("Running missing evolutions")
-    Source(list)
+    Source
+      .future(prepareLegacySchema(dataStore))
+      .flatMapConcat(_ => Source(list))
       .mapAsync(1) { evolution =>
         dataStore.evolutionRepo
           .findByVersion(evolution.version)
@@ -2641,4 +2643,38 @@ object evolutions {
       }
       .runWith(Sink.ignore)
   }
+
+  private def prepareLegacySchema(
+      dataStore: DataStore
+  )(implicit ec: ExecutionContext): Future[Unit] =
+    dataStore.evolutionRepo
+      .findByVersion(evolution_1910_d.version)
+      .flatMap {
+        case Some(evolution) if evolution.applied =>
+          Future.successful(())
+        case _ =>
+          AppLogger.info(
+            "Preparing legacy soft-delete columns for pending evolutions"
+          )
+          dataStore.withTransaction {
+            evolution_1910_d.tablesWithDeletedColumn
+              .foldLeft(Future.successful(())) { (previous, table) =>
+                previous.flatMap { _ =>
+                  for {
+                    _ <- dataStore.userRepo.execute(
+                      s"ALTER TABLE $table ADD COLUMN IF NOT EXISTS _deleted boolean"
+                    )
+                    _ <- dataStore.userRepo.execute(
+                      s"""UPDATE $table
+                         |SET _deleted = COALESCE((content->>'_deleted')::boolean, false)
+                         |WHERE _deleted IS NULL""".stripMargin
+                    )
+                    _ <- dataStore.userRepo.execute(
+                      s"ALTER TABLE $table ALTER COLUMN _deleted SET DEFAULT false"
+                    )
+                  } yield ()
+                }
+              }
+          }
+      }
 }

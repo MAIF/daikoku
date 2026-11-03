@@ -309,7 +309,7 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
               .mkString(", ")}"""",
           e
         )
-        promise.success(0L)
+        promise.failure(e)
     }
 
     promise.future
