@@ -143,6 +143,8 @@ daikoku:
       password: ""                 # [DAIKOKU_INIT_MAILER_PASSWORD] SMTP password (optional)
       # type=sendgrid:
       sendgridApiKey: ""           # [DAIKOKU_INIT_MAILER_SENDGRID_APIKEY] sendgrid api key
+      starttls: null               # true | false | null = non défini
+      ssl: null                    # true | false | null = non défini
 
     # --- Authentication module -------------------------------------------------
     # `provider` selects how users log in. Allowed values:
