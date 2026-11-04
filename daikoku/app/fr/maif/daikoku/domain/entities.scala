@@ -191,6 +191,7 @@ enum JobName(val value: String):
   case RemoteCatalog extends JobName("RemoteCatalog")
   case NotificationPurge extends JobName("NotificationPurge")
   case AuditTrailPurge extends JobName("AuditTrailPurge")
+  case ApiKeyStatsCollector extends JobName("ApiKeyStatsCollector")
 
 case class JobInformation(
     id: DatastoreId,

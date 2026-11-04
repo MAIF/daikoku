@@ -3,61 +3,36 @@ package fr.maif.daikoku.jobs
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.domain.BillingTimeUnit.{Day, Hour, Year}
-import fr.maif.daikoku.domain._
+import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.{IdGenerator, OtoroshiClient}
-import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.NotUsed
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
-import play.api.libs.json._
+import play.api.libs.json.*
 
-import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.math.Ordering.Implicits.infixOrderingOps
+import scala.util.control.NonFatal
 
-class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
+enum ApiKeyStatsJobInput:
+  case Api(api: fr.maif.daikoku.domain.Api)
+  case ApiSubscription(subscription: fr.maif.daikoku.domain.ApiSubscription)
+  case TeamOwner(team: TeamId)
+  case TeamSubscriber(team: TeamId)
+  case SyncAll
 
-  private val logger = Logger("ApiKeyStatsJob")
+class ApiKeyStatsJob(
+    otoroshiClient: OtoroshiClient,
+    override protected val env: Env
+) extends AbstractJob[ApiKeyStatsJobInput] {
 
-  private val ref = new AtomicReference[Cancellable]()
-  private val maxCallPerJob = 50
+  private val batchSize = 50
 
-  implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val mat: Materializer = env.defaultMaterializer
-
-  def start(): Unit = {
-    logger.info("Scrapping apikey stats from otoroshi")
-    if (ref.get() == null) {
-      ref.set(
-        env.defaultActorSystem.scheduler
-          .scheduleAtFixedRate(1.seconds, env.config.apikeysStatsSyncInterval) {
-            () =>
-              syncAll()
-          }
-      )
-    }
-  }
-
-  def getStats: Future[Done] = {
-    AppLogger.info("Scrapping apikey stats from otoroshi")
-    syncAll()
-  }
-
-  def stop(): Unit = {
-    Option(ref.get()).foreach(_.cancel())
-  }
-
-  // job de synchro des donnée de la  veille
-  def doJob(): Future[Done] = {
-    syncAll()
-  }
 
   private def loadSubKeyring(
       subscription: ApiSubscription,
@@ -158,16 +133,16 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   }
 
   def syncForSubscriber(
-      team: Team,
+      team: TeamId,
       tenant: Tenant
   ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       lastConsumptions <-
         env.dataStore.consumptionRepo
-          .findLastConsumptions(tenant.id.some, team = team.id.some)
+          .findLastConsumptions(tenant.id.some, team = team.some)
       subscriptions <-
         env.dataStore.apiSubscriptionRepo
-          .findByTeam(tenant.id, team.id)
+          .findByTeam(tenant.id, team)
       apis <-
         env.dataStore.apiRepo
           .forTenant(tenant)
@@ -180,57 +155,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     }).flatten
   }
 
-  def syncAll(): Future[Done] = {
-    (for {
-      tenants <- env.dataStore.tenantRepo.findAll()
-      apis <- env.dataStore.apiRepo.forAllTenant().findAll()
-      subscriptions <-
-        env.dataStore.apiSubscriptionRepo
-          .forAllTenant()
-          .findAll()
-      keyrings <-
-        env.dataStore.keyringRepo.forAllTenant().findAll()
-      lastConsumptions <-
-        env.dataStore.consumptionRepo.findLastConsumptions(None)
-    } yield {
-      val keyringById = keyrings.map(k => k.id -> k).toMap
-      val nbInterval = Math.ceil(
-        env.config.apikeysStatsSyncInterval / env.config.apikeysStatsCallInterval
-      )
-      val nbCall = Math
-        .ceil(
-          Math.max(subscriptions.length / nbInterval, maxCallPerJob.toDouble)
-        )
-        .toInt
-
-      Source(tenants.toList)
-        .flatMapConcat(tenant =>
-          Source(subscriptions.filter(_.tenant == tenant.id).toList)
-            .filterNot(sub =>
-              keyringById
-                .get(sub.keyring)
-                .exists(k =>
-                  lastConsumptions.exists(cons =>
-                    cons.clientId == k.apiKey.clientId && cons.from
-                      .isEqual(DateTime.now().withTimeAtStartOfDay())
-                  )
-                )
-            )
-            .via(syncConsumptionAsFlow(apis, tenant, lastConsumptions))
-        )
-        .grouped(nbCall)
-        .throttle(1, env.config.apikeysStatsCallInterval)
-        .runWith(Sink.ignore)
-    }).flatten
-  }
-
   def syncForOwner(
-      team: Team,
+      team: TeamId,
       tenant: Tenant
   ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       apis <-
-        env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
+        env.dataStore.apiRepo.findByTeam(tenant.id, team)
       lastConsumptions <-
         env.dataStore.consumptionRepo
           .findLastConsumptions(tenant.id.some, apis = apis.map(_.id).some)
@@ -245,21 +176,22 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     }).flatten
   }
 
-// format: off
+  // format: off
+
   /**
-    * with an optional given consumption, which is la last consumption found in database
-    * the consumption is calculated for every days between last consumption and now
-    * if the last consumption is not completed, the new consumption overwrite it
-    * An operation to sync consumption between daikoku and a possible third payment module is save if consumption is completed
-    *
-    */
+   * with an optional given consumption, which is la last consumption found in database
+   * the consumption is calculated for every days between last consumption and now
+   * if the last consumption is not completed, the new consumption overwrite it
+   * An operation to sync consumption between daikoku and a possible third payment module is save if consumption is completed
+   *
+   */
   private def syncConsumptionStatsForSubscription(
-      subscription: ApiSubscription,
-      tenant: Tenant,
-      maybeApi: Option[Api],
-      maybeLastConsumption: Option[ApiKeyConsumption],
-      completed: Boolean = false
-  ): Future[Seq[ApiKeyConsumption]] = {
+                                                   subscription: ApiSubscription,
+                                                   tenant: Tenant,
+                                                   maybeApi: Option[Api],
+                                                   maybeLastConsumption: Option[ApiKeyConsumption],
+                                                   completed: Boolean = false
+                                                 ): Future[Seq[ApiKeyConsumption]] = {
     (for {
       api <- OptionT.fromOption[Future](maybeApi)
       plan <- OptionT(
@@ -282,7 +214,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       val from = maybeLastConsumption
         .map(consumption =>
           consumption.state match {
-            case ApiKeyConsumptionState.Completed  => consumption.to
+            case ApiKeyConsumptionState.Completed => consumption.to
             case ApiKeyConsumptionState.InProgress => consumption.from
           }
         )
@@ -303,7 +235,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
           (from, to)
         })
-        .mapAsync(4) {
+        .mapAsync(1) {
           case (from, to) =>
             val isCompleteConsumption = completed || Days
               .daysBetween(from.withTimeAtStartOfDay(), to)
@@ -315,7 +247,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             val id = maybeLastConsumption
               .map {
                 case c
-                    if !c.isComplete && c.from.withTimeAtStartOfDay() == from =>
+                  if !c.isComplete && c.from.withTimeAtStartOfDay() == from =>
                   c.id
                 case _ => DatastoreId(IdGenerator.token(24))
               }
@@ -324,7 +256,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             for {
               consumption <- otoroshiClient.getApiKeyConsumption(
                 clientId = keyring.apiKey.clientId,
-                from  =from.getMillis.toString,
+                from = from.getMillis.toString,
                 to = to.toDateTime.getMillis.toString,
                 failOnError = plan.costPerMonth.isDefined
               )
@@ -368,13 +300,17 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   if (isCompleteConsumption) ApiKeyConsumptionState.Completed
                   else ApiKeyConsumptionState.InProgress
               )
-              _ <-
+              saved <-
                 env.dataStore.consumptionRepo
                   .forTenant(tenant)
                   .save(apiKeyConsumption)
+              _ <- if (saved) Future.successful(())
+                   else Future.failed(new IllegalStateException(
+                     s"Could not save API key consumption ${id.value}"
+                   ))
               _ <- apiKeyConsumption.state match {
                 case ApiKeyConsumptionState.Completed
-                    if subscription.thirdPartySubscriptionInformations.isDefined =>
+                  if subscription.thirdPartySubscriptionInformations.isDefined =>
                   env.dataStore.operationRepo
                     .forTenant(tenant)
                     .save(
@@ -406,24 +342,24 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             }
         }
         .runWith(Sink.seq)
-//        .recover {
-//          case e =>
-//            AppLogger.error(
-//              "[apikey stats job] Error during sync consumption",
-//              e
-//            )
-//            Seq.empty
-//        }
+      //        .recover {
+      //          case e =>
+      //            AppLogger.error(
+      //              "[apikey stats job] Error during sync consumption",
+      //              e
+      //            )
+      //            Seq.empty
+      //        }
     })
-    //      .recover {
-    //      case e =>
-    //        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
-    //        Seq.empty
-    //    })
+      //      .recover {
+      //      case e =>
+      //        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
+      //        Seq.empty
+      //    })
       .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
       .flatten
   }
-// format: on
+  // format: on
 
   def computeBilling(
       tenant: TenantId,
@@ -512,5 +448,146 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             )
         }
       })
+  }
+
+  override protected val logger = Logger("api-key-stats-collector")
+  override protected val jobName: JobName = JobName.ApiKeyStatsCollector
+  override protected val lockedBy: String = "api-key-stats-collector"
+
+  override protected val jobConfig: JobConfig = JobConfig(
+    enabled = env.config.apikeysStatsJobEnabled,
+    schedulingMode = env.config.apikeysStatsJobSchedulingMode,
+    cronExpression = env.config.apikeysStatsJobCronExpr,
+    interval = env.config.apikeysStatsJobInterval,
+    parallelism = 2
+  )
+
+  override protected def defaultInput: ApiKeyStatsJobInput =
+    ApiKeyStatsJobInput.SyncAll
+
+  private def subscriptionBatches(
+      tenant: Tenant,
+      input: ApiKeyStatsJobInput,
+      fromCursor: Option[Long]
+  ): Source[Seq[ApiSubscription], NotUsed] = {
+    val repo = env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+    val (target, targetParams): (String, Seq[AnyRef]) = input match {
+      case ApiKeyStatsJobInput.Api(api) =>
+        (" AND content->>'api' = $2", Seq(api.id.value))
+      case ApiKeyStatsJobInput.ApiSubscription(subscription) =>
+        (" AND _id = $2", Seq(subscription.id.value))
+      case ApiKeyStatsJobInput.TeamOwner(team) =>
+        (
+          """ AND content->>'api' IN (
+            |SELECT _id FROM apis WHERE content->>'_tenant' = $1 AND content->>'team' = $2
+            |)""".stripMargin,
+          Seq(team.value)
+        )
+      case ApiKeyStatsJobInput.TeamSubscriber(team) =>
+        (" AND content->>'team' = $2", Seq(team.value))
+      case ApiKeyStatsJobInput.SyncAll =>
+        ("", Seq.empty)
+    }
+    val baseParams = Seq[AnyRef](tenant.id.value) ++ targetParams
+    val resumeClause = fromCursor
+      .map(_ =>
+        s" AND (content->>'createdAt')::bigint >= $$${baseParams.size + 1}"
+      )
+      .getOrElse("")
+    val params = baseParams ++ fromCursor.map(java.lang.Long.valueOf)
+
+    Source.unfoldAsync[Option[(Long, String)], Seq[ApiSubscription]](None) {
+      after =>
+        val afterClause = after
+          .map(_ =>
+            s" AND ((content->>'createdAt')::bigint, _id) > ($$${params.size + 1}, $$${params.size + 2})"
+          )
+          .getOrElse("")
+        val pageParams = params ++ after.toSeq.flatMap { case (createdAt, id) =>
+          Seq[AnyRef](java.lang.Long.valueOf(createdAt), id)
+        }
+        repo
+          .query(
+            s"SELECT content FROM ${repo.tableName} " +
+              s"WHERE content->>'_tenant' = $$1$target$resumeClause$afterClause " +
+              s"ORDER BY (content->>'createdAt')::bigint, _id LIMIT $batchSize",
+            pageParams
+          )
+          .map { batch =>
+            batch.lastOption.map(last =>
+              (Some((last.createdAt.getMillis, last.id.value)), batch)
+            )
+          }
+    }
+  }
+
+  override protected def process(
+      tenant: Tenant,
+      input: ApiKeyStatsJobInput,
+      parallelism: Int,
+      saveCursor: Long => Future[Boolean],
+      fromCursor: Option[Long]
+  ): Future[JobRunResult] = {
+    if (parallelism <= 0)
+      return Future.failed(
+        new IllegalArgumentException(
+          "API key stats parallelism must be positive"
+        )
+      )
+
+    // The persisted cursor belongs to the full tenant scan, not an API/team subset.
+    val resumeCursor =
+      if (input == ApiKeyStatsJobInput.SyncAll) fromCursor else None
+
+    subscriptionBatches(tenant, input, resumeCursor)
+      .scanAsync(JobRunResult.empty.copy(lastCursor = resumeCursor)) {
+        (previous, batch) =>
+          Source(batch.toList)
+            .mapAsync(parallelism) { subscription =>
+              syncForSubscription(subscription, tenant)
+                .map(_ => Option.empty[JobItemFailure])
+                .recover { case NonFatal(error) =>
+                  logger.error(
+                    s"[api-key-stats-collector] subscription ${subscription.id.value} failed",
+                    error
+                  )
+                  Some(JobItemFailure(subscription.id.value, error.getMessage))
+                }
+                .map(failure => (subscription.createdAt.getMillis, failure))
+            }
+            .runWith(Sink.seq)
+            .flatMap { outcomes =>
+              val failures = outcomes.flatMap(_._2)
+              // Never checkpoint past a failed item, even if a later batch succeeds.
+              val cursor =
+                if (input != ApiKeyStatsJobInput.SyncAll) 0L
+                else if (previous.failures.nonEmpty)
+                  previous.lastCursor.getOrElse(0L)
+                else
+                  outcomes
+                    .collectFirst { case (createdAt, Some(_)) =>
+                      createdAt
+                    }
+                    .getOrElse(batch.last.createdAt.getMillis)
+              val result = JobRunResult(
+                processed = previous.processed + batch.size,
+                succeeded = previous.succeeded + batch.size - failures.size,
+                failures = previous.failures ++ failures,
+                lastCursor =
+                  if (input == ApiKeyStatsJobInput.SyncAll) Some(cursor)
+                  else None
+              )
+              saveCursor(cursor).flatMap {
+                case true => Future.successful(result)
+                case false =>
+                  Future.failed(
+                    new IllegalStateException(
+                      "Could not save API key stats job cursor"
+                    )
+                  )
+              }
+            }
+      }
+      .runWith(Sink.last)
   }
 }

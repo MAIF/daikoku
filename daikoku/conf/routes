@@ -338,7 +338,7 @@ POST    /api/remote-catalogs/:catalogId/_deploy         fr.maif.daikoku.controll
 POST    /api/remote-catalogs/:catalogId/_undeploy       fr.maif.daikoku.controllers.RemoteCatalogTokenController.undeploy(catalogId)
 POST    /api/remote-catalogs/:catalogId/_webhook        fr.maif.daikoku.controllers.RemoteCatalogTokenController.webhook(catalogId)
 POST    /api/jobs/remote-catalog/_sync                 fr.maif.daikoku.controllers.JobsController.remoteCatalogRunJob(parallelism: Int ?= 25)
-POST    /api/jobs/stats/_sync                           fr.maif.daikoku.controllers.JobsController.apikeysStatsSyncJob()
+POST    /api/jobs/stats/_sync                           fr.maif.daikoku.controllers.JobsController.apikeysStatsSyncJob(parallelism: Int ?= 2)
 POST    /api/jobs/purge/_sync                           fr.maif.daikoku.controllers.JobsController.auditTrailPurgeRunJob(parallelism: Int ?= 25)
 POST    /api/jobs/audit-trail-purge/_sync               fr.maif.daikoku.controllers.JobsController.auditTrailPurgeRunJob(parallelism: Int ?= 25)
 POST    /api/jobs/notification-purge/_sync              fr.maif.daikoku.controllers.JobsController.notificationsPurgeRunJob(parallelism: Int ?= 25)

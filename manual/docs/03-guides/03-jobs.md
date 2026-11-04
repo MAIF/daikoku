@@ -22,6 +22,39 @@ flagged as blocked and the synchronizer disables their contribution to the share
 restores it. A keyring whose members are all blocked ends up disabled rather than deleted, so the
 change can be rolled back.
 
+## API Key Statistics Collector Job
+
+`ApiKeyStatsJob` collects usage and billing statistics from Otoroshi for each tenant.
+It uses the shared job lifecycle: a single-instance claim, heartbeat, persisted cursor,
+and audit events reporting processed/succeeded subscriptions and individual failures.
+
+Subscriptions are read in batches of 50, ordered by creation time and ID. Each completed
+batch saves a cursor; after a crash or a failed run, collection resumes inclusively at
+that creation time, so subscriptions sharing a timestamp are not lost. Individual
+subscription failures are reported without stopping other subscriptions, and the cursor
+never advances beyond the first failure. A partially completed run is followed by a full
+scan on the next scheduled run.
+
+Each run also refreshes today's incomplete statistics; historical days are collected
+chronologically so a failed day is retried before later days. The previous downstream
+throttle is replaced by bounded subscription parallelism (2 by default).
+Existing subscription/API/team consumption endpoints keep returning consumption arrays.
+
+Automatic collection is disabled by default. Enable `daikoku.apikeysStatsJob.enabled`
+to start it with the application. An on-demand tenant run is available through
+`POST /api/jobs/stats/_sync?access_key=<key>&parallelism=2`.
+
+| Parameter | Environment variable | Default |
+| --------- | -------------------- | ------- |
+| `daikoku.apikeysStatsJob.enabled` | `DAIKOKU_APIKEYS_STATS_JOB_ENABLED` | `false` |
+| `daikoku.apikeysStatsJob.mode` | `DAIKOKU_APIKEYS_STATS_JOB_MODE` | `interval` |
+| `daikoku.apikeysStatsJob.key` | `DAIKOKU_APIKEYS_STATS_JOB_ACCESS_KEY` | `secret` |
+| `daikoku.apikeysStatsJob.cronExpression` | `DAIKOKU_APIKEYS_STATS_JOB_CRON_EXPRESSION` | -- |
+| `daikoku.apikeysStatsJob.interval` | `DAIKOKU_APIKEYS_STATS_JOB_INTERVAL` | `3600000` (milliseconds) |
+
+These settings replace `daikoku.stats.sync.*` and `daikoku.stats.call.interval`.
+For cron scheduling, set `mode = "cron"` and supply a cron expression.
+
 ## Notifications Purge Job
 
 The `NotificationsPurgeJob` is an automated job responsible for periodically deleting obsolete notifications in the Daikoku system. It helps maintain database cleanliness by removing old notifications based on specific criteria.

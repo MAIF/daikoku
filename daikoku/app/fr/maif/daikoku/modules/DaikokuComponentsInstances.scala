@@ -251,7 +251,7 @@ class DaikokuComponentsInstances(context: Context)
     .using(vertxInstance)
     .build()
 
-  //    statsJob.start()
+  statsJob.start()
   deletor.start()
   verifier.start()
   rotationVerifier.start()

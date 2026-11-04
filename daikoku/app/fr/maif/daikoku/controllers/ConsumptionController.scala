@@ -198,7 +198,7 @@ class ConsumptionController(
         )
       )(teamId, ctx) { team =>
         apiKeyStatsJob
-          .syncForSubscriber(team, ctx.tenant)
+          .syncForSubscriber(team.id, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
       }
     }
@@ -211,7 +211,7 @@ class ConsumptionController(
         )
       )(teamId, ctx) { team =>
         apiKeyStatsJob
-          .syncForOwner(team, ctx.tenant)
+          .syncForOwner(team.id, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
       }
     }

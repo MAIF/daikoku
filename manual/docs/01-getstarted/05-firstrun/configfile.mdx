@@ -199,14 +199,11 @@ daikoku {
     }
   }
 
-  stats {
-    sync {
-      interval = 3600000
-      cron = true
-    }
-    call {
-      interval = 600000
-    }
+  apikeysStatsJob {
+    enabled = false
+    mode = "interval"
+    key = "secret"
+    interval = 3600000
   }
 
   audit {
