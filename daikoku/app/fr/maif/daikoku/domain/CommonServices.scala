@@ -1237,6 +1237,248 @@ object CommonServices {
 
   type KeyringForGraphql = (Keyring, Long, Boolean, Seq[String])
 
+  case class KeyringEntry(
+      id: String,
+      keyring: Option[KeyringForGraphql],
+      demand: Option[SubscriptionDemand],
+      pendingCount: Long
+  )
+  case class KeyringEntries(
+      entries: Seq[KeyringEntry],
+      total: Long,
+      totalFiltered: Long,
+      keyringsCount: Long,
+      creationsCount: Long
+  )
+  case class KeyringRow(
+      id: String,
+      subscription: Option[ApiSubscription],
+      demand: Option[SubscriptionDemand]
+  )
+  case class KeyringRows(rows: Seq[KeyringRow], total: Long)
+
+  private val pendingKeyringDemands = """
+      |owned_keyrings AS (
+      | SELECT k._id, k.content FROM keyrings k
+      | WHERE k.content->>'_tenant' = $1 AND k.content->>'team' = $2
+      |),
+      |owned_subscriptions AS (
+      | SELECT s._id, s.content FROM api_subscriptions s
+      | WHERE s.content->>'_tenant' = $1 AND s.content->>'team' = $2
+      |),
+      |pending AS (
+      | SELECT d._id, d.content
+      | FROM subscription_demands d
+      | WHERE d.content->>'_tenant' = $1 AND d.content->>'team' = $2
+      |   AND (d.content->>'api' = $3 OR EXISTS (
+      |     SELECT 1 FROM owned_keyrings k WHERE k._id = d.content->>'keyring'
+      |   ))
+      |   AND d.content->>'state' IN ('waiting', 'inProgress')
+      |)
+      |""".stripMargin
+
+  def getApiKeyringEntries(
+      teamId: String,
+      apiId: String,
+      filter: String,
+      limit: Int,
+      offset: Int,
+      creationLabel: String,
+      unavailablePlanLabel: String
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ): Future[Either[AppError, KeyringEntries]] =
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        "@{user.name} has accessed team keyrings and pending requests"
+      )
+    )(ctx) { team =>
+      val query = s"""
+        |WITH $pendingKeyringDemands,
+        |entries AS (
+        | SELECT 'keyring:' || k._id AS id, k.content AS keyring, NULL::jsonb AS demand,
+        |   k.content->>'customName' AS name,
+        |   (SELECT count(*) FROM pending d WHERE d.content->>'keyring' = k._id) AS pending_count,
+        |   (SELECT count(*) FROM owned_subscriptions s WHERE s.content->>'keyring' = k._id) AS subscriptions_count,
+        |   COALESCE((SELECT bool_or((p.content->>'autoRotation')::boolean)
+        |     FROM owned_subscriptions s JOIN usage_plans p ON p._id = s.content->>'plan' AND p.content->>'_tenant' = $$1
+        |     WHERE s.content->>'keyring' = k._id AND s.content->>'api' = $$3), false) AS rotation_locked,
+        |   COALESCE((SELECT jsonb_agg(DISTINCT p.content->>'customName' ORDER BY p.content->>'customName')
+        |     FROM usage_plans p
+        |     WHERE p.content->>'_tenant' = $$1 AND p.content->>'customName' IS NOT NULL AND p._id IN (
+        |       SELECT s.content->>'plan' FROM owned_subscriptions s WHERE s.content->>'keyring' = k._id
+        |       UNION SELECT d.content->>'plan' FROM pending d WHERE d.content->>'keyring' = k._id
+        |     )), '[]'::jsonb) AS environments,
+        |   concat_ws(' ', k.content->>'customName', k.content->'apiKey'->>'clientId',
+        |     k.content->'apiKey'->>'clientName',
+        |     (SELECT string_agg(p.content->>'customName', ' ') FROM usage_plans p
+        |      WHERE p.content->>'_tenant' = $$1 AND p._id IN (
+        |        SELECT s.content->>'plan' FROM owned_subscriptions s WHERE s.content->>'keyring' = k._id AND s.content->>'api' = $$3
+        |        UNION SELECT d.content->>'plan' FROM pending d WHERE d.content->>'keyring' = k._id))) AS search
+        | FROM owned_keyrings k
+        | WHERE EXISTS (SELECT 1 FROM owned_subscriptions s WHERE s.content->>'keyring' = k._id AND s.content->>'api' = $$3)
+        |    OR EXISTS (SELECT 1 FROM pending d WHERE d.content->>'keyring' = k._id AND d.content->>'api' = $$3)
+        | UNION ALL
+        | SELECT 'demand:' || d._id, NULL::jsonb, d.content,
+        |   COALESCE(NULLIF(d.content->>'keyringCustomName', ''), replace($$7, '%s', COALESCE(p.content->>'customName', $$8))),
+        |   1, 0, false, '[]'::jsonb,
+        |   concat_ws(' ', d.content->>'keyringCustomName', p.content->>'customName')
+        | FROM pending d LEFT JOIN usage_plans p ON p._id = d.content->>'plan' AND p.content->>'_tenant' = $$1
+        | WHERE d.content->>'keyring' IS NULL
+        |),
+        |filtered AS (SELECT * FROM entries WHERE search ILIKE '%' || $$4::text || '%' OR name ILIKE '%' || $$4::text || '%'),
+        |page AS (SELECT * FROM filtered ORDER BY lower(name), id LIMIT $$5 OFFSET $$6)
+        |SELECT jsonb_build_object(
+        | 'entries', COALESCE((SELECT jsonb_agg(to_jsonb(page) ORDER BY lower(name), id) FROM page), '[]'::jsonb),
+        | 'total', (SELECT count(*) FROM entries),
+        | 'totalFiltered', (SELECT count(*) FROM filtered),
+        | 'keyringsCount', (SELECT count(*) FROM filtered WHERE keyring IS NOT NULL),
+        | 'creationsCount', (SELECT count(*) FROM filtered WHERE demand IS NOT NULL)
+        |) AS result
+        |""".stripMargin
+      env.dataStore
+        .queryRaw(
+          query,
+          "result",
+          Seq(
+            ctx.tenant.id.value,
+            team.id.value,
+            apiId,
+            filter,
+            java.lang.Integer.valueOf(limit),
+            java.lang.Integer.valueOf(offset),
+            creationLabel,
+            unavailablePlanLabel
+          )
+        )
+        .map { result =>
+          val value = result.head
+          val entries = (value \ "entries").as[Seq[JsObject]].map { row =>
+            val keyring = (row \ "keyring").asOpt[JsObject].map { content =>
+              (
+                content.as[Keyring](using json.KeyringFormat),
+                (row \ "subscriptions_count").as[Long],
+                (row \ "rotation_locked").as[Boolean],
+                (row \ "environments").as[Seq[String]]
+              )
+            }
+            KeyringEntry(
+              (row \ "id").as[String],
+              keyring,
+              (row \ "demand")
+                .asOpt[JsObject]
+                .map(
+                  _.as[SubscriptionDemand](using json.SubscriptionDemandFormat)
+                ),
+              (row \ "pending_count").as[Long]
+            )
+          }
+          Right(
+            KeyringEntries(
+              entries,
+              (value \ "total").as[Long],
+              (value \ "totalFiltered").as[Long],
+              (value \ "keyringsCount").as[Long],
+              (value \ "creationsCount").as[Long]
+            )
+          )
+        }
+    }
+
+  def getApiKeyringRows(
+      teamId: String,
+      apiId: String,
+      entryId: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ): Future[Either[AppError, KeyringRows]] =
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        "@{user.name} has accessed keyring subscriptions and pending requests"
+      )
+    )(ctx) { team =>
+      val sort = sorting.value.headOption
+      val column = sort.flatMap(v => (v \ "id").asOpt[String]) match {
+        case Some("plan") | Some("env") => "plan_name"
+        case Some("creationDate")       => "created_at"
+        case Some("state")              => "state"
+        case _                          => "api_name"
+      }
+      val direction =
+        if (sort.exists(v => (v \ "desc").asOpt[Boolean].contains(true))) "DESC"
+        else "ASC"
+      val query = s"""
+        |WITH $pendingKeyringDemands,
+        |rows AS (
+        | SELECT 'subscription:' || s._id AS id, s.content AS subscription, NULL::jsonb AS demand,
+        |   a.content->>'name' AS api_name, p.content->>'customName' AS plan_name,
+        |   (s.content->>'createdAt')::bigint AS created_at, s.content->>'state' AS state
+        | FROM owned_subscriptions s
+        | JOIN owned_keyrings k ON k._id = s.content->>'keyring' AND 'keyring:' || k._id = $$4
+        | JOIN apis a ON a._id = s.content->>'api' AND a.content->>'_tenant' = $$1
+        | LEFT JOIN usage_plans p ON p._id = s.content->>'plan' AND p.content->>'_tenant' = $$1
+        | UNION ALL
+        | SELECT 'demand:' || d._id, NULL::jsonb, d.content,
+        |   a.content->>'name', p.content->>'customName', (d.content->>'date')::bigint, 'pending'
+        | FROM pending d JOIN apis a ON a._id = d.content->>'api' AND a.content->>'_tenant' = $$1
+        | LEFT JOIN usage_plans p ON p._id = d.content->>'plan' AND p.content->>'_tenant' = $$1
+        | WHERE (d.content->>'keyring' IS NULL AND 'demand:' || d._id = $$4)
+        |    OR EXISTS (SELECT 1 FROM owned_keyrings k WHERE k._id = d.content->>'keyring' AND 'keyring:' || k._id = $$4)
+        |),
+        |filtered AS (SELECT * FROM rows WHERE COALESCE(plan_name, '') ILIKE '%' || $$5::text || '%'),
+        |page AS (SELECT * FROM filtered ORDER BY $column $direction NULLS LAST, id LIMIT $$6 OFFSET $$7)
+        |SELECT jsonb_build_object(
+        | 'rows', COALESCE((SELECT jsonb_agg(to_jsonb(page) ORDER BY $column $direction NULLS LAST, id) FROM page), '[]'::jsonb),
+        | 'total', (SELECT count(*) FROM filtered)
+        |) AS result
+        |""".stripMargin
+      env.dataStore
+        .queryRaw(
+          query,
+          "result",
+          Seq(
+            ctx.tenant.id.value,
+            team.id.value,
+            apiId,
+            entryId,
+            getFiltervalue[String](filters, "plan").getOrElse(""),
+            java.lang.Integer.valueOf(limit),
+            java.lang.Integer.valueOf(offset)
+          )
+        )
+        .map { result =>
+          val value = result.head
+          val rows = (value \ "rows")
+            .as[Seq[JsObject]]
+            .map(row =>
+              KeyringRow(
+                (row \ "id").as[String],
+                (row \ "subscription")
+                  .asOpt[JsObject]
+                  .map(_.as[ApiSubscription](using json.ApiSubscriptionFormat)),
+                (row \ "demand")
+                  .asOpt[JsObject]
+                  .map(
+                    _.as[SubscriptionDemand](using
+                      json.SubscriptionDemandFormat
+                    )
+                  )
+              )
+            )
+          Right(KeyringRows(rows, (value \ "total").as[Long]))
+        }
+    }
+
   /** The keyrings owned by the consuming team that aggregate at least one
     * subscription on the given api. Keyring-centric counterpart of
     * [[getApiSubscriptions]]: the consumer view lists keyrings (each carrying

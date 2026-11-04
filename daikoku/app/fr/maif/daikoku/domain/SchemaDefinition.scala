@@ -2571,6 +2571,11 @@ object SchemaDefinition {
             resolve = _.value.motivation
           ),
           Field(
+            "keyringCustomName",
+            OptionType(StringType),
+            resolve = _.value.keyringCustomName
+          ),
+          Field(
             "keyring",
             OptionType(KeyringType),
             resolve = ctx => keyringsFetcher.deferOpt(ctx.value.keyring)
@@ -3863,6 +3868,92 @@ object SchemaDefinition {
           )
       )
 
+    lazy val KeyringEntryType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      CommonServices.KeyringEntry
+    ](
+      "ApiKeyringEntry",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          CommonServices.KeyringEntry
+        ](
+          Field("_id", StringType, resolve = _.value.id),
+          Field(
+            "keyring",
+            OptionType(KeyringsWithSubCountAndRotationType),
+            resolve = _.value.keyring
+          ),
+          Field(
+            "demand",
+            OptionType(SubscriptionDemandType),
+            resolve = _.value.demand
+          ),
+          Field("pendingCount", LongType, resolve = _.value.pendingCount)
+        )
+    )
+
+    lazy val KeyringEntriesType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      CommonServices.KeyringEntries
+    ](
+      "ApiKeyringEntries",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          CommonServices.KeyringEntries
+        ](
+          Field(
+            "entries",
+            ListType(KeyringEntryType),
+            resolve = _.value.entries
+          ),
+          Field("total", LongType, resolve = _.value.total),
+          Field("totalFiltered", LongType, resolve = _.value.totalFiltered),
+          Field("keyringsCount", LongType, resolve = _.value.keyringsCount),
+          Field("creationsCount", LongType, resolve = _.value.creationsCount)
+        )
+    )
+
+    lazy val KeyringRowType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      CommonServices.KeyringRow
+    ](
+      "ApiKeyringRow",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          CommonServices.KeyringRow
+        ](
+          Field("_id", StringType, resolve = _.value.id),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = _.value.subscription
+          ),
+          Field(
+            "demand",
+            OptionType(SubscriptionDemandType),
+            resolve = _.value.demand
+          )
+        )
+    )
+
+    lazy val KeyringRowsType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      CommonServices.KeyringRows
+    ](
+      "ApiKeyringRows",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          CommonServices.KeyringRows
+        ](
+          Field("rows", ListType(KeyringRowType), resolve = _.value.rows),
+          Field("total", LongType, resolve = _.value.total)
+        )
+    )
+
     lazy val KeyringSubscriptionListType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       (Seq[ApiSubscription], Long)
@@ -4159,6 +4250,18 @@ object SchemaDefinition {
       "apiId",
       StringType,
       description = "The id of the api  request"
+    )
+    val CREATION_LABEL = Argument(
+      "creationLabel",
+      StringType,
+      description =
+        "Localized pending-card name template (%s is replaced by the plan) for sorting",
+      defaultValue = "Creation pending - %s"
+    )
+    val UNAVAILABLE_PLAN_LABEL = Argument(
+      "unavailablePlanLabel",
+      StringType,
+      defaultValue = "Unavailable plan"
     )
     val NAME: Argument[Option[String]] = Argument(
       "name",
@@ -4466,6 +4569,48 @@ object SchemaDefinition {
     def keyringsQueryFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
+        Field(
+          "apiKeyringEntries",
+          KeyringEntriesType,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: FILTER :: LIMIT :: OFFSET :: CREATION_LABEL :: UNAVAILABLE_PLAN_LABEL :: Nil,
+          resolve = ctx =>
+            CommonServices
+              .getApiKeyringEntries(
+                ctx.arg(TEAM_ID_NOT_OPT),
+                ctx.arg(ID),
+                ctx.arg(FILTER),
+                ctx.arg(LIMIT),
+                ctx.arg(OFFSET),
+                ctx.arg(CREATION_LABEL),
+                ctx.arg(UNAVAILABLE_PLAN_LABEL)
+              )(using ctx.ctx._2, env, e)
+              .map {
+                case Left(error)  => throw NotAuthorizedError(error.toString)
+                case Right(value) => value
+              }
+        ),
+        Field(
+          "apiKeyringRows",
+          KeyringRowsType,
+          arguments =
+            ID :: API_ID :: TEAM_ID_NOT_OPT :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx =>
+            CommonServices
+              .getApiKeyringRows(
+                ctx.arg(TEAM_ID_NOT_OPT),
+                ctx.arg(API_ID),
+                ctx.arg(ID),
+                ctx.arg(FILTER_TABLE),
+                ctx.arg(SORTING_TABLE),
+                ctx.arg(LIMIT),
+                ctx.arg(OFFSET)
+              )(using ctx.ctx._2, env, e)
+              .map {
+                case Left(error)  => throw NotAuthorizedError(error.toString)
+                case Right(value) => value
+              }
+        ),
         Field(
           "keyrings",
           KeyringListType,
