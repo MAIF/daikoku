@@ -245,17 +245,3 @@ export interface IApiKeyringEntriesGql {
   keyringsCount: number;
   creationsCount: number;
 }
-
-export interface IKeyringSubscriptionGql {
-  _id: string;
-  customName: string | null;
-  adminCustomName?: string;
-  enabled: boolean;
-  state: 'active' | 'blocked';
-  createdAt: number;
-  validUntil?: number;
-  tags: Array<string>;
-  lastUsage?: number;
-  plan: { _id: string; customName: string; isRotationLocked?: boolean };
-  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
-}
