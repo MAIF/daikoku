@@ -8,7 +8,7 @@ jobs:
   create-release-notes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v7
 
       - name: Prepare output folder
         run: mkdir -p temp_release_notes
