@@ -1,57 +1,47 @@
-import {useQuery} from '@tanstack/react-query';
-import sortBy from 'lodash/sortBy';
-import {
-  ChevronDown,
-  ChevronLeft, ChevronRight, ChevronUp, Ellipsis,
-} from "lucide-react";
-import {useContext, useEffect, useState, useRef} from 'react';
-import {Link, useParams} from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Ellipsis } from 'lucide-react';
+import { useContext, useEffect, useState, useRef } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
-import {
-  I18nContext,
-  useTeamBackOffice,
-} from '../../../contexts';
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
+  IApiKeyringEntriesGql,
   IKeyringSubscriptionGql,
   ITeamSimple,
-  isError
+  isError,
 } from '../../../types';
-import {
-  Can,
-  Spinner,
-  apikey,
-  read
-} from '../../utils';
-import {QUERY_KEYS} from "../../../constants/queryKeys";
-import Pagination from "../../utils/Pagination";
-import debounce from "lodash/debounce";
-import { KeyringCard } from './KeyringCard';
-import {IKeyringForApiGql, ApiKeysListForApiProps} from "../../../types";
+import { Can, Spinner, apikey, read } from '../../utils';
+import { QUERY_KEYS } from '../../../constants/queryKeys';
+import Pagination from '../../utils/Pagination';
+import debounce from 'lodash/debounce';
+import { KeyringCard, PendingKeyringCard } from './KeyringCard';
+import { ApiKeysListForApiProps } from '../../../types';
 
 const DisplayLink = ({ value }: { value: string }) => {
-  const [displayLink, setDisplayLink] = useState(false)
+  const [displayLink, setDisplayLink] = useState(false);
   const { translate } = useContext(I18nContext);
   return (
-    <div>{translate("subscriptions.link.explanation.1")}
+    <div>
+      {translate('subscriptions.link.explanation.1')}
       <ol>
-        <li>{translate("subscriptions.link.explanation.2")}</li>
-        <li>{translate("subscriptions.link.explanation.3")}</li>
-        <li>{translate("subscriptions.link.explanation.4")}</li>
+        <li>{translate('subscriptions.link.explanation.2')}</li>
+        <li>{translate('subscriptions.link.explanation.3')}</li>
+        <li>{translate('subscriptions.link.explanation.4')}</li>
       </ol>
-      <span className='a-fake' onClick={() => setDisplayLink(!displayLink)}>
-        {!!displayLink && <ChevronUp className='me-1' />}
-        {!displayLink && <ChevronDown className='me-1' />}
-        {displayLink ? translate('subscriptions.hide.link') : translate('subscriptions.display.link')}
+      <span className="a-fake" onClick={() => setDisplayLink(!displayLink)}>
+        {!!displayLink && <ChevronUp className="me-1" />}
+        {!displayLink && <ChevronDown className="me-1" />}
+        {displayLink
+          ? translate('subscriptions.hide.link')
+          : translate('subscriptions.display.link')}
       </span>
-      {displayLink && <div className='api-susbcription__display-link'>
-        {value}
-      </div>}
+      {displayLink && <div className="api-susbcription__display-link">{value}</div>}
     </div>
-  )
-}
+  );
+};
 
 export type IKeyringSubscriptionsWithCount = {
   subscriptions: Array<IKeyringSubscriptionGql>;
@@ -66,8 +56,7 @@ export const TeamApiKeysForApi = () => {
   const params = useParams();
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ApiKeys`;
+    if (currentTeam && !isError(currentTeam)) document.title = `${currentTeam.name} - ApiKeys`;
   }, [currentTeam]);
 
   const apiQuery = useQuery({
@@ -87,10 +76,14 @@ export const TeamApiKeysForApi = () => {
     enabled: !!apiQuery.data && !isError(apiQuery.data),
   });
 
-
   if (apiQuery.isLoading || teamQuery.isLoading) {
-    return <Spinner />
-  } else if (apiQuery.data && !isError(apiQuery.data) && teamQuery.data && !isError(teamQuery.data)) {
+    return <Spinner />;
+  } else if (
+    apiQuery.data &&
+    !isError(apiQuery.data) &&
+    teamQuery.data &&
+    !isError(teamQuery.data)
+  ) {
     const apiLink = `/${teamQuery.data._humanReadableId}/${apiQuery.data._humanReadableId}/${apiQuery.data.currentVersion}/description`;
 
     return (
@@ -99,23 +92,20 @@ export const TeamApiKeysForApi = () => {
           <h1>
             <Translation i18nkey="Api keys for">Api keys for</Translation>
             &nbsp;
-            <Link
-              to={apiLink}
-              className="cursor-pointer underline"
-            >{apiQuery.data!.name}</Link>
+            <Link to={apiLink} className="cursor-pointer underline">
+              {apiQuery.data!.name}
+            </Link>
           </h1>
         </div>
         <ApiKeysListForApi
           api={apiQuery.data!}
-          team={(currentTeam as ITeamSimple)}
+          team={currentTeam as ITeamSimple}
           ownerTeam={teamQuery.data}
         />
       </div>
-    )
+    );
   }
-
-}
-
+};
 
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -123,99 +113,141 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const pageNumber = 6;
   const [page, setPage] = useState(0);
 
-  const {translate} = useContext(I18nContext);
-  const {customGraphQLClient} = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
+  const creationLabel = translate('keyring.requests.creation');
+  const unavailablePlanLabel = translate('keyring.requests.plan.unavailable');
 
   const keyringsQuery = useQuery({
-    queryKey: [...QUERY_KEYS.apiKeyrings(props.team._id, props.api._id), pageNumber, page, searched],
+    queryKey: [
+      ...QUERY_KEYS.apiKeyrings(props.team._id, props.api._id),
+      pageNumber,
+      page,
+      searched,
+      creationLabel,
+      unavailablePlanLabel,
+    ],
     queryFn: () =>
       customGraphQLClient.request<{
-        keyrings: { keyringsWithSubCountAndRotation: Array<IKeyringForApiGql>, totalFiltered: number, total: number };
-      }>(Services.graphql.getApiKeyrings, {
+        apiKeyringEntries: IApiKeyringEntriesGql;
+      }>(Services.graphql.getApiKeyringEntries, {
         apiId: props.api._id,
         teamId: props.team._id,
         filter: searched,
         limit: pageNumber,
         offset: pageNumber * page,
+        creationLabel,
+        unavailablePlanLabel,
       }),
-    // select: (d) => d.keyrings.keyringsWithSubCountAndRotation
   });
 
+  useEffect(() => {
+    if (keyringsQuery.data) {
+      const lastPage = Math.max(
+        0,
+        Math.ceil(keyringsQuery.data.apiKeyringEntries.totalFiltered / pageNumber) - 1
+      );
+      if (page > lastPage) setPage(lastPage);
+    }
+  }, [keyringsQuery.data, page]);
 
   let List;
   if (keyringsQuery.isLoading) {
     List = <Spinner />;
-  } else if (keyringsQuery.data && !isError(keyringsQuery.data)) {
-    const keyrings = keyringsQuery.data.keyrings.keyringsWithSubCountAndRotation;
-    const sorted = sortBy(keyrings, [
-      (k) => (k.customName ?? k.apiKey.clientName).toLowerCase(),
-    ]);
-    const total = keyringsQuery.data?.keyrings.total ?? 0;
-    const totalFiltered = keyringsQuery.data?.keyrings.totalFiltered ?? total;
+  } else if (keyringsQuery.isError) {
+    List = (
+      <div className="alert alert-danger" role="alert">
+        {translate('keyring.requests.load.error')}
+        <button className="btn --tertiary ms-2" onClick={() => keyringsQuery.refetch()}>
+          {translate('keyring.requests.retry')}
+        </button>
+      </div>
+    );
+  } else if (keyringsQuery.data) {
+    const { entries, total, totalFiltered, keyringsCount, creationsCount } =
+      keyringsQuery.data.apiKeyringEntries;
 
-    if (sorted.length > 0) {
-      List =
+    if (entries.length > 0) {
+      List = (
         <div className="col-12">
           <div className="mt-2">
             <span className="small">
-              <span className="fw-bold">{totalFiltered}</span>
-              {totalFiltered < total
-                ? ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })} (sur ${total})`
-                : ` ${translate({ key: "keyring.count", plural: totalFiltered > 1 })}`}
+              <span className="fw-bold">{keyringsCount}</span>
+              {` ${translate({ key: 'keyring.count', plural: keyringsCount > 1 })}`}
+              {creationsCount > 0 &&
+                ` · ${translate({
+                  key: 'keyring.requests.creations',
+                  plural: creationsCount > 1,
+                  replacements: [String(creationsCount)],
+                })}`}
+              {totalFiltered < total && ` (${totalFiltered}/${total})`}
             </span>
           </div>
-        <div className="d-flex flex-row flex-wrap keyring-card-container">
-          {
-            sorted.map((keyring) => {
-              return (
+          <div className="d-flex flex-row flex-wrap keyring-card-container">
+            {entries.map((entry) => {
+              return entry.keyring ? (
                 <KeyringCard
-                  key={keyring._id}
+                  key={entry._id}
                   api={props.api}
                   currentTeam={props.team}
-                  keyring={keyring}
+                  keyring={entry.keyring}
+                  pendingCount={entry.pendingCount}
                 />
-              )
-            })
-          }
-        </div>
-        <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
-          <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{gap: 16}}>
-            <Pagination
-              containerClassName="pagination pagination--ds"
-              previousLabel={<ChevronLeft/>}
-              nextLabel={<ChevronRight/>}
-              breakLabel={<Ellipsis/>}
-              breakClassName="break"
-              breakLinkClassName="btn --ghost"
-              pageCount={Math.ceil(keyringsQuery.data.keyrings.totalFiltered / pageNumber)}
-              forcePage={page}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={3}
-              onPageChange={(data) => setPage(data.selected)}
-              pageClassName="page-selector"
-              pageLinkClassName="btn --ghost"
-              previousLinkClassName="btn --tertiary --icon"
-              nextLinkClassName="btn --tertiary --icon"
-              disabledLinkClassName="--disabled"
-              activeClassName="active"
-            />
+              ) : (
+                <PendingKeyringCard
+                  key={entry._id}
+                  entry={entry}
+                  api={props.api}
+                  team={props.team}
+                />
+              );
+            })}
+          </div>
+          <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">
+            <div
+              className="flex-grow-1 d-flex align-items-center justify-content-center"
+              style={{ gap: 16 }}
+            >
+              <Pagination
+                containerClassName="pagination pagination--ds"
+                previousLabel={<ChevronLeft />}
+                nextLabel={<ChevronRight />}
+                breakLabel={<Ellipsis />}
+                breakClassName="break"
+                breakLinkClassName="btn --ghost"
+                pageCount={Math.ceil(totalFiltered / pageNumber)}
+                forcePage={page}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={3}
+                onPageChange={(data) => setPage(data.selected)}
+                pageClassName="page-selector"
+                pageLinkClassName="btn --ghost"
+                previousLinkClassName="btn --tertiary --icon"
+                nextLinkClassName="btn --tertiary --icon"
+                disabledLinkClassName="--disabled"
+                activeClassName="active"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      );
     } else {
-      List = <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-        <div>{translate('keyring.filter.empty')}</div>
-        <button
-          className="btn --primary"
-          onClick={() => {
-            setSearched('')
-            if (searchInputRef.current) {
-              searchInputRef.current.value = ''
-            }
-          }}>
-          {translate('table.filters.clear.label')}
-        </button>
-      </div>
+      List = (
+        <div className={`alert alert-info col-6 text-center mx-auto`} role="alert">
+          <div>{translate('keyring.filter.empty')}</div>
+          <button
+            className="btn --primary"
+            onClick={() => {
+              setSearched('');
+              if (searchInputRef.current) {
+                searchInputRef.current.value = '';
+              }
+            }}
+          >
+            {translate('table.filters.clear.label')}
+          </button>
+        </div>
+      );
     }
   }
 
@@ -228,11 +260,10 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           placeholder={translate('Search your apiKey...')}
           aria-label="Search your apikey"
           ref={searchInputRef}
-          onChange={debounce(e => {
-            setSearched(e.target.value)
-            setPage(0)
-          }, 500
-          )}
+          onChange={debounce((e) => {
+            setSearched(e.target.value);
+            setPage(0);
+          }, 500)}
         />
       </div>
       {List}

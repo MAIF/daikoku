@@ -61,9 +61,9 @@ class KeyringService(
         OtoroshiApiKeyFormat.writes(keyring.apiKey)
       )
 
-  /** Delete the keyring with its subscriptions. deleteSubscriptions drops the
-    * keyring and its Otoroshi api key along with its last subscription; a
-    * keyring without subscription is deleted directly.
+  /** Cancel linked demands before deleting the keyring with its subscriptions.
+    * deleteSubscriptions drops the keyring and its Otoroshi api key along with
+    * its last subscription; a keyring without subscription is deleted directly.
     */
   def deleteKeyring(
       tenant: Tenant,
@@ -72,6 +72,12 @@ class KeyringService(
     import cats.implicits.*
 
     for {
+      demands <- EitherT.right[AppError](
+        env.dataStore.subscriptionDemandRepo.findByKeyring(tenant, keyring)
+      )
+      _ <- demands.traverse_(d =>
+        deletionService.cancelSubscriptionDemand(d.id, tenant)
+      )
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo.findByKeyring(tenant.id, keyring.id)
       )

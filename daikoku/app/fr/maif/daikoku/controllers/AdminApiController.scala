@@ -1665,7 +1665,7 @@ class SubscriptionDemandsAdminApiController(
       entity: SubscriptionDemand
   ): EitherT[Future, AppError, Unit] =
     deletionService
-      .cancelSubscriptionDemand(entity.id.value, tenant)
+      .cancelSubscriptionDemand(entity.id, tenant)
       .map(_ => ())
 }
 

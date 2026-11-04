@@ -189,7 +189,15 @@ export interface IKeyringSubscriptionGql {
   tags: Array<string>;
   lastUsage?: number;
   plan: { _id: string; customName: string; isRotationLocked?: boolean };
-  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
+  api: {
+    _id: string;
+    _humanReadableId: string;
+    name: string;
+    currentVersion: string;
+    team: {
+      _humanReadableId: string;
+    }
+  };
 }
 
 export interface IKeyringForApiGql {
@@ -207,16 +215,33 @@ export interface IKeyringForApiGql {
   environments: Array<string>;
 }
 
-export interface IKeyringSubscriptionGql {
+export interface IKeyringDemandGql {
   _id: string;
-  customName: string | null;
-  adminCustomName?: string;
-  enabled: boolean;
-  state: 'active' | 'blocked';
-  createdAt: number;
-  validUntil?: number;
-  tags: Array<string>;
-  lastUsage?: number;
-  plan: { _id: string; customName: string; isRotationLocked?: boolean };
-  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string };
+  state: 'waiting' | 'inProgress';
+  keyringCustomName?: string | null;
+  date: number;
+  from: { name: string };
+  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string; team: { _humanReadableId: string } };
+  plan: { _id: string; customName: string } | null;
+  steps: Array<{
+    id: string;
+    state: ISubscriptionDemandState;
+    step: { name: string };
+  }>;
+}
+
+export type IKeyringEntryGql =
+  | { _id: string; keyring: IKeyringForApiGql; demand: null; pendingCount: number }
+  | { _id: string; keyring: null; demand: IKeyringDemandGql; pendingCount: number };
+
+export type IKeyringRowGql =
+  | { _id: string; subscription: IKeyringSubscriptionGql; demand: null }
+  | { _id: string; subscription: null; demand: IKeyringDemandGql };
+
+export interface IApiKeyringEntriesGql {
+  entries: Array<IKeyringEntryGql>;
+  total: number;
+  totalFiltered: number;
+  keyringsCount: number;
+  creationsCount: number;
 }

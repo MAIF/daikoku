@@ -45,6 +45,27 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByRole('button', { name: 'Close toast' }).click();
+  await page.route('**/api/me/subscriptions/*/1.0.0', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({ response, json: { ...body, subscriptions: [] } });
+  }, { times: 1 });
+  await page.goto(`${HOME}api-division/api-papier/1.0.0/keyrings?team=${vendeurs}`);
+  const publicPendingCreation = page.locator('.keyring-card-pending');
+  await expect(publicPendingCreation).toContainText('Vendeurs');
+  await expect(publicPendingCreation).toContainText('Demande en cours');
+  await expect(publicPendingCreation.getByLabel('Copier le clientId et le clientSecret')).toHaveCount(0);
+  await findAndGoToTeam('Vendeurs', page);
+  await page.getByText('Clés d\'API').click();
+  await page.getByRole('listitem', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
+  const pendingCreation = page.locator('.keyring-card-pending').filter({ hasText: 'prod' });
+  await expect(pendingCreation).toContainText('Demande en cours');
+  await expect(pendingCreation.getByLabel('Copier le clientId et le clientSecret')).toHaveCount(0);
+  await expect(pendingCreation.getByLabel('Actions du trousseau')).toHaveCount(0);
+  await pendingCreation.getByRole('button', { name: 'Contenu du trousseau' }).click();
+  await expect(pendingCreation.locator('.dynamic-table__data')).toContainText('prod');
+  await expect(pendingCreation.locator('.dynamic-table__data')).toContainText('Jim Halpert');
+  await expect(pendingCreation.locator('.dynamic-table__data').getByRole('link')).toHaveCount(0);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -76,6 +97,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByText('Clés d\'API').click();
   await page.getByRole('listitem', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.locator('h1')).toContainText('API papier');
+  await expect(page.locator('.keyring-card-pending')).toHaveCount(0);
   await page.getByRole('listitem', { name: 'API papier - prod' }).getByLabel('Copier le clientId et le clientSecret').click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2)
@@ -219,6 +241,19 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.locator('.keyring-option', { hasText: 'prod' }).click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
+  await findAndGoToTeam('Logistique', page);
+  await page.getByText('Clés d\'API').click();
+  await page.getByRole('listitem', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
+  const pendingExtensionKeyring = page.locator('.keyring-card-new').filter({ hasText: 'API Commande - prod' });
+  await expect(pendingExtensionKeyring).toContainText('1 demande en cours');
+  await expect(page.locator('.keyring-card-pending')).toHaveCount(0);
+  await pendingExtensionKeyring.getByRole('button', { name: 'Contenu du trousseau' }).click();
+  const pendingRow = pendingExtensionKeyring.locator('li.table-row').filter({ hasText: 'Demande en cours' });
+  await expect(pendingRow).toContainText('API papier');
+  await expect(pendingRow).toContainText('prod');
+  await expect(pendingRow.getByRole('button')).toHaveCount(0);
+  await expect(pendingRow.getByRole('link')).toHaveCount(0);
+  await expect(pendingExtensionKeyring.getByLabel('Copier le clientId et le clientSecret')).toBeVisible();
   await logout(page)
 
   await loginAs(MICHAEL, page);

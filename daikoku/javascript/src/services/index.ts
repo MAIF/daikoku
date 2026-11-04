@@ -1327,7 +1327,49 @@ export const getAllAvailableEnvs = (teamId: string, apiId: string, version: stri
   }).then((r) => (r.ok ? r.json() : r));
 };
 
+const keyringDemandFields = `
+  _id state date keyringCustomName
+  from { name }
+  api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+  plan { _id customName }
+  steps { id state step { name } }
+`;
+
 export const graphql = {
+  getApiKeyringEntries: `
+    query getApiKeyringEntries($apiId: String!, $teamId: String!, $filter: String, $limit: Int!, $offset: Int!, $creationLabel: String!, $unavailablePlanLabel: String!) {
+      apiKeyringEntries(id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset, creationLabel: $creationLabel, unavailablePlanLabel: $unavailablePlanLabel) {
+        entries {
+          _id pendingCount
+          demand { ${keyringDemandFields} }
+          keyring {
+            _id customName enabled integrationToken bearerToken
+            apiKey { clientId clientSecret clientName }
+            team { name }
+            rotation { enabled rotationEvery gracePeriod pendingRotation }
+            subscriptionsCount isRotationLocked environments
+          }
+        }
+        total totalFiltered keyringsCount creationsCount
+      }
+    }
+  `,
+  getApiKeyringRows: `
+    query getApiKeyringRows($entryId: String!, $apiId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiKeyringRows(id: $entryId, apiId: $apiId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        rows {
+          _id
+          demand { ${keyringDemandFields} }
+          subscription {
+            _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
+            plan { _id customName }
+            api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+          }
+        }
+        total
+      }
+    }
+  `,
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
       page(name: $name, path: $path) {

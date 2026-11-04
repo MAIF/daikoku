@@ -10,5 +10,11 @@ export const QUERY_KEYS = {
     catalogId,
   ],
   keyringSubscriptions: (keyringId: string) => ['keyring-subscription', keyringId],
+  apiKeyringRows: (teamId: string, apiId: string, entryId: string) => [
+    'api-keyring-rows',
+    teamId,
+    apiId,
+    entryId,
+  ],
   apiKeyrings: (teamId: string, apiId: string) => ['keyrings', teamId, apiId],
 } as const;
