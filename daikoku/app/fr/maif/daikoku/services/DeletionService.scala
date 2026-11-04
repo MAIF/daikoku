@@ -264,7 +264,7 @@ class DeletionService(
       // Atomic DB closure: physically delete the subs and the orphaned
       // keyrings, drop the stale notifs, save the deletion notifs + payment
       // ops, and enqueue the deferred Otoroshi work — all or nothing, no HTTP.
-      result <- EitherT.liftF(env.dataStore.withTransaction {
+      result <- EitherT.right[AppError](env.dataStore.withTransaction {
         val notifRepo = env.dataStore.notificationRepo.forTenant(tenant)
         val opRepo = env.dataStore.operationRepo.forTenant(tenant)
         for {
@@ -858,7 +858,7 @@ class DeletionService(
   }
 
   def cancelSubscriptionDemand(
-      demandId: String,
+      demandId: DemandId,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
     for {

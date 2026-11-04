@@ -2408,6 +2408,25 @@ trait SubscriptionDemandRepo
     )
   }
 
+  def findByKeyring(
+                       tenant: Tenant,
+                       keyring: Keyring
+                     )(implicit dbConn: DbConn,
+                       ec: ExecutionContext
+                     ): Future[Seq[SubscriptionDemand]] = {
+    val repo = forTenant(tenant)
+
+    repo.query(
+      query =
+        s"""SELECT content FROM ${repo.tableName}
+           |WHERE content ->> '_tenant' = $$1 AND content ->> 'keyring' = $$2""".stripMargin,
+      params = Seq(
+        tenant.id.value,
+        keyring.id.value
+      )
+    )
+  }
+
   /** Moves every demand of a plan from one state to another — used to freeze
     * the demands in flight while their plan is being updated, then release
     * them.
