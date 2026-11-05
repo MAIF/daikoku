@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Jobs | Daikoku</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" name="twitter:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" property="og:url" content="https://maif.github.io/daikoku/docs/guides/jobs"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Jobs | Daikoku"><meta data-rh="true" name="description" content="Daikoku includes several background jobs designed to ensure data consistency and the smooth operation of the platform. These tasks run automatically at regular intervals and can be partially customized through configuration. Key jobs include:"><meta data-rh="true" property="og:description" content="Daikoku includes several background jobs designed to ensure data consistency and the smooth operation of the platform. These tasks run automatically at regular intervals and can be partially customized through configuration. Key jobs include:"><link data-rh="true" rel="icon" href="/daikoku/img/daikoku-mini.svg"><link data-rh="true" rel="canonical" href="https://maif.github.io/daikoku/docs/guides/jobs"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/guides/jobs" hreflang="en"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/guides/jobs" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Guides","item":"https://maif.github.io/daikoku/docs/guides/"},{"@type":"ListItem","position":2,"name":"Jobs","item":"https://maif.github.io/daikoku/docs/guides/jobs"}]}</script><link rel="stylesheet" href="/daikoku/assets/css/styles.ec4c36b5.css">
-<script src="/daikoku/assets/js/runtime~main.db4eb59b.js" defer="defer"></script>
+<script src="/daikoku/assets/js/runtime~main.07c76faf.js" defer="defer"></script>
 <script src="/daikoku/assets/js/main.0a717b80.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -29,12 +29,12 @@
 </ul>
 <p>These jobs play a critical role in maintaining Daikoku’s stability, performance, and data hygiene over time.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="otoroshi-synchronizer-job">Otoroshi Synchronizer Job<a href="#otoroshi-synchronizer-job" class="hash-link" aria-label="Direct link to Otoroshi Synchronizer Job" title="Direct link to Otoroshi Synchronizer Job" translate="no">​</a></h2>
-<p>This job reconciles Daikoku with Otoroshi. For each keyring it recomputes the shared Otoroshi API key
+<p>This job reconciles Daikoku with Otoroshi. For each API key it recomputes the shared Otoroshi API key
 from its <strong>still-active</strong> subscriptions only — a subscription takes part when it is enabled and not
 blocked (<code>enabled &amp;&amp; blockedBy</code> empty). This is how API lifecycle changes take effect on real keys:
 when a producer blocks an API (or an individual subscription), the corresponding subscriptions are
 flagged as blocked and the synchronizer disables their contribution to the shared key; unblocking
-restores it. A keyring whose members are all blocked ends up disabled rather than deleted, so the
+restores it. An API key whose members are all blocked ends up disabled rather than deleted, so the
 change can be rolled back.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="api-key-statistics-collector-job">API Key Statistics Collector Job<a href="#api-key-statistics-collector-job" class="hash-link" aria-label="Direct link to API Key Statistics Collector Job" title="Direct link to API Key Statistics Collector Job" translate="no">​</a></h2>
 <p><code>ApiKeyStatsJob</code> collects usage and billing statistics from Otoroshi for each tenant.

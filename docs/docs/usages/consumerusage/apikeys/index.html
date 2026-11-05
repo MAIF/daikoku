@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Manage APIkeys | Daikoku</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" name="twitter:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" property="og:url" content="https://maif.github.io/daikoku/docs/usages/consumerusage/apikeys"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Manage APIkeys | Daikoku"><meta data-rh="true" name="description" content="In the backoffice team, click on the API keys entry, on the left."><meta data-rh="true" property="og:description" content="In the backoffice team, click on the API keys entry, on the left."><link data-rh="true" rel="icon" href="/daikoku/img/daikoku-mini.svg"><link data-rh="true" rel="canonical" href="https://maif.github.io/daikoku/docs/usages/consumerusage/apikeys"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/consumerusage/apikeys" hreflang="en"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/consumerusage/apikeys" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Usages","item":"https://maif.github.io/daikoku/docs/usages/"},{"@type":"ListItem","position":2,"name":"Using Daikoku as an API consumer","item":"https://maif.github.io/daikoku/docs/usages/consumerusage/"},{"@type":"ListItem","position":3,"name":"Manage APIkeys","item":"https://maif.github.io/daikoku/docs/usages/consumerusage/apikeys"}]}</script><link rel="stylesheet" href="/daikoku/assets/css/styles.ec4c36b5.css">
-<script src="/daikoku/assets/js/runtime~main.db4eb59b.js" defer="defer"></script>
+<script src="/daikoku/assets/js/runtime~main.07c76faf.js" defer="defer"></script>
 <script src="/daikoku/assets/js/main.0a717b80.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -19,23 +19,22 @@ And you should see the list of subscribed <code>APIs</code></p>
 All subscribed plan for the API are displayed.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="pending-requests">Pending requests<a href="#pending-requests" class="hash-link" aria-label="Direct link to Pending requests" title="Direct link to Pending requests" translate="no">​</a></h3>
 <p>The API key list also shows your team&#x27;s requests that are waiting or in progress for
-the selected API. A request to create a new keyring appears as a temporary card,
+the selected API. A request to create a new API key appears as a temporary card,
 using the requested name when available. It has no credentials or key-management
-actions: the keyring is only created when the request is approved.</p>
-<p>Requests to extend an existing keyring appear as rows in its subscription table,
+actions: the API key is only created when the request is approved.</p>
+<p>Requests to extend an existing API key appear as rows in its subscription table,
 with the requested API, plan/environment and a <strong>Request in progress</strong> status.
-All pending extensions of that keyring are shown, even when they target a different
+All pending extensions of that API key are shown, even when they target a different
 API from the page being viewed. Its pending-request badge counts those same extensions.
 The environment/plan summary includes both existing subscriptions and open requests
-across the keyring, with duplicate names removed.
-Temporary cards for new keyrings remain limited to requests for the selected API.
+across the API key, with duplicate names removed.
+Temporary cards for new API keys remain limited to requests for the selected API.
 Expand the card to see the requester, request date and current validation step.
 A pending-request badge remains visible when the card is collapsed.</p>
 <p>Search and pagination include pending requests, but their counters remain separate
-from existing keyrings and subscriptions. Pending rows have no subscription actions
+from existing API keys and subscriptions. Pending rows have no subscription actions
 or usage statistics. Requests that have finished are not kept as history here.
-The view uses its usual refresh behavior, without periodic polling; on refresh,
-an approved request is replaced by the resulting keyring or subscription.</p>
+On refresh view, an approved request is replaced by the resulting API key or subscription.</p>
 <p>first of all, you can rename your API key, it&#x27;s just for better reading</p>
 <ul>
 <li class="">Secret can be reset for an API key</li>
