@@ -83,11 +83,11 @@ kind: api-documentation-page
 _id: page-weather-start
 _tenant: default
 title: Getting started
-content: Subscribe to a plan, then call the API with the key of your keyring.
+content: Subscribe to a plan, then call the API with the API key.
 ```
 
-A keyring carries its credentials, `apiKey` and `integrationToken`, stored as written: Daikoku
-generates nothing. The key must already exist in the Otoroshi instance of the keyring, with the
+A keyring (API key in UI) carries its credentials, `apiKey` and `integrationToken`, stored as written: Daikoku
+generates nothing. The key must already exist in the Otoroshi instance of the API key, with the
 same `clientId` and `clientSecret`: Daikoku does not create it.
 
 ## Folders and listings

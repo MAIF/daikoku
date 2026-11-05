@@ -201,7 +201,7 @@ contentType: text/markdown
 content: |
   # Getting started
 
-  Subscribe to a plan, then call the API with the key of your keyring.
+  Subscribe to a plan, then call the API with the API key.
 lastModificationAt: 1759190400000
 metadata:
   section: weather
