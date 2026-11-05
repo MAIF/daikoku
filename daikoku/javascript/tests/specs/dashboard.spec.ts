@@ -67,7 +67,7 @@ test('User producer can access to the dashboard', async ({ page }) => {
   await page.getByText('Environnements').click();
   page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('I want it !!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();
@@ -115,7 +115,7 @@ test('api list status', async ({ page }) => {
   await page.getByText('Environnements').click();
   await page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Dwight Schrute').click();
-  await page.getByRole('button', { name: 'Souscrire avec un nouveau trousseau' }).click();
+  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
   await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('i want it !!!!!!!');
   await page.getByRole('button', { name: 'Envoyer' }).click();

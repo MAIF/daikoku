@@ -41,13 +41,13 @@ import { DynamicTableProps } from '../../inputs/DynamicTable';
 const PendingDemandCell = ({ demand, column }: { demand: IKeyringDemandGql; column: string }) => {
   const { translate } = useContext(I18nContext);
   const { search } = useLocation();
-    
+
   switch (column) {
     case 'api': {
       const link = `/${demand.api.team._humanReadableId}/${demand.api._humanReadableId}/${demand.api.currentVersion}/keyrings`;
       return (
         <div className="d-flex flex-column">
-          <Link className="underline" to={{pathname: link, search}}>
+          <Link className="underline" to={{ pathname: link, search }}>
             {demand.api.name}
           </Link>
         </div>
@@ -440,11 +440,11 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
         ),
     });
 
-  const confirmationSchema = (subscription: IKeyringSubscriptionGql) => ({
+  const confirmationSchema = (subscription: IKeyringSubscriptionGql, confirmationTranslationKey: string = "apikeys.delete.confirm.label") => ({
     validation: {
       type: type.string,
       label: translate({
-        key: 'apikeys.delete.confirm.label',
+        key: confirmationTranslationKey,
         replacements: [
           `${subscription.api.name}/${subscription.customName ?? subscription.plan.customName}`,
         ],
@@ -506,7 +506,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
     callback: () => void
   ) => {
     openFormModal({
-      title: translate('apikeys.delete.confirm.modal.title'),
+      title: translate('apikeys.extract.confirm.modal.title'),
       description: (
         <div className="alert alert-danger" role="alert">
           <h4 className="alert-heading">{translate('Warning')}</h4>
@@ -525,7 +525,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
           </ul>
         </div>
       ),
-      schema: confirmationSchema(subscription),
+      schema: confirmationSchema(subscription, "apikeys.extract.confirm.label"),
       actionLabel: translate('Confirm'),
       onSubmit: () =>
         withPendingAction(`subscription:${subscription._id}`, () =>
@@ -641,7 +641,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
           const link = `/${sub.api.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/keyrings`;
           return (
             <div className="d-flex flex-column">
-              <Link className="underline" to={{pathname: link, search}}>
+              <Link className="underline" to={{ pathname: link, search }}>
                 {sub.api.name}
               </Link>
             </div>
@@ -936,26 +936,28 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
               </button>
               {!aggregated && !disableRotation && (
                 <button
-                  className={`dropdown-item cursor-pointer${keyring.enabled ? '' : ' disabled'}`}
+                  className="dropdown-item cursor-pointer"
+                  disabled={!keyring.enabled}
                   onClick={() => {
-                    if (!keyring.enabled) return;
-                    openFormModal({
-                      title: translate('ApiKey rotation'),
-                      actionLabel: translate('Save'),
-                      schema: settingsSchema,
-                      onSubmit: (data: IRotation) => {
-                        if (keyring.enabled) {
-                          return toggleApiKeyRotation(
-                            keyring._id,
-                            data.enabled,
-                            data.rotationEvery,
-                            data.gracePeriod,
-                            keyring.isRotationLocked
-                          );
-                        }
-                      },
-                      value: keyring.rotation,
-                    });
+                    if (keyring.enabled) {
+                      openFormModal({
+                        title: translate('ApiKey rotation'),
+                        actionLabel: translate('Save'),
+                        schema: settingsSchema,
+                        onSubmit: (data: IRotation) => {
+                          if (keyring.enabled) {
+                            return toggleApiKeyRotation(
+                              keyring._id,
+                              data.enabled,
+                              data.rotationEvery,
+                              data.gracePeriod,
+                              keyring.isRotationLocked
+                            );
+                          }
+                        },
+                        value: keyring.rotation,
+                      });
+                    }
                   }}
                 >
                   {translate('subscription.rotation.update.label')}
@@ -971,7 +973,8 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
               )}
               <div className="dropdown-divider" />
               <button
-                className={`dropdown-item cursor-pointer danger${keyring.enabled ? '' : ' disabled'}`}
+                className="dropdown-item cursor-pointer danger"
+                disabled={!keyring.enabled}
                 onClick={() => {
                   if (keyring.enabled) regenerateSecret(keyring);
                 }}
