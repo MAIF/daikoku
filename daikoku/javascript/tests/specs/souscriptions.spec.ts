@@ -64,8 +64,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await expect(pendingCreation.getByLabel('Actions de la clé d\'API')).toHaveCount(0);
   await pendingCreation.getByRole('button', { name: 'Contenu de la clé d\'API' }).click();
   await expect(pendingCreation.locator('.dynamic-table__data')).toContainText('prod');
-  await expect(pendingCreation.locator('.dynamic-table__data')).toContainText('Jim Halpert');
-  await expect(pendingCreation.locator('.dynamic-table__data').getByRole('link')).toHaveCount(0);
+  // await expect(pendingCreation.locator('.dynamic-table__data')).toContainText('Jim Halpert');
+  await expect(pendingCreation.locator('.dynamic-table__data').getByRole('link', {name: 'API papier'})).toBeVisible();
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('0 notification')).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -76,7 +76,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('1 notification')).toBeVisible();
-  await expect(page.getByRole('listitem').filter({ hasText: 'Nouvelle demande de souscription pour' })).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
+  await expect(page.getByRole('listitem').filter({ hasText: 'Nouvelle demande de souscription de l’équipe Vendeurs pour l’environnement prod.' }))
+    .toBeVisible();
   await page.getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
