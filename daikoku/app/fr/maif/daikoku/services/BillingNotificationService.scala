@@ -58,63 +58,6 @@ class BillingNotificationService {
       )
     )
 
-  def paymentFailed(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      amount: BigDecimal,
-      currency: Currency,
-      failedAt: DateTime,
-      gracePeriodEndsAt: DateTime
-  )(implicit
-      env: Env,
-      ec: ExecutionContext,
-      translator: Translator,
-      messagesApi: MessagesApi
-  ): Future[Unit] =
-    notifySubscribingTeam(
-      tenant,
-      subscription,
-      SubscriptionPaymentFailed(
-        subscription = subscription.id,
-        api = subscription.api,
-        plan = subscription.plan,
-        amount = amount,
-        currency = currency,
-        failedAt = failedAt,
-        gracePeriodEndsAt = gracePeriodEndsAt
-      ),
-      "mail.billing.payment.failed",
-      Map(
-        "amount" -> JsString(amount.toString),
-        "currency" -> JsString(currency.code),
-        "failedAt" -> JsString(asDay(failedAt)),
-        "gracePeriodEndsAt" -> JsString(asDay(gracePeriodEndsAt))
-      )
-    )
-
-  def keyDisabled(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      disabledAt: DateTime
-  )(implicit
-      env: Env,
-      ec: ExecutionContext,
-      translator: Translator,
-      messagesApi: MessagesApi
-  ): Future[Unit] =
-    notifySubscribingTeam(
-      tenant,
-      subscription,
-      SubscriptionKeyDisabled(
-        subscription = subscription.id,
-        api = subscription.api,
-        plan = subscription.plan,
-        disabledAt = disabledAt
-      ),
-      "mail.billing.key.disabled",
-      Map("disabledAt" -> JsString(asDay(disabledAt)))
-    )
-
   def cancellationScheduled(
       tenant: Tenant,
       subscription: ApiSubscription,
@@ -141,8 +84,8 @@ class BillingNotificationService {
   private def asDay(date: DateTime): String = date.toString("yyyy-MM-dd")
 
   /** A billing event is never worth failing the caller for: a webhook or a
-    * nightly job must not break because an api, a plan or a team went missing.
-    * Such a case is logged and skipped.
+    * price change must not break because an api, a plan or a team went
+    * missing. Such a case is logged and skipped.
     */
   private def notifySubscribingTeam(
       tenant: Tenant,

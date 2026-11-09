@@ -27,21 +27,6 @@ class NotificationActionSpec extends PlaySpec {
 
   val billingActions: Seq[(String, NotificationAction)] = Seq(
     "SubscriptionPriceChangeScheduled" -> priceChange,
-    "SubscriptionPaymentFailed" -> SubscriptionPaymentFailed(
-      subscription = subscription,
-      api = api,
-      plan = plan,
-      amount = BigDecimal("42.00"),
-      currency = eur,
-      failedAt = date,
-      gracePeriodEndsAt = date.plusDays(30)
-    ),
-    "SubscriptionKeyDisabled" -> SubscriptionKeyDisabled(
-      subscription = subscription,
-      api = api,
-      plan = plan,
-      disabledAt = date
-    ),
     "SubscriptionCancellationScheduled" -> SubscriptionCancellationScheduled(
       subscription = subscription,
       api = api,

@@ -4,7 +4,6 @@ import fr.maif.daikoku.domain.{ApiId, ApiSubscriptionId, UsagePlanId}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.{DaikokuApiAction, OtoroshiClient}
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.joda.time.DateTime
 import fr.maif.daikoku.jobs.*
 import fr.maif.daikoku.login.TenantHelper
 import play.api.libs.json.Json
@@ -111,15 +110,11 @@ class JobsController(
       }
     }
 
-  /** `at` lets the e2e run the pass against the frozen time of a Stripe test
-    * clock instead of the machine clock, so a period the clock moved forward is
-    * read the way Stripe sees it.
-    */
-  def stripeReconciliationSyncJob(at: Option[Long]): Action[AnyContent] =
+  def stripeReconciliationSyncJob(): Action[AnyContent] =
     Action.async { req =>
       if (env.config.stripeReconciliationByCron) {
         stripeReconciliationJob
-          .reconcile(at.map(new DateTime(_)).getOrElse(DateTime.now()))
+          .reconcile()
           .map(_ => Ok(Json.obj("done" -> true)))
       } else {
         FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))

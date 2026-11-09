@@ -1,19 +1,8 @@
 package fr.maif.daikoku.jobs
 
 import fr.maif.daikoku.controllers.PaymentClient
-import fr.maif.daikoku.controllers.UnpaidInvoice.gracePeriodDays
-import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
-import fr.maif.daikoku.domain.{
-  ApiKeyConsumption,
-  ApiSubscription,
-  Tenant,
-  UsagePlan
-}
+import fr.maif.daikoku.domain.{ApiKeyConsumption, ApiSubscription, Tenant}
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.{ApiService, BillingNotificationService}
-import fr.maif.daikoku.utils.Translator
-import org.joda.time.Days
-import play.api.i18n.MessagesApi
 import org.apache.pekko.Done
 import org.apache.pekko.actor.Cancellable
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -35,11 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class StripeReconciliationJob(
     env: Env,
-    paymentClient: PaymentClient,
-    apiService: ApiService,
-    billingNotificationService: BillingNotificationService,
-    translator: Translator,
-    messagesApi: MessagesApi
+    paymentClient: PaymentClient
 ) {
 
   private val logger = Logger("StripeReconciliationJob")
@@ -49,8 +34,6 @@ class StripeReconciliationJob(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val mat: Materializer = env.defaultMaterializer
-  implicit val tr: Translator = translator
-  implicit val m: MessagesApi = messagesApi
 
   def start(): Unit = {
     logger.info(
@@ -75,12 +58,9 @@ class StripeReconciliationJob(
 
   /** The window is the running billing period: usage is billed monthly, and a
     * meter event cannot be dated more than 35 days back anyway.
-    *
-    * `now` is the instant everything is measured against. It defaults to the
-    * machine clock; the e2e passes the frozen time of a Stripe test clock, so
-    * that a period it moved forward is read the way Stripe sees it.
     */
-  def reconcile(now: DateTime = DateTime.now()): Future[Done] = {
+  def reconcile(): Future[Done] = {
+    val now = DateTime.now()
     val from = now.withDayOfMonth(1).withTimeAtStartOfDay()
     val to = now
 
@@ -94,92 +74,18 @@ class StripeReconciliationJob(
               .streamAllRawFormatted(Json.obj("_deleted" -> false))
               .filter(_.thirdPartySubscriptionInformations.isDefined)
               .mapAsync(4)(subscription =>
-                reconcileSubscription(tenant, subscription, from, to, now)
+                reconcileSubscription(tenant, subscription, from, to)
               )
           )
           .runWith(Sink.ignore)
       )
   }
 
-  /** The team is told on day 1, on day 7, then every day from day 15. On day 30
-    * the key stops passing, unless the tenant asked never to cut. Nothing is
-    * destroyed: invoice.paid brings the same credentials back.
-    */
-  private def handleUnpaid(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      now: DateTime
-  ): Future[Unit] =
-    paymentClient.unpaidInvoiceOf(tenant, subscription, plan).value.flatMap {
-      case Left(error) =>
-        logger.error(
-          s"[reconciliation] unable to read the unpaid invoices of subscription ${subscription.id.value}: ${error.getErrorMessage()}"
-        )
-        FastFuture.successful(())
-      case Right(None) => FastFuture.successful(())
-      case Right(Some(unpaid)) =>
-        val days = Days.daysBetween(unpaid.since, now).getDays
-        val cutsOnUnpaid = plan.paymentSettings
-          .flatMap(settings =>
-            tenant.thirdPartyPaymentSettings.collectFirst {
-              case s: StripeSettings
-                  if s.id == settings.thirdPartyPaymentSettingsId =>
-                s.cutOnUnpaid
-            }
-          )
-          .getOrElse(true)
-
-        for {
-          _ <-
-            if (days == 1 || days == 7 || days >= 15)
-              billingNotificationService.paymentFailed(
-                tenant,
-                subscription,
-                unpaid.amount,
-                unpaid.currency,
-                unpaid.since,
-                unpaid.since.plusDays(gracePeriodDays)
-              )
-            else FastFuture.successful(())
-          _ <-
-            if (days >= gracePeriodDays && cutsOnUnpaid && subscription.enabled)
-              cutForUnpaid(tenant, subscription, plan, days)
-            else FastFuture.successful(())
-        } yield ()
-    }
-
-  private def cutForUnpaid(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      days: Int
-  ): Future[Unit] =
-    apiService
-      .archiveApiKey(tenant, subscription, plan, enabled = false)
-      .flatMap {
-        case Left(error) =>
-          logger.error(
-            s"[reconciliation] unable to disable subscription ${subscription.id.value} after $days unpaid days: ${error.getErrorMessage()}"
-          )
-          FastFuture.successful(())
-        case Right(_) =>
-          logger.warn(
-            s"[reconciliation] subscription ${subscription.id.value} disabled after $days unpaid days"
-          )
-          billingNotificationService.keyDisabled(
-            tenant,
-            subscription,
-            DateTime.now()
-          )
-      }
-
   private def reconcileSubscription(
       tenant: Tenant,
       subscription: ApiSubscription,
       from: DateTime,
-      to: DateTime,
-      now: DateTime
+      to: DateTime
   ): Future[Unit] =
     for {
       maybePlan <- env.dataStore.usagePlanRepo
@@ -218,9 +124,6 @@ class StripeReconciliationJob(
                 s"[reconciliation] unable to check the price of subscription ${subscription.id.value}: ${error.getErrorMessage()}"
               )
           }
-      )
-      _ <- maybePlan.fold(FastFuture.successful(()))(plan =>
-        handleUnpaid(tenant, subscription, plan, now)
       )
       _ <- (maybePlan, reportedHits) match {
         case (Some(plan), hits) if hits > 0 =>

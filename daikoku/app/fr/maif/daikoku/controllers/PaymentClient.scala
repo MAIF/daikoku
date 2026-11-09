@@ -22,19 +22,6 @@ import play.api.mvc.Results.Ok
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
-/** The oldest invoice Stripe still holds as unpaid for a subscription, which is
-  * where the grace period starts counting.
-  */
-case class UnpaidInvoice(
-    since: DateTime,
-    amount: BigDecimal,
-    currency: Currency
-)
-
-object UnpaidInvoice {
-  val gracePeriodDays = 30
-}
-
 /** Where a subscription stands with the money, read from Stripe each time it is
   * shown. `nextCharge` is an estimate: usage keeps adding up until the period
   * closes.
@@ -43,8 +30,6 @@ case class BillingStatus(
     cancelAt: Option[DateTime],
     periodEnd: Option[DateTime],
     nextCharge: Option[BigDecimal],
-    unpaid: Option[UnpaidInvoice],
-    cutAt: Option[DateTime],
     pricesOutdated: Boolean
 )
 
@@ -1066,70 +1051,6 @@ class PaymentClient(
           )
     } yield swapped
 
-  /** Stripe holds the truth about what is owed, so nothing about the grace
-    * period is stored on our side: the age of the oldest open invoice is
-    * recomputed at every pass.
-    */
-  def unpaidInvoiceOf(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan
-  ): EitherT[Future, AppError, Option[UnpaidInvoice]] =
-    (
-      plan.paymentSettings,
-      subscription.thirdPartySubscriptionInformations
-    ) match {
-      case (
-            Some(p: PaymentSettings.Stripe),
-            Some(i: StripeSubscriptionInformations)
-          ) =>
-        stripeSettingsOf(tenant, p) match {
-          case None =>
-            EitherT.leftT[Future, Option[UnpaidInvoice]](
-              AppError.ThirdPartyPaymentSettingsNotFound
-            )
-          case Some(s) =>
-            implicit val stripeSettings: StripeSettings = s
-            EitherT(
-              stripeClient("/v1/invoices")
-                .withQueryStringParameters(
-                  "subscription" -> i.subscriptionId,
-                  "status" -> "open",
-                  "limit" -> "100"
-                )
-                .get()
-                .map {
-                  case res if res.status == 200 =>
-                    Right[AppError, Option[UnpaidInvoice]](
-                      (res.json \ "data")
-                        .as[Seq[JsValue]]
-                        .map(invoice =>
-                          UnpaidInvoice(
-                            since = new DateTime(
-                              (invoice \ "created").as[Long] * 1000
-                            ),
-                            amount = fromStripeAmount(
-                              (invoice \ "amount_due")
-                                .asOpt[Long]
-                                .getOrElse(0L),
-                              plan.currency
-                            ),
-                            currency = plan.currency.getOrElse(defaultCurrency)
-                          )
-                        )
-                        .sortBy(_.since.getMillis)
-                        .headOption
-                    )
-                  case res =>
-                    Left[AppError, Option[UnpaidInvoice]](
-                      stripeErrorMessage(res)
-                    )
-                }
-            )
-        }
-      case _ => EitherT.pure[Future, AppError](None)
-    }
-
   private def nextChargeOf(
       stripeSubscriptionId: String,
       currency: Option[Currency]
@@ -1181,7 +1102,6 @@ class PaymentClient(
               nextCharge <- EitherT.liftF(
                 nextChargeOf(i.subscriptionId, plan.currency)
               )
-              unpaid <- unpaidInvoiceOf(tenant, subscription, plan)
             } yield {
               val items =
                 (stripeSubscription \ "items" \ "data").as[Seq[JsValue]]
@@ -1205,10 +1125,6 @@ class PaymentClient(
                 cancelAt = cancelAt,
                 periodEnd = periodEnd,
                 nextCharge = nextCharge,
-                unpaid = unpaid,
-                cutAt = unpaid
-                  .filter(_ => s.cutOnUnpaid)
-                  .map(_.since.plusDays(UnpaidInvoice.gracePeriodDays)),
                 pricesOutdated = outdatedItems(items, p).nonEmpty
               ).some
             }

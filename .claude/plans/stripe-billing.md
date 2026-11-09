@@ -76,7 +76,7 @@ with master and the PR is open.
 - Done when: `grep -rniE 'unpaid|cutOnUnpaid|PaymentFailed|KeyDisabled|invoice\.paid|mail\.billing\.(payment|key)'`
   over `daikoku/app daikoku/conf daikoku/javascript/src daikoku/javascript/tests daikoku/test manual/docs`
   returns nothing; `sbt Test/compile` and `npm run build` pass.
-- Status: todo
+- Status: done
 
 ### E2 · `Ended` block reason
 
@@ -150,4 +150,9 @@ with master and the PR is open.
 
 ## Validated deviations
 
-- none yet
+- E1 · `StripeReconciliationJob.reconcile` no longer takes `now`, `/api/jobs/stripe/_reconcile`
+  no longer takes `at`, the Playwright helpers built around them are gone, and
+  `dev/process-compose-test-stripe.yaml` no longer enables the reconciliation cron: only the removed
+  unpaid scenario ran the pass against a Stripe test clock.
+- E1 · The webhook section of `configfile.mdx` lists `checkout.session.completed`, the event that
+  has materialised paid subscriptions since #1221, which the doc had left out.

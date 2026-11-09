@@ -631,17 +631,6 @@ class ConsumptionController(
               "nextCharge" -> status.nextCharge
                 .map(JsNumber(_))
                 .getOrElse(JsNull),
-              "unpaid" -> status.unpaid
-                .map(unpaid =>
-                  Json.obj(
-                    "since" -> unpaid.since.getMillis,
-                    "amount" -> unpaid.amount,
-                    "cutAt" -> status.cutAt
-                      .map(date => JsNumber(date.getMillis))
-                      .getOrElse(JsNull)
-                  )
-                )
-                .getOrElse(JsNull),
               "priceChange" -> Option
                 .when(status.pricesOutdated)(
                   Json.obj(

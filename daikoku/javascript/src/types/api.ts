@@ -599,7 +599,6 @@ export interface ISubscriptionBillingState {
   cancelAt?: number | null;
   periodEnd?: number | null;
   nextCharge?: number | null;
-  unpaid?: { since: number; amount: number; cutAt: number | null } | null;
   priceChange?: {
     costPerMonth: number | null;
     costPerRequest: number | null;

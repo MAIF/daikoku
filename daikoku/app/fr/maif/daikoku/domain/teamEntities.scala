@@ -337,23 +337,6 @@ object NotificationAction {
       effectiveAt: DateTime
   ) extends NotificationAction
 
-  case class SubscriptionPaymentFailed(
-      subscription: ApiSubscriptionId,
-      api: ApiId,
-      plan: UsagePlanId,
-      amount: BigDecimal,
-      currency: Currency,
-      failedAt: DateTime,
-      gracePeriodEndsAt: DateTime
-  ) extends NotificationAction
-
-  case class SubscriptionKeyDisabled(
-      subscription: ApiSubscriptionId,
-      api: ApiId,
-      plan: UsagePlanId,
-      disabledAt: DateTime
-  ) extends NotificationAction
-
   case class SubscriptionCancellationScheduled(
       subscription: ApiSubscriptionId,
       api: ApiId,

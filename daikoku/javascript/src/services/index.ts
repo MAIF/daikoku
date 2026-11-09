@@ -2391,39 +2391,6 @@ export const graphql = {
               }
               effectiveAt
             }
-            ... on SubscriptionPaymentFailed {
-            __typename
-              api {
-                _id
-                _humanReadableId
-                name
-                currentVersion
-              }
-              plan {
-                _id
-                customName
-              }
-              amount
-              currency {
-                code
-              }
-              failedAt
-              gracePeriodEndsAt
-            }
-            ... on SubscriptionKeyDisabled {
-            __typename
-              api {
-                _id
-                _humanReadableId
-                name
-                currentVersion
-              }
-              plan {
-                _id
-                customName
-              }
-              disabledAt
-            }
             ... on SubscriptionCancellationScheduled {
             __typename
               api {

@@ -3084,79 +3084,6 @@ object SchemaDefinition {
       )
     )
 
-    lazy val SubscriptionPaymentFailedType = new PossibleObject(
-      ObjectType(
-        "SubscriptionPaymentFailed",
-        "A notification triggered when a subscription invoice could not be paid",
-        interfaces[
-          (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionPaymentFailed
-        ](NotificationActionType),
-        fields[
-          (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionPaymentFailed
-        ](
-          Field(
-            "subscription",
-            OptionType(ApiSubscriptionType),
-            resolve =
-              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
-          ),
-          Field(
-            "api",
-            OptionType(ApiType),
-            resolve = ctx => apisFetcher.defer(ctx.value.api)
-          ),
-          Field(
-            "plan",
-            OptionType(UsagePlanType),
-            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
-          ),
-          Field("amount", BigDecimalType, resolve = _.value.amount),
-          Field("currency", CurrencyType, resolve = _.value.currency),
-          Field("failedAt", DateTimeUnitype, resolve = _.value.failedAt),
-          Field(
-            "gracePeriodEndsAt",
-            DateTimeUnitype,
-            resolve = _.value.gracePeriodEndsAt
-          )
-        )
-      )
-    )
-
-    lazy val SubscriptionKeyDisabledType = new PossibleObject(
-      ObjectType(
-        "SubscriptionKeyDisabled",
-        "A notification triggered when an api key is disabled after the unpaid grace period",
-        interfaces[
-          (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionKeyDisabled
-        ](NotificationActionType),
-        fields[
-          (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionKeyDisabled
-        ](
-          Field(
-            "subscription",
-            OptionType(ApiSubscriptionType),
-            resolve =
-              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
-          ),
-          Field(
-            "api",
-            OptionType(ApiType),
-            resolve = ctx => apisFetcher.defer(ctx.value.api)
-          ),
-          Field(
-            "plan",
-            OptionType(UsagePlanType),
-            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
-          ),
-          Field("disabledAt", DateTimeUnitype, resolve = _.value.disabledAt)
-        )
-      )
-    )
-
     lazy val SubscriptionCancellationScheduledType = new PossibleObject(
       ObjectType(
         "SubscriptionCancellationScheduled",
@@ -3473,8 +3400,6 @@ object SchemaDefinition {
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,
             SubscriptionPriceChangeScheduledType,
-            SubscriptionPaymentFailedType,
-            SubscriptionKeyDisabledType,
             SubscriptionCancellationScheduledType,
             ApiDepreciationWarningType,
             ApiBlockingWarningType

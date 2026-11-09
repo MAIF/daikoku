@@ -114,40 +114,6 @@ class BillingNotificationServiceSpec
       (action \ "effectiveAt").as[Long] mustBe effectiveAt.getMillis
     }
 
-    "record a failed payment with its amount and the end of the grace period" in {
-      val failedAt = new DateTime(2026, 8, 18, 10, 0)
-      Await.result(
-        service.paymentFailed(
-          tenant,
-          subscription,
-          amount = BigDecimal("42.00"),
-          currency = eur,
-          failedAt = failedAt,
-          gracePeriodEndsAt = failedAt.plusDays(30)
-        ),
-        10.seconds
-      )
-
-      val action = (theOnlyStoredNotification().asJson \ "action").as[JsObject]
-      (action \ "type").as[String] mustBe "SubscriptionPaymentFailed"
-      (action \ "amount").as[BigDecimal] mustBe BigDecimal("42.00")
-      (action \ "failedAt").as[Long] mustBe failedAt.getMillis
-      (action \ "gracePeriodEndsAt")
-        .as[Long] mustBe failedAt.plusDays(30).getMillis
-    }
-
-    "record a key cut off for non-payment" in {
-      val disabledAt = new DateTime(2026, 9, 17, 3, 0)
-      Await.result(
-        service.keyDisabled(tenant, subscription, disabledAt),
-        10.seconds
-      )
-
-      val action = (theOnlyStoredNotification().asJson \ "action").as[JsObject]
-      (action \ "type").as[String] mustBe "SubscriptionKeyDisabled"
-      (action \ "disabledAt").as[Long] mustBe disabledAt.getMillis
-    }
-
     "record a cancellation with the date it takes effect" in {
       Await.result(
         service.cancellationScheduled(tenant, subscription, effectiveAt),
@@ -183,8 +149,6 @@ class BillingNotificationServiceSpec
     "have a mail template in every supported language" in {
       val keys = Seq(
         "mail.billing.price.change",
-        "mail.billing.payment.failed",
-        "mail.billing.key.disabled",
         "mail.billing.cancellation"
       ).flatMap(key => Seq(s"$key.title", s"$key.body"))
 

@@ -8,7 +8,7 @@ import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.DefaultBodyWritables.{
   writeableOf_String,
   writeableOf_urlEncodedSimpleForm
@@ -268,7 +268,7 @@ class StripeWebhookSpec()
   "The Stripe webhook (#1150)" must {
     "reject a delivery whose signature does not match" in {
       val stripeTenant = setupTenant("sk_test_unused")
-      val delivery = event("invoice.paid", invoice("sub_forged", 1000))
+      val delivery = event("invoice.finalized", invoice("sub_forged", 1000))
       val body = Json.stringify(delivery)
 
       deliver(
@@ -299,7 +299,7 @@ class StripeWebhookSpec()
 
       deliver(
         stripeTenant,
-        event("invoice.paid", invoice("sub_any", 1000))
+        event("invoice.finalized", invoice("sub_any", 1000))
       ).status mustBe 400
     }
 
@@ -440,33 +440,6 @@ class StripeWebhookSpec()
       (items.head \ "price" \ "id").as[String] mustBe renewed.priceIds.basePriceId
 
       cleanUp(stripeTenant, renewed, customerId)
-    }
-
-    "reactivate a cut key once an invoice is paid" in {
-      implicit val stripeKey: String = realStripeKey
-      val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant)
-      val (customerId, stripeSubscriptionId) =
-        stripeSubscription(paymentSettings.priceIds.basePriceId)
-      val subscription = daikokuSubscription(
-        stripeTenant,
-        stripeSubscriptionId,
-        customerId,
-        enabled = false
-      )
-
-      deliver(
-        stripeTenant,
-        event("invoice.paid", invoice(stripeSubscriptionId, 1000))
-      ).status mustBe 200
-
-      currentSubscription(stripeTenant, subscription.id).enabled mustBe true
-      val onStripe =
-        stripe(s"/v1/subscriptions/$stripeSubscriptionId").get().futureValue
-      onStripe.status mustBe 200
-      (onStripe.json \ "pause_collection").asOpt[JsObject] mustBe None
-
-      cleanUp(stripeTenant, paymentSettings, customerId)
     }
   }
 }

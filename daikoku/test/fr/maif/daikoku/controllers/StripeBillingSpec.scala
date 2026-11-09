@@ -13,7 +13,6 @@ import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.{IdGenerator, StripeSignature}
-import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.scalatestplus.play.PlaySpec
@@ -174,10 +173,6 @@ class StripeBillingSpec()
     stubFor(
       post(urlEqualTo("/v1/invoices/create_preview"))
         .willReturn(okJson(Json.stringify(Json.obj("amount_due" -> 1234))))
-    )
-    stubFor(
-      get(urlPathEqualTo("/v1/invoices"))
-        .willReturn(okJson(Json.stringify(Json.obj("data" -> Json.arr()))))
     )
   }
 
@@ -622,7 +617,6 @@ class StripeBillingSpec()
       (state \ "nextCharge").as[BigDecimal] mustBe BigDecimal("12.34")
       (state \ "periodEnd").as[Long] mustBe periodEnd * 1000
       (state \ "cancelAt").get mustBe JsNull
-      (state \ "unpaid").get mustBe JsNull
       (state \ "priceChange").get mustBe JsNull
     }
 
@@ -631,32 +625,6 @@ class StripeBillingSpec()
       stripeSubscriptionIs(stripeSubscription(cancelAtPeriodEnd = true))
 
       (billingState() \ "cancelAt").as[Long] mustBe periodEnd * 1000
-    }
-
-    "count an unpaid invoice from the day it was issued, and cut the key thirty days later" in {
-      subscribeAndPay()
-      stripeSubscriptionIs(stripeSubscription())
-      val issuedAt = DateTime.now().minusDays(5).getMillis / 1000
-      stubFor(
-        get(urlPathEqualTo("/v1/invoices")).willReturn(
-          okJson(
-            Json.stringify(
-              Json.obj(
-                "data" -> Json.arr(
-                  Json.obj("created" -> issuedAt, "amount_due" -> 1000)
-                )
-              )
-            )
-          )
-        )
-      )
-
-      val unpaid = billingState() \ "unpaid"
-
-      (unpaid \ "since").as[Long] mustBe issuedAt * 1000
-      (unpaid \ "amount").as[BigDecimal] mustBe BigDecimal(10)
-      (unpaid \ "cutAt").as[Long] mustBe
-        new DateTime(issuedAt * 1000).plusDays(30).getMillis
     }
 
     "announce the amounts of the plan while the subscription still carries the old prices" in {

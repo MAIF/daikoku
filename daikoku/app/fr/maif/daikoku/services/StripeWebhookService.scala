@@ -45,8 +45,6 @@ class StripeWebhookService(
     (event \ "type").asOpt[String] match {
       case Some("checkout.session.completed") =>
         onCheckoutCompleted(tenant, payload)
-      case Some("invoice.paid") =>
-        EitherT.liftF(onInvoicePaid(tenant, payload))
       case Some("customer.subscription.deleted") =>
         EitherT.liftF(onSubscriptionDeleted(tenant, payload))
       case Some("invoice.finalized") =>
@@ -111,15 +109,6 @@ class StripeWebhookService(
           .map(_ => ())
     }
   }
-
-  private def onInvoicePaid(tenant: Tenant, invoice: JsValue): Future[Unit] =
-    subscriptionOf(tenant, subscriptionOfInvoice(invoice)).flatMap {
-      case None => ignored("invoice.paid", subscriptionOfInvoice(invoice))
-      case Some(subscription) if subscription.enabled =>
-        FastFuture.successful(())
-      case Some(subscription) =>
-        setEnabled(tenant, subscription, enabled = true)
-    }
 
   /** The invoice for the period that just closed is now locked, so moving the
     * subscription onto the plan's current prices only affects the next one.

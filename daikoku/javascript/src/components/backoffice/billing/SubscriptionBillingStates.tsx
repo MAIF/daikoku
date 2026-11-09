@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { differenceInDays } from 'date-fns';
 import { ExternalLink } from 'lucide-react';
 import { useContext } from 'react';
 import { toast } from 'sonner';
@@ -31,8 +30,6 @@ const billingBadge = (state: ISubscriptionBillingState, { translate }: Translate
     return { className: '--inactive', label: translate('billing.state.legacy') };
   } else if (!state.enabled) {
     return { className: '--danger', label: translate('billing.state.cut') };
-  } else if (state.unpaid) {
-    return { className: '--warning', label: translate('billing.state.unpaid') };
   } else if (state.cancelAt) {
     return { className: '--neutral', label: translate('billing.state.cancellation-scheduled') };
   } else {
@@ -68,21 +65,6 @@ const SubscriptionBillingCard = ({ team, state, onUndoCancellation }: Subscripti
 
       {state.error && <p className="subscription-billing__line">{translate('billing.state.unavailable.description')}</p>}
       {state.legacy && <p className="subscription-billing__line">{translate('billing.state.legacy.description')}</p>}
-
-      {state.unpaid && (
-        <p className="subscription-billing__line --warning">
-          {translate({
-            key: 'billing.unpaid.since',
-            replacements: [
-              String(differenceInDays(new Date(), new Date(state.unpaid.since))),
-              amount(state.unpaid.amount, state.currency),
-            ],
-          })}
-          {state.enabled && state.unpaid.cutAt && (
-            <> {translate({ key: 'billing.unpaid.cut-at', replacements: [date(state.unpaid.cutAt)] })}</>
-          )}
-        </p>
-      )}
 
       {state.cancelAt && (
         <div className="subscription-billing__line d-flex align-items-center justify-content-between gap-2">

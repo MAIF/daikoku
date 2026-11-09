@@ -139,12 +139,6 @@ type NotificationActionGQL =
     api: IApiGQL; plan: IUsagePlan;
     costPerMonth: number; costPerRequest?: number; currency: { code: string }; effectiveAt: number;
   }
-  | {
-    __typename: 'SubscriptionPaymentFailed';
-    api: IApiGQL; plan: IUsagePlan;
-    amount: number; currency: { code: string }; failedAt: number; gracePeriodEndsAt: number;
-  }
-  | { __typename: 'SubscriptionKeyDisabled'; api: IApiGQL; plan: IUsagePlan; disabledAt: number }
   | { __typename: 'SubscriptionCancellationScheduled'; api: IApiGQL; plan: IUsagePlan; effectiveAt: number }
   | {
     __typename: 'ApiDepreciationWarning';
@@ -227,8 +221,6 @@ export const NotificationList = () => {
     { type: "OtoroshiSyncApiError" },
     { type: "OtoroshiSyncSubscriptionError" },
     { type: "SubscriptionCancellationScheduled" },
-    { type: "SubscriptionKeyDisabled" },
-    { type: "SubscriptionPaymentFailed" },
     { type: "SubscriptionPriceChangeScheduled" },
     { type: "TeamInvitation" },
     { type: "TransferApiOwnership" },
@@ -736,20 +728,6 @@ export const NotificationList = () => {
         return translate({
           key: 'notif.billing.price.change',
           replacements: [notification.action.plan.customName, day(notification.action.effectiveAt)],
-        });
-      case 'SubscriptionPaymentFailed':
-        return translate({
-          key: 'notif.billing.payment.failed',
-          replacements: [
-            `${notification.action.amount} ${notification.action.currency.code}`,
-            notification.action.plan.customName,
-            day(notification.action.gracePeriodEndsAt),
-          ],
-        });
-      case 'SubscriptionKeyDisabled':
-        return translate({
-          key: 'notif.billing.key.disabled',
-          replacements: [notification.action.plan.customName, day(notification.action.disabledAt)],
         });
       case 'SubscriptionCancellationScheduled':
         return translate({

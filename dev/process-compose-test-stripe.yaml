@@ -46,9 +46,7 @@ processes:
       command: |
         docker-compose -f daikoku/javascript/tests/docker-compose-ldap.yml -f daikoku/javascript/tests/docker-compose-es.yml down -v
 
-  # The stats cron is what reports usage to Stripe, and the reconciliation cron is what
-  # exposes /api/jobs/stripe/_reconcile, which the spec calls with the frozen time of a
-  # Stripe test clock.
+  # The stats cron is what reports usage to Stripe.
   Backend:
     working_dir: "daikoku"
     is_tty: true
@@ -56,7 +54,6 @@ processes:
       DAIKOKU_INIT_ADMIN_PASSWORD=password \
       DAIKOKU_POSTGRES_DATABASE=daikoku_test \
       DAIKOKU_OTOROSHI_SYNC_CRON=true \
-      DAIKOKU_STRIPE_RECONCILIATION_CRON=true \
       DAIKOKU_TENANT_PROVIDER=hostname \
       DAIKOKU_EXPOSED_ON=5173 \
       DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson \
