@@ -1,5 +1,10 @@
 # Front office tests
 
+## ReDoc internal links
+
+From `daikoku/javascript/tests`, run `../node_modules/.bin/playwright test --config playwright.redoc.config.js`.
+This isolated browser test starts Vite on port 5174; it does not require the backend.
+
 Since the front end is built with viteJS, it can be a pain to run tests.
 There are two ways to perform them:
 - you have a running instance (exposed on port 5173), then you can simply run the following command in your terminal 
