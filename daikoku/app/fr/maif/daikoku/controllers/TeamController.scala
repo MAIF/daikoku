@@ -196,7 +196,8 @@ class TeamController(
                   ),
                   state = SubscriptionDemandState.Waiting,
                   value = body - "confirmPassword" - "password",
-                  fromTenant = ctx.tenant.id
+                  fromTenant = ctx.tenant.id,
+                  creationSecurity = ctx.tenant.creationSecurity
                 )
               )
           )

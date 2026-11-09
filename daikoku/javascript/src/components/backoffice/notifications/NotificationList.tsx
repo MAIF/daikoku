@@ -35,6 +35,8 @@ import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard} from "../apikeys";
 import { IApiSubscriptionGql } from '../apis';
+import { OtoroshiEntitiesSelector } from '../../adminbackoffice/teams/TeamList';
+import { teamSchema } from '../teams/TeamEdit';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,17 @@ type NotificationsGQL = {
   totalByApis: Array<{ api: string, total: number }>,
   totalSelectable: number
 }
+
+type CustomTeamCreationData = {
+  name: string;
+  contact: string;
+  avatar: string;
+  metadata: Record<string, string>;
+  authorizedOtoroshiEntities:
+    | ITeamSimple['authorizedOtoroshiEntities']
+    | null;
+  creationSecurity: boolean;
+};
 
 type NotificationActionGQL =
   | { __typename: 'ApiAccess'; api: IApiGQL; team: ITeamFullGql }
@@ -225,8 +238,11 @@ export const NotificationList = () => {
 
   // ─── Actions ─────────────────────────────────────────────────────────────
 
-  const accept = (notification: string, sub?: CustomSubscriptionData) => {
-    return Services.acceptNotificationOfTeam(notification, sub)
+  const accept = (
+    notification: string,
+    values?: CustomSubscriptionData | CustomTeamCreationData
+  ) => {
+    return Services.acceptNotificationOfTeam(notification, values)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
@@ -234,6 +250,122 @@ export const NotificationList = () => {
     return Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
+  };
+
+  const openTeamCreationModal = (
+    notificationId: string,
+    demand: ITeamCreationGQL,
+    adminTeamId: string
+  ) => {
+    return Promise.all([
+      Services.team(adminTeamId),
+      Services.allSimpleOtoroshis(tenant._id),
+    ]).then(([adminTeam, otoroshis]) => {
+      if (isError(adminTeam)) {
+        toast.error(adminTeam.error);
+        return;
+      }
+      if (isError(otoroshis)) {
+        toast.error(otoroshis.error);
+        return;
+      }
+
+      const draftTeam: ITeamSimple = {
+        ...adminTeam,
+        type: 'Organization',
+        name: demand.name,
+        contact: demand.email,
+        avatar: demand.avatar,
+      };
+      const baseSchema = teamSchema(draftTeam, translate);
+
+      openFormModal<CustomTeamCreationData & { restrictOtoroshiEntities: boolean }>({
+        title: translate('notifications.page.team.creation.attempt.detail.modal.title'),
+        value: {
+          name: demand.name,
+          contact: demand.email,
+          avatar: demand.avatar,
+          metadata: { ...demand.metadata },
+          authorizedOtoroshiEntities: demand.authorizedOtoroshiEntities ?? [],
+          restrictOtoroshiEntities: demand.authorizedOtoroshiEntities != null,
+          creationSecurity: demand.creationSecurity
+        },
+        schema: {
+          name: baseSchema.name,
+          contact: {
+            ...baseSchema.contact,
+            constraints: [
+              constraints.required(translate('constraints.required.email')),
+              constraints.email(translate('constraints.matches.email')),
+            ],
+          },
+          avatar: baseSchema.avatar,
+          metadata: {
+            type: type.object,
+            label: translate('Metadata'),
+          },
+          restrictOtoroshiEntities: {
+            type: type.bool,
+            label: translate('Enable restrictions'),
+          },
+          authorizedOtoroshiEntities: {
+            type: type.object,
+            array: true,
+            format: format.form,
+            label: translate('Authorized entities'),
+            visible: ({ rawValues }) => rawValues.restrictOtoroshiEntities,
+            schema: {
+              otoroshiSettingsId: {
+                type: type.string,
+                format: format.select,
+                label: translate('Otoroshi instance'),
+                options: otoroshis,
+                transformer: (settings) => ({ label: settings.url, value: settings._id }),
+                constraints: [constraints.required(translate('constraints.required.value'))],
+              },
+              authorizedEntities: {
+                type: type.object,
+                label: translate('Authorized entities'),
+                defaultValue: { groups: [], services: [], routes: [] },
+                visible: ({ rawValues, informations }) => !!rawValues.authorizedOtoroshiEntities
+                  ?.[informations?.parent?.index ?? 0]?.value?.otoroshiSettingsId,
+                deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+                render: (props) => (
+                  <OtoroshiEntitiesSelector {...props} translate={translate} teamId={adminTeamId} />
+                ),
+              },
+            },
+          },
+          creationSecurity: {
+            type: type.bool,
+            label: translate('api.creation.enable.label'),
+          },
+        },
+        onSubmit: (values) => {
+          const { restrictOtoroshiEntities, ...customizations } = values;
+          return Promise.resolve()
+            .then(() => Services.acceptNotificationOfTeam(notificationId, {
+              ...customizations,
+              metadata: customizations.metadata ?? {},
+              authorizedOtoroshiEntities: restrictOtoroshiEntities
+                ? (customizations.authorizedOtoroshiEntities ?? []).map(entry => ({
+                  ...entry,
+                  authorizedEntities: entry.authorizedEntities ?? { groups: [], services: [], routes: [] },
+                }))
+                : null,
+              apisCreationPermission: customizations.creationSecurity
+            }))
+            .then(response => {
+              if (isError(response)) return response.error;
+              return queryClient.invalidateQueries({ queryKey: ['notifications'] })
+                .then(() => reloadUnreadNotificationsCount())
+                .then(() => undefined);
+            })
+            .catch(error => error instanceof Error ? error.message : translate('oops, something went wrong.'));
+        },
+        actionLabel: translate('Accept'),
+      });
+    });
   };
 
   // ─── Formatters ──────────────────────────────────────────────────────────
@@ -483,7 +615,15 @@ export const NotificationList = () => {
                     className="btn --tertiary --small --icon-only"
                     title={translate('Accept')}
                     aria-label={translate('Accept')}
-                    onPress={() => accept(notification._id)}
+                    disabled={notification.action.__typename === 'TeamCreationAttempt' &&
+                      (!notification.action.demand || !notification.team)}
+                    onPress={() => notification.action.__typename === 'TeamCreationAttempt'
+                      ? openTeamCreationModal(
+                        notification._id,
+                        notification.action.demand!,
+                        notification.team!._id
+                      ).catch(error => { toast.error(error instanceof Error ? error.message : String(error)); })
+                      : accept(notification._id)}
                   >
                     <Check />
                   </FeedbackButton>
@@ -1018,12 +1158,14 @@ export const NotificationList = () => {
   const bulkActions: BulkAction<NotificationGQL>[] = [
     {
       label: translate('notifications.page.table.read.bulk.action.label'),
-      onClick: async (rows, selectAll, ctx) => {
+      onClick: (rows, selectAll, ctx) => {
         const ids = rows.map(r => r._id);
-        await Services.acceptNotificationOfTeamByBulk(ids, selectAll);
-        ctx.resetFilters();
-        ctx.refetch();
-        reloadUnreadNotificationsCount();
+        return Services.acceptNotificationOfTeamByBulk(ids, selectAll)
+          .then(() => {
+            ctx.resetFilters();
+            ctx.refetch();
+            reloadUnreadNotificationsCount();
+          });
       },
     },
   ];

@@ -978,6 +978,7 @@
   "api.published": "Publiée",
   "api.deprecated": "Dépréciée",
   "api.blocked": "Bloquée",
+  "api.creation.enable.label": "Peut créer des APIs",
   "subscription.process.creation.title": "Création d'une étape de validation",
   "subscription.process.type.selection": "Merci de sélectionner un type de validation",
   "subscription.process.team.admin": "Admin. équipe",

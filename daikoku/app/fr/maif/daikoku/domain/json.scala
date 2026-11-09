@@ -3291,7 +3291,7 @@ object json {
             NewSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewSubscription"
             )
-          case p:TeamCreationAttempt =>
+          case p: TeamCreationAttempt =>
             teamCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "TeamCreationAttempt"
             )
@@ -3606,7 +3606,7 @@ object json {
       )
   }
 
-   val teamCreationAttemptFormat = new Format[TeamCreationAttempt] {
+  val teamCreationAttemptFormat = new Format[TeamCreationAttempt] {
     override def reads(json: JsValue): JsResult[TeamCreationAttempt] =
       Try {
         JsSuccess(
@@ -3628,7 +3628,7 @@ object json {
         "motivation" -> o.motivation
       )
   }
-  
+
   val ApiSubscriptionTransferSuccessFormat =
     new Format[ApiSubscriptionTransferSuccess] {
 
@@ -4427,6 +4427,33 @@ object json {
         )
     }
 
+  val TeamCreationAdminReviewFormat: Format[TeamCreationAdminReview] =
+    new Format[TeamCreationAdminReview] {
+      override def reads(json: JsValue): JsResult[TeamCreationAdminReview] =
+        for {
+          metadata <- (json \ "metadata").validate[Map[String, String]]
+          removedKeys <- (json \ "removedMetadataKeys").validate[Set[String]]
+          authorizedEntities <- (json \ "authorizedOtoroshiEntities")
+            .validateOpt(using SeqTeamAuthorizedEntitiesFormat)
+          creationSecurity <- (json \ "creationSecurity").validateOpt[Boolean]
+        } yield TeamCreationAdminReview(
+          metadata = metadata,
+          removedMetadataKeys = removedKeys,
+          authorizedOtoroshiEntities = authorizedEntities,
+          creationSecurity = creationSecurity
+        )
+
+      override def writes(o: TeamCreationAdminReview): JsValue =
+        Json.obj(
+          "metadata" -> o.metadata,
+          "removedMetadataKeys" -> o.removedMetadataKeys,
+          "authorizedOtoroshiEntities" -> o.authorizedOtoroshiEntities
+            .map(SeqTeamAuthorizedEntitiesFormat.writes)
+            .getOrElse(JsNull),
+          "creationSecurity" -> o.creationSecurity
+        )
+    }
+
   val TeamCreationFormat: Format[TeamCreation] =
     new Format[TeamCreation] {
       override def reads(json: JsValue): JsResult[TeamCreation] =
@@ -4443,7 +4470,17 @@ object json {
               steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
               state = (json \ "state").as(using SubscriptionDemandStateFormat),
               value = (json \ "value").as[JsObject],
-              fromTenant = (json \ "fromTenant").as(using TenantIdFormat)
+              fromTenant = (json \ "fromTenant").as(using TenantIdFormat),
+              metadata = (json \ "metadata")
+                .validateOpt[Map[String, String]]
+                .get
+                .getOrElse(Map.empty),
+              adminReview = (json \ "adminReview")
+                .validateOpt(using TeamCreationAdminReviewFormat)
+                .get,
+              creationSecurity = (json \ "creationSecurity")
+                .validateOpt[Boolean]
+                .get
             )
           )
         } recover { case e =>
@@ -4462,7 +4499,12 @@ object json {
           "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
           "state" -> SubscriptionDemandStateFormat.writes(o.state),
           "value" -> o.value,
-          "fromTenant" -> o.fromTenant.value
+          "fromTenant" -> o.fromTenant.value,
+          "metadata" -> o.metadata,
+          "adminReview" -> o.adminReview
+            .map(TeamCreationAdminReviewFormat.writes)
+            .getOrElse(JsNull),
+          "creationSecurity" -> o.creationSecurity
         )
     }
 

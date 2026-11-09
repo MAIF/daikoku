@@ -255,7 +255,7 @@ object SchemaDefinition {
           demands: Seq[DemandId]
       ) => ctx._1.accountCreationRepo.findByIds(demands)
     )(using HasId[AccountCreation, DemandId](_.id))
-       lazy val teamCreationsFetcher = Fetcher(
+    lazy val teamCreationsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
           ctx: (DataStore, DaikokuActionContext[JsValue]),
@@ -3233,6 +3233,7 @@ object SchemaDefinition {
       (DataStore, DaikokuActionContext[JsValue]),
       TeamCreation
     ](
+      ExcludeFields("adminReview"),
       ObjectTypeDescription(
         "waiting confirmation for a neaw team."
       ),
@@ -3270,8 +3271,33 @@ object SchemaDefinition {
         )
       ),
       ReplaceField(
+        "creationSecurity",
+        Field(
+          "creationSecurity",
+          OptionType(BooleanType),
+          resolve = ctx => ctx.value.adminReview
+            .flatMap(_.creationSecurity)
+            .orElse(ctx.value.creationSecurity)
+        )
+      ),
+      ReplaceField(
         "metadata",
-        Field("metadata", MapType, resolve = _.value.metadata)
+        Field(
+          "metadata",
+          JsonType,
+          resolve =
+            ctx => Json.toJson(ctx.value.effectiveMetadata(ctx.ctx._2.tenant))
+        )
+      ),
+      AddFields(
+        Field(
+          "authorizedOtoroshiEntities",
+          OptionType(ListType(TeamAuthorizedEntitiesType)),
+          resolve = ctx =>
+            ctx.value.adminReview.fold(
+              ctx.ctx._2.tenant.defaultAuthorizedOtoroshiEntities
+            )(_.authorizedOtoroshiEntities)
+        )
       )
     )
 
@@ -3397,7 +3423,6 @@ object SchemaDefinition {
         )
       )
     )
-
 
     lazy val NotificationInterfaceType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),

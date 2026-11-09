@@ -172,23 +172,19 @@ export interface IAccountCreationGQL {
 }
 
 export interface ITeamCreationGQL {
-  id: string;
-  randomId: string;
+  _id: string;
   email: string;
   name: string;
   avatar: string;
-  password: string;
-  creationDate: number;
-  validUntil: number;
+  value: object;
+  metadata: Record<string, string>;
+  authorizedOtoroshiEntities:
+    | ITeamFullGql['authorizedOtoroshiEntities']
+    | null;
+  creationSecurity: boolean;
   steps: Array<{
-    id: string;
-    state: ISubscriptionDemandState;
     step: IValidationStep;
   }>;
-  state: ISubscriptionDemandState;
-  value: object;
-  fromTenant: ITenant;
-  metadata: object;
 }
 
 export interface ApiKeysListForApiProps {

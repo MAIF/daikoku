@@ -9,6 +9,7 @@ import fr.maif.daikoku.domain.SubscriptionDemandState.Accepted
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.Cypher.encrypt
+import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -360,8 +361,34 @@ class TeamService(
             env.wsClient
               .url(step.url)
               .withHttpHeaders(step.headers.toSeq*)
-              .post(Json.obj("demand" -> demand.asJson))
-          )
+              .post(
+                Json.obj(
+                        "demand" -> demand.asJson,
+              "api" -> api.asJson,
+              "plan" -> plan.asJson,
+              "user" -> user.asJson,
+              "team" -> team.asJson,
+              "aggregate" -> keyring.fold[JsValue](JsNull)(k =>
+                Json.obj(
+                  "keyring" -> k.asSafeJson,
+                  "subscriptions" -> keyringSubscriptions.map(sub => {
+                    Json.obj(
+                      "subscription" -> sub.asJson,
+                      "api" -> aggregatedApis
+                        .find(_.id == sub.api)
+                        .map(_.asJson)
+                        .getOrElse(JsNull)
+                        .as[JsValue],
+                      "plan" -> aggregatedPlan
+                        .find(_.id == sub.plan)
+                        .map(_.asJson)
+                        .getOrElse(JsNull)
+                        .as[JsValue]
+                    )
+                  })
+                )
+              ))
+                  ))
           .map(_.json)
       accept <- EitherT.fromOption[Future](
         (response \ "accept").asOpt[Boolean],
@@ -370,7 +397,7 @@ class TeamService(
       result <-
         if (accept)
           validateStep(_step, demand, (response \ "metadata").asOpt[JsObject])
-            .map(_ => Ok(Json.obj("done" -> true)))
+            .flatMap(_ => runTeamCreationProcess(demand.id, tenant))
         else declineTeamCreation()
     } yield result
   }
@@ -598,26 +625,22 @@ class TeamService(
         // metadata : voir ci-dessous
       )
 
-      formKeysToMetadata =
-        tenant.teamCreationProcess
-          .collectFirst { case s: ValidationStep.Form => s }
-          .flatMap(_.formKeysToMetadata)
-
-      metadataFromMotivation: Option[JsObject] =
-        for {
-          motiv <- teamCreation.value.some
-          keys <- formKeysToMetadata
-        } yield {
-          val filtered = motiv.fields.collect {
-            case (k, v) if keys.contains(k) => (k, v)
-          }
-          JsObject(filtered)
-        }
-
+      effectiveMetadata = teamCreation.effectiveMetadata(tenant)
+      
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .save(team)
+          .save(
+            team.copy(
+              metadata = effectiveMetadata,
+              authorizedOtoroshiEntities = teamCreation.adminReview.fold(
+                team.authorizedOtoroshiEntities
+              )(_.authorizedOtoroshiEntities),
+              apisCreationPermission = teamCreation.adminReview
+                .flatMap(_.creationSecurity)
+                .orElse(teamCreation.creationSecurity)
+            )
+          )
       )
 
       mailData = Map(
@@ -662,22 +685,28 @@ class TeamService(
   ): EitherT[Future, AppError, Unit] = {
     for {
       _ <- step.check()
+      incomingMetadata = metadata
+        .map(
+          _.fields
+            .map {
+              case (key, field: JsString) => key -> field.value
+              case (key, field)           => key -> Json.stringify(field)
+            }
+            .toMap
+        )
+        .getOrElse(Map.empty[String, String])
+      collectedMetadata = demand.metadata ++ incomingMetadata
+      effectiveMetadata = demand.adminReview.fold(collectedMetadata)(review =>
+        (collectedMetadata -- review.removedMetadataKeys) ++ review.metadata
+      )
+      afg = println(effectiveMetadata)
       updatedDemand = demand.copy(
         steps = demand.steps.map(s =>
           if (s.id == step.id)
             s.copy(state = SubscriptionDemandState.Accepted)
           else s
         ),
-        metadata = demand.metadata ++ metadata
-          .map(
-            _.fieldSet
-              .map {
-                case (a, b: JsString) => a -> b.value
-                case (a, b)           => a -> Json.stringify(b)
-              }
-              .toMap
-          )
-          .getOrElse(Map.empty)
+        metadata = effectiveMetadata
       )
       _ <- EitherT.right[AppError](
         env.dataStore.teamCreationRepo
@@ -747,6 +776,82 @@ class TeamService(
     } yield ()
   }
 
+  private def readTeamCreationReview(
+      demand: TeamCreation,
+      tenant: Tenant,
+      js: JsValue
+  ): Either[AppError, TeamCreation] = {
+    val result = for {
+      name <- (js \ "name")
+        .validate[String]
+        .map(_.trim)
+        .filter(JsError("Name should not be empty"))(_.nonEmpty)
+      contact <- (js \ "contact")
+        .validate[String](using Reads.email)
+        .map(_.trim)
+      avatar <- (js \ "avatar").validate[String]
+      metadata <- (js \ "metadata").validate[Map[String, String]]
+      authorizedEntities <- (js \ "authorizedOtoroshiEntities")
+        .validate[JsValue]
+        .flatMap {
+          case JsNull => JsSuccess(Option.empty[Seq[TeamAuthorizedEntities]])
+          case value =>
+            value
+              .validate(using json.SeqTeamAuthorizedEntitiesFormat)
+              .map(Some(_))
+        }
+      creationSecurity <- (js \ "creationSecurity").validateOpt[Boolean]
+      _ <-
+        if (
+          authorizedEntities.forall(
+            _.forall(entry =>
+              tenant.otoroshiSettings.exists(_.id == entry.otoroshiSettingsId)
+            )
+          )
+        ) JsSuccess(())
+        else JsError("Unknown Otoroshi instance for this tenant")
+      _ <-
+        if (
+          authorizedEntities.forall(entries =>
+            entries.map(_.otoroshiSettingsId).distinct.size == entries.size
+          )
+        ) JsSuccess(())
+        else JsError("Select each Otoroshi instance only once")
+    } yield {
+      val removedKeys = (
+        demand.adminReview
+          .map(_.removedMetadataKeys)
+          .getOrElse(Set.empty[String]) ++
+          demand.effectiveMetadata(tenant).keySet
+      ) -- metadata.keySet
+      demand.copy(
+        name = name,
+        email = contact,
+        avatar = avatar,
+        metadata = metadata,
+        value = demand.value ++ Json.obj(
+          "name" -> name,
+          "contact" -> contact,
+          "email" -> contact,
+          "avatar" -> avatar
+        ),
+        adminReview = Some(
+          TeamCreationAdminReview(
+            metadata,
+            removedKeys,
+            authorizedEntities,
+            creationSecurity
+          )
+        )
+      )
+    }
+    result match {
+      case JsSuccess(reviewedDemand, _) => Right(reviewedDemand)
+      case JsError(errors) =>
+        Left(AppError.BadRequestError(Json.stringify(JsError.toJson(errors))))
+    }
+  }
+
   def acceptTeamCreationAttempt(
       teamCreation: DemandId,
       subscriptionDemandStepId: SubscriptionDemandStepId
@@ -763,11 +868,36 @@ class TeamService(
           .findById(teamCreation),
         AppError.EntityNotFound("Subscription demand")
       )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        demand.fromTenant == ctx.tenant.id && !demand.state.isClosed,
+        (),
+        AppError.ForbiddenAction
+      )
       step <- EitherT.fromOption[Future](
         demand.steps.find(_.id == subscriptionDemandStepId),
         AppError.EntityNotFound("Validation Step")
       )
-      _ <- validateStep(step, demand)
+      _ <- EitherT.cond[Future][AppError, Unit](
+        step.step.isInstanceOf[ValidationStep.TeamAdmin],
+        (),
+        AppError.ForbiddenAction
+      )
+      reviewedDemand <- EitherT.fromEither[Future](
+        if (ctx.request.body == Json.obj())
+          Right[AppError, TeamCreation](demand)
+        else readTeamCreationReview(demand, ctx.tenant, ctx.request.body)
+      )
+      existingTeam <- EitherT.liftF(
+        env.dataStore.teamRepo
+          .forTenant(ctx.tenant)
+          .findByIdOrHrId(reviewedDemand.name.urlPathSegmentSanitized)
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        existingTeam.isEmpty,
+        (),
+        AppError.TeamNameAlreadyExists
+      )
+      _ <- validateStep(step, reviewedDemand)
       _ <- runTeamCreationProcess(demand.id, ctx.tenant)
     } yield ()
     r.value

@@ -2441,6 +2441,17 @@ export const graphql = {
                 _id
                 email
                 name
+                avatar
+                metadata
+                creationSecurity
+                authorizedOtoroshiEntities {
+                  otoroshiSettingsId
+                  authorizedEntities {
+                    groups
+                    services
+                    routes
+                  }
+                }
                 value
                 steps {
                   step {

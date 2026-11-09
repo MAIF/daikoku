@@ -213,6 +213,13 @@ case class AccountCreation(
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
 
+case class TeamCreationAdminReview(
+    metadata: Map[String, String],
+    removedMetadataKeys: Set[String],
+    authorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]],
+    creationSecurity: Option[Boolean]
+)
+
 case class TeamCreation(
     id: DemandId,
     randomId: String,
@@ -225,9 +232,32 @@ case class TeamCreation(
     state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
     value: JsObject,
     fromTenant: TenantId,
-    metadata: Map[String, String] = Map.empty
+    metadata: Map[String, String] = Map.empty,
+    adminReview: Option[TeamCreationAdminReview] = None,
+    creationSecurity: Option[Boolean]
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.TeamCreationFormat.writes(this)
+
+  def effectiveMetadata(tenant: Tenant): Map[String, String] = {
+    val keys = tenant.teamCreationProcess
+      .collectFirst { case step: ValidationStep.Form => step }
+      .flatMap(_.formKeysToMetadata)
+      .getOrElse(Seq.empty)
+
+    val formMetadata = value.fields
+      .filter { case (key, _) => keys.contains(key) }
+      .map {
+        case (key, field: JsString) => key -> field.value
+        case (key, field)           => key -> Json.stringify(field)
+      }
+      .toMap
+
+    val collectedMetadata = formMetadata ++ metadata
+
+    adminReview.fold(collectedMetadata)(review =>
+      (collectedMetadata -- review.removedMetadataKeys) ++ review.metadata
+    )
+  }
 }
 
 sealed trait MessageType {
