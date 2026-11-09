@@ -1085,3 +1085,21 @@ Thank you to all the contributors who worked on this release:
 
 - fix: Restore Admin and CMS API access after the v19.0.0 keyring migration [#1293](https://github.com/MAIF/daikoku/issues/1293)
 
+## [v19.1.0] - 2026-11-09
+
+## :star: New Features
+
+- migrate apiKeyStatsJob to implement AbstractJob [#1310](https://github.com/MAIF/daikoku/issues/1310)
+- clean up pending subscription demands when deleting a keyring [#1309](https://github.com/MAIF/daikoku/issues/1309)
+- Add parameters STARTTLS and SSL/TLS on helm values [#1305](https://github.com/MAIF/daikoku/issues/1305)
+- [API keys page] add pending request in subscriptions list [#1282](https://github.com/MAIF/daikoku/issues/1282)
+- [Remote catalog] - add new UI to import or test yaml/json entitie [#1266](https://github.com/MAIF/daikoku/issues/1266)
+- [Remote catalog] - export entities as yaml/json from UI [#1265](https://github.com/MAIF/daikoku/issues/1265)
+- Reconcile enabled subscriptions with Otoroshi: Daikoku as the source of truth [#1130](https://github.com/MAIF/daikoku/issues/1130)
+
+## :lady_beetle: Bug Fixes
+
+- Redirection links in the specification are not working [#1312](https://github.com/MAIF/daikoku/issues/1312)
+- Bucket connexion error [#1307](https://github.com/MAIF/daikoku/issues/1307)
+- Tenant cant be exposed on multiple domain [#959](https://github.com/MAIF/daikoku/issues/959)
+
