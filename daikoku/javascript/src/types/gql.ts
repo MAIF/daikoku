@@ -196,7 +196,7 @@ export interface IKeyringSubscriptionGql {
     currentVersion: string;
     team: {
       _humanReadableId: string;
-    }
+    };
   };
 }
 
@@ -221,7 +221,13 @@ export interface IKeyringDemandGql {
   keyringCustomName?: string | null;
   date: number;
   from: { name: string };
-  api: { _id: string; _humanReadableId: string; name: string; currentVersion: string; team: { _humanReadableId: string } };
+  api: {
+    _id: string;
+    _humanReadableId: string;
+    name: string;
+    currentVersion: string;
+    team: { _humanReadableId: string };
+  };
   plan: { _id: string; customName: string } | null;
   steps: Array<{
     id: string;

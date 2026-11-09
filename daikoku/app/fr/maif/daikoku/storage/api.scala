@@ -2409,16 +2409,16 @@ trait SubscriptionDemandRepo
   }
 
   def findByKeyring(
-                       tenant: Tenant,
-                       keyring: Keyring
-                     )(implicit dbConn: DbConn,
-                       ec: ExecutionContext
-                     ): Future[Seq[SubscriptionDemand]] = {
+      tenant: Tenant,
+      keyring: Keyring
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[SubscriptionDemand]] = {
     val repo = forTenant(tenant)
 
     repo.query(
-      query =
-        s"""SELECT content FROM ${repo.tableName}
+      query = s"""SELECT content FROM ${repo.tableName}
            |WHERE content ->> '_tenant' = $$1 AND content ->> 'keyring' = $$2""".stripMargin,
       params = Seq(
         tenant.id.value,
