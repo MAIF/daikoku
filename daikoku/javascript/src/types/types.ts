@@ -1,4 +1,7 @@
 import { ITenant } from './tenant';
+import { IApi } from './api';
+import { ITeamSimple } from './team';
+import { IKeyringForApiGql, IKeyringSubscriptionGql } from './gql';
 
 export type TOption = {
   value: string;
@@ -33,7 +36,6 @@ export interface IStoreState {
 }
 
 export interface INotification {
-  _deleted: boolean;
   _id: string;
   _tenant: string;
   action: any;
@@ -42,4 +44,10 @@ export interface INotification {
   sender: { id?: string; name: string; email: string };
   status: { status: 'Pending' } | { status: 'Accepted' | 'Rejected'; date?: string };
   team: string;
+}
+
+export interface IKeyringSubscriptionsWithCount {
+  subscriptions: Array<IKeyringSubscriptionGql>;
+  total: number;
+  totalFiltered: number;
 }

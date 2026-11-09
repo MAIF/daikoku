@@ -10,6 +10,8 @@ import {
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
+  IRemoteCatalog,
+  IRemoteCatalogSettings,
   ISafeSubscription,
   ISession,
   ISimpleOtoroshiSettings,
@@ -256,14 +258,14 @@ export const makeUniqueApiKey = (
     method: 'POST',
   });
 
-export const toggleApiKeyRotation = (
+export const toggleKeyringRotation = (
   teamId: string,
-  subscriptionId: string,
+  keyringId: string,
   enabled: boolean,
   rotationEvery: number,
   gracePeriod: number
 ): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+  customFetch(`/api/teams/${teamId}/keyrings/${keyringId}/_rotation`, {
     method: 'POST',
     body: JSON.stringify({ enabled, rotationEvery, gracePeriod }),
   });
@@ -886,16 +888,6 @@ export const uploadExportFile = (file: any) =>
     body: file,
   });
 
-export const updateSubscriptionCustomName = (
-  team: ITeamSimple,
-  subscription: ISubscription,
-  customName: string
-): PromiseWithError<ISafeSubscription> =>
-  customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
-    method: 'POST',
-    body: JSON.stringify({ customName }),
-  });
-
 export const updateSubscription = (
   team: ITeamSimple,
   subscription: ISafeSubscription | any
@@ -1356,7 +1348,49 @@ export const getAllAvailableEnvs = (teamId: string, apiId: string, version: stri
   }).then((r) => (r.ok ? r.json() : r));
 };
 
+const keyringDemandFields = `
+  _id state date keyringCustomName
+  from { name }
+  api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+  plan { _id customName }
+  steps { id state step { name } }
+`;
+
 export const graphql = {
+  getApiKeyringEntries: `
+    query getApiKeyringEntries($apiId: String!, $teamId: String!, $filter: String, $limit: Int!, $offset: Int!, $creationLabel: String!, $unavailablePlanLabel: String!) {
+      apiKeyringEntries(id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset, creationLabel: $creationLabel, unavailablePlanLabel: $unavailablePlanLabel) {
+        entries {
+          _id pendingCount
+          demand { ${keyringDemandFields} }
+          keyring {
+            _id customName enabled integrationToken bearerToken
+            apiKey { clientId clientSecret clientName }
+            team { name }
+            rotation { enabled rotationEvery gracePeriod pendingRotation }
+            subscriptionsCount isRotationLocked environments
+          }
+        }
+        total totalFiltered keyringsCount creationsCount
+      }
+    }
+  `,
+  getApiKeyringRows: `
+    query getApiKeyringRows($entryId: String!, $apiId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiKeyringRows(id: $entryId, apiId: $apiId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        rows {
+          _id
+          demand { ${keyringDemandFields} }
+          subscription {
+            _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
+            plan { _id customName }
+            api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+          }
+        }
+        total
+      }
+    }
+  `,
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
       page(name: $name, path: $path) {
@@ -1438,7 +1472,6 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
-          deleted
           lastUpdate
           state
           currentVersion
@@ -1520,7 +1553,6 @@ export const graphql = {
     query plansByApiFront ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $apiId: String!) {
       plansByApi (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, apiId : $apiId) {
         plans {
-          _deleted
           _id
           _tenant
           aggregationApiKeysSecurity
@@ -1542,6 +1574,7 @@ export const graphql = {
           maxPerMonth
           includedRequestsPerMonth
           maxPerSecond
+          metadata
           otoroshiTarget {
             otoroshiSettings
             authorizedEntities {
@@ -1878,7 +1911,51 @@ export const graphql = {
           keyring {
             _id
             customName
-            subscriptionsCount
+            apiKey {
+              clientName
+            }
+          }
+        }
+        total
+      }
+    }
+    `,
+  getKeyringSubscriptions: `
+    query getKeyringSubscriptions ($keyringId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      keyringSubscriptions (id: $keyringId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
+        subscriptions {
+          _id
+          lastUsage
+          plan {
+            _id
+            customName
+            costPerMonth
+          }
+          team {
+            _id
+            name
+            type
+          }
+          createdAt
+          validUntil
+          api {
+            _id
+            name
+          }
+          customName
+          enabled
+          state
+          tags
+          metadata
+          customMetadata
+          customMaxPerSecond
+          customMaxPerDay
+          customMaxPerMonth
+          customReadOnly
+          adminCustomName
+          keyring {
+            _id
+            customName
             apiKey {
               clientName
             }
@@ -1889,19 +1966,21 @@ export const graphql = {
     }
     `,
   getApiKeyrings: `
-    query getApiKeyrings ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
-      keyrings (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
-        keyrings {
+    query getApiKeyrings ($apiId: String!, $teamId: String!,$filter: String, $limit: Int!, $offset: Int!) {
+      keyrings (id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset) {
+        keyringsWithSubCountAndRotation {
           _id
           customName
           enabled
           integrationToken
           bearerToken
-          subscriptionsCount
           apiKey {
             clientId
             clientSecret
             clientName
+          }
+          team {
+            name
           }
           rotation {
             enabled
@@ -1909,29 +1988,11 @@ export const graphql = {
             gracePeriod
             pendingRotation
           }
-          subscriptions {
-            _id
-            customName
-            adminCustomName
-            enabled
-            state
-            createdAt
-            validUntil
-            tags
-            plan {
-              _id
-              customName
-              autoRotation
-              costPerMonth
-            }
-            api {
-              _id
-              _humanReadableId
-              name
-              currentVersion
-            }
-          }
+          subscriptionsCount
+          isRotationLocked
+          environments
         }
+        totalFiltered
         total
       }
     }
@@ -1996,6 +2057,23 @@ export const graphql = {
               user {
                 id
                 name
+              }
+            }
+            ... on NewSubscription {
+            __typename
+              api {
+                _id
+                name
+                currentVersion
+              }
+              team {
+                _id
+                name
+                type
+              }
+              plan {
+                _id
+                customName
               }
             }
             ... on ApiSubscription {
@@ -2719,6 +2797,39 @@ export const fetchOAuthConfiguration = (
   });
 };
 
+export const getRemoteCatalogs = (tenantId: string): PromiseWithError<Array<IRemoteCatalog>> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`);
+export const getRemoteCatalogSettings = (
+  tenantId: string
+): PromiseWithError<IRemoteCatalogSettings> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_settings`);
+export const createRemoteCatalog = (
+  tenantId: string,
+  catalog: Partial<IRemoteCatalog>
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`, {
+    method: 'POST',
+    body: JSON.stringify(catalog),
+  });
+export const updateRemoteCatalog = (
+  tenantId: string,
+  catalog: IRemoteCatalog
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalog._id}`, {
+    method: 'PUT',
+    body: JSON.stringify(catalog),
+  });
+export const regenerateRemoteCatalogToken = (
+  tenantId: string,
+  catalogId: string
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_regenerate-token`, {
+    method: 'POST',
+  });
+export const deleteRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}`, {
+    method: 'DELETE',
+  });
 export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
 export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
@@ -2728,4 +2839,13 @@ export const testRemoteCatalog = (tenantId: string, catalogId: string) =>
 export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, {
     method: 'POST',
+  });
+export const loadResources = (
+  tenantId: string,
+  files: Array<{ path: string; content: string }>,
+  dryRun: boolean
+) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_load?dryRun=${dryRun}`, {
+    method: 'POST',
+    body: JSON.stringify(files),
   });

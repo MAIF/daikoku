@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import { CopyPlus, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CopyPlus, Download, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -52,6 +52,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import { useExportEntity } from '../../utils/useExportEntity';
 import { CmsViewerByPath } from "../CmsViewer";
 
 type Option = {
@@ -916,6 +917,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const { translate, language } = useContext(I18nContext);
   const queryClient = useQueryClient();
+  const { canExport, exportEntity } = useExportEntity();
 
   const userCanUpdatePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
   const usagePlansFetchData: FetchData<IUsagePlanGQL> = ({ limit, offset, filters, sorting }) =>
@@ -1388,7 +1390,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
       authorizedTeams.map((t) => t._id),
       props.subscriptions
         .filter((_) => !plan.allowMultipleKeys)
-        .filter((f) => !f._deleted)
         .map((s) => s.team)
     );
 
@@ -1435,7 +1436,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
                 pendingTeams={props.inProgressDemands.map((s) => s.team)}
                 acceptedTeams={props.subscriptions
-                  .filter((f) => !f._deleted)
                   .filter(s => s.plan === plan._id)
                   .map((subs) => subs.team)}
                 allowMultipleDemand={plan.allowMultipleKeys}
@@ -1619,7 +1619,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 "no-dot-in-metadata",
                 translate("constraints.test.no.dot.in.metadata.key"),
                 (metadata) => {
-                  return Object.keys(metadata).every(key => !key.includes('.'))
+                  return Object.keys(metadata || {}).every(key => !key.includes('.'))
                 })
             ]
           },
@@ -1801,7 +1801,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const columnHelper = createColumnHelper<DynamicTableFeatures, IUsagePlanGQL>();
   const columns = useMemo(() => {
     return [
-      columnHelper.display({
+      ...(connectedUser.isGuest ? [] : [columnHelper.display({
         meta: {
           hidden: !multiPlanSubscriptionEnabled
         },
@@ -1821,7 +1821,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             onChange={row.getToggleSelectedHandler()}
           />
         ),
-      }),
+      })]),
       columnHelper.display({
         id: 'plan',
         meta: {
@@ -2067,6 +2067,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
                               : translate('Duplicate plan')}
                           </button>)
                         }
+                        {canExport && (
+                          <button
+                            className="dropdown-item d-flex gap-1 align-items-center"
+                            onClick={() => exportEntity('usage-plan', plan._id)}>
+                            <Download size={16} />
+                            {translate('remote-catalog.exportEntity.button')}
+                          </button>
+                        )}
                         <button
                           className="dropdown-item d-flex gap-1 align-items-center"
                           onClick={() => actions(plan).deleteWithConfirm()}
@@ -2199,7 +2207,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                                 content: (
                                   <SubscriptionResultForm
                                     close={() => close()}
-                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/apikeys?team=${teamId}`}
+                                    url={`/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/keyrings?team=${teamId}`}
                                     teamName={teamName}
                                     requests={promises}
                                   />
@@ -2263,8 +2271,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             },
           },
         ]}
-        toolbar={
-          <>
+        toolbar={userCanUpdatePlan && <>
             <button
               type='button'
               onClick={() => createNewPlan()}
@@ -2273,11 +2280,11 @@ export const ApiPricing = (props: ApiPricingProps) => {
               <p className="m-0">{
                 tenant.display === 'environment' ?
                   translate('api.pricings.creation.environment.button.label') :
-                  translate('api.pricings.creation.plan.button.label'
-                  )}</p>
+                  translate('api.pricings.creation.plan.button.label')
+              }</p>
             </button>
           </>
-        }
+          }
       />
     </>
   );

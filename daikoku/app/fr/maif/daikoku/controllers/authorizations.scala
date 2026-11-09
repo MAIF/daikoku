@@ -292,8 +292,7 @@ object authorizations {
         ttl = FiniteDuration(10, TimeUnit.SECONDS)
       )
       env.dataStore.teamRepo
-        .forTenant(tenant)
-        .findOneNotDeleted(Json.obj("type" -> "Admin"))
+        .findAdminTeam(tenant.id)
         .flatMap {
           case _ if ctx.user.isDaikokuAdmin =>
             ctx.setCtxValue("tenant.id", tenant.id.value)
@@ -482,8 +481,7 @@ object authorizations {
         .flatMap {
           case Some(tenant) =>
             env.dataStore.teamRepo
-              .forTenant(tenant)
-              .findOneNotDeleted(Json.obj("type" -> "Admin"))
+              .findAdminTeam(tenant.id)
               .flatMap {
                 case Some(team) if ctx.user.isDaikokuAdmin =>
                   ctx.setCtxValue("tenant.id", tenant.id.value)
@@ -1048,10 +1046,7 @@ object authorizations {
           env.dataStore.teamRepo
             .forTenant(ctx.tenant.id)
             .findByIdOrHrId(teamId)
-        tenantAdminTeam <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("type" -> "Admin"))
+        tenantAdminTeam <- env.dataStore.teamRepo.findAdminTeam(ctx.tenant.id)
       } yield {
         (team, tenantAdminTeam) match {
           case (Some(team), _) if ctx.user.isDaikokuAdmin =>
@@ -1146,10 +1141,7 @@ object authorizations {
           env.dataStore.teamRepo
             .forTenant(ctx.tenant.id)
             .findByIdOrHrId(teamId)
-        tenantAdminTeam <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findOneNotDeleted(Json.obj("type" -> "Admin"))
+        tenantAdminTeam <- env.dataStore.teamRepo.findAdminTeam(ctx.tenant.id)
       } yield {
         (team, tenantAdminTeam) match {
           case (Some(team), _) if ctx.user.isDaikokuAdmin =>

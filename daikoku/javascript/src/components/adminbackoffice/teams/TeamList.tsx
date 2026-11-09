@@ -5,7 +5,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import Pagination from "../../utils/Pagination";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import {Pen, Plus, Trash2, Users} from 'lucide-react';
+import {Download, Pen, Plus, Trash2, Users} from 'lucide-react';
 
 import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
@@ -14,6 +14,7 @@ import * as Services from '../../../services';
 import { IAuthorizedEntities, IOtoroshiSettings, ISimpleOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { AvatarWithAction, Can, tenant as TENANT, manage } from '../../utils';
+import { useExportEntity } from '../../utils/useExportEntity';
 import { GlobalContext } from '../../../contexts/globalContext';
 
 export const TeamList = () => {
@@ -23,6 +24,7 @@ export const TeamList = () => {
   const { openFormModal, alert } = useContext(ModalContext);
   const queryClient = useQueryClient();
   const { customGraphQLClient } = useContext(GlobalContext);
+  const { exportEntity } = useExportEntity();
 
   const [search, setSearch] = useState<string>("");
   const limit = 11;
@@ -262,6 +264,12 @@ export const TeamList = () => {
         tooltip: translate('Edit team'),
         ariaLabel: translate('Edit team'),
         actionLabel: translate('Create')
+      },
+      {
+        action: () => exportEntity('team', team._id),
+        icon: <Download />,
+        tooltip: translate('remote-catalog.exportEntity.button'),
+        ariaLabel: translate('remote-catalog.exportEntity.button'),
       },
     ];
 

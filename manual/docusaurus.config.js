@@ -11,7 +11,7 @@ const redocusaurus = [
   {
     specs: [
       {
-        spec: 'static/openapi/admin-api-openapi.json',
+        spec: 'static/openapi/admin-api-openapi.yaml',
         route: '/openapi',
       },
     ],

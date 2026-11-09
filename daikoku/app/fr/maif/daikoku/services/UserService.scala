@@ -31,7 +31,7 @@ class UserService(
     for {
       _ <- EitherT.fromOptionF(
         env.dataStore.userRepo
-          .findByIdNotDeleted(user.id)
+          .findById(user.id)
           .map(r => r.fold(().some)(_ => None)),
         AppError.EntityConflict("user id")
       )
@@ -69,14 +69,7 @@ class UserService(
 
     EitherT.liftF[Future, AppError, User](for {
       maybePersonalTeam <-
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "type" -> TeamType.Personal.name,
-              "users.userId" -> userToSave.id.asJson
-            )
-          )
+        env.dataStore.teamRepo.findPersonalTeam(tenant.id, userToSave.id)
       _ <-
         env.dataStore.userRepo
           .save(userToSave.copy(password = hash))

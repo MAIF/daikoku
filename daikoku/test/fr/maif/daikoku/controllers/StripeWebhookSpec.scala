@@ -140,7 +140,7 @@ class StripeWebhookSpec()
   private def notifications(tenant: Tenant): Seq[Notification] =
     daikokuComponents.env.dataStore.notificationRepo
       .forTenant(tenant)
-      .findAllNotDeleted()
+      .findAll()
       .futureValue
 
   private def payablePlan(tenant: Tenant): PaymentSettings.Stripe = {

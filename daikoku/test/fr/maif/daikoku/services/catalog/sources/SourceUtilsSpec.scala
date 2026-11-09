@@ -85,7 +85,7 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
       entities.map(_.source) mustBe Seq("src/a.json", "src/b.json")
     }
 
-    "skip a path whose fetch fails and keep the others" in {
+    "reject the whole listing when a path cannot be fetched, naming the path" in {
       val result = resolve(
         Json.arr("a.json", "missing.json"),
         {
@@ -94,7 +94,36 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
         }
       )
 
-      result.value.map(_.id) mustBe Seq("team-a")
+      result.left.value.map(e => (e.source, e.message)) mustBe Seq(
+        ("src/missing.json", "404")
+      )
+    }
+
+    "reject the whole listing when a listed file is invalid" in {
+      val result = resolve(
+        Json.arr("a.json", "broken.json"),
+        {
+          case "a.json" => Future.successful(Right(teamJson("team-a")))
+          case _        => Future.successful(Right("""{"kind":"team"}"""))
+        }
+      )
+
+      result.left.value.map(e => (e.source, e.message)) mustBe Seq(
+        ("src/broken.json", "Missing required field '_id'")
+      )
+    }
+
+    "reject the whole listing when a glob cannot be resolved" in {
+      val result = resolve(
+        Json.arr("a.json", "teams/*.json"),
+        _ => Future.successful(Right(teamJson("team-a"))),
+        resolveGlob =
+          Some(_ => Future.successful(Left(Json.obj("error" -> "tree 500"))))
+      )
+
+      result.left.value.map(e => (e.source, e.message)) mustBe Seq(
+        ("src/teams/*.json", "tree 500")
+      )
     }
 
     "expand glob entries through the injected glob resolver" in {
@@ -105,7 +134,9 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
       val result = resolve(
         Json.arr("teams/*.json"),
         path => Future.successful(Right(contents(path))),
-        resolveGlob = Some(_ => Future.successful(Right(Seq("teams/a.json", "teams/b.json"))))
+        resolveGlob = Some(_ =>
+          Future.successful(Right(Seq("teams/a.json", "teams/b.json")))
+        )
       )
 
       result.value.map(_.id) mustBe Seq("team-a", "team-b")
@@ -122,7 +153,7 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
       )
 
       fetched mustBe Seq("teams/*.json")
-      result.value mustBe empty
+      result.left.value.map(_.source) mustBe Seq("src/teams/*.json")
     }
   }
 
@@ -144,8 +175,13 @@ class SourceUtilsSpec extends PlaySpec with OptionValues with EitherValues {
 
     "resolve a remote glob against a listing of files, relative to a base path" in {
       val files = Seq("base/teams/a.json", "base/teams/b.yml", "other/c.json")
-      SourceUtils.resolveRemoteGlob(files, "base", "teams/*.json") mustBe Seq("teams/a.json")
-      SourceUtils.resolveRemoteGlob(files, "", "**/*.json") mustBe Seq("base/teams/a.json", "other/c.json")
+      SourceUtils.resolveRemoteGlob(files, "base", "teams/*.json") mustBe Seq(
+        "teams/a.json"
+      )
+      SourceUtils.resolveRemoteGlob(files, "", "**/*.json") mustBe Seq(
+        "base/teams/a.json",
+        "other/c.json"
+      )
     }
 
     "recognize entity files and file extensions" in {

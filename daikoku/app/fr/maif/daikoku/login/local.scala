@@ -64,8 +64,7 @@ class LocalLoginSupport(env: Env, userService: UserService) {
   ): EitherT[Future, AppError, User] = {
     EitherT
       .fromOptionF(
-        env.dataStore.userRepo
-          .findOne(Json.obj("_deleted" -> false, "email" -> username.trim)),
+        env.dataStore.userRepo.findByEmail(username.trim),
         AppError.Unauthorized: AppError
       )
       .flatMap { user =>

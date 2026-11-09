@@ -111,7 +111,7 @@ class LoginControllerSpec()
         val userFetch = Await
           .result(
             daikokuComponents.env.dataStore.userRepo
-              .findByIdNotDeleted(userTeamUserId),
+              .findById(userTeamUserId),
             5.seconds
           )
         userFetch.get.failedLoginAttempts mustBe num
@@ -178,7 +178,7 @@ class LoginControllerSpec()
 
       val userFetch = Await.result(
         daikokuComponents.env.dataStore.userRepo
-          .findByIdNotDeleted(userTeamUserId),
+          .findById(userTeamUserId),
         5.seconds
       )
       userFetch.get.failedLoginAttempts mustBe 0
@@ -273,7 +273,7 @@ class LoginControllerSpec()
 
       val userFetch = Await.result(
         daikokuComponents.env.dataStore.userRepo
-          .findByIdNotDeleted(userTeamUserId),
+          .findById(userTeamUserId),
         5.seconds
       )
       userFetch.get.failedLoginAttempts mustBe 0
@@ -347,7 +347,7 @@ class LoginControllerSpec()
         val userFetch = Await
           .result(
             daikokuComponents.env.dataStore.userRepo
-              .findByIdNotDeleted(userTeamUserId),
+              .findById(userTeamUserId),
             5.seconds
           )
         userFetch.get.failedLoginAttempts mustBe num
@@ -424,7 +424,7 @@ class LoginControllerSpec()
 
       val userFetch = Await.result(
         daikokuComponents.env.dataStore.userRepo
-          .findByIdNotDeleted(userTeamUserId),
+          .findById(userTeamUserId),
         5.seconds
       )
       userFetch.get.failedLoginAttempts mustBe 0

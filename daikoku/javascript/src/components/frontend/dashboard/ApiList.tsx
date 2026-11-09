@@ -29,7 +29,7 @@ export const ApiList = (props: ApiListProps) => {
 
   const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
-  const navigate = useNavigate()
+
   const queryClient = useQueryClient()
 
   const myTeamsRequest = useQuery({
@@ -129,57 +129,33 @@ export const ApiList = (props: ApiListProps) => {
         cell: (info) => {
           const api = info.row.original.api
           const apiState = api.state
-          /*
-          * {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
-              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({
-              key: 'dashboard.api.list.deprecated.subscription.tag.label',
-              replacements: [activeCount.toString()]}
-            )}
-          </span>}
-          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
-              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({
-              key: 'dashboard.api.list.blocked.subscription.tag.label',
-              replacements: [activeCount.toString()]}
-            )}
-          </span>}
-          * */
           return (
             <div className="d-flex gap-1 status">
               {(apiState === 'created') && (
-                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.created')}</span>
+                <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.created')}
                 </span>
               )}
               {(apiState === 'published') && (
-                <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.published')}</span>
+                <span className="badge --success --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.published')}
                 </span>
               )}
               {apiState === 'deprecated' && (
-                <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}
-                  onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-                  <span>{translate('api.deprecated')}</span>
+                <span className="badge --warning --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
+                  {translate('api.deprecated')}
                 </span>
               )}
               {(apiState === 'blocked') && (
                 <span className="badge --inactive --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
-                  <span>{translate('api.blocked')}</span>
-                </span>
-              )}
-              {!apiState && (
-                <span className="badge --info --state d-flex align-items-center gap-2" style={{ border: 'none' }}>
-                  <span>{'Stateless'}</span>
+                  {translate('api.blocked')}
                 </span>
               )}
             </div>
           )
         },
       }),
-      columnHelper.display({
+      ...(connectedUser.isGuest ? [] : [columnHelper.display({
         id: translate('dashboard.apis.table.header.label.subscriptions'),
         meta: { className: 'subscription-cell d-flex gap-2 align-items-center', title: translate('dashboard.apis.table.header.label.subscriptions'), size: 15 },
         cell: (info) => {
@@ -188,7 +164,7 @@ export const ApiList = (props: ApiListProps) => {
           const api = info.row.original.api
           return (
             <div className="d-flex align-items-center gap-1">
-              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}>
+              <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/keyrings`}>
                 {`${subscriptionCount} ${translate({ key: 'dashboard.apis.table.header.label.subscriptions.cells' })}${subscriptionCount > 1 || subscriptionCount === 0 ? 's' : ''}`}
               </Link>
               {subscriptionDemandsCount > 0 && (
@@ -246,7 +222,7 @@ export const ApiList = (props: ApiListProps) => {
             )
           }
         },
-      }),
+      })]),
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTeamsRequest.data, connectedUser.starredApis])
@@ -299,15 +275,18 @@ export const ApiList = (props: ApiListProps) => {
       labelKey: 'dashboard.filters.tag.label',
       labelKeyAll: 'dashboard.filters.all.tags.label',
       options: arrayStringToTOps(tags),
-    },
-    {
+    }
+  ]
+
+  if(!connectedUser.isGuest) {
+    filters.push(    {
       id: 'subscribedOnly',
       type: 'boolean',
       style: 'checkbox',
       onLabel: translate('dashboard.filters.subscribe.apis.only.label'),
       offLabel: translate('dashboard.filters.all.apis.label'),
-    },
-  ]
+    })
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────
 

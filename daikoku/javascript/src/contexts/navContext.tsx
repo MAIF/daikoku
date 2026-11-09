@@ -170,10 +170,10 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
             },
           },
           viewApiKey: canReadApiKey && {
-            label: translate({ key: 'API key', plural: true }),
-            action: () => navigateTo('apikeys'),
+            label: translate({ key: 'navbar.keyrings.label', plural: true }),
+            action: () => navigateTo('keyrings'),
             className: {
-              active: currentTab === 'apikeys',
+              active: currentTab === 'keyrings',
             },
           }
         },
@@ -435,6 +435,11 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
                 label: translate('remote-catalog.title'),
                 action: () => navigateTo('settings/remote-catalogs'),
                 className: { active: subTab === 'remote-catalogs' },
+              },
+              resourceLoader: {
+                label: translate('resource-loader.title'),
+                action: () => navigateTo('settings/resource-loader'),
+                className: { active: subTab === 'resource-loader' },
               },
             },
           },

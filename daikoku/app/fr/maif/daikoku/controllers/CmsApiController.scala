@@ -150,8 +150,7 @@ class CmsApiController(
                   .contains(page.name)
               ) {
                 env.dataStore.cmsRepo
-                  .forTenant(ctx.tenant)
-                  .delete(Json.obj("path" -> page.path()))
+                  .deleteByPath(ctx.tenant.id, page.path())
                   .map(_ =>
                     env.dataStore.cmsRepo
                       .forTenant(ctx.tenant)
@@ -167,8 +166,7 @@ class CmsApiController(
                   )
               } else if (path.startsWith("/customization/")) {
                 env.dataStore.cmsRepo
-                  .forTenant(ctx.tenant)
-                  .delete(Json.obj("path" -> page.path()))
+                  .deleteByPath(ctx.tenant.id, page.path())
                   .map(_ =>
                     env.dataStore.cmsRepo
                       .forTenant(ctx.tenant)
@@ -216,7 +214,7 @@ class CmsApiController(
   def version() =
     CmsApiAction.async { ctx =>
       entityStore(ctx.tenant, env.dataStore)
-        .exists(Json.obj("_id" -> "daikoku_metadata"))
+        .exists("daikoku_metadata")
         .map {
           case true  => Ok(Json.obj())
           case false => NotFound
@@ -313,7 +311,7 @@ class CmsApiController(
   def findAll(): Action[AnyContent] =
     CmsApiAction.async { ctx =>
       entityStore(ctx.tenant, env.dataStore)
-        .findAllNotDeleted()
+        .findAll()
         .map(entities => Ok(JsArray(entities.map(_.asJson))))
     }
 
@@ -329,7 +327,7 @@ class CmsApiController(
 
   def getAllApis() =
     CmsApiAction.async { ctx =>
-      apiService.getApis(ctx, true)
+      apiService.getApis(ctx)
     }
 
   def getLoginToken() =

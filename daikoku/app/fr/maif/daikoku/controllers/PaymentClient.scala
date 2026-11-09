@@ -95,7 +95,7 @@ class PaymentClient(
   ): EitherT[Future, AppError, JsValue] = {
     EitherT
       .fromOptionF(
-        env.dataStore.tenantRepo.findByIdNotDeleted(tenantId),
+        env.dataStore.tenantRepo.findById(tenantId),
         AppError.TenantNotFound
       )
       .flatMap(
@@ -256,29 +256,30 @@ class PaymentClient(
       tenant: Tenant,
       subscriptionDemand: SubscriptionDemand,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String],
+      host: Option[String]
   ): EitherT[Future, AppError, Result] = {
     for {
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.api),
+          .findById(subscriptionDemand.api),
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF(
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.plan),
+          .findById(subscriptionDemand.plan),
         AppError.PlanNotFound
       )
       apiTeam <- EitherT.fromOptionF(
-        env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(api.team),
+        env.dataStore.teamRepo.forTenant(tenant).findById(api.team),
         AppError.TeamNotFound
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscriptionDemand.team),
+          .findById(subscriptionDemand.team),
         AppError.TeamNotFound
       )
       _ <- EitherT.fromEither[Future](if (team.verified) {
@@ -287,7 +288,7 @@ class PaymentClient(
         Left(AppError.TeamNotVerified)
       })
       user <- EitherT.fromOptionF(
-        env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from),
+        env.dataStore.userRepo.findById(subscriptionDemand.from),
         AppError.UserNotFound()
       )
       settings <- EitherT.fromOption[Future](
@@ -304,7 +305,8 @@ class PaymentClient(
         settings,
         user,
         step,
-        from
+        from,
+        host
       )
     } yield Ok(Json.obj("checkoutUrl" -> checkoutUrl))
   }
@@ -319,7 +321,8 @@ class PaymentClient(
       settings: PaymentSettings,
       user: User,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String] = None,
+      host: Option[String] = None
   ) = {
     settings match {
       case p: PaymentSettings.Stripe =>
@@ -336,7 +339,8 @@ class PaymentClient(
               p,
               user,
               step,
-              from
+              from,
+              host
             )
           case None =>
             EitherT.leftT[Future, String](
@@ -576,7 +580,8 @@ class PaymentClient(
       settings: PaymentSettings.Stripe,
       user: User,
       step: SubscriptionDemandStep,
-      from: Option[String] = None
+      from: Option[String] = None,
+      host: Option[String] = None
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, String] = {
@@ -597,7 +602,8 @@ class PaymentClient(
         val callback = from.getOrElse(
           env.getDaikokuUrl(
             tenant,
-            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing"
+            s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing",
+            host
           )
         )
 
@@ -618,11 +624,13 @@ class PaymentClient(
             .toLowerCase,
           "success_url" -> env.getDaikokuUrl(
             tenant,
-            s"/informations?message=subscription-payment-received&team=${subscriptionDemand.team.value}&demand=${subscriptionDemand.id.value}"
+            s"/informations?message=subscription-payment-received&team=${subscriptionDemand.team.value}&demand=${subscriptionDemand.id.value}",
+            host
           ),
           "cancel_url" -> env.getDaikokuUrl(
             tenant,
-            s"/api/subscription/_abort?token=$cipheredValidationToken&callback=$callback"
+            s"/api/subscription/_abort?token=$cipheredValidationToken&callback=$callback",
+            host
           )
         )
 
@@ -741,7 +749,7 @@ class PaymentClient(
       case (Some(paymentSettings), Some(infos)) =>
         (for {
           tenant <- EitherT.fromOptionF(
-            env.dataStore.tenantRepo.findByIdNotDeleted(consumption.tenant),
+            env.dataStore.tenantRepo.findById(consumption.tenant),
             AppError.TenantNotFound
           )
           setting <- EitherT.fromOption[Future](
@@ -1168,7 +1176,7 @@ class PaymentClient(
       case (Some(paymentSettings), Some(infos)) =>
         for {
           tenant <- EitherT.fromOptionF(
-            env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
+            env.dataStore.tenantRepo.findById(subscription.tenant),
             AppError.TenantNotFound
           )
           setting <- EitherT.fromOption[Future](

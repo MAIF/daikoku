@@ -319,8 +319,9 @@ class StripeBillingSpec()
   private def checkoutNotifications(): Seq[Notification] =
     daikokuComponents.env.dataStore.notificationRepo
       .forTenant(stripeTenant)
-      .findNotDeleted(Json.obj("action.type" -> "CheckoutForSubscription"))
+      .findAll()
       .futureValue
+      .filter(_.action.isInstanceOf[NotificationAction.CheckoutForSubscription])
 
   private def sentMails(): Seq[JsValue] =
     daikokuComponents.env.wsClient
@@ -333,7 +334,7 @@ class StripeBillingSpec()
   private def pendingDemandId(): String =
     daikokuComponents.env.dataStore.subscriptionDemandRepo
       .forTenant(stripeTenant)
-      .findAllNotDeleted()
+      .findAll()
       .futureValue
       .head
       .id
@@ -412,13 +413,13 @@ class StripeBillingSpec()
   private def subscriptions(): Seq[ApiSubscription] =
     daikokuComponents.env.dataStore.apiSubscriptionRepo
       .forTenant(stripeTenant)
-      .findAllNotDeleted()
+      .findAll()
       .futureValue
 
   private def currentSubscription(): ApiSubscription =
     daikokuComponents.env.dataStore.apiSubscriptionRepo
       .forTenant(stripeTenant)
-      .findAllNotDeleted()
+      .findAll()
       .futureValue
       .head
 
@@ -432,7 +433,7 @@ class StripeBillingSpec()
   private def currentConsumption(): ApiKeyConsumption =
     daikokuComponents.env.dataStore.consumptionRepo
       .forTenant(stripeTenant)
-      .findAllNotDeleted()
+      .findAll()
       .futureValue
       .head
 
@@ -627,7 +628,7 @@ class StripeBillingSpec()
 
       val validator = daikokuComponents.env.dataStore.stepValidatorRepo
         .forTenant(stripeTenant)
-        .findAllNotDeleted()
+        .findAll()
         .futureValue
         .head
       val token = encrypt(
@@ -1012,7 +1013,7 @@ class StripeBillingSpec()
       val asTenantAdmin = paymentEnabledAs(tenantAdmin)
       asTenantAdmin.status mustBe 400
       (asTenantAdmin.json \ "missing").as[Seq[String]] mustBe Seq(
-        "DAIKOKU_STATS_SYNC_CRON",
+        "DAIKOKU_APIKEYS_STATS_JOB_ENABLED",
         "DAIKOKU_STRIPE_RECONCILIATION_CRON"
       )
 

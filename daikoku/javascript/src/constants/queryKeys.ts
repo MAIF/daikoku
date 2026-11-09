@@ -5,4 +5,19 @@ export const QUERY_KEYS = {
   subscriptionDemand: (teamId: string, demandId: string) => ['subscription-demand', teamId, demandId] as const,
   visibleApiById: (apiId: string) => ['visible-api', apiId] as const,
   paymentEnabled: () => ['payment-enabled'] as const,
+  remoteCatalogs: (tenantId: string) => ['remote-catalogs', tenantId],
+  remoteCatalogSettings: (tenantId: string) => ['remote-catalog-settings', tenantId],
+  remoteCatalogHistory: (tenantId: string, catalogId: string) => [
+    'remote-catalog-history',
+    tenantId,
+    catalogId,
+  ],
+  keyringSubscriptions: (keyringId: string) => ['keyring-subscription', keyringId],
+  apiKeyringRows: (teamId: string, apiId: string, entryId: string) => [
+    'api-keyring-rows',
+    teamId,
+    apiId,
+    entryId,
+  ],
+  apiKeyrings: (teamId: string, apiId: string) => ['keyrings', teamId, apiId],
 } as const;

@@ -116,8 +116,11 @@ each paid plan gets its own meter, fed with the calls of its subscribers.
 | `daikoku.verifierJob.key`<br />(`DAIKOKU_VERIFIER_JOB_ACCESS_KEY`) | string | "secret" | Access key to run otoroshi entities verifier job |
 | `daikoku.verifierJob.cronExpression`<br />(`DAIKOKU_VERIFIER_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
 | `daikoku.verifierJob.interval`<br />(`DAIKOKU_VERIFIER_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
-| `daikoku.stats.sync.cron`<br />(`DAIKOKU_STATS_SYNC_CRON`) | boolean | false | Value to define if apikey consumption is collected by cron. This job is what reports usage to Stripe for pay-per-use plans |
-| `daikoku.stats.sync.interval` | duration | 1hour | **Only used when `cron = false`**. Delay in milliseconds between each consumption collection |
+| `daikoku.apikeysStatsJob.enabled`<br />(`DAIKOKU_APIKEYS_STATS_JOB_ENABLED`) | boolean | false | Value to define if the job that collects apikey consumption is enabled. This job is what reports usage to Stripe for pay-per-use plans |
+| `daikoku.apikeysStatsJob.mode`<br />(`DAIKOKU_APIKEYS_STATS_JOB_MODE`) | string | "interval" | scheduling strategy: `interval` (fixed delay loop) or `cron` (cron expression) |
+| `daikoku.apikeysStatsJob.key`<br />(`DAIKOKU_APIKEYS_STATS_JOB_ACCESS_KEY`) | string | "secret" | Access key to run the apikey consumption job |
+| `daikoku.apikeysStatsJob.cronExpression`<br />(`DAIKOKU_APIKEYS_STATS_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
+| `daikoku.apikeysStatsJob.interval`<br />(`DAIKOKU_APIKEYS_STATS_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
 | `daikoku.remoteCatalogJob.enabled`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_ENABLED`) | boolean | false | Value to define if the job that synchronizes remote catalogs is enabled |
 | `daikoku.remoteCatalogJob.mode`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_MODE`) | string | "interval" | scheduling strategy: `interval` (fixed delay loop) or `cron` (cron expression) |
 | `daikoku.remoteCatalogJob.key`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_KEY`) | string | "secret" | Access key to run the remote catalog job |
@@ -126,14 +129,13 @@ each paid plan gets its own meter, fed with the calls of its subscribers.
 
 ## Daikoku init
 
-| name | type | default value | description |
-|------|:----:|---------------|-------------|
-| `daikoku.init.host`<br />(`DAIKOKU_INIT_HOST`) | String | "localhost" | |
-| `daikoku.init.admin.name`<br />(`DAIKOKU_INIT_ADMIN_NAME`) | String | "Daikoku admin" | Daikoku default admin name |
-| `daikoku.init.admin.email`<br />(`DAIKOKU_INIT_ADMIN_EMAIL`) | String | "admin@daikoku.io" | Daikoku default admin email |
-| `daikoku.init.admin.password`<br />(`DAIKOKU_INIT_ADMIN_PASSWORD`) | String | | Daikoku default admin password |
-| `daikoku.init.data.from`<br />(`DAIKOKU_INIT_DATA_FROM`) | string | | A file path or a URL to a Daikoku export file. If the datastore is empty on startup, this file will be used to import data to the empty DB |
+The `daikoku.init.*` settings (`DAIKOKU_INIT_*` environment variables) bootstrap an **empty datastore**. They can create the initial administrator and configure the default tenant's identity, security, mailer, S3 storage, Otoroshi connection, authentication and audit destinations, or import an existing export instead.
 
+:::warning Bootstrap only
+These settings do not update an existing tenant. Once initialized, tenant settings are stored in the database and must be changed through the administration UI or API, not by restarting Daikoku with new initialization values.
+:::
+
+See [Initialize Daikoku](./initialization.md) for the complete variable reference, defaults, examples and Helm/GitOps lifecycle.
 
 ## DB configuration
 
@@ -248,14 +250,11 @@ daikoku {
     }
   }
 
-  stats {
-    sync {
-      interval = 3600000
-      cron = true
-    }
-    call {
-      interval = 600000
-    }
+  apikeysStatsJob {
+    enabled = false
+    mode = "interval"
+    key = "secret"
+    interval = 3600000
   }
 
   audit {

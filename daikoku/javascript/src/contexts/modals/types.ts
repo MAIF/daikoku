@@ -26,6 +26,7 @@ export interface IBaseModalProps {
 export type IRightPanelProps = {
   title: string;
   content: JSX.Element;
+  onBack?: () => void;
 };
 
 export type TModalContext = {
@@ -92,7 +93,7 @@ export interface IFormModalProps<T> {
   value?: T;
   schema: Schema;
   flow?: Flow;
-  onSubmit: (x: T) => void;
+  onSubmit: (x: T) => void | Promise<string | void>;
   options?: Option;
   actionLabel: string;
   noClose?: boolean;

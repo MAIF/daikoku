@@ -82,10 +82,10 @@ async function bulkInsert(client, table, rows) {
   const CHUNK = 500;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
-    const values = chunk.map((r, idx) => `($${idx * 3 + 1}, $${idx * 3 + 2}::jsonb, $${idx * 3 + 3})`).join(", ");
-    const params = chunk.flatMap(r => [r.id, JSON.stringify(r.content), false]);
+    const values = chunk.map((r, idx) => `($${idx * 2 + 1}, $${idx * 2 + 2}::jsonb)`).join(", ");
+    const params = chunk.flatMap(r => [r.id, JSON.stringify(r.content)]);
     await client.query(
-      `INSERT INTO ${table} (_id, content, _deleted) VALUES ${values} ON CONFLICT (_id) DO NOTHING`,
+      `INSERT INTO ${table} (_id, content) VALUES ${values} ON CONFLICT (_id) DO NOTHING`,
       params
     );
   }
@@ -148,7 +148,6 @@ const teamRows = Array.from({ length: NB_TEAMS }, (_, i) => ({
     _id: `seed-team-${i}`,
     _humanReadableId: `seed-team-${i}`,
     _tenant: TENANT_ID,
-    _deleted: false,
     type: "Organization",
     name: `Seed Team ${i}`,
     description: "",
@@ -202,7 +201,6 @@ for (let i = 0; i < NB_APIS; i++) {
       content: {
         _id: planId,
         _tenant: TENANT_ID,
-        _deleted: false,
         customName: `plan-${p}`,
         customDescription: "",
         otoroshiTarget: {
@@ -236,7 +234,6 @@ for (let i = 0; i < NB_APIS; i++) {
       _id: apiId,
       _humanReadableId: apiId,
       _tenant: TENANT_ID,
-      _deleted: false,
       team: teamRows[i % NB_TEAMS].id,
       name: `Seed API ${i}`,
       smallDescription: "",
@@ -306,7 +303,6 @@ for (let t = 0; t < NB_TEAMS; t++) {
     const baseSub = (id, apiId, planId, customName, extra = {}) => ({
       _id: id,
       _tenant: TENANT_ID,
-      _deleted: false,
       api: apiId,
       plan: planId,
       tags: [],

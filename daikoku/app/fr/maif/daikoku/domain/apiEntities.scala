@@ -199,7 +199,6 @@ case class UsagePlan(
     id: UsagePlanId,
     tenant: TenantId,
     customName: String,
-    deleted: Boolean = false,
     maxPerSecond: Option[Long] = None,
     maxPerDay: Option[Long] = None,
     maxPerMonth: Option[Long] = None,
@@ -298,6 +297,19 @@ case class UsagePlan(
       documentation.map(d => d.copy(pages = d.pages ++ pages))
     )
 
+  def checkEnvironment(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] =
+    tenant.display match {
+      case TenantDisplay.Environment =>
+        EitherT.cond[Future](
+          tenant.environments.contains(customName),
+          (),
+          AppError.EntityConflict("Plan custom name")
+        )
+      case _ => EitherT.pure[Future, AppError](())
+    }
+
   def checkCustomName(
       tenant: Tenant,
       plans: Seq[UsagePlan],
@@ -309,12 +321,14 @@ case class UsagePlan(
     // FIXME: check conflict with extisting name in case of creation but
     (apiVisibility, tenant.display) match {
       case (_, TenantDisplay.Environment) =>
-        EitherT.cond[Future](
-          !existingNames.contains(customName) && tenant.environments
-            .contains(customName),
-          (),
-          AppError.EntityConflict("Plan custom name")
-        )
+        for {
+          _ <- checkEnvironment(tenant)
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !existingNames.contains(customName),
+            (),
+            AppError.EntityConflict("Plan custom name")
+          )
+        } yield ()
       case _ => EitherT.pure[Future, AppError](())
     }
   }
@@ -447,40 +461,12 @@ case class ApiDocumentation(
   }
 
   def docIds() = flatDocIds(pages)
-  def fetchPages(tenant: Tenant)(implicit ec: ExecutionContext, env: Env) = {
-    env.dataStore.apiDocumentationPageRepo
-      .forTenant(tenant.id)
-      .findWithProjection(
-        Json.obj(
-          "_deleted" -> false,
-          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))
-        ),
-        Json.obj(
-          "_id" -> true,
-          "_humanReadableId" -> true,
-          "title" -> true,
-          "level" -> true,
-          "lastModificationAt" -> true,
-          "content" -> true,
-          "contentType" -> true
-        )
-      )
-      .map { list =>
-        // TODO: fetch remote content
-        pages
-          .map(page =>
-            list.find(o => (o \ "_id").as[String] == page.id.toString)
-          )
-          .collect { case Some(e) => e }
-      }
-  }
 }
 
 // "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
 case class ApiDocumentationPage(
     id: ApiDocumentationPageId,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     lastModificationAt: DateTime,
     content: String,
@@ -488,7 +474,8 @@ case class ApiDocumentationPage(
     cmsPage: Option[String] = None,
     remoteContentEnabled: Boolean = false,
     remoteContentUrl: Option[String] = None,
-    remoteContentHeaders: Map[String, String] = Map.empty[String, String]
+    remoteContentHeaders: Map[String, String] = Map.empty[String, String],
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[ApiDocumentationPage] {
   // def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = id.toString
@@ -500,7 +487,6 @@ case class ApiDocumentationPage(
 case class ApiPost(
     id: ApiPostId,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     lastModificationAt: DateTime,
     content: String
@@ -522,7 +508,6 @@ case class ApiIssue(
     id: ApiIssueId,
     seqId: Int,
     tenant: TenantId,
-    deleted: Boolean = false,
     title: String,
     tags: Set[ApiIssueTagId],
     open: Boolean,
@@ -616,14 +601,11 @@ object ApiState {
 
   }
 
-  def publishedJsonFilter: JsObject =
-    Json.obj("$in" -> Json.arr(Published.name, Deprecated.name))
 }
 
 case class Api(
     id: ApiId,
     tenant: TenantId,
-    deleted: Boolean = false,
     team: TeamId,
     name: String,
     smallDescription: String,

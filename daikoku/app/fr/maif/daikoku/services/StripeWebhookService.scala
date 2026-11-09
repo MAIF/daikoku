@@ -74,7 +74,7 @@ class StripeWebhookService(
       case Some(id) =>
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(id)
+          .findById(id)
           .flatMap {
             case None => FastFuture.successful(None)
             case Some(demand) =>
@@ -84,13 +84,12 @@ class StripeWebhookService(
                 case None => FastFuture.successful(None)
                 case Some(step) =>
                   env.dataStore.stepValidatorRepo
-                    .forTenant(tenant)
-                    .findOneNotDeleted(
-                      Json.obj(
-                        "step" -> step.id.value,
-                        "subscriptionDemand" -> demand.id.value
-                      )
+                    .findByDemandsAndStep(
+                      tenant.id,
+                      Seq(demand.id),
+                      step.id.value
                     )
+                    .map(_.headOption)
               }
           }
     }
@@ -125,7 +124,7 @@ class StripeWebhookService(
       case Some(subscription) =>
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
-          .findByIdNotDeleted(subscription.plan)
+          .findById(subscription.plan)
           .flatMap {
             case None => FastFuture.successful(())
             case Some(plan) =>
@@ -177,10 +176,7 @@ class StripeWebhookService(
       case None => FastFuture.successful(None)
       case Some(id) =>
         env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findOneNotDeleted(
-            Json.obj("thirdPartySubscriptionInformations.subscriptionId" -> id)
-          )
+          .findOneByStripeSubscriptionId(tenant.id, id)
     }
 
   private def subscriptionOfInvoice(invoice: JsValue): Option[String] =

@@ -27,7 +27,6 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  _deleted: boolean;
   lastUpdate: number;
   name: string;
   smallDescription: string;
@@ -219,7 +218,6 @@ export type IValidationStep =
 export interface IBaseUsagePlan {
   _id: string;
   _tenant: string;
-  _deleted: boolean;
   customDescription?: string;
   customName: string;
   subscriptionProcess: Array<IValidationStep>;
@@ -245,7 +243,6 @@ export interface IStripePaymentSettings extends IPaymentSettings {
 export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _tenant: string;
-  _deleted: boolean;
   aggregationApiKeysSecurity?: boolean;
   allowMultipleDemand?: string;
   allowMultipleKeys?: boolean;
@@ -323,7 +320,6 @@ export interface IDocPage {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  _deleted: boolean;
   title: string;
   lastModificationAt: number;
   content: string;
@@ -333,6 +329,7 @@ export interface IDocPage {
   remoteContentHeaders: object;
   linked?: boolean;
   cmsPage?: string;
+  metadata?: { [key: string]: string };
 }
 
 export interface IOtoroshiApiKey {
@@ -366,7 +363,6 @@ export interface IRotation {
 export interface IBaseSubscription {
   _id: string;
   _tenant: string;
-  _deleted: boolean;
   plan: string;
   team: string;
   api: string;
@@ -525,7 +521,6 @@ export interface IApiPost {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
-  _deleted: string;
   title: string;
   lastModificationAt: string;
   content: string;
@@ -544,7 +539,6 @@ export interface SubscriptionDemandStep {
 export interface ISubscriptionDemand {
   _id: string;
   _tenant: string;
-  _deleted: boolean;
   api: string;
   plan: string;
   steps: Array<SubscriptionDemandStep>;
@@ -572,7 +566,6 @@ export interface IGlobalInformations {
 
 export interface IConsumption {
   _id: string;
-  _deleted: boolean;
   _tenant: string;
   team: string;
   api: string;
@@ -617,7 +610,6 @@ export type Issue = {
   _humanReadableId: string;
   seqId: number;
   _tenant: string;
-  _deleted: boolean;
   lastModificationAt: number;
   open: boolean;
   createdAt: number;
@@ -671,7 +663,6 @@ export interface IUsagePlanGQL
   extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _tenant: string;
-  _deleted: boolean;
   aggregationApiKeysSecurity?: boolean;
   allowMultipleDemand?: string;
   allowMultipleKeys?: boolean;

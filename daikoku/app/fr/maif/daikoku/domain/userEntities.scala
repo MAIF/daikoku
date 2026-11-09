@@ -29,7 +29,6 @@ object User {
 
 case class User(
     id: UserId,
-    deleted: Boolean = false,
     tenants: Set[TenantId],
     origins: Set[AuthProvider],
     name: String,
@@ -47,7 +46,8 @@ case class User(
     twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
     invitation: Option[UserInvitation] = None,
     failedLoginAttempts: Int = 0,
-    lastFailedLogin: Option[DateTime] = None
+    lastFailedLogin: Option[DateTime] = None,
+    preferredDomains: Map[TenantId, String] = Map.empty
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized
@@ -183,7 +183,6 @@ case class UserInvitation(
 
 case class PasswordReset(
     id: DatastoreId,
-    deleted: Boolean = false,
     randomId: String,
     email: String,
     password: String,
@@ -196,7 +195,6 @@ case class PasswordReset(
 
 case class AccountCreation(
     id: DemandId,
-    deleted: Boolean = false,
     randomId: String,
     email: String,
     name: String,
@@ -208,7 +206,8 @@ case class AccountCreation(
     state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
     value: JsObject,
     fromTenant: TenantId,
-    metadata: Map[String, String] = Map.empty
+    metadata: Map[String, String] = Map.empty,
+    preferredDomains: Map[TenantId, String] = Map.empty
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }

@@ -68,7 +68,7 @@ class BillingNotificationServiceSpec
   private def storedActions(): Seq[JsObject] =
     Await
       .result(
-        env.dataStore.notificationRepo.forTenant(tenant).findAllNotDeleted(),
+        env.dataStore.notificationRepo.forTenant(tenant).findAll(),
         10.seconds
       )
       .map(notification => (notification.asJson \ "action").as[JsObject])
@@ -76,7 +76,7 @@ class BillingNotificationServiceSpec
   private def theOnlyStoredNotification(): Notification =
     Await
       .result(
-        env.dataStore.notificationRepo.forTenant(tenant).findAllNotDeleted(),
+        env.dataStore.notificationRepo.forTenant(tenant).findAll(),
         10.seconds
       ) match {
       case Seq(one) => one

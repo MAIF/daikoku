@@ -65,13 +65,13 @@ class StripeReconciliationJob(
     val to = now
 
     env.dataStore.tenantRepo
-      .findAllNotDeleted()
+      .findAll()
       .flatMap(tenants =>
         Source(tenants.toList)
           .flatMapConcat(tenant =>
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .streamAllRawFormatted(Json.obj("_deleted" -> false))
+              .streamAllRawFormatted()
               .filter(_.thirdPartySubscriptionInformations.isDefined)
               .mapAsync(4)(subscription =>
                 reconcileSubscription(tenant, subscription, from, to)
@@ -90,23 +90,21 @@ class StripeReconciliationJob(
     for {
       maybePlan <- env.dataStore.usagePlanRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(subscription.plan)
+        .findById(subscription.plan)
       // the api key lives on the keyring, and consumptions are still recorded
       // under its clientId
       maybeKeyring <- env.dataStore.keyringRepo
         .forTenant(tenant)
-        .findByIdNotDeleted(subscription.keyring)
+        .findById(subscription.keyring)
       consumptions <- maybeKeyring.fold(
         FastFuture.successful(Seq.empty[ApiKeyConsumption])
       )(keyring =>
-        env.dataStore.consumptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "clientId" -> keyring.apiKey.clientId,
-              "from" -> Json.obj("$gte" -> from.getMillis)
-            )
-          )
+        env.dataStore.consumptionRepo.findByClientIdBetween(
+          tenant.id,
+          keyring.apiKey.clientId,
+          from.getMillis,
+          Long.MaxValue
+        )
       )
       reportedHits = consumptions.map(_.lastReportedHits).sum
       _ <- maybePlan.fold(FastFuture.successful(()))(plan =>

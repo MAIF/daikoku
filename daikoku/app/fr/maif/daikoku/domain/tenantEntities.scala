@@ -7,138 +7,15 @@ import fr.maif.daikoku.domain.json.SeqValidationStepFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.login.AuthProvider
 import fr.maif.daikoku.utils.StringImplicits.BetterString
-import fr.maif.daikoku.utils._
-import play.api.libs.json._
+import fr.maif.daikoku.utils.*
+import org.joda.time.DateTime
+import play.api.libs.json.*
 import fr.maif.daikoku.services.CmsPage
 
 import scala.concurrent.duration.FiniteDuration
 
 object Tenant {
   val Default: TenantId = TenantId("default")
-  val jsCmsPageId = "tenant-js"
-  val cssCmsPageId = "tenant-css"
-  val colorThemePageId = "tenant-color-theme"
-  val colorTheme: String = s""":root {
-  --error-color: #dc3545;
-  --info-color: #17a2b8;
-  --success-color: #65B741;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-
-  --body_bg-color: #f1f3f6;
-  --body_text-color: #8a8a8a;
-  --body_link-color: #4c4c4d;
-  --body_link-hover-color: orange;
-
-  --level2_bg-color: #e5e7ea;
-  --level2_text-color: #4c4c4d;
-  --level2_link-color: #605c5c;
-  --level2_link-hover-color: #000;
-
-
-  --level3_bg-color: #fff;
-  --level3_text-color: #222;
-  --level3_link-color: #4c4c4d;
-  --level3_link-hover-color: #000;
-  --level3_link-hover-bg-color: grey;
-
-  --sidebar-bg-color: #e5e7ea;
-  --sidebar-text-color: #4c4c4d;
-  --sidebar-text-hover-color: orange;
-
-  --menu-bg-color: #fff;
-  --menu-text-color: #aaa;
-  --menu-text-hover-bg-color: #444;
-  --menu-text-hover-color: #fff;
-  --menu-link-color: #666;
-
-
-  --card_header-bg-color: #404040;
-  --card_header-text-color: #fff;
-  --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #97b0c7;
-  --card_link-hover-color : #a9cbea;
-
-  --btn-bg-color: #fff;
-  --btn-text-color: #495057;
-  --btn-border-color: #97b0c7;
-
-  --badge-tags-bg-color: #ffc107;
-  --badge-tags-bg-hover-color: #ffe1a7;
-  --badge-tags-text-color: #212529;
-
-  --form-text-color: #000;
-  --form-border-color: #586069;
-  --form-bg-color: #fff;
-
-  --form-select-focused-color: lightgrey;
-  --form-select-focused-text-color: white;
-  --form-select-heading-color: yellow;
-  --form-select-hover-color: lightgrey;
-  --form-select-hover-text-color: white;
-}
-
-
-:root[data-theme="DARK"] {
-  --error-color: #dc3545;
-  --info-color: #17a2b8;
-  --success-color: #65B741;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-
-  --body_bg-color: #000;
-  --body_text-color: #b3b3b3;
-  --body_link-color: #b3b3b3;
-  --body_link-hover-color: orange;
-
-  --level2_bg-color: #121212;
-  --level2_text-color: #b3b3b3;
-  --level2_link-color: #9f9e9e;
-  --level2_link-hover-color: #fff;
-
-  --level3_bg-color: #242424;
-  --level3_text-color: #e8e8e8;
-  --level3_link-color: #9f9e9e;
-  --level3_link-hover-color: #fff;
-  --level3_link-hover-bg-color: grey;
-
-  --sidebar-bg-color: #121212;
-  --sidebar-text-color: #b3b3b3;
-  --sidebar-text-hover-color: orange;
-
-  --menu-bg-color: #242424;
-  --menu-text-color: #fff;
-  --menu-text-hover-bg-color: #121212;
-  --menu-text-hover-color: #fff;
-  --menu-link-color: #b3b3b3;
-
-  --card_header-bg-color: #404040;
-  --card_header-text-color: #fff;
-  --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #97b0c7;
-  --card_link-hover-color : #a9cbea;
-
-
-  --btn-bg-color: #fff;
-  --btn-text-color: #495057;
-  --btn-border-color: #97b0c7;
-
-  --badge-tags-bg-color: #ffc107;
-  --badge-tags-bg-hover-color: #ffe1a7;
-  --badge-tags-text-color: #212529;
-
-  --form-text-color: #000;
-  --form-border-color: #586069;
-  --form-bg-color: #fff;
-
-  --form-select-focused-color: grey;
-  --form-select-focused-text-color: white;
-  --form-select-heading-color: yellow;
-  --form-select-hover-color: grey;
-  --form-select-hover-text-color: white;
-}"""
 
   def getCustomizationCmsPage(
       tenantId: TenantId,
@@ -414,9 +291,9 @@ case object ThirdPartyPaymentSettings {
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
-    deleted: Boolean = false,
     name: String,
     domain: String,
+    additionalDomains: Set[String] = Set.empty,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -446,8 +323,7 @@ case class Tenant(
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
     defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
-      None,
-    remoteCatalogs: Seq[RemoteCatalog] = Seq.empty
+      None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -575,6 +451,9 @@ case class Tenant(
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
   }
+  def allDomains: Set[String] = additionalDomains + domain
+  def hostFor(candidate: Option[String]): String =
+    candidate.filter(allDomains.contains).getOrElse(domain)
 }
 
 sealed trait MailerSettings {
@@ -625,6 +504,33 @@ case class MailjetSettings(
     new MailjetSender(env.wsClient, this)
   }
 }
+enum GrantType(val name: String) {
+  case ClientCredential extends GrantType("client-credential")
+  case RefreshToken extends GrantType("refresh-token")
+}
+case class SMTPOauth2Settings(
+    host: String,
+    port: Int = 25,
+    username: String,
+    fromTitle: String,
+    fromEmail: String,
+    template: Option[String],
+    clientId: String,
+    clientSecret: String,
+    scope: String,
+    tokenUrl: String,
+    starttls: Option[Boolean] = None,
+    ssl: Option[Boolean] = None,
+    grantType: GrantType = GrantType.ClientCredential
+) extends MailerSettings
+    with CanJson[SMTPOauth2Settings] {
+
+  override def mailerType: String = "smtpOAuthClient"
+
+  override def mailer(implicit env: Env): Mailer = new SMTPOauth2Sender(this)
+
+  override def asJson: JsValue = json.SMTPOauth2SettingsFormat.writes(this)
+}
 case class SimpleSMTPSettings(
     host: String,
     port: String = "25",
@@ -662,16 +568,6 @@ case class SendgridSettings(
     new SendgridSender(env.wsClient, this)
   }
 }
-
-// case class IdentitySettings(
-//   identityThroughOtoroshi: Boolean,
-//   stateHeaderName: String = "Otoroshi-State",
-//   stateRespHeaderName: String = "Otoroshi-State-Resp",
-//   claimHeaderName: String = "Otoroshi-Claim",
-//   claimSecret: String = "secret",
-// ) extends CanJson[OtoroshiSettings] {
-//   def asJson: JsValue = json.IdentitySettingsFormat.writes(this)
-// }
 
 case class OtoroshiSettings(
     id: OtoroshiSettingsId,
@@ -762,8 +658,7 @@ object SchedulingMode {
 }
 
 case class RemoteCatalogScheduling(
-    enabled: Boolean = false,
-    deployArgs: JsObject = Json.obj()
+    enabled: Boolean = false
 )
 
 case class RemoteCatalogSource(
@@ -772,11 +667,71 @@ case class RemoteCatalogSource(
 )
 
 case class RemoteCatalog(
-    id: String,
+    id: RemoteCatalogId,
+    tenant: TenantId,
     name: String,
     enabled: Boolean = true,
     source: RemoteCatalogSource = RemoteCatalogSource(),
     scheduling: RemoteCatalogScheduling = RemoteCatalogScheduling(),
     allowedKinds: Set[String] = Set.empty,
-    testDeployArgs: JsObject = Json.obj()
+    maxDeletionPercent: Int = 30,
+    adoptExisting: Boolean = false,
+    folderPerTeam: Boolean = false,
+    allowDeletions: Boolean = true,
+    token: String = IdGenerator.token(64)
+) extends CanJson[RemoteCatalog] {
+  def asJson: JsValue = json.RemoteCatalogFormat.writes(this)
+}
+
+enum RemoteCatalogRunStatus(val value: String):
+  case Completed extends RemoteCatalogRunStatus("completed")
+  case Partial extends RemoteCatalogRunStatus("partial")
+  case Failed extends RemoteCatalogRunStatus("failed")
+
+object RemoteCatalogRunStatus {
+  def fromValue(v: String): Option[RemoteCatalogRunStatus] =
+    RemoteCatalogRunStatus.values.find(_.value == v)
+}
+
+case class RemoteCatalogRunEntity(
+    kind: String,
+    id: String,
+    name: Option[String],
+    changes: Option[JsArray] = None
 )
+
+case class RemoteCatalogError(
+    source: String,
+    message: String,
+    entity: Option[RemoteCatalogRunEntity] = None
+)
+
+object RemoteCatalogError {
+
+  def collect[A](
+      results: Seq[Either[Seq[RemoteCatalogError], Seq[A]]]
+  ): Either[Seq[RemoteCatalogError], Seq[A]] = {
+    val errors = results.collect { case Left(errs) => errs }.flatten
+
+    if (errors.nonEmpty) {
+      Left(errors)
+    } else {
+      Right(results.collect { case Right(values) => values }.flatten)
+    }
+  }
+}
+
+case class RemoteCatalogRun(
+    id: DatastoreId,
+    tenant: TenantId,
+    catalog: RemoteCatalogId,
+    at: DateTime,
+    status: RemoteCatalogRunStatus,
+    created: Seq[RemoteCatalogRunEntity],
+    updated: Seq[RemoteCatalogRunEntity],
+    deleted: Seq[RemoteCatalogRunEntity],
+    detached: Seq[RemoteCatalogRunEntity],
+    errors: Seq[RemoteCatalogError]
+) extends CanJson[RemoteCatalogRun] {
+  def asJson: JsValue = json.RemoteCatalogRunFormat.writes(this)
+}

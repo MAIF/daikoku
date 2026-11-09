@@ -110,6 +110,22 @@ mise run pg
 
 All above mise command will detect that a postgres is already running and won't shut it down when terminated.
 
+### Loading postgres dump
+
+Using `mise run dev --mode dump` allows to load **an sql dump file** into daikoku database. There is however a few restrictions:
+
+* it does not work with already running postgres database (it needs to start a fresh postgres container to load dump)
+* database name need to be `daikoku` (for now)
+* your dump needs to be located at /dev/dumps/dump.sql (all files of dumps folder are gitignored, therefore no risk of accidentally commiting it)
+
+You can specify dump postgres user using `--dumpuser` and schema using `--dumpschema` (default is `postgres` for user and `public` for schema).
+
+For instance:
+
+```sh
+mise run dev --mode dump --dumpuser my_dump_user --dumpschema myschema
+```
+
 ---
 
 ## Without Mise

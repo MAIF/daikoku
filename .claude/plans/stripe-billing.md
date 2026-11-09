@@ -137,7 +137,7 @@ with master and the PR is open.
 - Zones: whole repository (conflict resolution only).
 - Done when: a merge commit of `origin/master` sits on `stripe`;
   `git rev-list --count stripe..origin/master` returns 0; `sbt Test/compile` and `npm run build` pass.
-- Status: todo
+- Status: done
 
 ### E8 · Green runs and PR
 
@@ -167,3 +167,17 @@ with master and the PR is open.
   an undo button bound to fail.
 - E6 · The dev seeds lose `trialPeriod` too, `.env.stripe.example` documents the mise tasks, and
   `StripeWebhookSpec` pays its test subscriptions with `pm_card_visa` instead of opening a trial.
+- E7 · On anything Stripe or paid-plan, the branch's choices win over master's: plan amounts may
+  change (master forbade it), the checkout returns to an information page, usage goes to the meter
+  straight from `ApiKeyStatsJob` (master's `Operation` sync is dropped), billing durations and trial
+  stay gone, and ending a paid subscription is ported into master's new `KeyringCard`.
+- E7 · `StripeReconciliationJob` keeps its own cron flag rather than moving to master's
+  `AbstractJob`; that migration is left for later.
+- E7 · Stripe code is ported to master's typed repositories (`findById`, `findByIds`, `findByTeam`,
+  `findByApiAndPlan`, `findByStates`, `findByClientIdBetween`), with a new
+  `findOneByStripeSubscriptionId`; the admin OpenAPI changes of E4 move to the YAML source.
+- E7 · Master's checkout notification update bound its status as a JSON string
+  (`$2::jsonb`), leaving the notification unreadable; it is fixed with `$2::text::jsonb`.
+- E7 · The stats job is enabled with `DAIKOKU_APIKEYS_STATS_JOB_ENABLED` everywhere the branch
+  relied on `DAIKOKU_STATS_SYNC_CRON`. Master's `env_cms` typo in `dev/process-compose.yaml` is left
+  as is.

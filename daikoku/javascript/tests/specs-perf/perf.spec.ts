@@ -45,13 +45,11 @@ async function resolveSeedIds(): Promise<void> {
       FROM (
         SELECT content->>'api' AS api_id, content->>'plan' AS plan_id, count(*) AS cnt
         FROM api_subscriptions
-        WHERE (content->>'_deleted')::boolean IS NOT TRUE
-          AND _id LIKE 'seed-%'
+        WHERE _id LIKE 'seed-%'
           AND content->>'api' = (
             SELECT content->>'api'
             FROM api_subscriptions
-            WHERE (content->>'_deleted')::boolean IS NOT TRUE
-              AND _id LIKE 'seed-%'
+            WHERE _id LIKE 'seed-%'
             GROUP BY content->>'api'
             ORDER BY count(*) DESC, content->>'api' ASC
             LIMIT 1
@@ -63,11 +61,9 @@ async function resolveSeedIds(): Promise<void> {
       JOIN api_subscriptions s
         ON  s.content->>'plan' = best_plan.plan_id
         AND s.content->>'api'  = best_plan.api_id
-        AND (s.content->>'_deleted')::boolean IS NOT TRUE
         AND s._id LIKE 'seed-%'
       JOIN keyrings k
         ON  k._id = s.content->>'keyring'
-        AND (k.content->>'_deleted')::boolean IS NOT TRUE
       LIMIT 1
     `)
 

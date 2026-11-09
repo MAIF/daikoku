@@ -131,18 +131,8 @@ class BillingNotificationService {
                 action = action
               )
             )
-          administrators <- env.dataStore.userRepo.find(
-            Json.obj(
-              "_deleted" -> false,
-              "_id" -> Json.obj(
-                "$in" -> JsArray(
-                  team
-                    .admins()
-                    .map(_.asJson)
-                    .toSeq
-                )
-              )
-            )
+          administrators <- env.dataStore.userRepo.findByIds(
+            team.admins().toSeq
           )
           _ <- Future.sequence(
             administrators.map(

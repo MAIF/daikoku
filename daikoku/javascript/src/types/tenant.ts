@@ -75,7 +75,8 @@ export interface IThirdPartyPaymentSettings {
   type: ThirdPartyPaymentType;
 }
 
-export type MailerType = 'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient';
+export type MailerType =
+  'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient' | 'smtpOAuthClient';
 
 export interface IMailerSettings {
   type: MailerType;
@@ -166,7 +167,6 @@ export interface ITenant {
 }
 
 export interface ITenantFull extends ITenant {
-  _deleted: boolean;
   adminApi: string;
   adminSubscription: Array<string>;
   auditTrailConfig: IAuditTrailConfig;
@@ -174,6 +174,7 @@ export interface ITenantFull extends ITenant {
   bucketSettings: IBucketSettings;
   daikokuHeader: { name: string; value: string };
   domain: string;
+  additionalDomains: Array<string>;
   enabled: boolean;
   isPrivate: boolean;
   mailerSettings: IMailerSettings;
@@ -181,7 +182,6 @@ export interface ITenantFull extends ITenant {
   style: ITenantStyle;
   translation: any;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
-  remoteCatalogs: Array<IRemoteCatalog>;
 }
 
 export type RemoteCatalogSourceKind = 'file' | 'http' | 'github' | 'gitlab';
@@ -211,16 +211,25 @@ export interface IRemoteCatalogSource {
 }
 export interface IRemoteCatalogScheduling {
   enabled: boolean;
-  deployArgs?: any;
 }
 export interface IRemoteCatalog {
-  id: string;
+  _id: string;
+  _tenant: string;
   name: string;
   enabled: boolean;
   source: IRemoteCatalogSource;
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
-  testDeployArgs?: any;
+  maxDeletionPercent: number;
+  adoptExisting: boolean;
+  folderPerTeam: boolean;
+  allowDeletions: boolean;
+  token: string;
+}
+export interface IRemoteCatalogSettings {
+  allowFileSource: boolean;
+  allowPreCommand: boolean;
+  allowedHosts: Array<string>;
 }
 
 export type TranslationItem = string | { s: string; p: string };

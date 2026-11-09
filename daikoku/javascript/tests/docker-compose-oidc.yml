@@ -207,6 +207,7 @@ services:
       - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_oidc.ndjson
       - DAIKOKU_MODE=test
       - DAIKOKU_HEALTH_ACCESS_KEY=secret
+      - "DAIKOKU_DELETION_INTERVAL=1 second"
     ports:
       - 13200:8080
     volumes:

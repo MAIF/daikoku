@@ -56,7 +56,6 @@ export const savePlan = (plan: Record<string, any>): Promise<Response> => {
 export const generatePlan = (overrides: Record<string, any> = {}) => ({
   _id: nanoid(32),
   _tenant: tenant,
-  _deleted: false,
   customName: "dev",
   customDescription: null,
   visibility: "Public",

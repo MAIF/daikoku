@@ -1,8 +1,9 @@
 package fr.maif.daikoku.services.catalog.sources
 
+import fr.maif.daikoku.domain.RemoteCatalogError
+import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{RemoteContentParser, RemoteEntity}
 import fr.maif.daikoku.utils.Yaml
-import play.api.Logger
 import play.api.libs.json._
 
 import java.io.File
@@ -13,29 +14,43 @@ import scala.util.Try
 
 object SourceUtils {
 
-  private val logger = Logger("daikoku-remote-catalog-source-utils")
-
-  def parseEntityContent(rawContent: String, sourceName: String): Seq[RemoteEntity] = {
+  def parseEntityContent(
+      rawContent: String,
+      sourceName: String
+  ): Either[Seq[RemoteCatalogError], Seq[RemoteEntity]] = {
     RemoteContentParser.parseRawContent(rawContent, sourceName)
   }
 
+  def fetchError(sourceName: String, err: JsValue): RemoteCatalogError = {
+    val message =
+      (err \ "error").asOpt[String].getOrElse(Json.stringify(err))
+
+    RemoteCatalogError(sourceName, message)
+  }
+
   private def isStringArray(value: JsValue): Option[JsArray] = value match {
-    case arr: JsArray if arr.value.nonEmpty && arr.value.forall(_.isInstanceOf[JsString]) => Some(arr)
-    case _                                                                                => None
+    case arr: JsArray
+        if arr.value.nonEmpty && arr.value.forall(_.isInstanceOf[JsString]) =>
+      Some(arr)
+    case _ => None
   }
 
   private def extractDeployListing(json: JsValue): Option[JsArray] = {
     isStringArray(json).orElse {
       json match {
         case obj: JsObject =>
-          val hasApiVersion = (obj \ "apiVersion").asOpt[String].contains("daikoku.io/v1")
-          val hasKind       = (obj \ "kind").asOpt[String].contains("RemoteCatalogListing")
+          val hasApiVersion =
+            (obj \ "apiVersion").asOpt[String].contains("daikoku.io/v1")
+          val hasKind =
+            (obj \ "kind").asOpt[String].contains("RemoteCatalogListing")
           if (hasApiVersion && hasKind) {
-            (obj \ "spec" \ "catalog_listing").asOpt[JsArray].flatMap(isStringArray)
+            (obj \ "spec" \ "catalog_listing")
+              .asOpt[JsArray]
+              .flatMap(isStringArray)
           } else {
             None
           }
-        case _             => None
+        case _ => None
       }
     }
   }
@@ -51,49 +66,110 @@ object SourceUtils {
       fetchRelativePath: String => Future[Either[JsValue, String]],
       sourceName: String,
       resolveGlob: Option[String => Future[Either[JsValue, Seq[String]]]] = None
-  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[RemoteEntity]]] = {
-    val rawPaths = deployArray.value.flatMap(_.asOpt[String])
-    Future
-      .sequence(rawPaths.map { path =>
-        if (isGlobPattern(path) && resolveGlob.isDefined) {
-          resolveGlob.get(path).flatMap {
-            case Left(err)            =>
-              logger.warn(s"Error resolving glob $path from $sourceName: ${err.toString}")
-              Future.successful(Seq.empty[RemoteEntity])
-            case Right(resolvedPaths) =>
-              Future
-                .sequence(resolvedPaths.map { relativePath =>
-                  fetchRelativePath(relativePath).map {
-                    case Left(err)         =>
-                      logger.warn(s"Error fetching $relativePath from $sourceName: ${err.toString}")
-                      Seq.empty[RemoteEntity]
-                    case Right(rawContent) =>
-                      parseEntityContent(rawContent, s"$sourceName/$relativePath")
-                  }
-                })
-                .map(_.flatten)
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+    val rawPaths = deployArray.value.flatMap(_.asOpt[String]).toSeq
+    val outsideErrors = rawPaths
+      .filter(isOutsideListing)
+      .map(path =>
+        RemoteCatalogError(
+          s"$sourceName/$path",
+          "Listing entries must stay inside the listing folder (no absolute path, no '..')"
+        )
+      )
+
+    def fetchAndParse(
+        relativePath: String
+    ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+      val fileSource = s"$sourceName/$relativePath"
+
+      fetchRelativePath(relativePath).map {
+        case Left(err) => Left(Seq(fetchError(fileSource, err)))
+        case Right(rawContent) =>
+          parseEntityContent(rawContent, fileSource)
+            .map(_.map(_.copy(path = relativePath)))
+      }
+    }
+
+    def fetchAll(
+        paths: Seq[String]
+    ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+      Future.sequence(paths.map(fetchAndParse)).map(RemoteCatalogError.collect)
+    }
+
+    if (outsideErrors.nonEmpty) Future.successful(Left(outsideErrors))
+    else
+      Future
+        .sequence(rawPaths.map { path =>
+          resolveGlob match {
+            case Some(resolve) if isGlobPattern(path) =>
+              resolve(path).flatMap {
+                case Left(err) =>
+                  Future.successful(
+                    Left(Seq(fetchError(s"$sourceName/$path", err)))
+                  )
+                case Right(resolvedPaths) => fetchAll(resolvedPaths)
+              }
+            case _ => fetchAndParse(path)
           }
-        } else {
-          fetchRelativePath(path).map {
-            case Left(err)         =>
-              logger.warn(s"Error fetching $path from $sourceName: ${err.toString}")
-              Seq.empty[RemoteEntity]
-            case Right(rawContent) =>
-              parseEntityContent(rawContent, s"$sourceName/$path")
-          }
-        }
-      })
-      .map(entities => Right(entities.flatten.toSeq): Either[JsValue, Seq[RemoteEntity]])
+        })
+        .map(RemoteCatalogError.collect)
+  }
+
+  // e.g. "../secrets.yaml", "/etc/passwd", "teams/../../x.json"
+  private def isOutsideListing(path: String): Boolean =
+    path.startsWith("/") || path.split("[/\\\\]").contains("..")
+
+  def checkHostAllowed(
+      url: String,
+      sourceName: String,
+      env: Env
+  ): Option[RemoteCatalogError] = {
+    val allowedHosts = env.config.remoteCatalogAllowedHosts
+    val host = Try(new java.net.URI(url).getHost).toOption
+      .flatMap(Option(_))
+      .map(_.toLowerCase)
+
+    (allowedHosts, host) match {
+      case (Nil, _) => None
+      case (_, None) =>
+        Some(RemoteCatalogError(sourceName, s"Cannot read a host from '$url'"))
+      case (_, Some(h)) if allowedHosts.contains(h) => None
+      case (_, Some(h)) =>
+        Some(
+          RemoteCatalogError(
+            sourceName,
+            s"Host '$h' is not allowed on this instance (allowed hosts: ${allowedHosts.mkString(", ")})"
+          )
+        )
+    }
+  }
+
+  def fetchAllPages[A](
+      perPage: Int,
+      fetchPage: Int => Future[Either[JsValue, Seq[A]]],
+      page: Int = 1,
+      collected: Seq[A] = Seq.empty
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[A]]] = {
+    fetchPage(page).flatMap {
+      case Left(err) => Future.successful(Left(err))
+      case Right(items) if items.size < perPage =>
+        Future.successful(Right(collected ++ items))
+      case Right(items) =>
+        fetchAllPages(perPage, fetchPage, page + 1, collected ++ items)
+    }
   }
 
   def isGlobPattern(path: String): Boolean = {
-    path.contains("*") || path.contains("?") || (path.contains("[") && path.contains("]"))
+    path.contains("*") || path
+      .contains("?") || (path.contains("[") && path.contains("]"))
   }
 
   def globToRegex(glob: String): String = {
-    val clean  = glob.stripPrefix("./")
+    val clean = glob.stripPrefix("./")
     val result = new StringBuilder("^")
-    var i      = 0
+    var i = 0
     while (i < clean.length) {
       if (i < clean.length - 1 && clean(i) == '*' && clean(i + 1) == '*') {
         result.append(".*")
@@ -116,8 +192,11 @@ object SourceUtils {
     path.matches(globToRegex(pattern))
   }
 
-  def resolveLocalGlob(baseDir: File, globPattern: String): Seq[String] = {
-    val clean   = globPattern.stripPrefix("./")
+  def resolveLocalGlob(
+      baseDir: File,
+      globPattern: String
+  ): Either[JsValue, Seq[String]] = {
+    val clean = globPattern.stripPrefix("./")
     val matcher = FileSystems.getDefault.getPathMatcher("glob:" + clean)
     Try {
       val stream = Files.walk(baseDir.toPath)
@@ -127,18 +206,29 @@ object SourceUtils {
           .asScala
           .filter(p => Files.isRegularFile(p))
           .map(p => baseDir.toPath.relativize(p))
-          .filter(p => matcher.matches(p) && isEntityFile(p.getFileName.toString))
+          .filter(p =>
+            matcher.matches(p) && isEntityFile(p.getFileName.toString)
+          )
           .map(_.toString)
           .toSeq
       } finally stream.close()
-    }.getOrElse(Seq.empty)
+    }.toEither.left.map(e =>
+      Json.obj(
+        "error" -> s"Cannot list files for '$globPattern': ${e.getMessage}"
+      )
+    )
   }
 
-  def resolveRemoteGlob(allFiles: Seq[String], basePath: String, globPattern: String): Seq[String] = {
+  def resolveRemoteGlob(
+      allFiles: Seq[String],
+      basePath: String,
+      globPattern: String
+  ): Seq[String] = {
     allFiles.flatMap { file =>
       val relativeOpt =
         if (basePath.isEmpty) Some(file)
-        else if (file.startsWith(basePath + "/")) Some(file.stripPrefix(basePath + "/"))
+        else if (file.startsWith(basePath + "/"))
+          Some(file.stripPrefix(basePath + "/"))
         else None
       relativeOpt.filter(r => matchesGlob(r, globPattern))
     }

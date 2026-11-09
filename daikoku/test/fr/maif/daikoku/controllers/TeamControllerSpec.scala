@@ -1470,6 +1470,8 @@ class TeamControllerSpec()
       )(using tenant, session)
       respDelete.status mustBe 200
 
+      // otoroshi apikey deletion is deferred to the deletion queue
+      awaitDeletionQueueDrained(tenant)
       val respOtoApikey2 = httpJsonCallWithoutSessionBlocking(
         path =
           s"/apis/apim.otoroshi.io/v1/apikeys/${personalSubKeyring.apiKey.clientId}",

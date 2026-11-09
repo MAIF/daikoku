@@ -60,10 +60,9 @@ final case class JobConfig(
   * lease, cursor resume, final status + audit reporting).
   *
   * `Input` is what a run operates on. The scheduled loop uses `defaultInput`
-  * (typically "everything"); on-demand callers may pass a narrower value — this
-  * is how `OtoroshiSynchronizerJob`'s `entryPoint` fits (`Input = ApiId |
-  * UsagePlanId | ApiSubscriptionId | KeyringId | SyncAllSubscription`). Jobs
-  * with nothing to target use `AbstractJob[Unit]`.
+  * (typically "everything"); on-demand callers may pass a narrower value — the
+  * Otoroshi synchronizer wraps its entry point and sync mode in an input value.
+  * Jobs with nothing to target use `AbstractJob[Unit]`.
   *
   * A concrete job only supplies its identity/config and the actual work
   * (`process`), and may override `onOutcome` to react (e.g. notify) once a run
@@ -98,8 +97,12 @@ abstract class AbstractJob[Input] {
     Future.successful(())
 
   /** Cheap business pre-check, evaluated before any claim or DB write.
-   * Some(reason) skips the run entirely. */
-  protected def skipReason(tenant: Tenant): Future[Option[String]] =
+    * Some(reason) skips the run entirely.
+    */
+  protected def skipReason(
+      tenant: Tenant,
+      input: Input
+  ): Future[Option[String]] =
     Future.successful(None)
 
   protected implicit def ec: ExecutionContext = env.defaultExecutionContext
@@ -169,7 +172,7 @@ abstract class AbstractJob[Input] {
 
   private def runForAllTenants(): Future[Unit] =
     env.dataStore.tenantRepo
-      .findAllNotDeleted()
+      .findAll()
       .flatMap(tenants =>
         Future.sequence(tenants.map(run(_, Runner.Scheduler)))
       )
@@ -288,7 +291,7 @@ abstract class AbstractJob[Input] {
           val outcome = JobOutcome.Failed(e.getMessage)
           // keep the cursor already persisted by saveCursor so the next run resumes
           jobRepo
-            .findByIdNotDeleted(jobId)
+            .findById(jobId)
             .flatMap { current =>
               val info = current
                 .getOrElse(runningInfo(fromCursor.getOrElse(0L)))
@@ -323,39 +326,35 @@ abstract class AbstractJob[Input] {
         lastBatchAt.plusSeconds(jobConfig.interval.toSeconds.toInt).isBeforeNow
 
     // Cheap business pre-check: decides skip / resume cursor before claiming.
-    skipReason(tenant).flatMap {
+    skipReason(tenant, input).flatMap {
       case Some(reason) => skip(reason)
-      case None => jobRepo
-        .find(
-          Json.obj("jobName" -> jobName.value),
-          sort = Some(Json.obj("startedAt" -> -1)),
-          maxDocs = 1
-        )
-        .map(_.headOption)
-        .flatMap {
-          case Some(last)
-            if last.status == JobStatus.Running && last.expiresAt.isAfterNow =>
-            skip("already running")
+      case None =>
+        env.dataStore.JobInformationRepo
+          .findLastRun(tenant.id, jobName.value)
+          .flatMap {
+            case Some(last)
+                if last.status == JobStatus.Running && last.expiresAt.isAfterNow =>
+              skip("already running")
 
-          case Some(last)
-            if last.status == JobStatus.Running && last.expiresAt.isBeforeNow =>
-            logger.info(
-              s"$logPrefix stale running job (expiresAt=${last.expiresAt}), resuming from cursor ${last.cursor}"
-            )
-            attempt(Some(last.cursor))
+            case Some(last)
+                if last.status == JobStatus.Running && last.expiresAt.isBeforeNow =>
+              logger.info(
+                s"$logPrefix stale running job (expiresAt=${last.expiresAt}), resuming from cursor ${last.cursor}"
+              )
+              attempt(Some(last.cursor))
 
-          case Some(last) if last.status == JobStatus.Failed =>
-            logger.info(
-              s"$logPrefix previous job failed, resuming from cursor ${last.cursor}"
-            )
-            attempt(Some(last.cursor))
+            case Some(last) if last.status == JobStatus.Failed =>
+              logger.info(
+                s"$logPrefix previous job failed, resuming from cursor ${last.cursor}"
+              )
+              attempt(Some(last.cursor))
 
-          case Some(last) if !intervalElapsed(last.lastBatchAt) =>
-            skip("interval not elapsed")
+            case Some(last) if !intervalElapsed(last.lastBatchAt) =>
+              skip("interval not elapsed")
 
-          case _ =>
-            attempt(None)
-        }
+            case _ =>
+              attempt(None)
+          }
     }
   }
 }

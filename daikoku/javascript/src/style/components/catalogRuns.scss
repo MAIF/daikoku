@@ -1,0 +1,103 @@
+@use "../variables";
+
+
+.catalog-report {
+  table-layout: fixed;
+
+  td,
+  th {
+    overflow-wrap: anywhere;
+  }
+}
+
+.catalog-report__toggle-column {
+  width: 40px;
+}
+
+.catalog-report__kind-column {
+  width: 25%;
+}
+
+.catalog-report__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+}
+
+.catalog-runs {
+  table-layout: fixed;
+}
+
+.catalog-runs__date-column {
+  width: 30%;
+}
+
+.catalog-runs__status-column {
+  width: 18%;
+}
+
+.catalog-runs__count-column {
+  width: 10%;
+}
+
+.catalog-runs__action-column {
+  width: 12%;
+}
+
+.catalog-diff {
+  border: 1px solid variables.$neutral-color-400;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--bs-font-monospace);
+  font-size: 0.85rem;
+}
+
+.catalog-diff__header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 12px;
+  border-bottom: 1px solid variables.$neutral-color-400;
+}
+
+.catalog-diff__count--added {
+  color: variables.$success-color;
+}
+
+.catalog-diff__count--removed {
+  color: variables.$danger-color;
+}
+
+.catalog-diff__change + .catalog-diff__change {
+  border-top: 1px solid variables.$neutral-color-200;
+}
+
+.catalog-diff__field {
+  padding: 4px 12px;
+  color: variables.$neutral-color-600;
+}
+
+.catalog-diff__line {
+  display: flex;
+  padding: 0 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.catalog-diff__line--added {
+  color: variables.$success-color-800;
+  background-color: variables.$success-color-bg;
+}
+
+.catalog-diff__line--removed {
+  color: variables.$danger-color-800;
+  background-color: variables.$danger-color-bg;
+}
+
+.catalog-diff__sign {
+  flex: 0 0 20px;
+  user-select: none;
+}

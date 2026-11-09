@@ -114,6 +114,12 @@ case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
 
+case class RemoteCatalogId(value: String)
+    extends ValueType
+    with CanJson[RemoteCatalogId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class ThirdPartyPaymentSettingsId(value: String)
     extends ValueType
     with CanJson[CmsPageId] {
@@ -183,11 +189,13 @@ enum JobName(val value: String):
   case KeyringSubscriptionExpiration
       extends JobName("KeyringSubscriptionExpiration")
   case RemoteCatalog extends JobName("RemoteCatalog")
+  case NotificationPurge extends JobName("NotificationPurge")
+  case AuditTrailPurge extends JobName("AuditTrailPurge")
+  case ApiKeyStatsCollector extends JobName("ApiKeyStatsCollector")
 
 case class JobInformation(
     id: DatastoreId,
     tenant: TenantId,
-    deleted: Boolean = false,
     jobName: JobName,
     lockedBy: String,
     lockedAt: DateTime,

@@ -149,3 +149,57 @@ export const triggerTeamBillingSync = async (page: Page, teamId: string) => {
   );
   expect(res.ok(), `billing sync failed: ${await res.text()}`).toBeTruthy();
 };
+
+// Deleting a subscription or a keyring removes the Daikoku rows in the request
+// transaction and hands the Otoroshi cleanup to the deletion queue, so the
+// apikey survives the response by up to a queue tick. Poll rather than read
+// once.
+export const fetchOtoroshiApiKey = async (clientId: string) => {
+  const resp = await fetch(
+    `http://otoroshi-api.oto.tools:8080/api/apikeys/${clientId}`,
+    {
+      method: "GET",
+      headers: {
+        "Otoroshi-Client-Id": otoroshiAdminApikeyId,
+        "Otoroshi-Client-Secret": otoroshiAdminApikeySecret,
+      },
+    },
+  );
+  return {
+    status: resp.status,
+    body: resp.status === 200 ? await resp.json() : null,
+  };
+};
+
+export const expectOtoroshiApiKeyGone = async (
+  clientId: string,
+  timeout = 20_000,
+) =>
+  expect
+    .poll(async () => (await fetchOtoroshiApiKey(clientId)).status, {
+      message: `Otoroshi apikey ${clientId} was still there`,
+      timeout,
+    })
+    .toBe(404);
+
+export const expectOtoroshiApiKeyEntities = async (
+  clientId: string,
+  entityCount: number,
+  timeout = 20_000,
+) =>
+  expect
+    .poll(
+      async () => {
+        const { status, body } = await fetchOtoroshiApiKey(clientId);
+        return {
+          status,
+          enabled: body?.enabled,
+          entities: body?.authorizedEntities?.length,
+        };
+      },
+      {
+        message: `Otoroshi apikey ${clientId} did not settle on ${entityCount} authorized entities`,
+        timeout,
+      },
+    )
+    .toEqual({ status: 200, enabled: true, entities: entityCount });

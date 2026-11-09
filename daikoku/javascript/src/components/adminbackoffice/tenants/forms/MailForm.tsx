@@ -1,4 +1,4 @@
-import { constraints, Form, format, type } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 
@@ -78,6 +78,66 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         },
         ...basicMailSchema,
       };
+    if (mailerType === 'smtpOAuthClient') {
+      return {
+        host: {
+          type: type.string,
+          label: translate('smtp_oauth_client.host'),
+          help: translate('smtp_oauth_client.host.help'),
+        },
+        port: {
+          type: type.number,
+          label: translate('smtp_oauth_client.port'),
+          help: translate('smtp_oauth_client.port.help'),
+        },
+        username: {
+          type: type.string,
+          label: translate('smtp_oauth_client.username'),
+          help: translate('smtp_oauth_client.username.help'),
+        },
+        clientId: {
+          type: type.string,
+          label: translate('smtp_oauth_client.clientId'),
+          help: translate('smtp_oauth_client.clientId.help'),
+        },
+        clientSecret: {
+          type: type.string,
+          label: translate('smtp_oauth_client.clientSecret'),
+          help: translate('smtp_oauth_client.clientSecret.help'),
+        },
+        scope: {
+          type: type.string,
+          format: format.password,
+          label: translate('smtp_oauth_client.scope'),
+          help: translate('smtp_oauth_client.scope.help'),
+        },
+        tokenUrl: {
+          type: type.string,
+          label: translate('smtp_oauth_client.tokenUrl'),
+          help: translate('smtp_oauth_client.tokenUrl.help'),
+        },
+        starttls: {
+          type: type.bool,
+          label: translate('smtp_oauth_client.starttls'),
+          help: translate('smtp_oauth_client.starttls.help'),
+        },
+        ssl: {
+          type: type.bool,
+          label: translate('smtp_oauth_client.ssl'),
+          help: translate('smtp_oauth_client.ssl.help'),
+        },
+        grantType: {
+          type: type.string,
+          format: format.buttonsSelect,
+          options: ['client-credential', 'refresh-token'],
+          formatter: o => translate(`smtp_oauth_client.${o}`),
+          label: translate('smtp_oauth_client.grantType'),
+          help: translate('smtp_oauth_client.grantType.help'),
+          defaultValue: 'client-credential'
+        },
+        ...basicMailSchema,
+      }
+    }
     if (mailerType === 'mailgun') {
       const { testConnection, ...basicWithoutTestButton } = basicMailSchema
       return {
@@ -135,6 +195,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       options: [
         { label: 'Console', value: 'console' },
         { label: 'SMTP Client', value: 'smtpClient' },
+        { label: 'SMTP OAUTH Client', value: 'smtpOAuthClient' },
         { label: 'Mailgun', value: 'mailgun' },
         { label: 'Mailjet', value: 'mailjet' },
         { label: 'Sendgrid', value: 'sendgrid' },

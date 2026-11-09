@@ -1,6 +1,6 @@
 package fr.maif.daikoku.services.catalog.sources
 
-import fr.maif.daikoku.domain.RemoteCatalog
+import fr.maif.daikoku.domain.{RemoteCatalog, RemoteCatalogError}
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.services.catalog.{CatalogSource, RemoteEntity}
 import play.api.Logger
@@ -15,12 +15,12 @@ class CatalogSourceGithub extends CatalogSource {
 
   private val logger = Logger("daikoku-remote-catalog-source-github")
 
-  override def sourceKind: String       = "github"
+  override def sourceKind: String = "github"
   override def supportsWebhook: Boolean = true
 
   private def parseRepo(repoUrl: String): Option[(String, String)] = {
     val cleaned = repoUrl.stripSuffix(".git")
-    val parts   = cleaned.split("/")
+    val parts = cleaned.split("/")
     if (parts.length >= 2) {
       Some((parts(parts.length - 2), parts(parts.length - 1)))
     } else {
@@ -30,16 +30,18 @@ class CatalogSourceGithub extends CatalogSource {
 
   private def githubHeaders(token: String): Seq[(String, String)] = {
     Seq(
-      "Accept"     -> "application/vnd.github.v3+json",
+      "Accept" -> "application/vnd.github.v3+json",
       "User-Agent" -> "Daikoku-Remote-Catalogs"
-    ) ++ (if (token.nonEmpty) Seq("Authorization" -> s"token $token") else Seq.empty)
+    ) ++ (if (token.nonEmpty) Seq("Authorization" -> s"token $token")
+          else Seq.empty)
   }
 
   private def githubRawHeaders(token: String): Seq[(String, String)] = {
     Seq(
-      "Accept"     -> "application/vnd.github.v3.raw",
+      "Accept" -> "application/vnd.github.v3.raw",
       "User-Agent" -> "Daikoku-Remote-Catalogs"
-    ) ++ (if (token.nonEmpty) Seq("Authorization" -> s"token $token") else Seq.empty)
+    ) ++ (if (token.nonEmpty) Seq("Authorization" -> s"token $token")
+          else Seq.empty)
   }
 
   private def fetchFileContent(
@@ -64,11 +66,19 @@ class CatalogSourceGithub extends CatalogSource {
         if (resp.status == 200) {
           Right(resp.body): Either[JsValue, String]
         } else {
-          Left(Json.obj("error" -> s"GitHub API returned ${resp.status} for $filePath")): Either[JsValue, String]
+          Left(
+            Json.obj(
+              "error" -> s"GitHub API returned ${resp.status} for $filePath"
+            )
+          ): Either[JsValue, String]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error fetching $filePath from GitHub: ${e.getMessage}")): Either[JsValue, String]
+        Left(
+          Json.obj(
+            "error" -> s"Error fetching $filePath from GitHub: ${e.getMessage}"
+          )
+        ): Either[JsValue, String]
       }
   }
 
@@ -88,8 +98,20 @@ class CatalogSourceGithub extends CatalogSource {
       .withRequestTimeout(Duration(60000L, TimeUnit.MILLISECONDS))
       .get()
       .map { resp =>
-        if (resp.status == 200) {
-          val tree  = (resp.json \ "tree").asOpt[Seq[JsObject]].getOrElse(Seq.empty)
+        val truncated =
+          resp.status == 200 && (resp.json \ "truncated")
+            .asOpt[Boolean]
+            .contains(true)
+
+        if (truncated) {
+          Left(
+            Json.obj(
+              "error" -> "GitHub recursive tree listing is truncated (too many files): list the files explicitly or target a narrower path"
+            )
+          ): Either[JsValue, Seq[String]]
+        } else if (resp.status == 200) {
+          val tree =
+            (resp.json \ "tree").asOpt[Seq[JsObject]].getOrElse(Seq.empty)
           val files = tree.flatMap { item =>
             val itemType = (item \ "type").asOpt[String].getOrElse("")
             val itemPath = (item \ "path").asOpt[String].getOrElse("")
@@ -97,14 +119,20 @@ class CatalogSourceGithub extends CatalogSource {
           }
           Right(files.toSeq): Either[JsValue, Seq[String]]
         } else {
-          Left(Json.obj("error" -> s"GitHub API returned ${resp.status} for recursive tree listing")): Either[
+          Left(
+            Json.obj(
+              "error" -> s"GitHub API returned ${resp.status} for recursive tree listing"
+            )
+          ): Either[
             JsValue,
             Seq[String]
           ]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing GitHub tree: ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(
+          Json.obj("error" -> s"Error listing GitHub tree: ${e.getMessage}")
+        ): Either[JsValue, Seq[String]]
       }
   }
 
@@ -129,42 +157,68 @@ class CatalogSourceGithub extends CatalogSource {
       .map { resp =>
         if (resp.status == 200) {
           resp.json match {
+            // the contents API returns at most 1000 entries per directory
+            case arr: JsArray if arr.value.size >= 1000 =>
+              Left(
+                Json.obj(
+                  "error" -> s"GitHub directory listing of $dirPath may be incomplete (1000 entries or more): list the files explicitly or split the directory"
+                )
+              ): Either[JsValue, Seq[String]]
             case arr: JsArray =>
               val files = arr.value.flatMap { item =>
                 val itemType = (item \ "type").asOpt[String].getOrElse("")
                 val itemName = (item \ "name").asOpt[String].getOrElse("")
                 val itemPath = (item \ "path").asOpt[String].getOrElse("")
-                if (itemType == "file" && SourceUtils.isEntityFile(itemName)) Some(itemPath) else None
+                if (itemType == "file" && SourceUtils.isEntityFile(itemName))
+                  Some(itemPath)
+                else None
               }
               Right(files.toSeq): Either[JsValue, Seq[String]]
-            case _            =>
-              Left(Json.obj("error" -> "GitHub API did not return an array for directory listing")): Either[
+            case _ =>
+              Left(
+                Json.obj(
+                  "error" -> "GitHub API did not return an array for directory listing"
+                )
+              ): Either[
                 JsValue,
                 Seq[String]
               ]
           }
         } else {
-          Left(Json.obj("error" -> s"GitHub API returned ${resp.status} for directory listing")): Either[JsValue, Seq[
+          Left(
+            Json.obj(
+              "error" -> s"GitHub API returned ${resp.status} for directory listing"
+            )
+          ): Either[JsValue, Seq[
             String
           ]]
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing GitHub directory: ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(
+          Json
+            .obj("error" -> s"Error listing GitHub directory: ${e.getMessage}")
+        ): Either[JsValue, Seq[String]]
       }
   }
 
-  override def webhookDeploySelect(possibleCatalogs: Seq[RemoteCatalog], payload: JsValue)(implicit
+  override def webhookDeploySelect(
+      possibleCatalogs: Seq[RemoteCatalog],
+      payload: JsValue
+  )(implicit
       ec: ExecutionContext,
       env: Env
   ): Future[Either[JsValue, Seq[RemoteCatalog]]] = {
-    val repoFullName = (payload \ "repository" \ "full_name").asOpt[String].getOrElse("")
-    val ref          = (payload \ "ref").asOpt[String].getOrElse("")
-    val branch       = ref.replace("refs/heads/", "")
-    val matched      = possibleCatalogs.filter { catalog =>
+    val repoFullName =
+      (payload \ "repository" \ "full_name").asOpt[String].getOrElse("")
+    val ref = (payload \ "ref").asOpt[String].getOrElse("")
+    val branch = ref.replace("refs/heads/", "")
+    val matched = possibleCatalogs.filter { catalog =>
       catalog.source.kind == "github" && {
-        val configRepo   = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
-        val configBranch = (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
+        val configRepo =
+          (catalog.source.config \ "repo").asOpt[String].getOrElse("")
+        val configBranch =
+          (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
         parseRepo(configRepo).exists { case (owner, repo) =>
           s"$owner/$repo" == repoFullName && configBranch == branch
         }
@@ -173,57 +227,76 @@ class CatalogSourceGithub extends CatalogSource {
     Future.successful(Right(matched))
   }
 
-  override def webhookDeployExtractArgs(catalog: RemoteCatalog, payload: JsValue)(implicit
-      ec: ExecutionContext,
-      env: Env
-  ): Future[Either[JsValue, JsObject]] = Future.successful(Right(Json.obj()))
-
   private def parseOrg(repoUrl: String): Option[String] = {
     val cleaned = repoUrl.stripSuffix(".git").stripSuffix("/")
-    val path    = if (cleaned.contains("://")) {
+    val path = if (cleaned.contains("://")) {
       cleaned.split("://", 2).last.split("/").drop(1).mkString("/")
     } else cleaned
-    val parts   = path.split("/").filter(_.nonEmpty)
+    val parts = path.split("/").filter(_.nonEmpty)
     if (parts.length == 1) Some(parts(0)) else None
   }
 
-  private def listOrgRepos(apiBase: String, org: String, token: String, env: Env)(implicit
-      ec: ExecutionContext
-  ): Future[Either[JsValue, Seq[String]]] = {
-    val orgUrl = s"$apiBase/orgs/$org/repos"
+  private val reposPerPage = 100
+
+  private def fetchRepoPage(
+      reposUrl: String,
+      page: Int,
+      token: String,
+      env: Env
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[JsObject]]] = {
     env.wsClient
-      .url(orgUrl)
-      .withQueryStringParameters("per_page" -> "100", "type" -> "all")
+      .url(reposUrl)
+      .withQueryStringParameters(
+        "per_page" -> reposPerPage.toString,
+        "page" -> page.toString,
+        "type" -> "all"
+      )
       .withHttpHeaders(githubHeaders(token)*)
       .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
       .get()
-      .flatMap { resp =>
-        if (resp.status == 200) {
-          val repos =
-            resp.json.asOpt[Seq[JsObject]].getOrElse(Seq.empty).flatMap(o => (o \ "name").asOpt[String])
-          Future.successful(Right(repos): Either[JsValue, Seq[String]])
+      .map { resp =>
+        if (resp.status != 200) {
+          Left(
+            Json.obj(
+              "error" -> s"GitHub API returned ${resp.status} for $reposUrl"
+            )
+          )
         } else {
-          val userUrl = s"$apiBase/users/$org/repos"
-          env.wsClient
-            .url(userUrl)
-            .withQueryStringParameters("per_page" -> "100", "type" -> "all")
-            .withHttpHeaders(githubHeaders(token)*)
-            .withRequestTimeout(Duration(30000L, TimeUnit.MILLISECONDS))
-            .get()
-            .map { resp2 =>
-              if (resp2.status == 200) {
-                Right(
-                  resp2.json.asOpt[Seq[JsObject]].getOrElse(Seq.empty).flatMap(o => (o \ "name").asOpt[String])
-                ): Either[JsValue, Seq[String]]
-              } else {
-                Left(Json.obj("error" -> s"Cannot list repos for '$org'")): Either[JsValue, Seq[String]]
-              }
-            }
+          Right(resp.json.asOpt[Seq[JsObject]].getOrElse(Seq.empty))
         }
       }
       .recover { case e: Throwable =>
-        Left(Json.obj("error" -> s"Error listing repos for '$org': ${e.getMessage}")): Either[JsValue, Seq[String]]
+        Left(Json.obj("error" -> s"Error listing $reposUrl: ${e.getMessage}"))
       }
+  }
+
+  private def listRepos(
+      reposUrl: String,
+      token: String,
+      env: Env
+  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[String]]] =
+    SourceUtils
+      .fetchAllPages(
+        reposPerPage,
+        page => fetchRepoPage(reposUrl, page, token, env)
+      )
+      .map(_.map(_.flatMap(repo => (repo \ "name").asOpt[String])))
+
+  private def listOrgRepos(
+      apiBase: String,
+      org: String,
+      token: String,
+      env: Env
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[JsValue, Seq[String]]] = {
+    listRepos(s"$apiBase/orgs/$org/repos", token, env).flatMap {
+      case Right(repos) => Future.successful(Right(repos))
+      case Left(_) =>
+        listRepos(s"$apiBase/users/$org/repos", token, env).map(
+          _.left.map(_ => Json.obj("error" -> s"Cannot list repos for '$org'"))
+        )
+    }
   }
 
   private def fetchFromSingleRepo(
@@ -232,95 +305,198 @@ class CatalogSourceGithub extends CatalogSource {
       repo: String,
       branch: String,
       path: String,
+      recursive: Boolean,
       token: String,
       env: Env
-  )(implicit ec: ExecutionContext): Future[Either[JsValue, Seq[RemoteEntity]]] = {
+  )(implicit
+      ec: ExecutionContext
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+    val sourceName = s"github://$owner/$repo/$path@$branch"
+
     if (SourceUtils.hasFileExtension(path)) {
       fetchFileContent(apiBase, owner, repo, path, branch, token, env).flatMap {
-        case Left(err)         => Future.successful(Left(err))
+        case Left(err) =>
+          Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
         case Right(rawContent) =>
           SourceUtils.isDeployListing(rawContent) match {
             case Some(arr) =>
-              val basePath = if (path.contains("/")) path.substring(0, path.lastIndexOf('/')) else ""
+              val basePath =
+                if (path.contains("/")) path.substring(0, path.lastIndexOf('/'))
+                else ""
               SourceUtils.resolveDeployListing(
                 arr,
                 relativePath => {
-                  val fullPath = if (basePath.nonEmpty) s"$basePath/$relativePath" else relativePath
-                  fetchFileContent(apiBase, owner, repo, fullPath, branch, token, env)
+                  val fullPath =
+                    if (basePath.nonEmpty) s"$basePath/$relativePath"
+                    else relativePath
+                  fetchFileContent(
+                    apiBase,
+                    owner,
+                    repo,
+                    fullPath,
+                    branch,
+                    token,
+                    env
+                  )
                 },
-                s"github://$owner/$repo/$path@$branch",
+                sourceName,
                 resolveGlob = Some(glob =>
-                  listAllFilesRecursive(apiBase, owner, repo, branch, token, env).map {
-                    case Left(err)    => Left(err)
-                    case Right(files) => Right(SourceUtils.resolveRemoteGlob(files, basePath, glob))
+                  listAllFilesRecursive(
+                    apiBase,
+                    owner,
+                    repo,
+                    branch,
+                    token,
+                    env
+                  ).map {
+                    case Left(err) => Left(err)
+                    case Right(files) =>
+                      Right(
+                        SourceUtils.resolveRemoteGlob(files, basePath, glob)
+                      )
                   }
                 )
               )
-            case None      =>
+            case None =>
               Future.successful(
-                Right(
-                  SourceUtils.parseEntityContent(rawContent, s"github://$owner/$repo/$path@$branch")
-                ): Either[JsValue, Seq[RemoteEntity]]
+                SourceUtils.parseEntityContent(rawContent, sourceName)
               )
           }
       }
     } else {
-      listDirectory(apiBase, owner, repo, path, branch, token, env).flatMap {
-        case Left(err)    => Future.successful(Left(err))
+      val listing =
+        if (recursive) {
+          listAllFilesRecursive(apiBase, owner, repo, branch, token, env).map(
+            _.map(files =>
+              SourceUtils
+                .resolveRemoteGlob(files, path, "**")
+                .filter(SourceUtils.isEntityFile)
+                .map(relative =>
+                  if (path.nonEmpty) s"$path/$relative" else relative
+                )
+            )
+          )
+        } else {
+          listDirectory(apiBase, owner, repo, path, branch, token, env)
+        }
+
+      listing.flatMap {
+        case Left(err) =>
+          Future.successful(Left(Seq(SourceUtils.fetchError(sourceName, err))))
         case Right(files) =>
           Future
             .sequence(files.map { filePath =>
-              fetchFileContent(apiBase, owner, repo, filePath, branch, token, env).map {
-                case Left(err)         =>
-                  logger.warn(s"Error fetching $filePath: ${err.toString}")
-                  Seq.empty[RemoteEntity]
+              val fileSource = s"github://$owner/$repo/$filePath@$branch"
+
+              fetchFileContent(
+                apiBase,
+                owner,
+                repo,
+                filePath,
+                branch,
+                token,
+                env
+              ).map {
+                case Left(err) =>
+                  Left(Seq(SourceUtils.fetchError(fileSource, err)))
                 case Right(rawContent) =>
-                  SourceUtils.parseEntityContent(rawContent, s"github://$owner/$repo/$filePath@$branch")
+                  SourceUtils
+                    .parseEntityContent(rawContent, fileSource)
+                    .map(_.map(_.copy(path = filePath.stripPrefix(s"$path/"))))
               }
             })
-            .map(entities => Right(entities.flatten): Either[JsValue, Seq[RemoteEntity]])
+            .map(RemoteCatalogError.collect)
       }
     }
   }
 
-  override def fetch(catalog: RemoteCatalog, args: JsObject)(implicit
+  override def fetch(catalog: RemoteCatalog)(implicit
       ec: ExecutionContext,
       env: Env
-  ): Future[Either[JsValue, Seq[RemoteEntity]]] = {
-    val repoUrl      = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
-    val branch       = (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
-    val path         = (catalog.source.config \ "path").asOpt[String].getOrElse("/").stripPrefix("/")
-    val token        = (catalog.source.config \ "token").asOpt[String].getOrElse("")
-    val apiBase      =
-      (catalog.source.config \ "base_url").asOpt[String].getOrElse("https://api.github.com").stripSuffix("/")
+  ): Future[Either[Seq[RemoteCatalogError], Seq[RemoteEntity]]] = {
+    val repoUrl = (catalog.source.config \ "repo").asOpt[String].getOrElse("")
+    val branch =
+      (catalog.source.config \ "branch").asOpt[String].getOrElse("main")
+    val path = (catalog.source.config \ "path")
+      .asOpt[String]
+      .getOrElse("/")
+      .stripPrefix("/")
+      .stripSuffix("/")
+    val recursive = catalog.folderPerTeam ||
+      (catalog.source.config \ "recursive").asOpt[Boolean].getOrElse(false)
+    val token = (catalog.source.config \ "token").asOpt[String].getOrElse("")
+    val apiBase =
+      (catalog.source.config \ "base_url")
+        .asOpt[String]
+        .getOrElse("https://api.github.com")
+        .stripSuffix("/")
     val repoPatterns =
-      (catalog.source.config \ "repo_patterns").asOpt[Seq[String]].getOrElse(Seq.empty)
+      (catalog.source.config \ "repo_patterns")
+        .asOpt[Seq[String]]
+        .getOrElse(Seq.empty)
 
-    parseRepo(repoUrl) match {
-      case Some((owner, repo)) =>
-        fetchFromSingleRepo(apiBase, owner, repo, branch, path, token, env)
-      case None                =>
-        parseOrg(repoUrl) match {
-          case Some(org) =>
-            listOrgRepos(apiBase, org, token, env).flatMap {
-              case Left(err)    => Future.successful(Left(err))
-              case Right(repos) =>
-                val filtered =
-                  if (repoPatterns.nonEmpty)
-                    repos.filter(name => repoPatterns.exists(p => SourceUtils.matchesGlob(name, p)))
-                  else repos
-                logger.info(s"Scanning ${filtered.size} repos in org '$org' for path '$path'")
-                Future
-                  .sequence(filtered.map { repoName =>
-                    fetchFromSingleRepo(apiBase, org, repoName, branch, path, token, env).map {
-                      case Left(_)         => Seq.empty[RemoteEntity]
-                      case Right(entities) => entities
-                    }
-                  })
-                  .map(all => Right(all.flatten): Either[JsValue, Seq[RemoteEntity]])
+    SourceUtils.checkHostAllowed(apiBase, sourceKind, env) match {
+      case Some(error) => Future.successful(Left(Seq(error)))
+      case None =>
+        parseRepo(repoUrl) match {
+          case Some((owner, repo)) =>
+            fetchFromSingleRepo(
+              apiBase,
+              owner,
+              repo,
+              branch,
+              path,
+              recursive,
+              token,
+              env
+            )
+          case None =>
+            parseOrg(repoUrl) match {
+              case Some(org) =>
+                listOrgRepos(apiBase, org, token, env).flatMap {
+                  case Left(err) =>
+                    Future.successful(
+                      Left(Seq(SourceUtils.fetchError(s"github://$org", err)))
+                    )
+                  case Right(repos) =>
+                    val filtered =
+                      if (repoPatterns.nonEmpty)
+                        repos.filter(name =>
+                          repoPatterns.exists(p =>
+                            SourceUtils.matchesGlob(name, p)
+                          )
+                        )
+                      else repos
+                    logger.info(
+                      s"Scanning ${filtered.size} repos in org '$org' for path '$path'"
+                    )
+                    Future
+                      .sequence(filtered.map { repoName =>
+                        fetchFromSingleRepo(
+                          apiBase,
+                          org,
+                          repoName,
+                          branch,
+                          path,
+                          recursive,
+                          token,
+                          env
+                        )
+                      })
+                      .map(RemoteCatalogError.collect)
+                }
+              case None =>
+                Future.successful(
+                  Left(
+                    Seq(
+                      RemoteCatalogError(
+                        sourceKind,
+                        s"Cannot parse GitHub repo or organization from: $repoUrl"
+                      )
+                    )
+                  )
+                )
             }
-          case None      =>
-            Future.successful(Left(Json.obj("error" -> s"Cannot parse GitHub repo or organization from: $repoUrl")))
         }
     }
   }

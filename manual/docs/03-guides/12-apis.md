@@ -5,7 +5,7 @@ Daikoku provides a fully featured REST admin API to perform almost every operati
 
 The Daikoku admin API is described using the OpenAPI format and is available at:
 
-https://maif.github.io/daikoku/manual/static/openapi/admin-api-openapi.json
+https://maif.github.io/daikoku/manual/static/openapi/admin-api-openapi.yaml
 
 ## OpenAPI definition as UI
 

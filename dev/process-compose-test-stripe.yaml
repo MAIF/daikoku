@@ -54,6 +54,7 @@ processes:
       DAIKOKU_INIT_ADMIN_PASSWORD=password \
       DAIKOKU_POSTGRES_DATABASE=daikoku_test \
       DAIKOKU_OTOROSHI_SYNC_CRON=true \
+      DAIKOKU_APIKEYS_STATS_JOB_ENABLED=true \
       DAIKOKU_TENANT_PROVIDER=hostname \
       DAIKOKU_EXPOSED_ON=5173 \
       DAIKOKU_INIT_DATA_FROM=javascript/tests/config/daikoku/daikoku_state_local_test.ndjson \

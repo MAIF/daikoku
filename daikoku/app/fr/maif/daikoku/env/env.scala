@@ -9,24 +9,23 @@ import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.daikoku.domain.{
-  DatastoreId,
-  SchedulingMode,
-  ReportsInfo,
-  TeamApiKeyVisibility,
-  Tenant
-}
-import fr.maif.daikoku.audit.ElasticAnalyticsConfig
-import fr.maif.daikoku.domain.{
   AuditTrailConfig,
   ConsoleMailerSettings,
+  DatastoreId,
   MailerSettings,
   MailgunSettings,
   MailjetSettings,
   OtoroshiSettings,
   OtoroshiSettingsId,
+  ReportsInfo,
+  SchedulingMode,
   SendgridSettings,
-  SimpleSMTPSettings
+  SimpleSMTPSettings,
+  TeamApiKeyVisibility,
+  Tenant,
+  User
 }
+import fr.maif.daikoku.audit.ElasticAnalyticsConfig
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.login.AuthProvider.Local
 import fr.maif.daikoku.login.{
@@ -47,7 +46,7 @@ import org.apache.pekko.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
-import play.api.mvc.EssentialFilter
+import play.api.mvc.{EssentialFilter, RequestHeader}
 import play.api.{Configuration, Environment}
 
 import java.nio.file.Paths
@@ -539,6 +538,23 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
 
+  lazy val apikeysStatsJobKey: String = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.key")
+    .getOrElse("secret")
+  lazy val apikeysStatsJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.apikeysStatsJob.enabled")
+    .getOrElse(false)
+  lazy val apikeysStatsJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.cronExpression")
+  lazy val apikeysStatsJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.apikeysStatsJob.interval")
+    .map(v => v.millis)
+    .getOrElse(1.hour)
+  lazy val apikeysStatsJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(Interval)
+
   lazy val keyringExpirationJobEnabled: Boolean = underlying
     .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
     .getOrElse(false)
@@ -569,7 +585,23 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.remoteCatalogJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
+  lazy val remoteCatalogAllowFileSource: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowFileSource")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowPreCommand: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowPreCommand")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowedHosts: Seq[String] = {
+    val key = "daikoku.remoteCatalogJob.allowedHosts"
+    val hosts = scala.util
+      .Try(underlying.getOptional[Seq[String]](key))
+      .getOrElse(underlying.getOptional[String](key).map(_.split(",").toSeq))
 
+    hosts
+      .getOrElse(Seq.empty)
+      .map(_.trim.toLowerCase)
+      .filter(_.nonEmpty)
+  }
 
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
@@ -591,38 +623,47 @@ class Config(val underlying: Configuration) {
   lazy val otoroshiGroupIdPrefix: Option[String] =
     underlying.getOptional[String]("daikoku.otoroshi.groups.idPrefix")
 
-  lazy val apikeysStatsByCron: Boolean =
-    underlying.getOptional[Boolean]("daikoku.stats.sync.cron").getOrElse(false)
-  lazy val apikeysStatsSyncInterval: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.stats.sync.interval")
-    .map(v => v.millis)
-    .getOrElse(1.hour)
-  lazy val apikeysStatsCallInterval: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.stats.call.interval")
-    .map(v => v.millis)
-    .getOrElse(10.minutes)
-
-  lazy val auditTrailPurgeByCron: Boolean = underlying
-    .getOptional[Boolean]("daikoku.audit.purge.cron")
+  lazy val auditTrailPurgeJobKey: String = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.key")
+    .getOrElse("secret")
+  lazy val auditTrailPurgeJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.auditTrailPurgeJob.enabled")
     .getOrElse(false)
-  lazy val auditTrailPurgeInterval: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.audit.purge.interval")
-    .getOrElse(1 hour)
-  lazy val auditTrailPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.audit.purge.max.date")
+  lazy val auditTrailPurgeJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.cronExpression")
+  lazy val auditTrailPurgeJobInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.auditTrailPurgeJob.interval")
+    .getOrElse(1.hour)
+  lazy val auditTrailPurgeJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.auditTrailPurgeJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
+  lazy val auditTrailPurgeJobMaxDate: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.auditTrailPurgeJob.max.date")
     .getOrElse(60 day)
 
-  lazy val notificationsPurgeByCron: Boolean = underlying
-    .getOptional[Boolean]("daikoku.notifications.purge.cron")
+  lazy val notificationsPurgeJobKey: String = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.key")
+    .getOrElse("secret")
+  lazy val notificationsPurgeJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.notificationsPurgeJob.enabled")
     .getOrElse(false)
-  lazy val notificationsPurgeInterval: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.purge.interval")
-    .getOrElse(1 hour)
+  lazy val notificationsPurgeJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.cronExpression")
+  lazy val notificationsPurgeJobInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.interval")
+    .getOrElse(1.hour)
+  lazy val notificationsPurgeJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.notificationsPurgeJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(SchedulingMode.Interval)
   lazy val notificationsToTreatPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.max.to.treat.date")
+    .getOptional[FiniteDuration](
+      "daikoku.notificationsPurgeJob.max.to.treat.date"
+    )
     .getOrElse(6 * 30 days)
   lazy val notificationsBasePurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.purge.max.base.date")
+    .getOptional[FiniteDuration]("daikoku.notificationsPurgeJob.max.base.date")
     .getOrElse(30 days)
 
   lazy val deletionByCron: Boolean = underlying
@@ -687,7 +728,16 @@ sealed trait Env {
       ec: ExecutionContext
   ): Seq[EssentialFilter]
 
+  def requestHost(request: RequestHeader): String
+
   def getDaikokuUrl(tenant: Tenant, path: String): String
+  def getDaikokuUrl(tenant: Tenant, path: String, host: Option[String]): String
+  def getDaikokuUrl(
+      tenant: Tenant,
+      path: String,
+      request: RequestHeader
+  ): String
+  def getDaikokuUrl(tenant: Tenant, path: String, user: User): String
 
   def initDatastore(path: Option[String] = None)(implicit
       ec: ExecutionContext
@@ -1070,7 +1120,7 @@ class DaikokuEnv(
     if (!config.isDev) FastFuture.successful(())
     else
       dataStore.tenantRepo
-        .findAllNotDeleted()
+        .findAll()
         .map(tenants =>
           for {
             tenant <- tenants
@@ -1113,20 +1163,44 @@ class DaikokuEnv(
       case _ => Seq.empty
     }
 
-  def getDaikokuUrl(tenant: Tenant, path: String): String = {
-    (config.sslEnabled, config.exposedPort) match {
-      case (Some(true), 443) => s"https://${tenant.domain}$path"
-      case (Some(true), exposedPort) =>
-        s"https://${tenant.domain}:$exposedPort$path"
-      case (Some(false), 80) => s"http://${tenant.domain}$path"
-      case (Some(false), exposedPort) =>
-        s"http://${tenant.domain}:$exposedPort$path"
-      case (_, 80)  => s"http://${tenant.domain}$path"
-      case (_, 443) => s"https://${tenant.domain}$path"
-      case (_, exposedPort) if exposedPort == config.securePort =>
-        s"https://${tenant.domain}:$exposedPort$path"
-      case (_, exposedPort) => s"http://${tenant.domain}:$exposedPort$path"
-    }
-
+  def requestHost(request: RequestHeader): String = {
+    val host = request.headers
+      .get(config.tenantHostHeaderKey)
+      .orElse(request.headers.get("X-Forwarded-Host"))
+      .getOrElse(request.host)
+    if (host.contains(":")) host.split(":").apply(0) else host
   }
+
+  def getDaikokuUrl(tenant: Tenant, path: String): String =
+    getDaikokuUrl(tenant, path, None)
+
+  def getDaikokuUrl(
+      tenant: Tenant,
+      path: String,
+      request: RequestHeader
+  ): String =
+    getDaikokuUrl(tenant, path, Some(requestHost(request)))
+
+  override def getDaikokuUrl(tenant: Tenant, path: String, user: User): String =
+    getDaikokuUrl(tenant, path, user.preferredDomains.get(tenant.id))
+
+  def getDaikokuUrl(
+      tenant: Tenant,
+      path: String,
+      host: Option[String]
+  ): String = {
+    val domain = tenant.hostFor(host)
+    (config.sslEnabled, config.exposedPort) match {
+      case (Some(true), 443)          => s"https://$domain$path"
+      case (Some(true), exposedPort)  => s"https://$domain:$exposedPort$path"
+      case (Some(false), 80)          => s"http://$domain$path"
+      case (Some(false), exposedPort) => s"http://$domain:$exposedPort$path"
+      case (_, 80)                    => s"http://$domain$path"
+      case (_, 443)                   => s"https://$domain$path"
+      case (_, exposedPort) if exposedPort == config.securePort =>
+        s"https://$domain:$exposedPort$path"
+      case (_, exposedPort) => s"http://$domain:$exposedPort$path"
+    }
+  }
+
 }

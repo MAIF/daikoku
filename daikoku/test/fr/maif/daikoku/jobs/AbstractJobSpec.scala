@@ -144,7 +144,7 @@ class AbstractJobSpec
       .result(
         daikokuComponents.env.dataStore.auditTrailRepo
           .forTenant(tenant.id)
-          .findRaw(Json.obj()),
+          .findAll(),
         10.seconds
       )
       .filter { e =>

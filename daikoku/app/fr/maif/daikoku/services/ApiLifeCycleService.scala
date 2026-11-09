@@ -40,7 +40,7 @@ class ApiLifeCycleService(
          (COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason')
            || '["$lifecycleReason"]'::jsonb
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
@@ -60,7 +60,7 @@ class ApiLifeCycleService(
          '{blockedBy}',
          COALESCE(content -> 'blockedBy', '[]'::jsonb) - '$lifecycleReason'
        )
-       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2 and _deleted IS FALSE
+       WHERE content ->> 'api' = $$1 and content ->> '_tenant' = $$2
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
@@ -75,13 +75,7 @@ class ApiLifeCycleService(
     for {
       plans <- env.dataStore.usagePlanRepo
         .forTenant(tenant)
-        .findNotDeleted(
-          Json.obj(
-            "_id" -> Json.obj(
-              "$in" -> JsArray(paid.map(_.plan.asJson).distinct)
-            )
-          )
-        )
+        .findByIds(paid.map(_.plan).distinct)
       _ <- Future.sequence(
         paid.flatMap(subscription =>
           plans
@@ -135,13 +129,12 @@ class ApiLifeCycleService(
     EitherT
       .right[AppError](
         env.dataStore.apiRepo
-          .forTenant(api.tenant)
-          .findOneNotDeleted(
-            Json.obj(
-              "_humanReadableId" -> api.humanReadableId,
-              "currentVersion" -> Json.obj("$ne" -> api.currentVersion.asJson)
-            )
+          .findOtherVersions(
+            api.tenant,
+            api.humanReadableId,
+            api.currentVersion.value
           )
+          .map(_.headOption)
       )
       .flatMap {
         case None => EitherT.pure[Future, AppError](())
@@ -174,7 +167,7 @@ class ApiLifeCycleService(
       subscriptions <- EitherT.right[AppError](
         addLifecycleBlock(api = api, tenant = tenant)
       )
-      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](synchronizerJob.runSync(api.id, tenant))
       _ <- EitherT.right[AppError](alignStripePauses(subscriptions, tenant))
       _ <- notifyBlocking(subscriptions, api, tenant, user)
     } yield ()
@@ -189,7 +182,7 @@ class ApiLifeCycleService(
       subscriptions <- EitherT.right[AppError](
         removeLifecycleBlock(api = api, tenant = tenant)
       )
-      _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](synchronizerJob.runSync(api.id, tenant))
       _ <- EitherT.right[AppError](alignStripePauses(subscriptions, tenant))
     } yield ()
   }
@@ -212,12 +205,7 @@ class ApiLifeCycleService(
         EitherT.right[AppError](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(subscriptionsTeamsIds.map(_.asJson)))
-              )
-            )
+            .findByIds(subscriptionsTeamsIds)
         )
       subscriptionWithMaybeTeams =
         subscriptions.map(subscription =>
@@ -273,10 +261,7 @@ class ApiLifeCycleService(
     for {
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
-          .forTenant(api.tenant)
-          .findNotDeleted(
-            Json.obj("api" -> api.id.value)
-          )
+          .findByApi(api.tenant, api.id)
       )
 
       subscriptionsTeamsIds: Seq[TeamId] = subscriptions.map(_.team).distinct
@@ -284,12 +269,7 @@ class ApiLifeCycleService(
         EitherT.liftF[Future, AppError, Seq[Team]](
           env.dataStore.teamRepo
             .forTenant(api.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(subscriptionsTeamsIds.map(_.asJson)))
-              )
-            )
+            .findByIds(subscriptionsTeamsIds)
         )
       _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](
         Future.sequence(subscriptionTeams.map(subscriptionTeam => {

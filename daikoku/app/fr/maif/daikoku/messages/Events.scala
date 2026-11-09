@@ -69,50 +69,32 @@ class MessageActor(implicit
       sender <- env.dataStore.userRepo.findById(message.sender)
       lastMessage <-
         env.dataStore.messageRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "closed" -> JsNull,
-              "chat" -> message.chat.asJson,
-              "date" -> Json.obj("$lt" -> message.date.getMillis)
-            )
+          .findLastOpenMessageBefore(
+            tenant.id,
+            message.chat,
+            message.date.getMillis
           )
-          .map(_.sortWith((a, b) => a.date.isAfter(b.date)).headOption)
-      recipients <- env.dataStore.userRepo.find(
-        Json.obj(
-          "_id" -> Json.obj(
-            "$in" -> JsArray(
-              (message.participants + message.chat - message.sender)
-                .map(_.asJson)
-                .toSeq
-            )
-          )
-        )
+      recipients <- env.dataStore.userRepo.findByIds(
+        (message.participants + message.chat - message.sender).toSeq
       )
-      connected <- env.dataStore.userSessionRepo.find(
-        Json.obj(
-          "userId" -> Json.obj("$in" -> JsArray(recipients.map(_.id.asJson))),
-          "expires" -> Json.obj("$gt" -> DateTime.now().getMillis)
-        )
+      connected <- env.dataStore.userSessionRepo.findActiveByUserIds(
+        recipients.map(_.id),
+        DateTime.now().getMillis
       )
 
-      emails =
+      recipientsToNotify =
         if (message.chat == message.sender)
           recipients
             .filter(u => lastMessage.exists(m => m.readBy.contains(u.id)))
             .filter(u => !connected.exists(s => s.userId == u.id))
-            .map(_.email)
         else
           recipients
             .filter(u => lastMessage.exists(_.readBy.contains(u.id)))
             .filter(_.id == message.chat)
             .filter(u => !connected.exists(s => s.userId == u.id))
-            .map(_.email)
       path =
         if (message.sender == message.chat) "/settings/messages"
         else "/"
-
-      link = env.getDaikokuUrl(tenant, path)
 
       title <- translator.translate(
         "mail.new.message.title",
@@ -121,50 +103,42 @@ class MessageActor(implicit
           "user" -> JsString(sender.get.name)
         )
       )
-      body <- translator.translate(
-        "mail.new.message.body",
-        tenant,
-        Map(
-          "body" -> JsString(message.message),
-          "user_data" -> sender.get.asSimpleJson,
-          "message_data" -> message.asJson,
-          "tenant_data" -> tenant.asJson,
-          "link" -> JsString(link)
-        )
-      )
       _ <- Future.sequence(
-        emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant))
+        recipientsToNotify.map(recipient =>
+          translator
+            .translate(
+              "mail.new.message.body",
+              tenant,
+              Map(
+                "body" -> JsString(message.message),
+                "user_data" -> sender.get.asSimpleJson,
+                "message_data" -> message.asJson,
+                "tenant_data" -> tenant.asJson,
+                "link" -> JsString(
+                  env.getDaikokuUrl(tenant, path, recipient)
+                )
+              )
+            )
+            .flatMap(body =>
+              tenant.mailer.send(title, Seq(recipient.email), body, tenant)
+            )
+        )
       )
     } yield ()
   }
 
   override def receive: Receive = {
     case GetAllMessage(user, tenant, maybeChat, closed) =>
-      val query = Json.obj("participants" -> user.id.asJson) ++
-        maybeChat.fold(Json.obj("closed" -> JsNull))(chat => {
-          val value: JsValue = closed.map(s => JsNumber(s)).getOrElse(JsNull)
-          Json.obj("chat" -> chat, "closed" -> value)
-        })
-
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo
-          .forTenant(tenant)
-          .find(query)
+          .findChatMessages(tenant.id, user.id, maybeChat, closed)
 
       response pipeTo sender()
 
     case GetMyAdminMessages(user, tenant, closed) =>
-      val value: JsValue = closed.map(d => JsNumber(d)).getOrElse(JsNull)
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo
-          .forTenant(tenant)
-          .find(
-            Json.obj(
-              "chat" -> user.id.asJson,
-              "messageType.type" -> "tenant",
-              "closed" -> value
-            )
-          )
+          .findAdminChatMessages(tenant.id, user.id, closed)
 
       response pipeTo sender()
 
@@ -181,37 +155,19 @@ class MessageActor(implicit
 
     case CloseChat(chat, tenant) =>
       val response = env.dataStore.messageRepo
-        .forTenant(tenant)
-        .updateMany(
-          Json.obj("chat" -> chat, "closed" -> JsNull),
-          Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime))
-        )
+        .closeChat(tenant.id, chat, DateTime.now().toDate.getTime)
 
       response pipeTo sender()
 
     case ReadMessages(user, chat, date, tenant) => {
       env.dataStore.messageRepo
-        .forTenant(tenant)
-        .updateManyByQuery(
-          Json.obj(
-            "$and" -> Json.arr(
-              Json.obj("chat" -> chat),
-              Json.obj("readBy" -> Json.obj("$ne" -> user.id.asJson)),
-              Json.obj("date" -> Json.obj("$lt" -> date.toDate.getTime))
-            )
-          ),
-          Json.obj("$push" -> Json.obj("readBy" -> user.id.asJson))
-        )
+        .markAsRead(tenant.id, chat, user.id, date.toDate.getTime)
     }
 
     case GetLastChatDate(chat, tenant, maybeDate) =>
       val date: Long = maybeDate.getOrElse(DateTime.now().toDate.getTime)
-      val result = env.dataStore.messageRepo
-        .forTenant(tenant)
-        .findMaxByQuery(
-          Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> date)),
-          "closed"
-        )
+      val result =
+        env.dataStore.messageRepo.lastClosedChatDate(tenant.id, chat, date)
       result pipeTo sender()
 
     case GetLastClosedChatDates(chats, tenant, maybeClosedDate) =>
@@ -219,11 +175,7 @@ class MessageActor(implicit
         .mapAsync(10)(chat => {
           val l: Long = maybeClosedDate.getOrElse(DateTime.now().toDate.getTime)
           env.dataStore.messageRepo
-            .forTenant(tenant)
-            .findMaxByQuery(
-              Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> l)),
-              "closed"
-            )
+            .lastClosedChatDate(tenant.id, chat, l)
             .map {
               case Some(date) =>
                 Json.obj("chat" -> chat, "date" -> JsNumber(date))

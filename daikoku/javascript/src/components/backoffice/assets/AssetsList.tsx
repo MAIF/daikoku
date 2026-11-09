@@ -36,6 +36,7 @@ const mimeTypes = [
     value: 'application/vnd.oasis.opendocument.text',
   },
   { label: '.png	fichier Portable Network Graphics', value: 'image/png' },
+  { label: '.webp	image webP', value: 'image/webp' },
   { label: '.pdf	Adobe Portable Document Format (PDF)', value: 'application/pdf' },
   { label: '.webm fichier vidéo WEBM', value: 'video/webm' },
   {

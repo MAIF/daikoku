@@ -275,19 +275,11 @@ class AdminApiControllerSpec
         resp.status mustBe 200
 
         val verif = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/tenants/${id.value}?notDeleted=true",
-          headers = getAdminApiHeader(adminApiKeyring)
-        )(using tenant)
-
-        verif.status mustBe 404
-
-        val verifDeleted = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/tenants/${id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verifDeleted.status mustBe 200
-        (verifDeleted.json.as[JsObject] \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -531,8 +523,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -833,8 +824,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -1144,8 +1134,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
 
       "Conflict :: Name already exists" in {
@@ -3687,7 +3676,7 @@ class AdminApiControllerSpec
           Await.result(
             daikokuComponents.env.dataStore.auditTrailRepo
               .forTenant(tenant.id)
-              .findRaw(Json.obj()),
+              .findAll(),
             10.seconds
           )
 
@@ -3732,6 +3721,34 @@ class AdminApiControllerSpec
         )(using tenant)
 
         resp.status mustBe 409
+      }
+
+      "POST :: Conflict :: custom name is not an environment of the tenant" in {
+        val plan = defaultApi.plans.head.copy(customName = "staging")
+
+        setupEnvBlocking(
+          tenants = Seq(tenantEnvMode),
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiKeyring),
+          body = plan.asJson.some
+        )(using tenantEnvMode)
+
+        resp.status mustBe 409
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiKeyring)
+        )(using tenantEnvMode)
+
+        verif.status mustBe 404
       }
 
       "POST :: BadRequest" in {
@@ -4118,8 +4135,7 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
 
-        verif.status mustBe 200
-        (verif.json \ "_deleted").as[Boolean] mustBe true
+        verif.status mustBe 404
       }
     }
 
@@ -4651,19 +4667,7 @@ class AdminApiControllerSpec
       def operationsPending() =
         Await.result(
           daikokuComponents.env.dataStore.operationRepo
-            .forTenant(tenant)
-            .find(
-              Json.obj(
-                "status" -> Json.obj(
-                  "$in" -> JsArray(
-                    Seq(
-                      JsString(OperationStatus.Idle.name),
-                      JsString(OperationStatus.InProgress.name)
-                    )
-                  )
-                )
-              )
-            ),
+            .findPending(tenant.id),
           5.seconds
         )
 
@@ -4823,12 +4827,7 @@ class AdminApiControllerSpec
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo
             .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-              )
-            ),
+            .findByIds(defaultApi.plans.map(_.id)),
           5.seconds
         )
         _maybePlans.isEmpty mustBe true
@@ -4836,7 +4835,7 @@ class AdminApiControllerSpec
         val _maybeDocs = Await.result(
           daikokuComponents.env.dataStore.apiDocumentationPageRepo
             .forTenant(tenant)
-            .findByIdNotDeleted(page.id),
+            .findById(page.id),
           5.seconds
         )
         _maybeDocs.isEmpty mustBe true
@@ -4844,7 +4843,7 @@ class AdminApiControllerSpec
         val _maybePosts = Await.result(
           daikokuComponents.env.dataStore.apiPostRepo
             .forTenant(tenant)
-            .findByIdNotDeleted(post.id),
+            .findById(post.id),
           5.seconds
         )
         _maybePosts.isEmpty mustBe true
@@ -4852,7 +4851,7 @@ class AdminApiControllerSpec
         val _maybeIssue = Await.result(
           daikokuComponents.env.dataStore.apiIssueRepo
             .forTenant(tenant)
-            .findByIdNotDeleted(issue.id),
+            .findById(issue.id),
           5.seconds
         )
         _maybeIssue.isEmpty mustBe true
@@ -4860,7 +4859,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forAllTenant()
-            .findByIdNotDeleted(subDemandNotif.id),
+            .findById(subDemandNotif.id),
           5.seconds
         ) mustBe None
 
@@ -4985,8 +4984,7 @@ class AdminApiControllerSpec
           path = s"/admin-api/users/${userTeamUserId.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
-        verifUser.status mustBe 200
-        (verifUser.json \ "_deleted").as[Boolean] mustBe true
+        verifUser.status mustBe 404
 
         val _maybeSubscription = Await.result(
           daikokuComponents.env.dataStore.apiSubscriptionRepo
@@ -5185,17 +5183,11 @@ class AdminApiControllerSpec
         )
         // subscription is now fully deleted
         _maybeSubscription mustBe empty
-        _maybeSubscription.forall(_.deleted) mustBe true
 
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo
             .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-              )
-            ),
+            .findByIds(defaultApi.plans.map(_.id)),
           5.seconds
         )
         _maybePlans.isEmpty mustBe true
@@ -5204,7 +5196,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.apiDocumentationPageRepo
               .forTenant(tenant)
-              .findByIdNotDeleted(page.id),
+              .findById(page.id),
             5.seconds
           )
           .isEmpty mustBe true
@@ -5213,7 +5205,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.apiPostRepo
               .forTenant(tenant)
-              .findByIdNotDeleted(post.id),
+              .findById(post.id),
             5.seconds
           )
           .isEmpty mustBe true
@@ -5222,7 +5214,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.apiIssueRepo
               .forTenant(tenant)
-              .findByIdNotDeleted(issue.id),
+              .findById(issue.id),
             5.seconds
           )
           .isEmpty mustBe true
@@ -5230,7 +5222,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forAllTenant()
-            .findByIdNotDeleted(subDemandNotif.id),
+            .findById(subDemandNotif.id),
           5.seconds
         ) mustBe None
 
@@ -5357,8 +5349,7 @@ class AdminApiControllerSpec
           path = s"/admin-api/usage-plans/${subscribedPlan.id.value}",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
-        verifPlan.status mustBe 200
-        (verifPlan.json \ "_deleted").as[Boolean] mustBe true
+        verifPlan.status mustBe 404
 
         org.awaitility.Awaitility.await.atMost(10.seconds.toJava) until { () =>
           // test if subscriptions are physically deleted
@@ -5378,12 +5369,7 @@ class AdminApiControllerSpec
         val _maybePlans = Await.result(
           daikokuComponents.env.dataStore.usagePlanRepo
             .forTenant(tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json
-                  .obj("$in" -> JsArray(defaultApi.plans.map(_.id.asJson)))
-              )
-            ),
+            .findByIds(defaultApi.plans.map(_.id)),
           5.seconds
         )
         _maybePlans.nonEmpty mustBe true
@@ -5393,7 +5379,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.apiDocumentationPageRepo
               .forTenant(tenant)
-              .findByIdNotDeleted(page.id),
+              .findById(page.id),
             5.seconds
           )
           .isEmpty mustBe true
@@ -5401,7 +5387,7 @@ class AdminApiControllerSpec
         Await.result(
           daikokuComponents.env.dataStore.notificationRepo
             .forAllTenant()
-            .findByIdNotDeleted(subDemandNotif.id),
+            .findById(subDemandNotif.id),
           5.seconds
         ) mustBe None
 
@@ -5467,7 +5453,7 @@ class AdminApiControllerSpec
         )
 
         val resp = httpJsonCallWithoutSessionBlocking(
-          path = s"/admin-api/subscriptions/${sub.id.value}?logically=true",
+          path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "DELETE",
           headers = getAdminApiHeader(adminApiKeyring)
         )(using tenant)
@@ -5586,7 +5572,7 @@ class AdminApiControllerSpec
           ),
           notif(
             "n-oto-sync-api-error",
-            NotificationAction.OtoroshiSyncApiError(api, "sync error")
+            NotificationAction.OtoroshiSyncApiError(api.id, "sync error")
           ),
           notif(
             "n-key-deletion",
@@ -5709,7 +5695,7 @@ class AdminApiControllerSpec
           .result(
             daikokuComponents.env.dataStore.notificationRepo
               .forTenant(tenant)
-              .findNotDeleted(Json.obj()),
+              .findAll(),
             5.seconds
           )
           .map(_.id.value)

@@ -22,8 +22,7 @@ class Translator {
     implicit val ec = env.defaultExecutionContext
 
     env.dataStore.translationRepo
-      .forTenant(tenant)
-      .findOne(Json.obj("key" -> key, "language" -> language.toLowerCase))
+      .findByKeyAndLanguage(tenant.id, key, language.toLowerCase)
       .map {
         case None => messagesApi(key)(using lang = Lang(language.toLowerCase))
         case Some(translation) => translation.value
@@ -44,11 +43,8 @@ class Translator {
     val body = if (key.startsWith("mail")) {
       env.dataStore.cmsRepo
         .forTenant(tenant)
-        .findOne(
-          Json.obj(
-            "_id" -> s".mails.$key.${language.toLowerCase}"
-              .replaceAll("\\.", "-")
-          )
+        .findById(
+          s".mails.$key.${language.toLowerCase}".replaceAll("\\.", "-")
         )
         .flatMap {
           case None =>
@@ -121,8 +117,7 @@ class Translator {
     implicit val ec: ExecutionContext = env.defaultExecutionContext
 
     env.dataStore.translationRepo
-      .forTenant(tenant)
-      .findOne(Json.obj("key" -> key, "language" -> language.toLowerCase))
+      .findByKeyAndLanguage(tenant.id, key, language.toLowerCase)
       .flatMap {
         case None =>
           tenant.mailerSettings match {
@@ -148,11 +143,8 @@ class Translator {
 
     env.dataStore.cmsRepo
       .forTenant(tenant)
-      .findOne(
-        Json.obj(
-          "_id" -> s".mails.root.$key.${language.toLowerCase}"
-            .replaceAll("\\.", "-")
-        )
+      .findById(
+        s".mails.root.$key.${language.toLowerCase}".replaceAll("\\.", "-")
       )
       .flatMap {
         case None => _getMailTemplate(key, tenant, args)
