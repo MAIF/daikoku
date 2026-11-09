@@ -46,4 +46,5 @@ daikoku/public/rolldown-runtime-*
 stats.html
 project/
 .env.stripe*
+!daikoku/.env.stripe.example
 .vibe

@@ -170,15 +170,20 @@ class StripeWebhookSpec()
       priceId: String
   )(implicit key: String): (String, String) = {
     val customer = (stripe("/v1/customers")
-      .post(Map("name" -> s"daikoku-webhook-${UUID.randomUUID()}"))
+      .post(
+        Map(
+          "name" -> s"daikoku-webhook-${UUID.randomUUID()}",
+          "payment_method" -> "pm_card_visa",
+          "invoice_settings[default_payment_method]" -> "pm_card_visa"
+        )
+      )
       .futureValue
       .json \ "id").as[String]
     val subscription = stripe("/v1/subscriptions")
       .post(
         Map(
           "customer" -> customer,
-          "items[0][price]" -> priceId,
-          "trial_period_days" -> "7"
+          "items[0][price]" -> priceId
         )
       )
       .futureValue
@@ -189,8 +194,7 @@ class StripeWebhookSpec()
   private def daikokuSubscription(
       tenant: Tenant,
       stripeSubscriptionId: String,
-      customerId: String,
-      enabled: Boolean = true
+      customerId: String
   ): ApiSubscription = {
     val keyring = Keyring(
       id = KeyringId(s"webhook-${UUID.randomUUID()}"),
@@ -205,8 +209,7 @@ class StripeWebhookSpec()
       otoroshiSettings = KeyringOtoroshiBinding.Otoroshi(wiremockedOtoroshi),
       createdAt = DateTime.now(),
       rotation = None,
-      integrationToken = "webhook-token",
-      enabled = enabled
+      integrationToken = "webhook-token"
     )
     val subscription = ApiSubscription(
       id = ApiSubscriptionId(s"webhook-${UUID.randomUUID()}"),
@@ -217,11 +220,10 @@ class StripeWebhookSpec()
       api = defaultApi.api.id,
       by = userAdmin.id,
       customName = None,
-      enabled = enabled,
       keyring = keyring.id,
       thirdPartySubscriptionInformations = StripeSubscriptionInformations(
         stripeSubscriptionId,
-        customerId.some
+        customerId
       ).some
     )
     daikokuComponents.env.dataStore.keyringRepo
@@ -312,35 +314,27 @@ class StripeWebhookSpec()
       ).status mustBe 200
     }
 
-    "cut the key when the subscription is cancelled on Stripe's side" in {
-      implicit val stripeKey: String = realStripeKey
-      val stripeTenant = setupTenant(stripeKey)
-      val paymentSettings = payablePlan(stripeTenant)
-      val (customerId, stripeSubscriptionId) =
-        stripeSubscription(paymentSettings.priceIds.basePriceId)
+    "end the subscription when it is cancelled on Stripe's side" in {
+      val stripeTenant = setupTenant("sk_test_unused")
       val subscription =
-        daikokuSubscription(stripeTenant, stripeSubscriptionId, customerId)
-      stripe(s"/v1/subscriptions/$stripeSubscriptionId")
-        .delete()
-        .futureValue
-        .status mustBe 200
+        daikokuSubscription(stripeTenant, "sub_deleted", "cus_deleted")
+      val deleted = event(
+        "customer.subscription.deleted",
+        Json.obj("id" -> "sub_deleted", "object" -> "subscription")
+      )
 
-      deliver(
-        stripeTenant,
-        event(
-          "customer.subscription.deleted",
-          Json.obj("id" -> stripeSubscriptionId, "object" -> "subscription")
-        )
-      ).status mustBe 200
+      deliver(stripeTenant, deleted).status mustBe 200
+      deliver(stripeTenant, deleted).status mustBe 200
 
-      currentSubscription(stripeTenant, subscription.id).enabled mustBe false
-      val cancelled = notifications(stripeTenant).map(_.action).collectFirst {
+      val ended = currentSubscription(stripeTenant, subscription.id)
+      ended.blockedBy must contain(SubscriptionBlockReason.Ended)
+      ended.enabled mustBe true
+
+      val cancellations = notifications(stripeTenant).map(_.action).collect {
         case action: NotificationAction.SubscriptionCancellationScheduled =>
           action
-      }.get
-      cancelled.subscription mustBe subscription.id
-
-      cleanUp(stripeTenant, paymentSettings, customerId)
+      }
+      cancellations.map(_.subscription) mustBe Seq(subscription.id)
     }
 
     "have real Stripe carry the new amounts, on the same product and meter" in {
@@ -377,10 +371,10 @@ class StripeWebhookSpec()
 
       // the usage price still reads the counter that has been accumulating
       val metered = stripe(
-        s"/v1/prices/${after.priceIds.additionalPriceId.get}"
+        s"/v1/prices/${after.priceIds.additionalPriceId}"
       ).get().futureValue
       (metered.json \ "recurring" \ "meter").as[String] mustBe
-        before.priceIds.meterId.get
+        before.priceIds.meterId
 
       savePlan(
         currentPlan(stripeTenant).copy(currency = Currency("USD").some)

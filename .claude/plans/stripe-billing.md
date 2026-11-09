@@ -86,7 +86,7 @@ with master and the PR is open.
 - Done when: a `StripeWebhookSpec` case shows `customer.subscription.deleted` leaves `blockedBy`
   containing `ended` with `enabled` unchanged; a spec shows a team subscribes again to a plan whose
   previous subscription is `Ended`.
-- Status: todo
+- Status: done
 
 ### E3 · Billing follows `blockedBy`
 
@@ -97,7 +97,7 @@ with master and the PR is open.
 - Done when: `toggleStateThirdPartySubscription` no longer exists; specs show an owner block pauses
   the Stripe subscription, an owner unblock resumes it, an API lifecycle block pauses every Stripe
   subscription of the API, and `enabled = false` makes no Stripe call.
-- Status: todo
+- Status: done
 
 ### E4 · Mandatory `customerId`, no legacy
 
@@ -106,7 +106,7 @@ with master and the PR is open.
   `controllers/ConsumptionController.scala`, Stripe specs.
 - Done when: `customerId: String` in `StripeSubscriptionInformations`; `grep -rn legacy` over
   `ConsumptionController.scala` and `PaymentClient.scala` returns nothing; `sbt Test/compile` passes.
-- Status: todo
+- Status: done
 
 ### E5 · Billing screen badges
 
@@ -118,7 +118,7 @@ with master and the PR is open.
   reads `enabled`; `grep -rnE 'billing\.state\.(legacy|unpaid|cut)'` over `daikoku/javascript/src`
   returns nothing; `billing.state.ended` and `billing.state.suspended` exist in en and fr;
   `npm run build` passes.
-- Status: todo
+- Status: done
 
 ### E6 · Trial traces and `.env.stripe.example`
 
@@ -129,7 +129,7 @@ with master and the PR is open.
 - Done when: `grep -rni trial` over `daikoku/app daikoku/javascript/src daikoku/javascript/tests daikoku/test`
   only returns the no-trial guard of `StripeBillingSpec`; `git ls-files daikoku/.env.stripe.example`
   lists the file; `git check-ignore daikoku/.env.stripe` still matches.
-- Status: todo
+- Status: done
 
 ### E7 · Merge master
 
@@ -156,3 +156,14 @@ with master and the PR is open.
   unpaid scenario ran the pass against a Stripe test clock.
 - E1 · The webhook section of `configfile.mdx` lists `checkout.session.completed`, the event that
   has materialised paid subscriptions since #1221, which the doc had left out.
+- E2 · The `customer.subscription.deleted` case of `StripeWebhookSpec` runs offline, on fake Stripe
+  ids: ending a subscription no longer calls Stripe.
+- E4 · Goes beyond `customerId`: `additionalPriceId`, `meterId` and `meterEventName` are mandatory
+  too, so no branch handles a plan priced before Billing Meters. `billingStatusOf` answers a
+  `BillingStatus` and errs for a subscription not paid through Stripe, the admin OpenAPI schemas
+  match the JSON formats, and the manual's pre-19.0.0 warning is gone.
+- E5 · The billing state of an `Ended` subscription is not read from Stripe: Stripe keeps a
+  cancelled subscription readable with `cancel_at_period_end`, which would show a past end date and
+  an undo button bound to fail.
+- E6 · The dev seeds lose `trialPeriod` too, `.env.stripe.example` documents the mise tasks, and
+  `StripeWebhookSpec` pays its test subscriptions with `pm_card_visa` instead of opening a trial.

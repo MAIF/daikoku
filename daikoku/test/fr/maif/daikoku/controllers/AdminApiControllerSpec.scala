@@ -3814,7 +3814,9 @@ class AdminApiControllerSpec
                   productId = "1234",
                   priceIds = StripePriceIds(
                     basePriceId = "1234",
-                    additionalPriceId = None
+                    additionalPriceId = "5678",
+                    meterId = "mtr_1234",
+                    meterEventName = "daikoku_usage_1234"
                   )
                 )
                 .some

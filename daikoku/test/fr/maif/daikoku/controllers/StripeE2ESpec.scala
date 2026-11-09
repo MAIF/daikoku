@@ -145,8 +145,8 @@ class StripeE2ESpec()
 
       val stripeSettingsResult =
         settings.toOption.get.asInstanceOf[PaymentSettings.Stripe]
-      val meterId = stripeSettingsResult.priceIds.meterId.get
-      val meteredPriceId = stripeSettingsResult.priceIds.additionalPriceId.get
+      val meterId = stripeSettingsResult.priceIds.meterId
+      val meteredPriceId = stripeSettingsResult.priceIds.additionalPriceId
 
       val meter = stripe(s"/v1/billing/meters/$meterId").get().futureValue
       meter.status mustBe 200
@@ -175,7 +175,7 @@ class StripeE2ESpec()
         .asInstanceOf[PaymentSettings.Stripe]
       val customerId = createCustomer()
       val informations =
-        StripeSubscriptionInformations("sub_e2e", customerId.some)
+        StripeSubscriptionInformations("sub_e2e", customerId)
 
       val first = consumption(stripeTenant.id, hits = 250, lastReportedHits = 0)
       daikokuComponents.paymentClient
@@ -188,7 +188,7 @@ class StripeE2ESpec()
         .futureValue mustBe Right(())
 
       eventually(timeout(Span(120, Seconds)), interval(Span(5, Seconds))) {
-        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+        aggregatedUsage(settings.priceIds.meterId, customerId) mustBe
           BigDecimal(400)
       }
 
@@ -197,7 +197,7 @@ class StripeE2ESpec()
         .futureValue mustBe Right(())
 
       eventually(timeout(Span(60, Seconds)), interval(Span(5, Seconds))) {
-        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+        aggregatedUsage(settings.priceIds.meterId, customerId) mustBe
           BigDecimal(400)
       }
 
@@ -223,7 +223,7 @@ class StripeE2ESpec()
       val informations =
         StripeSubscriptionInformations(
           s"sub_reconcile_${UUID.randomUUID()}",
-          customerId.some
+          customerId
         )
 
       daikokuComponents.env.dataStore.usagePlanRepo
@@ -271,7 +271,7 @@ class StripeE2ESpec()
         .futureValue mustBe Right(())
 
       eventually(timeout(Span(120, Seconds)), interval(Span(5, Seconds))) {
-        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+        aggregatedUsage(settings.priceIds.meterId, customerId) mustBe
           BigDecimal(250)
       }
 
@@ -283,14 +283,14 @@ class StripeE2ESpec()
       daikokuComponents.stripeReconciliationJob.reconcile().futureValue
 
       eventually(timeout(Span(120, Seconds)), interval(Span(5, Seconds))) {
-        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+        aggregatedUsage(settings.priceIds.meterId, customerId) mustBe
           BigDecimal(400)
       }
 
       daikokuComponents.stripeReconciliationJob.reconcile().futureValue
 
       eventually(timeout(Span(60, Seconds)), interval(Span(5, Seconds))) {
-        aggregatedUsage(settings.priceIds.meterId.get, customerId) mustBe
+        aggregatedUsage(settings.priceIds.meterId, customerId) mustBe
           BigDecimal(400)
       }
 

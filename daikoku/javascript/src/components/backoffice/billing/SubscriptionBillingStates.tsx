@@ -25,15 +25,30 @@ const amount = (value: number, currency: string) =>
 
 const billingBadge = (state: ISubscriptionBillingState, { translate }: Translate) => {
   if (state.error) {
-    return { className: '--neutral', label: translate('billing.state.unavailable') };
-  } else if (state.legacy) {
-    return { className: '--inactive', label: translate('billing.state.legacy') };
-  } else if (!state.enabled) {
-    return { className: '--danger', label: translate('billing.state.cut') };
+    return {
+      className: '--neutral',
+      label: translate('billing.state.unavailable'),
+    };
+  } else if (state.blockedBy.includes('ended')) {
+    return {
+      className: '--inactive',
+      label: translate('billing.state.ended'),
+    };
+  } else if (state.blockedBy.length > 0) {
+    return {
+      className: '--warning',
+      label: translate('billing.state.suspended'),
+    };
   } else if (state.cancelAt) {
-    return { className: '--neutral', label: translate('billing.state.cancellation-scheduled') };
+    return {
+      className: '--neutral',
+      label: translate('billing.state.cancellation-scheduled'),
+    };
   } else {
-    return { className: '--success', label: translate('billing.state.active') };
+    return {
+      className: '--success',
+      label: translate('billing.state.active'),
+    };
   }
 };
 
@@ -64,7 +79,6 @@ const SubscriptionBillingCard = ({ team, state, onUndoCancellation }: Subscripti
       </div>
 
       {state.error && <p className="subscription-billing__line">{translate('billing.state.unavailable.description')}</p>}
-      {state.legacy && <p className="subscription-billing__line">{translate('billing.state.legacy.description')}</p>}
 
       {state.cancelAt && (
         <div className="subscription-billing__line d-flex align-items-center justify-content-between gap-2">
@@ -97,7 +111,7 @@ const SubscriptionBillingCard = ({ team, state, onUndoCancellation }: Subscripti
         </p>
       )}
 
-      {!state.legacy && !state.error && (
+      {!state.error && (
         <button className="btn btn-sm --ghost subscription-billing__invoices" onClick={openInvoices}>
           {translate('billing.invoices')}
           <ExternalLink size={14} className="ms-1" />

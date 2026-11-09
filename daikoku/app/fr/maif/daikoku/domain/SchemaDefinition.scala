@@ -930,7 +930,7 @@ object SchemaDefinition {
         "additionalPriceId",
         Field(
           "additionalPriceId",
-          OptionType(StringType),
+          StringType,
           resolve = _.value.additionalPriceId
         )
       )

@@ -2,10 +2,11 @@ package fr.maif.daikoku.services
 
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
@@ -16,7 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ApiLifeCycleService(
     mailService: MailService,
-    synchronizerJob: OtoroshiSynchronizerJob
+    synchronizerJob: OtoroshiSynchronizerJob,
+    paymentClient: PaymentClient
 ) {
 
   private val lifecycleReason = SubscriptionBlockReason.Lifecycle.name
@@ -62,6 +64,44 @@ class ApiLifeCycleService(
        RETURNING content;""",
         Seq(api.id.value, tenant.id.value)
       )
+
+  private def alignStripePauses(
+      subscriptions: Seq[ApiSubscription],
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Unit] = {
+    val paid =
+      subscriptions.filter(_.thirdPartySubscriptionInformations.isDefined)
+
+    for {
+      plans <- env.dataStore.usagePlanRepo
+        .forTenant(tenant)
+        .findNotDeleted(
+          Json.obj(
+            "_id" -> Json.obj(
+              "$in" -> JsArray(paid.map(_.plan.asJson).distinct)
+            )
+          )
+        )
+      _ <- Future.sequence(
+        paid.flatMap(subscription =>
+          plans
+            .find(_.id == subscription.plan)
+            .map(plan =>
+              paymentClient
+                .alignStripePause(tenant, subscription, plan)
+                .value
+                .map {
+                  case Left(error) =>
+                    AppLogger.error(
+                      s"[api lifecycle] unable to align the Stripe pause of subscription ${subscription.id.value}: ${error.getErrorMessage()}"
+                    )
+                  case Right(_) => ()
+                }
+            )
+        )
+      )
+    } yield ()
+  }
 
   def handleApiLifeCycle(oldApi: Api, newApi: Api, tenant: Tenant, user: User)(
       implicit
@@ -135,6 +175,7 @@ class ApiLifeCycleService(
         addLifecycleBlock(api = api, tenant = tenant)
       )
       _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](alignStripePauses(subscriptions, tenant))
       _ <- notifyBlocking(subscriptions, api, tenant, user)
     } yield ()
   }
@@ -145,10 +186,11 @@ class ApiLifeCycleService(
   ): EitherT[Future, AppError, Unit] = {
 
     for {
-      _ <- EitherT.right[AppError](
+      subscriptions <- EitherT.right[AppError](
         removeLifecycleBlock(api = api, tenant = tenant)
       )
       _ <- EitherT.right[AppError](synchronizerJob.run(api.id, tenant))
+      _ <- EitherT.right[AppError](alignStripePauses(subscriptions, tenant))
     } yield ()
   }
 

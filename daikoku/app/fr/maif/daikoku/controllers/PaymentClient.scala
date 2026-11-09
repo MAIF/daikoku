@@ -207,8 +207,6 @@ class PaymentClient(
   private def archiveStripePrices(
       paymentSettings: PaymentSettings
   )(implicit settings: StripeSettings): EitherT[Future, AppError, JsValue] = {
-    val nothingToRetire = EitherT.pure[Future, AppError](Json.obj().as[JsValue])
-
     paymentSettings match {
       case PaymentSettings.Stripe(_, _, priceIds) =>
         for {
@@ -216,20 +214,14 @@ class PaymentClient(
             s"/v1/prices/${priceIds.basePriceId}",
             "already_inactive"
           )
-          additionalResponse <- priceIds.additionalPriceId.fold(
-            nothingToRetire
-          )(additionalPriceId =>
-            retireOnStripe(
-              s"/v1/prices/$additionalPriceId",
-              "already_inactive"
-            )
+          additionalResponse <- retireOnStripe(
+            s"/v1/prices/${priceIds.additionalPriceId}",
+            "already_inactive"
           )
-          meterResponse <- priceIds.meterId.fold(nothingToRetire)(meterId =>
-            retireOnStripe(
-              s"/v1/billing/meters/$meterId/deactivate",
-              "already_deactivated",
-              Map.empty
-            )
+          meterResponse <- retireOnStripe(
+            s"/v1/billing/meters/${priceIds.meterId}/deactivate",
+            "already_deactivated",
+            Map.empty
           )
         } yield Json.obj(
           "basePrice" -> baseResponse,
@@ -472,9 +464,9 @@ class PaymentClient(
           productId,
           StripePriceIds(
             basePriceId = baseprice,
-            additionalPriceId = payperUsePrice.some,
-            meterId = meterId.some,
-            meterEventName = eventName.some
+            additionalPriceId = payperUsePrice,
+            meterId = meterId,
+            meterEventName = eventName
           )
         )
       case _ =>
@@ -503,19 +495,14 @@ class PaymentClient(
         )
       case Some(s) =>
         implicit val stripeSettings: StripeSettings = s
-        val existingMeter = (
-          settings.priceIds.meterId,
-          settings.priceIds.meterEventName
-        ) match {
-          case (Some(meterId), Some(eventName)) => (meterId, eventName).some
-          case _                                => None
-        }
+        val existingMeter =
+          (settings.priceIds.meterId, settings.priceIds.meterEventName)
 
         createStripePrice(
           plan,
           settings.productId,
           s"${plan.id.value}-${IdGenerator.token(16)}",
-          existingMeter
+          existingMeter.some
         )
     }
 
@@ -535,13 +522,9 @@ class PaymentClient(
             s"/v1/prices/${settings.priceIds.basePriceId}",
             "already_inactive"
           )
-          _ <- settings.priceIds.additionalPriceId.fold(
-            EitherT.pure[Future, AppError](Json.obj().as[JsValue])
-          )(additionalPriceId =>
-            retireOnStripe(
-              s"/v1/prices/$additionalPriceId",
-              "already_inactive"
-            )
+          _ <- retireOnStripe(
+            s"/v1/prices/${settings.priceIds.additionalPriceId}",
+            "already_inactive"
           )
         } yield ()
     }
@@ -643,9 +626,8 @@ class PaymentClient(
           )
         )
 
-        val body = settings.priceIds.additionalPriceId
-          .map(addPriceId => baseBody + ("line_items[1][price]" -> addPriceId))
-          .getOrElse(baseBody)
+        val body = baseBody +
+          ("line_items[1][price]" -> settings.priceIds.additionalPriceId)
 
         // Billing is monthly for everyone, anchored on the 1st. Stripe prorates
         // the partial first month on its own, proration_behavior defaulting to
@@ -731,9 +713,15 @@ class PaymentClient(
             (subscription.json \ "id").asOpt[String],
             AppError.PaymentError(s"stripe subscription $sub could not be read")
           )
+          customerId <- EitherT.fromOption[Future](
+            (subscription.json \ "customer").asOpt[String],
+            AppError.PaymentError(
+              s"stripe subscription $sub carries no customer"
+            )
+          )
         } yield StripeSubscriptionInformations(
           subscriptionId = subscriptionId,
-          customerId = (subscription.json \ "customer").asOpt[String]
+          customerId = customerId
         ).some
     }
   }
@@ -825,20 +813,12 @@ class PaymentClient(
     if (delta <= 0) {
       FastFuture.successful(Right[AppError, Unit](()))
     } else {
-      (informations.customerId, settings.priceIds.meterEventName) match {
-        case (Some(customerId), Some(eventName)) =>
-          postMeterEvent(
-            eventName,
-            customerId,
-            delta,
-            s"${consumption.id.value}-${consumption.lastReportedHits}"
-          )
-        case _ =>
-          AppLogger.warn(
-            "[PAYMENT] metered sync skipped (legacy subscription without a meter)"
-          )
-          FastFuture.successful(Right[AppError, Unit](()))
-      }
+      postMeterEvent(
+        settings.priceIds.meterEventName,
+        informations.customerId,
+        delta,
+        s"${consumption.id.value}-${consumption.lastReportedHits}"
+      )
     }
   }
 
@@ -906,38 +886,28 @@ class PaymentClient(
             )
           case Some(s) =>
             implicit val stripeSettings: StripeSettings = s
-            (
-              p.priceIds.meterId,
-              p.priceIds.meterEventName,
-              i.customerId
-            ) match {
-              case (Some(meterId), Some(eventName), Some(customerId)) =>
-                (for {
-                  counted <- aggregatedUsageOnStripe(
-                    meterId,
-                    customerId,
-                    from,
-                    to
+            (for {
+              counted <- aggregatedUsageOnStripe(
+                p.priceIds.meterId,
+                i.customerId,
+                from,
+                to
+              )
+              missing = reportedHits - counted.longValue
+              _ <-
+                if (missing <= 0) {
+                  EitherT.pure[Future, AppError](())
+                } else {
+                  EitherT(
+                    postMeterEvent(
+                      p.priceIds.meterEventName,
+                      i.customerId,
+                      missing,
+                      s"reconcile-${i.subscriptionId}-${from.toString("yyyyMM")}-$reportedHits"
+                    )
                   )
-                  missing = reportedHits - counted.longValue
-                  _ <-
-                    if (missing <= 0) EitherT.pure[Future, AppError](())
-                    else
-                      EitherT(
-                        postMeterEvent(
-                          eventName,
-                          customerId,
-                          missing,
-                          s"reconcile-${i.subscriptionId}-${from.toString("yyyyMM")}-$reportedHits"
-                        )
-                      )
-                } yield Math.max(missing, 0L)).value
-              case _ =>
-                AppLogger.warn(
-                  "[PAYMENT] reconciliation skipped (legacy subscription without a meter)"
-                )
-                FastFuture.successful(Right[AppError, Long](0L))
-            }
+                }
+            } yield Math.max(missing, 0L)).value
         }
       case _ => FastFuture.successful(Right[AppError, Long](0L))
     }
@@ -984,10 +954,13 @@ class PaymentClient(
       val priceId = (item \ "price" \ "id").as[String]
       val metered = (item \ "price" \ "recurring" \ "meter").asOpt[String]
       val expected =
-        if (metered.isDefined) settings.priceIds.additionalPriceId
-        else settings.priceIds.basePriceId.some
+        if (metered.isDefined) {
+          settings.priceIds.additionalPriceId
+        } else {
+          settings.priceIds.basePriceId
+        }
 
-      expected.filter(_ != priceId).map(itemId -> _)
+      Option.when(expected != priceId)(itemId -> expected)
     }
 
   private def swapStripePrices(
@@ -1074,7 +1047,7 @@ class PaymentClient(
       tenant: Tenant,
       subscription: ApiSubscription,
       plan: UsagePlan
-  ): EitherT[Future, AppError, Option[BillingStatus]] =
+  ): EitherT[Future, AppError, BillingStatus] =
     (
       plan.paymentSettings,
       subscription.thirdPartySubscriptionInformations
@@ -1085,7 +1058,7 @@ class PaymentClient(
           ) =>
         stripeSettingsOf(tenant, p) match {
           case None =>
-            EitherT.leftT[Future, Option[BillingStatus]](
+            EitherT.leftT[Future, BillingStatus](
               AppError.ThirdPartyPaymentSettingsNotFound
             )
           case Some(s) =>
@@ -1126,10 +1099,13 @@ class PaymentClient(
                 periodEnd = periodEnd,
                 nextCharge = nextCharge,
                 pricesOutdated = outdatedItems(items, p).nonEmpty
-              ).some
+              )
             }
         }
-      case _ => EitherT.pure[Future, AppError](None)
+      case _ =>
+        EitherT.leftT[Future, BillingStatus](
+          AppError.PaymentError("this subscription is not paid through Stripe")
+        )
     }
 
   /** Ends the subscription when the period the consumer has already paid for
@@ -1234,58 +1210,48 @@ class PaymentClient(
     )
   }
 
-  def toggleStateThirdPartySubscription(
-      apiSubscription: ApiSubscription
-  ): EitherT[Future, AppError, JsValue] = {
-    for {
-      plan <- EitherT.fromOptionF(
-        env.dataStore.usagePlanRepo
-          .forTenant(apiSubscription.tenant)
-          .findByIdNotDeleted(apiSubscription.plan),
-        AppError.PlanNotFound
-      )
-      tenant <- EitherT.fromOptionF(
-        env.dataStore.tenantRepo.findByIdNotDeleted(apiSubscription.tenant),
-        AppError.TenantNotFound
-      )
-      settings = plan.paymentSettings.flatMap(s =>
-        tenant.thirdPartyPaymentSettings
-          .find(_.id == s.thirdPartyPaymentSettingsId)
-      )
-      value <- settings match {
-        case Some(p: StripeSettings) =>
-          toggleStateStripeSubscription(apiSubscription)(using p)
-        case None => EitherT.pure[Future, AppError](apiSubscription.asJson)
-      }
-    } yield value
-  }
+  def alignStripePause(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      plan: UsagePlan
+  ): EitherT[Future, AppError, Unit] =
+    (
+      plan.paymentSettings,
+      subscription.thirdPartySubscriptionInformations
+    ) match {
+      case _ if subscription.blockedBy.contains(SubscriptionBlockReason.Ended) =>
+        EitherT.pure[Future, AppError](())
+      case (
+            Some(p: PaymentSettings.Stripe),
+            Some(i: StripeSubscriptionInformations)
+          ) =>
+        stripeSettingsOf(tenant, p) match {
+          case None =>
+            EitherT.leftT[Future, Unit](
+              AppError.ThirdPartyPaymentSettingsNotFound
+            )
+          case Some(s) =>
+            implicit val stripeSettings: StripeSettings = s
 
-  private def toggleStateStripeSubscription(apiSubscription: ApiSubscription)(
-      implicit stripeSettings: StripeSettings
-  ): EitherT[Future, AppError, JsValue] = {
-    apiSubscription.thirdPartySubscriptionInformations match {
-      case Some(informations) =>
-        informations match {
-          case StripeSubscriptionInformations(subscriptionId, _) =>
-            val body =
-              if (apiSubscription.enabled)
+            val pause =
+              if (subscription.blockedBy.isEmpty) {
                 Map("pause_collection" -> "")
-              else
+              } else {
                 Map("pause_collection[behavior]" -> "void")
+              }
 
-            EitherT.liftF(
-              stripeClient(s"/v1/subscriptions/$subscriptionId")
-                .post(body)
-                .map(_.json)
+            EitherT(
+              retryingOn429(
+                stripeClient(s"/v1/subscriptions/${i.subscriptionId}")
+                  .post(pause)
+              ).map {
+                case res if res.status == 200 => Right[AppError, Unit](())
+                case res => Left[AppError, Unit](stripeErrorMessage(res))
+              }
             )
         }
-
-      case None =>
-        EitherT.left[JsValue](
-          FastFuture.successful(AppError.EntityNotFound("stripe settings"))
-        )
+      case _ => EitherT.pure[Future, AppError](())
     }
-  }
 
   def createAndGetStripeClient(team: Team)(implicit
       stripeSettings: StripeSettings

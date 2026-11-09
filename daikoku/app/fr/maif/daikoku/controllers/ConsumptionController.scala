@@ -8,15 +8,16 @@ import fr.maif.daikoku.controllers.authorizations.async.{
   TeamAdminOnly,
   TeamApiKeyAction
 }
-import fr.maif.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.daikoku.domain.{
   Api,
   ApiSubscription,
   Currency,
   OtoroshiSettings,
+  SubscriptionBlockReason,
   Tenant,
   UsagePlan
 }
+import fr.maif.daikoku.domain.json.SetSubscriptionBlockReasonFormat
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.OtoroshiClient
 import fr.maif.daikoku.jobs.ApiKeyStatsJob
@@ -606,48 +607,46 @@ class ConsumptionController(
       "apiName" -> api.map(a => JsString(a.name)).getOrElse(JsNull),
       "plan" -> plan.id.asJson,
       "planName" -> plan.customName,
-      "enabled" -> subscription.enabled,
+      "blockedBy" -> SetSubscriptionBlockReasonFormat.writes(
+        subscription.blockedBy
+      ),
       "currency" -> plan.currency.getOrElse(Currency("EUR")).code
     )
 
-    subscription.thirdPartySubscriptionInformations match {
-      case Some(StripeSubscriptionInformations(_, None)) =>
-        FastFuture.successful(identity ++ Json.obj("legacy" -> true))
-      case _ =>
-        paymentClient.billingStatusOf(tenant, subscription, plan).value.map {
-          case Left(error) =>
-            identity ++ Json.obj("error" -> error.getErrorMessage())
-          case Right(None) =>
-            identity ++ Json.obj("legacy" -> true)
-          case Right(Some(status)) =>
-            identity ++ Json.obj(
-              "legacy" -> false,
-              "cancelAt" -> status.cancelAt
-                .map(date => JsNumber(date.getMillis))
-                .getOrElse(JsNull),
-              "periodEnd" -> status.periodEnd
-                .map(date => JsNumber(date.getMillis))
-                .getOrElse(JsNull),
-              "nextCharge" -> status.nextCharge
-                .map(JsNumber(_))
-                .getOrElse(JsNull),
-              "priceChange" -> Option
-                .when(status.pricesOutdated)(
-                  Json.obj(
-                    "costPerMonth" -> plan.costPerMonth
-                      .map(JsNumber(_))
-                      .getOrElse(JsNull),
-                    "costPerRequest" -> plan.costPerRequest
-                      .map(JsNumber(_))
-                      .getOrElse(JsNull),
-                    "effectiveAt" -> status.periodEnd
-                      .map(date => JsNumber(date.getMillis))
-                      .getOrElse(JsNull)
-                  )
+    if (subscription.blockedBy.contains(SubscriptionBlockReason.Ended)) {
+      FastFuture.successful(identity)
+    } else {
+      paymentClient.billingStatusOf(tenant, subscription, plan).value.map {
+        case Left(error) =>
+          identity ++ Json.obj("error" -> error.getErrorMessage())
+        case Right(status) =>
+          identity ++ Json.obj(
+            "cancelAt" -> status.cancelAt
+              .map(date => JsNumber(date.getMillis))
+              .getOrElse(JsNull),
+            "periodEnd" -> status.periodEnd
+              .map(date => JsNumber(date.getMillis))
+              .getOrElse(JsNull),
+            "nextCharge" -> status.nextCharge
+              .map(JsNumber(_))
+              .getOrElse(JsNull),
+            "priceChange" -> Option
+              .when(status.pricesOutdated)(
+                Json.obj(
+                  "costPerMonth" -> plan.costPerMonth
+                    .map(JsNumber(_))
+                    .getOrElse(JsNull),
+                  "costPerRequest" -> plan.costPerRequest
+                    .map(JsNumber(_))
+                    .getOrElse(JsNull),
+                  "effectiveAt" -> status.periodEnd
+                    .map(date => JsNumber(date.getMillis))
+                    .getOrElse(JsNull)
                 )
-                .getOrElse(JsNull)
-            )
-        }
+              )
+              .getOrElse(JsNull)
+          )
+      }
     }
   }
 

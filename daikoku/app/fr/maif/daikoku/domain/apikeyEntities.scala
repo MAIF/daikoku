@@ -59,6 +59,7 @@ case class ApiSubscriptionRotation(
 enum SubscriptionBlockReason(val name: String) {
   case Lifecycle extends SubscriptionBlockReason("lifecycle")
   case Owner extends SubscriptionBlockReason("owner")
+  case Ended extends SubscriptionBlockReason("ended")
 }
 
 case class ApiSubscription(
@@ -89,8 +90,9 @@ case class ApiSubscription(
 ) extends CanJson[ApiSubscription] {
   // `blockedBy` is the single source of truth for whether a subscription is
   // blocked. `state` is derived: a subscription is Blocked as soon as it carries
-  // at least one reason (Owner and/or Lifecycle), Active otherwise. Keeping
-  // `state` as a derived value preserves the UI/GraphQL contract with no drift.
+  // at least one reason (Owner, Lifecycle and/or Ended), Active otherwise.
+  // Keeping `state` as a derived value preserves the UI/GraphQL contract with
+  // no drift.
   def state: ApiSubscriptionState =
     if (blockedBy.isEmpty) ApiSubscriptionState.Active
     else ApiSubscriptionState.Blocked
@@ -284,7 +286,7 @@ sealed trait ThirdPartySubscriptionInformations {
 object ThirdPartySubscriptionInformations {
   case class StripeSubscriptionInformations(
       subscriptionId: String,
-      customerId: Option[String] = None
+      customerId: String
   ) extends ThirdPartySubscriptionInformations {}
 }
 

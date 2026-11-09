@@ -7,7 +7,7 @@ import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
 import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
+import fr.maif.daikoku.domain.SubscriptionBlockReason.{Ended, Owner}
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
@@ -613,9 +613,12 @@ class ApiService(
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.run(updatedSubscription.id, tenant)
           )
-          _ <- paymentClient.toggleStateThirdPartySubscription(
-            updatedSubscription
-          )
+          _ <-
+            if (byOwner) {
+              paymentClient.alignStripePause(tenant, updatedSubscription, plan)
+            } else {
+              EitherT.pure[Future, AppError](())
+            }
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
@@ -628,6 +631,18 @@ class ApiService(
 
         r.value
     }
+  }
+
+  def endSubscription(
+      tenant: Tenant,
+      subscription: ApiSubscription
+  ): Future[Unit] = {
+    val ended = subscription.copy(blockedBy = subscription.blockedBy + Ended)
+
+    for {
+      _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).save(ended)
+      _ <- otoroshiSynchronisator.run(ended.id, tenant)
+    } yield ()
   }
 
   def regenerateKeyringSecret(
@@ -2186,16 +2201,22 @@ class ApiService(
           EitherT(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant)
-              .findOneNotDeleted(
+              .findNotDeleted(
                 Json.obj(
                   "team" -> team.id.asJson,
                   "api" -> api.id.asJson,
                   "plan" -> plan.id.asJson
                 )
               )
-              .map {
-                case Some(_) => Left(AppError.SubscriptionConflict)
-                case None    => Right(())
+              .map { subscriptions =>
+                val ongoing =
+                  subscriptions.filterNot(_.blockedBy.contains(Ended))
+
+                if (ongoing.nonEmpty) {
+                  Left(AppError.SubscriptionConflict)
+                } else {
+                  Right(())
+                }
               }
           )
       }

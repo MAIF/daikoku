@@ -1407,18 +1407,24 @@
       "ThirdPartySubscriptionInformations.Stripe": {
         "description": "ThirdPartySubscriptionInformations",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "stripe"
+            ]
+          },
           "subscriptionId": {
             "type": "string"
           },
-          "primaryElementId": {
-            "type": "string",
-            "nullable": true
-          },
-          "meteredElementId": {
-            "type": "string",
-            "nullable": true
+          "customerId": {
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "type",
+          "subscriptionId",
+          "customerId"
+        ]
       },
       "OtoroshiApiKey": {
         "description": "OtoroshiApiKey",
@@ -2689,12 +2695,20 @@
             "type": "string"
           },
           "additionalPriceId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
+          },
+          "meterId": {
+            "type": "string"
+          },
+          "meterEventName": {
+            "type": "string"
           }
         },
         "required": [
-          "basePriceId"
+          "basePriceId",
+          "additionalPriceId",
+          "meterId",
+          "meterEventName"
         ]
       },
       "ApikeyCustomization": {

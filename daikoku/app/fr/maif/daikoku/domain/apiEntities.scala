@@ -172,9 +172,9 @@ sealed trait PaymentSettings {
 
 case class StripePriceIds(
     basePriceId: String,
-    additionalPriceId: Option[String] = None,
-    meterId: Option[String] = None,
-    meterEventName: Option[String] = None
+    additionalPriceId: String,
+    meterId: String,
+    meterEventName: String
 ) extends CanJson[StripePriceIds] {
   override def asJson: JsValue = json.StripePriceIdsFormat.writes(this)
 }

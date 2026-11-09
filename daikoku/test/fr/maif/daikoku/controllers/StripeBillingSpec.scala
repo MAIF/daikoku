@@ -159,6 +159,10 @@ class StripeBillingSpec()
         .willReturn(okJson(fixture("subscription")))
     )
     stubFor(
+      post(urlEqualTo(s"/v1/subscriptions/$subscriptionId"))
+        .willReturn(okJson(fixture("subscription")))
+    )
+    stubFor(
       post(urlMatching("/v1/prices/[^/]+"))
         .willReturn(okJson(fixture("prices")))
     )
@@ -441,6 +445,49 @@ class StripeBillingSpec()
     currentSubscription()
   }
 
+  private def blockByOwner(
+      subscription: ApiSubscription,
+      blocked: Boolean
+  ): WSResponse = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+
+    httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamOwnerId.value}/subscriptions/${subscription.id.value}/_archiveByOwner?enabled=${!blocked}",
+      method = "PUT"
+    )(using stripeTenant, session)
+  }
+
+  private def turnKey(
+      subscription: ApiSubscription,
+      enabled: Boolean
+  ): WSResponse = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+
+    httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamConsumerId.value}/subscriptions/${subscription.id.value}/_archive?enabled=$enabled",
+      method = "PUT"
+    )(using stripeTenant, session)
+  }
+
+  private def moveApiTo(state: ApiState): WSResponse = {
+    implicit val session: UserSession =
+      loginWithBlocking(userAdmin, stripeTenant)
+
+    httpJsonCallBlocking(
+      path =
+        s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
+      method = "PUT",
+      body = defaultApi.api.copy(state = state).asJson.some
+    )(using stripeTenant, session)
+  }
+
+  private def pausesSentToStripe(): Seq[Map[String, String]] =
+    formBodies(s"/v1/subscriptions/$subscriptionId")
+
   private def archiveStripeProduct(): Either[AppError, JsValue] =
     daikokuComponents.paymentClient
       .deleteThirdPartyProduct(
@@ -468,7 +515,7 @@ class StripeBillingSpec()
       payCheckout().status mustBe 200
 
       subscriptions().map(_.thirdPartySubscriptionInformations) mustBe Seq(
-        StripeSubscriptionInformations(subscriptionId, customerId.some).some
+        StripeSubscriptionInformations(subscriptionId, customerId).some
       )
     }
 
@@ -613,7 +660,6 @@ class StripeBillingSpec()
 
       val state = billingState()
 
-      (state \ "legacy").as[Boolean] mustBe false
       (state \ "nextCharge").as[BigDecimal] mustBe BigDecimal("12.34")
       (state \ "periodEnd").as[Long] mustBe periodEnd * 1000
       (state \ "cancelAt").get mustBe JsNull
@@ -638,20 +684,51 @@ class StripeBillingSpec()
       (change \ "effectiveAt").as[Long] mustBe periodEnd * 1000
     }
 
-    "show a subscription without a Stripe customer as legacy, without asking Stripe" in {
+    "show an ended subscription without asking Stripe" in {
       val subscription = subscribeAndPay()
       daikokuComponents.env.dataStore.apiSubscriptionRepo
         .forTenant(stripeTenant)
-        .save(
-          subscription.copy(thirdPartySubscriptionInformations =
-            StripeSubscriptionInformations(subscriptionId, None).some
-          )
-        )
+        .save(subscription.copy(blockedBy = Set(SubscriptionBlockReason.Ended)))
         .futureValue
       wireMockServer.resetRequests()
 
-      (billingState() \ "legacy").as[Boolean] mustBe true
+      (billingState() \ "blockedBy").as[Seq[String]] mustBe Seq("ended")
       verify(0, getRequestedFor(urlPathMatching("/v1/subscriptions/.*")))
+    }
+  }
+
+  "billing a blocked subscription" must {
+    "pause the Stripe subscription while its producer blocks it, and resume it once unblocked" in {
+      val subscription = subscribeAndPay()
+      wireMockServer.resetRequests()
+
+      blockByOwner(subscription, blocked = true).status mustBe 200
+      blockByOwner(subscription, blocked = false).status mustBe 200
+
+      pausesSentToStripe() mustBe Seq(
+        Map("pause_collection[behavior]" -> "void"),
+        Map("pause_collection" -> "")
+      )
+    }
+
+    "pause the Stripe subscriptions of an API its lifecycle blocks" in {
+      subscribeAndPay()
+      wireMockServer.resetRequests()
+
+      moveApiTo(ApiState.Blocked).status mustBe 200
+
+      pausesSentToStripe() mustBe Seq(
+        Map("pause_collection[behavior]" -> "void")
+      )
+    }
+
+    "leave Stripe alone when the consumer turns its key off" in {
+      val subscription = subscribeAndPay()
+      wireMockServer.resetRequests()
+
+      turnKey(subscription, enabled = false).status mustBe 200
+
+      pausesSentToStripe() mustBe empty
     }
   }
 
@@ -697,7 +774,7 @@ class StripeBillingSpec()
       val subscription = subscribeAndPay()
 
       subscription.thirdPartySubscriptionInformations mustBe Some(
-        StripeSubscriptionInformations(subscriptionId, customerId.some)
+        StripeSubscriptionInformations(subscriptionId, customerId)
       )
     }
   }
@@ -715,11 +792,10 @@ class StripeBillingSpec()
 
     "bill the customer carried by the subscription, through the meter of the plan" in {
       subscribeAndPay()
-      val eventName = (currentPlan().paymentSettings.get
+      val eventName = currentPlan().paymentSettings.get
         .asInstanceOf[PaymentSettings.Stripe]
         .priceIds
-        .meterEventName)
-        .get
+        .meterEventName
 
       consume(hits = 250)
 
@@ -860,7 +936,7 @@ class StripeBillingSpec()
       val settings =
         currentPlan().paymentSettings.get.asInstanceOf[PaymentSettings.Stripe]
       settings.productId mustBe productId
-      settings.priceIds.meterId mustBe meterId.some
+      settings.priceIds.meterId mustBe meterId
       currentPlan().currency mustBe Currency("EUR").some
     }
 

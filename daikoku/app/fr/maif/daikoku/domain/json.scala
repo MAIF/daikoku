@@ -1073,9 +1073,9 @@ object json {
         JsSuccess(
           StripePriceIds(
             basePriceId = (json \ "basePriceId").as[String],
-            additionalPriceId = (json \ "additionalPriceId").asOpt[String],
-            meterId = (json \ "meterId").asOpt[String],
-            meterEventName = (json \ "meterEventName").asOpt[String]
+            additionalPriceId = (json \ "additionalPriceId").as[String],
+            meterId = (json \ "meterId").as[String],
+            meterEventName = (json \ "meterEventName").as[String]
           )
         )
       } recover { case e =>
@@ -1086,10 +1086,7 @@ object json {
     override def writes(o: StripePriceIds): JsValue =
       Json.obj(
         "basePriceId" -> o.basePriceId,
-        "additionalPriceId" -> o.additionalPriceId
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
+        "additionalPriceId" -> o.additionalPriceId,
         "meterId" -> o.meterId,
         "meterEventName" -> o.meterEventName
       )
@@ -2395,6 +2392,7 @@ object json {
       json.asOpt[String] match {
         case Some("lifecycle") => JsSuccess(SubscriptionBlockReason.Lifecycle)
         case Some("owner")     => JsSuccess(SubscriptionBlockReason.Owner)
+        case Some("ended")     => JsSuccess(SubscriptionBlockReason.Ended)
         case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
         case None      => JsError("Bad SubscriptionBlockReason value")
       }
@@ -2641,7 +2639,7 @@ object json {
           JsSuccess(
             StripeSubscriptionInformations(
               subscriptionId = (json \ "subscriptionId").as[String],
-              customerId = (json \ "customerId").asOpt[String]
+              customerId = (json \ "customerId").as[String]
             )
           )
         } recover { case e =>

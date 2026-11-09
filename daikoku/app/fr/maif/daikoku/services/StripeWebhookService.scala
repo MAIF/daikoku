@@ -2,6 +2,7 @@ package fr.maif.daikoku.services
 
 import cats.data.EitherT
 import fr.maif.daikoku.controllers.{AppError, PaymentClient}
+import fr.maif.daikoku.domain.SubscriptionBlockReason.Ended
 import fr.maif.daikoku.domain.{
   ApiSubscription,
   GuestUser,
@@ -153,42 +154,20 @@ class StripeWebhookService(
     subscriptionOf(tenant, stripeSubscriptionId).flatMap {
       case None =>
         ignored("customer.subscription.deleted", stripeSubscriptionId)
-      case Some(subscription) if !subscription.enabled =>
+      case Some(subscription) if subscription.blockedBy.contains(Ended) =>
         FastFuture.successful(())
       case Some(subscription) =>
-        setEnabled(tenant, subscription, enabled = false).flatMap(_ =>
-          billingNotificationService.cancellationScheduled(
-            tenant,
-            subscription,
-            DateTime.now()
+        apiService
+          .endSubscription(tenant, subscription)
+          .flatMap(_ =>
+            billingNotificationService.cancellationScheduled(
+              tenant,
+              subscription,
+              DateTime.now()
+            )
           )
-        )
     }
   }
-
-  private def setEnabled(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      enabled: Boolean
-  ): Future[Unit] =
-    env.dataStore.usagePlanRepo
-      .forTenant(tenant)
-      .findByIdNotDeleted(subscription.plan)
-      .flatMap {
-        case None =>
-          AppLogger.error(
-            s"[stripe webhook] plan ${subscription.plan.value} of subscription ${subscription.id.value} not found, enabled left to ${subscription.enabled}"
-          )
-          FastFuture.successful(())
-        case Some(plan) =>
-          apiService.archiveApiKey(tenant, subscription, plan, enabled).map {
-            case Left(error) =>
-              AppLogger.error(
-                s"[stripe webhook] unable to set enabled=$enabled on subscription ${subscription.id.value}: ${error.getErrorMessage()}"
-              )
-            case Right(_) => ()
-          }
-      }
 
   private def subscriptionOf(
       tenant: Tenant,

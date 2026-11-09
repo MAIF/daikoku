@@ -83,13 +83,8 @@ for runs out, so the key works until the last paid day and the closing invoice s
 their usage. The billing portal uses the merchant's own default configuration, so its legal
 links, its branding and what a customer may change there belong to the Stripe dashboard.
 
-:::warning
-Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage).
-Subscriptions taken before Daikoku 19.0.0 reference the legacy usage records API, which
-Stripe removed: their usage is no longer reported. They are logged and skipped. To bill
-them again, the plan has to be set up for payment anew, and consumers have to subscribe
-to the new plan.
-:::
+Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage):
+each paid plan gets its own meter, fed with the calls of its subscribers.
 
 ## Otoroshi settings
 

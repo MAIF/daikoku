@@ -376,10 +376,11 @@ export interface IBaseSubscription {
   customName: string | null;
   enabled: boolean;
   // `state` is derived from `blockedBy` on the backend: 'blocked' as soon as
-  // there is at least one reason ('owner' set by the API producer and/or
-  // 'lifecycle' set when the whole API is blocked), 'active' otherwise.
+  // there is at least one reason ('owner' set by the API producer, 'lifecycle'
+  // set when the whole API is blocked, 'ended' set once Stripe cancelled the
+  // subscription), 'active' otherwise.
   state: 'active' | 'blocked';
-  blockedBy: Array<'owner' | 'lifecycle'>;
+  blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -592,9 +593,8 @@ export interface ISubscriptionBillingState {
   apiName: string | null;
   plan: string;
   planName: string;
-  enabled: boolean;
+  blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
   currency: string;
-  legacy?: boolean;
   error?: string;
   cancelAt?: number | null;
   periodEnd?: number | null;
