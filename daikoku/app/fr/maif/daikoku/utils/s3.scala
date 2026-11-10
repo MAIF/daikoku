@@ -19,17 +19,23 @@ import play.api.libs.json.*
 import software.amazon.awssdk.auth.credentials.*
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.core.exception.SdkClientException
+import software.amazon.awssdk.endpoints.{Endpoint, EndpointUrl}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Client}
+import software.amazon.awssdk.services.s3.model.{
+  GetObjectRequest,
+  ListObjectsV2Request
+}
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
 import scala.concurrent.duration.DurationInt
 import java.net.{URI, URL}
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 class BadFileContentFromContentType()
@@ -213,26 +219,70 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
 
   def listAssets(tenant: TenantId, team: TeamId)(implicit
       conf: S3Configuration
+  ): Future[Seq[S3ListItem]] =
+    listAssets(s"/${tenant.value}/teams/${team.value}/assets")
+
+  private def listAssets(prefix: String)(implicit
+      conf: S3Configuration
   ): Future[Seq[S3ListItem]] = {
+    val client = S3AsyncClient
+      .builder()
+      .credentialsProvider(
+        StaticCredentialsProvider.create(
+          AwsBasicCredentials.create(conf.access, conf.secret)
+        )
+      )
+      .region(Region.of(conf.region))
+      // Preserve the connector's bucket-scoped endpoint, including {bucket} templates.
+      .endpointProvider(_ =>
+        CompletableFuture.completedFuture(
+          Endpoint
+            .builder()
+            .endpointUrl(
+              EndpointUrl.fromUri(
+                URI.create(conf.endpoint.replace("{bucket}", conf.bucket))
+              )
+            )
+            .build()
+        )
+      )
+      .build()
+    val request = ListObjectsV2Request
+      .builder()
+      .bucket(conf.bucket)
+      .prefix(prefix)
+      .build()
     val attrs = s3ClientSettingsAttrs
-    S3.listBucket(
-      conf.bucket,
-      Some(s"/${tenant.value}/teams/${team.value}/assets")
-    ).mapAsync(1) { content =>
-      val none: Option[ObjectMetadata] = None
-      S3.getObjectMetadata(conf.bucket, content.key)
-        .withAttributes(attrs)
-        .runFold(none)((_, opt) => opt)
-        .map {
-          case None =>
+
+    Source
+      .fromPublisher(client.listObjectsV2Paginator(request))
+      .mapConcat(_.contents().asScala.toList)
+      .mapAsync(1) { obj =>
+        val content = ListBucketResultContents(
+          conf.bucket,
+          obj.key(),
+          obj.eTag(),
+          obj.size().longValue(),
+          obj.lastModified(),
+          obj.storageClassAsString()
+        )
+        S3.getObjectMetadata(conf.bucket, content.key)
+          .withAttributes(attrs)
+          .runWith(Sink.head)
+          .map(meta =>
             S3ListItem(
               content,
-              ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
+              meta.getOrElse(
+                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
+              )
             )
-          case Some(meta) => S3ListItem(content, meta)
-        }
-    }.withAttributes(attrs)
-      .runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item)
+          )
+      }
+      .runWith(Sink.seq)
+      .transform { result =>
+        client.close()
+        result
+      }
   }
 
   def deleteAsset(tenant: TenantId, team: TeamId, asset: AssetId)(implicit
@@ -320,26 +370,8 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
 
   def listTenantAssets(
       tenant: TenantId
-  )(implicit conf: S3Configuration): Future[Seq[S3ListItem]] = {
-    val attrs = s3ClientSettingsAttrs
-    S3.listBucket(conf.bucket, Some(s"/${tenant.value}/tenant-assets"))
-      .mapAsync(1) { content =>
-        val none: Option[ObjectMetadata] = None
-        S3.getObjectMetadata(conf.bucket, content.key)
-          .withAttributes(attrs)
-          .runFold(none)((_, opt) => opt)
-          .map {
-            case None =>
-              S3ListItem(
-                content,
-                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
-              )
-            case Some(meta) => S3ListItem(content, meta)
-          }
-      }
-      .withAttributes(attrs)
-      .runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item)
-  }
+  )(implicit conf: S3Configuration): Future[Seq[S3ListItem]] =
+    listAssets(s"/${tenant.value}/tenant-assets")
 
   def deleteTenantAsset(tenant: TenantId, asset: AssetId)(implicit
       conf: S3Configuration

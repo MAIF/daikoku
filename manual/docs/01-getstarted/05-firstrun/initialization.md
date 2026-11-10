@@ -139,6 +139,9 @@ Configuration prefix: `daikoku.init.s3`.
 
 S3 settings are attached only when `DAIKOKU_INIT_S3_BUCKET` is set. The bucket must already exist and be accessible with the supplied credentials.
 
+Asset listing supports S3-compatible providers returning XML as either `application/xml` or `text/xml`.
+Use a bucket-scoped endpoint URL (a `{bucket}` placeholder is also supported); Daikoku does not append the bucket name to this URL.
+
 | Environment variable | Configuration key | Default | Description |
 | --- | --- | --- | --- |
 | `DAIKOKU_INIT_S3_BUCKET` | `bucket` | Unset | Bucket name. Enables S3 configuration seeding. |
